@@ -25,6 +25,12 @@ class DuplicateReactionError(Exception):
         super().__init__(msg)
 
 
+class MissingComponentError(Exception):
+    def __init__(self, fml):
+        msg = f"Cannot find component with formula '{fml}'"
+        super().__init__(msg)
+
+
 class VersionMismatch(Exception):
     def __init__(self, code, db):
         msg = f"Database version {db} conflicts with code version {code}"
@@ -61,6 +67,7 @@ class Component:
         else:
             return f"({self.formula}){self.num}"
 
+
 class Reaction:
     """Representation of a reaction and associated properties.
     """
@@ -73,7 +80,7 @@ class Reaction:
         id_=None,
         description="",
         form: str = "general",
-        components = None,
+        components=None,
         conditions: str = "",
         acid_base: str = ACID_BASE_VALUES[2],
         pka298k: float = 0.0,
@@ -146,7 +153,9 @@ class Reaction:
 
     def _fetch(self):
         if self._details is None:
-            self._details = self._db.fetch_reaction_details(self.id_, self.properties["form"])
+            self._details = self._db.fetch_reaction_details(
+                self.id_, self.properties["form"]
+            )
 
     def as_html(self, properties=False):
         return ""  # TODO: Return an HTML version of the formula
@@ -163,14 +172,16 @@ class Reaction:
             ("Form", self.properties["form"]),
             ("Conditions", self.properties["conditions"]),
             ("Acid/Base", self.properties["acid_base"]),
-            ("pKa at 298K", self.properties["pka298k"])
+            ("pKa at 298K", self.properties["pka298k"]),
         ]
         return self._twocol(lines, col_sep=": ")
 
     @staticmethod
     def _twocol(lines, col_sep="", row_sep="\n"):
         w = max((len(s[0]) for s in lines))
-        rows = [("{0:<%d}{sep}{1}" % w).format(sep=col_sep, *keyval) for keyval in lines]
+        rows = [
+            ("{0:<%d}{sep}{1}" % w).format(sep=col_sep, *keyval) for keyval in lines
+        ]
         return row_sep.join(rows)
 
     def __str__(self):
@@ -213,7 +224,9 @@ class ElectrolyteDB:
         else:
             self._init_tables()
         self._fetch_component_ids()
-        self._comp_react = {}  # {<side>: {<form>: {component-id-set: [reaction ids.. ]} } }
+        self._comp_react = (
+            {}
+        )  # {<side>: {<form>: {component-id-set: [reaction ids.. ]} } }
         self._needs_update = True
 
     def get_component(self, component_formula) -> Union[Component, None]:
@@ -228,18 +241,31 @@ class ElectrolyteDB:
         self._update()
         cursor = self._db.cursor()
         cursor.execute(
-            "SELECT id, type, dissociation, charge, casrn, mwt FROM component WHERE fml=:fml", {"fml": component_formula}
+            "SELECT id, type, dissociation, charge, casrn, mwt FROM component WHERE fml=:fml",
+            {"fml": component_formula},
         )
         row = cursor.fetchone()
         if row is None:
             return None
         id_, type_, diss, charge, casrn, mwt = row
+        if charge is None:
+            charge = 0
         diss_list = [] if diss is None else diss.split(self.DB_LIST_SEP)
-        return Component(component_formula, id_=id_, type_=type_, molecular_weight=mwt, casrn=casrn,
-                         charge=charge, dissociation=diss_list)
+        return Component(
+            component_formula,
+            id_=id_,
+            type_=type_,
+            molecular_weight=mwt,
+            casrn=casrn,
+            charge=charge,
+            dissociation=diss_list,
+        )
 
     def get_reactions(
-        self, components: Sequence[Union[Component, str]], form_filter=None, match_all: bool = False
+        self,
+        components: Sequence[Union[Component, str]],
+        form_filter=None,
+        match_all: bool = False,
     ) -> List[Reaction]:
         """Get reactions based on a component list.
 
@@ -275,13 +301,16 @@ class ElectrolyteDB:
         found_reactions_all_forms = {}
         if match_all:
             # only the 'both' will match
-            for form, reaction_list in self._find_reactions(component_key, self._comp_react['both']):
+            for form, reaction_list in self._find_reactions(
+                component_key, self._comp_react["both"]
+            ):
                 found_reactions_all_forms[form] = reaction_list
         else:
             # either LHS or RHS will match
-            for side in 'lhs', 'rhs':
-                # print(f"@@ {side} match")
-                for form, reaction_list in self._find_reactions(component_key, self._comp_react[side]):
+            for side in "lhs", "rhs":
+                for form, reaction_list in self._find_reactions(
+                    component_key, self._comp_react[side]
+                ):
                     found_reactions_all_forms[form] = reaction_list
         reactions = []
         for form, reaction_ids in found_reactions_all_forms.items():
@@ -289,11 +318,22 @@ class ElectrolyteDB:
                 # wrong form; skip
                 continue
             cursor = self._db.cursor()
-            cursor.execute(f"SELECT r.description, r.conditions, r.acid_base, r.pka298k FROM reaction r "
-                           f"WHERE r.id IN ({','.join([str(rid) for rid, _ in reaction_ids])})")
-            prop_kwds = []  # array of dict; keys matching keywords in Reaction constructor
+            cursor.execute(
+                f"SELECT r.description, r.conditions, r.acid_base, r.pka298k FROM reaction r "
+                f"WHERE r.id IN ({','.join([str(rid) for rid, _ in reaction_ids])})"
+            )
+            prop_kwds = (
+                []
+            )  # array of dict; keys matching keywords in Reaction constructor
             for row in cursor.fetchall():
-                prop_kwds.append({"description": row[0], "conditions": row[1], "acid_base": row[2], "pka298k": row[3]})
+                prop_kwds.append(
+                    {
+                        "description": row[0],
+                        "conditions": row[1],
+                        "acid_base": row[2],
+                        "pka298k": row[3],
+                    }
+                )
             for prop_kwd, (r_id, c_id) in zip(prop_kwds, reaction_ids):
                 r = Reaction(self, id_=r_id, form=form, components=c_id, **prop_kwd)
                 reactions.append(r)
@@ -412,12 +452,23 @@ class ElectrolyteDB:
         data = json.load(path.open())
         self.load_from_json(data)
 
-    def load_from_json(self, data: dict):
+    def load_from_json(self, data: dict, defer_update: bool = False):
+        """Load from a dict.
+
+        Args:
+            data: Input data with 'reactions' and/or 'components' keys.
+            defer_update: If False (the default), do error-checking immediately; otherwise, do error-checking
+                          etc, on the next DB operation.
+        Raises:
+            MissingComponentError, if a reaction is given that is missing component(s)
+        """
         if "components" in data:
             self._load_components(data["components"])
         if "reactions" in data:
-            self._load_reactions(data["reactions"], data["components"])
+            self._load_reactions(data["reactions"])
         self._needs_update = True
+        if not defer_update:
+            self.is_empty()  # force an update
 
     def _load_components(self, comp):
         values = []
@@ -438,7 +489,7 @@ class ElectrolyteDB:
         self._db.executemany("INSERT INTO component VALUES (?,?,?,?,?,?,?)", values)
         self._db.commit()
 
-    def _load_reactions(self, react, comp):
+    def _load_reactions(self, react):
         self._fetch_component_ids()  # populates self._comp_ids
         cursor = self._db.cursor()
         # get starting reaction_side id
@@ -454,7 +505,10 @@ class ElectrolyteDB:
                     formulae = r["forms"][form][side]
                     side_int = 0 if side == "LHS" else 1
                     for fml, num in formulae.items():
-                        comp_id = self._comp_ids[fml]
+                        try:
+                            comp_id = self._comp_ids[fml]
+                        except KeyError:
+                            raise MissingComponentError(fml)
                         values = [rs_id, comp_id, num, side_int]
                         cursor.execute(
                             "INSERT INTO component_side VALUES (?,?,?,?)", values
@@ -467,7 +521,14 @@ class ElectrolyteDB:
             # add a new reaction, and get its auto-generated identifier
             cursor.execute(
                 "INSERT INTO reaction VALUES (?, ?, ?, ?, ?, ?)",
-                [None, r["ID"], r["description"], r["conditions"], r["acid_base"], r["pKa_298K"]],
+                [
+                    None,
+                    r["ID"],
+                    r["description"],
+                    r["conditions"],
+                    r["acid_base"],
+                    r["pKa_298K"],
+                ],
             )
             rct_id = cursor.lastrowid
             # add entries to join table for reaction and its forms
@@ -483,10 +544,14 @@ class ElectrolyteDB:
             self._comp_fml[row[0]] = row[1]
 
     def _update(self):
+        _log.debug("update.start")
         if not self._needs_update:
+            _log.debug("update.end needed=False")
             return
-        self._comp_react = {'lhs': {}, 'rhs': {}, 'both': {}}
+        _log.debug("update.continue needed=True")
+        self._comp_react = {"lhs": {}, "rhs": {}, "both": {}}
         for side in self._comp_react:
+            _log.debug(f"outer loop: side={side}")
             # Query for LHS only, RHS only, or both is identical except this part
             if side == "lhs":
                 side_query = "(f.lhs_id == s.id)"
@@ -496,14 +561,16 @@ class ElectrolyteDB:
                 unique_reactions = False  # may be multiple reactions for same RHS
             else:
                 side_query = "(f.lhs_id == s.id or f.rhs_id == s.id)"
-                unique_reactions = True  # may NOT be multiple reactions for same LHS + RHS
+                unique_reactions = (
+                    True  # may NOT be multiple reactions for same LHS + RHS
+                )
             cursor = self._db.cursor()
             # Join the 'form' and 'component_side' tables to get components for each reaction-form,
             # and then use the 'reaction_form' join table to get the (parent) reaction identifier
             _log.debug("Getting reaction+form+component with a database join..")
             t0 = time.time()
             cursor.execute(
-                f"SELECT rf.react_id, f.form, s.comp_id "
+                f"SELECT rf.react_id, f.form, s.comp_id, s.side "
                 f"FROM form AS f "
                 f"JOIN component_side AS s ON {side_query} "
                 f"JOIN reaction_form as rf ON (rf.form_id == f.id) "
@@ -513,9 +580,14 @@ class ElectrolyteDB:
             _log.debug(f"Join for side={side} took {t1 - t0:.1f}s")
             _log.debug("Processing reactions..")
             t0 = time.time()
-            prev_react_id, forms, comp_ids = None, None, None
+            prev_react_id, forms, comp_ids = None, None, {}
             # Accumulate components for each reaction, and each 'form' of a reaction
-            for react_id, react_form, comp_id in cursor.fetchall():
+            for react_id, react_form, comp_id, side_code in cursor.fetchall():
+                if _log.isEnabledFor(logging.DEBUG):
+                    _log.debug(
+                        f"Row returned: side={side_code} react_id={react_id} react_form={react_form} "
+                        f"comp_id={comp_id}"
+                    )
                 # if this form has not been encountered, make a new dict for it
                 # (this should be fast: only a few keys to check)
                 if react_form not in self._comp_react[side]:
@@ -524,16 +596,25 @@ class ElectrolyteDB:
                 if react_id != prev_react_id:
                     # If there is a previous reaction to record..
                     if prev_react_id is not None:
-                        self._update_add_reaction_components(prev_react_id, comp_ids, self._comp_react[side],
-                                                             unique=unique_reactions)
+                        self._update_add_reaction_components(
+                            prev_react_id,
+                            comp_ids,
+                            self._comp_react[side],
+                            unique=unique_reactions,
+                        )
                     prev_react_id, comp_ids = react_id, {}
                 # Add components from this reaction
                 if react_form not in comp_ids:
                     comp_ids[react_form] = {comp_id}
                 else:
                     comp_ids[react_form].add(comp_id)
+            # record last reaction
+            self._update_add_reaction_components(
+                prev_react_id, comp_ids, self._comp_react[side], unique=unique_reactions
+            )
             t1 = time.time()
             _log.debug(f"Processing reactions for side={side} took {t1 - t0:.1f}s")
+        _log.debug("update.end needed=True")
         self._needs_update = False
 
     @staticmethod
@@ -543,8 +624,17 @@ class ElectrolyteDB:
         for reaction_form, component_ids in comp_ids.items():
             frz_component_ids = frozenset(component_ids)
             comp_react_form = comp_react[reaction_form]
+            if _log.isEnabledFor(logging.DEBUG):
+                _log.debug(
+                    f"reaction_form={reaction_form} component-ids={frz_component_ids} "
+                    f"comp_react_form={comp_react_form}"
+                )
             if frz_component_ids in comp_react_form:
                 if unique:
+                    _log.warning(
+                        f"Duplicate reaction found during update for components: "
+                        f"{', '.join([str(c) for c in frz_component_ids])}"
+                    )
                     other_react_id = comp_react_form[frz_component_ids]
                     raise DuplicateReactionError(react_id, other_react_id)
             elif not unique:
@@ -613,7 +703,7 @@ def __test(dbfile, inputfile, stress=False, delete=False):
             }
             reaction_list.append(r)
         t0 = time.time()
-        edb.load_from_json({"components": component_list, "reactions": reaction_list})
+        edb.load_from_json({"components": component_list, "reactions": reaction_list}, defer_update=True)
         t1 = time.time()
         delta_t = t1 - t0
         print(
