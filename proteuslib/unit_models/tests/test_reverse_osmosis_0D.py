@@ -9,7 +9,7 @@ from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType)
-from proteuslib.unit_models.reverse_osmosis_0D import RO
+from proteuslib.unit_models.reverse_osmosis_0D import RO_0D
 import proteuslib.property_models.NaCl_prop_pack as props
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
@@ -40,7 +40,7 @@ class TestReverseOsmosis():
 
         m.fs.properties = props.NaClParameterBlock()
 
-        m.fs.unit = RO(default={
+        m.fs.unit = RO_0D(default={
             "property_package": m.fs.properties,
             "has_pressure_change": True, })
         return m

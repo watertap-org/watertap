@@ -32,7 +32,7 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("RO")
+@declare_process_block_class("RO_0D")
 class ROData(UnitModelBlockData):
     """
     Standard RO Unit Model Class:
