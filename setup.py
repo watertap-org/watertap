@@ -63,9 +63,12 @@ setup(
     install_requires=[
         'pytest'  # technically developer, but everyone likes tests
     ],
-    # extras_require={
-    #     'dev': ['sphinx'],
-    # },
+    extras_require={
+        'dev': [
+            'Sphinx',
+            'sphinx_rtd_theme',
+        ],
+    },
    package_data={  # Optional
         "": [
             "*.json",
