@@ -129,7 +129,8 @@ class NFData(UnitModelBlockData):
 
     def build(self):
         # Call UnitModel.build to setup dynamics
-        super(NFData, self).build()
+#        super(NFData, self).build()
+        super().build()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
@@ -358,7 +359,6 @@ class NFData(UnitModelBlockData):
     def initialize(
             blk,
             state_args=None,
-            routine=None,
             outlvl=idaeslog.DEBUG,
             solver="ipopt",
             optarg={"tol": 1e-6}):
