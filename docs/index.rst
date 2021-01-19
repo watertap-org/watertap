@@ -10,6 +10,9 @@ Welcome to ProteusLib's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   unit_models/index
+   property_models/index
+
 
 
 Indices and tables
