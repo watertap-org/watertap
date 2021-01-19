@@ -30,11 +30,11 @@ from idaes.core import (FlowsheetBlock,
 
 # COMMENT: NEED TO UPDATE REFERENCE ONCE FINALIZED
 
-from nanofiltration import NF
+from proteuslib.unit_models.nanofiltration import NF
 
 # QUESTION: WHAT IS THE RIGHT SYNTAX HERE?
 
-from NaCl_prop_pack import NaClParameterBlock
+from proteuslib.property_models.NaCl_prop_pack import NaClParameterBlock
 # import NaCl_prop_pack as props
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
