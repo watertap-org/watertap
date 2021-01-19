@@ -1,11 +1,6 @@
 0D Nanofiltration Model
 =======================
 
-.. index::
-  pair: idaes.power_generation.unit_models.drum;Drum
-
-.. currentmodule:: idaes.power_generation.unit_models.drum
-
 Introduction
 ------------
 
