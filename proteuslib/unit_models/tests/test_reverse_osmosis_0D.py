@@ -5,6 +5,7 @@ from pyomo.environ import (ConcreteModel,
                            SolverStatus,
                            value,
                            Var)
+from pyomo.network import Port
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
@@ -43,8 +44,33 @@ class TestReverseOsmosis():
         m.fs.unit = RO_0D(default={
             "property_package": m.fs.properties,
             "has_pressure_change": True, })
+
+        # fully specify system
+        feed_flow_mass = 1
+        feed_mass_frac_NaCl = 0.035
+        feed_pressure = 50e5
+        feed_temperature = 273.15 + 25
+        membrane_pressure_drop = 3e5
+        membrane_area = 50
+        A = 4.2e-12
+        B = 3.5e-8
+        pressure_atmospheric = 101325
+
+        feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+        m.fs.unit.inlet.flow_mass_comp[0, 'NaCl'].fix(
+            feed_flow_mass * feed_mass_frac_NaCl)
+        m.fs.unit.inlet.flow_mass_comp[0, 'H2O'].fix(
+            feed_flow_mass * feed_mass_frac_H2O)
+        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.deltaP.fix(-membrane_pressure_drop)
+        m.fs.unit.area.fix(membrane_area)
+        m.fs.unit.A.fix(A)
+        m.fs.unit.B.fix(B)
+        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         return m
 
+    @pytest.mark.unit
     def test_config(self, RO_frame):
         m = RO_frame
         # check unit config arguments
@@ -62,6 +88,7 @@ class TestReverseOsmosis():
         assert m.fs.unit.config.property_package is \
                m.fs.properties
 
+    @pytest.mark.unit
     def test_build(self, RO_frame):
         m = RO_frame
 
@@ -72,8 +99,11 @@ class TestReverseOsmosis():
             assert hasattr(m.fs.unit, port_str)
             port = getattr(m.fs.unit, port_str)
             assert len(port.vars) == 3
+            assert isinstance(port, Port)
             for var_str in port_vars_lst:
                 assert hasattr(port, var_str)
+                var = getattr(port, var_str)
+                assert isinstance(var, Var)
 
         # test unit objects (including parameters, variables, and constraints)
         unit_objs_lst = ['A', 'B', 'dens_H2O',
@@ -116,34 +146,12 @@ class TestReverseOsmosis():
         assert number_total_constraints(m) == 40
         assert number_unused_variables(m) == 13  # vars from property package parameters
 
+    @pytest.mark.unit
     def test_dof(self, RO_frame):
         m = RO_frame
-        # fully specify system
-        feed_flow_mass = 1
-        feed_mass_frac_NaCl = 0.035
-        feed_pressure = 50e5
-        feed_temperature = 273.15 + 25
-        membrane_pressure_drop = 3e5
-        membrane_area = 50
-        A = 4.2e-12
-        B = 3.5e-8
-        pressure_atmospheric = 101325
-
-        feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
-        m.fs.unit.inlet.flow_mass_comp[0, 'NaCl'].fix(
-            feed_flow_mass * feed_mass_frac_NaCl)
-        m.fs.unit.inlet.flow_mass_comp[0, 'H2O'].fix(
-            feed_flow_mass * feed_mass_frac_H2O)
-        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
-        m.fs.unit.deltaP.fix(-membrane_pressure_drop)
-        m.fs.unit.area.fix(membrane_area)
-        m.fs.unit.A.fix(A)
-        m.fs.unit.B.fix(B)
-        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
-
         assert degrees_of_freedom(m) == 0
 
+    @pytest.mark.unit
     def test_calculate_scaling(self, RO_frame):
         m = RO_frame
         calculate_scaling_factors(m)
@@ -155,6 +163,7 @@ class TestReverseOsmosis():
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
         assert len(unscaled_constraint_list) == 0
 
+    @pytest.mark.component
     def test_initialize(self, RO_frame):
         m = RO_frame
 
@@ -177,11 +186,13 @@ class TestReverseOsmosis():
         for v in fin_fixed_vars:
             assert v in orig_fixed_vars
 
+    @pytest.mark.component
     def test_var_scaling(self, RO_frame):
         m = RO_frame
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
 
+    @pytest.mark.component
     def test_solve(self, RO_frame):
         m = RO_frame
         solver.options = {'nlp_scaling_method': 'user-scaling'}
@@ -192,6 +203,7 @@ class TestReverseOsmosis():
                TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
+    @pytest.mark.component
     def test_conservation(self, RO_frame):
         m = RO_frame
         b = m.fs.unit
@@ -213,6 +225,7 @@ class TestReverseOsmosis():
             - flow_mass_permeate * b.properties_permeate[0].enth_mass
         )) <= 1e-6)
 
+    @pytest.mark.component
     def test_solution(self, RO_frame):
         m = RO_frame
         assert (pytest.approx(5.90e-3, abs=1e-5) ==
