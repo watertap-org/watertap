@@ -548,14 +548,14 @@ class NaClStateBlockData(StateBlockData):
 
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
-        if p is not 'Liq':
+        if p != 'Liq':
             PropertyPackageError("Property package {} does not support "
                                  "non-liquid phases.".format(self.name))
         return self.flow_mass_comp[j]
 
     def get_enthalpy_flow_terms(self, p):
         """Create enthalpy flow terms."""
-        if p is not 'Liq':
+        if p != 'Liq':
             PropertyPackageError("Property package {} does not support "
                                  "non-liquid phases.".format(self.name))
         return self.enth_flow
