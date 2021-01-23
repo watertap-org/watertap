@@ -37,10 +37,8 @@ from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
-from idaes.core.util.misc import add_object_reference, extract_data
-from idaes.core.util.model_statistics import degrees_of_freedom, \
-    number_unfixed_variables
-from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
+from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.exceptions import PropertyPackageError
 import idaes.core.util.scaling as iscale
 
 # Set up logger
@@ -64,7 +62,6 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.TDS = Solute()
 
         # phases
-        # self.phase_list = Set(initialize=['Liq'])  # deprecated, automatically added with phase objects
         self.Liq = LiquidPhase()
 
         # parameters
@@ -73,7 +70,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
                         'TDS': 58.44E-3}  # TODO: Confirm how Sharqawy 2010 converts to moles
         self.mw_comp = Param(self.component_list,
                              mutable=False,
-                             initialize=extract_data(mw_comp_data),
+                             initialize=mw_comp_data,
                              units=pyunits.kg/pyunits.mol,
                              doc="Molecular weight kg/mol")
 
@@ -158,14 +155,8 @@ class SeawaterParameterData(PhysicalParameterBlock):
             doc='Specific enthalpy parameters')
 
         # traditional parameters are the only Vars on the block and should be fixed
-        for v in self.component_objects(Var, descend_into=True):
-            for i in v:
-                if v[i].value is None:
-                    raise ConfigurationError(
-                        "{} parameter {} was not assigned"
-                        " a value. Please check your configuration "
-                        "arguments.".format(self.name, v.local_name))
-                v[i].fix()
+        for v in self.component_objects(Var):
+            v.fix()
 
         # ---default scaling---
         self.set_default_scaling('temperature', 1e-2)
@@ -183,19 +174,19 @@ class SeawaterParameterData(PhysicalParameterBlock):
     def define_metadata(cls, obj):
         """Define properties supported and units."""
         obj.add_properties(
-            {'flow_mass_comp': {'method': None, 'units': pyunits.kg/pyunits.s},
-             'temperature': {'method': None, 'units': pyunits.degK},
-             'pressure': {'method': None, 'units': pyunits.Pa},
-             'mass_frac_comp': {'method': '_mass_frac_comp', 'units': None},
-             'dens_mass': {'method': '_dens_mass', 'units': pyunits.kg/pyunits.m**3},
-             'flow_vol': {'method': '_flow_vol', 'units': pyunits.m**3/pyunits.s},
-             'visc_d': {'method': '_visc_d', 'units': pyunits.Pa*pyunits.s},
-             'diffus': {'method': '_diffus', 'units': pyunits.m**2/pyunits.s},
-             'conc_mass_comp': {'method': '_conc_mass_comp', 'units': pyunits.kg/pyunits.m**3},
-             'osm_coeff': {'method': '_osm_coeff', 'units': None},
-             'pressure_osm': {'method': '_pressure_osm', 'units': pyunits.Pa},
-             'enth_mass': {'method': '_enth_mass', 'units': pyunits.J/pyunits.kg},
-             'enth_flow': {'method': '_enth_flow', 'units': pyunits.J/pyunits.s}
+            {'flow_mass_comp': {'method': None},
+             'temperature': {'method': None},
+             'pressure': {'method': None},
+             'mass_frac_comp': {'method': '_mass_frac_comp'},
+             'dens_mass': {'method': '_dens_mass'},
+             'flow_vol': {'method': '_flow_vol'},
+             'visc_d': {'method': '_visc_d'},
+             'diffus': {'method': '_diffus'},
+             'conc_mass_comp': {'method': '_conc_mass_comp'},
+             'osm_coeff': {'method': '_osm_coeff'},
+             'pressure_osm': {'method': '_pressure_osm'},
+             'enth_mass': {'method': '_enth_mass'},
+             'enth_flow': {'method': '_enth_flow'}
              })
 
         obj.add_default_units({'time': pyunits.s,
@@ -211,8 +202,8 @@ class _SeawaterStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, state_args={}, state_vars_fixed=False,
-                   hold_state=False, outlvl=1,
+    def initialize(self, state_args={}, state_vars_fixed=False,
+                   hold_state=False, outlvl=idaeslog.NOTSET,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
         Initialization routine for property package.
@@ -220,7 +211,7 @@ class _SeawaterStateBlock(StateBlock):
             state_args : Dictionary with initial guesses for the state vars
                          chosen. Note that if this method is triggered
                          through the control volume, and if initial guesses
-                         were not provied at the unit model level, the
+                         were not provided at the unit model level, the
                          control volume passes the inlet values as initial
                          guess.The keys for the state_args dictionary are:
 
@@ -231,8 +222,8 @@ class _SeawaterStateBlock(StateBlock):
             outlvl : sets output level of initialization routine
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
-                     * 2 = include solver output infomation (tee=True)
-            optarg : solver options dictionary object (default=None)
+                     * 2 = include solver output information (tee=True)
+            optarg : solver options dictionary object (default={'tol': 1e-8})
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
                               - True - states have already been fixed by the
@@ -242,86 +233,61 @@ class _SeawaterStateBlock(StateBlock):
                                        with 0D blocks.
                              - False - states have not been fixed. The state
                                        block will deal with fixing/unfixing.
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states varaibles are not unfixed, and
+                         - True - states variables are not unfixed, and
                                  a dict of returned containing flags for
                                  which states were fixed during
                                  initialization.
                         - False - state variables are unfixed after
                                  initialization by calling the
-                                 relase_state method
+                                 release_state method
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         """
+        # Get loggers
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="properties")
 
-        _log.info('Starting {} initialization'.format(blk.name))
+        # Set solver and options
+        opt = SolverFactory(solver)
+        opt.options = optarg
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
-            flags = fix_state_vars(blk, state_args)
-
-        else:
+            flags = fix_state_vars(self, state_args)
             # Check when the state vars are fixed already result in dof 0
-            for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
-                    raise Exception("State vars fixed but degrees of freedom "
-                                    "for state block is not zero during "
-                                    "initialization.")
-        # Set solver options
-        if outlvl > 1:
-            stee = True
-        else:
-            stee = False
-
-        if optarg is None:
-            sopt = {'tol': 1e-8}
-        else:
-            sopt = optarg
-
-        opt = SolverFactory('ipopt')
-        opt.options = sopt
-        # ---------------------------------------------------------------------
-        # Initialize flow rates and compositions
-
-        free_vars = 0
-        for k in blk.keys():
-            free_vars += number_unfixed_variables(blk[k])
-        if free_vars > 0:
-            try:
-                results = solve_indexed_blocks(opt, [blk], tee=stee)
-            except:
-                results = None
-        else:
-            results = None
-
-        if outlvl > 0:
-            if results is None or results.solver.termination_condition \
-                    == TerminationCondition.optimal:
-                _log.info("Property initialization for "
-                          "{} completed".format(blk.name))
-            else:
-                _log.warning("Property initialization for "
-                             "{} failed".format(blk.name))
+            for k in self.keys():
+                dof = degrees_of_freedom(self[k])
+                if dof != 0:
+                    init_log.error("Degrees of freedom not 0, ({})".format(dof))
+                    raise PropertyPackageError("State vars fixed but degrees of "
+                                               "freedom for state block is not "
+                                               "zero during initialization.")
 
         # ---------------------------------------------------------------------
-        # Return state to initial conditions
+        # Initialize properties
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = solve_indexed_blocks(opt, [self], tee=slc.tee)
+        init_log.info("Property initialization: {}."
+                      .format(idaeslog.condition(results)))
+
+        # ---------------------------------------------------------------------
+        # If input block, return flags, else release state
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
             else:
-                blk.release_state(flags)
+                self.release_state(flags)
 
-        if outlvl > 0:
-            _log.info("Initialization completed for {}".format(blk.name))
-
-    def release_state(blk, flags, outlvl=0):
+    def release_state(self, flags, outlvl=idaeslog.NOTSET):
         '''
-        Method to relase state variables fixed during initialization.
+        Method to relase state variables fixed during initialisation.
+
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -329,19 +295,15 @@ class _SeawaterStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         '''
-        if flags is None:
-            return
-
         # Unfix state variables
-        revert_state_vars(blk, flags)
-
-        if outlvl > 0:
-            if outlvl > 0:
-                _log.info('{} states released.'.format(blk.name))
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
+        revert_state_vars(self, flags)
+        init_log.info('{} State Released.'.format(self.name))
 
 @declare_process_block_class("SeawaterStateBlock",
                              block_class=_SeawaterStateBlock)
 class SeawaterStateBlockData(StateBlockData):
+    """A seawater property package."""
     def build(self):
         """Callable method for Block construction."""
         super(SeawaterStateBlockData, self).build()
@@ -355,21 +317,21 @@ class SeawaterStateBlockData(StateBlockData):
             bounds=(1e-8, 100),
             domain=NonNegativeReals,
             units=pyunits.kg/pyunits.s,
-            doc='Mass flow rate [kg/s]')
+            doc='Mass flow rate')
 
         self.temperature = Var(
             initialize=298.15,
             bounds=(273.15, 1000),
             domain=NonNegativeReals,
-            units=pyunits.degK,
-            doc='State temperature [K]')
+            units=pyunits.K,
+            doc='Temperature')
 
         self.pressure = Var(
             initialize=101325,
             bounds=(1e5, 5e7),
             domain=NonNegativeReals,
             units=pyunits.Pa,
-            doc='State pressure [Pa]')
+            doc='Pressure')
 
     # -----------------------------------------------------------------------------
     # Property Methods
@@ -379,7 +341,7 @@ class SeawaterStateBlockData(StateBlockData):
             initialize=0.1,
             bounds=(1e-8, 1),
             units=None,
-            doc='mass fraction [unitless]')
+            doc='Mass fraction')
 
         def rule_mass_frac_comp(b, j):
             return (b.mass_frac_comp[j] == b.flow_mass_comp[j] /
@@ -392,10 +354,10 @@ class SeawaterStateBlockData(StateBlockData):
             initialize=1e3,
             bounds=(1, 1e6),
             units=pyunits.kg * pyunits.m**-3,
-            doc="Mass density [kg/m3]")
+            doc="Mass density")
 
         def rule_dens_mass(b):  # density [kg/m3]
-            t = b.temperature / pyunits.degK - 273.15
+            t = b.temperature / pyunits.K - 273.15
             S = b.mass_frac_comp['TDS'] * 1000
             params = b.params.dens_mass_params
             A = (params['A_1'] * t + params['A_2']) / params['A_3']
@@ -420,7 +382,7 @@ class SeawaterStateBlockData(StateBlockData):
             initialize=1,
             bounds=(1e-8, 1e8),
             units=pyunits.m**3 / pyunits.s,
-            doc="Volumetric flow rate [m3/s]")
+            doc="Volumetric flow rate")
 
         def rule_flow_vol(b):
             return (b.flow_vol == sum(b.flow_mass_comp[j] for j in self.params.component_list)
@@ -432,10 +394,10 @@ class SeawaterStateBlockData(StateBlockData):
             initialize=1e-3,
             bounds=(1e-8, 1),
             units=pyunits.Pa * pyunits.s,
-            doc="Viscosity [Pa-s]")
+            doc="Viscosity")
 
         def rule_visc_d(b):  # dynamic viscosity [Pa-s]
-            t = b.temperature - 273.15 * pyunits.degK
+            t = b.temperature - 273.15 * pyunits.K
             s = b.mass_frac_comp['TDS']
             mu_w = (b.params.visc_d_muw_A
                     + (b.params.visc_d_muw_B *
@@ -451,10 +413,10 @@ class SeawaterStateBlockData(StateBlockData):
             initialize=1e-9,
             bounds=(1e-12, 1e-6),
             units=pyunits.m**2 * pyunits.s**-1,
-            doc="Diffusivity [m2/s]")
+            doc="Diffusivity")
 
         def rule_diffus(b):  # diffusivity [m2/s]
-            t = b.temperature / pyunits.degK
+            t = b.temperature / pyunits.K
             params = b.params.diffus_params
             return (b.diffus == (params['A'] * t ** 2 + params['B'] * t
                                  + params['C']) * 1e-9 * pyunits.m**2 * pyunits.s**-1)
@@ -466,7 +428,7 @@ class SeawaterStateBlockData(StateBlockData):
             initialize=10,
             bounds=(1e-6, 1e6),
             units=pyunits.kg * pyunits.m**-3,
-            doc="Mass concentration [kg/m3]")
+            doc="Mass concentration")
 
         def rule_conc_mass_comp(b, j):
             return self.conc_mass_comp[j] == \
@@ -479,11 +441,11 @@ class SeawaterStateBlockData(StateBlockData):
             initialize=1,
             bounds=(1e-8, 10),
             units=None,
-            doc="Osmotic coefficient [unitless]")
+            doc="Osmotic coefficient")
 
         def rule_osm_coeff(b):  # osmotic coefficient [-], eq. 49
             s = b.mass_frac_comp['TDS']  # typo in Sharqawy, s is mass_frac
-            t = b.temperature / pyunits.degK - 273.15
+            t = b.temperature / pyunits.K - 273.15
             params = b.params.osm_coeff_params
             osm_coeff = (params['1'] + params['2'] * t + params['3'] * t ** 2
                          + params['4'] * t ** 4 + params['5'] * s + params['6'] * s * t
@@ -498,7 +460,7 @@ class SeawaterStateBlockData(StateBlockData):
             initialize=1e6,
             bounds=(1, 1e8),
             units=pyunits.Pa,
-            doc="Osmotic pressure [Pa]")
+            doc="Osmotic pressure")
 
         def rule_pressure_osm(b):  # osmotic pressure [Pa]
             i = 2  # number of ionic species
@@ -512,10 +474,10 @@ class SeawaterStateBlockData(StateBlockData):
             initialize=1e6,
             bounds=(1, 1e9),
             units=pyunits.J * pyunits.kg**-1,
-            doc="Specific enthalpy [J/kg]")
+            doc="Specific enthalpy")
 
         def rule_enth_mass(b):  # specific enthalpy [J/kg]
-            t = b.temperature / pyunits.degK - 273.15
+            t = b.temperature / pyunits.K - 273.15
             S = b.mass_frac_comp['TDS']
             params = b.params.enth_mass_params
             h_w = params['A1'] + params['A2'] * t + params['A3'] * t ** 2 + params['A4'] * t ** 3
@@ -540,16 +502,10 @@ class SeawaterStateBlockData(StateBlockData):
 
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
-        if p != 'Liq':
-            PropertyPackageError("Property package {} does not support "
-                                 "non-liquid phases.".format(self.name))
         return self.flow_mass_comp[j]
 
     def get_enthalpy_flow_terms(self, p):
         """Create enthalpy flow terms."""
-        if p != 'Liq':
-            PropertyPackageError("Property package {} does not support "
-                                 "non-liquid phases.".format(self.name))
         return self.enth_flow
 
     # TODO: make property package compatible with dynamics
