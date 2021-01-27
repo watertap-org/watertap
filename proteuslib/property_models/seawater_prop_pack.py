@@ -64,97 +64,182 @@ class SeawaterParameterData(PhysicalParameterBlock):
         # phases
         self.Liq = LiquidPhase()
 
+        # reference
+        # this package is developed from Sharqawy et al. (2010) http://dx.doi.org/10.5004/dwt.2010.1079
+
         # parameters
         # molecular weight
         mw_comp_data = {'H2O': 18.01528E-3,
-                        'TDS': 58.44E-3}  # TODO: Confirm how Sharqawy 2010 converts to moles
+                        'TDS': 58.44E-3}  # TODO: Confirm how Sharqawy converts TDS to moles
         self.mw_comp = Param(self.component_list,
                              mutable=False,
                              initialize=mw_comp_data,
                              units=pyunits.kg/pyunits.mol,
-                             doc="Molecular weight kg/mol")
+                             doc="Molecular weight")
 
-        # mass density parameters, unitless
-        dens_mass_params_dic = {'A_1': 2, 'A_2': -200, 'A_3': 160,  # term A
-                                'B_1': 2, 'B_2': -150, 'B_3': 150,  # term B
-                                'F1': 0.5,  # term F1
-                                'F3_1': 2, 'F3_2': -1,  # term F3
-                                'F4_1': 4, 'F4_2': -3,  # term F4
-                                'G1': 0.5,  # term G1
-                                'G3_1': 2, 'G3_2': -1,  # term G3
-                                'A1_1': 4.032, 'A1_2': 0.115, 'A1_3': 3.26E-4,  # term A1
-                                'A2_1': -0.108, 'A2_2': 1.571e-3, 'A2_3': -4.23e-4,  # term A2
-                                'A3_1': -0.012, 'A3_2': 1.74e-3, 'A3_3': -9e-6,  # term A3
-                                'A4_1': 6.92e-4, 'A4_2': -8.7e-5, 'A4_3': -5.3e-5,  # term A4
-                                }
-        self.dens_mass_params = Var(
-            [*dens_mass_params_dic],
-            within=Reals, initialize=dens_mass_params_dic, units=None,
-            doc='Mass density parameters')
+        # mass density parameters, eq. 8 in Sharqawy
+        self.dens_mass_param_A1 = Var(
+            within=Reals, initialize=9.999e2, units=pyunits.kg/pyunits.m**3,
+            doc='Mass density parameter A1')
+        self.dens_mass_param_A2 = Var(
+            within=Reals, initialize=2.034e-2, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-1,
+            doc='Mass density parameter A2')
+        self.dens_mass_param_A3 = Var(
+            within=Reals, initialize=-6.162e-3, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-2,
+            doc='Mass density parameter A3')
+        self.dens_mass_param_A4 = Var(
+            within=Reals, initialize=2.261e-5, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-3,
+            doc='Mass density parameter A4')
+        self.dens_mass_param_A5 = Var(
+            within=Reals, initialize=-4.657e-8, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-4,
+            doc='Mass density parameter A5')
+        self.dens_mass_param_B1 = Var(
+            within=Reals, initialize=8.020e2, units=pyunits.kg/pyunits.m ** 3,
+            doc='Mass density parameter B1')
+        self.dens_mass_param_B2 = Var(
+            within=Reals, initialize=-2.001, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-1,
+            doc='Mass density parameter B2')
+        self.dens_mass_param_B3 = Var(
+            within=Reals, initialize=1.677e-2, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-2,
+            doc='Mass density parameter B3')
+        self.dens_mass_param_B4 = Var(
+            within=Reals, initialize=-3.060e-5, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-3,
+            doc='Mass density parameter B4')
+        self.dens_mass_param_B5 = Var(
+            within=Reals, initialize=-1.613e-5, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-2,
+            doc='Mass density parameter B5')
+        self.dens_mass_param_dict = {
+            'A1': self.dens_mass_param_A1,
+            'A2': self.dens_mass_param_A2,
+            'A3': self.dens_mass_param_A3,
+            'A4': self.dens_mass_param_A4,
+            'A5': self.dens_mass_param_A5,
+            'B1': self.dens_mass_param_B1,
+            'B2': self.dens_mass_param_B2,
+            'B3': self.dens_mass_param_B3,
+            'B4': self.dens_mass_param_B4,
+            'B5': self.dens_mass_param_B5}
 
-        # dynamic viscosity parameters, with units
-        self.visc_d_muw_A = Var(
-            within=Reals, initialize=4.2844e-5, units=pyunits.Pa * pyunits.s,
+        # dynamic viscosity parameters, eq. 22 and 23 in Sharqawy
+        self.visc_d_param_muw_A = Var(
+            within=Reals, initialize=4.2844e-5, units=pyunits.Pa*pyunits.s,
             doc='Dynamic viscosity parameter A for pure water')
-        self.visc_d_muw_B = Var(
-            within=Reals, initialize=0.157, units=pyunits.degK**-2 * pyunits.Pa**-1 * pyunits.s**-1,
+        self.visc_d_param_muw_B = Var(
+            within=Reals, initialize=0.157, units=pyunits.degK**-2*pyunits.Pa**-1*pyunits.s**-1,
             doc='Dynamic viscosity parameter B for pure water')
-        self.visc_d_muw_C = Var(
-            within=Reals, initialize=64.993, units=pyunits.degK,
+        self.visc_d_param_muw_C = Var(
+            within=Reals, initialize=64.993, units=pyunits.K,
             doc='Dynamic viscosity parameter C for pure water')
-        self.visc_d_muw_D = Var(
-            within=Reals, initialize=91.296, units=pyunits.Pa**-1 * pyunits.s**-1,
+        self.visc_d_param_muw_D = Var(
+            within=Reals, initialize=91.296, units=pyunits.Pa**-1*pyunits.s**-1,
             doc='Dynamic viscosity parameter D for pure water')
-        self.visc_d_A_1 = Var(
+        self.visc_d_param_A_1 = Var(
             within=Reals, initialize=1.541, units=None,
             doc='Dynamic viscosity parameter 1 for term A')
-        self.visc_d_A_2 = Var(
-            within=Reals, initialize=1.998e-2, units=pyunits.degK**-1,
+        self.visc_d_param_A_2 = Var(
+            within=Reals, initialize=1.998e-2, units=pyunits.K**-1,
             doc='Dynamic viscosity parameter 2 for term A')
-        self.visc_d_A_3 = Var(
-            within=Reals, initialize=-9.52e-5, units=pyunits.degK**-2,
+        self.visc_d_param_A_3 = Var(
+            within=Reals, initialize=-9.52e-5, units=pyunits.K**-2,
             doc='Dynamic viscosity parameter 3 for term A')
-        self.visc_d_B_1 = Var(
+        self.visc_d_param_B_1 = Var(
             within=Reals, initialize=7.974, units=None,
             doc='Dynamic viscosity parameter 1 for term B')
-        self.visc_d_B_2 = Var(
-            within=Reals, initialize=-7.561e-2, units=pyunits.degK**-1,
+        self.visc_d_param_B_2 = Var(
+            within=Reals, initialize=-7.561e-2, units=pyunits.K**-1,
             doc='Dynamic viscosity parameter 2 for term B')
-        self.visc_d_B_3 = Var(
-            within=Reals, initialize=4.724e-4, units=pyunits.degK**-2,
+        self.visc_d_param_B_3 = Var(
+            within=Reals, initialize=4.724e-4, units=pyunits.K**-2,
             doc='Dynamic viscosity parameter 3 for term B')
+        self.visc_d_param_dict = {
+            'muw_A': self.visc_d_param_muw_A,
+            'muw_B': self.visc_d_param_muw_B,
+            'muw_C': self.visc_d_param_muw_C,
+            'muw_D': self.visc_d_param_muw_D,
+            'A_1': self.visc_d_param_A_1,
+            'A_2': self.visc_d_param_A_2,
+            'A_3': self.visc_d_param_A_3,
+            'B_1': self.visc_d_param_B_1,
+            'B_2': self.visc_d_param_B_2,
+            'B_3': self.visc_d_param_B_3}
 
-        # diffusivity parameters, unitless
-        diffus_params_dic = {'A': 3.847e-4, 'B': -0.1984, 'C': 26.54}
-        self.diffus_params = Var([*diffus_params_dic],
-            within=Reals, initialize=diffus_params_dic, units=None,
-            doc='Diffusivity parameters')
+        # osmotic coefficient parameters, eq. 49 in Sharqawy
+        self.osm_coeff_param_1 = Var(
+            within=Reals, initialize=8.9453e-1, units=pyunits.dimensionless,
+            doc='Osmotic coefficient parameter 1')
+        self.osm_coeff_param_2 = Var(
+            within=Reals, initialize=4.1561e-4, units=pyunits.K**-1,
+            doc='Osmotic coefficient parameter 2')
+        self.osm_coeff_param_3 = Var(
+            within=Reals, initialize=-4.6262e-6, units=pyunits.K**-2,
+            doc='Osmotic coefficient parameter 3')
+        self.osm_coeff_param_4 = Var(
+            within=Reals, initialize=2.2211e-11, units=pyunits.K**-4,
+            doc='Osmotic coefficient parameter 4')
+        self.osm_coeff_param_5 = Var(
+            within=Reals, initialize=-1.1445e-1, units=pyunits.dimensionless,
+            doc='Osmotic coefficient parameter 5')
+        self.osm_coeff_param_6 = Var(
+            within=Reals, initialize=-1.4783e-3, units=pyunits.K**-1,
+            doc='Osmotic coefficient parameter 6')
+        self.osm_coeff_param_7 = Var(
+            within=Reals, initialize=-1.3526e-8, units=pyunits.K**-3,
+            doc='Osmotic coefficient parameter 7')
+        self.osm_coeff_param_8 = Var(
+            within=Reals, initialize=7.0132, units=pyunits.dimensionless,
+            doc='Osmotic coefficient parameter 8')
+        self.osm_coeff_param_9 = Var(
+            within=Reals, initialize=5.696e-2, units=pyunits.K**-1,
+            doc='Osmotic coefficient parameter 9')
+        self.osm_coeff_param_10 = Var(
+            within=Reals, initialize=-2.8624e-4, units=pyunits.K**-2,
+            doc='Osmotic coefficient parameter 10')
+        self.osm_coeff_param_dict = {
+            '1': self.osm_coeff_param_1,
+            '2': self.osm_coeff_param_2,
+            '3': self.osm_coeff_param_3,
+            '4': self.osm_coeff_param_4,
+            '5': self.osm_coeff_param_5,
+            '6': self.osm_coeff_param_6,
+            '7': self.osm_coeff_param_7,
+            '8': self.osm_coeff_param_8,
+            '9': self.osm_coeff_param_9,
+            '10': self.osm_coeff_param_10}
 
-        # osmotic coefficient parameters, unitless
-        osm_coeff_dic = {'1': 8.9453e-1,
-                         '2': 4.1561e-4,
-                         '3': -4.6262e-6,
-                         '4': 2.2211e-11,
-                         '5': -1.1445e-1,
-                         '6': -1.4783e-3,
-                         '7': -1.3526e-8,
-                         '8': 7.0132,
-                         '9': 5.696e-2,
-                         '10': -2.8624e-4}
-        self.osm_coeff_params = Var(
-            [*osm_coeff_dic],
-            within=Reals, initialize=osm_coeff_dic, units=None,
-            doc='Osmotic coefficient parameters')
-
-        # specific enthalpy parameters, unitless
+        # specific enthalpy parameters, eq. 55 and 43 in Sharqawy
         enth_mass_dic = {'A1': 124.790, 'A2': 4203.075, 'A3': -0.552, 'A4': 0.004,
                          'B1': 27062.623, 'B2': 4835.675}
         self.enth_mass_params = Var(
             [*enth_mass_dic],
             within=Reals, initialize=enth_mass_dic, units=None,
             doc='Specific enthalpy parameters')
+        self.enth_mass_param_A1 = Var(
+            within=Reals, initialize=124.790, units=pyunits.J/pyunits.kg,
+            doc='Specific enthalpy parameter A1')
+        self.enth_mass_param_A2 = Var(
+            within=Reals, initialize=4203.075, units=(pyunits.J/pyunits.kg) * pyunits.K**-1,
+            doc='Specific enthalpy parameter A2')
+        self.enth_mass_param_A3 = Var(
+            within=Reals, initialize=-0.552, units=(pyunits.J/pyunits.kg) * pyunits.K**-2,
+            doc='Specific enthalpy parameter A3')
+        self.enth_mass_param_A4 = Var(
+            within=Reals, initialize=0.004, units=(pyunits.J/pyunits.kg) * pyunits.K**-3,
+            doc='Specific enthalpy parameter A4')
+        self.enth_mass_param_B1 = Var(
+            within=Reals, initialize=27062.623, units=pyunits.dimensionless,
+            doc='Specific enthalpy parameter B1')
+        self.enth_mass_param_B2 = Var(
+            within=Reals, initialize=4835.675, units=pyunits.dimensionless,
+            doc='Specific enthalpy parameter B2')
+        self.enth_mass_param_dict = {
+            'A1': self.enth_mass_param_A1,
+            'A2': self.enth_mass_param_A2,
+            'A3': self.enth_mass_param_A3,
+            'A4': self.enth_mass_param_A4,
+            'B1': self.enth_mass_param_B1,
+            'B2': self.enth_mass_param_B2}
 
-        # traditional parameters are the only Vars on the block and should be fixed
+        # traditional parameters are the only Vars currently on the block and should be fixed
         for v in self.component_objects(Var):
             v.fix()
 
@@ -162,7 +247,6 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling('temperature', 1e-2)
         self.set_default_scaling('dens_mass', 1e-3)
         self.set_default_scaling('visc_d', 1e3)
-        self.set_default_scaling('diffus', 1e9)
         self.set_default_scaling('osm_coeff', 1e0)
         self.set_default_scaling('enth_mass', 1e-5)
         # TODO: require users to provide the following scaling factors
@@ -181,7 +265,6 @@ class SeawaterParameterData(PhysicalParameterBlock):
              'dens_mass': {'method': '_dens_mass'},
              'flow_vol': {'method': '_flow_vol'},
              'visc_d': {'method': '_visc_d'},
-             'diffus': {'method': '_diffus'},
              'conc_mass_comp': {'method': '_conc_mass_comp'},
              'osm_coeff': {'method': '_osm_coeff'},
              'pressure_osm': {'method': '_pressure_osm'},
@@ -356,25 +439,15 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density")
 
-        def rule_dens_mass(b):  # density [kg/m3]
-            t = b.temperature / pyunits.K - 273.15
-            S = b.mass_frac_comp['TDS'] * 1000
-            params = b.params.dens_mass_params
-            A = (params['A_1'] * t + params['A_2']) / params['A_3']
-            B = (params['B_1'] * S + params['B_2']) / params['B_3']
-            F1 = params['F1']
-            F2 = A
-            F3 = params['F3_1'] * A ** 2 + params['F3_2']
-            F4 = params['F4_1'] * A ** 3 + params['F4_2'] * A
-            G1 = params['G1']
-            G2 = B
-            G3 = params['G3_1'] * B ** 2 + params['G3_2']
-            A1 = params['A1_1'] * G1 + params['A1_2'] * G2 + params['A1_3'] * G3
-            A2 = params['A2_1'] * G1 + params['A2_2'] * G2 + params['A2_3'] * G3
-            A3 = params['A3_1'] * G1 + params['A3_2'] * G2 + params['A3_3'] * G3
-            A4 = params['A4_1'] * G1 + params['A4_2'] * G2 + params['A4_3'] * G3
-            dens_mass = A1 * F1 + A2 * F2 + A3 * F3 + A4 * F4  # kg/L
-            return b.dens_mass == dens_mass * 1e3 * pyunits.kg * pyunits.m**-3
+        def rule_dens_mass(b):  # density, eq. 8 in Sharqawy
+            t = b.temperature - 273.15 * pyunits.K
+            s = b.mass_frac_comp['TDS']
+            params = b.params.dens_mass_param_dict
+            dens_mass = (params['A1'] + params['A2'] * t + params['A3'] * t ** 2
+                         + params['A4'] * t ** 3 + params['A5'] * t ** 4
+                         + params['B1'] * s + params['B2'] * s * t + params['B3'] * s * t ** 2
+                         + params['B4'] * s * t ** 3 + params['B5'] * s ** 2 * t ** 2)
+            return b.dens_mass == dens_mass
         self.eq_dens_mass = Constraint(rule=rule_dens_mass)
 
     def _flow_vol(self):
@@ -396,31 +469,18 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.Pa * pyunits.s,
             doc="Viscosity")
 
-        def rule_visc_d(b):  # dynamic viscosity [Pa-s]
-            t = b.temperature - 273.15 * pyunits.K
+        def rule_visc_d(b):  # dynamic viscosity, eq. 22 and 23 in Sharqawy
+            t = b.temperature - 273.15 * pyunits.K  # temperature in degC, but pyunits are K
             s = b.mass_frac_comp['TDS']
-            mu_w = (b.params.visc_d_muw_A
-                    + (b.params.visc_d_muw_B *
-                       (t + b.params.visc_d_muw_C) ** 2
-                       - b.params.visc_d_muw_D) ** -1)
-            A = b.params.visc_d_A_1 + b.params.visc_d_A_2 * t + b.params.visc_d_A_3 * t ** 2
-            B = b.params.visc_d_B_1 + b.params.visc_d_B_2 * t + b.params.visc_d_B_3 * t ** 2
+            params = b.params.visc_d_param_dict
+            mu_w = (params['muw_A']
+                    + (params['muw_B'] *
+                       (t + params['muw_C']) ** 2
+                       - params['muw_D']) ** -1)
+            A = (params['A_1'] + params['A_2'] * t + params['A_3'] * t ** 2)
+            B = (params['B_1'] + params['B_2'] * t + params['B_3'] * t ** 2)
             return b.visc_d == mu_w * (1 + A * s + B * s ** 2)
         self.eq_visc_d = Constraint(rule=rule_visc_d)
-
-    def _diffus(self):
-        self.diffus = Var(
-            initialize=1e-9,
-            bounds=(1e-12, 1e-6),
-            units=pyunits.m**2 * pyunits.s**-1,
-            doc="Diffusivity")
-
-        def rule_diffus(b):  # diffusivity [m2/s]
-            t = b.temperature / pyunits.K
-            params = b.params.diffus_params
-            return (b.diffus == (params['A'] * t ** 2 + params['B'] * t
-                                 + params['C']) * 1e-9 * pyunits.m**2 * pyunits.s**-1)
-        self.eq_diffus = Constraint(rule=rule_diffus)
 
     def _conc_mass_comp(self):
         self.conc_mass_comp = Var(
@@ -443,10 +503,10 @@ class SeawaterStateBlockData(StateBlockData):
             units=None,
             doc="Osmotic coefficient")
 
-        def rule_osm_coeff(b):  # osmotic coefficient [-], eq. 49
-            s = b.mass_frac_comp['TDS']  # typo in Sharqawy, s is mass_frac
-            t = b.temperature / pyunits.K - 273.15
-            params = b.params.osm_coeff_params
+        def rule_osm_coeff(b):  # osmotic coefficient, eq. 49 in Sharqawy
+            s = b.mass_frac_comp['TDS']
+            t = b.temperature - 273.15 * pyunits.K  # temperature in degC, but pyunits are still K
+            params = b.params.osm_coeff_param_dict
             osm_coeff = (params['1'] + params['2'] * t + params['3'] * t ** 2
                          + params['4'] * t ** 4 + params['5'] * s + params['6'] * s * t
                          + params['7'] * s * t ** 3 + params['8'] * s ** 2
@@ -462,11 +522,12 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.Pa,
             doc="Osmotic pressure")
 
-        def rule_pressure_osm(b):  # osmotic pressure [Pa]
+        def rule_pressure_osm(b):  # osmotic pressure, based on molality and assumes TDS is NaCl
             i = 2  # number of ionic species
+            molality = b.mass_frac_comp['TDS'] / (1 - b.mass_frac_comp['TDS']) / b.params.mw_comp['TDS']
+            rhow = 1000 * pyunits.kg/pyunits.m**3  # TODO: could make this variable based on temperature
             return (b.pressure_osm ==
-                    i * b.osm_coeff * b.conc_mass_comp['TDS'] / b.params.mw_comp['TDS']
-                    * Constants.gas_constant * b.temperature)
+                    i * b.osm_coeff * molality * rhow * Constants.gas_constant * b.temperature)
         self.eq_pressure_osm = Constraint(rule=rule_pressure_osm)
 
     def _enth_mass(self):
@@ -476,13 +537,16 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.J * pyunits.kg**-1,
             doc="Specific enthalpy")
 
-        def rule_enth_mass(b):  # specific enthalpy [J/kg]
-            t = b.temperature / pyunits.K - 273.15
+        def rule_enth_mass(b):  # specific enthalpy, eq. 55 and 43 in Sharqawy
+            t = b.temperature - 273.15 * pyunits.K  # temperature in degC, but pyunits in K
             S = b.mass_frac_comp['TDS']
-            params = b.params.enth_mass_params
+            params = b.params.enth_mass_param_dict
             h_w = params['A1'] + params['A2'] * t + params['A3'] * t ** 2 + params['A4'] * t ** 3
-            h_sw = (h_w - (S * (params['B1'] + S) + S * (params['B2'] + S) * t))
-            return b.enth_mass == h_sw * pyunits.J * pyunits.kg**-1
+            h_sw = (h_w -
+                    (S * (params['B1'] + S)
+                     + S * (params['B2'] + S) * t/pyunits.K)
+                    * pyunits.J/pyunits.kg)  # must make relationship dimensionless and add units at end
+            return b.enth_mass == h_sw
         self.eq_enth_mass = Constraint(rule=rule_enth_mass)
 
     def _enth_flow(self):
