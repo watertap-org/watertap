@@ -47,6 +47,7 @@ _log = idaeslog.getLogger(__name__)
 
 @declare_process_block_class("SeawaterParameterBlock")
 class SeawaterParameterData(PhysicalParameterBlock):
+    """Parameter block for a seawater property package."""
     CONFIG = PhysicalParameterBlock.CONFIG()
 
     def build(self):
@@ -108,17 +109,6 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.dens_mass_param_B5 = Var(
             within=Reals, initialize=-1.613e-5, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-2,
             doc='Mass density parameter B5')
-        # self.dens_mass_param_dict = {
-        #     'A1': self.dens_mass_param_A1,
-        #     'A2': self.dens_mass_param_A2,
-        #     'A3': self.dens_mass_param_A3,
-        #     'A4': self.dens_mass_param_A4,
-        #     'A5': self.dens_mass_param_A5,
-        #     'B1': self.dens_mass_param_B1,
-        #     'B2': self.dens_mass_param_B2,
-        #     'B3': self.dens_mass_param_B3,
-        #     'B4': self.dens_mass_param_B4,
-        #     'B5': self.dens_mass_param_B5}
 
         # dynamic viscosity parameters, eq. 22 and 23 in Sharqawy
         self.visc_d_param_muw_A = Var(
@@ -134,7 +124,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
             within=Reals, initialize=91.296, units=pyunits.Pa**-1*pyunits.s**-1,
             doc='Dynamic viscosity parameter D for pure water')
         self.visc_d_param_A_1 = Var(
-            within=Reals, initialize=1.541, units=None,
+            within=Reals, initialize=1.541, units=pyunits.dimensionless,
             doc='Dynamic viscosity parameter 1 for term A')
         self.visc_d_param_A_2 = Var(
             within=Reals, initialize=1.998e-2, units=pyunits.K**-1,
@@ -143,7 +133,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
             within=Reals, initialize=-9.52e-5, units=pyunits.K**-2,
             doc='Dynamic viscosity parameter 3 for term A')
         self.visc_d_param_B_1 = Var(
-            within=Reals, initialize=7.974, units=None,
+            within=Reals, initialize=7.974, units=pyunits.dimensionless,
             doc='Dynamic viscosity parameter 1 for term B')
         self.visc_d_param_B_2 = Var(
             within=Reals, initialize=-7.561e-2, units=pyunits.K**-1,
@@ -185,12 +175,6 @@ class SeawaterParameterData(PhysicalParameterBlock):
             doc='Osmotic coefficient parameter 10')
 
         # specific enthalpy parameters, eq. 55 and 43 in Sharqawy
-        enth_mass_dic = {'A1': 124.790, 'A2': 4203.075, 'A3': -0.552, 'A4': 0.004,
-                         'B1': 27062.623, 'B2': 4835.675}
-        self.enth_mass_params = Var(
-            [*enth_mass_dic],
-            within=Reals, initialize=enth_mass_dic, units=None,
-            doc='Specific enthalpy parameters')
         self.enth_mass_param_A1 = Var(
             within=Reals, initialize=124.790, units=pyunits.J/pyunits.kg,
             doc='Specific enthalpy parameter A1')
@@ -216,14 +200,11 @@ class SeawaterParameterData(PhysicalParameterBlock):
 
         # ---default scaling---
         self.set_default_scaling('temperature', 1e-2)
+        self.set_default_scaling('pressure', 1e-6)
         self.set_default_scaling('dens_mass', 1e-3)
         self.set_default_scaling('visc_d', 1e3)
         self.set_default_scaling('osm_coeff', 1e0)
         self.set_default_scaling('enth_mass', 1e-5)
-        # TODO: require users to provide the following scaling factors
-        self.set_default_scaling('flow_mass_comp', 1e0, 'H2O')
-        self.set_default_scaling('flow_mass_comp', 1e2, 'TDS')
-        self.set_default_scaling('pressure', 1e-6)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -392,7 +373,7 @@ class SeawaterStateBlockData(StateBlockData):
             self.params.component_list,
             initialize=0.1,
             bounds=(1e-8, 1),
-            units=None,
+            units=pyunits.dimensionless,
             doc='Mass fraction')
 
         def rule_mass_frac_comp(b, j):
@@ -470,14 +451,14 @@ class SeawaterStateBlockData(StateBlockData):
         def rule_conc_mass_comp(b, j):
             return self.conc_mass_comp[j] == \
                    self.dens_mass * self.mass_frac_comp[j]
-        self.eq_conc_mass_comp = Constraint(self.params.component_list,rule=rule_conc_mass_comp)
+        self.eq_conc_mass_comp = Constraint(self.params.component_list, rule=rule_conc_mass_comp)
 
 
     def _osm_coeff(self):
         self.osm_coeff = Var(
             initialize=1,
             bounds=(1e-8, 10),
-            units=None,
+            units=pyunits.dimensionless,
             doc="Osmotic coefficient")
 
         def rule_osm_coeff(b):  # osmotic coefficient, eq. 49 in Sharqawy
@@ -525,7 +506,7 @@ class SeawaterStateBlockData(StateBlockData):
                    + b.params.enth_mass_param_A2 * t
                    + b.params.enth_mass_param_A3 * t ** 2
                    + b.params.enth_mass_param_A4 * t ** 3)
-            # relationship requires dimensionless calc and units added at end
+            # relationship requires dimensionless calculation and units added at end
             h_sw = (h_w -
                     (S * (b.params.enth_mass_param_B1 + S)
                      + S * (b.params.enth_mass_param_B2 + S) * t/pyunits.K)
@@ -598,10 +579,6 @@ class SeawaterStateBlockData(StateBlockData):
         if iscale.get_scaling_factor(self.flow_mass_comp['TDS']) is None:
             sf = iscale.get_scaling_factor(self.flow_mass_comp['TDS'], default=1e2, warning=True)
             iscale.set_scaling_factor(self.flow_mass_comp['TDS'], sf)
-
-        if iscale.get_scaling_factor(self.flow_mass_comp['H2O']) is None:
-            sf = iscale.get_scaling_factor(self.pressure, default=1e-6, warning=True)
-            iscale.set_scaling_factor(self.pressure, sf)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
