@@ -417,6 +417,19 @@ class SeawaterStateBlockData(StateBlockData):
                     / b.dens_mass)
         self.eq_flow_vol = Constraint(rule=rule_flow_vol)
 
+    def _conc_mass_comp(self):
+        self.conc_mass_comp = Var(
+            self.params.component_list,
+            initialize=10,
+            bounds=(1e-6, 1e6),
+            units=pyunits.kg * pyunits.m**-3,
+            doc="Mass concentration")
+
+        def rule_conc_mass_comp(b, j):
+            return self.conc_mass_comp[j] == \
+                   self.dens_mass * self.mass_frac_comp[j]
+        self.eq_conc_mass_comp = Constraint(self.params.component_list, rule=rule_conc_mass_comp)
+
     def _visc_d(self):
         self.visc_d = Var(
             initialize=1e-3,
@@ -439,20 +452,6 @@ class SeawaterStateBlockData(StateBlockData):
                  + b.params.visc_d_param_B_3 * t ** 2)
             return b.visc_d == mu_w * (1 + A * s + B * s ** 2)
         self.eq_visc_d = Constraint(rule=rule_visc_d)
-
-    def _conc_mass_comp(self):
-        self.conc_mass_comp = Var(
-            self.params.component_list,
-            initialize=10,
-            bounds=(1e-6, 1e6),
-            units=pyunits.kg * pyunits.m**-3,
-            doc="Mass concentration")
-
-        def rule_conc_mass_comp(b, j):
-            return self.conc_mass_comp[j] == \
-                   self.dens_mass * self.mass_frac_comp[j]
-        self.eq_conc_mass_comp = Constraint(self.params.component_list, rule=rule_conc_mass_comp)
-
 
     def _osm_coeff(self):
         self.osm_coeff = Var(
