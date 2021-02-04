@@ -1,5 +1,7 @@
 """
 NAWI Electrolyte Database
+
+Interface for helping with electrolyte properties.
 """
 import argparse
 from collections import namedtuple
