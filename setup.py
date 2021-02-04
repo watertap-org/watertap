@@ -66,6 +66,8 @@ setup(
     extras_require={
          'dev': [
              'pytest-cov'
+            'Sphinx',
+            'sphinx_rtd_theme',
          ],
     },
    package_data={  # Optional

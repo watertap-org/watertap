@@ -130,3 +130,12 @@ dmypy.json
 
 # Pycharm
 .idea
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+.\#*
