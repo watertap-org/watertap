@@ -64,6 +64,7 @@ class NaClParameterData(PhysicalParameterBlock):
 
         # reference
         # this package is developed from Bartholomew & Mauter (2019) https://doi.org/10.1016/j.memsci.2018.11.067
+        # the enthalpy calculations are from Sharqawy et al. (2010) http://dx.doi.org/10.5004/dwt.2010.1079
 
         # molecular weight
         mw_comp_data = {'H2O': 18.01528E-3,
@@ -74,7 +75,7 @@ class NaClParameterData(PhysicalParameterBlock):
                              units=pyunits.kg / pyunits.mol,
                              doc="Molecular weight")
 
-        # mass density parameters
+        # mass density parameters, eq 4 in Bartholomew
         self.dens_mass_param_0 = Var(
             within=Reals, initialize=995, units=pyunits.kg / pyunits.m**3,
             doc='Mass density parameter 0')
@@ -82,7 +83,7 @@ class NaClParameterData(PhysicalParameterBlock):
             within=Reals, initialize=756, units=pyunits.kg / pyunits.m**3,
             doc='Mass density parameter 1')
 
-        # dynamic viscosity parameters
+        # dynamic viscosity parameters, eq 5 in Bartholomew
         self.visc_d_param_0 = Var(
             within=Reals, initialize=9.80E-4, units=pyunits.Pa * pyunits.s,
             doc='Dynamic viscosity parameter 0')
@@ -90,7 +91,7 @@ class NaClParameterData(PhysicalParameterBlock):
             within=Reals, initialize=2.15E-3, units=pyunits.Pa * pyunits.s,
             doc='Dynamic viscosity parameter 1')
 
-        # diffusivity parameters
+        # diffusivity parameters, eq 6 in Bartholomew
         self.diffus_param_0 = Var(
             within=Reals, initialize=1.51e-9, units=pyunits.m**2 / pyunits.s,
             doc='Dynamic viscosity parameter 0')
@@ -107,7 +108,7 @@ class NaClParameterData(PhysicalParameterBlock):
             within=Reals, initialize=1.53e-7, units=pyunits.m**2 / pyunits.s,
             doc='Dynamic viscosity parameter 4')
 
-        # osmotic coefficient parameters
+        # osmotic coefficient parameters, eq. 3b in Bartholomew
         self.osm_coeff_param_0 = Var(
             within=Reals, initialize=0.918, units=pyunits.dimensionless,
             doc='Osmotic coefficient parameter 0')
@@ -335,7 +336,7 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density")
 
-        def rule_dens_mass(b):
+        def rule_dens_mass(b):  # density, eq. 4 in Bartholomew
             return b.dens_mass == (b.params.dens_mass_param_1 * b.mass_frac_comp['NaCl']
                                    + b.params.dens_mass_param_0)
         self.eq_dens_mass = Constraint(rule=rule_dens_mass)
@@ -372,7 +373,7 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.Pa * pyunits.s,
             doc="Viscosity")
 
-        def rule_visc_d(b):
+        def rule_visc_d(b):  # dynamic viscosity, eq 5 in Bartholomew
             return b.visc_d == (b.params.visc_d_param_1 * b.mass_frac_comp['NaCl']
                                 + b.params.visc_d_param_0)
         self.eq_visc_d = Constraint(rule=rule_visc_d)
@@ -384,7 +385,7 @@ class NaClStateBlockData(StateBlockData):
             units=pyunits.m**2 * pyunits.s**-1,
             doc="Diffusivity")
 
-        def rule_diffus(b):  # diffusivity
+        def rule_diffus(b):  # diffusivity, eq 6 in Bartholomew
             return b.diffus == (b.params.diffus_param_4 * b.mass_frac_comp['NaCl'] ** 4
                                 + b.params.diffus_param_3 * b.mass_frac_comp['NaCl'] ** 3
                                 + b.params.diffus_param_2 * b.mass_frac_comp['NaCl'] ** 2
