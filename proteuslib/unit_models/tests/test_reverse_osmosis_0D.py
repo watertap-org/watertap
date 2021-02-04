@@ -142,9 +142,9 @@ class TestReverseOsmosis():
             assert hasattr(blk[0], var_str)
 
         # test statistics
-        assert number_variables(m) == 104
+        assert number_variables(m) == 67
         assert number_total_constraints(m) == 40
-        assert number_unused_variables(m) == 13  # vars from property package parameters
+        assert number_unused_variables(m) == 7  # vars from property package parameters
 
     @pytest.mark.unit
     def test_dof(self, RO_frame):
@@ -228,13 +228,11 @@ class TestReverseOsmosis():
     @pytest.mark.component
     def test_solution(self, RO_frame):
         m = RO_frame
-        assert (pytest.approx(5.90e-3, abs=1e-5) ==
+        assert (pytest.approx(5.574e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_comp_avg[0, 'H2O']))
-        assert (pytest.approx(1.51e-6, abs=1e-8) ==
+        assert (pytest.approx(1.491e-6, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_comp_avg[0, 'NaCl']))
-        assert (pytest.approx(0.295, abs=1e-3) ==
-                value(m.fs.unit.properties_permeate[0].
-                      flow_mass_comp['H2O']))
-        assert (pytest.approx(7.57e-5, abs=1e-7) ==
-                value(m.fs.unit.properties_permeate[0].
-                      flow_mass_comp['NaCl']))
+        assert (pytest.approx(0.2787, rel=1e-3) ==
+                value(m.fs.unit.properties_permeate[0].flow_mass_comp['H2O']))
+        assert (pytest.approx(7.453e-5, abs=1e-3) ==
+                value(m.fs.unit.properties_permeate[0].flow_mass_comp['NaCl']))
