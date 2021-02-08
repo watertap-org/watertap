@@ -1,0 +1,5 @@
+# Types of files to ignore
+.*
+!/.gitignore
+*.pdf
+*.png
