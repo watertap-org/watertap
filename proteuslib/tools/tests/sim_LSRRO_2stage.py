@@ -231,8 +231,9 @@ def optimization(m, obj, *args):
     min_avg_flux = min_avg_flux / 3600 * pyunits.kg / pyunits.m**2 / pyunits.s  # [kg/m2-s]
 
     # ---Override with model choices---
-    ctr = 0
+    found_param_sweep = False
     for key, value in zip(*args):
+        found_param_sweep = True
         value = float(value)
         if 'recovery' in key:
             product_recovery = value
@@ -240,7 +241,6 @@ def optimization(m, obj, *args):
             feed_mass_frac_NaCl = value
             m.fs.M1.feed.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
             m.fs.M1.feed.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
-        ctr += 1
 
     # additional constraints
     m.fs.eq_recovery = Constraint(
@@ -278,9 +278,10 @@ def optimization(m, obj, *args):
 
     # ---displaying---
     print('\n   Optimization')
-    display_metrics(m)
-    display_state(m)
-    display_design(m)
+    if not found_param_sweep:
+        display_metrics(m)
+        display_state(m)
+        display_design(m)
 
     return m
 
@@ -385,6 +386,7 @@ def display_design(m):
 def main():
     m = build_model()
     simulate(m)
+    print('finished simulation')
     optimization(m, 'LCOW')
 
     print('---Close to bounds---')

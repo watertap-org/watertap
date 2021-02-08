@@ -29,8 +29,8 @@ else:
 sweep_params = dict()
 # sweep_params['fs.P1.control_volume.properties_out[0].pressure'] = [55e5, 65e5, 4]
 # sweep_params['fs.P2.control_volume.properties_out[0].pressure'] = [65e5, 75e5, 4]
-sweep_params['m.fs.M1.feed.flow_mass_comp'] = [0.025, 0.15, 4]
-sweep_params['m.fs.recovery'] = [0.3, 0.7, 4]
+sweep_params['m.fs.M1.feed.flow_mass_comp'] = [0.025, 0.15, 3]
+sweep_params['m.fs.recovery'] = [0.3, 0.7, 3]
 # sweep_params['m.fs.recovery'] = [0.3, 0.6, 3]
 
 save_val = 'EC'
@@ -120,4 +120,7 @@ if rank == 0:
     # plt.colorbar()
     # plt.savefig('contour.png')
     # plt.savefig('contour.pdf')
+
+print('global', global_values)
+print('values', values)
 
