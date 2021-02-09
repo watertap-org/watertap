@@ -37,7 +37,6 @@ from pyomo.util.check_units import assert_units_consistent
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_default_solver()
-print(solver)
 
 # -----------------------------------------------------------------------------
 # @pytest.mark.unit
@@ -59,8 +58,8 @@ class TestSeawaterPropPack():
         # specify conditions
         mass_flow = 1
         x_TDS = 0.035
-        m.fs.stream[0].flow_mass_comp['TDS'].fix(x_TDS * mass_flow)
-        m.fs.stream[0].flow_mass_comp['H2O'].fix((1 - x_TDS) * mass_flow)
+        m.fs.stream[0].flow_mass_phase_comp['Liq', 'TDS'].fix(x_TDS * mass_flow)
+        m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'].fix((1 - x_TDS) * mass_flow)
         m.fs.stream[0].temperature.fix(273.15 + 25)
         m.fs.stream[0].pressure.fix(101325)
         return m
@@ -129,10 +128,10 @@ class TestSeawaterPropPack():
         assert hasattr(m.fs.properties, 'default_scaling_factor')
         default_scaling_var_dict = {('temperature', None): 1e-2,
                                     ('pressure', None): 1e-6,
-                                    ('dens_mass', None): 1e-3,
-                                    ('visc_d', None): 1e3,
+                                    ('dens_mass_phase', 'Liq'): 1e-3,
+                                    ('visc_d_phase', 'Liq'): 1e3,
                                     ('osm_coeff', None): 1e0,
-                                    ('enth_mass', None): 1e-5}
+                                    ('enth_mass_phase', 'Liq'): 1e-5}
         assert len(default_scaling_var_dict) == len(m.fs.properties.default_scaling_factor)
         for t, sf in default_scaling_var_dict.items():
             assert t in m.fs.properties.default_scaling_factor.keys()
@@ -157,7 +156,7 @@ class TestSeawaterPropPack():
         assert isinstance(m.fs.stream[0].scaling_factor, Suffix)
 
         # test state variables
-        state_vars_list = ['flow_mass_comp', 'temperature', 'pressure']
+        state_vars_list = ['flow_mass_phase_comp', 'temperature', 'pressure']
         state_vars_dict = m.fs.stream[0].define_state_vars()
         assert len(state_vars_dict) == len(state_vars_list)
         for sv in state_vars_list:
@@ -167,8 +166,8 @@ class TestSeawaterPropPack():
             assert isinstance(var, Var)
 
         # test on demand variables
-        var_list = ['mass_frac_comp', 'dens_mass', 'flow_vol', 'visc_d', 'conc_mass_comp',
-                    'osm_coeff', 'pressure_osm', 'enth_mass']
+        var_list = ['mass_frac_phase_comp', 'dens_mass_phase', 'flow_vol_phase', 'visc_d_phase',
+                    'conc_mass_phase_comp', 'osm_coeff', 'pressure_osm', 'enth_mass_phase']
         for v in var_list:  # test that they are not built when not demanded
             assert not m.fs.stream[0].is_property_constructed(v)
         for v in var_list:  # test they are built on demand
@@ -205,10 +204,10 @@ class TestSeawaterPropPack():
         m = frame
 
         assert hasattr(m.fs.stream[0], 'get_material_flow_terms')
-        assert (m.fs.stream[0].get_material_flow_terms(None, 'H2O')
-               is m.fs.stream[0].flow_mass_comp['H2O'])
-        assert (m.fs.stream[0].get_material_flow_terms(None, 'TDS')
-                is m.fs.stream[0].flow_mass_comp['TDS'])
+        assert (m.fs.stream[0].get_material_flow_terms('Liq', 'H2O')
+               is m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'])
+        assert (m.fs.stream[0].get_material_flow_terms('Liq', 'TDS')
+                is m.fs.stream[0].flow_mass_phase_comp['Liq', 'TDS'])
 
         assert hasattr(m.fs.stream[0], 'get_enthalpy_flow_terms')
         assert (m.fs.stream[0].get_enthalpy_flow_terms(None)
@@ -232,7 +231,6 @@ class TestSeawaterPropPack():
 
         # check all variables have assigned units
         for v in m.component_objects(Var, descend_into=True):
-            print(v)
             assert v.get_units() is not None
 
         assert_units_consistent(m)
@@ -241,8 +239,8 @@ class TestSeawaterPropPack():
     def test_scaling(self, frame):
         m = frame
 
-        set_scaling_factor(m.fs.stream[0].flow_mass_comp['H2O'], 1)
-        set_scaling_factor(m.fs.stream[0].flow_mass_comp['TDS'], 1e2)
+        set_scaling_factor(m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'], 1)
+        set_scaling_factor(m.fs.stream[0].flow_mass_phase_comp['Liq', 'TDS'], 1e2)
         calculate_scaling_factors(m.fs)
 
         # check that all variables have scaling factors
@@ -281,20 +279,20 @@ class TestSeawaterPropPack():
         m = frame
 
         # specified conditions
-        assert pytest.approx(0.035, rel=1e-3) == value(m.fs.stream[0].flow_mass_comp['TDS'])
-        assert pytest.approx(0.965, rel=1e-3) == value(m.fs.stream[0].flow_mass_comp['H2O'])
+        assert pytest.approx(0.035, rel=1e-3) == value(m.fs.stream[0].flow_mass_phase_comp['Liq', 'TDS'])
+        assert pytest.approx(0.965, rel=1e-3) == value(m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'])
         assert pytest.approx(273.15 + 25, rel=1e-3) == value(m.fs.stream[0].temperature)
         assert pytest.approx(101325, rel=1e-3) == value(m.fs.stream[0].pressure)
 
         # calculated properties
-        assert pytest.approx(0.035, rel=1e-3) == value(m.fs.stream[0].mass_frac_comp['TDS'])
-        assert pytest.approx(0.965, rel=1e-3) == value(m.fs.stream[0].mass_frac_comp['H2O'])
-        assert pytest.approx(1023.6, rel=1e-3) == value(m.fs.stream[0].dens_mass)
-        assert pytest.approx(9.770e-4, rel=1e-3) == value(m.fs.stream[0].flow_vol)
-        assert pytest.approx(9.588e-4, rel=1e-3) == value(m.fs.stream[0].visc_d)
-        assert pytest.approx(987.7, rel=1e-3) == value(m.fs.stream[0].conc_mass_comp['H2O'])
-        assert pytest.approx(35.82, rel=1e-3) == value(m.fs.stream[0].conc_mass_comp['TDS'])
+        assert pytest.approx(0.035, rel=1e-3) == value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'TDS'])
+        assert pytest.approx(0.965, rel=1e-3) == value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'H2O'])
+        assert pytest.approx(1023.6, rel=1e-3) == value(m.fs.stream[0].dens_mass_phase['Liq'])
+        assert pytest.approx(9.770e-4, rel=1e-3) == value(m.fs.stream[0].flow_vol_phase['Liq'])
+        assert pytest.approx(9.588e-4, rel=1e-3) == value(m.fs.stream[0].visc_d_phase['Liq'])
+        assert pytest.approx(987.7, rel=1e-3) == value(m.fs.stream[0].conc_mass_phase_comp['Liq', 'H2O'])
+        assert pytest.approx(35.82, rel=1e-3) == value(m.fs.stream[0].conc_mass_phase_comp['Liq', 'TDS'])
         assert pytest.approx(0.9068, rel=1e-3) == value(m.fs.stream[0].osm_coeff)
         assert pytest.approx(2.790e6, rel=1e-3) == value(m.fs.stream[0].pressure_osm)
-        assert pytest.approx(9.974e4, rel=1e-3) == value(m.fs.stream[0].enth_mass)
+        assert pytest.approx(9.974e4, rel=1e-3) == value(m.fs.stream[0].enth_mass_phase['Liq'])
         assert pytest.approx(9.974e4, rel=1e-3) == value(m.fs.stream[0].enth_flow)
