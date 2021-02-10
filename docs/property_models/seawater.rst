@@ -3,14 +3,27 @@ Seawater Property Package
 
 This package implements property relationships for seawater as provided in `Sharqawy et al (2010) <https://doi.org/10.5004/dwt.2010.1079>`_.
 
-The seawater property package has only H2O (solvent) and TDS (solute) components and only liquid phase. The package is based on mass flowrate and is in SI units. The package is currently not compatible for dynamics.
+This seawater property package:
+   * supports only H2O (solvent) and TDS (solute) components 
+   * supports only liquid phase
+   * is formulated on a mass basis
+   * estimates molar basis properties by assuming molecular weight of TDS is equivalent to NaCl
+   * does not support dynamics
+
+Sets
+----
+.. csv-table::
+   :header: "Description", "Symbol", "Indicies"
+
+   "Components", ":math:`j`", "['H2O', 'TDS']"
+   "Phases", ":math:`p`", "['Liq']"
 
 State variables
 ---------------
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
 
-   "Component mass flowrate", ":math:`M_j`", "flow_mass_comp[j]", "j in [H2O, TDS]", ":math:`\text{kg/s}`"
+   "Component mass flowrate", ":math:`M_j`", "flow_mass_phase_comp", "[p, j]", ":math:`\text{kg/s}`"
    "Temperature", ":math:`T`", "temperature", "None", ":math:`\text{K}`"
    "Pressure", ":math:`P`", "pressure", "None", ":math:`\text{Pa}`"
 
@@ -19,32 +32,44 @@ Properties
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
 
-   "Component mass fraction", ":math:`X_j`", "mass_frac_comp[j]", "j in [H2O, TDS]", ":math:`\text{dimensionless}`"
-   "Mass density", ":math:`\rho`", "dens_mass", "None", ":math:`\text{kg/}\text{m}^3`"
-   "Volumetric flowrate", ":math:`Q`", "flow_vol", "None", ":math:`\text{m}^3\text{/s}`"
-   "Mass concentration", ":math:`C_j`", "conc_mass_comp", "j in [H2O, TDS]", ":math:`\text{kg/}\text{m}^3`"
-   "Dynamic viscosity", ":math:`\mu`", "visc_d", "None", ":math:`\text{Pa}\cdotp\text{s}`"
+   "Component mass fraction", ":math:`x_j`", "mass_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
+   "Mass density", ":math:`\rho`", "dens_mass_phase", "[p]", ":math:`\text{kg/}\text{m}^3`"
+   "Volumetric flowrate", ":math:`Q`", "flow_vol_phase", "[p]", ":math:`\text{m}^3\text{/s}`"
+   "Mass concentration", ":math:`C_j`", "conc_mass_phase_comp", "[p, j]", ":math:`\text{kg/}\text{m}^3`"
+   "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa}\cdotp\text{s}`"
    "Osmotic coefficient", ":math:`\phi`", "osm_coeff", "None", ":math:`\text{dimensionless}`"
-   "Osmotic pressure", ":math:`\pi`", "pressure_osm", "None", ":math:`\text{Pa}`"
-   "Specific enthalpy", ":math:`\widehat{H}`", "enth_mass", "None", ":math:`\text{J/kg}`"
+   "Specific enthalpy", ":math:`\widehat{H}`", "enth_mass_phase", "[p]", ":math:`\text{J/kg}`"
    "Enthalpy flow", ":math:`H`", "enth_flow", "None", ":math:`\text{J/s}`"
+
+**The properties below assume TDS is equivalent to NaCl to convert to moles.**
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable", "Index", "Units"
+
+   "Component mole flowrate", ":math:`N_j`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mole/s}`"
+   "Component mole fraction", ":math:`y_j`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`" 
+   "Molality", ":math:`Cm_{TDS}`", "molality_comp", "['TDS']", ":math:`\text{mole/kg}`"
+   "Osmotic pressure", ":math:`\pi`", "pressure_osm", "None", ":math:`\text{Pa}`"
 
 Relationships
 -------------
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Component mass fraction", ":math:`X_j = \frac{M_j}{\sum_{j} M_j}`"
+   "Component mass fraction", ":math:`x_j = \frac{M_j}{\sum_{j} M_j}`"
    "Mass density", "Equation 8 in Sharqawy (2010)"
    "Volumetric flowrate", ":math:`Q = \frac{\sum_{j} M_j}{\rho}`"
-   "Mass concentration", ":math:`C_j = X_j \cdotp \rho`"
+   "Mass concentration", ":math:`C_j = x_j \cdotp \rho`"
    "Dynamic viscosity", "Equation 22 and 23 in Sharqawy (2010)"
    "Osmotic coefficient", "Equation 49 in Sharqawy (2010)"
-   "Osmotic pressure", ":math:`\pi = i \cdotp \phi \cdotp C_m \cdotp \rho_w \cdotp R \cdotp T` [See note below]"
    "Specific enthalpy", "Equation 43 and 55 in Sharqawy (2010)"
    "Enthalpy flow", ":math:`H = \sum_{j} M_j \cdotp \widehat{H}`"
+   "Component mole flowrate", ":math:`N_j = \frac{M_j}{MW_j}`"
+   "Component mole fraction", ":math:`y_j = \frac{N_j}{\sum_{j} N_j}`"
+   "Molality", ":math:`Cm_{TDS} = \frac{x_{TDS}}{(1-x_{TDS}) \cdotp MW_{TDS}}`"
+   "Osmotic pressure", ":math:`\pi = i \cdotp \phi \cdotp Cm_{TDS} \cdotp \rho_w \cdotp R \cdotp T` [See note below]"
 
-Note: Osmotic pressure calculation uses the Van't Hoff factor (:math:`i`), molality (:math:`C_m`), density of water (:math:`\rho_w`), gas constant (:math:`R`) in addition to previously defined variables. The calculation assumes TDS is equivalent to NaCl for the conversion to moles (58.44 g/mol) and the Van't Hoff factor (2).
+Note: Osmotic pressure calculation uses the Van't Hoff factor (:math:`i\text{, assumed to be 2}`), density of water (:math:`\rho_w\text{, assumed to be 1000 kg/}\text{m}^3`), gas constant (:math:`R\text{, 8.314 J/mol}\cdotp\text{K}`) in addition to previously defined variables.
 
 Scaling
 -------
@@ -64,8 +89,8 @@ The user can specify the scaling factors for component mass flowrates with the f
    m.fs.properties = props.SeawaterParameterBlock()
 
    # set scaling for component mass flowrate
-   m.fs.properties.set_default_scaling('flow_mass_comp', 1, index='H2O')
-   m.fs.properties.set_default_scaling('flow_mass_comp', 1e2, index='TDS')
+   m.fs.properties.set_default_scaling('flow_mass_comp', 1, index=('Liq','H2O'))
+   m.fs.properties.set_default_scaling('flow_mass_comp', 1e2, index=('Liq','TDS'))
 
    # calculate scaling factors
    calculate_scaling_factors(m.fs)
