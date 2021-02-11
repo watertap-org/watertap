@@ -271,7 +271,7 @@ def simulate(m,N=2):
         pump.control_volume.properties_out[0].pressure = 65e5  # pressure out of pump 1 [Pa]
         pump.efficiency_pump.fix(pump_efi)
         pump.control_volume.properties_out[0].pressure.fix()  # value set in decision variables
-        # iscale.set_scaling_factor(pump.control_volume.work, 1e-3)
+        iscale.set_scaling_factor(pump.control_volume.work, 1e-3)
 
     # initialize eq pumps
     if N>2:
@@ -280,7 +280,7 @@ def simulate(m,N=2):
             pump.control_volume.properties_out[0].pressure = 65e5  # pressure out of pump 1 [Pa]
             pump.efficiency_pump.fix(pump_efi)
             pump.control_volume.properties_out[0].pressure.fix()  # value set in decision variables
-            # iscale.set_scaling_factor(pump.control_volume.work, 1e-3) 
+            iscale.set_scaling_factor(pump.control_volume.work, 1e-3) 
 
     # initialize stages
     for i in range(N):
@@ -299,7 +299,7 @@ def simulate(m,N=2):
     # energy recovery device
     m.fs.ERD.efficiency_pump.fix(erd_efi)
     m.fs.ERD.control_volume.properties_out[0].pressure.fix(pressure_atm)
-    # iscale.set_scaling_factor(m.fs.ERD.control_volume.work, 1e-3)
+    iscale.set_scaling_factor(m.fs.ERD.control_volume.work, 1e-3)
 
     # ---scaling---
     iscale.calculate_scaling_factors(m)
@@ -418,19 +418,20 @@ def optimization(m, obj, params=None, values=None, N=2):
     iscale.constraint_scaling_transform(m.fs.eq_product_quality, 1e3)  # scaling constraint
 
     # Create flux constraints
-    for i in range(N):
-        stage = getattr(m.fs,"Stage"+repr(i+1))
-        setattr(m.fs,"eq_min_avg_flux_Stage"+repr(i+1),Constraint(
-            expr=min_avg_flux <= sum(stage.flux_mass_comp_avg[0, j] for j in ['H2O', 'NaCl'])))
-        iscale.constraint_scaling_transform(getattr(m.fs,"eq_min_avg_flux_Stage"+repr(i+1)), 1e3)  # scaling constraint
+    if obj == 'EC':
+        for i in range(N):
+            stage = getattr(m.fs,"Stage"+repr(i+1))
+            setattr(m.fs,"eq_min_avg_flux_Stage"+repr(i+1),Constraint(
+                expr=min_avg_flux <= sum(stage.flux_mass_comp_avg[0, j] for j in ['H2O', 'NaCl'])))
+            iscale.constraint_scaling_transform(getattr(m.fs,"eq_min_avg_flux_Stage"+repr(i+1)), 1e3)  # scaling constraint
 
     # Create pump equalize constraints
     if N>2:
         for i in range(N-2):
-            pump = getattr(m.fs,"P"+repr(i+2))
+            stage = getattr(m.fs,"Stage"+repr(i+1))
             eq_pump = getattr(m.fs,"EqP"+repr(i+2))
             setattr(m.fs, "eq_equal_pressure"+repr(i+2), Constraint(
-                expr=pump.control_volume.properties_out[0].pressure
+                expr=stage.feed_side.properties_out[0].pressure
                 == eq_pump.control_volume.properties_out[0].pressure))
 
     # ---checking model---
@@ -562,7 +563,7 @@ def display_design(m,N=2):
 
 
 def main():
-    N = 2
+    N = 4
     m = build_model(N=N)
     simulate(m, N=N)
     print('finished simulation')
