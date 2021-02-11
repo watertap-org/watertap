@@ -23,7 +23,7 @@ import financials # Only version exists in initial_sim
 
 from proteuslib.tools.parallel_manager import set_nested_attr
 
-def build_model():
+def build_model(**kwargs):
     # ---building model---
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -48,9 +48,15 @@ def build_model():
     # additional variables or expressions
     # Iterate over h20 only
     # add constraint
+    # m.fs.recovery = Expression(
+    #     expr=(sum(m.fs.RO.permeate.flow_mass_comp[0, j] for j in ['H2O', 'NaCl'])
+    #           / sum(m.fs.M1.feed.flow_mass_comp[0, j] for j in ['H2O', 'NaCl'])))
+    # add constraint
     m.fs.recovery = Expression(
-        expr=(sum(m.fs.RO.permeate.flow_mass_comp[0, j] for j in ['H2O', 'NaCl'])
-              / sum(m.fs.M1.feed.flow_mass_comp[0, j] for j in ['H2O', 'NaCl'])))
+        expr=(sum(m.fs.RO.permeate.flow_mass_comp[0, j] for j in ['H2O'])
+              / sum(m.fs.M1.feed.flow_mass_comp[0, j] for j in ['H2O'])))
+   
+    # m.fs.eq_recovery = Constraint(expr=0.59 == m.fs.recovery)
 
     # energy consumption [J/m3]
     m.fs.EC = Expression(
@@ -84,7 +90,7 @@ def build_model():
     return m
 
 
-def simulate(m, *args):
+def simulate(m, **kwargs):
     # ---specifications---
     # parameters
     pump_efi = 0.75  # pump efficiency [-]
@@ -140,8 +146,8 @@ def simulate(m, *args):
     m.fs.ERD.control_volume.properties_out[0].pressure.fix(pressure_atm)
 
     # ---Override with model choices---
-    for key, value in zip(*args):
-        m = set_nested_attr(m, key, value)
+    # for key, value in zip(*args):
+    #     m = set_nested_attr(m, key, value)
 
     # ---scaling---
     iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
@@ -151,7 +157,8 @@ def simulate(m, *args):
 
     # ---checking model---
     assert_units_consistent(m)
-    assert degrees_of_freedom(m) == 0
+    # assert degrees_of_freedom(m) == 0
+    print(degrees_of_freedom(m))
 
 
     # ---initializing---
@@ -194,7 +201,7 @@ def simulate(m, *args):
     return m
 
 
-def optimization(m, obj, *args):
+def optimization(m, obj, params=None, values=None, **kwargs):
     # ---optimizing---
     # objective
     if obj == 'EC':
@@ -231,16 +238,35 @@ def optimization(m, obj, *args):
     min_avg_flux = min_avg_flux / 3600 * pyunits.kg / pyunits.m**2 / pyunits.s  # [kg/m2-s]
 
     # ---Override with model choices---
-    found_param_sweep = False
-    for key, value in zip(*args):
+    if params is not None:
         found_param_sweep = True
-        value = float(value)
-        if 'recovery' in key:
-            product_recovery = value
-        elif 'flow_mass_comp' in key:
-            feed_mass_frac_NaCl = value
-            m.fs.M1.feed.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
-            m.fs.M1.feed.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
+        for key, value in zip(params, values):
+            value = float(value)
+            if 'recovery' in key:
+                product_recovery = value
+            elif 'flow_mass_comp' in key:
+                feed_mass_frac_NaCl = value
+                m.fs.M1.feed.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
+                m.fs.M1.feed.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
+    else:
+        found_param_sweep = False
+
+    # for key, value in zip(*args):
+    #     found_param_sweep = True
+    #     value = float(value)
+    #     if 'recovery' in key:
+    #         product_recovery = value
+    #     elif 'flow_mass_comp' in key:
+    #         feed_mass_frac_NaCl = value
+    #         m.fs.M1.feed.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
+    #         m.fs.M1.feed.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
+
+
+    # product_recovery = 0.597436
+    # feed_mass_frac_NaCl = 0.031410
+    # m.fs.M1.feed.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
+    # m.fs.M1.feed.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
+
 
     # additional constraints
     m.fs.eq_recovery = Constraint(
@@ -286,7 +312,7 @@ def optimization(m, obj, *args):
     return m
 
 
-def display_metrics(m):
+def display_metrics(m, **kwargs):
     print('----system metrics----')
 
     feed_flow_mass = sum(m.fs.M1.feed.flow_mass_comp[0, j].value for j in ['H2O', 'NaCl'])
@@ -303,7 +329,11 @@ def display_metrics(m):
     disp_pressure_osm = m.fs.LSRRO.feed_side.properties_out[0].pressure_osm.value / 1e5
     print('Disposal osmotic pressure: %.1f bar' % disp_pressure_osm)
 
-    print('Recovery: %.1f%%' % (prod_flow_mass / feed_flow_mass * 100))
+
+    recovery = 100.0*sum(m.fs.RO.permeate.flow_mass_comp[0, j].value for j in ['H2O'])/sum(m.fs.M1.feed.flow_mass_comp[0, j].value for j in ['H2O'])
+
+    # print('Recovery: %.1f%%' % (prod_flow_mass / feed_flow_mass * 100))
+    print('Recovery: %.1f%%' % (recovery))
 
     EC = value(m.fs.EC)/3.6e6  # energy consumption [kWh/m3]
     print('Energy Consumption: %.2f kWh/m3' % EC)
@@ -322,7 +352,8 @@ def display_metrics(m):
                'EC': EC,
                'LCOW': LCOW}
 
-    return metrics
+    # return metrics
+    return EC, LCOW
 
 
 def display_state(m):
@@ -344,6 +375,15 @@ def display_state(m):
     print_state('LSRRO perm ', m.fs.LSRRO.permeate)
     print_state('LSRRO reten', m.fs.LSRRO.retentate)
     print_state('ERD outlet ', m.fs.ERD.outlet)
+
+
+    # print('ETHAN', m.fs.RO.properties_permeate[0].mass_frac_comp['NaCl'].value/\
+    #     (m.fs.RO.properties_permeate[0].mass_frac_comp['H20'].value + m.fs.RO.properties_permeate[0].mass_frac_comp['NaCl'].value))
+    print('ETHAN', m.fs.RO.properties_permeate[0].mass_frac_comp['NaCl'].value)
+    print('ETHAN', m.fs.RO.properties_permeate[0].conc_mass_comp['NaCl'].value)
+    print('ETHAN', m.fs.RO.feed_side.properties_in[0].mass_frac_comp['NaCl'].value)
+    print('ETHAN', m.fs.RO.feed_side.properties_in[0].conc_mass_comp['NaCl'].value)
+    # print(m.fs.M1.feed.mass_frac_comp[0, 'NaCl'].value)
 
     states = {'Feed': m.fs.M1.feed,
               'Recycle': m.fs.M1.recycle,
