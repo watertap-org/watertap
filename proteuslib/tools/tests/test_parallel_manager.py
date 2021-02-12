@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 from proteuslib.tools.parallel_manager import build_and_divide_combinations
 # from sim_LSRRO_2stage import build_model, simulate, optimization, display_metrics, display_state
-from sim_LSRRO_Nstage import build_model, simulate, optimization, display_metrics, display_state
+# from sim_LSRRO_Nstage import build_model, simulate, optimization, display_metrics, display_state
+from sim_LSRRO_Nstage_new import build_model, simulate, optimization, display_metrics, display_state
 
 try:
     from mpi4py import MPI
@@ -30,8 +31,8 @@ else:
 sweep_params = dict()
 # sweep_params['fs.P1.control_volume.properties_out[0].pressure'] = [55e5, 65e5, 4]
 # sweep_params['fs.P2.control_volume.properties_out[0].pressure'] = [65e5, 75e5, 4]
-sweep_params['m.fs.M1.feed.flow_mass_comp'] = [0.025, 0.05, 3]
-sweep_params['m.fs.recovery'] = [0.3, 0.7, 3]
+sweep_params['m.fs.recovery'] = [0.3, 0.7, 1]
+sweep_params['m.fs.M1.feed.flow_mass_comp'] = [0.025, 0.05, 1]
 # sweep_params['m.fs.recovery'] = [0.3, 0.6, 3]
 
 param_keys, values, global_values = build_and_divide_combinations(sweep_params, rank, num_procs)
@@ -95,7 +96,7 @@ if rank == 0:
     data_x = 'm.fs.M1.feed.flow_mass_comp'
     data_y = 'm.fs.recovery'
 
-    fp = open('raw_data2.csv', 'w')
+    fp = open('raw_data3.csv', 'w')
     fp.write('%s, %s, %s, %s\n' % (data_x, data_y, 'EC', 'LCOW'))
 
     for k in range(np.size(results_global_EC)):

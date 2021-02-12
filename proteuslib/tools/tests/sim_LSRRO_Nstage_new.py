@@ -19,92 +19,6 @@ import NaCl_prop_pack as props
 from reverse_osmosis import RO
 import financials
 
-# def build_model(n=2):
-#     # ---building model---
-#     m = ConcreteModel()
-#     m.fs = FlowsheetBlock(default={"dynamic": False})
-#     m.fs.properties = props.NaClParameterBlock()
-#     financials.add_costing_param_block(m.fs)
-
-#     # Add the mixers
-#     for i in range(n-1):
-#         mixer = "M"+repr(i)
-
-#         setattr(m.fs, mixer, Mixer(default={
-#             "property_package": m.fs.properties,
-#             "inlet_list": ['feed', 'recycle']}))
-
-#     # Add the pumps and ros
-#     # total_pump_work = 0
-#     for i in range(n):
-#         pump = "P"+repr(i)
-#         stage = "Stage"+repr(i)
-
-#         setattr(m.fs, pump, Pump(default={"property_package": m.fs.properties}))
-#         # getattr(m.fs, pump).get_costing(module=financials, pump_type="High pressure")
-#         # total_pump_work += getattr(m.fs, pump).work_mechanical[0]
-
-#         setattr(m.fs, stage, RO(default={
-#             "property_package": m.fs.properties,
-#             "has_pressure_change": True}))
-#         # getattr(m.fs, stage).get_costing(module=financials)
-
-#     # Add ERD
-#     m.fs.ERD = Pump(default={"property_package": m.fs.properties})
-#     # m.fs.ERD.get_costing(module=financials, pump_type="Pressure exchanger")
-#     # total_pump_work += m.fs.ERD.work_mechanical[0]
-
-#     # additional variables or expressions
-#     m.fs.recovery = Expression(
-#         expr=(sum(m.fs.Stage0.permeate.flow_mass_comp[0, j] for j in ['H2O', 'NaCl'])
-#               / sum(m.fs.M0.feed.flow_mass_comp[0, j] for j in ['H2O', 'NaCl'])))
-#     # energy consumption [J/m3]
-#     m.fs.EC = Expression(
-#         # expr=(total_pump_work)
-#         expr=(m.fs.P0.work_mechanical[0] + m.fs.P1.work_mechanical[0] + m.fs.ERD.work_mechanical[0])
-#              / sum(m.fs.Stage0.properties_permeate[0].flow_mass_comp[j] for j in ['H2O', 'NaCl'])
-#              * m.fs.Stage0.properties_permeate[0].dens_mass)
-#     m.fs.AWP = Expression(
-#         expr=(pyunits.convert(sum(m.fs.Stage0.properties_permeate[0].flow_mass_comp[j] for j in ['H2O', 'NaCl']),
-#                               to_units=pyunits.kg / pyunits.year)
-#               / m.fs.Stage0.properties_permeate[0].dens_mass) * m.fs.costing_param.load_factor)
-
-#     # costing
-#     m.fs.Stage0.get_costing(module=financials)
-#     m.fs.Stage1.get_costing(module=financials)
-#     m.fs.P0.get_costing(module=financials, pump_type="High pressure")
-#     m.fs.P1.get_costing(module=financials, pump_type="High pressure")
-#     m.fs.ERD.get_costing(module=financials, pump_type="Pressure exchanger")
-#     financials.get_system_costing(m.fs)
-
-#     # connections
-#     # arc_id = 0
-#     # for i in range(n-1):
-#     #     arc_name = "s%02d" % arc_id; arc_id+=1
-#     #     setattr(m.fs,arc_name, Arc(source=m.fs.M0.outlet, destination=m.fs.P0.inlet))
-#     #     arc_name = "s%02d" % arc_id; arc_id+=1
-#     #     setattr(m.fs,arc_name, Arc(source=m.fs.P0.outlet, destination=m.fs.Stage0.inlet))
-#     #     arc_name = "s%02d" % arc_id; arc_id+=1
-#     #     setattr(m.fs,arc_name, Arc(source=m.fs.Stage0.retentate, destination=m.fs.P0.inlet))
-#     #     arc_name = "s%02d" % arc_id; arc_id+=1
-#     #     setattr(m.fs,arc_name, Arc(source=m.fs.P0.outlet, destination=m.fs.Stage1.inlet))
-#     #     arc_name = "s%02d" % arc_id; arc_id+=1
-#     #     setattr(m.fs,arc_name, Arc(source=m.fs.Stage1.permeate, destination=m.fs.M0.recycle))
-
-
-#     # setattr(m.fs,arc_name, Arc(source=m.fs.Stage1.retentate, destination=m.fs.ERD.inlet))
-
-#     m.fs.s01 = Arc(source=m.fs.M0.outlet, destination=m.fs.P0.inlet)
-#     m.fs.s02 = Arc(source=m.fs.P0.outlet, destination=m.fs.Stage0.inlet)
-#     m.fs.s03 = Arc(source=m.fs.Stage0.retentate, destination=m.fs.P1.inlet)
-#     m.fs.s04 = Arc(source=m.fs.P1.outlet, destination=m.fs.Stage1.inlet)
-#     m.fs.s05 = Arc(source=m.fs.Stage1.retentate, destination=m.fs.ERD.inlet)
-#     m.fs.s06 = Arc(source=m.fs.Stage1.permeate, destination=m.fs.M0.recycle)
-
-#     TransformationFactory("network.expand_arcs").apply_to(m)
-#     return m
-
-
 def build_model(N=2):
     # ---building model---
     m = ConcreteModel()
@@ -118,7 +32,6 @@ def build_model(N=2):
 
         setattr(m.fs, mixer, Mixer(default={
             "property_package": m.fs.properties,
-            # "inlet_list": ['feed', 'recycle']}))
             "inlet_list": ['upstream', 'downstream']}))
 
     # Add the pumps
@@ -131,12 +44,11 @@ def build_model(N=2):
         total_pump_work += getattr(m.fs, pump).work_mechanical[0]
 
     # Add the equalizer pumps
-    if N>2: 
-        for i in range(N-2):
-            pump = "EqP"+repr(i+2)
+    for i in range(N-1):
+        pump = "EqP"+repr(i+2)
 
-            setattr(m.fs, pump, Pump(default={"property_package": m.fs.properties}))
-            total_pump_work += getattr(m.fs, pump).work_mechanical[0]
+        setattr(m.fs, pump, Pump(default={"property_package": m.fs.properties}))
+        total_pump_work += getattr(m.fs, pump).work_mechanical[0]
 
     # Add the stages ROs
     for i in range(N):
@@ -156,7 +68,7 @@ def build_model(N=2):
     # additional variables or expressions
     m.fs.recovery = Expression(
         expr=(sum(m.fs.Stage1.permeate.flow_mass_comp[0, j] for j in ['H2O'])
-              / sum(m.fs.M1.upstream.flow_mass_comp[0, j] for j in ['H2O'])))
+              / sum(m.fs.P1.inlet.flow_mass_comp[0, j] for j in ['H2O'])))
     # energy consumption [J/m3]
     m.fs.EC = Expression(
         # expr=(m.fs.P1.work_mechanical[0] + m.fs.P2.work_mechanical[0] + m.fs.ERD.work_mechanical[0])
@@ -181,38 +93,36 @@ def build_model(N=2):
     for i in range(N):
         n = i+1 # stage level
 
-        ### Connect the Mixer n to the Pump
         if n < N:
+            ### Connect the Pump n to the Mixer n
+            s = getattr(m.fs, "P"+repr(n)).outlet
+            d = getattr(m.fs, "M"+repr(n)).upstream
+            arc_id = add_arc(s,d,arc_id)
+
+            ### Connect the Mixer n to the Stage n
             s = getattr(m.fs, "M"+repr(n)).outlet
-            d = getattr(m.fs, "P"+repr(n)).inlet
+            d = getattr(m.fs, "Stage"+repr(n)).inlet
             arc_id = add_arc(s,d,arc_id)
 
-        ### Connect the Pump n to the Stage n
-        s = getattr(m.fs, "P"+repr(n)).outlet
-        d = getattr(m.fs, "Stage"+repr(n)).inlet
-        arc_id = add_arc(s,d,arc_id)
-
-        ### Connect permeate from stage 2 to Mixer 1 or stage n to EqPump n-1
-        if n == 2: 
-            s = getattr(m.fs, "Stage"+repr(n)).permeate
-            d = getattr(m.fs, "M"+repr(n-1)).downstream
-            arc_id = add_arc(s,d,arc_id)
-        elif n > 2:
-            s = getattr(m.fs, "Stage"+repr(n)).permeate
-            d = getattr(m.fs, "EqP"+repr(n-1)).inlet
-            arc_id = add_arc(s,d,arc_id)
-            s = getattr(m.fs, "EqP"+repr(n-1)).outlet
-            d = getattr(m.fs, "M"+repr(n-1)).downstream
-            arc_id = add_arc(s,d,arc_id)
-
-        ### Connect retentate from stage n to Mixer n+1 or Pump n+1
-        if n < N-1:
-            s = getattr(m.fs, "Stage"+repr(n)).retentate
-            d = getattr(m.fs, "M"+repr(n+1)).upstream
-            arc_id = add_arc(s,d,arc_id)
-        elif n == N-1:
+            ### Connect the Stage n to the Pump n+1
             s = getattr(m.fs, "Stage"+repr(n)).retentate
             d = getattr(m.fs, "P"+repr(n+1)).inlet
+            arc_id = add_arc(s,d,arc_id)
+        else:
+            ### Connect the Pump N to the Stage N
+            s = getattr(m.fs, "P"+repr(n)).outlet
+            d = getattr(m.fs, "Stage"+repr(n)).inlet
+            arc_id = add_arc(s,d,arc_id)
+          
+        if n > 1:
+            ### Connect the Stage n to the Eq Pump n
+            s = getattr(m.fs, "Stage"+repr(n)).permeate
+            d = getattr(m.fs, "EqP"+repr(n)).inlet
+            arc_id = add_arc(s,d,arc_id)
+
+            ### Connect the Eq Pump n to the Mixer n-1
+            s = getattr(m.fs, "EqP"+repr(n)).outlet
+            d = getattr(m.fs, "M"+repr(n-1)).downstream
             arc_id = add_arc(s,d,arc_id)
 
     ### Connect Final Stage to ERD Pump
@@ -224,19 +134,6 @@ def build_model(N=2):
     #     s = getattr(m.fs, "s%02d" % (i+1))
     #     print(s.source.name,s.destination.name)
     # exit()
-
-    # m.fs.s01 = Arc(source=m.fs.M1.outlet, destination=m.fs.P1.inlet)
-    # m.fs.s02 = Arc(source=m.fs.P1.outlet, destination=m.fs.Stage1.inlet)
-    # m.fs.s03 = Arc(source=m.fs.Stage1.retentate, destination=m.fs.P2.inlet)
-    # m.fs.s04 = Arc(source=m.fs.P2.outlet, destination=m.fs.M2.upstream)
-    # m.fs.s05 = Arc(source=m.fs.M2.outlet, destination=m.fs.Stage2.inlet)
-    # m.fs.s06 = Arc(source=m.fs.Stage2.permeate, destination=m.fs.M1.downstream)
-    # m.fs.s07 = Arc(source=m.fs.Stage2.retentate, destination=m.fs.P3.inlet)
-    # m.fs.s08 = Arc(source=m.fs.P3.outlet, destination=m.fs.Stage3.inlet)
-    # m.fs.s09 = Arc(source=m.fs.Stage3.permeate, destination=m.fs.EqP2.inlet)
-    # m.fs.s10 = Arc(source=m.fs.EqP2.outlet, destination=m.fs.M2.recycle)
-    # m.fs.s11 = Arc(source=m.fs.Stage3.retentate, destination=m.fs.ERD.inlet)
-
 
     TransformationFactory("network.expand_arcs").apply_to(m)
     return m
@@ -260,10 +157,10 @@ def simulate(m,N=2):
     feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
 
     # initialize feed mixer
-    m.fs.M1.upstream.flow_mass_comp[0, 'NaCl'].fix(feed_flow_mass * feed_mass_frac_NaCl)
-    m.fs.M1.upstream.flow_mass_comp[0, 'H2O'].fix(feed_flow_mass * feed_mass_frac_H2O)
-    m.fs.M1.upstream.pressure[0].fix(pressure_atm)
-    m.fs.M1.upstream.temperature[0].fix(feed_temperature)
+    m.fs.P1.inlet.flow_mass_comp[0, 'NaCl'].fix(feed_flow_mass * feed_mass_frac_NaCl)
+    m.fs.P1.inlet.flow_mass_comp[0, 'H2O'].fix(feed_flow_mass * feed_mass_frac_H2O)
+    m.fs.P1.inlet.pressure[0].fix(pressure_atm)
+    m.fs.P1.inlet.temperature[0].fix(feed_temperature)
 
     # initialize pumps
     for i in range(N):
@@ -274,13 +171,12 @@ def simulate(m,N=2):
         iscale.set_scaling_factor(pump.control_volume.work, 1e-3)
 
     # initialize eq pumps
-    if N>2:
-        for i in range(N-2):
-            pump = getattr(m.fs,"EqP"+repr(i+2))
-            pump.control_volume.properties_out[0].pressure = 65e5  # pressure out of pump 1 [Pa]
-            pump.efficiency_pump.fix(pump_efi)
-            pump.control_volume.properties_out[0].pressure.fix()  # value set in decision variables
-            iscale.set_scaling_factor(pump.control_volume.work, 1e-3) 
+    for i in range(N-1):
+        pump = getattr(m.fs,"EqP"+repr(i+2))
+        pump.control_volume.properties_out[0].pressure = 65e5  # pressure out of pump 1 [Pa]
+        pump.efficiency_pump.fix(pump_efi)
+        pump.control_volume.properties_out[0].pressure.fix()  # value set in decision variables
+        iscale.set_scaling_factor(pump.control_volume.work, 1e-3) 
 
     # initialize stages
     for i in range(N):
@@ -357,6 +253,8 @@ def optimization(m, obj, params=None, values=None, N=2):
     elif obj == 'LCOW':
         m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
+    # m.fs.P1.inlet.flow_mass_comp[0, 'NaCl'].fix(0.125)
+    # m.fs.P1.inlet.flow_mass_comp[0, 'H2O'].fix(1-0.125)
     # unfix pumps
     for i in range(N):
         pump = getattr(m.fs,"P"+repr(i+1))
@@ -366,13 +264,12 @@ def optimization(m, obj, params=None, values=None, N=2):
         pump.deltaP.setlb(0)
 
     # unfix eq pumps
-    if N>2:
-        for i in range(N-2):
-            pump = getattr(m.fs,"EqP"+repr(i+2))
-            pump.control_volume.properties_out[0].pressure.unfix()  # pressure out of pump 1 [Pa]
-            pump.control_volume.properties_out[0].pressure.setlb(10e5)
-            pump.control_volume.properties_out[0].pressure.setub(80e5)
-            pump.deltaP.setlb(0)
+    for i in range(N-1):
+        pump = getattr(m.fs,"EqP"+repr(i+2))
+        pump.control_volume.properties_out[0].pressure.unfix()  # pressure out of pump 1 [Pa]
+        pump.control_volume.properties_out[0].pressure.setlb(10e5)
+        pump.control_volume.properties_out[0].pressure.setub(80e5)
+        pump.deltaP.setlb(0)
 
     # unfix stages
     for i in range(N):
@@ -391,6 +288,7 @@ def optimization(m, obj, params=None, values=None, N=2):
     min_avg_flux = 5  # minimum average water flux [kg/m2-h]
     min_avg_flux = min_avg_flux / 3600 * pyunits.kg / pyunits.m**2 / pyunits.s  # [kg/m2-s]
 
+
     # ---Override with model choices---
     if params is not None:
         found_param_sweep = True
@@ -402,19 +300,15 @@ def optimization(m, obj, params=None, values=None, N=2):
                 feed_mass_frac_NaCl = value
                 # m.fs.M1.feed.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
                 # m.fs.M1.feed.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
-
-                m.fs.M1.upstream.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
-                m.fs.M1.upstream.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
+                # m.fs.M1.upstream.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
+                # m.fs.M1.upstream.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
+                m.fs.P1.inlet.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
+                m.fs.P1.inlet.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
 
     else:
         found_param_sweep = False
+    # ---End Override with model choices---
 
-    # if 1 > 0:
-    #     feed_mass_frac_NaCl = 0.125
-    #     recovery = 0.5
-
-    #     m.fs.M1.upstream.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
-    #     m.fs.M1.upstream.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
 
     # additional constraints
     m.fs.eq_recovery = Constraint(
@@ -433,13 +327,12 @@ def optimization(m, obj, params=None, values=None, N=2):
             iscale.constraint_scaling_transform(getattr(m.fs,"eq_min_avg_flux_Stage"+repr(i+1)), 1e3)  # scaling constraint
 
     # Create pump equalize constraints
-    if N>2:
-        for i in range(N-2):
-            stage = getattr(m.fs,"Stage"+repr(i+1))
-            eq_pump = getattr(m.fs,"EqP"+repr(i+2))
-            setattr(m.fs, "eq_equal_pressure"+repr(i+2), Constraint(
-                expr=stage.feed_side.properties_out[0].pressure
-                == eq_pump.control_volume.properties_out[0].pressure))
+    for i in range(N-1):
+        pump = getattr(m.fs,"P"+repr(i+1))
+        eq_pump = getattr(m.fs,"EqP"+repr(i+2))
+        setattr(m.fs, "eq_equal_pressure"+repr(i+2), Constraint(
+            expr=pump.control_volume.properties_out[0].pressure
+            == eq_pump.control_volume.properties_out[0].pressure))
 
     # ---checking model---
     assert_units_consistent(m)
@@ -471,8 +364,8 @@ def optimization(m, obj, params=None, values=None, N=2):
 def display_metrics(m,N=2):
     print('----system metrics----')
 
-    feed_flow_mass = sum(m.fs.M1.upstream.flow_mass_comp[0, j].value for j in ['H2O', 'NaCl'])
-    feed_mass_frac_NaCl = m.fs.M1.upstream.flow_mass_comp[0, 'NaCl'].value / feed_flow_mass
+    feed_flow_mass = sum(m.fs.P1.inlet.flow_mass_comp[0, j].value for j in ['H2O', 'NaCl'])
+    feed_mass_frac_NaCl = m.fs.P1.inlet.flow_mass_comp[0, 'NaCl'].value / feed_flow_mass
     print('Feed: %.2f kg/s, %.0f ppm' % (feed_flow_mass, feed_mass_frac_NaCl * 1e6))
 
     prod_flow_mass = sum(m.fs.Stage1.permeate.flow_mass_comp[0, j].value for j in ['H2O', 'NaCl'])
@@ -486,8 +379,7 @@ def display_metrics(m,N=2):
     disp_pressure_osm = getattr(m.fs,"Stage"+repr(N)).feed_side.properties_out[0].pressure_osm.value / 1e5
     print('Disposal osmotic pressure: %.1f bar' % disp_pressure_osm)
 
-    recovery = 100.0*sum(m.fs.Stage1.permeate.flow_mass_comp[0, j].value for j in ['H2O'])/sum(m.fs.M1.upstream.flow_mass_comp[0, j].value for j in ['H2O'])
-
+    recovery = 100.0*sum(m.fs.Stage1.permeate.flow_mass_comp[0, j].value for j in ['H2O'])/sum(m.fs.P1.inlet.flow_mass_comp[0, j].value for j in ['H2O'])
     # print('Recovery: %.1f%%' % (prod_flow_mass / feed_flow_mass * 100))
     print('Recovery: %.1f%%' % (recovery))
 
@@ -510,7 +402,7 @@ def display_state(m,N=2):
         print(s + ': %.3f kg/s \t%.0f ppm \t%.1f bar' % (flow_mass, mass_frac_ppm, pressure_bar))
 
     if N==2:
-        print_state('Feed       ', m.fs.M1.upstream)
+        print_state('Feed       ', m.fs.P1.inlet)
         print_state('Recycle    ', m.fs.M1.downstream)
         print_state('M1 outlet  ', m.fs.M1.outlet)
         print_state('P1 outlet  ', m.fs.P1.outlet)
@@ -521,7 +413,7 @@ def display_state(m,N=2):
         print_state('LSRRO reten', m.fs.Stage2.retentate)
         print_state('ERD outlet ', m.fs.ERD.outlet)
     elif N==3:
-        print_state('Feed        ', m.fs.M1.upstream)
+        print_state('Feed        ', m.fs.P1.inlet)
         print_state('Recycle     ', m.fs.M1.downstream)
         print_state('M1 outlet   ', m.fs.M1.outlet)
         print_state('P1 outlet   ', m.fs.P1.outlet)
@@ -546,7 +438,7 @@ def display_design(m,N=2):
         print('Pump %d \noutlet pressure: %.1f bar \npower %.1f kW'
               % (i+1, pump.outlet.pressure[0].value / 1e5, pump.work_mechanical[0].value / 1e3))
 
-    for i in range(N-2):
+    for i in range(N-1):
         pump = getattr(m.fs,"EqP"+repr(i+2))
         print('EQ Pump %d \noutlet pressure: %.1f bar \npower %.1f kW'
               % (i+2, pump.outlet.pressure[0].value / 1e5, pump.work_mechanical[0].value / 1e3))
@@ -565,8 +457,6 @@ def display_design(m,N=2):
                  / sum(stage.permeate.flow_mass_comp[0, j].value for j in ['H2O', 'NaCl']) * 1e6))
 
     print('ERD \npower recovered: %.1f kW' % (-m.fs.ERD.work_mechanical[0].value / 1e3))
-
-
 
 
 def main():
