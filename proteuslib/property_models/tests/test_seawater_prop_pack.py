@@ -37,6 +37,7 @@ from pyomo.util.check_units import assert_units_consistent
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_default_solver()
+solver.options["nlp_scaling_method"] = "user-scaling"
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
@@ -143,11 +144,6 @@ class TestSeawaterPropPack():
         assert hasattr(m.fs.properties, 'define_metadata')
 
     @pytest.mark.unit
-    def test_initialize_exists(self, frame):
-        m = frame
-        assert hasattr(m.fs.stream, 'initialize')
-
-    @pytest.mark.unit
     def test_build(self, frame):
         m = frame
 
@@ -231,7 +227,7 @@ class TestSeawaterPropPack():
         m = frame
 
         # check all variables have assigned units
-        for v in m.component_objects(Var, descend_into=True):
+        for v in m.component_data_objects(Var, descend_into=True):
             assert v.get_units() is not None
 
         assert_units_consistent(m)
@@ -260,13 +256,10 @@ class TestSeawaterPropPack():
         m = frame
         assert (degrees_of_freedom(m) == 0)
 
-    @pytest.mark.solver
     @pytest.mark.component
     def test_solve(self, frame):
         m = frame
 
-        solver = SolverFactory('ipopt')
-        solver.options = {'tol': 1e-8, 'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -274,7 +267,6 @@ class TestSeawaterPropPack():
                TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.solver
     @pytest.mark.component
     def test_solution(self, frame):
         m = frame

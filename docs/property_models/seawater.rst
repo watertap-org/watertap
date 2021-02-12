@@ -69,11 +69,11 @@ Relationships
    "Molality", ":math:`Cm_{TDS} = \frac{x_{TDS}}{(1-x_{TDS}) \cdotp MW_{TDS}}`"
    "Osmotic pressure", ":math:`\pi = i \cdotp \phi \cdotp Cm_{TDS} \cdotp \rho_w \cdotp R \cdotp T` [See note below]"
 
-Note: Osmotic pressure calculation uses the Van't Hoff factor (:math:`i\text{, assumed to be 2}`), density of water (:math:`\rho_w\text{, assumed to be 1000 kg/}\text{m}^3`), gas constant (:math:`R\text{, 8.314 J/mol}\cdotp\text{K}`) in addition to previously defined variables.
+Note: Osmotic pressure calculation uses the van 't Hoff factor (:math:`i\text{, assumed to be 2}`), density of water (:math:`\rho_w\text{, assumed to be 1000 kg/}\text{m}^3`), gas constant (:math:`R\text{, 8.314 J/mol}\cdotp\text{K}`) in addition to previously defined variables.
 
 Scaling
 -------
-This seawater property package includes support for scaling, such as providing default or calculating scaling factors for almost all variables. The only variables that do not have scaling factors are the component mass flowrate and the user must set them or the user will receive a warning.
+This seawater property package includes support for scaling, such as providing default or calculating scaling factors for almost all variables. The only variables that do not have scaling factors are the component mass flowrate and the user will receive a warning if these are not set.
 
 The user can specify the scaling factors for component mass flowrates with the following:
 

@@ -243,7 +243,7 @@ class _SeawaterStateBlock(StateBlock):
 
     def initialize(self, state_args={}, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={'tol': 1e-8}):
+                   solver=None, optarg={}):
         """
         Initialization routine for property package.
         Keyword Arguments:
@@ -259,10 +259,7 @@ class _SeawaterStateBlock(StateBlock):
                          pressure : value at which to initialize pressure
                          temperature : value at which to initialize temperature
             outlvl : sets output level of initialization routine
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = include solver output information (tee=True)
-            optarg : solver options dictionary object (default={'tol': 1e-8})
+            optarg : solver options dictionary object (default={})
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
                               - True - states have already been fixed by the
@@ -272,8 +269,8 @@ class _SeawaterStateBlock(StateBlock):
                                        with 0D blocks.
                              - False - states have not been fixed. The state
                                        block will deal with fixing/unfixing.
-            solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+            solver : Solver object to use during initialization if None is provided
+                     it will use the default solver for IDAES (default = None)
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
@@ -297,7 +294,7 @@ class _SeawaterStateBlock(StateBlock):
             opt = get_default_solver()
         else:
             opt = solver
-        opt.options = optarg
+            opt.options = optarg
 
         # Fix state variables
         flags = fix_state_vars(self, state_args)
