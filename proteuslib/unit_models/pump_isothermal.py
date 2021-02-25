@@ -11,9 +11,11 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 
+from pyomo.environ import Constraint
 # Import IDAES cores
 from idaes.generic_models.unit_models.pressure_changer import PumpData
 from idaes.core import declare_process_block_class
+import idaes.core.util.scaling as iscale
 
 import idaes.logger as idaeslog
 
@@ -30,8 +32,15 @@ class PumpIsothermalData(PumpData):
 
         del self.control_volume.enthalpy_balances
 
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Isothermal")
-        def eq_isothermal(b, t):
-            return (b.control_volume.properties_in[t].temperature
-                    == b.control_volume.properties_out[t].temperature)
+        @self.control_volume.Constraint(
+            self.flowsheet().config.time,
+            doc="Isothermal constraint")
+        def isothermal_balance(b, t):
+            return b.properties_in[t].temperature == b.properties_out[t].temperature
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        for ind, c in self.control_volume.isothermal_balance.items():
+            sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].temperature)
+            iscale.constraint_scaling_transform(c, sf)
