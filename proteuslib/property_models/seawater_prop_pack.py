@@ -427,16 +427,10 @@ class SeawaterStateBlockData(StateBlockData):
         self.eq_flow_vol_phase = Constraint(rule=rule_flow_vol_phase)
 
     def _flow_vol(self):
-        self.flow_vol = Var(
-            initialize=1,
-            bounds=(1e-8, 1e8),
-            units=pyunits.m**3 / pyunits.s,
-            doc="Volumetric flow rate")
 
         def rule_flow_vol(b):
-            return (b.flow_vol
-                    == sum(b.flow_vol_phase[p] for p in self.params.phase_list))
-        self.eq_flow_vol = Constraint(rule=rule_flow_vol)
+            return sum(b.flow_vol_phase[p] for p in self.params.phase_list)
+        self.flow_vol = Expression(rule=rule_flow_vol)
 
     def _conc_mass_phase_comp(self):
         self.conc_mass_phase_comp = Var(
@@ -729,7 +723,7 @@ class SeawaterStateBlockData(StateBlockData):
 
         # transforming constraints
         # property relationships with no index, simple constraint
-        v_str_lst_simple = ['osm_coeff', 'pressure_osm', 'flow_vol']
+        v_str_lst_simple = ['osm_coeff', 'pressure_osm']
         for v_str in v_str_lst_simple:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
