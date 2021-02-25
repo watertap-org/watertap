@@ -11,7 +11,8 @@ from pyomo.environ import (ConcreteModel,
                            Suffix,
                            Param,
                            Expression,
-                           Var)
+                           Var,
+                           units)
 from idaes.core import (FlowsheetBlock,
                         MaterialFlowBasis,
                         MaterialBalanceType,
@@ -32,7 +33,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_variables_generator,
                                      unscaled_constraints_generator,
                                      badly_scaled_var_generator)
-from pyomo.util.check_units import assert_units_consistent
+from pyomo.util.check_units import assert_units_consistent, check_units_equivalent, assert_units_equivalent
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -162,9 +163,10 @@ class TestSeawaterPropPack():
             assert isinstance(var, Var)
 
         # test on demand variables
-        var_list = ['mass_frac_phase_comp', 'dens_mass_phase', 'flow_vol_phase', 'conc_mass_phase_comp',
-                    'flow_mol_phase_comp', 'mole_frac_phase_comp', 'molality_comp',
-                    'visc_d_phase', 'osm_coeff', 'pressure_osm', 'enth_mass_phase']
+        var_list = ['mass_frac_phase_comp', 'dens_mass_phase', 'flow_vol_phase',
+                    'conc_mass_phase_comp', 'flow_mol_phase_comp', 'mole_frac_phase_comp',
+                    'molality_comp', 'visc_d_phase', 'osm_coeff', 'pressure_osm',
+                    'enth_mass_phase']
         for v in var_list:  # test that they are not built when not demanded
             assert not m.fs.stream[0].is_property_constructed(v)
         for v in var_list:  # test they are built on demand
@@ -180,7 +182,7 @@ class TestSeawaterPropPack():
             assert isinstance(c, Constraint)
 
         # test on demand expressions
-        exp_list = ['enth_flow']
+        exp_list = ['flow_vol', 'enth_flow']
         for e in exp_list:  # test that they are not built when not demanded
             assert not m.fs.stream[0].is_property_constructed(e)
         for e in exp_list:  # test they are built on demand
@@ -226,10 +228,73 @@ class TestSeawaterPropPack():
     def test_units(self, frame):
         m = frame
 
-        # check all variables have assigned units
-        for v in m.component_data_objects(Var, descend_into=True):
-            assert v.get_units() is not None
+        # check all variables have their assigned units - parameter block
+        var_unit_dict = {
+            'dens_mass_param_A1': units.kg/units.m**3,
+            'dens_mass_param_A2': (units.kg/units.m**3) * units.K**-1,
+            'dens_mass_param_A3': (units.kg/units.m**3) * units.K**-2,
+            'dens_mass_param_A4': (units.kg/units.m**3) * units.K**-3,
+            'dens_mass_param_A5': (units.kg/units.m**3) * units.K**-4,
+            'dens_mass_param_B1': units.kg/units.m ** 3,
+            'dens_mass_param_B2': (units.kg/units.m**3) * units.K**-1,
+            'dens_mass_param_B3': (units.kg/units.m**3) * units.K**-2,
+            'dens_mass_param_B4': (units.kg/units.m**3) * units.K**-3,
+            'dens_mass_param_B5': (units.kg/units.m**3) * units.K**-2,
+            'visc_d_param_muw_A': units.Pa*units.s,
+            'visc_d_param_muw_B': units.degK**-2*units.Pa**-1*units.s**-1,
+            'visc_d_param_muw_C': units.K,
+            'visc_d_param_muw_D': units.Pa**-1*units.s**-1,
+            'visc_d_param_A_1': units.dimensionless,
+            'visc_d_param_A_2': units.K**-1,
+            'visc_d_param_A_3': units.K**-2,
+            'visc_d_param_B_1': units.dimensionless,
+            'visc_d_param_B_2': units.K**-1,
+            'visc_d_param_B_3': units.K**-2,
+            'osm_coeff_param_1': units.dimensionless,
+            'osm_coeff_param_2': units.K**-1,
+            'osm_coeff_param_3': units.K**-2,
+            'osm_coeff_param_4': units.K**-4,
+            'osm_coeff_param_5': units.dimensionless,
+            'osm_coeff_param_6': units.K**-1,
+            'osm_coeff_param_7': units.K**-3,
+            'osm_coeff_param_8': units.dimensionless,
+            'osm_coeff_param_9': units.K**-1,
+            'osm_coeff_param_10': units.K**-2,
+            'enth_mass_param_A1': units.J/units.kg,
+            'enth_mass_param_A2': (units.J/units.kg) * units.K**-1,
+            'enth_mass_param_A3': (units.J/units.kg) * units.K**-2,
+            'enth_mass_param_A4': (units.J/units.kg) * units.K**-3,
+            'enth_mass_param_B1': units.dimensionless,
+            'enth_mass_param_B2': units.dimensionless}
 
+        for (v, u) in var_unit_dict.items():
+            var = getattr(m.fs.properties, v)
+            assert_units_equivalent(var, u)
+
+        # check all variables have their assigned units - state block
+        var_unit_dict = {
+            'flow_mass_phase_comp': units.kg/units.s,
+            'temperature': units.K,
+            'pressure': units.Pa,
+            'mass_frac_phase_comp': units.dimensionless,
+            'dens_mass_phase': units.kg * units.m**-3,
+            'flow_vol_phase': units.m**3 / units.s,
+            'flow_vol': units.m**3 / units.s,
+            'conc_mass_phase_comp': units.kg * units.m**-3,
+            'flow_mol_phase_comp': units.mol / units.s,
+            'mole_frac_phase_comp': units.dimensionless,
+            'molality_comp': units.mole / units.kg,
+            'visc_d_phase': units.Pa * units.s,
+            'osm_coeff': units.dimensionless,
+            'pressure_osm': units.Pa,
+            'enth_mass_phase': units.J * units.kg**-1,
+            'enth_flow': units.J / units.s}
+
+        for (v, u) in var_unit_dict.items():
+            var = getattr(m.fs.stream[0], v)
+            assert_units_equivalent(var, u)
+
+        # check if units are consistent
         assert_units_consistent(m)
 
     @pytest.mark.unit
@@ -282,6 +347,7 @@ class TestSeawaterPropPack():
         assert pytest.approx(0.965, rel=1e-3) == value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'H2O'])
         assert pytest.approx(1023.6, rel=1e-3) == value(m.fs.stream[0].dens_mass_phase['Liq'])
         assert pytest.approx(9.770e-4, rel=1e-3) == value(m.fs.stream[0].flow_vol_phase['Liq'])
+        assert pytest.approx(9.770e-4, rel=1e-3) == value(m.fs.stream[0].flow_vol)
         assert pytest.approx(987.7, rel=1e-3) == value(m.fs.stream[0].conc_mass_phase_comp['Liq', 'H2O'])
         assert pytest.approx(35.82, rel=1e-3) == value(m.fs.stream[0].conc_mass_phase_comp['Liq', 'TDS'])
         assert pytest.approx(53.57, rel=1e-3) == value(m.fs.stream[0].flow_mol_phase_comp['Liq', 'H2O'])
