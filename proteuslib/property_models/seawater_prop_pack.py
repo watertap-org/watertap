@@ -201,7 +201,6 @@ class SeawaterParameterData(PhysicalParameterBlock):
         # ---default scaling---
         self.set_default_scaling('temperature', 1e-2)
         self.set_default_scaling('pressure', 1e-6)
-        # self.set_default_scaling('molality_comp', 1, index='TDS')
         self.set_default_scaling('dens_mass_phase', 1e-3, index='Liq')
         self.set_default_scaling('visc_d_phase', 1e3, index='Liq')
         self.set_default_scaling('osm_coeff', 1e0)
@@ -217,6 +216,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
              'mass_frac_phase_comp': {'method': '_mass_frac_phase_comp'},
              'dens_mass_phase': {'method': '_dens_mass_phase'},
              'flow_vol_phase': {'method': '_flow_vol_phase'},
+             'flow_vol': {'method': '_flow_vol'},
              'conc_mass_phase_comp': {'method': '_conc_mass_phase_comp'},
              'flow_mol_phase_comp': {'method': '_flow_mol_phase_comp'},
              'mole_frac_phase_comp': {'method': '_mole_frac_phase_comp'},
@@ -425,6 +425,18 @@ class SeawaterStateBlockData(StateBlockData):
                     == sum(b.flow_mass_phase_comp['Liq', j] for j in self.params.component_list)
                     / b.dens_mass_phase['Liq'])
         self.eq_flow_vol_phase = Constraint(rule=rule_flow_vol_phase)
+
+    def _flow_vol(self):
+        self.flow_vol = Var(
+            initialize=1,
+            bounds=(1e-8, 1e8),
+            units=pyunits.m**3 / pyunits.s,
+            doc="Volumetric flow rate")
+
+        def rule_flow_vol(b):
+            return (b.flow_vol
+                    == sum(b.flow_vol_phase[p] for p in self.params.phase_list))
+        self.eq_flow_vol = Constraint(rule=rule_flow_vol)
 
     def _conc_mass_phase_comp(self):
         self.conc_mass_phase_comp = Var(
@@ -654,9 +666,13 @@ class SeawaterStateBlockData(StateBlockData):
                         iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], 1)
 
         if self.is_property_constructed('flow_vol_phase'):
-            iscale.set_scaling_factor(self.flow_vol_phase,
-                                      iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'])
-                                      / iscale.get_scaling_factor(self.dens_mass_phase['Liq']))
+            sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'])
+                  / iscale.get_scaling_factor(self.dens_mass_phase['Liq']))
+            iscale.set_scaling_factor(self.flow_vol_phase, sf)
+
+        if self.is_property_constructed('flow_vol'):
+            sf = iscale.get_scaling_factor(self.flow_vol_phase)
+            iscale.set_scaling_factor(self.flow_vol, sf)
 
         if self.is_property_constructed('conc_mass_phase_comp'):
             for j in self.params.component_list:
@@ -713,7 +729,7 @@ class SeawaterStateBlockData(StateBlockData):
 
         # transforming constraints
         # property relationships with no index, simple constraint
-        v_str_lst_simple = ['osm_coeff', 'pressure_osm']
+        v_str_lst_simple = ['osm_coeff', 'pressure_osm', 'flow_vol']
         for v_str in v_str_lst_simple:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
