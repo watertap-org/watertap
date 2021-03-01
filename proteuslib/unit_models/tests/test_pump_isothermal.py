@@ -29,7 +29,7 @@ solver = get_default_solver()
 
 # -----------------------------------------------------------------------------
 
-class TestReverseOsmosis():
+class TestPumpIsothermal():
     @pytest.fixture(scope="class")
     def Pump_frame(self):
         m = ConcreteModel()
@@ -111,20 +111,33 @@ class TestReverseOsmosis():
     @pytest.mark.component
     def test_initialize(self, Pump_frame):
         m = Pump_frame
-
-        # orig_fixed_vars = fixed_variables_set(m)
-        # orig_act_consts = activated_constraints_set(m)
         m.fs.unit.initialize()
 
-        assert degrees_of_freedom(m) == 0
-        #
-        # fin_fixed_vars = fixed_variables_set(m)
-        # fin_act_consts = activated_constraints_set(m)
-        #
-        # assert len(fin_act_consts) == len(orig_act_consts)
-        # assert len(fin_fixed_vars) == len(orig_fixed_vars)
-        #
-        # for c in fin_act_consts:
-        #     assert c in orig_act_consts
-        # for v in fin_fixed_vars:
-        #     assert v in orig_fixed_vars
+    @pytest.mark.component
+    def test_solve(self, Pump_frame):
+        m = Pump_frame
+        solver.options = {'nlp_scaling_method': 'user-scaling'}
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+               TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_solution(self, Pump_frame):
+        m = Pump_frame
+
+        # pump variables
+        assert (pytest.approx(521.06, rel=1e-3) == value(m.fs.unit.work_mechanical[0]))
+        assert (pytest.approx(4e5, rel=1e-3) == value(m.fs.unit.deltaP[0]))
+        assert (pytest.approx(5, rel=1e-3) == value(m.fs.unit.ratioP[0]))
+        assert (pytest.approx(390.79, rel=1e-3) == value(m.fs.unit.work_fluid[0]))
+
+        # outlet state variables
+        assert (pytest.approx(0.965, rel=1e-3) ==
+                value(m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp['Liq', 'H2O']))
+        assert (pytest.approx(0.035, rel=1e-3) ==
+                value(m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp['Liq', 'TDS']))
+        assert (pytest.approx(298.15, rel=1e-5) ==
+                value(m.fs.unit.control_volume.properties_out[0].temperature))
