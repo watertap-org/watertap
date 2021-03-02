@@ -14,7 +14,8 @@ from proteuslib.unit_models.pump_isothermal import Pump
 import proteuslib.property_models.seawater_prop_pack as props
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util.testing import (get_default_solver,
+                                     initialization_tester)
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_variables_generator,
                                      unscaled_constraints_generator,
@@ -66,10 +67,14 @@ class TestPumpIsothermal():
         var_list = ['work_mechanical', 'deltaP', 'ratioP', 'work_fluid', 'efficiency_pump']
         for v in var_list:
             assert hasattr(m.fs.unit, v)
+            var = getattr(m.fs.unit, v)
+            assert isinstance(var, Var)
 
         con_list = ['ratioP_calculation', 'fluid_work_calculation', 'actual_work']
         for c in con_list:
             assert hasattr(m.fs.unit, c)
+            con = getattr(m.fs.unit, c)
+            assert isinstance(con, Constraint)
 
         # check that IDAES control volume has not changed variable and constraint names
         assert hasattr(m.fs.unit.control_volume, 'work')
@@ -110,8 +115,7 @@ class TestPumpIsothermal():
 
     @pytest.mark.component
     def test_initialize(self, Pump_frame):
-        m = Pump_frame
-        m.fs.unit.initialize()
+        initialization_tester(Pump_frame)
 
     @pytest.mark.component
     def test_solve(self, Pump_frame):
@@ -123,6 +127,25 @@ class TestPumpIsothermal():
         assert results.solver.termination_condition == \
                TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_conservation(self, Pump_frame):
+        m = Pump_frame
+        b = m.fs.unit.control_volume
+        comp_lst = ['TDS', 'H2O']
+
+        for t in m.fs.config.time:
+            # mass balance
+            for j in comp_lst:
+                assert (abs(
+                    value(b.properties_in[t].flow_mass_phase_comp['Liq', j]
+                          - b.properties_out[t].flow_mass_phase_comp['Liq', j]))
+                        <= 1e-6)
+            # energy balance
+            assert (abs(
+                value(b.properties_in[t].enth_flow
+                      - b.properties_out[t].enth_flow))
+                    <= 1e-6)
 
     @pytest.mark.component
     def test_solution(self, Pump_frame):
