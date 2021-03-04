@@ -65,8 +65,8 @@ class TestReverseOsmosis():
         m.fs.unit.inlet.temperature[0].fix(feed_temperature)
         m.fs.unit.deltaP.fix(-membrane_pressure_drop)
         m.fs.unit.area.fix(membrane_area)
-        m.fs.unit.A.fix(A)
-        m.fs.unit.B.fix(B)
+        m.fs.unit.A_comp.fix(A)
+        m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         return m
 
@@ -106,9 +106,9 @@ class TestReverseOsmosis():
                 assert isinstance(var, Var)
 
         # test unit objects (including parameters, variables, and constraints)
-        unit_objs_lst = ['A', 'B', 'dens_H2O',
-                         'flux_mass_comp_in', 'flux_mass_comp_out', 'area',
-                         'deltaP', 'mass_transfer_comp', 'flux_mass_comp_avg',
+        unit_objs_lst = ['A_comp', 'B_comp', 'dens_solvent',
+                         'flux_mass_phase_comp_in', 'flux_mass_phase_comp_out', 'area',
+                         'deltaP', 'mass_transfer_phase_comp', 'flux_mass_phase_comp_avg',
                          'eq_mass_transfer_term', 'eq_permeate_production',
                          'eq_flux_in', 'eq_flux_out',
                          'eq_connect_mass_transfer', 'eq_connect_enthalpy_transfer',
@@ -229,9 +229,9 @@ class TestReverseOsmosis():
     def test_solution(self, RO_frame):
         m = RO_frame
         assert (pytest.approx(5.90e-3, abs=1e-5) ==
-                value(m.fs.unit.flux_mass_comp_avg[0, 'H2O']))
+                value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
         assert (pytest.approx(1.51e-6, abs=1e-8) ==
-                value(m.fs.unit.flux_mass_comp_avg[0, 'NaCl']))
+                value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl']))
         assert (pytest.approx(0.295, abs=1e-3) ==
                 value(m.fs.unit.properties_permeate[0].
                       flow_mass_comp['H2O']))
