@@ -19,7 +19,7 @@ import idaes.logger as idaeslog
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, \
-    Var, Param, Suffix, value
+    Var, Param, Suffix, value, SolverFactory
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores
@@ -290,11 +290,16 @@ class _SeawaterStateBlock(StateBlock):
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="properties")
 
         # Set solver and options
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = solver
+        # TODO: clean up once IDAES new API for initialize solvers is released
+        if isinstance(solver, str):
+            opt = SolverFactory(solver)
             opt.options = optarg
+        else:
+            if solver is None:
+                opt = get_default_solver()
+            else:
+                opt = solver
+                opt.options = optarg
 
         # Fix state variables
         flags = fix_state_vars(self, state_args)
