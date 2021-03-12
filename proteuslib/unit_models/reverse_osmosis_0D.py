@@ -127,7 +127,7 @@ class ROData(UnitModelBlockData):
 
     def build(self):
         # Call UnitModel.build to setup dynamics
-        super(ROData, self).build()
+        super().build()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 

@@ -1,3 +1,16 @@
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes-pse".
+##############################################################################
+
 import pytest
 from pyomo.environ import (ConcreteModel,
                            Constraint,
@@ -16,11 +29,9 @@ import proteuslib.property_models.NaCl_prop_pack as props
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
-                                              fixed_variables_set,
-                                              activated_constraints_set,
                                               number_unused_variables)
-from idaes.core.util.testing import get_default_solver
-from idaes.core.util.exceptions import BalanceTypeNotSupportedError
+from idaes.core.util.testing import (get_default_solver,
+                                     initialization_tester)
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_variables_generator,
                                      unscaled_constraints_generator,
@@ -165,26 +176,7 @@ class TestReverseOsmosis():
 
     @pytest.mark.component
     def test_initialize(self, RO_frame):
-        m = RO_frame
-
-        orig_fixed_vars = fixed_variables_set(m)
-        orig_act_consts = activated_constraints_set(m)
-
-        m.fs.unit.initialize(
-            optarg={'nlp_scaling_method': 'user-scaling'})
-
-        assert degrees_of_freedom(m) == 0
-
-        fin_fixed_vars = fixed_variables_set(m)
-        fin_act_consts = activated_constraints_set(m)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
+        initialization_tester(RO_frame)
 
     @pytest.mark.component
     def test_var_scaling(self, RO_frame):

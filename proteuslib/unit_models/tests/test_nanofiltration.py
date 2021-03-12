@@ -10,167 +10,226 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-"""
-Tests for 0D Nanofiltration unit model.
-Author: Markus Drouven
-"""
 
 import pytest
 from pyomo.environ import (ConcreteModel,
                            Constraint,
                            TerminationCondition,
                            SolverStatus,
-                           units,
-                           Var,
-                           value)
+                           value,
+                           Var)
+from pyomo.network import Port
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType)
-
-from proteuslib.unit_models.nanofiltration import NF
-
-from proteuslib.property_models.NaCl_prop_pack import NaClParameterBlock
-# import NaCl_prop_pack as props
+from proteuslib.unit_models.nanofiltration_0D import NF_0D
+import proteuslib.property_models.NaCl_prop_pack as props
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock,
                                      initialization_tester)
-from pyomo.util.check_units import (assert_units_consistent,
-                                    assert_units_equivalent)
-
+from idaes.core.util.scaling import (calculate_scaling_factors,
+                                     unscaled_variables_generator,
+                                     unscaled_constraints_generator,
+                                     badly_scaled_var_generator)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_default_solver()
 
-
-# -----------------------------------------------------------------------------
-@pytest.mark.unit
-def test_config():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-
-    m.fs.properties = NaClParameterBlock()
-    # m.fs.properties = props.NaClParameterBlock
-    # m.fs.properties = PhysicalParameterTestBlock()
-    
-    m.fs.unit = NF(default={"property_package": m.fs.properties,"has_pressure_change": True})
-
-    # Check unit config arguments
-    assert len(m.fs.unit.config) == 8
-
-    assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.useDefault
-    assert m.fs.unit.config.energy_balance_type == \
-        EnergyBalanceType.useDefault
-    assert m.fs.unit.config.momentum_balance_type == \
-        MomentumBalanceType.pressureTotal
-    assert m.fs.unit.config.has_pressure_change
-    assert m.fs.unit.config.property_package is m.fs.properties
-
-
-
-# -----------------------------------------------------------------------------
-class TestNanofiltration(object):
+class TestNanoFiltration():
     @pytest.fixture(scope="class")
-    def defaultspec(self):
+    def NF_frame(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.properties = NaClParameterBlock()
-        
-        m.fs.unit = NF(default={"property_package": m.fs.properties,"has_pressure_change": True})
+        m.fs.properties = props.NaClParameterBlock()
 
-        m.fs.unit.inlet.flow_mass_comp[0, 'NaCl'].fix(0.035)
-        m.fs.unit.inlet.flow_mass_comp[0, 'H2O'].fix(0.965)
-        
-        m.fs.unit.inlet.pressure[0].fix(689476)
-        m.fs.unit.inlet.temperature[0].fix(298.15)
+        m.fs.unit = NF_0D(default={
+            "property_package": m.fs.properties,
+            "has_pressure_change": True, })
 
-        m.fs.unit.A.fix(3.77e-11)
-        m.fs.unit.B.fix(4.724e-5)
-        m.fs.unit.sigma.fix(0.28)
-        m.fs.unit.deltaP.fix(-1e5)
-        m.fs.unit.area.fix(2.5)
+        # fully specify system
+        feed_flow_mass = 1
+        feed_mass_frac_NaCl = 0.035
+        feed_pressure = 6e5
+        feed_temperature = 273.15 + 25
+        membrane_pressure_drop = 1e5
+        membrane_area = 50 * feed_flow_mass
+        A = 3.77e-11
+        B = 4.724e-5
+        sigma = 0.28
+        pressure_atmospheric = 101325
 
-        m.fs.unit.permeate.pressure[0].fix(101325)
-
+        feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+        m.fs.unit.inlet.flow_mass_comp[0, 'NaCl'].fix(
+            feed_flow_mass * feed_mass_frac_NaCl)
+        m.fs.unit.inlet.flow_mass_comp[0, 'H2O'].fix(
+            feed_flow_mass * feed_mass_frac_H2O)
+        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.deltaP.fix(-membrane_pressure_drop)
+        m.fs.unit.area.fix(membrane_area)
+        m.fs.unit.A_comp.fix(A)
+        m.fs.unit.B_comp.fix(B)
+        m.fs.unit.sigma.fix(sigma)
+        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         return m
 
+    @pytest.mark.unit
+    def test_config(self, NF_frame):
+        m = NF_frame
+        # check unit config arguments
+        assert len(m.fs.unit.config) == 8
+
+        assert not m.fs.unit.config.dynamic
+        assert not m.fs.unit.config.has_holdup
+        assert m.fs.unit.config.material_balance_type == \
+               MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == \
+               EnergyBalanceType.useDefault
+        assert m.fs.unit.config.momentum_balance_type == \
+               MomentumBalanceType.pressureTotal
+        assert m.fs.unit.config.has_pressure_change
+        assert m.fs.unit.config.property_package is \
+               m.fs.properties
 
     @pytest.mark.unit
-    def test_build(self, defaultspec):
+    def test_build(self, NF_frame):
+        m = NF_frame
 
-        assert hasattr(defaultspec.fs.unit, "inlet")      
-        assert hasattr(defaultspec.fs.unit.inlet, "flow_mass_comp")
-        assert hasattr(defaultspec.fs.unit.inlet, "temperature")
-        assert hasattr(defaultspec.fs.unit.inlet, "pressure")
-        assert len(defaultspec.fs.unit.inlet.vars) == 3
+        # test ports and variables
+        port_lst = ['inlet', 'retentate', 'permeate']
+        port_vars_lst = ['flow_mass_comp', 'pressure', 'temperature']
+        for port_str in port_lst:
+            assert hasattr(m.fs.unit, port_str)
+            port = getattr(m.fs.unit, port_str)
+            assert len(port.vars) == 3
+            assert isinstance(port, Port)
+            for var_str in port_vars_lst:
+                assert hasattr(port, var_str)
+                var = getattr(port, var_str)
+                assert isinstance(var, Var)
 
-        assert hasattr(defaultspec.fs.unit, "permeate")      
-        assert hasattr(defaultspec.fs.unit.permeate, "flow_mass_comp")
-        assert hasattr(defaultspec.fs.unit.permeate, "temperature")
-        assert hasattr(defaultspec.fs.unit.permeate, "pressure")
-        assert len(defaultspec.fs.unit.permeate.vars) == 3
+        # test unit objects (including parameters, variables, and constraints)
+        unit_objs_lst = ['A_comp', 'B_comp', 'sigma', 'dens_solvent',
+                         'flux_mass_phase_comp_in', 'flux_mass_phase_comp_out',
+                         'avg_conc_mass_phase_comp_in', 'avg_conc_mass_phase_comp_out', 'area',
+                         'deltaP', 'mass_transfer_phase_comp', 'flux_mass_phase_comp_avg',
+                         'eq_mass_transfer_term', 'eq_permeate_production',
+                         'eq_flux_in', 'eq_flux_out',
+                         'eq_avg_conc_in', 'eq_avg_conc_out',
+                         'eq_connect_mass_transfer', 'eq_connect_enthalpy_transfer',
+                         'eq_permeate_isothermal']
+        for obj_str in unit_objs_lst:
+            assert hasattr(m.fs.unit, obj_str)
 
-        assert hasattr(defaultspec.fs.unit, "retentate")      
-        assert hasattr(defaultspec.fs.unit.retentate, "flow_mass_comp")
-        assert hasattr(defaultspec.fs.unit.retentate, "temperature")
-        assert hasattr(defaultspec.fs.unit.retentate, "pressure")
-        assert len(defaultspec.fs.unit.retentate.vars) == 3
 
-        assert hasattr(defaultspec.fs.unit, "deltaP")
+        # test state block objects
+        cv_name = 'feed_side'
+        cv_stateblock_lst = ['properties_in', 'properties_out']
+        stateblock_objs_lst = \
+            ['flow_mass_comp', 'pressure', 'temperature', 'pressure_osm',
+             'osm_coeff', 'mass_frac_comp', 'conc_mass_comp', 'dens_mass',
+             'enth_mass',
+             'eq_pressure_osm', 'eq_osm_coeff', 'eq_mass_frac_comp',
+             'eq_conc_mass_comp', 'eq_dens_mass', 'eq_enth_mass'
+             ]
+        # control volume
+        assert hasattr(m.fs.unit, cv_name)
+        cv_blk = getattr(m.fs.unit, cv_name)
+        for blk_str in cv_stateblock_lst:
+            assert hasattr(cv_blk, blk_str)
+            blk = getattr(cv_blk, blk_str)
+            for obj_str in stateblock_objs_lst:
+                assert hasattr(blk[0], obj_str)
+        # permeate
+        assert hasattr(m.fs.unit, 'properties_permeate')
+        blk = getattr(m.fs.unit, 'properties_permeate')
+        for var_str in stateblock_objs_lst:
+            assert hasattr(blk[0], var_str)
 
-        assert number_variables(defaultspec) == 107
-        assert number_total_constraints(defaultspec) == 42
-        assert number_unused_variables(defaultspec) == 13
-
-    @pytest.mark.component
-    def test_units(self, defaultspec):
-        assert_units_consistent(defaultspec)
-        assert_units_equivalent(defaultspec.fs.unit.deltaP[0], units.Pa)
+        # test statistics
+        assert number_variables(m) == 107
+        assert number_total_constraints(m) == 42
+        assert number_unused_variables(m) == 13  # vars from property package parameters
 
     @pytest.mark.unit
-    def test_dof(self, defaultspec):
-        assert degrees_of_freedom(defaultspec) == 0
+    def test_dof(self, NF_frame):
+        m = NF_frame
+        assert degrees_of_freedom(m) == 0
+
+    @pytest.mark.unit
+    def test_calculate_scaling(self, NF_frame):
+        m = NF_frame
+        calculate_scaling_factors(m)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(unscaled_variables_generator(m))
+        assert len(unscaled_var_list) == 0
+        # check that all constraints have been scaled
+        unscaled_constraint_list = list(unscaled_constraints_generator(m))
+        assert len(unscaled_constraint_list) == 0
 
     @pytest.mark.component
-    def test_initialize(self, defaultspec):
-        initialization_tester(defaultspec)
+    def test_initialize(self, NF_frame):
+        initialization_tester(NF_frame)
 
     @pytest.mark.component
-    def test_solve(self, defaultspec):
-        results = solver.solve(defaultspec)
+    def test_var_scaling(self, NF_frame):
+        m = NF_frame
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        assert badly_scaled_var_lst == []
+
+    @pytest.mark.component
+    def test_solve(self, NF_frame):
+        m = NF_frame
+        solver.options = {'nlp_scaling_method': 'user-scaling'}
+        results = solver.solve(m)
 
         # Check for optimal solution
         assert results.solver.termination_condition == \
-            TerminationCondition.optimal
+               TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_solution(self, defaultspec):
-        assert (pytest.approx(589476.0, abs=1e-2) ==
-                value(defaultspec.fs.unit.retentate.pressure[0]))
-        assert (pytest.approx(298.15, abs=1e-2) ==
-                value(defaultspec.fs.unit.permeate.temperature[0]))
-        assert (pytest.approx(0.03428220299, abs=1e-5) ==
-                value(defaultspec.fs.unit.permeate.flow_mass_comp[0, "H2O"]))
+    def test_conservation(self, NF_frame):
+        m = NF_frame
+        b = m.fs.unit
+        comp_lst = ['NaCl', 'H2O']
 
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
+        flow_mass_inlet = sum(
+            b.feed_side.properties_in[0].flow_mass_comp[j] for j in comp_lst)
+        flow_mass_retentate = sum(
+            b.feed_side.properties_out[0].flow_mass_comp[j] for j in comp_lst)
+        flow_mass_permeate = sum(
+            b.properties_permeate[0].flow_mass_comp[j] for j in comp_lst)
+
+        assert (abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate
+                          )) <= 1e-6)
+
+        assert (abs(value(
+            flow_mass_inlet * b.feed_side.properties_in[0].enth_mass
+            - flow_mass_retentate * b.feed_side.properties_out[0].enth_mass
+            - flow_mass_permeate * b.properties_permeate[0].enth_mass
+        )) <= 1e-6)
+
     @pytest.mark.component
-    def test_conservation(self, defaultspec):
-        assert (abs(value(defaultspec.fs.unit.inlet.flow_mass_comp[0, "NaCl"] - 
-                          defaultspec.fs.unit.permeate.flow_mass_comp[0, "NaCl"] -
-                          defaultspec.fs.unit.retentate.flow_mass_comp[0, "NaCl"]))
-                <= 1e-6)
-
+    def test_solution(self, NF_frame):
+        m = NF_frame
+        assert (pytest.approx(1.097e-2, rel=1e-3) ==
+                value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
+        assert (pytest.approx(3.492e-4, rel=1e-3) ==
+                value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl']))
+        assert (pytest.approx(0.5486, rel=1e-3) ==
+                value(m.fs.unit.properties_permeate[0].
+                      flow_mass_comp['H2O']))
+        assert (pytest.approx(1.746e-2, rel=1e-3) ==
+                value(m.fs.unit.properties_permeate[0].
+                      flow_mass_comp['NaCl']))
 
 
