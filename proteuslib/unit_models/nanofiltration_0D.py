@@ -195,7 +195,7 @@ class NFData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=1e-3,
-            bounds=(1e-10, 1e6),
+            bounds=(1e-12, 1e6),
             units=units_meta('mass') * units_meta('length') ** -2 * units_meta('time') ** -1,
             doc='Flux at feed inlet')
         self.flux_mass_phase_comp_out = Var(
@@ -203,7 +203,7 @@ class NFData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=1e-3,
-            bounds=(1e-10, 1e6),
+            bounds=(1e-12, 1e6),
             units=units_meta('mass') * units_meta('length') ** -2 * units_meta('time') ** -1,
             doc='Flux at feed outlet')
         self.avg_conc_mass_phase_comp_in = Var(
@@ -322,7 +322,7 @@ class NFData(UnitModelBlockData):
                            - b.sigma[t] * (prop_feed.pressure_osm - prop_perm.pressure_osm)))
             elif comp.is_solute():
                 return (b.flux_mass_phase_comp_in[t, p, j] == b.B_comp[t, j]
-                        * (prop_feed.conc_mass_comp[j] - prop_perm.conc_mass_comp[j])
+                        * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j])
                         + ((1 - b.sigma[t]) * b.flux_mass_phase_comp_in[t, p, j]
                            * 1 / b.dens_solvent * b.avg_conc_mass_phase_comp_in[t, p, j])
                         )
@@ -344,7 +344,7 @@ class NFData(UnitModelBlockData):
                            - b.sigma[t] * (prop_feed.pressure_osm - prop_perm.pressure_osm)))
             elif comp.is_solute():
                 return (b.flux_mass_phase_comp_out[t, p, j] == b.B_comp[t, j]
-                        * (prop_feed.conc_mass_comp[j] - prop_perm.conc_mass_comp[j])
+                        * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j])
                         + ((1 - b.sigma[t]) * b.flux_mass_phase_comp_out[t, p, j]
                            * 1 / b.dens_solvent * b.avg_conc_mass_phase_comp_out[t, p, j])
                         )
@@ -362,8 +362,8 @@ class NFData(UnitModelBlockData):
             prop_feed = b.feed_side.properties_in[t]
             prop_perm = b.properties_permeate[t]
             return (b.avg_conc_mass_phase_comp_in[t, p, j] ==
-                    (prop_feed.conc_mass_comp[j] * prop_perm.conc_mass_comp[j] *
-                     (prop_feed.conc_mass_comp[j] + prop_perm.conc_mass_comp[j])/2)**(1/3))
+                    (prop_feed.conc_mass_phase_comp[p, j] * prop_perm.conc_mass_phase_comp[p, j] *
+                     (prop_feed.conc_mass_phase_comp[p, j] + prop_perm.conc_mass_phase_comp[p, j])/2)**(1/3))
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
@@ -373,8 +373,8 @@ class NFData(UnitModelBlockData):
             prop_feed = b.feed_side.properties_out[t]
             prop_perm = b.properties_permeate[t]
             return (b.avg_conc_mass_phase_comp_out[t, p, j] ==
-                    (prop_feed.conc_mass_comp[j] * prop_perm.conc_mass_comp[j] *
-                     (prop_feed.conc_mass_comp[j] + prop_perm.conc_mass_comp[j]) / 2) ** (1 / 3))
+                    (prop_feed.conc_mass_phase_comp[p, j] * prop_perm.conc_mass_phase_comp[p, j] *
+                     (prop_feed.conc_mass_phase_comp[p, j] + prop_perm.conc_mass_phase_comp[p, j])/2)**(1/3))
 
         # Feed and permeate-side connection
         @self.Constraint(self.flowsheet().config.time,
@@ -497,16 +497,16 @@ class NFData(UnitModelBlockData):
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
         if iscale.get_scaling_factor(self.A_comp) is None:
-            iscale.set_scaling_factor(self.A_comp, 1e12)
+            iscale.set_scaling_factor(self.A_comp, 1e11)
 
         if iscale.get_scaling_factor(self.B_comp) is None:
-            iscale.set_scaling_factor(self.B_comp, 1e8)
+            iscale.set_scaling_factor(self.B_comp, 1e5)
 
         if iscale.get_scaling_factor(self.sigma) is None:
             iscale.set_scaling_factor(self.sigma, 1)
 
         if iscale.get_scaling_factor(self.dens_solvent) is None:
-            sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].dens_mass)
+            sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].dens_mass_phase['Liq'])
             iscale.set_scaling_factor(self.dens_solvent, sf)
 
         for vobj in [self.flux_mass_phase_comp_in, self.flux_mass_phase_comp_out]:
@@ -520,13 +520,13 @@ class NFData(UnitModelBlockData):
                         iscale.set_scaling_factor(v, sf)
                     elif comp.is_solute():  # scaling based on solute flux equation
                         sf = (iscale.get_scaling_factor(self.B_comp[t, j])
-                              * iscale.get_scaling_factor(self.feed_side.properties_in[t].conc_mass_comp[j]))
+                              * iscale.get_scaling_factor(self.feed_side.properties_in[t].conc_mass_phase_comp[p, j]))
                         iscale.set_scaling_factor(v, sf)
 
         for vobj in [self.avg_conc_mass_phase_comp_in, self.avg_conc_mass_phase_comp_out]:
             for (t, p, j), v in vobj.items():
                 if iscale.get_scaling_factor(v) is None:
-                    sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].conc_mass_comp[j])
+                    sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].conc_mass_phase_comp[p, j])
                     iscale.set_scaling_factor(v, sf)
 
         for (t, p, j), v in self.feed_side.mass_transfer_term.items():

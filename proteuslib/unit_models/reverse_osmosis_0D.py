@@ -290,7 +290,7 @@ class ROData(UnitModelBlockData):
                            - (prop_feed.pressure_osm - prop_perm.pressure_osm)))
             elif comp.is_solute():
                 return (b.flux_mass_phase_comp_in[t, p, j] == b.B_comp[t, j]
-                        * (prop_feed.conc_mass_comp[j] - prop_perm.conc_mass_comp[j]))
+                        * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j]))
             else:
                 b.flux_mass_phase_comp_in[t, p, j].fix(0)
                 return Constraint.Skip
@@ -309,7 +309,7 @@ class ROData(UnitModelBlockData):
                            - (prop_feed.pressure_osm - prop_perm.pressure_osm)))
             elif comp.is_solute():
                 return (b.flux_mass_phase_comp_out[t, p, j] == b.B_comp[t, j]
-                        * (prop_feed.conc_mass_comp[j] - prop_perm.conc_mass_comp[j]))
+                        * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j]))
             else:
                 b.flux_mass_phase_comp_in[t, p, j].fix(0)
                 return Constraint.Skip
@@ -442,7 +442,7 @@ class ROData(UnitModelBlockData):
             iscale.set_scaling_factor(self.B_comp, 1e8)
 
         if iscale.get_scaling_factor(self.dens_solvent) is None:
-            sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].dens_mass)
+            sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].dens_mass_phase['Liq'])
             iscale.set_scaling_factor(self.dens_solvent, sf)
 
         for vobj in [self.flux_mass_phase_comp_in, self.flux_mass_phase_comp_out]:
@@ -456,7 +456,7 @@ class ROData(UnitModelBlockData):
                         iscale.set_scaling_factor(v, sf)
                     elif comp.is_solute():  # scaling based on solute flux equation
                         sf = (iscale.get_scaling_factor(self.B_comp[t, j])
-                              * iscale.get_scaling_factor(self.feed_side.properties_in[t].conc_mass_comp[j]))
+                              * iscale.get_scaling_factor(self.feed_side.properties_in[t].conc_mass_phase_comp[p, j]))
                         iscale.set_scaling_factor(v, sf)
 
         for (t, p, j), v in self.feed_side.mass_transfer_term.items():

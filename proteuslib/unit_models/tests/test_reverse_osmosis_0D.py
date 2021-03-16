@@ -13,7 +13,6 @@
 
 import pytest
 from pyomo.environ import (ConcreteModel,
-                           Constraint,
                            TerminationCondition,
                            SolverStatus,
                            value,
@@ -68,9 +67,9 @@ class TestReverseOsmosis():
         pressure_atmospheric = 101325
 
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
-        m.fs.unit.inlet.flow_mass_comp[0, 'NaCl'].fix(
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
             feed_flow_mass * feed_mass_frac_NaCl)
-        m.fs.unit.inlet.flow_mass_comp[0, 'H2O'].fix(
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
             feed_flow_mass * feed_mass_frac_H2O)
         m.fs.unit.inlet.pressure[0].fix(feed_pressure)
         m.fs.unit.inlet.temperature[0].fix(feed_temperature)
@@ -105,7 +104,7 @@ class TestReverseOsmosis():
 
         # test ports and variables
         port_lst = ['inlet', 'retentate', 'permeate']
-        port_vars_lst = ['flow_mass_comp', 'pressure', 'temperature']
+        port_vars_lst = ['flow_mass_phase_comp', 'pressure', 'temperature']
         for port_str in port_lst:
             assert hasattr(m.fs.unit, port_str)
             port = getattr(m.fs.unit, port_str)
@@ -132,11 +131,11 @@ class TestReverseOsmosis():
         cv_name = 'feed_side'
         cv_stateblock_lst = ['properties_in', 'properties_out']
         stateblock_objs_lst = \
-            ['flow_mass_comp', 'pressure', 'temperature', 'pressure_osm',
-             'osm_coeff', 'mass_frac_comp', 'conc_mass_comp', 'dens_mass',
-             'enth_mass',
-             'eq_pressure_osm', 'eq_osm_coeff', 'eq_mass_frac_comp',
-             'eq_conc_mass_comp', 'eq_dens_mass', 'eq_enth_mass'
+            ['flow_mass_phase_comp', 'pressure', 'temperature', 'pressure_osm',
+             'osm_coeff', 'mass_frac_phase_comp', 'conc_mass_phase_comp',
+             'dens_mass_phase', 'enth_mass_phase',
+             'eq_pressure_osm', 'eq_osm_coeff', 'eq_mass_frac_phase_comp',
+             'eq_conc_mass_phase_comp', 'eq_dens_mass_phase', 'eq_enth_mass_phase'
              ]
         # control volume
         assert hasattr(m.fs.unit, cv_name)
@@ -153,9 +152,9 @@ class TestReverseOsmosis():
             assert hasattr(blk[0], var_str)
 
         # test statistics
-        assert number_variables(m) == 104
-        assert number_total_constraints(m) == 40
-        assert number_unused_variables(m) == 13  # vars from property package parameters
+        assert number_variables(m) == 70
+        assert number_total_constraints(m) == 43
+        assert number_unused_variables(m) == 7  # vars from property package parameters
 
     @pytest.mark.unit
     def test_dof(self, RO_frame):
@@ -202,31 +201,29 @@ class TestReverseOsmosis():
         comp_lst = ['NaCl', 'H2O']
 
         flow_mass_inlet = sum(
-            b.feed_side.properties_in[0].flow_mass_comp[j] for j in comp_lst)
+            b.feed_side.properties_in[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
         flow_mass_retentate = sum(
-            b.feed_side.properties_out[0].flow_mass_comp[j] for j in comp_lst)
+            b.feed_side.properties_out[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
         flow_mass_permeate = sum(
-            b.properties_permeate[0].flow_mass_comp[j] for j in comp_lst)
+            b.properties_permeate[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
 
         assert (abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate
                           )) <= 1e-6)
 
         assert (abs(value(
-            flow_mass_inlet * b.feed_side.properties_in[0].enth_mass
-            - flow_mass_retentate * b.feed_side.properties_out[0].enth_mass
-            - flow_mass_permeate * b.properties_permeate[0].enth_mass
+            flow_mass_inlet * b.feed_side.properties_in[0].enth_mass_phase['Liq']
+            - flow_mass_retentate * b.feed_side.properties_out[0].enth_mass_phase['Liq']
+            - flow_mass_permeate * b.properties_permeate[0].enth_mass_phase['Liq']
         )) <= 1e-6)
 
     @pytest.mark.component
     def test_solution(self, RO_frame):
         m = RO_frame
-        assert (pytest.approx(5.90e-3, abs=1e-5) ==
+        assert (pytest.approx(5.574e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
-        assert (pytest.approx(1.51e-6, abs=1e-8) ==
+        assert (pytest.approx(1.491e-6, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl']))
-        assert (pytest.approx(0.295, abs=1e-3) ==
-                value(m.fs.unit.properties_permeate[0].
-                      flow_mass_comp['H2O']))
-        assert (pytest.approx(7.57e-5, abs=1e-7) ==
-                value(m.fs.unit.properties_permeate[0].
-                      flow_mass_comp['NaCl']))
+        assert (pytest.approx(0.2787, rel=1e-3) ==
+                value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
+        assert (pytest.approx(7.453e-5, rel=1e-3) ==
+                value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
