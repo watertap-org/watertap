@@ -168,7 +168,7 @@ class NFData(UnitModelBlockData):
             initialize=1e-12,
             bounds=(1e-18, 1e-6),
             domain=NonNegativeReals,
-            units=units_meta('length') * units_meta('pressure') ** -1 * units_meta('time') ** -1,
+            units=units_meta('length')*units_meta('pressure')**-1*units_meta('time')**-1,
             doc='Solvent permeability coeff.')
         self.B_comp = Var(
             self.flowsheet().config.time,
@@ -176,7 +176,7 @@ class NFData(UnitModelBlockData):
             initialize=1e-8,
             bounds=(1e-11, 1e-5),
             domain=NonNegativeReals,
-            units=units_meta('length') * units_meta('time') ** -1,
+            units=units_meta('length')*units_meta('time')**-1,
             doc='Solute permeability coeff.')
         self.sigma = Var(
             self.flowsheet().config.time,
@@ -187,7 +187,7 @@ class NFData(UnitModelBlockData):
             doc='Reflection coefficient')
         self.dens_solvent = Param(
             initialize=1000,
-            units=units_meta('mass') * units_meta('length') ** -3,
+            units=units_meta('mass')*units_meta('length')**-3,
             doc='Pure water density')
 
         # Add unit variables
@@ -197,7 +197,7 @@ class NFData(UnitModelBlockData):
             self.config.property_package.component_list,
             initialize=1e-3,
             bounds=(1e-12, 1e6),
-            units=units_meta('mass') * units_meta('length') ** -2 * units_meta('time') ** -1,
+            units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Flux at feed inlet')
         self.flux_mass_phase_comp_out = Var(
             self.flowsheet().config.time,
@@ -205,7 +205,7 @@ class NFData(UnitModelBlockData):
             self.config.property_package.component_list,
             initialize=1e-3,
             bounds=(1e-12, 1e6),
-            units=units_meta('mass') * units_meta('length') ** -2 * units_meta('time') ** -1,
+            units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Flux at feed outlet')
         self.avg_conc_mass_phase_comp_in = Var(
             self.flowsheet().config.time,
@@ -283,7 +283,7 @@ class NFData(UnitModelBlockData):
             initialize=1,
             bounds=(1e-8, 1e6),
             domain=NonNegativeReals,
-            units=units_meta('mass') * units_meta('time') ** -1,
+            units=units_meta('mass')*units_meta('time')**-1,
             doc='Mass transfer to permeate')
 
         @self.Constraint(self.flowsheet().config.time,
