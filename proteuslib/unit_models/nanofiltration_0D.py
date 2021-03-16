@@ -141,6 +141,7 @@ class NFData(UnitModelBlockData):
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
+        # TODO: update IDAES such that solvent and solute lists are automatically created on the parameter block
         self.solvent_list = Set()
         self.solute_list = Set()
         for c in self.config.property_package.component_list:
