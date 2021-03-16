@@ -229,5 +229,3 @@ class TestNanoFiltration():
                 value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
         assert (pytest.approx(1.717e-2, rel=1e-3) ==
                 value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
-
-
