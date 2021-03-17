@@ -134,14 +134,14 @@ class SeparatorZOData(UnitModelBlockData):
             self.deltaP_outlet = Var(
                 self.flowsheet().config.time,
                 initialize=1e4,
-                bounds=(1e-8, 1e8),
+                bounds=(-1e8, 1e8),
                 domain=Reals,
                 units=units_meta("pressure"),
                 doc="Pressure change between inlet and outlet")
             self.deltaP_waste = Var(
                 self.flowsheet().config.time,
                 initialize=1e4,
-                bounds=(1e-8, 1e8),
+                bounds=(-1e8, 1e8),
                 domain=Reals,
                 units=units_meta("pressure"),
                 doc="Pressure change between inlet and waste")
@@ -189,14 +189,14 @@ class SeparatorZOData(UnitModelBlockData):
                 @self.Constraint(self.flowsheet().config.time,
                                  doc="Outlet pressure equation")
                 def eq_outlet_pressure(b, t):
-                    return (b.inlet_state[t].pressure ==
-                            b.outlet_state[t].pressure + b.deltaP_outlet[t])
+                    return (b.inlet_state[t].pressure + b.deltaP_outlet[t] ==
+                            b.outlet_state[t].pressure)
 
                 @self.Constraint(self.flowsheet().config.time,
                                  doc="Waste pressure equation")
                 def eq_waste_pressure(b, t):
-                    return (b.inlet_state[t].pressure ==
-                            b.waste_state[t].pressure + b.deltaP_waste[t])
+                    return (b.inlet_state[t].pressure + b.deltaP_waste[t] ==
+                            b.waste_state[t].pressure)
             else:
                 @self.Constraint(self.flowsheet().config.time,
                                  doc="Isobaric outlet pressure")
