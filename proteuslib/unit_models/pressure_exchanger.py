@@ -159,6 +159,13 @@ class PressureExchangerData(UnitModelBlockData):
             balance_type=self.config.material_balance_type)
 
         if self.config.is_isothermal:
+            self.high_pressure_side.work = Var(
+                self.flowsheet().config.time,
+                bounds=(-1e8, 1e8),
+                domain=Reals,
+                initialize=0.0,
+                doc="Work transferred into control volume",
+                units=units_meta('power'))
             @self.high_pressure_side.Constraint(
                 self.flowsheet().config.time,
                 doc="Isothermal constraint")
@@ -187,7 +194,13 @@ class PressureExchangerData(UnitModelBlockData):
             balance_type=self.config.material_balance_type)
 
         if self.config.is_isothermal:
-            self.low_pressure_side.work = Var()
+            self.low_pressure_side.work = Var(
+                self.flowsheet().config.time,
+                bounds=(-1e8, 1e8),
+                domain=Reals,
+                initialize=0.0,
+                doc="Work transferred into control volume",
+                units=units_meta('power'))
             @self.low_pressure_side.Constraint(
                 self.flowsheet().config.time,
                 doc="Isothermal constraint")

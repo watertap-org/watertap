@@ -125,27 +125,29 @@ def test_default_build():
     assert number_total_constraints(m) == 32
     assert number_unused_variables(m) == 20  # vars from property package parameters
 
-# @pytest.mark.unit
-# def test_isothermal_build():
-#     m = ConcreteModel()
-#     m.fs = FlowsheetBlock(default={'dynamic': False})
-#     m.fs.properties = props.SeawaterParameterBlock()
-#     m.fs.unit = PressureExchanger(default={'property_package': m.fs.properties,
-#                                            'is_isothermal': True})
-#
-#     # test enthalpy balance excluded and isothermal constraint included
-#     cv_list = ['low_pressure_side', 'high_pressure_side']
-#     for cv_str in cv_list:
-#         assert hasattr(m.fs.unit, cv_str)
-#         cv = getattr(m.fs.unit, cv_str)
-#         assert not hasattr(cv, 'enthalpy_balances')
-#         assert hasattr(cv, 'isothermal_temperature')
-#         assert isinstance(cv.isothermal_temperature, Constraint)
-#
-#     # test statistics
-#     assert number_variables(m) == 74
-#     assert number_total_constraints(m) == 29
-#     assert number_unused_variables(m) == 26  # vars from property package parameters
+@pytest.mark.unit
+def test_isothermal_build():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={'dynamic': False})
+    m.fs.properties = props.SeawaterParameterBlock()
+    m.fs.unit = PressureExchanger(default={'property_package': m.fs.properties,
+                                           'is_isothermal': True})
+
+    # test enthalpy balance excluded and isothermal constraint and work variable included
+    cv_list = ['low_pressure_side', 'high_pressure_side']
+    for cv_str in cv_list:
+        assert hasattr(m.fs.unit, cv_str)
+        cv = getattr(m.fs.unit, cv_str)
+        assert not hasattr(cv, 'enthalpy_balances')
+        assert hasattr(cv, 'work')
+        assert isinstance(cv.work, Var)
+        assert hasattr(cv, 'isothermal_temperature')
+        assert isinstance(cv.isothermal_temperature, Constraint)
+
+    # test statistics
+    assert number_variables(m) == 73
+    assert number_total_constraints(m) == 28
+    assert number_unused_variables(m) == 26  # vars from property package parameters
 
 class TestPressureExchanger():
     @pytest.fixture(scope="class")
