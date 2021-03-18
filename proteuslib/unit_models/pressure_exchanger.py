@@ -147,9 +147,9 @@ class PressureExchangerData(UnitModelBlockData):
         self.work_transfer = Var(
             self.flowsheet().config.time,
             initialize=1,
-            bounds=(-1e6, 1e6),
+            bounds=(-1e8, 1e8),
             domain=Reals,
-            units=pyunits.dimensionless,
+            units=units_meta('power'),
             doc='Work transferred to low pressure side')
 
         # Build control volume for high pressure side
@@ -186,10 +186,10 @@ class PressureExchangerData(UnitModelBlockData):
         self.high_pressure_side.work_fluid = Var(
             self.flowsheet().config.time,
             initialize=1.0,
-            bounds=(-1e6, 1e6),
+            bounds=(-1e8, 1e8),
             domain=Reals,
-            doc='Work required to increase the pressure of the liquid',
-            units=units_meta('power'))
+            units = units_meta('power'),
+            doc='Work required to increase the pressure of the liquid')
 
         # Build control volume for high pressure side
         self.low_pressure_side = ControlVolume0DBlock(default={
@@ -221,10 +221,10 @@ class PressureExchangerData(UnitModelBlockData):
         self.low_pressure_side.work_fluid = Var(
             self.flowsheet().config.time,
             initialize=1.0,
-            bounds=(-1e6, 1e6),
+            bounds=(-1e8, 1e8),
             domain=Reals,
-            doc="Work required to increase the pressure of the liquid",
-            units=units_meta('power'))
+            units=units_meta('power'),
+            doc="Work required to increase the pressure of the liquid")
 
         # Add Ports
         self.add_inlet_port(name='high_pressure_inlet', block=self.high_pressure_side)
@@ -232,7 +232,7 @@ class PressureExchangerData(UnitModelBlockData):
         self.add_inlet_port(name='low_pressure_inlet', block=self.low_pressure_side)
         self.add_outlet_port(name='low_pressure_outlet', block=self.low_pressure_side)
 
-        # Performance equation
+        # Performance equations
         @self.high_pressure_side.Constraint(
             self.flowsheet().config.time,
             doc="Fluid work term")
@@ -265,108 +265,91 @@ class PressureExchangerData(UnitModelBlockData):
         def eq_equal_flow_vol(b, t):
             return (b.high_pressure_side.properties_in[t].flow_vol ==
                     b.low_pressure_side.properties_in[t].flow_vol)
-    #
-    # def initialize(
-    #         self,
-    #         state_args=None,
-    #         routine=None,
-    #         outlvl=idaeslog.NOTSET,
-    #         solver=None,
-    #         optarg={"tol": 1e-6}):
-    #     """
-    #     General wrapper for pressure changer initialization routines
-    #     Keyword Arguments:
-    #         routine : str stating which initialization routine to execute
-    #                     * None - currently no specialized routine for RO unit
-    #         state_args : a dict of arguments to be passed to the property
-    #                      package(s) to provide an initial state for
-    #                      initialization (see documentation of the specific
-    #                      property package) (default = {}).
-    #         outlvl : sets output level of initialization routine
-    #         optarg : solver options dictionary object (default={'tol': 1e-6})
-    #         solver : str indicating whcih solver to use during
-    #                  initialization (default = 'ipopt')
-    #     Returns:
-    #         None
-    #     """
-    #     # Get loggers
-    #     init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
-    #     solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="properties")
-    #
-    #     # Set solver and options
-    #     # TODO: clean up once IDAES new API for initialize solvers is released
-    #     if isinstance(solver, str):
-    #         opt = SolverFactory(solver)
-    #         opt.options = optarg
-    #     else:
-    #         if solver is None:
-    #             opt = get_default_solver()
-    #         else:
-    #             opt = solver
-    #             opt.options = optarg
-    #
-    #     # Solve simple unit
-    #     with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-    #         res = opt.solve(self, tee=slc.tee)
-    #     init_log.info_high(
-    #         "Initialized zero order separator.".format(idaeslog.condition(res)))
-    #
-    # def calculate_scaling_factors(self):
-    #     super().calculate_scaling_factors()
-    #
-    #     # scale variables
-    #     for (t, p, j), v in self.recovery_frac_phase_comp.items():
-    #         recovery_var = v
-    #         removal_var = self.removal_frac_phase_comp[t, p, j]
-    #         if (iscale.get_scaling_factor(recovery_var) is None
-    #                 and iscale.get_scaling_factor(removal_var) is None):
-    #             sf = iscale.get_scaling_factor(removal_var, default=1, warning=True)
-    #             iscale.set_scaling_factor(recovery_var, sf)
-    #             iscale.set_scaling_factor(removal_var, sf)
-    #         elif iscale.get_scaling_factor(recovery_var) is None:
-    #             sf = 1 / iscale.get_scaling_factor(removal_var)
-    #             iscale.set_scaling_factor(recovery_var, sf)
-    #         elif iscale.get_scaling_factor(removal_var) is None:
-    #             sf = 1 / iscale.get_scaling_factor(recovery_var)
-    #             iscale.set_scaling_factor(removal_var, sf)
-    #
-    #     for t, v in self.deltaP_outlet.items():
-    #         if iscale.get_scaling_factor(v) is None:
-    #             sf = iscale.get_scaling_factor(self.inlet_state[t].pressure)
-    #             sf = sf / 10
-    #             iscale.set_scaling_factor(v, sf)
-    #
-    #     for t, v in self.deltaP_waste.items():
-    #         if iscale.get_scaling_factor(v) is None:
-    #             sf = iscale.get_scaling_factor(self.inlet_state[t].pressure)
-    #             sf = sf / 10
-    #             iscale.set_scaling_factor(v, sf)
-    #
-    #     # transform constraints
-    #     for (t, p, j), c in self.eq_component_mass_balance.items():
-    #         sf = iscale.get_scaling_factor(self.inlet_state[t].get_material_flow_terms(p, j))
-    #         iscale.constraint_scaling_transform(c, sf)
-    #
-    #     for (t, p, j), c in self.eq_component_removal.items():
-    #         sf = iscale.get_scaling_factor(self.inlet_state[t].get_material_flow_terms(p, j))
-    #         iscale.constraint_scaling_transform(c, sf)
-    #
-    #     for (t, p, j), c in self.eq_removal_to_recovery.items():
-    #         sf = iscale.get_scaling_factor(self.removal_frac_phase_comp[t, p, j])
-    #         iscale.constraint_scaling_transform(c, sf)
-    #
-    #     for t, c in self.eq_outlet_temperature.items():
-    #         sf = iscale.get_scaling_factor(self.inlet_state[t].temperature)
-    #         iscale.constraint_scaling_transform(c, sf)
-    #
-    #     for t, c in self.eq_waste_temperature.items():
-    #         sf = iscale.get_scaling_factor(self.inlet_state[t].temperature)
-    #         iscale.constraint_scaling_transform(c, sf)
-    #
-    #     for t, c in self.eq_outlet_pressure.items():
-    #         sf = iscale.get_scaling_factor(self.inlet_state[t].pressure)
-    #         iscale.constraint_scaling_transform(c, sf)
-    #
-    #     for t, c in self.eq_waste_pressure.items():
-    #         sf = iscale.get_scaling_factor(self.inlet_state[t].pressure)
-    #         iscale.constraint_scaling_transform(c, sf)
+
+    def initialize(
+            self,
+            state_args=None,
+            routine=None,
+            outlvl=idaeslog.NOTSET,
+            solver=None,
+            optarg={"tol": 1e-6}):
+        """
+        General wrapper for pressure exchanger initialization routine
+        Keyword Arguments:
+            routine : str stating which initialization routine to execute
+                        * None - currently no specialized routine for RO unit
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for
+                         initialization (see documentation of the specific
+                         property package) (default = {}).
+            outlvl : sets output level of initialization routine
+            optarg : solver options dictionary object (default={'tol': 1e-6})
+            solver : str indicating whcih solver to use during
+                     initialization (default = 'ipopt')
+        Returns:
+            None
+        """
+        # Get loggers
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="properties")
+
+        # Set solver and options
+        # TODO: clean up once IDAES new API for initialize solvers is released
+        if isinstance(solver, str):
+            opt = SolverFactory(solver)
+            opt.options = optarg
+        else:
+            if solver is None:
+                opt = get_default_solver()
+            else:
+                opt = solver
+                opt.options = optarg
+
+        # Solve simple unit
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.info_high(
+            "Initialized pressure exchanger.".format(idaeslog.condition(res)))
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        # scale variables
+        if iscale.get_scaling_factor(self.efficiency_pressure_exchanger) is None:
+            # efficiency should always be between 0.1-1
+            iscale.set_scaling_factor(self.efficiency_pressure_exchanger, 1)
+
+        if iscale.get_scaling_factor(self.work_transfer) is None:
+            sf = iscale.get_scaling_factor(self.low_pressure_side.properties_in[0].flow_vol)
+            sf = sf * iscale.get_scaling_factor(self.low_pressure_side.deltaP[0])
+            iscale.set_scaling_factor(self.work_transfer, sf)
+
+        if iscale.get_scaling_factor(self.low_pressure_side.work_fluid) is None:
+            sf = iscale.get_scaling_factor(self.work_transfer)
+            iscale.set_scaling_factor(self.low_pressure_side.work_fluid, sf)
+
+        if iscale.get_scaling_factor(self.high_pressure_side.work_fluid) is None:
+            sf = iscale.get_scaling_factor(self.work_transfer)
+            iscale.set_scaling_factor(self.high_pressure_side.work_fluid, sf)
+
+        # transform constraints
+        if self.config.is_isothermal:
+            for t, c in self.low_pressure_side.isothermal_temperature.items():
+                sf = iscale.get_scaling_factor(self.low_pressure_side.properties_in[t].pressure)
+                iscale.constraint_scaling_transform(c, sf)
+
+            for t, c in self.high_pressure_side.isothermal_temperature.items():
+                sf = iscale.get_scaling_factor(self.high_pressure_side.properties_in[t].pressure)
+                iscale.constraint_scaling_transform(c, sf)
+
+        for t, c in self.low_pressure_side.eq_work_fluid.items():
+            sf = iscale.get_scaling_factor(self.work_transfer)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for t, c in self.high_pressure_side.eq_work_fluid.items():
+            sf = iscale.get_scaling_factor(self.work_transfer)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for t, c in self.eq_equal_flow_vol.items():
+            sf = iscale.get_scaling_factor(self.low_pressure_side.properties_in[t].flow_vol)
+            iscale.constraint_scaling_transform(c, sf)
