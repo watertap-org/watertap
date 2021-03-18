@@ -1,0 +1,12 @@
+# Types of files to ignore
+.*
+!/.gitignore
+*.pdf
+*.png
+
+# Directories to ignore categorically
+LSRRO_tests/trash/
+LSRRO_tests/output/
+LSRRO_tests/debugging_pack/
+old_tools/                                                                                                           
+
