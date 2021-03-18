@@ -386,6 +386,8 @@ class NaClStateBlockData(StateBlockData):
             self.params.component_list,
             initialize=0.1,
             bounds=(1e-8, 1),
+            #bounds=(1e-8, 0.26),
+            # bounds=(1e-8, 0.999),
             units=None,
             doc='mass fraction [unitless]')
 
@@ -525,10 +527,13 @@ class NaClStateBlockData(StateBlockData):
         def rule_enth_mass(b):  # specific enthalpy [J/kg]
             t = b.temperature / pyunits.degK - 273.15
             S = b.mass_frac_comp['NaCl']
+            P = b.pressure
             params = b.params.enth_mass_params
             h_w = params['A1'] + params['A2'] * t + params['A3'] * t ** 2 + params['A4'] * t ** 3
             h_sw = (h_w - (S * (params['B1'] + S) + S * (params['B2'] + S) * t))
-            return b.enth_mass == h_sw * pyunits.J * pyunits.kg**-1
+            return b.enth_mass == h_sw * pyunits.J * pyunits.kg ** -1
+            # h_pterm = b.pressure / b.dens_mass
+            # return b.enth_mass == h_sw * pyunits.J * pyunits.kg**-1 + h_pterm
         self.eq_enth_mass = Constraint(rule=rule_enth_mass)
 
     def _enth_flow(self):

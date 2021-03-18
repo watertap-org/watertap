@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 from pyomo.environ import (
-    Block, Constraint, Expression, Var, Param, NonNegativeReals, units as pyunits)
+    Block, Constraint, Expression, Var, Param, Reals, NonNegativeReals, units as pyunits)
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -117,7 +117,8 @@ def _make_vars(self):
                             domain=NonNegativeReals,
                             doc='Unit capital cost [$]')
     self.operating_cost = Var(initialize=1e5,
-                              domain=NonNegativeReals,
+                              domain=Reals,
+                              bounds=(0, 1e6),
                               doc='Operating cost [$/year]')
 
 
@@ -162,6 +163,9 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
     b_PC = self.parent_block()
     b_fs = b_PC.parent_block()
 
+    self.purchase_cost = Var()
+    self.cp_cost_eq = Constraint(expr=self.purchase_cost == 0)
+
     if pump_type == 'High pressure':
         # capital cost
         self.eq_capital_cost = Constraint(
@@ -183,5 +187,8 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                  / (b_cv_in.dens_mass / (pyunits.kg/pyunits.m**3)) * 3600) ** 0.58))
 
         # operating cost
-        self.operating_cost.fix(0)
-
+        self.operating_cost.setlb(-1e6)
+        self.eq_operating_cost = Constraint(
+            expr=self.operating_cost == (b_PC.work_mechanical[0] / pyunits.W
+                                         * 3600 * 24 * 365 * b_fs.costing_param.load_factor)
+                 * b_fs.costing_param.electricity_cost / 3600 / 1000)
