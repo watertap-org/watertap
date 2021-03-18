@@ -4,4 +4,8 @@
 *.pdf
 *.png
 
-old_tools/
+# Directories to ignore categorically
+tools/LSRRO_tests/trash/
+tools/LSRRO_tests/output/
+tools/LSRRO_tests/debugging_pack/
+tools/old_tools/
