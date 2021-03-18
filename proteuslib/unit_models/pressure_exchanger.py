@@ -95,15 +95,15 @@ class PressureExchangerData(UnitModelBlockData):
     **MomentumBalanceType.momentumTotal** - single momentum balance for material,
     **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("is_isothermal", ConfigValue(
-        default=True,
+        default=False,
         domain=In([True, False]),
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-        constructed,
+        description="Isothermal construction flag",
+        doc="""Indicates whether isothermal constraint should be included and 
+        enthalpy balance should be excluded,
         **default** - False.
         **Valid values:** {
-        **True** - include pressure change terms,
-        **False** - exclude pressure change terms.}"""))
+        **True** - include isothermal constraint and exclude enthalpy balance,
+        **False** - default enthalpy balance}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -347,6 +347,14 @@ class PressureExchangerData(UnitModelBlockData):
             iscale.constraint_scaling_transform(c, sf)
 
         for t, c in self.high_pressure_side.eq_work_fluid.items():
+            sf = iscale.get_scaling_factor(self.work_transfer)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for t, c in self.eq_work_transfer_low_pressure.items():
+            sf = iscale.get_scaling_factor(self.work_transfer)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for t, c in self.eq_work_transfer_high_pressure.items():
             sf = iscale.get_scaling_factor(self.work_transfer)
             iscale.constraint_scaling_transform(c, sf)
 
