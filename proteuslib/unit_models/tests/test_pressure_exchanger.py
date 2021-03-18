@@ -80,22 +80,18 @@ def test_default_build():
     # test unit variables
     assert hasattr(m.fs.unit, 'efficiency_pressure_exchanger')
     assert isinstance(m.fs.unit.efficiency_pressure_exchanger, Var)
-    assert hasattr(m.fs.unit, 'work_transfer')
-    assert isinstance(m.fs.unit.work_transfer, Var)
 
     # test unit constraints
-    unit_cons_lst = ['eq_work_transfer_low_pressure',
-                     'eq_work_transfer_high_pressure',
-                     'eq_equal_flow_vol']
+    unit_cons_lst = ['eq_work_transfer', 'eq_equal_flow_vol']
     for c in unit_cons_lst:
         assert hasattr(m.fs.unit, c)
         con = getattr(m.fs.unit, c)
         assert isinstance(con, Constraint)
 
-    # test control volumes, only terms added or directly used by pressure exchanger
+    # test control volumes, only terms directly used by pressure exchanger
     cv_list = ['low_pressure_side', 'high_pressure_side']
-    cv_var_lst = ['deltaP', 'work_fluid']
-    cv_con_lst = ['eq_work_fluid']
+    cv_var_lst = ['deltaP', 'work']
+    cv_con_lst = ['eq_work']
     for cv_str in cv_list:
         assert hasattr(m.fs.unit, cv_str)
         cv = getattr(m.fs.unit, cv_str)
@@ -125,31 +121,31 @@ def test_default_build():
                 assert isinstance(sb_exp, Expression)
 
     # test statistics
-    assert number_variables(m) == 78
-    assert number_total_constraints(m) == 33
+    assert number_variables(m) == 77
+    assert number_total_constraints(m) == 32
     assert number_unused_variables(m) == 20  # vars from property package parameters
 
-@pytest.mark.unit
-def test_isothermal_build():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={'dynamic': False})
-    m.fs.properties = props.SeawaterParameterBlock()
-    m.fs.unit = PressureExchanger(default={'property_package': m.fs.properties,
-                                           'is_isothermal': True})
-
-    # test enthalpy balance excluded and isothermal constraint included
-    cv_list = ['low_pressure_side', 'high_pressure_side']
-    for cv_str in cv_list:
-        assert hasattr(m.fs.unit, cv_str)
-        cv = getattr(m.fs.unit, cv_str)
-        assert not hasattr(cv, 'enthalpy_balances')
-        assert hasattr(cv, 'isothermal_temperature')
-        assert isinstance(cv.isothermal_temperature, Constraint)
-
-    # test statistics
-    assert number_variables(m) == 74
-    assert number_total_constraints(m) == 29
-    assert number_unused_variables(m) == 26  # vars from property package parameters
+# @pytest.mark.unit
+# def test_isothermal_build():
+#     m = ConcreteModel()
+#     m.fs = FlowsheetBlock(default={'dynamic': False})
+#     m.fs.properties = props.SeawaterParameterBlock()
+#     m.fs.unit = PressureExchanger(default={'property_package': m.fs.properties,
+#                                            'is_isothermal': True})
+#
+#     # test enthalpy balance excluded and isothermal constraint included
+#     cv_list = ['low_pressure_side', 'high_pressure_side']
+#     for cv_str in cv_list:
+#         assert hasattr(m.fs.unit, cv_str)
+#         cv = getattr(m.fs.unit, cv_str)
+#         assert not hasattr(cv, 'enthalpy_balances')
+#         assert hasattr(cv, 'isothermal_temperature')
+#         assert isinstance(cv.isothermal_temperature, Constraint)
+#
+#     # test statistics
+#     assert number_variables(m) == 74
+#     assert number_total_constraints(m) == 29
+#     assert number_unused_variables(m) == 26  # vars from property package parameters
 
 class TestPressureExchanger():
     @pytest.fixture(scope="class")
@@ -203,7 +199,9 @@ class TestPressureExchanger():
 
     @pytest.mark.component
     def test_initialize(self, unit_frame):
-        initialization_tester(unit_frame)
+        kwargs = {'solver': solver,
+                  'optarg': {'nlp_scaling_method': 'user-scaling'}}
+        initialization_tester(unit_frame, **kwargs)
 
     @pytest.mark.component
     def test_var_scaling(self, unit_frame):
@@ -238,10 +236,8 @@ class TestPressureExchanger():
         assert (pytest.approx(4.654e6, rel=1e-3) ==
                 value(m.fs.unit.low_pressure_side.deltaP[0]))
         assert (pytest.approx(4.654e3, rel=1e-3) ==
-                value(m.fs.unit.low_pressure_side.work_fluid[0]))
+                value(m.fs.unit.low_pressure_side.work[0]))
         assert (pytest.approx(-4.899e6, rel=1e-3) ==
                 value(m.fs.unit.high_pressure_side.deltaP[0]))
         assert (pytest.approx(-4.899e3, rel=1e-3) ==
-                value(m.fs.unit.high_pressure_side.work_fluid[0]))
-        assert (pytest.approx(4.654e3, rel=1e-3) ==
-                value(m.fs.unit.work_transfer[0]))
+                value(m.fs.unit.high_pressure_side.work[0]))

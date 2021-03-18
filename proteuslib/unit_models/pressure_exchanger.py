@@ -144,13 +144,6 @@ class PressureExchangerData(UnitModelBlockData):
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc='Pressure exchanger efficiency')
-        self.work_transfer = Var(
-            self.flowsheet().config.time,
-            initialize=1,
-            bounds=(-1e8, 1e8),
-            domain=Reals,
-            units=units_meta('power'),
-            doc='Work transferred to low pressure side')
 
         # Build control volume for high pressure side
         self.high_pressure_side = ControlVolume0DBlock(default={
@@ -173,25 +166,14 @@ class PressureExchangerData(UnitModelBlockData):
                 return b.properties_in[t].temperature == b.properties_out[t].temperature
         else:
             self.high_pressure_side.add_energy_balances(
-                balance_type=self.config.energy_balance_type)
-
-        if not self.config.is_isothermal:
-            self.high_pressure_side.add_energy_balances(
-                balance_type=self.config.energy_balance_type)
+                balance_type=self.config.energy_balance_type,
+                has_work_transfer=True)
 
         self.high_pressure_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=True)
 
-        self.high_pressure_side.work_fluid = Var(
-            self.flowsheet().config.time,
-            initialize=1.0,
-            bounds=(-1e8, 1e8),
-            domain=Reals,
-            units = units_meta('power'),
-            doc='Work required to increase the pressure of the liquid')
-
-        # Build control volume for high pressure side
+        # Build control volume for low pressure side
         self.low_pressure_side = ControlVolume0DBlock(default={
             "dynamic": False,
             "has_holdup": False,
@@ -205,6 +187,7 @@ class PressureExchangerData(UnitModelBlockData):
             balance_type=self.config.material_balance_type)
 
         if self.config.is_isothermal:
+            self.low_pressure_side.work = Var()
             @self.low_pressure_side.Constraint(
                 self.flowsheet().config.time,
                 doc="Isothermal constraint")
@@ -212,19 +195,12 @@ class PressureExchangerData(UnitModelBlockData):
                 return b.properties_in[t].temperature == b.properties_out[t].temperature
         else:
             self.low_pressure_side.add_energy_balances(
-                balance_type=self.config.energy_balance_type)
+                balance_type=self.config.energy_balance_type,
+                has_work_transfer=True)
 
         self.low_pressure_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=True)
-
-        self.low_pressure_side.work_fluid = Var(
-            self.flowsheet().config.time,
-            initialize=1.0,
-            bounds=(-1e8, 1e8),
-            domain=Reals,
-            units=units_meta('power'),
-            doc="Work required to increase the pressure of the liquid")
 
         # Add Ports
         self.add_inlet_port(name='high_pressure_inlet', block=self.high_pressure_side)
@@ -235,29 +211,22 @@ class PressureExchangerData(UnitModelBlockData):
         # Performance equations
         @self.high_pressure_side.Constraint(
             self.flowsheet().config.time,
-            doc="Fluid work term")
-        def eq_work_fluid(b, t):
-            return b.work_fluid[t] == b.properties_out[t].flow_vol * b.deltaP[t]
+            doc="Work term")
+        def eq_work(b, t):
+            return b.work[t] == b.properties_out[t].flow_vol * b.deltaP[t]
 
         @self.low_pressure_side.Constraint(
             self.flowsheet().config.time,
-            doc="Fluid work term")
-        def eq_work_fluid(b, t):
-            return b.work_fluid[t] == b.properties_out[t].flow_vol * b.deltaP[t]
+            doc="Work term")
+        def eq_work(b, t):
+            return b.work[t] == b.properties_out[t].flow_vol * b.deltaP[t]
 
         @self.Constraint(
             self.flowsheet().config.time,
-            doc="Work transfer from high pressure side")
-        def eq_work_transfer_high_pressure(b, t):
-            return (b.work_transfer[t] ==
-                    b.efficiency_pressure_exchanger[t]
-                    * -b.high_pressure_side.work_fluid[t])
-
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="Work transfer to low pressure side")
-        def eq_work_transfer_low_pressure(b, t):
-            return b.work_transfer[t] == b.low_pressure_side.work_fluid[t]
+            doc="Work transfer efficiency")
+        def eq_work_transfer(b, t):
+            return (b.low_pressure_side.work[t] ==
+                    b.efficiency_pressure_exchanger[t] * -b.high_pressure_side.work[t])
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -319,18 +288,15 @@ class PressureExchangerData(UnitModelBlockData):
             # efficiency should always be between 0.1-1
             iscale.set_scaling_factor(self.efficiency_pressure_exchanger, 1)
 
-        if iscale.get_scaling_factor(self.work_transfer) is None:
+        if iscale.get_scaling_factor(self.low_pressure_side.work) is None:
             sf = iscale.get_scaling_factor(self.low_pressure_side.properties_in[0].flow_vol)
             sf = sf * iscale.get_scaling_factor(self.low_pressure_side.deltaP[0])
-            iscale.set_scaling_factor(self.work_transfer, sf)
+            iscale.set_scaling_factor(self.low_pressure_side.work, sf)
 
-        if iscale.get_scaling_factor(self.low_pressure_side.work_fluid) is None:
-            sf = iscale.get_scaling_factor(self.work_transfer)
-            iscale.set_scaling_factor(self.low_pressure_side.work_fluid, sf)
-
-        if iscale.get_scaling_factor(self.high_pressure_side.work_fluid) is None:
-            sf = iscale.get_scaling_factor(self.work_transfer)
-            iscale.set_scaling_factor(self.high_pressure_side.work_fluid, sf)
+        if iscale.get_scaling_factor(self.high_pressure_side.work) is None:
+            sf = iscale.get_scaling_factor(self.high_pressure_side.properties_in[0].flow_vol)
+            sf = sf * iscale.get_scaling_factor(self.high_pressure_side.deltaP[0])
+            iscale.set_scaling_factor(self.high_pressure_side.work, sf)
 
         # transform constraints
         if self.config.is_isothermal:
@@ -342,20 +308,16 @@ class PressureExchangerData(UnitModelBlockData):
                 sf = iscale.get_scaling_factor(self.high_pressure_side.properties_in[t].pressure)
                 iscale.constraint_scaling_transform(c, sf)
 
-        for t, c in self.low_pressure_side.eq_work_fluid.items():
-            sf = iscale.get_scaling_factor(self.work_transfer)
+        for t, c in self.low_pressure_side.eq_work.items():
+            sf = iscale.get_scaling_factor(self.low_pressure_side.work[t])
             iscale.constraint_scaling_transform(c, sf)
 
-        for t, c in self.high_pressure_side.eq_work_fluid.items():
-            sf = iscale.get_scaling_factor(self.work_transfer)
+        for t, c in self.high_pressure_side.eq_work.items():
+            sf = iscale.get_scaling_factor(self.high_pressure_side.work[t])
             iscale.constraint_scaling_transform(c, sf)
 
-        for t, c in self.eq_work_transfer_low_pressure.items():
-            sf = iscale.get_scaling_factor(self.work_transfer)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for t, c in self.eq_work_transfer_high_pressure.items():
-            sf = iscale.get_scaling_factor(self.work_transfer)
+        for t, c in self.eq_work_transfer.items():
+            sf = iscale.get_scaling_factor(self.low_pressure_side.work)
             iscale.constraint_scaling_transform(c, sf)
 
         for t, c in self.eq_equal_flow_vol.items():
