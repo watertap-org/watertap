@@ -12,7 +12,7 @@
 ##############################################################################
 
 # Import Pyomo libraries
-from pyomo.environ import Var, Constraint, Param, Expression, SolverFactory, \
+from pyomo.environ import Var, Constraint, Set, Param, Expression, SolverFactory, \
     TerminationCondition, Suffix, NonNegativeReals, units as pyunits, Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -25,15 +25,15 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.misc import add_object_reference
+from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("RO_0D")
-class ROData(UnitModelBlockData):
+@declare_process_block_class("ReverseOsmosis0D")
+class ReverseOsmosisData(UnitModelBlockData):
     """
     Standard RO Unit Model Class:
     - zero dimensional model
@@ -127,45 +127,75 @@ class ROData(UnitModelBlockData):
 
     def build(self):
         # Call UnitModel.build to setup dynamics
-        super(ROData, self).build()
+        super().build()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
+        if (len(self.config.property_package.phase_list) > 1
+                or 'Liq' not in [p for p in self.config.property_package.phase_list]):
+            raise ConfigurationError(
+                "RO model only supports one liquid phase ['Liq'],"
+                "the property package has specified the following phases {}"
+                    .format([p for p in self.config.property_package.phase_list]))
+
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
+        # TODO: update IDAES such that solvent and solute lists are automatically created on the parameter block
+        self.solvent_list = Set()
+        self.solute_list = Set()
+        for c in self.config.property_package.component_list:
+            comp = self.config.property_package.get_component(c)
+            try:
+                if comp.is_solvent():
+                    self.solvent_list.add(c)
+                if comp.is_solute():
+                    self.solute_list.add(c)
+            except TypeError:
+                raise ConfigurationError("RO model only supports one solvent and one or more solutes,"
+                                         "the provided property package has specified a component '{}' "
+                                         "that is not a solvent or solute".format(c))
+        if len(self.solvent_list) > 1:
+            raise ConfigurationError("RO model only supports one solvent component,"
+                                     "the provided property package has specified {} solvent components"
+                                     .format(len(self.solvent_list)))
+
         # Add unit parameters
-        self.A = Var(
+        self.A_comp = Var(
             self.flowsheet().config.time,
+            self.solvent_list,
             initialize=1e-12,
             bounds=(1e-18, 1e-6),
             domain=NonNegativeReals,
             units=units_meta('length')*units_meta('pressure')**-1*units_meta('time')**-1,
-            doc='Water permeability coeff.')
-        self.B = Var(
+            doc='Solvent permeability coeff.')
+        self.B_comp = Var(
             self.flowsheet().config.time,
+            self.solute_list,
             initialize=1e-8,
             bounds=(1e-11, 1e-5),
             domain=NonNegativeReals,
             units=units_meta('length')*units_meta('time')**-1,
-            doc='Salt permeability coeff.')
-        self.dens_H2O = Param(
+            doc='Solute permeability coeff.')
+        self.dens_solvent = Param(
             initialize=1000,
             units=units_meta('mass')*units_meta('length')**-3,
             doc='Pure water density')
 
         # Add unit variables
-        self.flux_mass_comp_in = Var(
+        self.flux_mass_phase_comp_in = Var(
             self.flowsheet().config.time,
+            self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=1e-3,
-            bounds=(1e-8, 1e6),
+            bounds=(1e-10, 1e6),
             units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Flux at feed inlet')
-        self.flux_mass_comp_out = Var(
+        self.flux_mass_phase_comp_out = Var(
             self.flowsheet().config.time,
+            self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=1e-3,
-            bounds=(1e-8, 1e6),
+            bounds=(1e-10, 1e6),
             units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Flux at feed outlet')
         self.area = Var(
@@ -219,10 +249,9 @@ class ROData(UnitModelBlockData):
             self.deltaP = Reference(self.feed_side.deltaP)
 
         # mass transfer
-        # redundant, but useful to have on RO block, reference doesn't work with units at the moment
-        # self.mass_transfer_comp = Reference(self.feed_side.mass_transfer_term[:, 'Liq', :])
-        self.mass_transfer_comp = Var(
+        self.mass_transfer_phase_comp = Var(
             self.flowsheet().config.time,
+            self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=1,
             bounds=(1e-8, 1e6),
@@ -231,65 +260,73 @@ class ROData(UnitModelBlockData):
             doc='Mass transfer to permeate')
 
         @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Mass transfer term")
-        def eq_mass_transfer_term(b, t, j):
-            return b.mass_transfer_comp[t, j] == -b.feed_side.mass_transfer_term[t, 'Liq', j]
+        def eq_mass_transfer_term(self, t, p, j):
+            return self.mass_transfer_phase_comp[t, p, j] == -self.feed_side.mass_transfer_term[t, p, j]
 
         # RO performance equations
         @self.Expression(self.flowsheet().config.time,
+                         self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Average flux expression")
-        def flux_mass_comp_avg(b, t, j):
-            return 0.5 * (b.flux_mass_comp_in[t, j] + b.flux_mass_comp_out[t, j])
+        def flux_mass_phase_comp_avg(b, t, p, j):
+            return 0.5 * (b.flux_mass_phase_comp_in[t, p, j] + b.flux_mass_phase_comp_out[t, p, j])
 
         @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Permeate production")
-        def eq_permeate_production(b, t, j):
-            return b.properties_permeate[t].flow_mass_comp[j] == b.area * b.flux_mass_comp_avg[t, j]
+        def eq_permeate_production(b, t, p, j):
+            return (b.properties_permeate[t].get_material_flow_terms(p, j)
+                    == b.area * b.flux_mass_phase_comp_avg[t, p, j])
 
         @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Inlet water and salt flux")
-        def eq_flux_in(b, t, j):
+        def eq_flux_in(b, t, p, j):
             prop_feed = b.feed_side.properties_in[t]
             prop_perm = b.properties_permeate[t]
-            if j == 'H2O':
-                return (b.flux_mass_comp_in[t, j] == b.A[t] * b.dens_H2O
+            comp = self.config.property_package.get_component(j)
+            if comp.is_solvent():
+                return (b.flux_mass_phase_comp_in[t, p, j] == b.A_comp[t, j] * b.dens_solvent
                         * ((prop_feed.pressure - prop_perm.pressure)
                            - (prop_feed.pressure_osm - prop_perm.pressure_osm)))
-            elif j == 'NaCl':
-                return (b.flux_mass_comp_in[t, j] == b.B[t]
-                        * (prop_feed.conc_mass_comp[j] - prop_perm.conc_mass_comp[j]))
+            elif comp.is_solute():
+                return (b.flux_mass_phase_comp_in[t, p, j] == b.B_comp[t, j]
+                        * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j]))
 
         @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Outlet water and salt flux")
-        def eq_flux_out(b, t, j):
+        def eq_flux_out(b, t, p, j):
             prop_feed = b.feed_side.properties_out[t]
             prop_perm = b.properties_permeate[t]
-            if j == 'H2O':
-                return (b.flux_mass_comp_out[t, j] == b.A[t] * b.dens_H2O
+            comp = self.config.property_package.get_component(j)
+            if comp.is_solvent():
+                return (b.flux_mass_phase_comp_out[t, p, j] == b.A_comp[t, j] * b.dens_solvent
                         * ((prop_feed.pressure - prop_perm.pressure)
                            - (prop_feed.pressure_osm - prop_perm.pressure_osm)))
-            elif j == 'NaCl':
-                return (b.flux_mass_comp_out[t, j] == b.B[t]
-                        * (prop_feed.conc_mass_comp[j] - prop_perm.conc_mass_comp[j]))
+            elif comp.is_solute():
+                return (b.flux_mass_phase_comp_out[t, p, j] == b.B_comp[t, j]
+                        * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j]))
 
         # Feed and permeate-side connection
         @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Mass transfer from feed to permeate")
-        def eq_connect_mass_transfer(b, t, j):
-            return b.properties_permeate[t].flow_mass_comp[j] == -b.feed_side.mass_transfer_term[t, 'Liq', j]
+        def eq_connect_mass_transfer(b, t, p, j):
+            return (b.properties_permeate[t].get_material_flow_terms(p, j)
+                    == -b.feed_side.mass_transfer_term[t, p, j])
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="Enthalpy transfer from feed to permeate")
         def eq_connect_enthalpy_transfer(b, t):
-            return (sum(b.properties_permeate[t].flow_mass_comp[j]
-                        for j in b.config.property_package.component_list)
-                    * b.properties_permeate[t].enth_mass
+            return (b.properties_permeate[t].get_enthalpy_flow_terms('Liq')
                     == -b.feed_side.enthalpy_transfer[t])
 
         @self.Constraint(self.flowsheet().config.time,
@@ -302,22 +339,19 @@ class ROData(UnitModelBlockData):
     def initialize(
             blk,
             state_args=None,
-            routine=None,
             outlvl=idaeslog.NOTSET,
             solver="ipopt",
             optarg={"tol": 1e-6}):
         """
         General wrapper for pressure changer initialization routines
         Keyword Arguments:
-            routine : str stating which initialization routine to execute
-                        * None - currently no specialized routine for RO unit
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
         Returns:
             None
@@ -325,6 +359,7 @@ class ROData(UnitModelBlockData):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver options
+        # TODO: update with new initialization solver API for IDAES
         opt = SolverFactory(solver)
         opt.options = optarg
 
@@ -397,46 +432,47 @@ class ROData(UnitModelBlockData):
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
-        if iscale.get_scaling_factor(self.A) is None:
-            iscale.set_scaling_factor(self.A, 1e12)
+        if iscale.get_scaling_factor(self.A_comp) is None:
+            iscale.set_scaling_factor(self.A_comp, 1e12)
 
-        if iscale.get_scaling_factor(self.B) is None:
-            iscale.set_scaling_factor(self.B, 1e8)
+        if iscale.get_scaling_factor(self.B_comp) is None:
+            iscale.set_scaling_factor(self.B_comp, 1e8)
 
-        if iscale.get_scaling_factor(self.dens_H2O) is None:
-            iscale.set_scaling_factor(self.dens_H2O, self.feed_side.properties_in[0].scaling_factor[
-                        self.feed_side.properties_in[0].dens_mass])
+        if iscale.get_scaling_factor(self.dens_solvent) is None:
+            sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].dens_mass_phase['Liq'])
+            iscale.set_scaling_factor(self.dens_solvent, sf)
 
-        for vobj in [self.flux_mass_comp_in, self.flux_mass_comp_out]:
-            for ind, v in vobj.items():
-                t = ind[0]  # time
-                j = ind[1]  # component
+        for vobj in [self.flux_mass_phase_comp_in, self.flux_mass_phase_comp_out]:
+            for (t, p, j), v in vobj.items():
                 if iscale.get_scaling_factor(v) is None:
-                    if j == 'H2O':  # scaling based on water flux equation
-                        sf = (iscale.get_scaling_factor(self.A[t])
-                              * iscale.get_scaling_factor(self.dens_H2O)
+                    comp = self.config.property_package.get_component(j)
+                    if comp.is_solvent():  # scaling based on solvent flux equation
+                        sf = (iscale.get_scaling_factor(self.A_comp[t, j])
+                              * iscale.get_scaling_factor(self.dens_solvent)
                               * iscale.get_scaling_factor(self.feed_side.properties_in[t].pressure))
                         iscale.set_scaling_factor(v, sf)
-                    elif j == 'NaCl':  # scaling based on salt flux equation
-                        sf = (iscale.get_scaling_factor(self.B[t])
-                              * iscale.get_scaling_factor(self.feed_side.properties_in[t].conc_mass_comp[j]))
+                    elif comp.is_solute():  # scaling based on solute flux equation
+                        sf = (iscale.get_scaling_factor(self.B_comp[t, j])
+                              * iscale.get_scaling_factor(self.feed_side.properties_in[t].conc_mass_phase_comp[p, j]))
                         iscale.set_scaling_factor(v, sf)
 
         for (t, p, j), v in self.feed_side.mass_transfer_term.items():
             if iscale.get_scaling_factor(v) is None:
-                sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].flow_mass_comp[j])
-                if j == 'NaCl':
+                sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].get_material_flow_terms(p, j))
+                comp = self.config.property_package.get_component(j)
+                if comp.is_solute:
                     sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
                 iscale.set_scaling_factor(v, sf)
 
-        for (t, j), v in self.mass_transfer_comp.items():
+        for (t, p, j), v in self.mass_transfer_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
-                sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].flow_mass_comp[j])
-                if j == 'NaCl':
+                sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].get_material_flow_terms(p, j))
+                comp = self.config.property_package.get_component(j)
+                if comp.is_solute:
                     sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
                 iscale.set_scaling_factor(v, sf)
 
-        # TODO: update control volume to automatically provide scaling factors for mass_transfer and enthalpy_transfer
+        # TODO: update IDAES control volume to scale mass_transfer and enthalpy_transfer
         for ind, v in self.feed_side.mass_transfer_term.items():
             (t, p, j) = ind
             if iscale.get_scaling_factor(v) is None:
@@ -445,37 +481,36 @@ class ROData(UnitModelBlockData):
 
         for t, v in self.feed_side.enthalpy_transfer.items():
             if iscale.get_scaling_factor(v) is None:
-                sf = (iscale.get_scaling_factor(self.feed_side.properties_in[t].flow_mass_comp['H2O'])
-                      * iscale.get_scaling_factor(self.feed_side.properties_in[t].enth_mass))
+                sf = (iscale.get_scaling_factor(self.feed_side.properties_in[t].enth_flow))
                 iscale.set_scaling_factor(v, sf)
                 iscale.constraint_scaling_transform(self.feed_side.enthalpy_balances[t], sf)
 
         # transforming constraints
         for ind, c in self.eq_mass_transfer_term.items():
-            iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
-                self.mass_transfer_comp[ind]))
+            sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
+            iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_permeate_production.items():
-            iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
-                self.mass_transfer_comp[ind]))
+            sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
+            iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_flux_in.items():
-            iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
-                self.flux_mass_comp_in[ind]))
+            sf = iscale.get_scaling_factor(self.flux_mass_phase_comp_in[ind])
+            iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_flux_out.items():
-            iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
-                self.flux_mass_comp_out[ind]))
+            sf = iscale.get_scaling_factor(self.flux_mass_phase_comp_out[ind])
+            iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_connect_mass_transfer.items():
-            iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
-                self.mass_transfer_comp[ind]))
+            sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
+            iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_connect_enthalpy_transfer.items():
-            iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
-                self.feed_side.enthalpy_transfer[ind]))
+            sf = iscale.get_scaling_factor(self.feed_side.enthalpy_transfer[ind])
+            iscale.constraint_scaling_transform(c, sf)
 
         for t, c in self.eq_permeate_isothermal.items():
-            iscale.constraint_scaling_transform(c,iscale.get_scaling_factor(
-                self.feed_side.properties_in[t].temperature))
+            sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].temperature)
+            iscale.constraint_scaling_transform(c, sf)
 
