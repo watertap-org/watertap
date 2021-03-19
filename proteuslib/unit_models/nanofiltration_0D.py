@@ -145,21 +145,20 @@ class NFData(UnitModelBlockData):
         self.solvent_list = Set()
         self.solute_list = Set()
         for c in self.config.property_package.component_list:
-            comp = getattr(self.config.property_package, c)
-            if comp.is_solvent():
-                self.solvent_list.add(c)
-            if comp.is_solute():
-                self.solute_list.add(c)
-
+            comp = self.config.property_package.get_component(c)
+            try:
+                if comp.is_solvent():
+                    self.solvent_list.add(c)
+                if comp.is_solute():
+                    self.solute_list.add(c)
+            except TypeError:
+                raise ConfigurationError("NF model only supports one solvent and one or more solutes,"
+                                         "the provided property package has specified a component '{}' "
+                                         "that is not a solvent or solute".format(c))
         if len(self.solvent_list) > 1:
-            ConfigurationError("NF model only supports one solvent component,"
-                               "the provided property package has specified {} solvent components"
-                               .format(len(self.solvent_list)))
-
-        if len(self.solute_list) > 1:
-            ConfigurationError("NF model only supports one solute component,"
-                               "the provided property package has specified {} solute components"
-                               .format(len(self.solute_list)))
+            raise ConfigurationError("NF model only supports one solvent component,"
+                                     "the provided property package has specified {} solvent components"
+                                     .format(len(self.solvent_list)))
 
         # Add unit parameters
         self.A_comp = Var(
@@ -316,7 +315,7 @@ class NFData(UnitModelBlockData):
         def eq_flux_in(b, t, p, j):
             prop_feed = b.feed_side.properties_in[t]
             prop_perm = b.properties_permeate[t]
-            comp = getattr(b.config.property_package, j)
+            comp = self.config.property_package.get_component(j)
             if comp.is_solvent():
                 return (b.flux_mass_phase_comp_in[t, p, j] == b.A_comp[t, j] * b.dens_solvent
                         * ((prop_feed.pressure - prop_perm.pressure)
@@ -338,7 +337,7 @@ class NFData(UnitModelBlockData):
         def eq_flux_out(b, t, p, j):
             prop_feed = b.feed_side.properties_out[t]
             prop_perm = b.properties_permeate[t]
-            comp = getattr(b.config.property_package, j)
+            comp = self.config.property_package.get_component(j)
             if comp.is_solvent():
                 return (b.flux_mass_phase_comp_out[t, p, j] == b.A_comp[t, j] * b.dens_solvent
                         * ((prop_feed.pressure - prop_perm.pressure)
@@ -401,15 +400,12 @@ class NFData(UnitModelBlockData):
     def initialize(
             blk,
             state_args=None,
-            routine=None,
             outlvl=idaeslog.NOTSET,
             solver="ipopt",
             optarg={"tol": 1e-6}):
         """
         General wrapper for pressure changer initialization routines
         Keyword Arguments:
-            routine : str stating which initialization routine to execute
-                        * None - currently no specialized routine for NF unit
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
@@ -513,7 +509,7 @@ class NFData(UnitModelBlockData):
         for vobj in [self.flux_mass_phase_comp_in, self.flux_mass_phase_comp_out]:
             for (t, p, j), v in vobj.items():
                 if iscale.get_scaling_factor(v) is None:
-                    comp = getattr(self.config.property_package, j)
+                    comp = self.config.property_package.get_component(j)
                     if comp.is_solvent():  # scaling based on solvent flux equation
                         sf = (iscale.get_scaling_factor(self.A_comp[t, j])
                               * iscale.get_scaling_factor(self.dens_solvent)
@@ -533,7 +529,7 @@ class NFData(UnitModelBlockData):
         for (t, p, j), v in self.feed_side.mass_transfer_term.items():
             if iscale.get_scaling_factor(v) is None:
                 sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].get_material_flow_terms(p, j))
-                comp = getattr(self.config.property_package, j)
+                comp = self.config.property_package.get_component(j)
                 if comp.is_solute:
                     sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
                 iscale.set_scaling_factor(v, sf)
@@ -541,7 +537,7 @@ class NFData(UnitModelBlockData):
         for (t, p, j), v in self.mass_transfer_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].get_material_flow_terms(p, j))
-                comp = getattr(self.config.property_package, j)
+                comp = self.config.property_package.get_component(j)
                 if comp.is_solute:
                     sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
                 iscale.set_scaling_factor(v, sf)

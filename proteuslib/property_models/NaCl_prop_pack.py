@@ -575,7 +575,9 @@ class NaClStateBlockData(StateBlockData):
             iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'NaCl'], sf)
 
         # scaling factors for parameters
-        iscale.set_scaling_factor(self.params.mw_comp, 1e-1)
+        for j, v in self.params.mw_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(self.params.mw_comp, 1e-1)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor

@@ -46,7 +46,6 @@ from pyomo.util.check_units import assert_units_consistent, assert_units_equival
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_default_solver()
-solver.options["nlp_scaling_method"] = "user-scaling"
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
@@ -296,7 +295,7 @@ class TestNaClPropPack():
         m = frame
         assert (degrees_of_freedom(m) == 0)
 
-    @pytest.mark.solver
+
     @pytest.mark.component
     def test_solve(self, frame):
         m = frame
@@ -308,7 +307,6 @@ class TestNaClPropPack():
                TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.solver
     @pytest.mark.component
     def test_solution(self, frame):
         m = frame
