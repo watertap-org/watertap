@@ -297,9 +297,6 @@ class ReverseOsmosisData(UnitModelBlockData):
             elif comp.is_solute():
                 return (b.flux_mass_phase_comp_in[t, p, j] == b.B_comp[t, j]
                         * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j]))
-            else:
-                b.flux_mass_phase_comp_in[t, p, j].fix(0)
-                return Constraint.Skip
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
@@ -316,9 +313,6 @@ class ReverseOsmosisData(UnitModelBlockData):
             elif comp.is_solute():
                 return (b.flux_mass_phase_comp_out[t, p, j] == b.B_comp[t, j]
                         * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j]))
-            else:
-                b.flux_mass_phase_comp_in[t, p, j].fix(0)
-                return Constraint.Skip
 
         # Feed and permeate-side connection
         @self.Constraint(self.flowsheet().config.time,

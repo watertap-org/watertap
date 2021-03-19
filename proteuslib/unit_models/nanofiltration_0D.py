@@ -326,9 +326,6 @@ class NanoFiltrationData(UnitModelBlockData):
                         + ((1 - b.sigma[t]) * b.flux_mass_phase_comp_in[t, p, j]
                            * 1 / b.dens_solvent * b.avg_conc_mass_phase_comp_in[t, p, j])
                         )
-            else:
-                b.flux_mass_phase_comp_in[t, p, j].fix(0)
-                return Constraint.Skip
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
@@ -348,9 +345,6 @@ class NanoFiltrationData(UnitModelBlockData):
                         + ((1 - b.sigma[t]) * b.flux_mass_phase_comp_out[t, p, j]
                            * 1 / b.dens_solvent * b.avg_conc_mass_phase_comp_out[t, p, j])
                         )
-            else:
-                b.flux_mass_phase_comp_in[t, p, j].fix(0)
-                return Constraint.Skip
 
         # Average concentration
         # COMMENT: Chen approximation of logarithmic average implemented

@@ -296,14 +296,10 @@ class TestNaClPropPack():
         assert (degrees_of_freedom(m) == 0)
 
     @pytest.mark.component
-    def test_initialize(self, frame):
-        # additional initialize testing in property test harness
-        m = frame
-        m.fs.stream.initialize()
-
-    @pytest.mark.component
     def test_solve(self, frame):
         m = frame
+
+        m.fs.stream.initialize()
 
         results = solver.solve(m)
 
