@@ -33,8 +33,8 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("NF_0D")
-class NFData(UnitModelBlockData):
+@declare_process_block_class("NanoFiltration0D")
+class NanoFiltrationData(UnitModelBlockData):
     """
     Standard NF Unit Model Class:
     - zero dimensional model

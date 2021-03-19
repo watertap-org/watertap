@@ -32,8 +32,8 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("RO_0D")
-class ROData(UnitModelBlockData):
+@declare_process_block_class("ReverseOsmosis0D")
+class ReverseOsmosisData(UnitModelBlockData):
     """
     Standard RO Unit Model Class:
     - zero dimensional model

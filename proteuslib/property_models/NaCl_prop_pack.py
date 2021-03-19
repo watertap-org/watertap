@@ -38,6 +38,7 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.misc import add_object_reference, extract_data
+from idaes.core.util.testing import get_default_solver
 from idaes.core.util.model_statistics import degrees_of_freedom, \
     number_unfixed_variables
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
@@ -327,7 +328,7 @@ class NaClStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-8, 1),
+            bounds=(1e-8, None),
             units=pyunits.dimensionless,
             doc='Mass fraction')
 
@@ -404,7 +405,7 @@ class NaClStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-8, 1),
+            bounds=(1e-8, None),
             units=pyunits.dimensionless,
             doc="Mole fraction")
 
