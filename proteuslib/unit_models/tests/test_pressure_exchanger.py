@@ -43,7 +43,7 @@ def test_config():
     m.fs.unit = PressureExchanger(default={'property_package': m.fs.properties})
 
     # check unit config arguments
-    assert len(m.fs.unit.config) == 8
+    assert len(m.fs.unit.config) == 7
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -53,11 +53,10 @@ def test_config():
            EnergyBalanceType.useDefault
     assert m.fs.unit.config.momentum_balance_type == \
            MomentumBalanceType.pressureTotal
-    assert not m.fs.unit.config.is_isothermal
     assert m.fs.unit.config.property_package is m.fs.properties
 
 @pytest.mark.unit
-def test_default_build():
+def test_build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={'dynamic': False})
     m.fs.properties = props.SeawaterParameterBlock()
@@ -82,7 +81,7 @@ def test_default_build():
     assert isinstance(m.fs.unit.efficiency_pressure_exchanger, Var)
 
     # test unit constraints
-    unit_cons_lst = ['eq_work_transfer', 'eq_equal_flow_vol']
+    unit_cons_lst = ['eq_pressure_transfer', 'eq_equal_flow_vol']
     for c in unit_cons_lst:
         assert hasattr(m.fs.unit, c)
         con = getattr(m.fs.unit, c)
@@ -90,8 +89,9 @@ def test_default_build():
 
     # test control volumes, only terms directly used by pressure exchanger
     cv_list = ['low_pressure_side', 'high_pressure_side']
-    cv_var_lst = ['deltaP', 'work']
-    cv_con_lst = ['eq_work']
+    cv_var_lst = ['deltaP']
+    cv_con_lst = ['isothermal_temperature']
+    cv_exp_lst = ['work']
     for cv_str in cv_list:
         assert hasattr(m.fs.unit, cv_str)
         cv = getattr(m.fs.unit, cv_str)
@@ -101,10 +101,13 @@ def test_default_build():
         for cv_con_str in cv_con_lst:
             cv_con = getattr(cv, cv_con_str)
             assert isinstance(cv_con, Constraint)
+        for cv_exp_str in cv_exp_lst:
+            cv_exp = getattr(cv, cv_exp_str)
+            assert isinstance(cv_exp, Expression)
 
     # test state blocks, only terms directly used by pressure exchanger
     cv_stateblock_lst = ['properties_in', 'properties_out']
-    stateblock_var_lst = ['pressure']
+    stateblock_var_lst = ['pressure', 'temperature']
     stateblock_exp_lst = ['flow_vol']
     for cv_str in cv_list:
         cv = getattr(m.fs.unit, cv_str)
@@ -121,32 +124,8 @@ def test_default_build():
                 assert isinstance(sb_exp, Expression)
 
     # test statistics
-    assert number_variables(m) == 77
-    assert number_total_constraints(m) == 32
-    assert number_unused_variables(m) == 20  # vars from property package parameters
-
-@pytest.mark.unit
-def test_isothermal_build():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={'dynamic': False})
-    m.fs.properties = props.SeawaterParameterBlock()
-    m.fs.unit = PressureExchanger(default={'property_package': m.fs.properties,
-                                           'is_isothermal': True})
-
-    # test enthalpy balance excluded and isothermal constraint and work variable included
-    cv_list = ['low_pressure_side', 'high_pressure_side']
-    for cv_str in cv_list:
-        assert hasattr(m.fs.unit, cv_str)
-        cv = getattr(m.fs.unit, cv_str)
-        assert not hasattr(cv, 'enthalpy_balances')
-        assert hasattr(cv, 'work')
-        assert isinstance(cv.work, Var)
-        assert hasattr(cv, 'isothermal_temperature')
-        assert isinstance(cv.isothermal_temperature, Constraint)
-
-    # test statistics
-    assert number_variables(m) == 73
-    assert number_total_constraints(m) == 28
+    assert number_variables(m) == 71
+    assert number_total_constraints(m) == 26
     assert number_unused_variables(m) == 26  # vars from property package parameters
 
 class TestPressureExchanger():
@@ -163,7 +142,6 @@ class TestPressureExchanger():
         lowP_mass_frac_TDS = 0.035
         lowP_pressure = 101325
 
-        highP_flow_vol = lowP_flow_vol
         highP_mass_frac_TDS = 0.07
         highP_pressure = 50e5
         highP_outlet_pressure = 101325
