@@ -13,9 +13,8 @@
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.environ import Block, Constraint, Var, Suffix, NonNegativeReals, Reals, \
+from pyomo.environ import Var, Suffix, NonNegativeReals, Reals, \
     SolverFactory, units as pyunits
-from pyomo.network import Port
 
 # Import IDAES cores
 import idaes.logger as idaeslog
@@ -129,7 +128,7 @@ class PressureExchangerData(UnitModelBlockData):
         if (len(self.config.property_package.phase_list) > 1
                 or 'Liq' not in [p for p in self.config.property_package.phase_list]):
             raise ConfigurationError(
-                "RO model only supports one liquid phase ['Liq'],"
+                "Pressure exchanger model only supports one liquid phase ['Liq'],"
                 "the property package has specified the following phases {}"
                     .format([p for p in self.config.property_package.phase_list]))
 
@@ -259,7 +258,7 @@ class PressureExchangerData(UnitModelBlockData):
         General wrapper for pressure exchanger initialization routine
         Keyword Arguments:
             routine : str stating which initialization routine to execute
-                        * None - currently no specialized routine for RO unit
+                        * None - currently no specialized routine for Pressure exchanger unit
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
