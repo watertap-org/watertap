@@ -383,14 +383,13 @@ class SeawaterStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-8, 1),
+            bounds=(1e-8, None),
             units=pyunits.dimensionless,
             doc='Mass fraction')
 
         def rule_mass_frac_phase_comp(b, j):
             return (b.mass_frac_phase_comp['Liq', j] == b.flow_mass_phase_comp['Liq', j] /
-                    sum(b.flow_mass_phase_comp['Liq', j]
-                        for j in self.params.component_list))
+                    sum(b.flow_mass_phase_comp['Liq', j] for j in b.params.component_list))
         self.eq_mass_frac_phase_comp = Constraint(self.params.component_list, rule=rule_mass_frac_phase_comp)
 
     def _dens_mass_phase(self):
@@ -427,14 +426,14 @@ class SeawaterStateBlockData(StateBlockData):
 
         def rule_flow_vol_phase(b):
             return (b.flow_vol_phase['Liq']
-                    == sum(b.flow_mass_phase_comp['Liq', j] for j in self.params.component_list)
+                    == sum(b.flow_mass_phase_comp['Liq', j] for j in b.params.component_list)
                     / b.dens_mass_phase['Liq'])
         self.eq_flow_vol_phase = Constraint(rule=rule_flow_vol_phase)
 
     def _flow_vol(self):
 
         def rule_flow_vol(b):
-            return sum(b.flow_vol_phase[p] for p in self.params.phase_list)
+            return sum(b.flow_vol_phase[p] for p in b.params.phase_list)
         self.flow_vol = Expression(rule=rule_flow_vol)
 
     def _conc_mass_phase_comp(self):
@@ -447,8 +446,8 @@ class SeawaterStateBlockData(StateBlockData):
             doc="Mass concentration")
 
         def rule_conc_mass_phase_comp(b, j):
-            return (self.conc_mass_phase_comp['Liq', j] ==
-                    self.dens_mass_phase['Liq'] * self.mass_frac_phase_comp['Liq', j])
+            return (b.conc_mass_phase_comp['Liq', j] ==
+                    b.dens_mass_phase['Liq'] * b.mass_frac_phase_comp['Liq', j])
         self.eq_conc_mass_phase_comp = Constraint(self.params.component_list, rule=rule_conc_mass_phase_comp)
 
     def _flow_mol_phase_comp(self):
@@ -470,7 +469,7 @@ class SeawaterStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-8, 1),
+            bounds=(1e-8, None),
             units=pyunits.dimensionless,
             doc="Mole fraction")
 
@@ -645,7 +644,9 @@ class SeawaterStateBlockData(StateBlockData):
             iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq','TDS'], sf)
 
         # scaling factors for parameters
-        iscale.set_scaling_factor(self.params.mw_comp, 1e-1)
+        for j, v in self.params.mw_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(self.params.mw_comp, 1e-1)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
