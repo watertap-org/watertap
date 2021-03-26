@@ -105,32 +105,29 @@ class SeparatorZOData(UnitModelBlockData):
             default=tmp_dict)
 
         # Add ports
-        self.add_inlet_port(name='inlet', block=self.inlet_state)
-        self.add_outlet_port(name='outlet', block=self.outlet_state)
+        self.add_port(name='inlet', block=self.inlet_state)
+        self.add_port(name='outlet', block=self.outlet_state)
         self.add_port(name='waste', block=self.waste_state)
 
         # Add additional variables
         self.recovery_frac_phase_comp = Var(
             self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
+            self.config.property_package._phase_component_set,
             initialize=0.8,
             bounds=(0, 1),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc="Water recovery fraction")
+            doc="Component recovery fraction")
         self.removal_frac_phase_comp = Var(
             self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
+            self.config.property_package._phase_component_set,
             initialize=0.75,
             bounds=(0, 1),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc="Component removal fraction")
 
-        if (self.config.has_pressure_change
-                and self.outlet_state[0].is_property_constructed('pressure')):
+        if self.config.has_pressure_change:
             self.deltaP_outlet = Var(
                 self.flowsheet().config.time,
                 initialize=1e4,
@@ -148,8 +145,7 @@ class SeparatorZOData(UnitModelBlockData):
 
         # Add performance equations
         @self.Constraint(self.flowsheet().config.time,
-                         self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
+                         self.config.property_package._phase_component_set,
                          doc="Component mass balance")
         def eq_component_mass_balance(b, t, p, j):
             return (b.inlet_state[t].get_material_flow_terms(p, j) ==
@@ -157,8 +153,7 @@ class SeparatorZOData(UnitModelBlockData):
                     + b.waste_state[t].get_material_flow_terms(p, j))
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
+                         self.config.property_package._phase_component_set,
                          doc="Component removal")
         def eq_component_removal(b, t, p, j):
             return (b.removal_frac_phase_comp[t, p, j]
@@ -166,47 +161,44 @@ class SeparatorZOData(UnitModelBlockData):
                     b.waste_state[t].get_material_flow_terms(p, j))
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
+                         self.config.property_package._phase_component_set,
                          doc="Removal fraction to recovery fraction")
         def eq_removal_to_recovery(b, t, p, j):
             return (b.removal_frac_phase_comp[t, p, j] ==
                     1 - b.recovery_frac_phase_comp[t, p, j])
 
-        if self.inlet_state[0].is_property_constructed('temperature'):
+        @self.Constraint(self.flowsheet().config.time,
+                         doc="Isothermal outlet temperature")
+        def eq_outlet_temperature(b, t):
+            return b.outlet_state[t].temperature == b.inlet_state[t].temperature
+
+        @self.Constraint(self.flowsheet().config.time,
+                         doc="Isothermal waste temperature")
+        def eq_waste_temperature(b, t):
+            return b.waste_state[t].temperature == b.inlet_state[t].temperature
+
+        if self.config.has_pressure_change:
             @self.Constraint(self.flowsheet().config.time,
-                             doc="Isothermal outlet temperature")
-            def eq_outlet_temperature(b, t):
-                return b.outlet_state[t].temperature == b.inlet_state[t].temperature
+                             doc="Outlet pressure equation")
+            def eq_outlet_pressure(b, t):
+                return (b.inlet_state[t].pressure + b.deltaP_outlet[t] ==
+                        b.outlet_state[t].pressure)
 
             @self.Constraint(self.flowsheet().config.time,
-                             doc="Isothermal waste temperature")
-            def eq_waste_temperature(b, t):
-                return b.waste_state[t].temperature == b.inlet_state[t].temperature
+                             doc="Waste pressure equation")
+            def eq_waste_pressure(b, t):
+                return (b.inlet_state[t].pressure + b.deltaP_waste[t] ==
+                        b.waste_state[t].pressure)
+        else:
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Isobaric outlet pressure")
+            def eq_outlet_pressure(b, t):
+                return b.inlet_state[t].pressure == b.outlet_state[t].pressure
 
-        if self.inlet_state[0].is_property_constructed('pressure'):
-            if self.config.has_pressure_change:
-                @self.Constraint(self.flowsheet().config.time,
-                                 doc="Outlet pressure equation")
-                def eq_outlet_pressure(b, t):
-                    return (b.inlet_state[t].pressure + b.deltaP_outlet[t] ==
-                            b.outlet_state[t].pressure)
-
-                @self.Constraint(self.flowsheet().config.time,
-                                 doc="Waste pressure equation")
-                def eq_waste_pressure(b, t):
-                    return (b.inlet_state[t].pressure + b.deltaP_waste[t] ==
-                            b.waste_state[t].pressure)
-            else:
-                @self.Constraint(self.flowsheet().config.time,
-                                 doc="Isobaric outlet pressure")
-                def eq_outlet_pressure(b, t):
-                    return b.inlet_state[t].pressure == b.outlet_state[t].pressure
-
-                @self.Constraint(self.flowsheet().config.time,
-                                 doc="Isobaric waste pressure")
-                def eq_waste_pressure(b, t):
-                    return b.inlet_state[t].pressure == b.waste_state[t].pressure
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Isobaric waste pressure")
+            def eq_waste_pressure(b, t):
+                return b.inlet_state[t].pressure == b.waste_state[t].pressure
 
     def initialize(
             self,
