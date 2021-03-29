@@ -128,7 +128,7 @@ class PressureExchangerData(UnitModelBlockData):
 
         self.efficiency_pressure_exchanger = Var(
             self.flowsheet().config.time,
-            initialize=0.9,
+            initialize=0.95,
             bounds=(1e-6, 1),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
@@ -150,6 +150,8 @@ class PressureExchangerData(UnitModelBlockData):
         self.high_pressure_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=True)
+
+        self.high_pressure_side.deltaP.setub(0)
 
         @self.high_pressure_side.Expression(
             self.flowsheet().config.time,
@@ -174,6 +176,8 @@ class PressureExchangerData(UnitModelBlockData):
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=True)
 
+        self.low_pressure_side.deltaP.setlb(0)
+
         @self.low_pressure_side.Expression(
             self.flowsheet().config.time,
             doc='Work transferred to low pressure side fluid')
@@ -187,18 +191,6 @@ class PressureExchangerData(UnitModelBlockData):
         self.add_outlet_port(name='low_pressure_outlet', block=self.low_pressure_side)
 
         # Performance equations
-        @self.low_pressure_side.Constraint(
-            self.flowsheet().config.time,
-            doc="Isothermal constraint")
-        def isothermal_temperature(b, t):
-            return b.properties_in[t].temperature == b.properties_out[t].temperature
-
-        @self.high_pressure_side.Constraint(
-            self.flowsheet().config.time,
-            doc="Isothermal constraint")
-        def isothermal_temperature(b, t):
-            return b.properties_in[t].temperature == b.properties_out[t].temperature
-
         @self.Constraint(
             self.flowsheet().config.time,
             doc="Pressure transfer")
@@ -208,10 +200,29 @@ class PressureExchangerData(UnitModelBlockData):
 
         @self.Constraint(
             self.flowsheet().config.time,
-            doc="Equal volumetric flow rate constraint")
+            doc="Equal volumetric flow rate")
         def eq_equal_flow_vol(b, t):
             return (b.high_pressure_side.properties_in[t].flow_vol ==
                     b.low_pressure_side.properties_in[t].flow_vol)
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Equal low pressure on both sides")
+        def eq_equal_low_pressure(b, t):
+            return (b.high_pressure_side.properties_out[t].pressure ==
+                    b.low_pressure_side.properties_in[t].pressure)
+
+        @self.low_pressure_side.Constraint(
+            self.flowsheet().config.time,
+            doc="Isothermal constraint")
+        def eq_isothermal_temperature(b, t):
+            return b.properties_in[t].temperature == b.properties_out[t].temperature
+
+        @self.high_pressure_side.Constraint(
+            self.flowsheet().config.time,
+            doc="Isothermal constraint")
+        def eq_isothermal_temperature(b, t):
+            return b.properties_in[t].temperature == b.properties_out[t].temperature
 
     def initialize(
             self,
@@ -278,11 +289,11 @@ class PressureExchangerData(UnitModelBlockData):
             iscale.set_scaling_factor(self.high_pressure_side.work, sf)
 
         # transform constraints
-        for t, c in self.low_pressure_side.isothermal_temperature.items():
+        for t, c in self.low_pressure_side.eq_isothermal_temperature.items():
             sf = iscale.get_scaling_factor(self.low_pressure_side.properties_in[t].temperature)
             iscale.constraint_scaling_transform(c, sf)
 
-        for t, c in self.high_pressure_side.isothermal_temperature.items():
+        for t, c in self.high_pressure_side.eq_isothermal_temperature.items():
             sf = iscale.get_scaling_factor(self.high_pressure_side.properties_in[t].temperature)
             iscale.constraint_scaling_transform(c, sf)
 
@@ -292,4 +303,8 @@ class PressureExchangerData(UnitModelBlockData):
 
         for t, c in self.eq_equal_flow_vol.items():
             sf = iscale.get_scaling_factor(self.low_pressure_side.properties_in[t].flow_vol)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for t, c in self.eq_equal_low_pressure.items():
+            sf = iscale.get_scaling_factor(self.low_pressure_side.properties_in[t].pressure)
             iscale.constraint_scaling_transform(c, sf)

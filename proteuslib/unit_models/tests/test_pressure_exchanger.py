@@ -81,7 +81,7 @@ def test_build():
     assert isinstance(m.fs.unit.efficiency_pressure_exchanger, Var)
 
     # test unit constraints
-    unit_cons_lst = ['eq_pressure_transfer', 'eq_equal_flow_vol']
+    unit_cons_lst = ['eq_pressure_transfer', 'eq_equal_flow_vol', 'eq_equal_low_pressure']
     for c in unit_cons_lst:
         assert hasattr(m.fs.unit, c)
         con = getattr(m.fs.unit, c)
@@ -90,7 +90,7 @@ def test_build():
     # test control volumes, only terms directly used by pressure exchanger
     cv_list = ['low_pressure_side', 'high_pressure_side']
     cv_var_lst = ['deltaP']
-    cv_con_lst = ['isothermal_temperature']
+    cv_con_lst = ['eq_isothermal_temperature']
     cv_exp_lst = ['work']
     for cv_str in cv_list:
         assert hasattr(m.fs.unit, cv_str)
@@ -124,9 +124,9 @@ def test_build():
                 assert isinstance(sb_exp, Expression)
 
     # test statistics
-    assert number_variables(m) == 71
-    assert number_total_constraints(m) == 26
-    assert number_unused_variables(m) == 26  # vars from property package parameters
+    assert number_variables(m.fs.unit) == 35
+    assert number_total_constraints(m.fs.unit) == 27
+    assert number_unused_variables(m.fs.unit) == 0
 
 class TestPressureExchanger():
     @pytest.fixture(scope="class")
@@ -144,7 +144,6 @@ class TestPressureExchanger():
 
         highP_mass_frac_TDS = 0.07
         highP_pressure = 50e5
-        highP_outlet_pressure = 101325
 
         m.fs.unit.low_pressure_side.properties_in[0].flow_vol_phase['Liq'].fix(lowP_flow_vol)
         m.fs.unit.low_pressure_side.properties_in[0].mass_frac_phase_comp['Liq', 'TDS'].fix(lowP_mass_frac_TDS)
@@ -153,7 +152,6 @@ class TestPressureExchanger():
 
         m.fs.unit.high_pressure_side.properties_in[0].mass_frac_phase_comp['Liq', 'TDS'].fix(highP_mass_frac_TDS)
         m.fs.unit.high_pressure_side.properties_in[0].pressure.fix(highP_pressure)
-        m.fs.unit.high_pressure_side.properties_out[0].pressure.fix(highP_outlet_pressure)
         m.fs.unit.high_pressure_side.properties_in[0].temperature.fix(temperature)
 
         # Specify unit
@@ -175,6 +173,8 @@ class TestPressureExchanger():
         assert len(unscaled_var_list) == 0
         # check that all constraints have been scaled
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
+        for c in unscaled_constraint_list:
+            print(c)
         assert len(unscaled_constraint_list) == 0
 
     @pytest.mark.component
