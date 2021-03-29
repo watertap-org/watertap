@@ -15,9 +15,9 @@ from pyomo.util.check_units import assert_units_consistent, assert_units_equival
 import pyomo.util.infeasible as infeas
 import idaes.core.util.scaling as iscale
 
-import NaCl_prop_pack as props
-from reverse_osmosis import RO
-from pump_isothermal import Pump
+import proteuslib.property_models.NaCl_prop_pack as props
+from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D as RO
+from proteuslib.unit_models.pump_isothermal import Pump
 import financials
 
 def build_model(N=2):

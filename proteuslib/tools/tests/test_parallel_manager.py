@@ -4,7 +4,7 @@ import sys
 import os
 
 from sim_LSRRO_Nstage import build_model, simulate
-from parallel_manager import run_param_sweep
+from proteuslib.tools.parallel_manager import run_param_sweep
 
 # ================================================================
 # Build and simulate the model once as an initial condition
