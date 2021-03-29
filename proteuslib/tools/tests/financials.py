@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 from pyomo.environ import (
-    Block, Constraint, Expression, Var, Param, Reals, NonNegativeReals, units as pyunits)
+    Block, Constraint, Expression, Var, Param, NonNegativeReals, units as pyunits)
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -117,8 +117,7 @@ def _make_vars(self):
                             domain=NonNegativeReals,
                             doc='Unit capital cost [$]')
     self.operating_cost = Var(initialize=1e5,
-                              domain=Reals,
-                              bounds=(0, 1e6),
+                              domain=NonNegativeReals,
                               doc='Operating cost [$/year]')
 
 
@@ -137,27 +136,8 @@ def RO_costing(self):
         expr=self.operating_cost == b_fs.costing_param.factor_membrane_replacement
              * b_fs.costing_param.mem_cost * b_RO.area / pyunits.m ** 2)
 
-def pressure_changer_costing(self, Mat_factor="stain_steel",
-                             # applies for all (pump, compressor, fan, blower)
-                             mover_type="compressor",
-                             # fan, blower, compressor
-                             compressor_type="centrifugal",
-                             # only for compressor
-                             driver_mover_type="electrical_motor",
-                             # only for compressors
-                             pump_type="centrifugal",
-                             # centrifugal, external_gear, reciprocating
-                             pump_type_factor='1.4',
-                             # 1.1 to 1.4, 2.1 and 2.2
-                             # (needs to be wise-selected by user see table)
-                             pump_motor_type_factor='open',
-                             # centrifugal_backward, centrifugal_straight
-                             # vane_axial, tube_axial
-                             fan_type='centrifugal_backward',
-                             # select from table depends on fan's head
-                             fan_head_factor=1.45,
-                             # centrifugal and rotary
-                             blower_type='centrifugal'):
+def pressure_changer_costing(self,
+                             pump_type="centrifugal"):
     _make_vars(self)
 
     b_PC = self.parent_block()
@@ -187,8 +167,5 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                  / (b_cv_in.dens_mass / (pyunits.kg/pyunits.m**3)) * 3600) ** 0.58))
 
         # operating cost
-        self.operating_cost.setlb(-1e6)
-        self.eq_operating_cost = Constraint(
-            expr=self.operating_cost == (b_PC.work_mechanical[0] / pyunits.W
-                                         * 3600 * 24 * 365 * b_fs.costing_param.load_factor)
-                 * b_fs.costing_param.electricity_cost / 3600 / 1000)
+        self.operating_cost.fix(0)
+
