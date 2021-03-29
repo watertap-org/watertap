@@ -165,7 +165,7 @@ class ROData(UnitModelBlockData):
             self.flowsheet().config.time,
             self.config.property_package.component_list,
             initialize=1e-3,
-            bounds=(1e-8, 1e6)
+            bounds=(1e-8, 1e6),
             units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Flux at feed outlet')
         self.area = Var(
