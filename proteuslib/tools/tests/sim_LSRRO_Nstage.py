@@ -69,18 +69,18 @@ def build_model(N=2):
     ######################## fix for only water recovery ########################
     # additional variables or expressions
     m.fs.recovery = Expression(
-        expr=(sum(m.fs.Stage1.permeate.flow_mass_comp[0, j] for j in ['H2O'])
-              / sum(m.fs.P1.inlet.flow_mass_comp[0, j] for j in ['H2O'])))
+        expr=(sum(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', j] for j in ['H2O'])
+              / sum(m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', j] for j in ['H2O'])))
     # energy consumption [J/m3]
     m.fs.EC = Expression(
         # expr=(m.fs.P1.work_mechanical[0] + m.fs.P2.work_mechanical[0] + m.fs.ERD.work_mechanical[0])
         expr=(total_pump_work)
-             / sum(m.fs.Stage1.properties_permeate[0].flow_mass_comp[j] for j in ['H2O', 'NaCl'])
-             * m.fs.Stage1.properties_permeate[0].dens_mass)
+             / sum(m.fs.Stage1.properties_permeate[0].flow_mass_phase_comp['Liq', j] for j in ['H2O', 'NaCl'])
+             * m.fs.Stage1.properties_permeate[0].dens_mass_phase['Liq'])
     m.fs.AWP = Expression(
-        expr=(pyunits.convert(sum(m.fs.Stage1.properties_permeate[0].flow_mass_comp[j] for j in ['H2O', 'NaCl']),
+        expr=(pyunits.convert(sum(m.fs.Stage1.properties_permeate[0].flow_mass_phase_comp['Liq', j] for j in ['H2O', 'NaCl']),
                               to_units=pyunits.kg / pyunits.year)
-              / m.fs.Stage1.properties_permeate[0].dens_mass) * m.fs.costing_param.load_factor)
+              / m.fs.Stage1.properties_permeate[0].dens_mass_phase['Liq']) * m.fs.costing_param.load_factor)
 
     # costing
     financials.get_system_costing(m.fs)
@@ -143,8 +143,8 @@ def build_model(N=2):
     for b in m.component_data_objects(Block, descend_into=True):
         if hasattr(b, 'flux_mass_comp_out'):
             b.flux_mass_comp_out[0, 'H2O'].setlb(2.778e-4)
-        if hasattr(b, 'mass_frac_comp'):
-            b.mass_frac_comp['NaCl'].setub(0.26)
+        if hasattr(b, 'mass_frac_phase_comp'):
+            b.mass_frac_phase_comp['Liq', 'NaCl'].setub(0.26)
 
     return m
 
@@ -169,8 +169,8 @@ def simulate(m,N=2):
     feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
 
     # initialize feed mixer
-    m.fs.P1.inlet.flow_mass_comp[0, 'NaCl'].fix(feed_flow_mass * feed_mass_frac_NaCl)
-    m.fs.P1.inlet.flow_mass_comp[0, 'H2O'].fix(feed_flow_mass * feed_mass_frac_H2O)
+    m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_flow_mass * feed_mass_frac_NaCl)
+    m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(feed_flow_mass * feed_mass_frac_H2O)
     m.fs.P1.inlet.pressure[0].fix(pressure_atm)
     m.fs.P1.inlet.temperature[0].fix(feed_temperature)
 
@@ -199,8 +199,8 @@ def simulate(m,N=2):
             B_scale = 1.0
         stage = getattr(m.fs,"Stage"+repr(i+1))
         stage.area = 25  # area in membrane stage 1 [m2]
-        stage.A.fix(mem_A)
-        stage.B.fix(mem_B*B_scale)
+        stage.A_comp.fix(mem_A)
+        stage.B_comp.fix(mem_B*B_scale)
         stage.deltaP.fix(mem_deltaP)
         stage.area.fix()  # value set in decision variables
         stage.permeate.pressure[0].fix(pressure_atm)
@@ -234,7 +234,7 @@ def simulate(m,N=2):
     print('tear: ', [o.name for o in heuristic_tear_set])  # s01 - mixer outlet
     # set guess
     tear_guesses = {
-        "flow_mass_comp": {
+        "flow_mass_phase_comp": {
             (0, 'NaCl'): feed_flow_mass * feed_mass_frac_NaCl * 1.2,
             (0, 'H2O'): feed_flow_mass * feed_mass_frac_H2O * 1.2},
         "temperature": {0: feed_temperature},
@@ -273,8 +273,8 @@ def optimization(m, obj='LCOW', N=2, verbose=False):
     #         m.fs.objective.expr=m.fs.costing.LCOW  
 
 
-    # m.fs.P1.inlet.flow_mass_comp[0, 'NaCl'].fix(0.125)
-    # m.fs.P1.inlet.flow_mass_comp[0, 'H2O'].fix(1-0.125)
+    # m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(0.125)
+    # m.fs.P1.inlet.flow_mass_phase_comp[0, 'H2O'].fix(1-0.125)
     # unfix pumps
     for i in range(N):
         pump = getattr(m.fs,"P"+repr(i+1))
@@ -298,9 +298,9 @@ def optimization(m, obj='LCOW', N=2, verbose=False):
         stage.area.setlb(1)
         stage.area.setub(1000)
         if i>0:
-            stage.B.unfix()
-            stage.B.setlb(3.5e-8)
-            stage.B.setub(3.5e-8 * 1e3)
+            stage.B_comp.unfix()
+            stage.B_comp.setlb(3.5e-8)
+            stage.B_comp.setub(3.5e-8 * 1e3)
 
     # additional specifications
     #product_recovery = 0.4  # product mass flow rate fraction of feed [-]
@@ -320,14 +320,14 @@ def optimization(m, obj='LCOW', N=2, verbose=False):
 
     #         if 'recovery' in key:
     #             product_recovery = value
-    #         elif 'flow_mass_comp' in key:
+    #         elif 'flow_mass_phase_comp' in key:
     #             feed_mass_frac_NaCl = value
-    #             # m.fs.M1.feed.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
-    #             # m.fs.M1.feed.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
-    #             # m.fs.M1.upstream.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
-    #             # m.fs.M1.upstream.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
-    #             m.fs.P1.inlet.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
-    #             m.fs.P1.inlet.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
+    #             # m.fs.M1.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_mass_frac_NaCl)
+    #             # m.fs.M1.feed.flow_mass_phase_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
+    #             # m.fs.M1.upstream.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_mass_frac_NaCl)
+    #             # m.fs.M1.upstream.flow_mass_phase_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
+    #             m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_mass_frac_NaCl)
+    #             m.fs.P1.inlet.flow_mass_phase_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
     #         elif "ele_cost" in key:
     #             m.fs.costing_param.electricity_cost.fix(value)
     #         elif "mem_cost" in key:
@@ -353,7 +353,7 @@ def optimization(m, obj='LCOW', N=2, verbose=False):
 
     # if not hasattr(m.fs,"eq_product_quality"):
     m.fs.eq_product_quality = Constraint(
-        expr=m.fs.Stage1.properties_permeate[0].mass_frac_comp['NaCl'] <= product_salinity)
+        expr=m.fs.Stage1.properties_permeate[0].mass_frac_phase_comp['Liq', 'NaCl'] <= product_salinity)
     iscale.constraint_scaling_transform(m.fs.eq_product_quality, 1e3)  # scaling constraint
     # else:
     #     m.fs.eq_product_quality.expr.args[1].value = product_salinity
@@ -408,22 +408,22 @@ def optimization(m, obj='LCOW', N=2, verbose=False):
 def display_metrics(m,N=2):
     print('----system metrics----')
 
-    feed_flow_mass = sum(m.fs.P1.inlet.flow_mass_comp[0, j].value for j in ['H2O', 'NaCl'])
-    feed_mass_frac_NaCl = m.fs.P1.inlet.flow_mass_comp[0, 'NaCl'].value / feed_flow_mass
+    feed_flow_mass = sum(m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
+    feed_mass_frac_NaCl = m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / feed_flow_mass
     print('Feed: %.2f kg/s, %.0f ppm' % (feed_flow_mass, feed_mass_frac_NaCl * 1e6))
 
-    prod_flow_mass = sum(m.fs.Stage1.permeate.flow_mass_comp[0, j].value for j in ['H2O', 'NaCl'])
-    prod_mass_frac_ppm = m.fs.Stage1.permeate.flow_mass_comp[0, 'NaCl'].value / prod_flow_mass * 1e6
+    prod_flow_mass = sum(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
+    prod_mass_frac_ppm = m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / prod_flow_mass * 1e6
     print('Product: %.2f kg/s, %.0f ppm' % (prod_flow_mass, prod_mass_frac_ppm))
 
-    disp_flow_mass = sum(m.fs.ERD.outlet.flow_mass_comp[0, j].value for j in ['H2O', 'NaCl'])
-    disp_mass_frac_ppm = m.fs.ERD.outlet.flow_mass_comp[0, 'NaCl'].value / disp_flow_mass * 1e6
+    disp_flow_mass = sum(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
+    disp_mass_frac_ppm = m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / disp_flow_mass * 1e6
     print('Disposal: %.2f kg/s, %.0f ppm' % (disp_flow_mass, disp_mass_frac_ppm))
 
     disp_pressure_osm = getattr(m.fs,"Stage"+repr(N)).feed_side.properties_out[0].pressure_osm.value / 1e5
     print('Disposal osmotic pressure: %.1f bar' % disp_pressure_osm)
 
-    recovery = 100.0*sum(m.fs.Stage1.permeate.flow_mass_comp[0, j].value for j in ['H2O'])/sum(m.fs.P1.inlet.flow_mass_comp[0, j].value for j in ['H2O'])
+    recovery = 100.0*sum(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O'])/sum(m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O'])
     # print('Recovery: %.1f%%' % (prod_flow_mass / feed_flow_mass * 100))
     print('Recovery: %.1f%%' % (recovery))
 
@@ -440,8 +440,8 @@ def display_state(m,N=2):
     print('---state variables---')
 
     def print_state(s, b):
-        flow_mass = sum(b.flow_mass_comp[0, j].value for j in ['H2O', 'NaCl'])
-        mass_frac_ppm = b.flow_mass_comp[0, 'NaCl'].value / flow_mass * 1e6
+        flow_mass = sum(b.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
+        mass_frac_ppm = b.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / flow_mass * 1e6
         pressure_bar = b.pressure[0].value / 1e5
         temperature_C = b.temperature[0].value - 273
         print(s + ': %.3f kg/s \t%.0f ppm \t%.1f bar \t%.1f C'
@@ -495,12 +495,12 @@ def display_design(m,N=2):
         print('Stage %d \nmembrane area: %.1f m2 \nretentate: %.3f kg/s, %.0f ppm \npermeate: %.3f kg/s, %.0f ppm'
               % (i+1,
                  stage.area.value,
-                 sum(stage.retentate.flow_mass_comp[0, j].value for j in ['H2O', 'NaCl']),
-                 stage.retentate.flow_mass_comp[0, 'NaCl'].value
-                 / sum(stage.retentate.flow_mass_comp[0, j].value for j in ['H2O', 'NaCl']) * 1e6,
-                 sum(stage.permeate.flow_mass_comp[0, j].value for j in ['H2O', 'NaCl']),
-                 stage.permeate.flow_mass_comp[0, 'NaCl'].value
-                 / sum(stage.permeate.flow_mass_comp[0, j].value for j in ['H2O', 'NaCl']) * 1e6))
+                 sum(stage.retentate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl']),
+                 stage.retentate.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value
+                 / sum(stage.retentate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl']) * 1e6,
+                 sum(stage.permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl']),
+                 stage.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value
+                 / sum(stage.permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl']) * 1e6))
 
     print('ERD \npower recovered: %.1f kW' % (-m.fs.ERD.work_mechanical[0].value / 1e3))
 

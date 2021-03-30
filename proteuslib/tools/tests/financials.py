@@ -121,7 +121,7 @@ def _make_vars(self):
                               doc='Operating cost [$/year]')
 
 
-def RO_costing(self):
+def ReverseOsmosis_costing(self):
     _make_vars(self)
 
     b_RO = self.parent_block()
@@ -162,9 +162,9 @@ def pressure_changer_costing(self,
         b_cv_in = b_PC.control_volume.properties_in[0]
         self.eq_capital_cost = Constraint(
             expr=(self.capital_cost == b_fs.costing_param.erd_cost['A']
-                 * (sum(b_cv_in.flow_mass_comp[j] / (pyunits.kg/pyunits.s)
+                 * (sum(b_cv_in.flow_mass_phase_comp['Liq', j] / (pyunits.kg/pyunits.s)
                         for j in b_PC.config.property_package.component_list)
-                 / (b_cv_in.dens_mass / (pyunits.kg/pyunits.m**3)) * 3600) ** 0.58))
+                 / (b_cv_in.dens_mass_phase['Liq'] / (pyunits.kg/pyunits.m**3)) * 3600) ** 0.58))
 
         # operating cost
         self.operating_cost.fix(0)
