@@ -3,8 +3,6 @@ import pyomo.core.base as pyobase
 import sys
 import os
 
-from sim_LSRRO_Nstage import optimization, display_metrics, display_state
-
 # ================================================================
 
 def build_and_divide_combinations(d, rank, num_procs):
@@ -85,7 +83,8 @@ def update_model_values(m, param_dict=None, values=None):
 
 # ================================================================
 
-def run_param_sweep(m, num_stages, sweep_params, output_dir='output', mpi_comm=None):
+def run_param_sweep(m, sweep_params, outputs, output_dir='output', mpi_comm=None,
+    num_stages=2, optimization=None, display_metrics=None):
 
     # Get an MPI communicator
     if mpi_comm is None:
@@ -118,12 +117,18 @@ def run_param_sweep(m, num_stages, sweep_params, output_dir='output', mpi_comm=N
     # Enumerate all possibilities and divide the workload between processors
     local_values, global_values = build_and_divide_combinations(sweep_params, rank, num_procs)
 
-    # Initialize space to hold local results
-    num_cases = np.int64(np.shape(local_values)[0])
-    local_EC = np.zeros(num_cases, dtype=np.float64)
-    local_LCOW = np.zeros(num_cases, dtype=np.float64)
+    # Initialize space to hold results
+    local_num_cases = np.int64(np.shape(local_values)[0])
+    local_results = np.zeros((local_num_cases, len(outputs)), dtype=np.float64)
 
-    for k in range(num_cases):
+    global_num_cases = np.int64(np.shape(global_values)[0])
+    global_results = np.zeros((global_num_cases, len(outputs)), dtype=np.float64)
+
+    # ================================================================
+    # Run all optimization cases
+    # ================================================================
+
+    for k in range(local_num_cases):
         # Update the model values with a single combination from the parameter space
         update_model_values(m, param_dict=sweep_params, values=local_values[k, :])
 
@@ -134,54 +139,45 @@ def run_param_sweep(m, num_stages, sweep_params, output_dir='output', mpi_comm=N
 
         except:
             # If the run is infeasible, report nan
-            EC = np.nan
-            LCOW = np.nan
+            local_results[k, :] = np.nan
             previous_run_failed = True
 
         else:
             # If the simulation suceeds, report stats
-            # states = display_state(m, N=num_stages)
-            EC, LCOW = display_metrics(m, N=num_stages)
+            local_results[k, :] = display_metrics(m, N=num_stages, outputs=outputs)
             previous_run_failed = False
 
-        local_EC[k] = EC
-        local_LCOW[k] = LCOW
-
         if previous_run_failed:
-            pass
             # We might choose to re-initialize the model at this point
-
-    # Save the local results to a file (helpful for parallel debugging)
-    fname = '%s/local_results_%03d.csv' % (output_dir, rank)
-    save_data = np.hstack((local_values, local_EC[:, None], local_LCOW[:, None]))
-
-    header = ''
-    for k, v in sweep_params.items():
-        header += '%s, ' % (k)
-    header += 'EC, LCOW'
-
-    np.savetxt(fname, save_data, header=header, delimiter=', ', fmt='%.6e')
+            pass
 
     # ================================================================
     # Save results
     # ================================================================
 
-    # Collect all results onto rank 0
-    global_EC = np.zeros(np.shape(global_values)[0], dtype=np.float64)
-    global_LCOW = np.zeros(np.shape(global_values)[0], dtype=np.float64)
+    # Save the local results to a file (helpful for parallel debugging)
+    fname = '%s/local_results_%03d.csv' % (output_dir, rank)
+    save_data = np.hstack((local_values, local_results))
 
+    data_header = ''
+    for k, v in sweep_params.items():
+        data_header += '%s, ' % (k)
+    data_header += ', '.join(outputs)
+
+    np.savetxt(fname, save_data, header=data_header, delimiter=', ', fmt='%.6e')
+
+    # Collect the number of result values to be sent from each process
     send_counts = np.zeros(num_procs, dtype=np.int64)
-    comm.Gather(num_cases, send_counts, root=0)
+    comm.Gather(np.int64(np.size(local_results)), send_counts, root=0)
 
-    comm.Gatherv(local_EC, (global_EC, send_counts), root=0)
-    comm.Gatherv(local_LCOW, (global_LCOW, send_counts), root=0)
+    # Collect the global results results onto rank 0
+    comm.Gatherv(local_results, (global_results, send_counts), root=0)
 
     if rank == 0:
         # Save the global results to a file
         fname = '%s/%d_stage.csv' % (output_dir, num_stages)
-        save_data = np.hstack((global_values, global_EC[:, None], global_LCOW[:, None]))
-        np.savetxt(fname, save_data, header=header, delimiter=', ', fmt='%.6e')
-
+        save_data = np.hstack((global_values, global_results))
+        np.savetxt(fname, save_data, header=data_header, delimiter=', ', fmt='%.6e')
 
 # ================================================================
 

@@ -405,35 +405,42 @@ def optimization(m, obj='LCOW', N=2, verbose=False):
 
     return m
 
-def display_metrics(m,N=2):
+def display_metrics(m,N=2,outputs=[]):
     print('----system metrics----')
 
-    feed_flow_mass = sum(m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
-    feed_mass_frac_NaCl = m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / feed_flow_mass
-    print('Feed: %.2f kg/s, %.0f ppm' % (feed_flow_mass, feed_mass_frac_NaCl * 1e6))
+    metrics = {}
 
-    prod_flow_mass = sum(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
-    prod_mass_frac_ppm = m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / prod_flow_mass * 1e6
-    print('Product: %.2f kg/s, %.0f ppm' % (prod_flow_mass, prod_mass_frac_ppm))
+    metrics['feed_flow_mass'] = sum(m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
+    metrics['feed_mass_frac_NaCl'] = m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / metrics['feed_flow_mass']
+    print('Feed: %.2f kg/s, %.0f ppm' % (metrics['feed_flow_mass'], metrics['feed_mass_frac_NaCl'] * 1e6))
 
-    disp_flow_mass = sum(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
-    disp_mass_frac_ppm = m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / disp_flow_mass * 1e6
-    print('Disposal: %.2f kg/s, %.0f ppm' % (disp_flow_mass, disp_mass_frac_ppm))
+    metrics['prod_flow_mass'] = sum(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
+    metrics['prod_mass_frac_ppm'] = m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / metrics['prod_flow_mass'] * 1e6
+    print('Product: %.2f kg/s, %.0f ppm' % (metrics['prod_flow_mass'], metrics['prod_mass_frac_ppm']))
 
-    disp_pressure_osm = getattr(m.fs,"Stage"+repr(N)).feed_side.properties_out[0].pressure_osm.value / 1e5
-    print('Disposal osmotic pressure: %.1f bar' % disp_pressure_osm)
+    metrics['disp_flow_mass'] = sum(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
+    metrics['disp_mass_frac_ppm'] = m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / metrics['disp_flow_mass'] * 1e6
+    print('Disposal: %.2f kg/s, %.0f ppm' % (metrics['disp_flow_mass'], metrics['disp_mass_frac_ppm']))
 
-    recovery = 100.0*sum(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O'])/sum(m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O'])
-    # print('Recovery: %.1f%%' % (prod_flow_mass / feed_flow_mass * 100))
-    print('Recovery: %.1f%%' % (recovery))
+    metrics['disp_pressure_osm'] = getattr(m.fs,"Stage"+repr(N)).feed_side.properties_out[0].pressure_osm.value / 1e5
+    print('Disposal osmotic pressure: %.1f bar' % metrics['disp_pressure_osm'])
 
-    EC = value(m.fs.EC)/3.6e6  # energy consumption [kWh/m3]
-    print('Energy Consumption: %.2f kWh/m3' % EC)
+    metrics['recovery'] = 100.0*sum(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O'])/sum(m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O'])
+    # print('metrics['Recovery']: %.1f%%' % (metrics['prod_flow_mass'] / metrics['feed_flow_mass'] * 100))
+    print('Recovery: %.1f%%' % (metrics['recovery']))
 
-    LCOW = value(m.fs.costing.LCOW)
-    print('Levelized cost of water: %.2f $/m3' % LCOW)
+    metrics['EC'] = value(m.fs.EC)/3.6e6  # energy consumption [kWh/m3]
+    print('Energy Consumption: %.2f kWh/m3' % metrics['EC'])
 
-    return EC, LCOW
+    metrics['LCOW'] = value(m.fs.costing.LCOW)
+    print('Levelized cost of water: %.2f $/m3' % metrics['LCOW'])
+
+    output_data = []
+
+    for k in outputs:
+        output_data.append(metrics[k])
+
+    return output_data
 
 
 def display_state(m,N=2):

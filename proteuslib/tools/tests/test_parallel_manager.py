@@ -3,7 +3,7 @@ import numpy as np
 import sys
 import os
 
-from sim_LSRRO_Nstage import build_model, simulate
+from sim_LSRRO_Nstage import build_model, simulate, optimization, display_metrics
 from proteuslib.tools.parallel_manager import run_param_sweep
 
 # ================================================================
@@ -41,4 +41,5 @@ sweep_params['Electricity Cost']  = (m.fs.costing_param.electricity_cost, 0.03, 
 # Run the parameter sweep
 # ================================================================
 
-run_param_sweep(m, num_stages, sweep_params, output_dir='output')
+run_param_sweep(m, sweep_params, ['EC', 'LCOW'], output_dir='output',
+    num_stages=num_stages, optimization=optimization, display_metrics=display_metrics)
