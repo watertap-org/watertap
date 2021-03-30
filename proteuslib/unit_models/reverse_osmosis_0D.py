@@ -12,8 +12,14 @@
 ##############################################################################
 
 # Import Pyomo libraries
-from pyomo.environ import Var, Constraint, Set, Param, Expression, SolverFactory, \
-    TerminationCondition, Suffix, NonNegativeReals, units as pyunits, Reference
+from pyomo.environ import (Var,
+                           Set,
+                           Param,
+                           SolverFactory,
+                           Suffix,
+                           NonNegativeReals,
+                           Reference,
+                           Block)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -417,6 +423,10 @@ class ReverseOsmosisData(UnitModelBlockData):
             var_dict["Pressure Change"] = self.deltaP[time_point]
 
         return {"vars": var_dict}
+
+    def get_costing(self, module=None, **kwargs):
+        self.costing = Block()
+        module.ReverseOsmosis_costing(self.costing, **kwargs)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
