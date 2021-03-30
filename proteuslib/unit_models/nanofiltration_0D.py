@@ -12,8 +12,15 @@
 ##############################################################################
 
 # Import Pyomo libraries
-from pyomo.environ import Set, Var, Constraint, Param, Expression, SolverFactory, \
-    TerminationCondition, Suffix, NonNegativeReals, units as pyunits, Reference
+from pyomo.environ import (Block,
+                           Set,
+                           Var,
+                           Param,
+                           SolverFactory,
+                           Suffix,
+                           NonNegativeReals,
+                           Reference,
+                           units as pyunits)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -472,6 +479,10 @@ class NanoFiltrationData(UnitModelBlockData):
             var_dict["Pressure Change"] = self.deltaP[time_point]
 
         return {"vars": var_dict}
+
+    def get_costing(self, module=None, **kwargs):
+        self.costing = Block()
+        module.NanoFiltration_costing(self.costing, **kwargs)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
