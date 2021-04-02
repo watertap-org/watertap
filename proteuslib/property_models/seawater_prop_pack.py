@@ -176,13 +176,13 @@ class SeawaterParameterData(PhysicalParameterBlock):
 
         # specific enthalpy parameters, eq. 55 and 43 in Sharqawy
         self.enth_mass_param_A1 = Var(
-            within=Reals, initialize=124.790, units=pyunits.J/pyunits.kg,
+            within=Reals, initialize=143.355, units=pyunits.J/pyunits.kg,
             doc='Specific enthalpy parameter A1')
         self.enth_mass_param_A2 = Var(
-            within=Reals, initialize=4203.075, units=(pyunits.J/pyunits.kg) * pyunits.K**-1,
+            within=Reals, initialize=4202.07, units=(pyunits.J/pyunits.kg) * pyunits.K**-1,
             doc='Specific enthalpy parameter A2')
         self.enth_mass_param_A3 = Var(
-            within=Reals, initialize=-0.552, units=(pyunits.J/pyunits.kg) * pyunits.K**-2,
+            within=Reals, initialize=-0.535, units=(pyunits.J/pyunits.kg) * pyunits.K**-2,
             doc='Specific enthalpy parameter A3')
         self.enth_mass_param_A4 = Var(
             within=Reals, initialize=0.004, units=(pyunits.J/pyunits.kg) * pyunits.K**-3,
