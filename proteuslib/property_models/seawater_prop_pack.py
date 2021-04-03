@@ -19,7 +19,7 @@ import idaes.logger as idaeslog
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, \
-    Var, Param, Suffix, value, SolverFactory
+    Var, Param, Suffix, value, SolverFactory, log, exp
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores
@@ -75,71 +75,71 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.mw_comp = Param(self.component_list,
                              mutable=False,
                              initialize=mw_comp_data,
-                             units=pyunits.kg/pyunits.mol,
+                             units=pyunits.kg / pyunits.mol,
                              doc="Molecular weight")
 
         # mass density parameters, eq. 8 in Sharqawy
         self.dens_mass_param_A1 = Var(
-            within=Reals, initialize=9.999e2, units=pyunits.kg/pyunits.m**3,
+            within=Reals, initialize=9.999e2, units=pyunits.kg / pyunits.m ** 3,
             doc='Mass density parameter A1')
         self.dens_mass_param_A2 = Var(
-            within=Reals, initialize=2.034e-2, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-1,
+            within=Reals, initialize=2.034e-2, units=(pyunits.kg / pyunits.m ** 3) * pyunits.K ** -1,
             doc='Mass density parameter A2')
         self.dens_mass_param_A3 = Var(
-            within=Reals, initialize=-6.162e-3, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-2,
+            within=Reals, initialize=-6.162e-3, units=(pyunits.kg / pyunits.m ** 3) * pyunits.K ** -2,
             doc='Mass density parameter A3')
         self.dens_mass_param_A4 = Var(
-            within=Reals, initialize=2.261e-5, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-3,
+            within=Reals, initialize=2.261e-5, units=(pyunits.kg / pyunits.m ** 3) * pyunits.K ** -3,
             doc='Mass density parameter A4')
         self.dens_mass_param_A5 = Var(
-            within=Reals, initialize=-4.657e-8, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-4,
+            within=Reals, initialize=-4.657e-8, units=(pyunits.kg / pyunits.m ** 3) * pyunits.K ** -4,
             doc='Mass density parameter A5')
         self.dens_mass_param_B1 = Var(
-            within=Reals, initialize=8.020e2, units=pyunits.kg/pyunits.m ** 3,
+            within=Reals, initialize=8.020e2, units=pyunits.kg / pyunits.m ** 3,
             doc='Mass density parameter B1')
         self.dens_mass_param_B2 = Var(
-            within=Reals, initialize=-2.001, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-1,
+            within=Reals, initialize=-2.001, units=(pyunits.kg / pyunits.m ** 3) * pyunits.K ** -1,
             doc='Mass density parameter B2')
         self.dens_mass_param_B3 = Var(
-            within=Reals, initialize=1.677e-2, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-2,
+            within=Reals, initialize=1.677e-2, units=(pyunits.kg / pyunits.m ** 3) * pyunits.K ** -2,
             doc='Mass density parameter B3')
         self.dens_mass_param_B4 = Var(
-            within=Reals, initialize=-3.060e-5, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-3,
+            within=Reals, initialize=-3.060e-5, units=(pyunits.kg / pyunits.m ** 3) * pyunits.K ** -3,
             doc='Mass density parameter B4')
         self.dens_mass_param_B5 = Var(
-            within=Reals, initialize=-1.613e-5, units=(pyunits.kg/pyunits.m**3) * pyunits.K**-2,
+            within=Reals, initialize=-1.613e-5, units=(pyunits.kg / pyunits.m ** 3) * pyunits.K ** -2,
             doc='Mass density parameter B5')
 
         # dynamic viscosity parameters, eq. 22 and 23 in Sharqawy
         self.visc_d_param_muw_A = Var(
-            within=Reals, initialize=4.2844e-5, units=pyunits.Pa*pyunits.s,
+            within=Reals, initialize=4.2844e-5, units=pyunits.Pa * pyunits.s,
             doc='Dynamic viscosity parameter A for pure water')
         self.visc_d_param_muw_B = Var(
-            within=Reals, initialize=0.157, units=pyunits.degK**-2*pyunits.Pa**-1*pyunits.s**-1,
+            within=Reals, initialize=0.157, units=pyunits.degK ** -2 * pyunits.Pa ** -1 * pyunits.s ** -1,
             doc='Dynamic viscosity parameter B for pure water')
         self.visc_d_param_muw_C = Var(
             within=Reals, initialize=64.993, units=pyunits.K,
             doc='Dynamic viscosity parameter C for pure water')
         self.visc_d_param_muw_D = Var(
-            within=Reals, initialize=91.296, units=pyunits.Pa**-1*pyunits.s**-1,
+            within=Reals, initialize=91.296, units=pyunits.Pa ** -1 * pyunits.s ** -1,
             doc='Dynamic viscosity parameter D for pure water')
         self.visc_d_param_A_1 = Var(
             within=Reals, initialize=1.541, units=pyunits.dimensionless,
             doc='Dynamic viscosity parameter 1 for term A')
         self.visc_d_param_A_2 = Var(
-            within=Reals, initialize=1.998e-2, units=pyunits.K**-1,
+            within=Reals, initialize=1.998e-2, units=pyunits.K ** -1,
             doc='Dynamic viscosity parameter 2 for term A')
         self.visc_d_param_A_3 = Var(
-            within=Reals, initialize=-9.52e-5, units=pyunits.K**-2,
+            within=Reals, initialize=-9.52e-5, units=pyunits.K ** -2,
             doc='Dynamic viscosity parameter 3 for term A')
         self.visc_d_param_B_1 = Var(
             within=Reals, initialize=7.974, units=pyunits.dimensionless,
             doc='Dynamic viscosity parameter 1 for term B')
         self.visc_d_param_B_2 = Var(
-            within=Reals, initialize=-7.561e-2, units=pyunits.K**-1,
+            within=Reals, initialize=-7.561e-2, units=pyunits.K ** -1,
             doc='Dynamic viscosity parameter 2 for term B')
         self.visc_d_param_B_3 = Var(
-            within=Reals, initialize=4.724e-4, units=pyunits.K**-2,
+            within=Reals, initialize=4.724e-4, units=pyunits.K ** -2,
             doc='Dynamic viscosity parameter 3 for term B')
 
         # osmotic coefficient parameters, eq. 49 in Sharqawy
@@ -147,45 +147,45 @@ class SeawaterParameterData(PhysicalParameterBlock):
             within=Reals, initialize=8.9453e-1, units=pyunits.dimensionless,
             doc='Osmotic coefficient parameter 1')
         self.osm_coeff_param_2 = Var(
-            within=Reals, initialize=4.1561e-4, units=pyunits.K**-1,
+            within=Reals, initialize=4.1561e-4, units=pyunits.K ** -1,
             doc='Osmotic coefficient parameter 2')
         self.osm_coeff_param_3 = Var(
-            within=Reals, initialize=-4.6262e-6, units=pyunits.K**-2,
+            within=Reals, initialize=-4.6262e-6, units=pyunits.K ** -2,
             doc='Osmotic coefficient parameter 3')
         self.osm_coeff_param_4 = Var(
-            within=Reals, initialize=2.2211e-11, units=pyunits.K**-4,
+            within=Reals, initialize=2.2211e-11, units=pyunits.K ** -4,
             doc='Osmotic coefficient parameter 4')
         self.osm_coeff_param_5 = Var(
             within=Reals, initialize=-1.1445e-1, units=pyunits.dimensionless,
             doc='Osmotic coefficient parameter 5')
         self.osm_coeff_param_6 = Var(
-            within=Reals, initialize=-1.4783e-3, units=pyunits.K**-1,
+            within=Reals, initialize=-1.4783e-3, units=pyunits.K ** -1,
             doc='Osmotic coefficient parameter 6')
         self.osm_coeff_param_7 = Var(
-            within=Reals, initialize=-1.3526e-8, units=pyunits.K**-3,
+            within=Reals, initialize=-1.3526e-8, units=pyunits.K ** -3,
             doc='Osmotic coefficient parameter 7')
         self.osm_coeff_param_8 = Var(
             within=Reals, initialize=7.0132, units=pyunits.dimensionless,
             doc='Osmotic coefficient parameter 8')
         self.osm_coeff_param_9 = Var(
-            within=Reals, initialize=5.696e-2, units=pyunits.K**-1,
+            within=Reals, initialize=5.696e-2, units=pyunits.K ** -1,
             doc='Osmotic coefficient parameter 9')
         self.osm_coeff_param_10 = Var(
-            within=Reals, initialize=-2.8624e-4, units=pyunits.K**-2,
+            within=Reals, initialize=-2.8624e-4, units=pyunits.K ** -2,
             doc='Osmotic coefficient parameter 10')
 
         # specific enthalpy parameters, eq. 55 and 43 in Sharqawy
         self.enth_mass_param_A1 = Var(
-            within=Reals, initialize=143.355, units=pyunits.J/pyunits.kg,
+            within=Reals, initialize=141.355, units=pyunits.J / pyunits.kg,
             doc='Specific enthalpy parameter A1')
         self.enth_mass_param_A2 = Var(
-            within=Reals, initialize=4202.07, units=(pyunits.J/pyunits.kg) * pyunits.K**-1,
+            within=Reals, initialize=4202.07, units=(pyunits.J / pyunits.kg) * pyunits.K ** -1,
             doc='Specific enthalpy parameter A2')
         self.enth_mass_param_A3 = Var(
-            within=Reals, initialize=-0.535, units=(pyunits.J/pyunits.kg) * pyunits.K**-2,
+            within=Reals, initialize=-0.535, units=(pyunits.J / pyunits.kg) * pyunits.K ** -2,
             doc='Specific enthalpy parameter A3')
         self.enth_mass_param_A4 = Var(
-            within=Reals, initialize=0.004, units=(pyunits.J/pyunits.kg) * pyunits.K**-3,
+            within=Reals, initialize=0.004, units=(pyunits.J / pyunits.kg) * pyunits.K ** -3,
             doc='Specific enthalpy parameter A4')
         self.enth_mass_param_B1 = Var(
             within=Reals, initialize=27062.623, units=pyunits.dimensionless,
@@ -193,7 +193,30 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.enth_mass_param_B2 = Var(
             within=Reals, initialize=4835.675, units=pyunits.dimensionless,
             doc='Specific enthalpy parameter B2')
-
+        self.pressure_sat_param_psatw_A1 = Var(
+            within=Reals, initialize=-5.8002206e3, units=pyunits.K,
+            doc='Vapor pressure of pure water parameter A1')
+        self.pressure_sat_param_psatw_A2 = Var(
+            within=Reals, initialize=1.3914993, units=pyunits.dimensionless,
+            doc='Vapor pressure of pure water parameter A2')
+        self.pressure_sat_param_psatw_A3 = Var(
+            within=Reals, initialize=-4.8640239e-2, units=pyunits.K ** -1,
+            doc='Vapor pressure of pure water parameter A3')
+        self.pressure_sat_param_psatw_A4 = Var(
+            within=Reals, initialize=4.1764768e-5, units=pyunits.K ** -2,
+            doc='Vapor pressure of pure water parameter A4')
+        self.pressure_sat_param_psatw_A5 = Var(
+            within=Reals, initialize=-1.4452093e-8, units=pyunits.K ** -3,
+            doc='Vapor pressure of pure water parameter A5')
+        self.pressure_sat_param_psatw_A6 = Var(
+            within=Reals, initialize=6.5459673, units=pyunits.K ** -1,
+            doc='Vapor pressure of pure water parameter A6')
+        self.pressure_sat_param_B1 = Var(
+            within=Reals, initialize=-4.5818e-4, units=pyunits.kg / pyunits.g,
+            doc='Vapor pressure of seawater parameter B1')
+        self.pressure_sat_param_B2 = Var(
+            within=Reals, initialize=-2.0443e-6, units=pyunits.kg ** 2 / pyunits.g ** 2,
+            doc='Vapor pressure of seawater parameter B2')
         # traditional parameters are the only Vars currently on the block and should be fixed
         for v in self.component_objects(Var):
             v.fix()
@@ -225,7 +248,8 @@ class SeawaterParameterData(PhysicalParameterBlock):
              'osm_coeff': {'method': '_osm_coeff'},
              'pressure_osm': {'method': '_pressure_osm'},
              'enth_mass_phase': {'method': '_enth_mass_phase'},
-             'enth_flow': {'method': '_enth_flow'}
+             'enth_flow': {'method': '_enth_flow'},
+             'pressure_sat': {'method': '_pressure_sat'}
              })
 
         obj.add_default_units({'time': pyunits.s,
@@ -342,10 +366,12 @@ class _SeawaterStateBlock(StateBlock):
         revert_state_vars(self, flags)
         init_log.info('{} State Released.'.format(self.name))
 
+
 @declare_process_block_class("SeawaterStateBlock",
                              block_class=_SeawaterStateBlock)
 class SeawaterStateBlockData(StateBlockData):
     """A seawater property package."""
+
     def build(self):
         """Callable method for Block construction."""
         super().build()
@@ -359,7 +385,7 @@ class SeawaterStateBlockData(StateBlockData):
             initialize=1,
             bounds=(1e-8, 100),
             domain=NonNegativeReals,
-            units=pyunits.kg/pyunits.s,
+            units=pyunits.kg / pyunits.s,
             doc='Mass flow rate')
 
         self.temperature = Var(
@@ -390,6 +416,7 @@ class SeawaterStateBlockData(StateBlockData):
         def rule_mass_frac_phase_comp(b, j):
             return (b.mass_frac_phase_comp['Liq', j] == b.flow_mass_phase_comp['Liq', j] /
                     sum(b.flow_mass_phase_comp['Liq', j] for j in b.params.component_list))
+
         self.eq_mass_frac_phase_comp = Constraint(self.params.component_list, rule=rule_mass_frac_phase_comp)
 
     def _dens_mass_phase(self):
@@ -397,7 +424,7 @@ class SeawaterStateBlockData(StateBlockData):
             self.params.phase_list,
             initialize=1e3,
             bounds=(1, 1e6),
-            units=pyunits.kg * pyunits.m**-3,
+            units=pyunits.kg * pyunits.m ** -3,
             doc="Mass density")
 
         def rule_dens_mass_phase(b):  # density, eq. 8 in Sharqawy
@@ -414,6 +441,7 @@ class SeawaterStateBlockData(StateBlockData):
                          + b.params.dens_mass_param_B4 * s * t ** 3
                          + b.params.dens_mass_param_B5 * s ** 2 * t ** 2)
             return b.dens_mass_phase['Liq'] == dens_mass
+
         self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
 
     def _flow_vol_phase(self):
@@ -421,19 +449,21 @@ class SeawaterStateBlockData(StateBlockData):
             self.params.phase_list,
             initialize=1,
             bounds=(1e-8, 1e8),
-            units=pyunits.m**3 / pyunits.s,
+            units=pyunits.m ** 3 / pyunits.s,
             doc="Volumetric flow rate")
 
         def rule_flow_vol_phase(b):
             return (b.flow_vol_phase['Liq']
                     == sum(b.flow_mass_phase_comp['Liq', j] for j in b.params.component_list)
                     / b.dens_mass_phase['Liq'])
+
         self.eq_flow_vol_phase = Constraint(rule=rule_flow_vol_phase)
 
     def _flow_vol(self):
 
         def rule_flow_vol(b):
             return sum(b.flow_vol_phase[p] for p in b.params.phase_list)
+
         self.flow_vol = Expression(rule=rule_flow_vol)
 
     def _conc_mass_phase_comp(self):
@@ -442,12 +472,13 @@ class SeawaterStateBlockData(StateBlockData):
             self.params.component_list,
             initialize=10,
             bounds=(1e-6, 1e6),
-            units=pyunits.kg * pyunits.m**-3,
+            units=pyunits.kg * pyunits.m ** -3,
             doc="Mass concentration")
 
         def rule_conc_mass_phase_comp(b, j):
             return (b.conc_mass_phase_comp['Liq', j] ==
                     b.dens_mass_phase['Liq'] * b.mass_frac_phase_comp['Liq', j])
+
         self.eq_conc_mass_phase_comp = Constraint(self.params.component_list, rule=rule_conc_mass_phase_comp)
 
     def _flow_mol_phase_comp(self):
@@ -462,6 +493,7 @@ class SeawaterStateBlockData(StateBlockData):
         def rule_flow_mol_phase_comp(b, j):
             return (b.flow_mol_phase_comp['Liq', j] ==
                     b.flow_mass_phase_comp['Liq', j] / b.params.mw_comp[j])
+
         self.eq_flow_mol_phase_comp = Constraint(self.params.component_list, rule=rule_flow_mol_phase_comp)
 
     def _mole_frac_phase_comp(self):
@@ -476,6 +508,7 @@ class SeawaterStateBlockData(StateBlockData):
         def rule_mole_frac_phase_comp(b, j):
             return (b.mole_frac_phase_comp['Liq', j] == b.flow_mol_phase_comp['Liq', j] /
                     sum(b.flow_mol_phase_comp['Liq', j] for j in b.params.component_list))
+
         self.eq_mole_frac_phase_comp = Constraint(self.params.component_list, rule=rule_mole_frac_phase_comp)
 
     def _molality_comp(self):
@@ -491,6 +524,7 @@ class SeawaterStateBlockData(StateBlockData):
                     b.mass_frac_phase_comp['Liq', j]
                     / (1 - b.mass_frac_phase_comp['Liq', j])
                     / b.params.mw_comp[j])
+
         self.eq_molality_comp = Constraint(['TDS'], rule=rule_molality_comp)
 
     def _visc_d_phase(self):
@@ -515,6 +549,7 @@ class SeawaterStateBlockData(StateBlockData):
                  + b.params.visc_d_param_B_2 * t
                  + b.params.visc_d_param_B_3 * t ** 2)
             return b.visc_d_phase['Liq'] == mu_w * (1 + A * s + B * s ** 2)
+
         self.eq_visc_d_phase = Constraint(rule=rule_visc_d_phase)
 
     def _osm_coeff(self):
@@ -538,6 +573,7 @@ class SeawaterStateBlockData(StateBlockData):
                          + b.params.osm_coeff_param_9 * s ** 2 * t
                          + b.params.osm_coeff_param_10 * s ** 2 * t ** 2)
             return b.osm_coeff == osm_coeff
+
         self.eq_osm_coeff = Constraint(rule=rule_osm_coeff)
 
     def _pressure_osm(self):
@@ -549,9 +585,10 @@ class SeawaterStateBlockData(StateBlockData):
 
         def rule_pressure_osm(b):  # osmotic pressure, based on molality and assumes TDS is NaCl
             i = 2  # number of ionic species
-            rhow = 1000 * pyunits.kg/pyunits.m**3  # TODO: could make this variable based on temperature
+            rhow = 1000 * pyunits.kg / pyunits.m ** 3  # TODO: could make this variable based on temperature
             return (b.pressure_osm ==
                     i * b.osm_coeff * b.molality_comp['TDS'] * rhow * Constants.gas_constant * b.temperature)
+
         self.eq_pressure_osm = Constraint(rule=rule_pressure_osm)
 
     def _enth_mass_phase(self):
@@ -559,7 +596,7 @@ class SeawaterStateBlockData(StateBlockData):
             self.params.phase_list,
             initialize=1e6,
             bounds=(1, 1e9),
-            units=pyunits.J * pyunits.kg**-1,
+            units=pyunits.J * pyunits.kg ** -1,
             doc="Specific enthalpy")
 
         def rule_enth_mass_phase(b):  # specific enthalpy, eq. 55 and 43 in Sharqawy
@@ -572,9 +609,10 @@ class SeawaterStateBlockData(StateBlockData):
             # relationship requires dimensionless calculation and units added at end
             h_sw = (h_w -
                     (S * (b.params.enth_mass_param_B1 + S)
-                     + S * (b.params.enth_mass_param_B2 + S) * t/pyunits.K)
-                    * pyunits.J/pyunits.kg)
+                     + S * (b.params.enth_mass_param_B2 + S) * t / pyunits.K)
+                    * pyunits.J / pyunits.kg)
             return b.enth_mass_phase['Liq'] == h_sw
+
         self.eq_enth_mass_phase = Constraint(rule=rule_enth_mass_phase)
 
     def _enth_flow(self):
@@ -582,10 +620,30 @@ class SeawaterStateBlockData(StateBlockData):
 
         def rule_enth_flow(b):  # enthalpy flow [J/s]
             return sum(b.flow_mass_phase_comp['Liq', j] for j in b.params.component_list) * b.enth_mass_phase['Liq']
+
         self.enth_flow = Expression(rule=rule_enth_flow)
 
-    # TODO: add vapor pressure, specific heat, thermal conductivity,
+    # TODO: specific heat, thermal conductivity,
     #   and heat of vaporization
+    def _pressure_sat(self):
+        self.pressure_sat = Var(
+            initialize=1e3,
+            bounds=(1, 1e8),
+            units=pyunits.Pa,
+            doc="Vapor pressure")
+
+        def rule_pressure_sat(b):  # vapor pressure, eq. 5 and 6 in Nayar et al.(2016)
+            t = b.temperature
+            s = b.mass_frac_phase_comp['Liq', 'TDS'] * 1000 * pyunits.g / pyunits.kg
+            psatw = exp(b.params.pressure_sat_param_psatw_A1 * t ** -1
+                        + b.params.pressure_sat_param_psatw_A2
+                        + b.params.pressure_sat_param_psatw_A3 * t
+                        + b.params.pressure_sat_param_psatw_A4 * t ** 2
+                        + b.params.pressure_sat_param_psatw_A5 * t ** 3
+                        + b.params.pressure_sat_param_psatw_A6 * log(t))
+            return b.pressure_sat == psatw * exp(b.params.pressure_sat_param_B1 * s
+                                                 + b.params.pressure_sat_param_B2 * s**2)
+        self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
 
     # -----------------------------------------------------------------------------
     # General Methods
@@ -641,7 +699,7 @@ class SeawaterStateBlockData(StateBlockData):
 
         if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'TDS']) is None:
             sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'TDS'], default=1e2, warning=True)
-            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq','TDS'], sf)
+            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'TDS'], sf)
 
         # scaling factors for parameters
         for j, v in self.params.mw_comp.items():
