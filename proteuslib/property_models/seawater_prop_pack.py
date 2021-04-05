@@ -189,13 +189,37 @@ class SeawaterParameterData(PhysicalParameterBlock):
             within=Reals, initialize=0.004, units=(pyunits.J / pyunits.kg) * pyunits.K ** -3,
             doc='Specific enthalpy parameter A4')
         self.enth_mass_param_B1 = Var(
-            within=Reals, initialize=27062.623, units=pyunits.dimensionless,
+            within=Reals, initialize=-2.348e4, units=(pyunits.J / pyunits.kg),
             doc='Specific enthalpy parameter B1')
         self.enth_mass_param_B2 = Var(
-            within=Reals, initialize=4835.675, units=pyunits.dimensionless,
+            within=Reals, initialize=3.152e5, units=(pyunits.J / pyunits.kg),
             doc='Specific enthalpy parameter B2')
+        self.enth_mass_param_B3 = Var(
+            within=Reals, initialize=2.803e6, units=(pyunits.J / pyunits.kg),
+            doc='Specific enthalpy parameter B3')
+        self.enth_mass_param_B4 = Var(
+            within=Reals, initialize=-1.446e7, units=(pyunits.J / pyunits.kg),
+            doc='Specific enthalpy parameter B4')
+        self.enth_mass_param_B5 = Var(
+            within=Reals, initialize=7.826e3, units=(pyunits.J / pyunits.kg) * pyunits.K ** -1,
+            doc='Specific enthalpy parameter B5')
+        self.enth_mass_param_B6 = Var(
+            within=Reals, initialize=-4.417e1, units=(pyunits.J / pyunits.kg) * pyunits.K ** -2,
+            doc='Specific enthalpy parameter B6')
+        self.enth_mass_param_B7 = Var(
+            within=Reals, initialize=2.139e-1, units=(pyunits.J / pyunits.kg) * pyunits.K ** -3,
+            doc='Specific enthalpy parameter B7')
+        self.enth_mass_param_B8 = Var(
+            within=Reals, initialize=-1.991e4, units=(pyunits.J / pyunits.kg) * pyunits.K ** -1,
+            doc='Specific enthalpy parameter B8')
+        self.enth_mass_param_B9 = Var(
+            within=Reals, initialize=2.778e4, units=(pyunits.J / pyunits.kg),
+            doc='Specific enthalpy parameter B9')
+        self.enth_mass_param_B10 = Var(
+            within=Reals, initialize=9.728e1, units=(pyunits.J / pyunits.kg) * pyunits.K ** -2,
+            doc='Specific enthalpy parameter B10')
 
-        # vapor pressure parameters, eq. 55 and 43 in Sharqawy
+        # vapor pressure parameters,  eq. 5 and 6 in Nayar et al.(2016)
         self.pressure_sat_param_psatw_A1 = Var(
             within=Reals, initialize=-5.8002206e3, units=pyunits.K,
             doc='Vapor pressure of pure water parameter A1')
@@ -609,11 +633,16 @@ class SeawaterStateBlockData(StateBlockData):
                    + b.params.enth_mass_param_A2 * t
                    + b.params.enth_mass_param_A3 * t ** 2
                    + b.params.enth_mass_param_A4 * t ** 3)
-            # relationship requires dimensionless calculation and units added at end
-            h_sw = (h_w -
-                    (S * (b.params.enth_mass_param_B1 + S)
-                     + S * (b.params.enth_mass_param_B2 + S) * t / pyunits.K)
-                    * pyunits.J / pyunits.kg)
+            h_sw = h_w - S * (b.params.enth_mass_param_B1 +
+                              b.params.enth_mass_param_B2 * S +
+                              b.params.enth_mass_param_B3 * S ** 2 +
+                              b.params.enth_mass_param_B4 * S ** 3 +
+                              b.params.enth_mass_param_B5 * t +
+                              b.params.enth_mass_param_B6 * t ** 2 +
+                              b.params.enth_mass_param_B7 * t ** 3 +
+                              b.params.enth_mass_param_B8 * S * t +
+                              b.params.enth_mass_param_B9 * S ** 2 * t +
+                              b.params.enth_mass_param_B3 * S * t ** 2)
             return b.enth_mass_phase['Liq'] == h_sw
 
         self.eq_enth_mass_phase = Constraint(rule=rule_enth_mass_phase)
@@ -645,7 +674,8 @@ class SeawaterStateBlockData(StateBlockData):
                         + b.params.pressure_sat_param_psatw_A5 * t ** 3
                         + b.params.pressure_sat_param_psatw_A6 * log(t))
             return b.pressure_sat == psatw * exp(b.params.pressure_sat_param_B1 * s
-                                                 + b.params.pressure_sat_param_B2 * s**2)
+                                                 + b.params.pressure_sat_param_B2 * s ** 2)
+
         self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
 
     # -----------------------------------------------------------------------------
