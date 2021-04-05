@@ -70,8 +70,9 @@ class SeawaterParameterData(PhysicalParameterBlock):
 
         # parameters
         # molecular weight
-        mw_comp_data = {'H2O': 18.01528E-3,
-                        'TDS': 58.44E-3}  # TODO: Confirm how Sharqawy converts TDS to moles
+        mw_comp_data = {'H2O': 18.01528e-3,
+                        'TDS': 31.4038218e-3}  # Average atomic weight of sea salt, based on "Reference-Composition
+        # Salinity Scale" in Millero et al. (2008) and cited by Sharqawy et al. (2010)
         self.mw_comp = Param(self.component_list,
                              mutable=False,
                              initialize=mw_comp_data,
@@ -193,6 +194,8 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.enth_mass_param_B2 = Var(
             within=Reals, initialize=4835.675, units=pyunits.dimensionless,
             doc='Specific enthalpy parameter B2')
+
+        # vapor pressure parameters, eq. 55 and 43 in Sharqawy
         self.pressure_sat_param_psatw_A1 = Var(
             within=Reals, initialize=-5.8002206e3, units=pyunits.K,
             doc='Vapor pressure of pure water parameter A1')
