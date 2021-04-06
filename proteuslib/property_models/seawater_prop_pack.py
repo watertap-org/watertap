@@ -65,9 +65,15 @@ class SeawaterParameterData(PhysicalParameterBlock):
         # phases
         self.Liq = LiquidPhase()
 
-        # reference
-        # this package is developed from Sharqawy et al. (2010) http://dx.doi.org/10.5004/dwt.2010.1079
+        ''' References
+        This package is developed from the following references:
+        
+        - K.G.Nayar, M.H.Sharqawy, L.D.Banchik, and J.H.Lienhard V, "Thermophysical properties of seawater: A review and new correlations that include pressure dependence,"
+        Desalination, Vol.390, pp.1 - 24, 2016.doi: 10.1016/j.desal.2016.02.024(preprint)
 
+        - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of existing correlations and data,"
+        Desalination and Water Treatment, Vol.16, pp.354 - 380, April 2010.(2017 corrections provided at http://web.mit.edu/seawater)
+        '''
         # parameters
         # molecular weight
         mw_comp_data = {'H2O': 18.01528e-3,
@@ -244,6 +250,45 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.pressure_sat_param_B2 = Var(
             within=Reals, initialize=-2.0443e-6, units=pyunits.kg ** 2 / pyunits.g ** 2,
             doc='Vapor pressure of seawater parameter B2')
+
+        # specific heat parameters from eq (9) in Sharqawy et al. (2010)
+        self.specific_heat_param_A1 = Var(
+            within=Reals, initialize=5.328, units=pyunits.kJ/ (pyunits.kg*pyunits.K),
+            doc='Specific heat of seawater parameter A1')
+        self.specific_heat_param_A2 = Var(
+            within=Reals, initialize=-9.76e-2, units=pyunits.kJ/ (pyunits.kg*pyunits.K)*(pyunits.g/pyunits.kg)**-1,
+            doc='Specific heat of seawater parameter A2')
+        self.specific_heat_param_A3 = Var(
+            within=Reals, initialize=4.04e-4, units=pyunits.kJ/ (pyunits.kg*pyunits.K)*(pyunits.g/pyunits.kg)**-2,
+            doc='Specific heat of seawater parameter A3')
+        self.specific_heat_param_B1 = Var(
+            within=Reals, initialize=-6.913e-3, units=pyunits.kJ/ (pyunits.kg*pyunits.K),
+            doc='Specific heat of seawater parameter B1')
+        self.specific_heat_param_B2 = Var(
+            within=Reals, initialize=7.351e-4, units=pyunits.kJ/ (pyunits.kg*pyunits.K)*(pyunits.g/pyunits.kg)**-1,
+            doc='Specific heat of seawater parameter B2')
+        self.specific_heat_param_B3 = Var(
+            within=Reals, initialize=-3.15e-6, units=pyunits.kJ/ (pyunits.kg*pyunits.K)*(pyunits.g/pyunits.kg)**-2,
+            doc='Specific heat of seawater parameter B3')
+        self.specific_heat_param_C1 = Var(
+            within=Reals, initialize=9.6e-6, units=pyunits.kJ/ (pyunits.kg*pyunits.K),
+            doc='Specific heat of seawater parameter C1')
+        self.specific_heat_param_C2 = Var(
+            within=Reals, initialize=-1.927e-6, units=pyunits.kJ/ (pyunits.kg*pyunits.K)*(pyunits.g/pyunits.kg)**-1,
+            doc='Specific heat of seawater parameter C2')
+        self.specific_heat_param_C3 = Var(
+            within=Reals, initialize=8.23e-9, units=pyunits.kJ/ (pyunits.kg*pyunits.K)*(pyunits.g/pyunits.kg)**-2,
+            doc='Specific heat of seawater parameter C3')
+        self.specific_heat_param_D1 = Var(
+            within=Reals, initialize=2.5e-9, units=pyunits.kJ/ (pyunits.kg*pyunits.K),
+            doc='Specific heat of seawater parameter D1')
+        self.specific_heat_param_D2 = Var(
+            within=Reals, initialize=1.666e-9, units=pyunits.kJ/ (pyunits.kg*pyunits.K)*(pyunits.g/pyunits.kg)**-1,
+            doc='Specific heat of seawater parameter D2')
+        self.specific_heat_param_D3 = Var(
+            within=Reals, initialize=-7.125e-12, units=pyunits.kJ/ (pyunits.kg*pyunits.K)*(pyunits.g/pyunits.kg)**-2,
+            doc='Specific heat of seawater parameter D3')
+
         # traditional parameters are the only Vars currently on the block and should be fixed
         for v in self.component_objects(Var):
             v.fix()
@@ -276,7 +321,8 @@ class SeawaterParameterData(PhysicalParameterBlock):
              'pressure_osm': {'method': '_pressure_osm'},
              'enth_mass_phase': {'method': '_enth_mass_phase'},
              'enth_flow': {'method': '_enth_flow'},
-             'pressure_sat': {'method': '_pressure_sat'}
+             'pressure_sat': {'method': '_pressure_sat'},
+             'specific_heat': {'method': '_specific_heat'}
              })
 
         obj.add_default_units({'time': pyunits.s,
@@ -379,7 +425,7 @@ class _SeawaterStateBlock(StateBlock):
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         '''
-        Method to relase state variables fixed during initialisation.
+        Method to release state variables fixed during initialisation.
 
         Keyword Arguments:
             flags : dict containing information of which state variables
@@ -655,14 +701,14 @@ class SeawaterStateBlockData(StateBlockData):
 
         self.enth_flow = Expression(rule=rule_enth_flow)
 
-    # TODO: specific heat, thermal conductivity,
+    # TODO: thermal conductivity,
     #   and heat of vaporization
     def _pressure_sat(self):
         self.pressure_sat = Var(
             initialize=1e3,
             bounds=(1, 1e8),
             units=pyunits.Pa,
-            doc="Vapor pressure")
+            doc="Vapor pressure of seawater")
 
         def rule_pressure_sat(b):  # vapor pressure, eq. 5 and 6 in Nayar et al.(2016)
             t = b.temperature
@@ -673,10 +719,30 @@ class SeawaterStateBlockData(StateBlockData):
                         + b.params.pressure_sat_param_psatw_A4 * t ** 2
                         + b.params.pressure_sat_param_psatw_A5 * t ** 3
                         + b.params.pressure_sat_param_psatw_A6 * log(t))
-            return b.pressure_sat == psatw * exp(b.params.pressure_sat_param_B1 * s
-                                                 + b.params.pressure_sat_param_B2 * s ** 2)
+            return b.pressure_sat == psatw * exp(b.params.pressure_sat_param_B1 * s +
+                                                 b.params.pressure_sat_param_B2 * s ** 2)
 
         self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
+
+    def _specific_heat(self):
+        self.specific_heat = Var(
+            initialize=4,
+            bounds=(1, 10),
+            units=pyunits.kJ / pyunits.kg / pyunits.K,
+            doc="Specific heat of seawater")
+
+        def rule_specific_heat(b):  # specific heat
+            t = (b.temperature - 0.00025 * 273.15 * pyunits.K) / (
+                        1 - 0.00025)  # Convert T90 to T68, eq (4) in Sharqawy (2010)
+            s = b.mass_frac_phase_comp['Liq', 'TDS'] * 1000 * pyunits.g / pyunits.kg
+            A = b.params.specific_heat_param_A1 + b.params.specific_heat_param_A2 * s + b.params.specific_heat_param_A3 * s ** 2
+            B = b.params.specific_heat_param_B1 + b.params.specific_heat_param_B2 * s + b.params.specific_heat_param_B3 * s ** 2
+            C = b.params.specific_heat_param_C1 + b.params.specific_heat_param_C2 * s + b.params.specific_heat_param_C3 * s ** 2
+            D = b.params.specific_heat_param_D1 + b.params.specific_heat_param_D2 * s + b.params.specific_heat_param_D3 * s ** 2
+            return b.specific_heat == A + B * t + C * t ** 2 + D * t ** 3
+
+        self.eq_specific_heat = Constraint(rule=rule_specific_heat)
+
 
     # -----------------------------------------------------------------------------
     # General Methods
