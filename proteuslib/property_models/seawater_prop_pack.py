@@ -19,7 +19,7 @@ import idaes.logger as idaeslog
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, \
-    Var, Param, Suffix, value, SolverFactory, log, exp
+    Var, Param, Suffix, value, SolverFactory, log, log10, exp
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores
@@ -289,6 +289,36 @@ class SeawaterParameterData(PhysicalParameterBlock):
             within=Reals, initialize=-7.125e-12, units=pyunits.kJ/ (pyunits.kg*pyunits.K)*(pyunits.g/pyunits.kg)**-2,
             doc='Specific heat of seawater parameter D3')
 
+        # thermal conductivity parameters from eq. 13 in Sharqawy et al. (2010)
+        self.thermal_conductivity_param_1 = Var(
+            within=Reals, initialize=240, units=pyunits.W/pyunits.m/pyunits.K,
+            doc='Thermal conductivity of seawater parameter 1')
+        self.thermal_conductivity_param_2 = Var(
+            within=Reals, initialize=0.0002, units=pyunits.W/pyunits.m/pyunits.K*pyunits.kg/pyunits.g,
+            doc='Thermal conductivity of seawater parameter 2')
+        self.thermal_conductivity_param_3 = Var(
+            within=Reals, initialize=0.434, units=pyunits.W/pyunits.m/pyunits.K,
+            doc='Thermal conductivity of seawater parameter 3')
+        self.thermal_conductivity_param_4 = Var(
+            within=Reals, initialize=2.3, units=pyunits.dimensionless,
+            doc='Thermal conductivity of seawater parameter 4')
+        self.thermal_conductivity_param_5 = Var(
+            within=Reals, initialize=343.5, units=pyunits.K,
+            doc='Thermal conductivity of seawater parameter 5')
+        self.thermal_conductivity_param_6 = Var(
+            within=Reals, initialize=0.037, units=pyunits.K*pyunits.kg/pyunits.g,
+            doc='Thermal conductivity of seawater parameter 6')
+        self.thermal_conductivity_param_7 = Var(
+            within=Reals, initialize=647, units=pyunits.K,
+            doc='Thermal conductivity of seawater parameter 7')
+        self.thermal_conductivity_param_8 = Var(
+            within=Reals, initialize=0.03, units=pyunits.K*pyunits.kg/pyunits.g,
+            doc='Thermal conductivity of seawater parameter 8')
+        self.thermal_conductivity_param_9 = Var(
+            within=Reals, initialize=0.333, units=pyunits.dimensionless,
+            doc='Thermal conductivity of seawater parameter 9')
+
+
         # traditional parameters are the only Vars currently on the block and should be fixed
         for v in self.component_objects(Var):
             v.fix()
@@ -322,8 +352,8 @@ class SeawaterParameterData(PhysicalParameterBlock):
              'enth_mass_phase': {'method': '_enth_mass_phase'},
              'enth_flow': {'method': '_enth_flow'},
              'pressure_sat': {'method': '_pressure_sat'},
-             'specific_heat': {'method': '_specific_heat'}
-             })
+             'specific_heat': {'method': '_specific_heat'},
+             'thermal_conductivity': {'method': '_thermal_conductivity'}})
 
         obj.add_default_units({'time': pyunits.s,
                                'length': pyunits.m,
@@ -701,8 +731,7 @@ class SeawaterStateBlockData(StateBlockData):
 
         self.enth_flow = Expression(rule=rule_enth_flow)
 
-    # TODO: thermal conductivity,
-    #   and heat of vaporization
+    # TODO:   and heat of vaporization
     def _pressure_sat(self):
         self.pressure_sat = Var(
             initialize=1e3,
@@ -731,9 +760,9 @@ class SeawaterStateBlockData(StateBlockData):
             units=pyunits.kJ / pyunits.kg / pyunits.K,
             doc="Specific heat of seawater")
 
-        def rule_specific_heat(b):  # specific heat
+        def rule_specific_heat(b):  # specific heat, eq. 9 in Sharqawy et al. (2010)
             t = (b.temperature - 0.00025 * 273.15 * pyunits.K) / (
-                        1 - 0.00025)  # Convert T90 to T68, eq (4) in Sharqawy (2010)
+                        1 - 0.00025)  # Convert T90 to T68, eq. 4 in Sharqawy et al. (2010)
             s = b.mass_frac_phase_comp['Liq', 'TDS'] * 1000 * pyunits.g / pyunits.kg
             A = b.params.specific_heat_param_A1 + b.params.specific_heat_param_A2 * s + b.params.specific_heat_param_A3 * s ** 2
             B = b.params.specific_heat_param_B1 + b.params.specific_heat_param_B2 * s + b.params.specific_heat_param_B3 * s ** 2
@@ -742,6 +771,26 @@ class SeawaterStateBlockData(StateBlockData):
             return b.specific_heat == A + B * t + C * t ** 2 + D * t ** 3
 
         self.eq_specific_heat = Constraint(rule=rule_specific_heat)
+
+    def _thermal_conductivity(self):
+        self.thermal_conductivity = Var(
+            initialize= 0.6,
+            bounds=(1e-8, 1),
+            units= pyunits.W/pyunits.m/pyunits.K,
+            doc="Thermal conductivity of seawater")
+
+        def rule_thermal_conductivity(b):  # thermal conductivity, eq. 13 in Sharqawy  et al. (2010)
+            t = (b.temperature - 0.00025 * 273.15 * pyunits.K) / (
+                        1 - 0.00025)  # Convert T90 to T68, eq. 4 in Sharqawy et al. (2010)
+            s = b.mass_frac_phase_comp['Liq', 'TDS'] * 1000 * pyunits.g / pyunits.kg
+            log10_ksw = log10(b.params.thermal_conductivity_param_1 + b.params.thermal_conductivity_param_2 * s) + \
+                        b.params.thermal_conductivity_param_3 * (b.params.thermal_conductivity_param_4 -
+                        (b.params.thermal_conductivity_param_5 + b.params.thermal_conductivity_param_6 * s)/t) * \
+                        (1 - t / (b.params.thermal_conductivity_param_7 + b.params.thermal_conductivity_param_8 * s)) \
+                        ** b.params.thermal_conductivity_param_9
+            return b.thermal_conductivity == 10 ** log10_ksw
+
+        self.eq_thermal_conductivity = Constraint(rule=rule_thermal_conductivity)
 
 
     # -----------------------------------------------------------------------------
