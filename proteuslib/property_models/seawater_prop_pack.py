@@ -68,11 +68,13 @@ class SeawaterParameterData(PhysicalParameterBlock):
         ''' References
         This package is developed from the following references:
         
-        - K.G.Nayar, M.H.Sharqawy, L.D.Banchik, and J.H.Lienhard V, "Thermophysical properties of seawater: A review and new correlations that include pressure dependence,"
-        Desalination, Vol.390, pp.1 - 24, 2016.doi: 10.1016/j.desal.2016.02.024(preprint)
+        - K.G.Nayar, M.H.Sharqawy, L.D.Banchik, and J.H.Lienhard V, "Thermophysical properties of seawater: A review and
+        new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016.
+        doi: 10.1016/j.desal.2016.02.024(preprint)
 
-        - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of existing correlations and data,"
-        Desalination and Water Treatment, Vol.16, pp.354 - 380, April 2010.(2017 corrections provided at http://web.mit.edu/seawater)
+        - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of 
+        existing correlations and data,"Desalination and Water Treatment, Vol.16, pp.354 - 380, April 2010.
+        (2017 corrections provided at http://web.mit.edu/seawater)
         '''
         # parameters
         # molecular weight
@@ -318,6 +320,24 @@ class SeawaterParameterData(PhysicalParameterBlock):
             within=Reals, initialize=0.333, units=pyunits.dimensionless,
             doc='Thermal conductivity of seawater parameter 9')
 
+        # latent heat of pure water parameters from eq. 54 in Sharqawy et al. (2010)
+        self.dh_vap_w_param_0 = Var(
+            within=Reals, initialize=2.501e6, units=pyunits.J/pyunits.kg,
+            doc='Latent heat of pure water parameter 0')
+        self.dh_vap_w_param_1 = Var(
+            within=Reals, initialize=-2.369e3, units=pyunits.J/pyunits.kg/pyunits.K,
+            doc='Latent heat of pure water parameter 1')
+        self.dh_vap_w_param_2 = Var(
+            within=Reals, initialize=2.678e-1, units=pyunits.J/pyunits.kg*pyunits.K**-2,
+            doc='Latent heat of pure water parameter 2')
+        self.dh_vap_w_param_3 = Var(
+            within=Reals, initialize=-8.103e-3, units=pyunits.J/pyunits.kg*pyunits.K**-3,
+            doc='Latent heat of pure water parameter 3')
+        self.dh_vap_w_param_4 = Var(
+            within=Reals, initialize=-2.079e-5, units=pyunits.J/pyunits.kg*pyunits.K**-4,
+            doc='Latent heat of pure water parameter 4')
+
+
 
         # traditional parameters are the only Vars currently on the block and should be fixed
         for v in self.component_objects(Var):
@@ -353,7 +373,8 @@ class SeawaterParameterData(PhysicalParameterBlock):
              'enth_flow': {'method': '_enth_flow'},
              'pressure_sat': {'method': '_pressure_sat'},
              'specific_heat': {'method': '_specific_heat'},
-             'thermal_conductivity': {'method': '_thermal_conductivity'}})
+             'thermal_conductivity': {'method': '_thermal_conductivity'},
+             'dh_vap': {'method': '_dh_vap'}})
 
         obj.add_default_units({'time': pyunits.s,
                                'length': pyunits.m,
@@ -791,6 +812,23 @@ class SeawaterStateBlockData(StateBlockData):
             return b.thermal_conductivity == 10 ** log10_ksw
 
         self.eq_thermal_conductivity = Constraint(rule=rule_thermal_conductivity)
+
+    def _dh_vap(self):
+        self.dh_vap = Var(
+            initialize=2.4e3,
+            bounds=(1,1e9),
+            units=pyunits.J/pyunits.kg,
+            doc="Latent heat of vaporization of seawater")
+
+        def rule_dh_vap(b): # latent heat of seawater from eq. 37 and eq. 55 in Sharqawy et al. (2010)
+            t = b.temperature - 273.15 * pyunits.K
+            s = b.mass_frac_phase_comp['Liq', 'TDS']
+            dh_vap_w = b.params.dh_vap_w_param_0 + b.params.dh_vap_w_param_1 * t + b.params.dh_vap_w_param_2 * t ** 2 \
+                       + b.params.dh_vap_w_param_3 * t ** 3 + b.params.dh_vap_w_param_3 * t ** 4
+            return b.dh_vap == dh_vap_w * (1 - s)
+
+        self.eq_dh_vap = Constraint(rule=rule_dh_vap)
+
 
 
     # -----------------------------------------------------------------------------
