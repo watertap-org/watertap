@@ -565,11 +565,7 @@ class SeawaterStateBlockData(StateBlockData):
         def rule_dens_mass_phase(b):  # density, eq. 8 in Sharqawy
             t = b.temperature - 273.15*pyunits.K
             s = b.mass_frac_phase_comp['Liq', 'TDS']
-            dens_mass = (b.params.dens_mass_param_A1
-                         + b.params.dens_mass_param_A2 * t
-                         + b.params.dens_mass_param_A3 * t**2
-                         + b.params.dens_mass_param_A4 * t**3
-                         + b.params.dens_mass_param_A5 * t**4
+            dens_mass = (b.dens_mass_w_phase['Liq']
                          + b.params.dens_mass_param_B1 * s
                          + b.params.dens_mass_param_B2 * s * t
                          + b.params.dens_mass_param_B3 * s * t**2
@@ -776,7 +772,7 @@ class SeawaterStateBlockData(StateBlockData):
             initialize=1e3,
             bounds=(1, 1e8),
             units=pyunits.Pa,
-            doc="Vapor pressure of seawater")
+            doc="Vapor pressure")
 
         def rule_pressure_sat(b):  # vapor pressure, eq. 5 and 6 in Nayar et al.(2016)
             t = b.temperature
@@ -798,7 +794,7 @@ class SeawaterStateBlockData(StateBlockData):
             initialize=4e3,
             bounds=(1e-8, 1e8),
             units=pyunits.J/pyunits.kg/pyunits.K,
-            doc="Specific heat of seawater")
+            doc="Specific heat capacity")
 
         def rule_cp_phase(b):  # specific heat, eq. 9 in Sharqawy et al. (2010)
             # Convert T90 to T68, eq. 4 in Sharqawy et al. (2010); primary reference from Rusby (1991)
@@ -817,7 +813,7 @@ class SeawaterStateBlockData(StateBlockData):
             initialize=0.6,
             bounds=(1e-8, 1),
             units=pyunits.W/pyunits.m/pyunits.K,
-            doc="Thermal conductivity of seawater")
+            doc="Thermal conductivity")
 
         def rule_therm_cond_phase(b):  # thermal conductivity, eq. 13 in Sharqawy  et al. (2010)
             # Convert T90 to T68, eq. 4 in Sharqawy et al. (2010); primary reference from Rusby (1991)
@@ -834,9 +830,9 @@ class SeawaterStateBlockData(StateBlockData):
     def _dh_vap(self):
         self.dh_vap = Var(
             initialize=2.4e3,
-            bounds=(1,1e9),
+            bounds=(1, 1e9),
             units=pyunits.J/pyunits.kg,
-            doc="Latent heat of vaporization of seawater")
+            doc="Latent heat of vaporization")
 
         def rule_dh_vap(b): # latent heat of seawater from eq. 37 and eq. 55 in Sharqawy et al. (2010)
             t = b.temperature - 273.15 * pyunits.K
