@@ -353,7 +353,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling('temperature', 1e-2)
         self.set_default_scaling('pressure', 1e-6)
         self.set_default_scaling('dens_mass_phase', 1e-3, index='Liq')
-        self.set_default_scaling('dens_mass_w_phase', 1e-3, index='Liq')
+        self.set_default_scaling('dens_mass_solvent', 1e-3, index='Liq')
         self.set_default_scaling('visc_d_phase', 1e3, index='Liq')
         self.set_default_scaling('osm_coeff', 1e0)
         self.set_default_scaling('enth_mass_phase', 1e-5, index='Liq')
@@ -371,7 +371,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
              'pressure': {'method': None},
              'mass_frac_phase_comp': {'method': '_mass_frac_phase_comp'},
              'dens_mass_phase': {'method': '_dens_mass_phase'},
-             'dens_mass_w_phase': {'method': '_dens_mass_w_phase'},
+             'dens_mass_solvent': {'method': '_dens_mass_solvent'},
              'flow_vol_phase': {'method': '_flow_vol_phase'},
              'flow_vol': {'method': '_flow_vol'},
              'conc_mass_phase_comp': {'method': '_conc_mass_phase_comp'},
@@ -565,7 +565,7 @@ class SeawaterStateBlockData(StateBlockData):
         def rule_dens_mass_phase(b):  # density, eq. 8 in Sharqawy
             t = b.temperature - 273.15*pyunits.K
             s = b.mass_frac_phase_comp['Liq', 'TDS']
-            dens_mass = (b.dens_mass_w_phase['Liq']
+            dens_mass = (b.dens_mass_solvent
                          + b.params.dens_mass_param_B1 * s
                          + b.params.dens_mass_param_B2 * s * t
                          + b.params.dens_mass_param_B3 * s * t**2
@@ -574,23 +574,22 @@ class SeawaterStateBlockData(StateBlockData):
             return b.dens_mass_phase['Liq'] == dens_mass
         self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
 
-    def _dens_mass_w_phase(self):
-        self.dens_mass_w_phase = Var(
-            self.params.phase_list,
+    def _dens_mass_solvent(self):
+        self.dens_mass_solvent = Var(
             initialize=1e3,
             bounds=(1, 1e6),
             units=pyunits.kg*pyunits.m**-3,
             doc="Mass density of pure water")
 
-        def rule_dens_mass_w_phase(b):  # density, eq. 8 in Sharqawy
+        def rule_dens_mass_solvent(b):  # density, eq. 8 in Sharqawy
             t = b.temperature - 273.15*pyunits.K
             dens_mass_w = (b.params.dens_mass_param_A1
                          + b.params.dens_mass_param_A2 * t
                          + b.params.dens_mass_param_A3 * t**2
                          + b.params.dens_mass_param_A4 * t**3
                          + b.params.dens_mass_param_A5 * t**4)
-            return b.dens_mass_w_phase['Liq'] == dens_mass_w
-        self.eq_dens_mass_w_phase = Constraint(rule=rule_dens_mass_w_phase)
+            return b.dens_mass_solvent == dens_mass_w
+        self.eq_dens_mass_solvent = Constraint(rule=rule_dens_mass_solvent)
 
     def _flow_vol_phase(self):
         self.flow_vol_phase = Var(
@@ -727,7 +726,7 @@ class SeawaterStateBlockData(StateBlockData):
 
         def rule_pressure_osm(b):  # osmotic pressure, based on eq. 48 in Nayar et al. (2016)
             i = 2  # number of ionic species
-            rhow = b.dens_mass_w_phase['Liq']
+            rhow = b.dens_mass_solvent
             return (b.pressure_osm ==
                     b.osm_coeff * b.molality_comp['TDS'] * rhow * Constants.gas_constant * b.temperature)
         self.eq_pressure_osm = Constraint(rule=rule_pressure_osm)
@@ -996,7 +995,7 @@ class SeawaterStateBlockData(StateBlockData):
                 iscale.constraint_scaling_transform(c, sf)
 
         # property relationships with phase index, but simple constraint
-        v_str_lst_phase = ['dens_mass_phase', 'dens_mass_w_phase', 'flow_vol_phase', 'visc_d_phase', 'enth_mass_phase',
+        v_str_lst_phase = ['dens_mass_phase', 'dens_mass_solvent', 'flow_vol_phase', 'visc_d_phase', 'enth_mass_phase',
                            'cp_phase', 'therm_cond_phase']
         for v_str in v_str_lst_phase:
             if self.is_property_constructed(v_str):
