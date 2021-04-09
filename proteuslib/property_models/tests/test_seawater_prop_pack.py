@@ -127,6 +127,7 @@ class TestSeawaterPropPack():
         default_scaling_var_dict = {('temperature', None): 1e-2,
                                     ('pressure', None): 1e-6,
                                     ('dens_mass_phase', 'Liq'): 1e-3,
+                                    ('dens_mass_w_phase', 'Liq'): 1e-3,
                                     ('visc_d_phase', 'Liq'): 1e3,
                                     ('osm_coeff', None): 1e0,
                                     ('enth_mass_phase', 'Liq'): 1e-5,
@@ -164,7 +165,7 @@ class TestSeawaterPropPack():
             assert isinstance(var, Var)
 
         # test on demand variables
-        var_list = ['mass_frac_phase_comp', 'dens_mass_phase', 'flow_vol_phase',
+        var_list = ['mass_frac_phase_comp', 'dens_mass_phase', 'dens_mass_w_phase', 'flow_vol_phase',
                     'conc_mass_phase_comp', 'flow_mol_phase_comp', 'mole_frac_phase_comp',
                     'molality_comp', 'visc_d_phase', 'osm_coeff', 'pressure_osm',
                     'enth_mass_phase', 'pressure_sat', 'cp_phase', 'therm_cond_phase', 'dh_vap']
@@ -195,8 +196,8 @@ class TestSeawaterPropPack():
     def test_statistics(self, frame):
         m = frame
 
-        assert number_variables(m) == 100
-        assert number_total_constraints(m) == 19
+        assert number_variables(m) == 101
+        assert number_total_constraints(m) == 20
         assert number_unused_variables(m) == 1  # pressure is unused
 
     @pytest.mark.unit
@@ -316,6 +317,7 @@ class TestSeawaterPropPack():
             'pressure': units.Pa,
             'mass_frac_phase_comp': units.dimensionless,
             'dens_mass_phase': units.kg * units.m**-3,
+            'dens_mass_w_phase': units.kg * units.m ** -3,
             'flow_vol_phase': units.m**3 / units.s,
             'flow_vol': units.m**3 / units.s,
             'conc_mass_phase_comp': units.kg * units.m**-3,
@@ -389,6 +391,7 @@ class TestSeawaterPropPack():
         assert pytest.approx(0.035, rel=1e-3) == value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'TDS'])
         assert pytest.approx(0.965, rel=1e-3) == value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'H2O'])
         assert pytest.approx(1023.6, rel=1e-3) == value(m.fs.stream[0].dens_mass_phase['Liq'])
+        assert pytest.approx(996, rel=1e-3) == value(m.fs.stream[0].dens_mass_w_phase['Liq'])
         assert pytest.approx(9.770e-4, rel=1e-3) == value(m.fs.stream[0].flow_vol_phase['Liq'])
         assert pytest.approx(9.770e-4, rel=1e-3) == value(m.fs.stream[0].flow_vol)
         assert pytest.approx(987.7, rel=1e-3) == value(m.fs.stream[0].conc_mass_phase_comp['Liq', 'H2O'])
@@ -400,7 +403,7 @@ class TestSeawaterPropPack():
         assert pytest.approx(1.1549, rel=1e-3) == value(m.fs.stream[0].molality_comp['TDS'])
         assert pytest.approx(9.588e-4, rel=1e-3) == value(m.fs.stream[0].visc_d_phase['Liq'])
         assert pytest.approx(0.9068, rel=1e-3) == value(m.fs.stream[0].osm_coeff)
-        assert pytest.approx(5.193e6, rel=1e-3) == value(m.fs.stream[0].pressure_osm) #TODO: revise osmotic pressure eq
+        assert pytest.approx(2.588e6, rel=1e-3) == value(m.fs.stream[0].pressure_osm)
         assert pytest.approx(9.974e4, rel=1e-3) == value(m.fs.stream[0].enth_mass_phase['Liq'])
         assert pytest.approx(9.974e4, rel=1e-3) == value(m.fs.stream[0].enth_flow)
         assert pytest.approx(3111, rel=1e-3) == value(m.fs.stream[0].pressure_sat)
