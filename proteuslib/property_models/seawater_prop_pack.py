@@ -545,7 +545,7 @@ class SeawaterStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-8, 100),
+            bounds=(1e-8, None),
             units=pyunits.dimensionless,
             doc='Mass fraction')
 
