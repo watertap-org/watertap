@@ -353,7 +353,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling('temperature', 1e-2)
         self.set_default_scaling('pressure', 1e-6)
         self.set_default_scaling('dens_mass_phase', 1e-3, index='Liq')
-        self.set_default_scaling('dens_mass_solvent', 1e-3, index='Liq')
+        self.set_default_scaling('dens_mass_solvent', 1e-3)
         self.set_default_scaling('visc_d_phase', 1e3, index='Liq')
         self.set_default_scaling('osm_coeff', 1e0)
         self.set_default_scaling('enth_mass_phase', 1e-5, index='Liq')
@@ -986,7 +986,7 @@ class SeawaterStateBlockData(StateBlockData):
 
         # transforming constraints
         # property relationships with no index, simple constraint
-        v_str_lst_simple = ['osm_coeff', 'pressure_osm', 'pressure_sat', 'dh_vap']
+        v_str_lst_simple = ['dens_mass_solvent','osm_coeff', 'pressure_osm', 'pressure_sat', 'dh_vap']
         for v_str in v_str_lst_simple:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
@@ -995,7 +995,7 @@ class SeawaterStateBlockData(StateBlockData):
                 iscale.constraint_scaling_transform(c, sf)
 
         # property relationships with phase index, but simple constraint
-        v_str_lst_phase = ['dens_mass_phase', 'dens_mass_solvent', 'flow_vol_phase', 'visc_d_phase', 'enth_mass_phase',
+        v_str_lst_phase = ['dens_mass_phase', 'flow_vol_phase', 'visc_d_phase', 'enth_mass_phase',
                            'cp_phase', 'therm_cond_phase']
         for v_str in v_str_lst_phase:
             if self.is_property_constructed(v_str):
