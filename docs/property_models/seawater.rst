@@ -44,13 +44,13 @@ Properties
    "Osmotic coefficient", ":math:`\phi`", "osm_coeff", "None", ":math:`\text{dimensionless}`"
    "Specific enthalpy", ":math:`\widehat{H}`", "enth_mass_phase", "[p]", ":math:`\text{J/kg}`"
    "Enthalpy flow", ":math:`H`", "enth_flow", "None", ":math:`\text{J/s}`"
-   "Vapor pressure", ":math:`P_v`", "pressure_sat", "None", ":math:`\text{Pa}`"
+   "Saturation pressure", ":math:`P_v`", "pressure_sat", "None", ":math:`\text{Pa}`"
    "Specific heat capacity", ":math:`c_p`", "cp_phase", "[p]", ":math:`\text{J/kg/K}`"
    "Thermal conductivity", ":math:`\kappa`", "therm_cond_phase", "[p]", ":math:`\text{W/m/K}`"
    "Latent heat of vaporization", ":math:`h_{vap}`", "dh_vap", "None", ":math:`\text{J/kg}`"
 
 
-**The properties make use of the average molecular weight of sea salt, ≈ 31.40 g/mol, reported in the Reference-Composition Salinity Scale (Millero et al. (2008))  to convert to moles.**
+**The properties make use of the average molecular weight of sea salt, ≈ 31.40 g/mol, reported in the Reference-Composition Salinity Scale (Millero et al., 2008)  to convert to moles.**
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
@@ -77,7 +77,7 @@ Relationships
    "Component mole fraction", ":math:`y_j = \frac{N_j}{\sum_{j} N_j}`"
    "Molality", ":math:`Cm = \frac{x_{TDS}}{(1-x_{TDS}) \cdotp MW_{TDS}}`"
    "Osmotic pressure", ":math:`\pi = \phi \cdotp Cm \cdotp \rho_w \cdotp R \cdotp T` [See note below]"
-   "Vapor pressure", "Equations 5 and 6 in Nayar et al. (2016)"
+   "Saturation pressure", "Equations 5 and 6 in Nayar et al. (2016)"
    "Specific heat capacity", "Equation 9 in Sharqawy et al. (2010)"
    "Thermal conductivity", "Equation 13 in Sharqawy et al. (2010)"
    "Latent heat of vaporization", "Equations 37 and 55 in Sharqawy et al. (2010)"
@@ -117,7 +117,7 @@ The default scaling factors are as follows:
    * 1e3 for dynamic viscosity
    * 1 for the osmotic coefficient
    * 1e-5 for the specific enthalpy
-   * 1e-5 for vapor pressure
+   * 1e-5 for saturation pressure
    * 1e-3 for the specific heat capacity
    * 1 for thermal conductivity
    * 1e-6 for latent heat of vaporization
