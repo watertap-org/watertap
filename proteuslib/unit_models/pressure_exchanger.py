@@ -13,7 +13,7 @@
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.environ import Var, Suffix, NonNegativeReals, Reals, \
+from pyomo.environ import Block, Var, Suffix, NonNegativeReals, Reals, \
     SolverFactory, units as pyunits
 
 # Import IDAES cores
@@ -242,7 +242,7 @@ class PressureExchangerData(UnitModelBlockData):
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
         Returns:
             None
@@ -268,6 +268,10 @@ class PressureExchangerData(UnitModelBlockData):
             res = opt.solve(self, tee=slc.tee)
         init_log.info_high(
             "Initialized pressure exchanger.".format(idaeslog.condition(res)))
+
+    def get_costing(self, module=None):
+        self.costing = Block()
+        module.PressureExchanger_costing(self.costing)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

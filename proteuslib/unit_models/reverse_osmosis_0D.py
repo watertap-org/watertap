@@ -12,7 +12,7 @@
 ##############################################################################
 
 # Import Pyomo libraries
-from pyomo.environ import Var, Constraint, Set, Param, Expression, SolverFactory, \
+from pyomo.environ import Block, Var, Constraint, Set, Param, Expression, SolverFactory, \
     TerminationCondition, Suffix, NonNegativeReals, units as pyunits, Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -417,6 +417,10 @@ class ReverseOsmosisData(UnitModelBlockData):
             var_dict["Pressure Change"] = self.deltaP[time_point]
 
         return {"vars": var_dict}
+
+    def get_costing(self, module=None):
+        self.costing = Block()
+        module.ReverseOsmosis_costing(self.costing)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
