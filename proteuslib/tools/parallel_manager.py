@@ -58,29 +58,6 @@ def update_model_values(m, param_dict=None, values=None):
                 # Otherwise, set the single value to values[k]
                 param.value(values[k])
 
-        # OLD CODE SAVED AS EXAMPLE OF WHERE/HOW VALUES WERE CHANGED
-        # TO GENERATE LSRRO RESULTS FOR NAWI WEBINAR.
-        #
-        # if 'recovery' in key:
-        #     product_recovery = value
-        # elif 'flow_mass_comp' in key:
-        #     feed_mass_frac_NaCl = value
-        #     # m.fs.M1.feed.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
-        #     # m.fs.M1.feed.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
-        #     # m.fs.M1.upstream.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
-        #     # m.fs.M1.upstream.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
-        #     m.fs.P1.inlet.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
-        #     m.fs.P1.inlet.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
-        # elif "ele_cost" in key:
-        #     m.fs.costing_param.electricity_cost.fix(value)
-        # elif "mem_cost" in key:
-        #     m.fs.costing_param.mem_cost.fix(value)
-        # elif "water_perm" in key:
-        #     for i in range(N):
-        #         # These could be indexed stage[2], etc.
-        #         stage = getattr(m.fs,"Stage"+repr(i+1))
-        #         stage.A.fix(value)
-
 # ================================================================
 
 def run_param_sweep(m, sweep_params, outputs, output_dir='output', mpi_comm=None,
@@ -134,7 +111,6 @@ def run_param_sweep(m, sweep_params, outputs, output_dir='output', mpi_comm=None
 
         try:
             # Simulate/optimize with this set of parameters
-            # print(param_keys, local_values[k, :])
             m = optimization(m, 'LCOW', N=num_stages)
 
         except:
@@ -180,74 +156,3 @@ def run_param_sweep(m, sweep_params, outputs, output_dir='output', mpi_comm=None
         np.savetxt(fname, save_data, header=data_header, delimiter=', ', fmt='%.6e')
 
 # ================================================================
-
-# def set_nested_attr(m, full_attr_path, value):
-    
-#     parent = m
-#     attr_list = full_attr_path.split('.')
-#     stripped_list = []
-#     nn = len(attr_list)
-    
-#     for attr in attr_list:
-#         if '[' in attr:
-#             attr_name = attr.split('[')[0]
-#             idx = int(attr.split('[')[1].split(']')[0])
-#         else:
-#             attr_name = attr
-#             idx = None
-            
-#         stripped_list.append([attr_name, idx])
-    
-#     for k, item in enumerate(stripped_list):
-#         attr_name = item[0]
-#         idx = item[1]
-#         child = getattr(parent, attr_name)
-
-#         if type(child) == list and idx is None:
-#             raise ValueError('The "%s" attribute is a list and must have an element specified with an integer index' % attr_name)
-        
-#         if k < nn-1:
-#             if idx is not None:
-#                 child = child[idx]
-    
-#             parent = child
-
-#         else:
-#             if idx is not None:
-#                 child[idx] = value
-#             else:
-#                 setattr(parent, attr_name, value)
-
-#     return m
-
-# ================================================================
-
-# def set_nested_attr_eval(m, key, value):
-
-
-#     temp = eval('%s' % (key))
-#     print(type(temp))
-#     print(temp)
-#     if type(temp) == var:
-#         print('yep')
-#     exit()
-
-
-#     if 'recovery' in key:
-#         product_recovery = value
-#     elif 'flow_mass_comp' in key:
-#         feed_mass_frac_NaCl = value
-#         # m.fs.M1.feed.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
-#         # m.fs.M1.feed.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
-#         # m.fs.M1.upstream.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
-#         # m.fs.M1.upstream.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
-#         m.fs.P1.inlet.flow_mass_comp[0, 'NaCl'].fix(feed_mass_frac_NaCl)
-#         m.fs.P1.inlet.flow_mass_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
-#     elif "ele_cost" in key:
-#         m.fs.costing_param.electricity_cost.fix(value)
-#     elif "mem_cost" in key:
-#         m.fs.costing_param.mem_cost.fix(value)
-#     elif "water_perm" in key:
-#         for i in range(N):
-#             stage = getattr(m.fs,"Stage"+repr(i+1))
-#             stage.A.fix(value)

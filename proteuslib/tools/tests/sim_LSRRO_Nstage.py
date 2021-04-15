@@ -73,7 +73,6 @@ def build_model(N=2):
               / sum(m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', j] for j in ['H2O'])))
     # energy consumption [J/m3]
     m.fs.EC = Expression(
-        # expr=(m.fs.P1.work_mechanical[0] + m.fs.P2.work_mechanical[0] + m.fs.ERD.work_mechanical[0])
         expr=(total_pump_work)
              / sum(m.fs.Stage1.properties_permeate[0].flow_mass_phase_comp['Liq', j] for j in ['H2O', 'NaCl'])
              * m.fs.Stage1.properties_permeate[0].dens_mass_phase['Liq'])
@@ -132,11 +131,6 @@ def build_model(N=2):
     d = m.fs.ERD.inlet
     arc_id = add_arc(s,d,arc_id)
 
-    # for i in range(arc_id-1):
-    #     s = getattr(m.fs, "s%02d" % (i+1))
-    #     print(s.source.name,s.destination.name)
-    # exit()
-
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # additional bounding
@@ -162,9 +156,7 @@ def simulate(m,N=2):
 
     # feed
     feed_flow_mass = 1  # feed mass flow rate [kg/s]
-    #feed_mass_frac_NaCl = 0.05  # feed NaCl mass fraction [-]
     feed_mass_frac_NaCl = 0.07  # feed NaCl mass fraction [-]
-    #feed_mass_frac_NaCl = 0.105  # feed NaCl mass fraction [-]
     feed_temperature = 273.15 + 25
     feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
 
@@ -261,20 +253,11 @@ def simulate(m,N=2):
 def optimization(m, obj='LCOW', N=2, verbose=False):
     # ---optimizing---
     # objective
-    # if not hasattr(m.fs,"objective"):
     if obj == 'EC':
         m.fs.objective = Objective(expr=m.fs.EC)
     elif obj == 'LCOW':
         m.fs.objective = Objective(expr=m.fs.costing.LCOW)
-    # else:
-    #     if obj == 'EC':
-    #         m.fs.objective.expr=m.fs.EC
-    #     elif obj == 'LCOW':
-    #         m.fs.objective.expr=m.fs.costing.LCOW  
 
-
-    # m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(0.125)
-    # m.fs.P1.inlet.flow_mass_phase_comp[0, 'H2O'].fix(1-0.125)
     # unfix pumps
     for i in range(N):
         pump = getattr(m.fs,"P"+repr(i+1))
@@ -303,66 +286,22 @@ def optimization(m, obj='LCOW', N=2, verbose=False):
             stage.B_comp.setub(3.5e-8 * 1e3)
 
     # additional specifications
-    #product_recovery = 0.4  # product mass flow rate fraction of feed [-]
     product_recovery = 0.5  # product mass flow rate fraction of feed [-]
     product_salinity = 500e-6  # product NaCl mass fraction [-]
     min_avg_flux = 5  # minimum average water flux [kg/m2-h]
     min_avg_flux = min_avg_flux / 3600 * pyunits.kg / pyunits.m**2 / pyunits.s  # [kg/m2-s]
 
-
-    # # ---Override with model choices---
-    # if params is not None:
-    #     found_param_sweep = True
-    #     for key, value in zip(params, values):
-    #         value = float(value)
-
-    #         # set_nested_attr_eval(m, key, value)
-
-    #         if 'recovery' in key:
-    #             product_recovery = value
-    #         elif 'flow_mass_phase_comp' in key:
-    #             feed_mass_frac_NaCl = value
-    #             # m.fs.M1.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_mass_frac_NaCl)
-    #             # m.fs.M1.feed.flow_mass_phase_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
-    #             # m.fs.M1.upstream.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_mass_frac_NaCl)
-    #             # m.fs.M1.upstream.flow_mass_phase_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
-    #             m.fs.P1.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_mass_frac_NaCl)
-    #             m.fs.P1.inlet.flow_mass_phase_comp[0, 'H2O'].fix(1-feed_mass_frac_NaCl)
-    #         elif "ele_cost" in key:
-    #             m.fs.costing_param.electricity_cost.fix(value)
-    #         elif "mem_cost" in key:
-    #             m.fs.costing_param.mem_cost.fix(value)
-    #         elif "water_perm" in key:
-    #             for i in range(N):
-    #                 # These could be indexed stage[2], etc.
-    #                 stage = getattr(m.fs,"Stage"+repr(i+1))
-    #                 stage.A.fix(value)
-
-    # else:
-    #     found_param_sweep = False
-    # ---End Override with model choices---
-
-
     # additional constraints
-    # if not hasattr(m.fs,"eq_recovery"):
     m.fs.eq_recovery = Constraint(
         expr=product_recovery == m.fs.recovery)
-    # else:
-    #     m.fs.eq_recovery.expr.args[1].value = product_recovery
-    #     m.fs.eq_recovery.reconstruct()
 
-    # if not hasattr(m.fs,"eq_product_quality"):
     m.fs.eq_product_quality = Constraint(
         expr=m.fs.Stage1.properties_permeate[0].mass_frac_phase_comp['Liq', 'NaCl'] <= product_salinity)
     iscale.constraint_scaling_transform(m.fs.eq_product_quality, 1e3)  # scaling constraint
-    # else:
-    #     m.fs.eq_product_quality.expr.args[1].value = product_salinity
-    #     m.fs.eq_product_quality.reconstruct()
 
     if obj == 'EC':
         # Create flux constraints
         for i in range(N):
-            # if not hasattr(m.fs,"eq_min_avg_flux_Stage"+repr(i+1)):
             stage = getattr(m.fs,"Stage"+repr(i+1))
             setattr(m.fs,"eq_min_avg_flux_Stage"+repr(i+1),Constraint(
                 expr=min_avg_flux <= sum(stage.flux_mass_comp_avg[0, j] for j in ['H2O', 'NaCl'])))
@@ -370,7 +309,6 @@ def optimization(m, obj='LCOW', N=2, verbose=False):
 
     # Create pump equalize constraints
     for i in range(N-1):
-        # if not hasattr(m.fs,"eq_equal_pressure"+repr(i+2)):
         pump = getattr(m.fs,"P"+repr(i+1))
         eq_pump = getattr(m.fs,"EqP"+repr(i+2))
         setattr(m.fs, "eq_equal_pressure"+repr(i+2), Constraint(
@@ -387,13 +325,6 @@ def optimization(m, obj='LCOW', N=2, verbose=False):
     results = solver.solve(m, tee=False)
     assert results.solver.termination_condition == TerminationCondition.optimal
 
-    # io_options = dict()
-    # io_options['solver'] = 'conopt'
-    # # io_options['warmstart'] = True
-    # opt = SolverFactory('gams')
-    # results = opt.solve(m, io_options=io_options)
-    # assert results.solver.termination_condition == TerminationCondition.locallyOptimal  # make sure result is optimal
-
     # ---displaying---
     print('\n   Optimization')
 
@@ -401,7 +332,6 @@ def optimization(m, obj='LCOW', N=2, verbose=False):
         display_metrics(m,N)
         display_state(m,N)
         display_design(m,N)
-
 
     return m
 
@@ -523,10 +453,6 @@ def main():
     infeas.log_close_to_bounds(m)
 
     m.fs.EqP2.display()
-
-    # for p in m.fs.component_objects(Port, descend_into=True):
-    #     print(p.name)
-    #     print(type(p.name))
 
 if __name__ == "__main__":
     main()

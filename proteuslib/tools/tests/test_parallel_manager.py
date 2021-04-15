@@ -25,14 +25,6 @@ m = simulate(m, N=num_stages);
 # ================================================================
 
 sweep_params = dict()
-
-# sweep_params['fs.P1.control_volume.properties_out[0].pressure'] = [55e5, 65e5, 4]
-# sweep_params['fs.P2.control_volume.properties_out[0].pressure'] = [65e5, 75e5, 4]
-
-#sweep_params['m.fs.M1.feed.flow_mass_comp'] = [0.005, 0.155, 72]
-#sweep_params['m.fs.M1.feed.flow_mass_comp'] = [0.025, 0.15, 72]
-#sweep_params['m.fs.recovery'] = [0.3, 0.7, 72]
-
 sweep_params['Membrane Cost'] = (m.fs.costing_param.mem_cost, 15, 60, 4)
 sweep_params['Electricity Cost']  = (m.fs.costing_param.electricity_cost, 0.03, 0.15, 4)
 # sweep_params['Water Permeability'] = (m.fs.Stage[:].A, 2e-12, 10e-12, 4)
