@@ -233,11 +233,21 @@ class ReverseOsmosisData(UnitModelBlockData):
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change)
 
-        # Add permeate block
+        # Add additional state blocks
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package
-        tmp_dict["defined_state"] = False  # permeate block is not an inlet
+        tmp_dict["defined_state"] = False  # these blocks are not inlets
+        # Interface properties
+        self.feed_side.properties_in_inter = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of feed-side interface at inlet",
+            default=tmp_dict)
+        self.feed_side.properties_out_inter = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of feed-side interface at outlet",
+            default=tmp_dict)
+        # Permeate properties
         self.properties_permeate = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of permeate",
@@ -340,6 +350,57 @@ class ReverseOsmosisData(UnitModelBlockData):
         def eq_permeate_isothermal(b, t):
             return b.feed_side.properties_out[t].temperature == \
                    b.properties_permeate[t].temperature
+
+        # # Bulk and interface connection on the feed-side
+        @self.feed_side.Constraint(self.flowsheet().config.time,
+                         doc="Temperature at interface of inlet")
+        def eq_equal_temp_in(b, t):
+            return b.properties_in_inter[t].temperature == \
+                   b.properties_in[t].temperature
+
+        @self.feed_side.Constraint(self.flowsheet().config.time,
+                         doc="Pressure at interface of inlet")
+        def eq_equal_pressure_in(b, t):
+            return b.properties_in_inter[t].pressure == \
+                   b.properties_in[t].pressure
+        # Using this constraint instead of eq_equal_flow_mass_phase_in leads to an extra degree of freedom during
+        # test_dof
+        # @self.feed_side.Constraint(self.flowsheet().config.time, doc="Volumetric flow at interface of
+        # inlet") def eq_equal_flow_vol_phase_in(b, t): return b.properties_in_inter[t].flow_vol_phase['Liq'] == \
+        # b.properties_in[t].flow_vol_phase['Liq']
+        @self.feed_side.Constraint(self.flowsheet().config.time,
+                                   self.config.property_package.phase_list,
+                                   self.config.property_package.component_list,
+                                   doc="Mass flow at interface of inlet")
+        def eq_equal_flow_mass_phase_in(b, t, p, j):
+            return b.properties_in_inter[t].flow_mass_phase_comp[p, j] == \
+                   b.properties_in[t].flow_mass_phase_comp[p, j]
+
+        @self.feed_side.Constraint(self.flowsheet().config.time,
+                         doc="Temperature at interface of outlet")
+        def eq_equal_temp_out(b, t):
+            return b.properties_out_inter[t].temperature == \
+                   b.properties_out[t].temperature
+
+        @self.feed_side.Constraint(self.flowsheet().config.time,
+                         doc="Pressure at interface of outlet")
+        def eq_equal_pressure_out(b, t):
+            return b.properties_out_inter[t].pressure == \
+                   b.properties_out[t].pressure
+
+        # @self.feed_side.Constraint(self.flowsheet().config.time,
+        #                  doc="Volumetric flow at interface of outlet")
+        # def eq_equal_flow_vol_phase_out(b, t):
+        #     return b.properties_out_inter[t].flow_vol_phase['Liq'] == \
+        #            b.properties_out[t].flow_vol_phase['Liq']
+        @self.feed_side.Constraint(self.flowsheet().config.time,
+                                   self.config.property_package.phase_list,
+                                   self.config.property_package.component_list,
+                                   doc="Mass flow at interface of outlet")
+        def eq_equal_flow_mass_phase_out(b, t, p, j):
+            return b.properties_out_inter[t].flow_mass_phase_comp[p, j] == \
+                   b.properties_out[t].flow_mass_phase_comp[p, j]
+
 
 
     def initialize(

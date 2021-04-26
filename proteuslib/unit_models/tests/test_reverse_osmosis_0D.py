@@ -152,8 +152,8 @@ class TestReverseOsmosis():
             assert hasattr(blk[0], var_str)
 
         # test statistics
-        assert number_variables(m) == 70
-        assert number_total_constraints(m) == 43
+        assert number_variables(m) == 78
+        assert number_total_constraints(m) == 51
         assert number_unused_variables(m) == 7  # vars from property package parameters
 
     @pytest.mark.unit
