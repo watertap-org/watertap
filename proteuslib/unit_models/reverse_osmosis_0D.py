@@ -11,6 +11,8 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 
+
+from enum import Enum
 # Import Pyomo libraries
 from pyomo.environ import (Var,
                            Set,
@@ -37,6 +39,12 @@ import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
+## Possibly add in next PR when extending concentration polarization functionality
+## from binary to multi-option config setting
+# class ConcentrationPolarizationType(Enum):
+#     none = 0        # simplified assumption: no concentration polarization
+#     fixed = 1       # simplified assumption: concentration polarization modulus is a user specified value
+#     calculated = 2  # calculate concentration polarization (concentration at membrane interface)
 
 @declare_process_block_class("ReverseOsmosis0D")
 class ReverseOsmosisData(UnitModelBlockData):
@@ -132,8 +140,8 @@ class ReverseOsmosisData(UnitModelBlockData):
     CONFIG.declare("has_concentration_polarization", ConfigValue(
         default=False,
         domain=In([True, False]),
-        description="Construction flag for concentration at membrane interface",
-        doc="""Indicates whether terms for concentration polarization should be
+        description="Construction flag for concentration polarization effect",
+        doc="""Indicates whether terms related to concentration polarization should be
     constructed,
     **default** - False.
     **Valid values:** {

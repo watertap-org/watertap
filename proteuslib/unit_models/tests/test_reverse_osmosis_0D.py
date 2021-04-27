@@ -16,7 +16,8 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            value,
-                           Var)
+                           Var,
+                           Constraint)
 from pyomo.network import Port
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
@@ -53,7 +54,7 @@ class TestReverseOsmosis():
 
         m.fs.unit = ReverseOsmosis0D(default={
             "property_package": m.fs.properties,
-            "has_pressure_change": True, })
+            "has_pressure_change": True})
 
         # fully specify system
         feed_flow_mass = 1
@@ -84,7 +85,7 @@ class TestReverseOsmosis():
     def test_config(self, RO_frame):
         m = RO_frame
         # check unit config arguments
-        assert len(m.fs.unit.config) == 8
+        assert len(m.fs.unit.config) == 9
 
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -103,7 +104,7 @@ class TestReverseOsmosis():
     def test_build(self, RO_frame):
         m = RO_frame
 
-        # test ports and variables
+        # test ports and state variables
         port_lst = ['inlet', 'retentate', 'permeate']
         port_vars_lst = ['flow_mass_phase_comp', 'pressure', 'temperature']
         for port_str in port_lst:
@@ -120,35 +121,56 @@ class TestReverseOsmosis():
         unit_objs_lst = ['A_comp', 'B_comp', 'dens_solvent',
                          'flux_mass_phase_comp_in', 'flux_mass_phase_comp_out', 'area',
                          'deltaP', 'mass_transfer_phase_comp', 'flux_mass_phase_comp_avg',
-                         'eq_mass_transfer_term', 'eq_permeate_production',
-                         'eq_flux_in', 'eq_flux_out',
-                         'eq_connect_mass_transfer', 'eq_connect_enthalpy_transfer',
-                         'eq_permeate_isothermal']
+                         ]
+
+        unit_constr_lst = ['eq_mass_transfer_term', 'eq_permeate_production',
+                           'eq_flux_in', 'eq_flux_out',
+                           'eq_connect_mass_transfer', 'eq_connect_enthalpy_transfer',
+                           'eq_permeate_isothermal']
         for obj_str in unit_objs_lst:
             assert hasattr(m.fs.unit, obj_str)
+            
         # TODO: test variables, constraints, expression separately (like done in prop pack); make var lists for
-        # interface and bulk; implement is_property_constructed for variables RO model needs
+        # interface and bulk; implement is_property_constructed for variables RO model needs?
 
-        # test state block objects
         cv_name = 'feed_side'
-        cv_stateblock_lst = ['properties_in', 'properties_out']
+
+        # test feed-side/membrane-interface relational constraints
+        cv_constraint_lst = ['eq_concentration_polarization_in', 'eq_concentration_polarization_out',
+                             'eq_equal_temp_inter_in', 'eq_equal_temp_inter_out',
+                             'eq_equal_pressure_inter_in', 'eq_equal_pressure_inter_out',
+                             'eq_equal_flow_vol_inter_in', 'eq_equal_flow_vol_inter_out']
+
+        # test state block objects for feed-side inlet/outlet, bulk and interface
+        cv_stateblock_lst = ['properties_in', 'properties_out', 'properties_inter_in', 'properties_inter_out']
         stateblock_objs_lst = \
             ['flow_mass_phase_comp', 'pressure', 'temperature', 'pressure_osm',
              'osm_coeff', 'mass_frac_phase_comp', 'conc_mass_phase_comp',
              'dens_mass_phase', 'enth_mass_phase',
              'eq_pressure_osm', 'eq_osm_coeff', 'eq_mass_frac_phase_comp',
              'eq_conc_mass_phase_comp', 'eq_dens_mass_phase', 'eq_enth_mass_phase']
-        # test interface stateblocks
-        # cv_stateblock_inter_lst = ['properties_inter_in', 'properties_inter_out']
-        # stateblock_inter_objs_lst =
+
         # control volume
         assert hasattr(m.fs.unit, cv_name)
         cv_blk = getattr(m.fs.unit, cv_name)
+
+        # feed-side constraints
+        for constr_str in cv_constraint_lst:
+            # check that constraints exist on control volume
+            assert hasattr(cv_blk, constr_str)
+            blk_constr = getattr(cv_blk, constr_str)
+            # check that listed constraints on control volume are constraints
+            assert isinstance(blk_constr, Constraint)
+
+        # stateblocks on feed-side
         for blk_str in cv_stateblock_lst:
+            # check that stateblocks exist for inlet and outlet for both the bulk and membrane interface
             assert hasattr(cv_blk, blk_str)
             blk = getattr(cv_blk, blk_str)
+            # check that listed attributes exist on each stateblock
             for obj_str in stateblock_objs_lst:
                 assert hasattr(blk[0], obj_str)
+
         # permeate
         assert hasattr(m.fs.unit, 'properties_permeate')
         blk = getattr(m.fs.unit, 'properties_permeate')
@@ -156,8 +178,8 @@ class TestReverseOsmosis():
             assert hasattr(blk[0], var_str)
 
         # test statistics
-        assert number_variables(m) == 78
-        assert number_total_constraints(m) == 51
+        assert number_variables(m) == 100
+        assert number_total_constraints(m) == 73
         assert number_unused_variables(m) == 7  # vars from property package parameters
 
     @pytest.mark.unit
