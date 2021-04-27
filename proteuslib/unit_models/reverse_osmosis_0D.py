@@ -39,12 +39,11 @@ import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
-## Possibly add in next PR when extending concentration polarization functionality
-## from binary to multi-option config setting
-# class ConcentrationPolarizationType(Enum):
-#     none = 0        # simplified assumption: no concentration polarization
-#     fixed = 1       # simplified assumption: concentration polarization modulus is a user specified value
-#     calculated = 2  # calculate concentration polarization (concentration at membrane interface)
+
+class ConcentrationPolarizationType(Enum):
+    none = 0        # simplified assumption: no concentration polarization
+    fixed = 1       # simplified assumption: concentration polarization modulus is a user specified value
+    calculated = 2  # calculate concentration polarization (concentration at membrane interface)
 
 @declare_process_block_class("ReverseOsmosis0D")
 class ReverseOsmosisData(UnitModelBlockData):
@@ -138,15 +137,15 @@ class ReverseOsmosisData(UnitModelBlockData):
     **Valid values:** {
     see property package for documentation.}"""))
     CONFIG.declare("has_concentration_polarization", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Construction flag for concentration polarization effect",
-        doc="""Indicates whether terms related to concentration polarization should be
-    constructed,
-    **default** - False.
-    **Valid values:** {
-    **True** - include concentration polarization terms,
-    **False** - exclude concentration polarization  terms.}"""))
+        default=ConcentrationPolarizationType.none,
+        domain=In(ConcentrationPolarizationType),
+        description="External concentration polarization effect in RO",
+        doc="""Options to account for concentration polarization,
+**default** - ConcentrationPolarizationType.none. 
+**Valid values:** {
+**ConcentrationPolarizationType.none** - assume no concentration polarization,
+**ConcentrationPolarizationType.fixed** - specify concentration polarization modulus,
+**ConcentrationPolarizationType.calculated** - complete calculation membrane interface concentration.}"""))
 
     def build(self):
         # Call UnitModel.build to setup dynamics
