@@ -120,7 +120,7 @@ class TestReverseOsmosis():
         # test unit objects (including parameters, variables, and constraints)
         unit_objs_lst = ['A_comp', 'B_comp', 'dens_solvent',
                          'flux_mass_phase_comp_in', 'flux_mass_phase_comp_out', 'area',
-                         'deltaP', 'mass_transfer_phase_comp', 'flux_mass_phase_comp_avg',
+                         'deltaP', 'mass_transfer_phase_comp', 'flux_mass_phase_comp_avg'
                          ]
 
         unit_constr_lst = ['eq_mass_transfer_term', 'eq_permeate_production',
@@ -190,9 +190,11 @@ class TestReverseOsmosis():
     @pytest.mark.unit
     def test_calculate_scaling(self, RO_frame):
         m = RO_frame
-
-        m.fs.properties.set_default_scaling('flow_mass_comp', 1, index='H2O')
-        m.fs.properties.set_default_scaling('flow_mass_comp', 1e2, index='NaCl')
+        #TODO: seems that I can put any string argument as the first arg in set_default_scaling
+        # and nothing goes wrong. Perhaps there should be a test to check that the arg is an existing
+        # variable in the property package
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index='H2O')
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index='NaCl')
         calculate_scaling_factors(m)
 
         # check that all variables have scaling factors

@@ -300,8 +300,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 initialize=1,
                 bounds=(1e-8, 10),
                 domain=NonNegativeReals,
-                units=(units_meta('mass') * units_meta('length')**-3) /
-                      (units_meta('mass') * units_meta('length')**-3), # just use None?
+                units=None,
                 doc='Concentration polarization modulus')
 
         @self.Constraint(self.flowsheet().config.time,
