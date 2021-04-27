@@ -97,6 +97,7 @@ class TestReverseOsmosis():
         assert m.fs.unit.config.has_pressure_change
         assert m.fs.unit.config.property_package is \
                m.fs.properties
+        assert not m.fs.unit.config.has_concentration_polarization
 
     @pytest.mark.unit
     def test_build(self, RO_frame):
@@ -125,7 +126,8 @@ class TestReverseOsmosis():
                          'eq_permeate_isothermal']
         for obj_str in unit_objs_lst:
             assert hasattr(m.fs.unit, obj_str)
-
+        # TODO: test variables, constraints, expression separately (like done in prop pack); make var lists for
+        # interface and bulk; implement is_property_constructed for variables RO model needs
 
         # test state block objects
         cv_name = 'feed_side'
@@ -135,8 +137,10 @@ class TestReverseOsmosis():
              'osm_coeff', 'mass_frac_phase_comp', 'conc_mass_phase_comp',
              'dens_mass_phase', 'enth_mass_phase',
              'eq_pressure_osm', 'eq_osm_coeff', 'eq_mass_frac_phase_comp',
-             'eq_conc_mass_phase_comp', 'eq_dens_mass_phase', 'eq_enth_mass_phase'
-             ]
+             'eq_conc_mass_phase_comp', 'eq_dens_mass_phase', 'eq_enth_mass_phase']
+        # test interface stateblocks
+        # cv_stateblock_inter_lst = ['properties_inter_in', 'properties_inter_out']
+        # stateblock_inter_objs_lst =
         # control volume
         assert hasattr(m.fs.unit, cv_name)
         cv_blk = getattr(m.fs.unit, cv_name)
@@ -164,6 +168,9 @@ class TestReverseOsmosis():
     @pytest.mark.unit
     def test_calculate_scaling(self, RO_frame):
         m = RO_frame
+
+        m.fs.properties.set_default_scaling('flow_mass_comp', 1, index='H2O')
+        m.fs.properties.set_default_scaling('flow_mass_comp', 1e2, index='NaCl')
         calculate_scaling_factors(m)
 
         # check that all variables have scaling factors
