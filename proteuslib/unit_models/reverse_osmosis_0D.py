@@ -22,7 +22,8 @@ from pyomo.environ import (Var,
                            NonNegativeReals,
                            Reference,
                            Block,
-                           units as pyunits)
+                           units as pyunits,
+                           exp)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -138,7 +139,7 @@ class ReverseOsmosisData(UnitModelBlockData):
     **default** - None.
     **Valid values:** {
     see property package for documentation.}"""))
-    CONFIG.declare("has_concentration_polarization", ConfigValue(
+    CONFIG.declare("concentration_polarization_type", ConfigValue(
         default=ConcentrationPolarizationType.none,
         domain=In(ConcentrationPolarizationType),
         description="External concentration polarization effect in RO",
@@ -228,7 +229,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             domain=NonNegativeReals,
             units=units_meta('length')**2,
             doc='Membrane area')
-        if self.config.has_concentration_polarization is True:
+        if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
             self.cp_modulus = Var(
                 self.flowsheet().config.time,
                 self.solute_list,
@@ -237,6 +238,24 @@ class ReverseOsmosisData(UnitModelBlockData):
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc='Concentration polarization modulus')
+        if self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
+            self.Kf_in = Var(
+                self.flowsheet().config.time,
+                self.solute_list,
+                initialize=1e-5,
+                bounds=(1e-10, 1),
+                domain=NonNegativeReals,
+                units=units_meta('length') * units_meta('time')**-1,
+                doc='Mass transfer coefficient at feed channel inlet')
+            self.Kf_out = Var(
+                self.flowsheet().config.time,
+                self.solute_list,
+                initialize=1e-5,
+                bounds=(1e-10, 1),
+                domain=NonNegativeReals,
+                units=units_meta('length') * units_meta('time')**-1,
+                doc='Mass transfer coefficient at feed channel outlet')
+
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(default={
@@ -301,17 +320,6 @@ class ReverseOsmosisData(UnitModelBlockData):
             domain=NonNegativeReals,
             units=units_meta('mass') * units_meta('time')**-1,
             doc='Mass transfer to permeate')
-
-        # concentration polarization modulus - currently assuming a fixed CPmod to be specified by user
-        if self.config.has_concentration_polarization == ConcentrationPolarizationType.fixed:
-            self.cp_modulus = Var(
-                self.flowsheet().config.time,
-                self.solute_list,
-                initialize=1,
-                bounds=(1e-8, 10),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc='Concentration polarization modulus')
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
@@ -396,25 +404,47 @@ class ReverseOsmosisData(UnitModelBlockData):
                                    self.solute_list,
                                    doc="Concentration polarization at the inlet")
         def eq_concentration_polarization_in(b, t, j):
-            if self.config.has_concentration_polarization is False:
+            if self.config.concentration_polarization_type == ConcentrationPolarizationType.none:
                 return b.properties_interface_in[t].conc_mass_phase_comp['Liq', j] == \
                        b.properties_in[t].conc_mass_phase_comp['Liq', j]
-            else:
+            elif self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
                 return b.properties_interface_in[t].conc_mass_phase_comp['Liq', j] == \
                        b.properties_in[t].conc_mass_phase_comp['Liq', j] \
                        * self.cp_modulus[t, j]
+            elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
+                comp = self.config.property_package.get_component(j)
+                jw = self.flux_mass_phase_comp_in[t, 'Liq', 'H2O'] / self.dens_solvent
+                if comp.is_solute():
+                    js = self.flux_mass_phase_comp_in[t, 'Liq', j]
+                    return b.properties_interface_in[t].conc_mass_phase_comp['Liq', j] ==\
+                       (b.properties_in[t].conc_mass_phase_comp['Liq', j] - js / jw) * \
+                       exp(jw/self.Kf_in[t, j]) + \
+                       js / jw
+                else:
+                    pass
 
         @self.feed_side.Constraint(self.flowsheet().config.time,
                                    self.solute_list,
                                    doc="Concentration polarization at the outlet")
         def eq_concentration_polarization_out(b, t, j):
-            if self.config.has_concentration_polarization is False:
+            if self.config.concentration_polarization_type == ConcentrationPolarizationType.none:
                 return b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] == \
                        b.properties_out[t].conc_mass_phase_comp['Liq', j]
-            else:
+            elif self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
                 return b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] == \
                        b.properties_out[t].conc_mass_phase_comp['Liq', j] \
                        * self.cp_modulus[t, j]
+            elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
+                comp = self.config.property_package.get_component(j)
+                jw = self.flux_mass_phase_comp_out[t, 'Liq', 'H2O'] / self.dens_solvent
+                if comp.is_solute():
+                    js = self.flux_mass_phase_comp_out[t, 'Liq', j]
+                    return b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] ==\
+                       (b.properties_out[t].conc_mass_phase_comp['Liq', j] - js / jw) * \
+                       exp(jw/self.Kf_out[t, j]) + \
+                       js / jw
+                else:
+                    pass
 
         # Bulk and interface connection on the feed-side
         @self.feed_side.Constraint(self.flowsheet().config.time,
@@ -563,6 +593,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.dens_solvent) is None:
             sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].dens_mass_phase['Liq'])
             iscale.set_scaling_factor(self.dens_solvent, sf)
+        #TODO- add scaling factors for cp_modulus? Kf_in and out?
 
         for vobj in [self.flux_mass_phase_comp_in, self.flux_mass_phase_comp_out]:
             for (t, p, j), v in vobj.items():

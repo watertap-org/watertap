@@ -26,7 +26,8 @@ from idaes.core import (FlowsheetBlock,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         ControlVolume0DBlock)
-from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
+from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
+                                                       ConcentrationPolarizationType)
 import proteuslib.property_models.NaCl_prop_pack as props
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
@@ -66,7 +67,8 @@ def test_config():
     assert not m.fs.unit.config.has_pressure_change
     assert m.fs.unit.config.property_package is \
            m.fs.properties
-    assert not m.fs.unit.config.has_concentration_polarization
+    assert m.fs.unit.config.concentration_polarization_type == \
+           ConcentrationPolarizationType.none
 
 @pytest.mark.unit
 def test_option_has_pressure_change():
@@ -81,14 +83,14 @@ def test_option_has_pressure_change():
     assert isinstance(m.fs.unit.deltaP, Var)
 
 @pytest.mark.unit
-def test_option_has_concentration_polarization():
+def test_option_concentration_polarization_type_fixed():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis0D(default={
         "property_package": m.fs.properties,
         "has_pressure_change": True,
-        "has_concentration_polarization": True})
+        "concentration_polarization_type": ConcentrationPolarizationType.fixed})
 
     assert isinstance(m.fs.unit.cp_modulus, Var)
 
@@ -103,7 +105,7 @@ class TestReverseOsmosis():
         m.fs.unit = ReverseOsmosis0D(default={
             "property_package": m.fs.properties,
             "has_pressure_change": True,
-            "has_concentration_polarization": True})
+            "concentration_polarization_type": ConcentrationPolarizationType.fixed})
 
         # fully specify system
         feed_flow_mass = 1
