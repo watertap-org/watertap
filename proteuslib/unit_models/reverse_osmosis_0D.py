@@ -303,14 +303,14 @@ class ReverseOsmosisData(UnitModelBlockData):
             doc='Mass transfer to permeate')
 
         # concentration polarization modulus - currently assuming a fixed CPmod to be specified by user
-        if self.config.has_concentration_polarization is True:
-            self.CP_modulus = Var(
+        if self.config.has_concentration_polarization == ConcentrationPolarizationType.fixed:
+            self.cp_modulus = Var(
                 self.flowsheet().config.time,
                 self.solute_list,
                 initialize=1,
                 bounds=(1e-8, 10),
                 domain=NonNegativeReals,
-                units=None,
+                units=pyunits.dimensionless,
                 doc='Concentration polarization modulus')
 
         @self.Constraint(self.flowsheet().config.time,
