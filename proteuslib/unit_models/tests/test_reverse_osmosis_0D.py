@@ -16,12 +16,16 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            value,
-                           Var)
+                           Param,
+                           Var,
+                           Expression,
+                           Constraint)
 from pyomo.network import Port
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
-                        MomentumBalanceType)
+                        MomentumBalanceType,
+                        ControlVolume0DBlock)
 from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 import proteuslib.property_models.NaCl_prop_pack as props
 
@@ -42,6 +46,51 @@ solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.unit
+def test_config():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = props.NaClParameterBlock()
+    m.fs.unit = ReverseOsmosis0D(default={"property_package": m.fs.properties})
+
+    assert len(m.fs.unit.config) == 9
+
+    assert not m.fs.unit.config.dynamic
+    assert not m.fs.unit.config.has_holdup
+    assert m.fs.unit.config.material_balance_type == \
+           MaterialBalanceType.useDefault
+    assert m.fs.unit.config.energy_balance_type == \
+           EnergyBalanceType.useDefault
+    assert m.fs.unit.config.momentum_balance_type == \
+           MomentumBalanceType.pressureTotal
+    assert not m.fs.unit.config.has_pressure_change
+    assert m.fs.unit.config.property_package is \
+           m.fs.properties
+    assert not m.fs.unit.config.has_concentration_polarization
+
+@pytest.mark.unit
+def test_option_has_pressure_change():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = props.NaClParameterBlock()
+    m.fs.unit = ReverseOsmosis0D(default={
+        "property_package": m.fs.properties,
+        "has_pressure_change": True})
+
+    assert isinstance(m.fs.unit.feed_side.deltaP, Var)
+    assert isinstance(m.fs.unit.deltaP, Var)
+
+@pytest.mark.unit
+def test_option_has_concentration_polarization():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = props.NaClParameterBlock()
+    m.fs.unit = ReverseOsmosis0D(default={
+        "property_package": m.fs.properties,
+        "has_pressure_change": True,
+        "has_concentration_polarization": True})
+
+    assert isinstance(m.fs.unit.cp_modulus, Var)
 
 class TestReverseOsmosis():
     @pytest.fixture(scope="class")
@@ -53,7 +102,8 @@ class TestReverseOsmosis():
 
         m.fs.unit = ReverseOsmosis0D(default={
             "property_package": m.fs.properties,
-            "has_pressure_change": True, })
+            "has_pressure_change": True,
+            "has_concentration_polarization": True})
 
         # fully specify system
         feed_flow_mass = 1
@@ -65,6 +115,7 @@ class TestReverseOsmosis():
         A = 4.2e-12
         B = 3.5e-8
         pressure_atmospheric = 101325
+        concentration_polarization_modulus = 1.1
 
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
         m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
@@ -78,82 +129,73 @@ class TestReverseOsmosis():
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.cp_modulus.fix(concentration_polarization_modulus)
         return m
-
-    @pytest.mark.unit
-    def test_config(self, RO_frame):
-        m = RO_frame
-        # check unit config arguments
-        assert len(m.fs.unit.config) == 8
-
-        assert not m.fs.unit.config.dynamic
-        assert not m.fs.unit.config.has_holdup
-        assert m.fs.unit.config.material_balance_type == \
-               MaterialBalanceType.useDefault
-        assert m.fs.unit.config.energy_balance_type == \
-               EnergyBalanceType.useDefault
-        assert m.fs.unit.config.momentum_balance_type == \
-               MomentumBalanceType.pressureTotal
-        assert m.fs.unit.config.has_pressure_change
-        assert m.fs.unit.config.property_package is \
-               m.fs.properties
 
     @pytest.mark.unit
     def test_build(self, RO_frame):
         m = RO_frame
 
-        # test ports and variables
+        # test ports
         port_lst = ['inlet', 'retentate', 'permeate']
-        port_vars_lst = ['flow_mass_phase_comp', 'pressure', 'temperature']
         for port_str in port_lst:
-            assert hasattr(m.fs.unit, port_str)
             port = getattr(m.fs.unit, port_str)
-            assert len(port.vars) == 3
+            assert len(port.vars) == 3  # number of state variables for NaCl property package
             assert isinstance(port, Port)
-            for var_str in port_vars_lst:
-                assert hasattr(port, var_str)
-                var = getattr(port, var_str)
-                assert isinstance(var, Var)
 
-        # test unit objects (including parameters, variables, and constraints)
-        unit_objs_lst = ['A_comp', 'B_comp', 'dens_solvent',
-                         'flux_mass_phase_comp_in', 'flux_mass_phase_comp_out', 'area',
-                         'deltaP', 'mass_transfer_phase_comp', 'flux_mass_phase_comp_avg',
-                         'eq_mass_transfer_term', 'eq_permeate_production',
-                         'eq_flux_in', 'eq_flux_out',
-                         'eq_connect_mass_transfer', 'eq_connect_enthalpy_transfer',
-                         'eq_permeate_isothermal']
-        for obj_str in unit_objs_lst:
-            assert hasattr(m.fs.unit, obj_str)
+        # test pyomo objects on unit
+        unit_objs_type_dict = {'dens_solvent': Param,
+                               'A_comp': Var,
+                               'B_comp': Var,
+                               'flux_mass_phase_comp_in': Var,
+                               'flux_mass_phase_comp_out': Var,
+                               'area': Var,
+                               'deltaP': Var,
+                               'cp_modulus': Var,
+                               'mass_transfer_phase_comp': Var,
+                               'flux_mass_phase_comp_avg': Expression,
+                               'eq_mass_transfer_term': Constraint,
+                               'eq_permeate_production': Constraint,
+                               'eq_flux_in': Constraint,
+                               'eq_flux_out': Constraint,
+                               'eq_connect_mass_transfer': Constraint,
+                               'eq_connect_enthalpy_transfer': Constraint,
+                               'eq_permeate_isothermal': Constraint}
+        for (obj_str, obj_type) in unit_objs_type_dict.items():
+            obj = getattr(m.fs.unit, obj_str)
+            assert isinstance(obj, obj_type)
+        # check that all added unit objects are tested
+        for obj in m.fs.unit.component_objects(
+                [Param, Var, Expression, Constraint], descend_into=False):
+            obj_str = obj.name[8::]  # remove leading "fs.unit."
+            assert obj_str in unit_objs_type_dict
 
+        # test control volume and associated stateblocks
+        assert isinstance(m.fs.unit.feed_side, ControlVolume0DBlock)
+        cv_stateblock_lst = ['properties_in', 'properties_out',
+                             'properties_interface_in', 'properties_interface_out']
+        for sb_str in cv_stateblock_lst:
+            sb = getattr(m.fs.unit.feed_side, sb_str)
+            assert isinstance(sb, props.NaClStateBlock)
+        # test objects added to control volume
+        cv_objs_type_dict = {'eq_concentration_polarization_in': Constraint,
+                             'eq_concentration_polarization_out': Constraint,
+                             'eq_equal_temp_interface_in': Constraint,
+                             'eq_equal_pressure_interface_in': Constraint,
+                             'eq_equal_flow_vol_interface_in': Constraint,
+                             'eq_equal_temp_interface_out': Constraint,
+                             'eq_equal_pressure_interface_out': Constraint,
+                             'eq_equal_flow_vol_interface_out': Constraint}
+        for (obj_str, obj_type) in cv_objs_type_dict.items():
+            obj = getattr(m.fs.unit.feed_side, obj_str)
+            assert isinstance(obj, obj_type)
 
-        # test state block objects
-        cv_name = 'feed_side'
-        cv_stateblock_lst = ['properties_in', 'properties_out']
-        stateblock_objs_lst = \
-            ['flow_mass_phase_comp', 'pressure', 'temperature', 'pressure_osm',
-             'osm_coeff', 'mass_frac_phase_comp', 'conc_mass_phase_comp',
-             'dens_mass_phase', 'enth_mass_phase',
-             'eq_pressure_osm', 'eq_osm_coeff', 'eq_mass_frac_phase_comp',
-             'eq_conc_mass_phase_comp', 'eq_dens_mass_phase', 'eq_enth_mass_phase'
-             ]
-        # control volume
-        assert hasattr(m.fs.unit, cv_name)
-        cv_blk = getattr(m.fs.unit, cv_name)
-        for blk_str in cv_stateblock_lst:
-            assert hasattr(cv_blk, blk_str)
-            blk = getattr(cv_blk, blk_str)
-            for obj_str in stateblock_objs_lst:
-                assert hasattr(blk[0], obj_str)
-        # permeate
-        assert hasattr(m.fs.unit, 'properties_permeate')
-        blk = getattr(m.fs.unit, 'properties_permeate')
-        for var_str in stateblock_objs_lst:
-            assert hasattr(blk[0], var_str)
+        # test permeate stateblock
+        assert isinstance(m.fs.unit.properties_permeate, props.NaClStateBlock)
 
         # test statistics
-        assert number_variables(m) == 70
-        assert number_total_constraints(m) == 43
+        assert number_variables(m) == 93
+        assert number_total_constraints(m) == 65
         assert number_unused_variables(m) == 7  # vars from property package parameters
 
     @pytest.mark.unit
@@ -164,6 +206,9 @@ class TestReverseOsmosis():
     @pytest.mark.unit
     def test_calculate_scaling(self, RO_frame):
         m = RO_frame
+
+        m.fs.properties.set_default_scaling('flow_mass_comp', 1, index='H2O')
+        m.fs.properties.set_default_scaling('flow_mass_comp', 1e2, index='NaCl')
         calculate_scaling_factors(m)
 
         # check that all variables have scaling factors
@@ -219,11 +264,11 @@ class TestReverseOsmosis():
     @pytest.mark.component
     def test_solution(self, RO_frame):
         m = RO_frame
-        assert (pytest.approx(5.574e-3, rel=1e-3) ==
+        assert (pytest.approx(4.682e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
-        assert (pytest.approx(1.491e-6, rel=1e-3) ==
+        assert (pytest.approx(1.580e-6, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl']))
-        assert (pytest.approx(0.2787, rel=1e-3) ==
+        assert (pytest.approx(0.2341, rel=1e-3) ==
                 value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
-        assert (pytest.approx(7.453e-5, rel=1e-3) ==
+        assert (pytest.approx(7.901e-5, rel=1e-3) ==
                 value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
