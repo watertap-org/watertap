@@ -386,7 +386,6 @@ class ReverseOsmosisData(UnitModelBlockData):
                        b.properties_in[t].conc_mass_phase_comp['Liq', j] \
                        * self.cp_modulus[t, j]
 
-
         @self.feed_side.Constraint(self.flowsheet().config.time,
                                    self.solute_list,
                                    doc="Concentration polarization at the outlet")
