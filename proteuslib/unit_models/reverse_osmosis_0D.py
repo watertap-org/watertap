@@ -238,6 +238,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc='Concentration polarization modulus')
+
         if self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
             self.Kf_in = Var(
                 self.flowsheet().config.time,
@@ -408,41 +409,38 @@ class ReverseOsmosisData(UnitModelBlockData):
                 return b.properties_interface_in[t].conc_mass_phase_comp['Liq', j] == \
                        b.properties_in[t].conc_mass_phase_comp['Liq', j]
             elif self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
-                return b.properties_interface_in[t].conc_mass_phase_comp['Liq', j] == \
-                       b.properties_in[t].conc_mass_phase_comp['Liq', j] \
-                       * self.cp_modulus[t, j]
+                return (b.properties_interface_in[t].conc_mass_phase_comp['Liq', j] ==
+                        b.properties_in[t].conc_mass_phase_comp['Liq', j]
+                        * self.cp_modulus[t, j])
             elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
-                comp = self.config.property_package.get_component(j)
-                jw = self.flux_mass_phase_comp_in[t, 'Liq', 'H2O'] / self.dens_solvent
-                if comp.is_solute():
-                    js = self.flux_mass_phase_comp_in[t, 'Liq', j]
-                    return b.properties_interface_in[t].conc_mass_phase_comp['Liq', j] ==\
-                       (b.properties_in[t].conc_mass_phase_comp['Liq', j] - js / jw) * \
-                       exp(jw/self.Kf_in[t, j]) + \
-                       js / jw
-                else:
-                    pass
+                jw = self.flux_mass_phase_comp_in[t, 'Liq', self.solvent_list[1]] / self.dens_solvent
+                js = self.flux_mass_phase_comp_in[t, 'Liq', j]
+                return (b.properties_interface_in[t].conc_mass_phase_comp['Liq', j] ==
+                        (b.properties_in[t].conc_mass_phase_comp['Liq', j] - js / jw)
+                        * exp(jw / self.Kf_in[t, j])
+                        + js / jw)
+
 
         @self.feed_side.Constraint(self.flowsheet().config.time,
                                    self.solute_list,
                                    doc="Concentration polarization at the outlet")
         def eq_concentration_polarization_out(b, t, j):
             if self.config.concentration_polarization_type == ConcentrationPolarizationType.none:
-                return b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] == \
+                return b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] ==\
                        b.properties_out[t].conc_mass_phase_comp['Liq', j]
             elif self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
-                return b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] == \
-                       b.properties_out[t].conc_mass_phase_comp['Liq', j] \
-                       * self.cp_modulus[t, j]
+                return (b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] ==
+                        b.properties_out[t].conc_mass_phase_comp['Liq', j]
+                        * self.cp_modulus[t, j])
             elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
                 comp = self.config.property_package.get_component(j)
-                jw = self.flux_mass_phase_comp_out[t, 'Liq', 'H2O'] / self.dens_solvent
+                jw = self.flux_mass_phase_comp_out[t, 'Liq', self.solvent_list[1]] / self.dens_solvent
                 if comp.is_solute():
                     js = self.flux_mass_phase_comp_out[t, 'Liq', j]
-                    return b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] ==\
-                       (b.properties_out[t].conc_mass_phase_comp['Liq', j] - js / jw) * \
-                       exp(jw/self.Kf_out[t, j]) + \
-                       js / jw
+                    return (b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] ==
+                            (b.properties_out[t].conc_mass_phase_comp['Liq', j] - js / jw)
+                            * exp(jw / self.Kf_out[t, j])
+                            + js / jw)
                 else:
                     pass
 
