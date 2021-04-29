@@ -182,7 +182,7 @@ class TestReverseOsmosis():
         # check that all added unit objects are tested
         for obj in m.fs.unit.component_objects(
                 [Param, Var, Expression, Constraint], descend_into=False):
-            obj_str = obj.name[8::]  # remove leading "fs.unit."
+            obj_str = obj.local_name
             assert obj_str in unit_objs_type_dict
 
         # test control volume and associated stateblocks
