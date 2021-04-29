@@ -21,7 +21,8 @@ from idaes.core.phases import LiquidPhase
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
-                                              number_unused_variables)
+                                              number_unused_variables,
+                                              unused_variables_set)
 from idaes.core.util.testing import get_default_solver
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      set_scaling_factor,
@@ -126,9 +127,15 @@ class TestSeawaterPropPack():
         default_scaling_var_dict = {('temperature', None): 1e-2,
                                     ('pressure', None): 1e-6,
                                     ('dens_mass_phase', 'Liq'): 1e-3,
+                                    ('dens_mass_solvent', None): 1e-3,
                                     ('visc_d_phase', 'Liq'): 1e3,
                                     ('osm_coeff', None): 1e0,
-                                    ('enth_mass_phase', 'Liq'): 1e-5}
+                                    ('enth_mass_phase', 'Liq'): 1e-5,
+                                    ('pressure_sat', None): 1e-5,
+                                    ('cp_phase', 'Liq'): 1e-3,
+                                    ('therm_cond_phase', 'Liq'): 1e0,
+                                    ('dh_vap', None): 1e-6}
+
         assert len(default_scaling_var_dict) == len(m.fs.properties.default_scaling_factor)
         for t, sf in default_scaling_var_dict.items():
             assert t in m.fs.properties.default_scaling_factor.keys()
@@ -158,10 +165,10 @@ class TestSeawaterPropPack():
             assert isinstance(var, Var)
 
         # test on demand variables
-        var_list = ['mass_frac_phase_comp', 'dens_mass_phase', 'flow_vol_phase',
+        var_list = ['mass_frac_phase_comp', 'dens_mass_phase', 'dens_mass_solvent', 'flow_vol_phase',
                     'conc_mass_phase_comp', 'flow_mol_phase_comp', 'mole_frac_phase_comp',
                     'molality_comp', 'visc_d_phase', 'osm_coeff', 'pressure_osm',
-                    'enth_mass_phase']
+                    'enth_mass_phase', 'pressure_sat', 'cp_phase', 'therm_cond_phase', 'dh_vap']
         for v in var_list:  # test that they are not built when not demanded
             assert not m.fs.stream[0].is_property_constructed(v)
         for v in var_list:  # test they are built on demand
@@ -189,8 +196,8 @@ class TestSeawaterPropPack():
     def test_statistics(self, frame):
         m = frame
 
-        assert number_variables(m) == 55
-        assert number_total_constraints(m) == 15
+        assert number_variables(m) == 101
+        assert number_total_constraints(m) == 20
         assert number_unused_variables(m) == 1  # pressure is unused
 
     @pytest.mark.unit
@@ -224,43 +231,80 @@ class TestSeawaterPropPack():
         m = frame
 
         # check all variables have their assigned units - parameter block
+        dens_units = units.kg/units.m**3
+        cp_units = units.J/(units.kg*units.K)
+        enth_mass_units = units.J/units.kg
+
+        t_inv_units = units.K**-1
+        s_inv_units = units.kg/units.g
+
         var_unit_dict = {
-            'dens_mass_param_A1': units.kg/units.m**3,
-            'dens_mass_param_A2': (units.kg/units.m**3) * units.K**-1,
-            'dens_mass_param_A3': (units.kg/units.m**3) * units.K**-2,
-            'dens_mass_param_A4': (units.kg/units.m**3) * units.K**-3,
-            'dens_mass_param_A5': (units.kg/units.m**3) * units.K**-4,
-            'dens_mass_param_B1': units.kg/units.m ** 3,
-            'dens_mass_param_B2': (units.kg/units.m**3) * units.K**-1,
-            'dens_mass_param_B3': (units.kg/units.m**3) * units.K**-2,
-            'dens_mass_param_B4': (units.kg/units.m**3) * units.K**-3,
-            'dens_mass_param_B5': (units.kg/units.m**3) * units.K**-2,
-            'visc_d_param_muw_A': units.Pa*units.s,
-            'visc_d_param_muw_B': units.degK**-2*units.Pa**-1*units.s**-1,
+            'dens_mass_param_A1': dens_units,
+            'dens_mass_param_A2': dens_units * t_inv_units,
+            'dens_mass_param_A3': dens_units * t_inv_units**2,
+            'dens_mass_param_A4': dens_units * t_inv_units**3,
+            'dens_mass_param_A5': dens_units * t_inv_units**4,
+            'dens_mass_param_B1': dens_units,
+            'dens_mass_param_B2': dens_units * t_inv_units,
+            'dens_mass_param_B3': dens_units * t_inv_units**2,
+            'dens_mass_param_B4': dens_units * t_inv_units**3,
+            'dens_mass_param_B5': dens_units * t_inv_units**2,
+            'visc_d_param_muw_A': units.Pa * units.s,
+            'visc_d_param_muw_B': units.degK**-2 * units.Pa**-1 * units.s**-1,
             'visc_d_param_muw_C': units.K,
-            'visc_d_param_muw_D': units.Pa**-1*units.s**-1,
+            'visc_d_param_muw_D': units.Pa**-1 * units.s**-1,
             'visc_d_param_A_1': units.dimensionless,
-            'visc_d_param_A_2': units.K**-1,
-            'visc_d_param_A_3': units.K**-2,
+            'visc_d_param_A_2': t_inv_units,
+            'visc_d_param_A_3': t_inv_units**2,
             'visc_d_param_B_1': units.dimensionless,
-            'visc_d_param_B_2': units.K**-1,
-            'visc_d_param_B_3': units.K**-2,
+            'visc_d_param_B_2': t_inv_units,
+            'visc_d_param_B_3': t_inv_units**2,
             'osm_coeff_param_1': units.dimensionless,
-            'osm_coeff_param_2': units.K**-1,
-            'osm_coeff_param_3': units.K**-2,
-            'osm_coeff_param_4': units.K**-4,
+            'osm_coeff_param_2': t_inv_units,
+            'osm_coeff_param_3': t_inv_units**2,
+            'osm_coeff_param_4': t_inv_units**4,
             'osm_coeff_param_5': units.dimensionless,
-            'osm_coeff_param_6': units.K**-1,
-            'osm_coeff_param_7': units.K**-3,
+            'osm_coeff_param_6': t_inv_units,
+            'osm_coeff_param_7': t_inv_units**3,
             'osm_coeff_param_8': units.dimensionless,
-            'osm_coeff_param_9': units.K**-1,
-            'osm_coeff_param_10': units.K**-2,
-            'enth_mass_param_A1': units.J/units.kg,
-            'enth_mass_param_A2': (units.J/units.kg) * units.K**-1,
-            'enth_mass_param_A3': (units.J/units.kg) * units.K**-2,
-            'enth_mass_param_A4': (units.J/units.kg) * units.K**-3,
-            'enth_mass_param_B1': units.dimensionless,
-            'enth_mass_param_B2': units.dimensionless}
+            'osm_coeff_param_9': t_inv_units,
+            'osm_coeff_param_10': t_inv_units**2,
+            'enth_mass_param_A1': enth_mass_units,
+            'enth_mass_param_A2': enth_mass_units * t_inv_units,
+            'enth_mass_param_A3': enth_mass_units * t_inv_units**2,
+            'enth_mass_param_A4': enth_mass_units * t_inv_units**3,
+            'enth_mass_param_B1': enth_mass_units,
+            'enth_mass_param_B2': enth_mass_units,
+            'enth_mass_param_B3': enth_mass_units,
+            'enth_mass_param_B4': enth_mass_units,
+            'enth_mass_param_B5': enth_mass_units * t_inv_units,
+            'enth_mass_param_B6': enth_mass_units * t_inv_units**2,
+            'enth_mass_param_B7': enth_mass_units * t_inv_units**3,
+            'enth_mass_param_B8': enth_mass_units * t_inv_units,
+            'enth_mass_param_B9': enth_mass_units * t_inv_units,
+            'enth_mass_param_B10': enth_mass_units * t_inv_units**2,
+            'pressure_sat_param_psatw_A1': units.K,
+            'pressure_sat_param_psatw_A2': units.dimensionless,
+            'pressure_sat_param_psatw_A3': t_inv_units,
+            'pressure_sat_param_psatw_A4': t_inv_units**2,
+            'pressure_sat_param_psatw_A5': t_inv_units**3,
+            'pressure_sat_param_psatw_A6': units.dimensionless,
+            'pressure_sat_param_B1': s_inv_units,
+            'pressure_sat_param_B2': s_inv_units**2,
+            'cp_phase_param_A1': cp_units,
+            'cp_phase_param_A2': cp_units * s_inv_units,
+            'cp_phase_param_A3': cp_units * s_inv_units**2,
+            'cp_phase_param_B1': cp_units * t_inv_units,
+            'cp_phase_param_B2': cp_units * s_inv_units * t_inv_units,
+            'cp_phase_param_B3': cp_units * s_inv_units**2 * t_inv_units,
+            'cp_phase_param_C1': cp_units * t_inv_units**2,
+            'cp_phase_param_C2': cp_units * s_inv_units * t_inv_units**2,
+            'cp_phase_param_C3': cp_units * s_inv_units**2 * t_inv_units**2,
+            'cp_phase_param_D1': cp_units * t_inv_units**3,
+            'cp_phase_param_D2': cp_units * s_inv_units * t_inv_units**3,
+            'cp_phase_param_D3': cp_units * s_inv_units**2 * t_inv_units**3,
+
+        }
 
         for (v, u) in var_unit_dict.items():
             var = getattr(m.fs.properties, v)
@@ -273,6 +317,7 @@ class TestSeawaterPropPack():
             'pressure': units.Pa,
             'mass_frac_phase_comp': units.dimensionless,
             'dens_mass_phase': units.kg * units.m**-3,
+            'dens_mass_solvent': units.kg * units.m ** -3,
             'flow_vol_phase': units.m**3 / units.s,
             'flow_vol': units.m**3 / units.s,
             'conc_mass_phase_comp': units.kg * units.m**-3,
@@ -282,8 +327,11 @@ class TestSeawaterPropPack():
             'visc_d_phase': units.Pa * units.s,
             'osm_coeff': units.dimensionless,
             'pressure_osm': units.Pa,
-            'enth_mass_phase': units.J * units.kg**-1,
-            'enth_flow': units.J / units.s}
+            'enth_mass_phase': enth_mass_units,
+            'enth_flow': units.J / units.s,
+            'pressure_sat': units.Pa,
+            'cp_phase': cp_units,
+            'therm_cond_phase': units.W/units.m/units.K}
 
         for (v, u) in var_unit_dict.items():
             var = getattr(m.fs.stream[0], v)
@@ -343,17 +391,23 @@ class TestSeawaterPropPack():
         assert pytest.approx(0.035, rel=1e-3) == value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'TDS'])
         assert pytest.approx(0.965, rel=1e-3) == value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'H2O'])
         assert pytest.approx(1023.6, rel=1e-3) == value(m.fs.stream[0].dens_mass_phase['Liq'])
+        assert pytest.approx(996, rel=1e-3) == value(m.fs.stream[0].dens_mass_solvent)
         assert pytest.approx(9.770e-4, rel=1e-3) == value(m.fs.stream[0].flow_vol_phase['Liq'])
         assert pytest.approx(9.770e-4, rel=1e-3) == value(m.fs.stream[0].flow_vol)
         assert pytest.approx(987.7, rel=1e-3) == value(m.fs.stream[0].conc_mass_phase_comp['Liq', 'H2O'])
         assert pytest.approx(35.82, rel=1e-3) == value(m.fs.stream[0].conc_mass_phase_comp['Liq', 'TDS'])
         assert pytest.approx(53.57, rel=1e-3) == value(m.fs.stream[0].flow_mol_phase_comp['Liq', 'H2O'])
-        assert pytest.approx(0.5989, rel=1e-3) == value(m.fs.stream[0].flow_mol_phase_comp['Liq', 'TDS'])
-        assert pytest.approx(0.9889, rel=1e-3) == value(m.fs.stream[0].mole_frac_phase_comp['Liq', 'H2O'])
-        assert pytest.approx(1.106e-2, rel=1e-3) == value(m.fs.stream[0].mole_frac_phase_comp['Liq', 'TDS'])
-        assert pytest.approx(0.6206, rel=1e-3) == value(m.fs.stream[0].molality_comp['TDS'])
+        assert pytest.approx(1.1145, rel=1e-3) == value(m.fs.stream[0].flow_mol_phase_comp['Liq', 'TDS'])
+        assert pytest.approx(0.9796, rel=1e-3) == value(m.fs.stream[0].mole_frac_phase_comp['Liq', 'H2O'])
+        assert pytest.approx(0.02038, rel=1e-3) == value(m.fs.stream[0].mole_frac_phase_comp['Liq', 'TDS'])
+        assert pytest.approx(1.1549, rel=1e-3) == value(m.fs.stream[0].molality_comp['TDS'])
         assert pytest.approx(9.588e-4, rel=1e-3) == value(m.fs.stream[0].visc_d_phase['Liq'])
         assert pytest.approx(0.9068, rel=1e-3) == value(m.fs.stream[0].osm_coeff)
-        assert pytest.approx(2.790e6, rel=1e-3) == value(m.fs.stream[0].pressure_osm)
+        assert pytest.approx(2.588e6, rel=1e-3) == value(m.fs.stream[0].pressure_osm)
         assert pytest.approx(9.974e4, rel=1e-3) == value(m.fs.stream[0].enth_mass_phase['Liq'])
         assert pytest.approx(9.974e4, rel=1e-3) == value(m.fs.stream[0].enth_flow)
+        assert pytest.approx(3111, rel=1e-3) == value(m.fs.stream[0].pressure_sat)
+        assert pytest.approx(4000.77, rel=1e-3) == value(m.fs.stream[0].cp_phase['Liq'])
+        assert pytest.approx(0.6086, rel=1e-3) == value(m.fs.stream[0].therm_cond_phase['Liq'])
+        assert pytest.approx(2.356e6, rel=1e-3) == value(m.fs.stream[0].dh_vap)
+

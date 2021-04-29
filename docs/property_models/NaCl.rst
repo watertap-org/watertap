@@ -1,7 +1,7 @@
 NaCl Property Package
 =====================
 
-This package implements property relationships for a NaCl solution as provided in `Bartholomew and Mauter (2019) <https://doi.org/10.1016/j.memsci.2018.11.067>`_.
+This package implements property relationships for an NaCl solution as provided in `Bartholomew and Mauter (2019) <https://doi.org/10.1016/j.memsci.2018.11.067>`_.
 
 This NaCl property package:
    * supports only H2O (solvent) and TDS (solute) components 
@@ -10,12 +10,12 @@ This NaCl property package:
    * is intended for isothermal applications at 25C
    * does not support dynamics
 
-This package includes one temperature dependent property, specific enthalpy. The specific enthalpy is based on relationships developed for seawater instead of a NaCl solution, but the deviation is expected to be negiligible for isothermal applications (the recommended use for this property package).
+This package includes one temperature dependent property, specific enthalpy. The specific enthalpy is based on relationships developed for seawater instead of a NaCl solution, but the deviation is expected to be negligible for isothermal applications (the recommended use for this property package).
 
 Sets
 ----
 .. csv-table::
-   :header: "Description", "Symbol", "Indicies"
+   :header: "Description", "Symbol", "Indices"
 
    "Components", ":math:`j`", "['H2O', 'TDS']"
    "Phases", ":math:`p`", "['Liq']"
@@ -68,7 +68,7 @@ Relationships
    "Specific enthalpy", "Equation 43 and 55 in Sharqawy (2010) [See note 2 below]"
    "Enthalpy flow", ":math:`H = \sum_{j} M_j \cdotp \widehat{H}`"
 
-Note 2: Osmotic pressure calculation uses the van 't Hoff factor (:math:`i\text{, assumed to be 2}`), density of water (:math:`\rho_w\text{, assumed to be 1000 kg/}\text{m}^3`), gas constant (:math:`R\text{, 8.314 J/mol}\cdotp\text{K}`) in addition to previously defined variables.
+Note 1: Osmotic pressure calculation uses the van 't Hoff factor (:math:`i\text{, assumed to be 2}`), density of water (:math:`\rho_w\text{, assumed to be 1000 kg/}\text{m}^3`), gas constant (:math:`R\text{, 8.314 J/mol}\cdotp\text{K}`) in addition to previously defined variables.
 
 Note 2: Specific enthalpy calculation is based on seawater relationships in Sharqawy (2010).
 
