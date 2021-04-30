@@ -413,7 +413,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                         b.properties_in[t].conc_mass_phase_comp['Liq', j]
                         * self.cp_modulus[t, j])
             elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
-                jw = self.flux_mass_phase_comp_in[t, 'Liq', self.solvent_list.first()] / self.dens_solvent
+                jw = self.flux_mass_phase_comp_in[t, 'Liq', 'H2O'] / self.dens_solvent
                 js = self.flux_mass_phase_comp_in[t, 'Liq', j]
                 return (b.properties_interface_in[t].conc_mass_phase_comp['Liq', j] ==
                         (b.properties_in[t].conc_mass_phase_comp['Liq', j] - js / jw)
@@ -434,7 +434,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                         * self.cp_modulus[t, j])
             elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
                 comp = self.config.property_package.get_component(j)
-                jw = self.flux_mass_phase_comp_out[t, 'Liq', self.solvent_list.first()] / self.dens_solvent
+                jw = self.flux_mass_phase_comp_out[t, 'Liq', 'H2O'] / self.dens_solvent
                 if comp.is_solute():
                     js = self.flux_mass_phase_comp_out[t, 'Liq', j]
                     return (b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] ==
