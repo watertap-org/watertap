@@ -413,7 +413,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                         b.properties_in[t].conc_mass_phase_comp['Liq', j]
                         * self.cp_modulus[t, j])
             elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
-                jw = self.flux_mass_phase_comp_in[t, 'Liq', self.solvent_list[1]] / self.dens_solvent
+                jw = self.flux_mass_phase_comp_in[t, 'Liq', self.solvent_list.first()] / self.dens_solvent
                 js = self.flux_mass_phase_comp_in[t, 'Liq', j]
                 return (b.properties_interface_in[t].conc_mass_phase_comp['Liq', j] ==
                         (b.properties_in[t].conc_mass_phase_comp['Liq', j] - js / jw)
@@ -434,7 +434,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                         * self.cp_modulus[t, j])
             elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
                 comp = self.config.property_package.get_component(j)
-                jw = self.flux_mass_phase_comp_out[t, 'Liq', self.solvent_list[1]] / self.dens_solvent
+                jw = self.flux_mass_phase_comp_out[t, 'Liq', self.solvent_list.first()] / self.dens_solvent
                 if comp.is_solute():
                     js = self.flux_mass_phase_comp_out[t, 'Liq', j]
                     return (b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] ==
@@ -591,7 +591,19 @@ class ReverseOsmosisData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.dens_solvent) is None:
             sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].dens_mass_phase['Liq'])
             iscale.set_scaling_factor(self.dens_solvent, sf)
-        #TODO- add scaling factors for cp_modulus? Kf_in and out?
+
+        if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
+            if iscale.get_scaling_factor(self.cp_modulus) is None:
+                sf = iscale.get_scaling_factor(self.cp_modulus)
+                iscale.set_scaling_factor(self.cp_modulus, sf)
+
+        elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
+            for (t, j) in self.Kf_in.keys():
+                if iscale.get_scaling_factor(self.Kf_in[t, j]) is None:
+                    iscale.set_scaling_factor(self.Kf_in[t, j], 1e5)
+
+                if iscale.get_scaling_factor(self.Kf_out[t, j]) is None:
+                    iscale.set_scaling_factor(self.Kf_out[t, j], 1e5)
 
         for vobj in [self.flux_mass_phase_comp_in, self.flux_mass_phase_comp_out]:
             for (t, p, j), v in vobj.items():
