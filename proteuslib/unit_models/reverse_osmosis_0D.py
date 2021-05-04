@@ -433,16 +433,12 @@ class ReverseOsmosisData(UnitModelBlockData):
                         b.properties_out[t].conc_mass_phase_comp['Liq', j]
                         * self.cp_modulus[t, j])
             elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
-                comp = self.config.property_package.get_component(j)
                 jw = self.flux_mass_phase_comp_out[t, 'Liq', 'H2O'] / self.dens_solvent
-                if comp.is_solute():
-                    js = self.flux_mass_phase_comp_out[t, 'Liq', j]
-                    return (b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] ==
-                            (b.properties_out[t].conc_mass_phase_comp['Liq', j] - js / jw)
-                            * exp(jw / self.Kf_out[t, j])
-                            + js / jw)
-                else:
-                    pass
+                js = self.flux_mass_phase_comp_out[t, 'Liq', j]
+                return (b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] ==
+                        (b.properties_out[t].conc_mass_phase_comp['Liq', j] - js / jw)
+                        * exp(jw / self.Kf_out[t, j])
+                        + js / jw)
 
         # Bulk and interface connection on the feed-side
         @self.feed_side.Constraint(self.flowsheet().config.time,

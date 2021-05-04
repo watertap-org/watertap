@@ -28,7 +28,8 @@ from idaes.core import (FlowsheetBlock,
                         ControlVolume0DBlock)
 from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
                                                        ConcentrationPolarizationType)
-import proteuslib.property_models.NaCl_prop_pack as props
+import proteuslib.property_models.NaCl_prop_pack\
+    as props
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
@@ -225,9 +226,7 @@ class TestReverseOsmosis():
     @pytest.mark.unit
     def test_calculate_scaling(self, RO_frame):
         m = RO_frame
-        #TODO: seems that I can put any string argument as the first arg in set_default_scaling
-        # and nothing goes wrong. Perhaps there should be a test to check that the arg is an existing
-        # variable in the property package
+
         m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
         m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
         calculate_scaling_factors(m)
@@ -240,17 +239,17 @@ class TestReverseOsmosis():
         assert len(unscaled_constraint_list) == 0
 
     @pytest.mark.component
-    def test_initialize(self, RO_frame): #TODO for each option
+    def test_initialize(self, RO_frame):
         initialization_tester(RO_frame)
 
     @pytest.mark.component
-    def test_var_scaling(self, RO_frame): #TODO for each option
+    def test_var_scaling(self, RO_frame):
         m = RO_frame
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
-    def test_solve(self, RO_frame): #TODO for each option
+    def test_solve(self, RO_frame):
         m = RO_frame
         solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
@@ -283,7 +282,7 @@ class TestReverseOsmosis():
         )) <= 1e-6)
 
     @pytest.mark.component
-    def test_solution(self, RO_frame): #TODO for each option
+    def test_solution(self, RO_frame):
         m = RO_frame
         assert (pytest.approx(4.682e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
@@ -357,7 +356,8 @@ class TestReverseOsmosis():
         # TODO: Setting the "include_fixed" arg as True reveals
         #  unscaled vars that weren't being accounted for previously. However, calling the whole block (i.e.,
         #  m) shows that several NaCl property parameters are unscaled. For now, we are just interested in ensuring
-        #  unit variables are scaled but might need to revisit scaling and associated testing for property models.
+        #  unit variables are scaled (hence, calling m.fs.unit) but might need to revisit scaling and associated
+        #  testing for property models.
 
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
 
