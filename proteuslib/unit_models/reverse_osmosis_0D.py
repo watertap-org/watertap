@@ -22,7 +22,8 @@ from pyomo.environ import (Var,
                            NonNegativeReals,
                            Reference,
                            Block,
-                           units as pyunits)
+                           units as pyunits,
+                           exp)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -39,6 +40,13 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
+
+
+class ConcentrationPolarizationType(Enum):
+    none = 0        # simplified assumption: no concentration polarization
+    fixed = 1       # simplified assumption: concentration polarization modulus is a user specified value
+    calculated = 2  # calculate concentration polarization (concentration at membrane interface)
+
 
 @declare_process_block_class("ReverseOsmosis0D")
 class ReverseOsmosisData(UnitModelBlockData):
@@ -131,16 +139,16 @@ class ReverseOsmosisData(UnitModelBlockData):
     **default** - None.
     **Valid values:** {
     see property package for documentation.}"""))
-    CONFIG.declare("has_concentration_polarization", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Construction flag for concentration polarization effect",
-        doc="""Indicates whether terms related to concentration polarization should be
-    constructed,
-    **default** - False.
-    **Valid values:** {
-    **True** - include concentration polarization terms,
-    **False** - exclude concentration polarization  terms.}"""))
+    CONFIG.declare("concentration_polarization_type", ConfigValue(
+        default=ConcentrationPolarizationType.none,
+        domain=In(ConcentrationPolarizationType),
+        description="External concentration polarization effect in RO",
+        doc="""Options to account for concentration polarization,
+**default** - ConcentrationPolarizationType.none. 
+**Valid values:** {
+**ConcentrationPolarizationType.none** - assume no concentration polarization,
+**ConcentrationPolarizationType.fixed** - specify concentration polarization modulus,
+**ConcentrationPolarizationType.calculated** - complete calculation membrane interface concentration.}"""))
 
     def build(self):
         # Call UnitModel.build to setup dynamics
@@ -221,7 +229,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             domain=NonNegativeReals,
             units=units_meta('length')**2,
             doc='Membrane area')
-        if self.config.has_concentration_polarization is True:
+        if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
             self.cp_modulus = Var(
                 self.flowsheet().config.time,
                 self.solute_list,
@@ -230,6 +238,25 @@ class ReverseOsmosisData(UnitModelBlockData):
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc='Concentration polarization modulus')
+
+        if self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
+            self.Kf_in = Var(
+                self.flowsheet().config.time,
+                self.solute_list,
+                initialize=1e-5,
+                bounds=(1e-10, 1),
+                domain=NonNegativeReals,
+                units=units_meta('length') * units_meta('time')**-1,
+                doc='Mass transfer coefficient at feed channel inlet')
+            self.Kf_out = Var(
+                self.flowsheet().config.time,
+                self.solute_list,
+                initialize=1e-5,
+                bounds=(1e-10, 1),
+                domain=NonNegativeReals,
+                units=units_meta('length') * units_meta('time')**-1,
+                doc='Mass transfer coefficient at feed channel outlet')
+
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(default={
@@ -378,25 +405,40 @@ class ReverseOsmosisData(UnitModelBlockData):
                                    self.solute_list,
                                    doc="Concentration polarization at the inlet")
         def eq_concentration_polarization_in(b, t, j):
-            if self.config.has_concentration_polarization is False:
+            if self.config.concentration_polarization_type == ConcentrationPolarizationType.none:
                 return b.properties_interface_in[t].conc_mass_phase_comp['Liq', j] == \
                        b.properties_in[t].conc_mass_phase_comp['Liq', j]
-            else:
-                return b.properties_interface_in[t].conc_mass_phase_comp['Liq', j] == \
-                       b.properties_in[t].conc_mass_phase_comp['Liq', j] \
-                       * self.cp_modulus[t, j]
+            elif self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
+                return (b.properties_interface_in[t].conc_mass_phase_comp['Liq', j] ==
+                        b.properties_in[t].conc_mass_phase_comp['Liq', j]
+                        * self.cp_modulus[t, j])
+            elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
+                jw = self.flux_mass_phase_comp_in[t, 'Liq', 'H2O'] / self.dens_solvent
+                js = self.flux_mass_phase_comp_in[t, 'Liq', j]
+                return (b.properties_interface_in[t].conc_mass_phase_comp['Liq', j] ==
+                        (b.properties_in[t].conc_mass_phase_comp['Liq', j] - js / jw)
+                        * exp(jw / self.Kf_in[t, j])
+                        + js / jw)
+
 
         @self.feed_side.Constraint(self.flowsheet().config.time,
                                    self.solute_list,
                                    doc="Concentration polarization at the outlet")
         def eq_concentration_polarization_out(b, t, j):
-            if self.config.has_concentration_polarization is False:
-                return b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] == \
+            if self.config.concentration_polarization_type == ConcentrationPolarizationType.none:
+                return b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] ==\
                        b.properties_out[t].conc_mass_phase_comp['Liq', j]
-            else:
-                return b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] == \
-                       b.properties_out[t].conc_mass_phase_comp['Liq', j] \
-                       * self.cp_modulus[t, j]
+            elif self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
+                return (b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] ==
+                        b.properties_out[t].conc_mass_phase_comp['Liq', j]
+                        * self.cp_modulus[t, j])
+            elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
+                jw = self.flux_mass_phase_comp_out[t, 'Liq', 'H2O'] / self.dens_solvent
+                js = self.flux_mass_phase_comp_out[t, 'Liq', j]
+                return (b.properties_interface_out[t].conc_mass_phase_comp['Liq', j] ==
+                        (b.properties_out[t].conc_mass_phase_comp['Liq', j] - js / jw)
+                        * exp(jw / self.Kf_out[t, j])
+                        + js / jw)
 
         # Bulk and interface connection on the feed-side
         @self.feed_side.Constraint(self.flowsheet().config.time,
@@ -545,6 +587,19 @@ class ReverseOsmosisData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.dens_solvent) is None:
             sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].dens_mass_phase['Liq'])
             iscale.set_scaling_factor(self.dens_solvent, sf)
+
+        if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
+            if iscale.get_scaling_factor(self.cp_modulus) is None:
+                sf = iscale.get_scaling_factor(self.cp_modulus)
+                iscale.set_scaling_factor(self.cp_modulus, sf)
+
+        elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
+            for (t, j) in self.Kf_in.keys():
+                if iscale.get_scaling_factor(self.Kf_in[t, j]) is None:
+                    iscale.set_scaling_factor(self.Kf_in[t, j], 1e5)
+
+                if iscale.get_scaling_factor(self.Kf_out[t, j]) is None:
+                    iscale.set_scaling_factor(self.Kf_out[t, j], 1e5)
 
         for vobj in [self.flux_mass_phase_comp_in, self.flux_mass_phase_comp_out]:
             for (t, p, j), v in vobj.items():
