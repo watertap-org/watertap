@@ -13,8 +13,14 @@
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.environ import Block, Var, Suffix, NonNegativeReals, Reals, \
-    SolverFactory, units as pyunits
+from pyomo.environ import (Block,
+                           Var,
+                           Suffix,
+                           NonNegativeReals,
+                           Reals,
+                           value,
+                           SolverFactory,
+                           units as pyunits)
 
 # Import IDAES cores
 import idaes.logger as idaeslog
@@ -25,6 +31,7 @@ from idaes.core import (ControlVolume0DBlock,
                         MomentumBalanceType,
                         UnitModelBlockData,
                         useDefault)
+from idaes.core.util.initialization import revert_state_vars
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.testing import get_default_solver
@@ -240,10 +247,11 @@ class PressureExchangerData(UnitModelBlockData):
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
                          property package) (default = {}).
-            outlvl : sets output level of initialization routine
+            outlvl : sets output level of initialization routine (default=idaeslog.NOTSET)
             optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+            solver : solver object or string indicating which solver to use during
+                     initialization, if None provided the default solver will be used
+                     (default = None)
         Returns:
             None
         """
@@ -263,11 +271,74 @@ class PressureExchangerData(UnitModelBlockData):
                 opt = solver
                 opt.options = optarg
 
-        # Solve simple unit
+        # initialize inlets
+        flags_low_in = self.low_pressure_side.properties_in.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+            hold_state=True)
+        flags_high_in = self.high_pressure_side.properties_in.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+            hold_state=True)
+        init_log.info_high("Initialize inlets complete")
+
+        # check that inlets are feasible
+        if (value(self.low_pressure_side.properties_in[0].pressure)
+                > value(self.high_pressure_side.properties_in[0].pressure)):
+            raise ConfigurationError(
+                "Initializing pressure exchanger failed because "
+                "the low pressure side inlet has a higher pressure "
+                "than the high pressure side inlet")
+        if (abs(value(self.low_pressure_side.properties_in[0].flow_vol)
+                - value(self.high_pressure_side.properties_in[0].flow_vol))
+                < 1e-8):
+            raise ConfigurationError(
+                "Initializing pressure exchanger failed because "
+                "the volumetric flow rates are not equal for both inlets")
+        else:  # volumetric flow is equal, deactivate flow constraint for the solve
+            self.eq_equal_flow_vol.deactivate()
+
+        # initialize outlets from inlets and update pressure
+        def propogate_state(sb1, sb2):
+            state_dict_1 = sb1.define_state_vars()
+            state_dict_2 = sb2.define_state_vars()
+            for k in state_dict_1.keys():
+                if state_dict_1[k].is_indexed():
+                    for m in state_dict_1[k].keys():
+                        state_dict_2[k][m].value = state_dict_1[k][m].value
+                else:
+                    state_dict_2[k].value = state_dict_1[k].value
+
+        # low pressure side
+        propogate_state(self.low_pressure_side.properties_in[0],
+                        self.low_pressure_side.properties_out[0])
+        self.low_pressure_side.properties_out[0].pressure = (
+                self.low_pressure_side.properties_in[0].pressure.value
+                + self.efficiency_pressure_exchanger[0].value
+                * (self.high_pressure_side.properties_in[0].pressure.value
+                   - self.low_pressure_side.properties_in[0].pressure.value))
+        # high pressure side
+        propogate_state(self.high_pressure_side.properties_in[0],
+                        self.high_pressure_side.properties_out[0])
+        self.high_pressure_side.properties_out[0].pressure.value = \
+            self.low_pressure_side.properties_in[0].pressure.value
+        init_log.info_high("Initialize outlets complete")
+
+        # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
-        init_log.info_high(
-            "Initialized pressure exchanger.".format(idaeslog.condition(res)))
+        init_log.info("Initialization complete: {}".format(idaeslog.condition(res)))
+
+        # release state of fixed variables
+        self.low_pressure_side.properties_in.release_state(flags_low_in)
+        self.high_pressure_side.properties_in.release_state(flags_high_in)
+
+        # reactivate volumetric flow constraint
+        self.eq_equal_flow_vol.activate()
 
     def get_costing(self, module=None):
         self.costing = Block()
