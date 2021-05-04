@@ -258,11 +258,16 @@ class _NaClStateBlock(StateBlock):
                                            "zero during initialization.")
 
         # ---------------------------------------------------------------------
-        # Initialize properties
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solve_indexed_blocks(opt, [self], tee=slc.tee)
-        init_log.info("Property initialization: {}."
-                      .format(idaeslog.condition(results)))
+        skip_solve = True  # skip solve if only state variables are present
+        for k in self.keys():
+            if number_unfixed_variables(self[k]) != 0:
+                skip_solve = False
+
+        if not skip_solve:
+            # Initialize properties
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                results = solve_indexed_blocks(opt, [self], tee=slc.tee)
+            init_log.info_high("Property initialization: {}.".format(idaeslog.condition(results)))
 
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state
@@ -286,7 +291,7 @@ class _NaClStateBlock(StateBlock):
         # Unfix state variables
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
         revert_state_vars(self, flags)
-        init_log.info('{} State Released.'.format(self.name))
+        init_log.info_high('{} State Released.'.format(self.name))
 
 @declare_process_block_class("NaClStateBlock",
                              block_class=_NaClStateBlock)
