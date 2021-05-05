@@ -126,8 +126,8 @@ def test_build():
                 assert isinstance(sb_exp, Expression)
 
     # test statistics
-    assert number_variables(m.fs.unit) == 35
-    assert number_total_constraints(m.fs.unit) == 27
+    assert number_variables(m.fs.unit) == 39
+    assert number_total_constraints(m.fs.unit) == 31
     assert number_unused_variables(m.fs.unit) == 0
 
 class TestPressureExchanger():
