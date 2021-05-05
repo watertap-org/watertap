@@ -295,7 +295,8 @@ class PressureExchangerData(UnitModelBlockData):
                 "than the high pressure side inlet")
         if (abs(value(self.low_pressure_side.properties_in[0].flow_vol)
                 - value(self.high_pressure_side.properties_in[0].flow_vol))
-                < 1e-8):
+                / value(self.high_pressure_side.properties_in[0].flow_vol)
+                > 1e-4):  # flow_vol values are not within 0.1%
             raise ConfigurationError(
                 "Initializing pressure exchanger failed because "
                 "the volumetric flow rates are not equal for both inlets")
