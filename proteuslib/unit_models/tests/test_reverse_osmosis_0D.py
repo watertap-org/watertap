@@ -109,8 +109,8 @@ def test_option_concentration_polarization_type_calculated():
 
     assert m.fs.unit.config.concentration_polarization_type == \
            ConcentrationPolarizationType.calculated
-    assert isinstance(m.fs.unit.Kf_in, Var)
-    assert isinstance(m.fs.unit.Kf_out, Var)
+    assert isinstance(m.fs.unit.Kf, Var)
+    assert isinstance(m.fs.unit.Kf, Var)
 
 class TestReverseOsmosis():
     @pytest.fixture(scope="class")
@@ -167,8 +167,7 @@ class TestReverseOsmosis():
         unit_objs_type_dict = {'dens_solvent': Param,
                                'A_comp': Var,
                                'B_comp': Var,
-                               'flux_mass_phase_comp_in': Var,
-                               'flux_mass_phase_comp_out': Var,
+                               'flux_mass_phase_comp': Var,
                                'area': Var,
                                'deltaP': Var,
                                'cp_modulus': Var,
@@ -176,8 +175,7 @@ class TestReverseOsmosis():
                                'flux_mass_phase_comp_avg': Expression,
                                'eq_mass_transfer_term': Constraint,
                                'eq_permeate_production': Constraint,
-                               'eq_flux_in': Constraint,
-                               'eq_flux_out': Constraint,
+                               'eq_flux': Constraint,
                                'eq_connect_mass_transfer': Constraint,
                                'eq_connect_enthalpy_transfer': Constraint,
                                'eq_permeate_isothermal': Constraint}
@@ -198,12 +196,10 @@ class TestReverseOsmosis():
             sb = getattr(m.fs.unit.feed_side, sb_str)
             assert isinstance(sb, props.NaClStateBlock)
         # test objects added to control volume
-        cv_objs_type_dict = {'eq_concentration_polarization_in': Constraint,
-                             'eq_concentration_polarization_out': Constraint,
-                             'eq_equal_temp_interface_in': Constraint,
+        cv_objs_type_dict = {'eq_concentration_polarization': Constraint,
+                             'eq_equal_temp_interface': Constraint,
                              'eq_equal_pressure_interface_in': Constraint,
                              'eq_equal_flow_vol_interface_in': Constraint,
-                             'eq_equal_temp_interface_out': Constraint,
                              'eq_equal_pressure_interface_out': Constraint,
                              'eq_equal_flow_vol_interface_out': Constraint}
         for (obj_str, obj_type) in cv_objs_type_dict.items():
@@ -340,8 +336,7 @@ class TestReverseOsmosis():
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
-        m.fs.unit.Kf_in.fix(kf)
-        m.fs.unit.Kf_out.fix(kf)
+        m.fs.unit.Kf.fix(kf)
 
         # test statistics
         assert number_variables(m) == 94
