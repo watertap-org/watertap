@@ -109,8 +109,7 @@ def test_option_concentration_polarization_type_calculated():
 
     assert m.fs.unit.config.concentration_polarization_type == \
            ConcentrationPolarizationType.calculated
-    assert isinstance(m.fs.unit.Kf, Var)
-    assert isinstance(m.fs.unit.Kf, Var)
+    assert isinstance(m.fs.unit.Kf_io, Var)
 
 class TestReverseOsmosis():
     @pytest.fixture(scope="class")
@@ -167,7 +166,7 @@ class TestReverseOsmosis():
         unit_objs_type_dict = {'dens_solvent': Param,
                                'A_comp': Var,
                                'B_comp': Var,
-                               'flux_mass_phase_comp': Var,
+                               'flux_mass_io_phase_comp': Var,
                                'area': Var,
                                'deltaP': Var,
                                'cp_modulus': Var,
@@ -175,7 +174,7 @@ class TestReverseOsmosis():
                                'flux_mass_phase_comp_avg': Expression,
                                'eq_mass_transfer_term': Constraint,
                                'eq_permeate_production': Constraint,
-                               'eq_flux': Constraint,
+                               'eq_flux_io': Constraint,
                                'eq_connect_mass_transfer': Constraint,
                                'eq_connect_enthalpy_transfer': Constraint,
                                'eq_permeate_isothermal': Constraint}
@@ -196,10 +195,10 @@ class TestReverseOsmosis():
             sb = getattr(m.fs.unit.feed_side, sb_str)
             assert isinstance(sb, props.NaClStateBlock)
         # test objects added to control volume
-        cv_objs_type_dict = {'eq_concentration_polarization': Constraint,
-                             'eq_equal_temp_interface': Constraint,
-                             'eq_equal_pressure_interface': Constraint,
-                             'eq_equal_flow_vol_interface': Constraint}
+        cv_objs_type_dict = {'eq_concentration_polarization_io': Constraint,
+                             'eq_equal_temp_interface_io': Constraint,
+                             'eq_equal_pressure_interface_io': Constraint,
+                             'eq_equal_flow_vol_interface_io': Constraint}
         for (obj_str, obj_type) in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
@@ -297,8 +296,8 @@ class TestReverseOsmosis():
     def test_CP_calculation(self):
         """ Testing 0D-RO with ConcentrationPolarizationType.calculated option enabled.
         This option makes use of an alternative constraint for the feed-side, membrane-interface concentration.
-        Additionally, two more variables are created when this option is enabled: Kf_in and Kf_out- feed-channel
-        mass transfer coefficients at the channel inlet and outlet, respectively.
+        Additionally, two more variables are created when this option is enabled: Kf_io - feed-channel
+        mass transfer coefficients at the channel inlet and outlet.
         """
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -334,7 +333,7 @@ class TestReverseOsmosis():
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
-        m.fs.unit.Kf.fix(kf)
+        m.fs.unit.Kf_io.fix(kf)
 
         # test statistics
         assert number_variables(m) == 94
