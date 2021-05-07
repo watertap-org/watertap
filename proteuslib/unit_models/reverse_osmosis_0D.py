@@ -417,31 +417,30 @@ class ReverseOsmosisData(UnitModelBlockData):
                    prop_io.temperature
 
         @self.feed_side.Constraint(self.flowsheet().config.time,
-                         doc="Pressure at interface")
-        def eq_equal_pressure_interface_in(b, t):
-            return b.properties_interface_in[t].pressure == \
-                   b.properties_in[t].pressure
+                                   self.io_list,
+                                   doc="Pressure at interface")
+        def eq_equal_pressure_interface(b, t, x):
+            if x == 'in':
+                prop_io = b.properties_in[t]
+                prop_interface_io = b.properties_interface_in[t]
+            elif x == 'out':
+                prop_io = b.properties_out[t]
+                prop_interface_io = b.properties_interface_out[t]
+            return prop_interface_io.pressure == \
+                   prop_io.pressure
 
         @self.feed_side.Constraint(self.flowsheet().config.time,
+                                   self.io_list,
                                    doc="Volumetric flow at interface of inlet")
-        def eq_equal_flow_vol_interface_in(b, t):
-            return b.properties_interface_in[t].flow_vol_phase['Liq'] ==\
-                   b.properties_in[t].flow_vol_phase['Liq']
-
-
-
-        @self.feed_side.Constraint(self.flowsheet().config.time,
-                         doc="Pressure at interface of outlet")
-        def eq_equal_pressure_interface_out(b, t):
-            return b.properties_interface_out[t].pressure == \
-                   b.properties_out[t].pressure
-
-        @self.feed_side.Constraint(self.flowsheet().config.time,
-                         doc="Volumetric flow at interface of outlet")
-        def eq_equal_flow_vol_interface_out(b, t):
-            return b.properties_interface_out[t].flow_vol_phase['Liq'] == \
-                   b.properties_out[t].flow_vol_phase['Liq']
-
+        def eq_equal_flow_vol_interface(b, t, x):
+            if x == 'in':
+                prop_io = b.properties_in[t]
+                prop_interface_io = b.properties_interface_in[t]
+            elif x == 'out':
+                prop_io = b.properties_out[t]
+                prop_interface_io = b.properties_interface_out[t]
+            return prop_interface_io.flow_vol_phase['Liq'] ==\
+                   prop_io.flow_vol_phase['Liq']
 
     def initialize(
             blk,
@@ -646,20 +645,19 @@ class ReverseOsmosisData(UnitModelBlockData):
                 sf = iscale.get_scaling_factor(self.feed_side.properties_interface_out[t].temperature)
                 iscale.constraint_scaling_transform(c, sf)
 
+        for (t, x), c in self.feed_side.eq_equal_pressure_interface.items():
+            if x == 'in':
+                sf = iscale.get_scaling_factor(self.feed_side.properties_interface_in[t].pressure)
+                iscale.constraint_scaling_transform(c, sf)
+            elif x == 'out':
+                sf = iscale.get_scaling_factor(self.feed_side.properties_interface_out[t].pressure)
+                iscale.constraint_scaling_transform(c, sf)
 
-        for t, c in self.feed_side.eq_equal_pressure_interface_in.items():
-            sf = iscale.get_scaling_factor(self.feed_side.properties_interface_in[t].pressure)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for t, c in self.feed_side.eq_equal_flow_vol_interface_in.items():
-            sf = iscale.get_scaling_factor(self.feed_side.properties_interface_in[t].flow_vol_phase['Liq'])
-            iscale.constraint_scaling_transform(c, sf)
-
-        for t, c in self.feed_side.eq_equal_pressure_interface_out.items():
-            sf = iscale.get_scaling_factor(self.feed_side.properties_interface_out[t].pressure)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for t, c in self.feed_side.eq_equal_flow_vol_interface_out.items():
-            sf = iscale.get_scaling_factor(self.feed_side.properties_interface_out[t].flow_vol_phase['Liq'])
-            iscale.constraint_scaling_transform(c, sf)
+        for (t, x), c in self.feed_side.eq_equal_flow_vol_interface.items():
+            if x == 'in':
+                sf = iscale.get_scaling_factor(self.feed_side.properties_interface_in[t].flow_vol_phase['Liq'])
+                iscale.constraint_scaling_transform(c, sf)
+            elif x == 'out':
+                sf = iscale.get_scaling_factor(self.feed_side.properties_interface_out[t].flow_vol_phase['Liq'])
+                iscale.constraint_scaling_transform(c, sf)
 

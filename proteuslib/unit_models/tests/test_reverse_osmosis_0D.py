@@ -198,10 +198,8 @@ class TestReverseOsmosis():
         # test objects added to control volume
         cv_objs_type_dict = {'eq_concentration_polarization': Constraint,
                              'eq_equal_temp_interface': Constraint,
-                             'eq_equal_pressure_interface_in': Constraint,
-                             'eq_equal_flow_vol_interface_in': Constraint,
-                             'eq_equal_pressure_interface_out': Constraint,
-                             'eq_equal_flow_vol_interface_out': Constraint}
+                             'eq_equal_pressure_interface': Constraint,
+                             'eq_equal_flow_vol_interface': Constraint}
         for (obj_str, obj_type) in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
