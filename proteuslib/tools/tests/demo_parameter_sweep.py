@@ -33,5 +33,5 @@ sweep_params['Electricity Cost']  = (m.fs.costing_param.electricity_cost, 0.03, 
 # Run the parameter sweep
 # ================================================================
 
-parameter_sweep(m, sweep_params, ['EC', 'LCOW'], output_dir='output_z',
+parameter_sweep(m, sweep_params, ['EC', 'LCOW'], objective='LCOW', output_dir='output_z',
     num_stages=num_stages, optimization=optimization, display_metrics=display_metrics)

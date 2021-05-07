@@ -12,6 +12,7 @@
 ##############################################################################
 
 import pytest
+import os
 import numpy as np
 
 from pyomo.environ import (ConcreteModel,
@@ -144,7 +145,7 @@ class TestParallelManager():
     def test_aggregate_results(self):
         comm, rank, num_procs = _init_mpi()
 
-        print('Rank %d, num_procs %d' % (rank, num_procs))
+        # print('Rank %d, num_procs %d' % (rank, num_procs))
 
         nn = 5
         np.random.seed(1)
@@ -164,7 +165,44 @@ class TestParallelManager():
 
     @pytest.mark.component
     def test_parameter_sweep(self, RO_frame):
-        # m, sweep_params, outputs, output_dir='output', mpi_comm=None, num_stages=2, optimization=None, display_metrics=None
+        def optimization(m, objective, **kwargs):
+            if objective == 'Area':
+                m.fs.unit.area.unfix()
+                m.fs.unit.area.setlb(20)
+                m.fs.unit.area.setub(60)
+                m.fs.objective = Objective(expr=m.fs.unit.area)
+
+
+            m.fs.unit.B_comp.unfix()
+            m.fs.unit.B_comp.setlb(3.5e-8)
+            m.fs.unit.B_comp.setub(3.5e-8 * 1e3)
+        
+            m.fs.unit.A_comp.unfix()
+            m.fs.unit.A_comp.setlb(4.2e-12)
+            m.fs.unit.A_comp.setub(4.2e-12 * 1e3)
+
+            # solver = SolverFactory('ipopt')
+            solver = SolverFactory('ipopt')
+            solver.options = {'nlp_scaling_method': 'user-scaling'}
+            results = solver.solve(m, tee=True)
+
+            return m
+
+        def display_metrics(m, outputs, **kwargs):
+            metrics = dict()
+
+            metrics['A_comp'] = value(m.fs.unit.A_comp[0.0, 'H2O'])
+            metrics['B_comp'] = value(m.fs.unit.B_comp[0.0, 'NaCl'])
+            metrics['Area'] = value(m.fs.unit.area)
+
+            output_data = []
+
+            for k in outputs:
+                output_data.append(metrics[k])
+
+            return output_data
+
+        comm, rank, num_procs = _init_mpi()
 
         m = RO_frame
 
@@ -173,21 +211,34 @@ class TestParallelManager():
         solver = get_default_solver()
         solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
-        print(results)
+        # print(results)
 
         assert results.solver.termination_condition == \
                TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-        m.fs.objective = Objective(expr=m.fs.unit.area)
+        sweep_params = dict()
+        sweep_params['pressure_drop'] = (m.fs.unit.deltaP, 2e5, 4e5, 3)
+        outputs = ['A_comp', 'B_comp', 'Area']
 
-        m.fs.unit.B_comp.unfix()
-        m.fs.unit.B_comp.setlb(3.5e-8)
-        m.fs.unit.B_comp.setub(3.5e-8 * 1e3)
+        # Call the parameter_sweep function
+        parameter_sweep(m, sweep_params, outputs, objective='Area', 
+            output_dir='pytest_output', mpi_comm=comm, optimization=optimization,
+            display_metrics=display_metrics, save_debugging_data=True)
 
-        # solver = SolverFactory('ipopt')
-        solver = SolverFactory('ipopt')
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
-        results = solver.solve(m, tee=True)
+        # Check that the global results file is created
+        assert os.path.isfile('pytest_output/global_results.csv')
 
-        assert results.solver.termination_condition == TerminationCondition.optimal
+        if rank == 0:
+            # Check that all local output files have been created
+            for k in range(num_procs):
+                assert os.path.isfile('pytest_output/local_results_%03d.csv' % (k))
+
+            # Attempt to read in the data
+            data = np.genfromtxt('pytest_output/global_results.csv', skip_header=1, delimiter=',')
+
+            truth_data = [4.000000e+05, 1.469657e-11, 2.922988e-05, 2.000000e+01]
+
+            # Compare the last row of the imported data to truth
+            for k in range(len(truth_data)):
+                assert data[-1, k] == pytest.approx(truth_data[k])

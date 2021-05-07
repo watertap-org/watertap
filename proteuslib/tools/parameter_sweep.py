@@ -97,7 +97,7 @@ def _aggregate_results(local_results, global_values, comm, num_procs):
 
 # ================================================================
 
-def parameter_sweep(m, sweep_params, outputs, output_dir='output', mpi_comm=None,
+def parameter_sweep(m, sweep_params, outputs, objective=None, output_dir='output', mpi_comm=None,
     num_stages=2, optimization=None, display_metrics=None, save_debugging_data=False):
 
     '''
@@ -111,6 +111,7 @@ def parameter_sweep(m, sweep_params, outputs, output_dir='output', mpi_comm=None
                       (path.to.model.variable, lower_limit, upper_limit, num_samples)
         outputs : A list of strings indicating which elements from the potential
                   output dictionary to monitor
+        objective : A string indicating the objective function to use
         output_dir : The directory to save all output files
         mpi_comm : User-provided MPI communicator
         num_stages : The number of stages to use (specific to the NStage model)
@@ -143,7 +144,7 @@ def parameter_sweep(m, sweep_params, outputs, output_dir='output', mpi_comm=None
 
         try:
             # Simulate/optimize with this set of parameters
-            m = optimization(m, 'LCOW', N=num_stages)
+            m = optimization(m, objective, N=num_stages)
 
         except:
             # If the run is infeasible, report nan
@@ -188,7 +189,7 @@ def parameter_sweep(m, sweep_params, outputs, output_dir='output', mpi_comm=None
 
     if rank == 0:
         # Create the global filename and data
-        fname = '%s/%d_stage.csv' % (output_dir, num_stages)
+        fname = '%s/global_results.csv' % (output_dir)
         save_data = np.hstack((global_values, global_results))
 
         # Save the global data
