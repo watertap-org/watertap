@@ -27,11 +27,11 @@ from idaes.core.util.scaling import calculate_scaling_factors
 
 from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 import proteuslib.property_models.NaCl_prop_pack as props
-from proteuslib.tools.parallel_manager import (init_mpi,
-                                               build_and_divide_combinations,
-                                               update_model_values,
-                                               aggregate_results,
-                                               run_param_sweep)
+from proteuslib.tools.parameter_sweep import (_init_mpi,
+                                               _build_and_divide_combinations,
+                                               _update_model_values,
+                                               _aggregate_results,
+                                               parameter_sweep)
 
 # -----------------------------------------------------------------------------
 
@@ -74,7 +74,7 @@ class TestParallelManager():
 
     @pytest.mark.unit
     def test_init_mpi(self):
-        comm, rank, num_procs = init_mpi()
+        comm, rank, num_procs = _init_mpi()
 
         assert type(rank) == int
         assert type(num_procs) == int
@@ -82,18 +82,22 @@ class TestParallelManager():
 
     @pytest.mark.component
     def test_build_and_divide_combinations(self):
-        comm, rank, num_procs = init_mpi()
+        comm, rank, num_procs = _init_mpi()
+
+        range_A = [0.0, 10.0]
+        range_B = [1.0, 20.0]
+        range_C = [2.0, 30.0]
 
         nn_A = 4
         nn_B = 5
         nn_C = 6
 
         param_dict = dict()
-        param_dict['var_A'] = (None, 0.0, 1.0, nn_A)
-        param_dict['var_B']  = (None, 1.0, 2.0, nn_B)
-        param_dict['var_C']  = (None, 2.0, 3.0, nn_C)
+        param_dict['var_A'] = (None, range_A[0], range_A[1], nn_A)
+        param_dict['var_B']  = (None, range_B[0], range_B[1], nn_B)
+        param_dict['var_C']  = (None, range_C[0], range_C[1], nn_C)
 
-        local_combo_array, full_combo_array = build_and_divide_combinations(param_dict, rank, num_procs)
+        local_combo_array, full_combo_array = _build_and_divide_combinations(param_dict, rank, num_procs)
 
         test = np.array_split(full_combo_array, num_procs, axis=0)[rank]
 
@@ -106,14 +110,14 @@ class TestParallelManager():
         assert test[-1, 2] == pytest.approx(local_combo_array[-1, 2])
 
         if rank == 0:
-            assert test[0, 0] == pytest.approx(0.0)
-            assert test[0, 1] == pytest.approx(1.0)
-            assert test[0, 2] == pytest.approx(2.0)
+            assert test[0, 0] == pytest.approx(range_A[0])
+            assert test[0, 1] == pytest.approx(range_B[0])
+            assert test[0, 2] == pytest.approx(range_C[0])
 
         if rank == num_procs - 1:
-            assert test[-1, 0] == pytest.approx(1.0)
-            assert test[-1, 1] == pytest.approx(2.0)
-            assert test[-1, 2] == pytest.approx(3.0)
+            assert test[-1, 0] == pytest.approx(range_A[1])
+            assert test[-1, 1] == pytest.approx(range_B[1])
+            assert test[-1, 2] == pytest.approx(range_C[1])
 
     @pytest.mark.component
     def test_update_model_values(self, RO_frame):
@@ -131,21 +135,23 @@ class TestParallelManager():
 
         new_values = [1.1*original_pressure, 1.1*original_area]
 
-        update_model_values(m, param_dict=param_dict, values=new_values)
+        _update_model_values(m, param_dict, new_values)
 
         assert value(m.fs.unit.inlet.pressure[0]) == pytest.approx(new_values[0])
         assert value(m.fs.unit.area) == pytest.approx(new_values[1])
 
     @pytest.mark.unit
     def test_aggregate_results(self):
-        comm, rank, num_procs = init_mpi()
+        comm, rank, num_procs = _init_mpi()
+
+        print('Rank %d, num_procs %d' % (rank, num_procs))
 
         nn = 5
         np.random.seed(1)
         local_results = (rank+1)*np.random.rand(nn, 2)
         global_values = np.random.rand(nn*num_procs, 4)
 
-        global_results = aggregate_results(local_results, global_values, comm, num_procs)
+        global_results = _aggregate_results(local_results, global_values, comm, num_procs)
 
         assert np.shape(global_results)[1] == np.shape(local_results)[1]
         assert np.shape(global_results)[0] == np.shape(global_values)[0]
@@ -157,7 +163,7 @@ class TestParallelManager():
             assert global_results[-1, 1] == pytest.approx(num_procs*local_results[-1, 1])
 
     @pytest.mark.component
-    def test_run_param_sweep(self, RO_frame):
+    def test_parameter_sweep(self, RO_frame):
         # m, sweep_params, outputs, output_dir='output', mpi_comm=None, num_stages=2, optimization=None, display_metrics=None
 
         m = RO_frame

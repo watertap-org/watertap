@@ -4,7 +4,7 @@ import sys
 import os
 
 from sim_LSRRO_Nstage import build_model, simulate, optimization, display_metrics
-from proteuslib.tools.parallel_manager import run_param_sweep
+from proteuslib.tools.parameter_sweep import parameter_sweep
 
 # ================================================================
 # Build and simulate the model once as an initial condition
@@ -16,7 +16,7 @@ else:
     num_stages = 2
 
 m = build_model(N=num_stages)
-m = simulate(m, N=num_stages);
+m = simulate(m, N=num_stages)
 
 # ================================================================
 # Set parameter sweep options
@@ -33,5 +33,5 @@ sweep_params['Electricity Cost']  = (m.fs.costing_param.electricity_cost, 0.03, 
 # Run the parameter sweep
 # ================================================================
 
-run_param_sweep(m, sweep_params, ['EC', 'LCOW'], output_dir='output_z',
+parameter_sweep(m, sweep_params, ['EC', 'LCOW'], output_dir='output_z',
     num_stages=num_stages, optimization=optimization, display_metrics=display_metrics)

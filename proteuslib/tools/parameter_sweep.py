@@ -5,34 +5,23 @@ import os
 
 # ================================================================
 
-def init_mpi(mpi_comm=None):
+def _init_mpi(mpi_comm=None):
+
     if mpi_comm is None:
         try:
             from mpi4py import MPI
 
         except:
-            print('The parallel manager functions require a version')
-            print('of mpi4py to be installed in this environment.')
-            print('Defaulting to num_procs = 1, rank = 0.')
-
-            comm = None
-            rank = 0
-            num_procs = 1
+            return None, 0, 1
 
         else:
-            comm = MPI.COMM_WORLD
-            rank = comm.Get_rank()
-            num_procs = comm.Get_size()
+            mpi_comm = MPI.COMM_WORLD
 
-    else:
-        print('Passing MPI communicators is not currently supported')
-        comm, rank, num_procs = init_mpi()
-
-    return comm, rank, num_procs
+    return mpi_comm, mpi_comm.Get_rank(), mpi_comm.Get_size()
 
 # ================================================================
 
-def build_and_divide_combinations(d, rank, num_procs):
+def _build_and_divide_combinations(d, rank, num_procs):
 
     param_values = []
 
@@ -60,7 +49,7 @@ def build_and_divide_combinations(d, rank, num_procs):
 
 # ================================================================
 
-def update_model_values(m, param_dict=None, values=None):
+def _update_model_values(m, param_dict, values):
 
     for k, item in enumerate(param_dict.items()):
 
@@ -87,7 +76,7 @@ def update_model_values(m, param_dict=None, values=None):
 
 # ================================================================
 
-def aggregate_results(local_results, global_values, comm, num_procs):
+def _aggregate_results(local_results, global_values, comm, num_procs):
 
     if num_procs > 1:
         local_results = local_results.astype(np.float64)
@@ -108,14 +97,37 @@ def aggregate_results(local_results, global_values, comm, num_procs):
 
 # ================================================================
 
-def run_param_sweep(m, sweep_params, outputs, output_dir='output', mpi_comm=None,
-    num_stages=2, optimization=None, display_metrics=None):
+def parameter_sweep(m, sweep_params, outputs, output_dir='output', mpi_comm=None,
+    num_stages=2, optimization=None, display_metrics=None, save_debugging_data=False):
+
+    '''
+    This function offers a general way to perform repeated optimizations
+    of a model for the purposes of exploring a parameter space while
+    monitoring multiple outputs:
+        m : A Pyomo model containing a proteuslib flowsheet, for best results
+            it should be initialized before being passed to this function
+        sweep_params: A dictionary containing the values to vary with the 
+                      format sweep_params['Short/Pretty-print Name'] =
+                      (path.to.model.variable, lower_limit, upper_limit, num_samples)
+        outputs : A list of strings indicating which elements from the potential
+                  output dictionary to monitor
+        output_dir : The directory to save all output files
+        mpi_comm : User-provided MPI communicator
+        num_stages : The number of stages to use (specific to the NStage model)
+        optimization : A user-defined function to perform the optimization of flowsheet m
+        display_metrics : Au ser-defined function to calculate outputs of flowsheet m
+        save_debugging_data : Optionally, save results on a per-process basis for 
+                              parallel debugging purposes
+    Returns:
+        None,
+        Writes global CSV file with all inputs and resulting outputs
+    '''
 
     # Get an MPI communicator
-    comm, rank, num_procs = init_mpi(mpi_comm)
+    comm, rank, num_procs = _init_mpi(mpi_comm)
 
     # Enumerate all possibilities and divide the workload between processors
-    local_values, global_values = build_and_divide_combinations(sweep_params, rank, num_procs)
+    local_values, global_values = _build_and_divide_combinations(sweep_params, rank, num_procs)
 
     # Initialize space to hold results
     local_num_cases = np.shape(local_values)[0]
@@ -127,7 +139,7 @@ def run_param_sweep(m, sweep_params, outputs, output_dir='output', mpi_comm=None
 
     for k in range(local_num_cases):
         # Update the model values with a single combination from the parameter space
-        update_model_values(m, param_dict=sweep_params, values=local_values[k, :])
+        _update_model_values(m, sweep_params, local_values[k, :])
 
         try:
             # Simulate/optimize with this set of parameters
@@ -151,7 +163,7 @@ def run_param_sweep(m, sweep_params, outputs, output_dir='output', mpi_comm=None
     # Save results
     # ================================================================
 
-    global_results = aggregate_results(local_results, global_values, comm, num_procs)
+    global_results = _aggregate_results(local_results, global_values, comm, num_procs)
 
     # Make a directory for saved outputs
     if rank == 0:
@@ -166,12 +178,13 @@ def run_param_sweep(m, sweep_params, outputs, output_dir='output', mpi_comm=None
         data_header += '%s, ' % (k)
     data_header += ', '.join(outputs)
 
-    # Create the local filename and data
-    fname = '%s/local_results_%03d.csv' % (output_dir, rank)
-    save_data = np.hstack((local_values, local_results))
+    if save_debugging_data:
+        # Create the local filename and data
+        fname = '%s/local_results_%03d.csv' % (output_dir, rank)
+        save_data = np.hstack((local_values, local_results))
 
-    # Save the local data
-    np.savetxt(fname, save_data, header=data_header, delimiter=', ', fmt='%.6e')
+        # Save the local data
+        np.savetxt(fname, save_data, header=data_header, delimiter=', ', fmt='%.6e')
 
     if rank == 0:
         # Create the global filename and data
