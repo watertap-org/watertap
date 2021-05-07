@@ -206,7 +206,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             units=units_meta('mass')*units_meta('length')**-3,
             doc='Pure water density')
 
-        self.io_list = ['in', 'out']
+        self.io_list = Set(initialize=['in', 'out'])
 
         # Add unit variables
         self.flux_mass_phase_comp = Var(
@@ -217,7 +217,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             initialize=1e-3,
             bounds=(1e-10, 1e6),
             units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
-            doc='Mass Flux across membrane')
+            doc='Mass flux across membrane')
         self.area = Var(
             initialize=1,
             bounds=(1e-8, 1e6),
@@ -243,7 +243,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 bounds=(1e-10, 1),
                 domain=NonNegativeReals,
                 units=units_meta('length') * units_meta('time')**-1,
-                doc='Mass transfer coefficient at feed channel')
+                doc='Mass transfer coefficient in feed channel')
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(default={
