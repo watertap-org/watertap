@@ -173,18 +173,27 @@ class ReverseOsmosisData(UnitModelBlockData):
         if (self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated
                 and self.config.mass_transfer_coefficient == MassTransferCoefficient.none):
             raise ConfigurationError(
-                "mass_transfer_coefficient must be set to MassTransferCoefficient.fixed or "
-                "MassTransferCoefficient.calculated "
-                "to perform concentration polarization calculation")
+                "\n'mass_transfer_coefficient' and 'concentration_polarization_type' options configured incorrectly:\n"
+                "'mass_transfer_coefficient' cannot be set to MassTransferCoefficient.none "
+                "while 'concentration_polarization_type' is set to ConcentrationPolarizationType.calculated.\n "
+                "\n\nSet 'mass_transfer_coefficient' to MassTransferCoefficient.fixed or MassTransferCoefficient.calculated"
+                "\nor set 'concentration_polarization_type' to ConcentrationPolarizationType.fixed or "
+                "ConcentrationPolarizationType.none")
         if (self.config.concentration_polarization_type != ConcentrationPolarizationType.calculated
                 and self.config.mass_transfer_coefficient != MassTransferCoefficient.none):
             raise ConfigurationError(
-                "mass_transfer_coefficient must be set to MassTransferCoefficient.none or "
-                "concentration_polarization_type must be set to ConcentrationPolarizationType.calculated")
+                "\nConflict between configuration options:\n"
+                "'mass_transfer_coefficient' cannot be set to {} "
+                "while 'concentration_polarization_type' is set to {}.\n\n"
+                "'mass_transfer_coefficient' must be set to MassTransferCoefficient.none\nor "
+                "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated"
+                .format(self.config.mass_transfer_coefficient, self.config.concentration_polarization_type))
 
     def build(self):
         # Call UnitModel.build to setup dynamics
         super().build()
+
+        self._process_config()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
@@ -491,16 +500,75 @@ class ReverseOsmosisData(UnitModelBlockData):
                         + js / jw)
 
         # Mass transfer coefficient calculation
-        if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
+        if self.config.mass_transfer_coefficient == MassTransferCoefficient.none:
+            pass
+        elif self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
             @self.Constraint(self.flowsheet().config.time,
                                        self.io_list,
                                        self.solute_list,
-                                       doc="Concentration polarization")
+                                       doc="Mass transfer coefficient in feed channel")
             def eq_Kf_io(b, t, x, j):
+                if x == 'in':
+                    prop_io = b.feed_side.properties_in[t]
+                elif x == 'out':
+                    prop_io = b.feed_side.properties_out[t]
                 return (b.Kf_io[t, x, j] ==
-                        b.diffus_phase
+                        prop_io.diffus_phase['Liq']  # TODO: add diff coefficient to SW prop and consider multi-components
                         / b.dh
-                        * b.N_Sh_io)
+                        * b.N_Sh_io[t, x])
+
+            @self.Constraint(self.flowsheet().config.time,
+                                       self.io_list,
+                                       doc="Sherwood number")
+            def eq_N_Sh_io(b, t, x):
+                return (b.N_Sh_io[t, x] ==
+                        0.46 * (b.N_Re_io[t, x] * b.N_Sc_io[t, x])**0.36)
+
+            @self.Constraint(self.flowsheet().config.time,
+                                       self.io_list,
+                                       doc="Schmidt number")
+            def eq_N_Sc_io(b, t, x):
+                if x == 'in':
+                    prop_io = b.feed_side.properties_in[t]
+                elif x == 'out':
+                    prop_io = b.feed_side.properties_out[t]
+                return (b.N_Sc_io[t, x] ==
+                        prop_io.visc_d_phase['Liq']
+                        / prop_io.dens_mass_phase['Liq']
+                        / prop_io.diffus_phase['Liq'])
+
+            @self.Expression(doc="Cross-sectional area")
+            def area_cross(b):
+                return b.channel_height * b.width * b.spacer_porosity
+
+            @self.Constraint(self.flowsheet().config.time,
+                                       self.io_list,
+                                       doc="Reynolds number")
+            def eq_N_Re_io(b, t, x):
+                if x == 'in':
+                    prop_io = b.feed_side.properties_in[t]
+                elif x == 'out':
+                    prop_io = b.feed_side.properties_out[t]
+                return (b.N_Re_io[t, x] ==
+                        sum(prop_io.flow_mass_phase_comp['Liq', j] for j in b.solute_list)
+                        / b.area_cross
+                        * b.dh
+                        / prop_io.visc_d_phase['Liq'])
+
+            @self.Constraint(doc="Hydraulic diameter")  # TODO: add detail related to spacer geometry
+            def eq_dh(b):
+                return (b.dh ==
+                        2 * (b.channel_height * b.width)
+                        / (b.channel_height + b.width))
+
+            @self.Constraint(doc="Membrane area")
+            def eq_area(b):
+                return b.area == b.length * b.width
+        elif self.config.mass_transfer_coefficient == MassTransferCoefficient.fixed and self.Kf_io is None:
+            raise ConfigurationError("Values for the inlet and outlet mass transfer coefficient "
+                                     "must be fixed by the user")
+        else:
+            pass
 
         # Bulk and interface connection on the feed-side
         @self.feed_side.Constraint(self.flowsheet().config.time,
