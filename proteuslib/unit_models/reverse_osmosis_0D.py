@@ -729,6 +729,51 @@ class ReverseOsmosisData(UnitModelBlockData):
             for (t, x, j) in self.Kf_io.keys():
                 if iscale.get_scaling_factor(self.Kf_io[t, x, j]) is None:
                     iscale.set_scaling_factor(self.Kf_io[t, x, j], 1e5)
+            if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
+                for (t, x) in self.N_Re_io.keys():
+                    if iscale.get_scaling_factor(self.N_Re_io[t, x]) is None:
+                        iscale.set_scaling_factor(self.N_Re_io[t, x], 1e-3)
+                    if iscale.get_scaling_factor(self.N_Sc_io[t, x]) is None:
+                        iscale.set_scaling_factor(self.N_Sc_io[t, x], 1e-3)
+                    if iscale.get_scaling_factor(self.N_Sh_io[t, x]) is None:
+                        iscale.set_scaling_factor(self.N_Sh_io[t, x], 1e-2)
+
+                if iscale.get_scaling_factor(self.length) is None:
+                    iscale.set_scaling_factor(self.length, 1e-2)
+
+                if iscale.get_scaling_factor(self.width) is None:
+                    iscale.set_scaling_factor(self.width, 1e-2)
+
+                if iscale.get_scaling_factor(self.channel_height) is None:
+                    iscale.set_scaling_factor(self.channel_height, 1e3)
+
+                if iscale.get_scaling_factor(self.spacer_porosity) is None:
+                    iscale.set_scaling_factor(self.spacer_porosity, 1)
+
+                if iscale.get_scaling_factor(self.dh) is None:
+                    iscale.set_scaling_factor(self.dh, 1e4)
+
+                for ind, c in self.eq_Kf_io.items():
+                    sf = iscale.get_scaling_factor(self.Kf_io[ind])
+                    iscale.constraint_scaling_transform(c, sf)
+
+                for ind, c in self.eq_N_Re_io.items():
+                    sf = iscale.get_scaling_factor(self.N_Re_io[ind])
+                    iscale.constraint_scaling_transform(c, sf)
+
+                for ind, c in self.eq_N_Sc_io.items():
+                    sf = iscale.get_scaling_factor(self.N_Sc_io[ind])
+                    iscale.constraint_scaling_transform(c, sf)
+
+                for ind, c in self.eq_N_Sh_io.items():
+                    sf = iscale.get_scaling_factor(self.N_Sh_io[ind])
+                    iscale.constraint_scaling_transform(c, sf)
+
+                sf = iscale.get_scaling_factor(self.area)
+                iscale.constraint_scaling_transform(self.eq_area, sf)
+
+                sf = iscale.get_scaling_factor(self.dh)
+                iscale.constraint_scaling_transform(self.eq_dh, sf)
 
         for (t, x, p, j), v in self.flux_mass_io_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:

@@ -387,7 +387,8 @@ class SeawaterParameterData(PhysicalParameterBlock):
              'cp_phase': {'method': '_cp_phase'},
              'therm_cond_phase': {'method': '_therm_cond_phase'},
              'dh_vap': {'method': '_dh_vap'}})
-
+        # TODO: add diffusivity variable and constraint since it is needed when calculating mass transfer coefficient in
+        #  current implementation of 0D RO model
         obj.add_default_units({'time': pyunits.s,
                                'length': pyunits.m,
                                'mass': pyunits.kg,
