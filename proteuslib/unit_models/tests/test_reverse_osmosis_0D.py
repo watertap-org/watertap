@@ -27,7 +27,8 @@ from idaes.core import (FlowsheetBlock,
                         MomentumBalanceType,
                         ControlVolume0DBlock)
 from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
-                                                       ConcentrationPolarizationType)
+                                                       ConcentrationPolarizationType,
+                                                       MassTransferCoefficient)
 import proteuslib.property_models.NaCl_prop_pack\
     as props
 
@@ -55,7 +56,7 @@ def test_config():
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis0D(default={"property_package": m.fs.properties})
 
-    assert len(m.fs.unit.config) == 9
+    assert len(m.fs.unit.config) == 10
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -70,6 +71,8 @@ def test_config():
            m.fs.properties
     assert m.fs.unit.config.concentration_polarization_type == \
            ConcentrationPolarizationType.none
+    assert m.fs.unit.config.mass_transfer_coefficient == \
+           MassTransferCoefficient.none
 
 @pytest.mark.unit
 def test_option_has_pressure_change():

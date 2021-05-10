@@ -48,6 +48,13 @@ class ConcentrationPolarizationType(Enum):
     calculated = 2  # calculate concentration polarization (concentration at membrane interface)
 
 
+class MassTransferCoefficient(Enum):
+    none = 0        # mass transfer coefficient not utilized for concentration polarization effect
+    fixed = 1       # mass transfer coefficient is a user specified value
+    calculated = 2  # mass transfer coefficient is calculated
+    # TODO: add option for users to define their own relationship?
+
+
 @declare_process_block_class("ReverseOsmosis0D")
 class ReverseOsmosisData(UnitModelBlockData):
     """
@@ -144,11 +151,36 @@ class ReverseOsmosisData(UnitModelBlockData):
         domain=In(ConcentrationPolarizationType),
         description="External concentration polarization effect in RO",
         doc="""Options to account for concentration polarization,
-**default** - ConcentrationPolarizationType.none. 
-**Valid values:** {
-**ConcentrationPolarizationType.none** - assume no concentration polarization,
-**ConcentrationPolarizationType.fixed** - specify concentration polarization modulus,
-**ConcentrationPolarizationType.calculated** - complete calculation membrane interface concentration.}"""))
+    **default** - ConcentrationPolarizationType.none. 
+    **Valid values:** {
+    **ConcentrationPolarizationType.none** - assume no concentration polarization,
+    **ConcentrationPolarizationType.fixed** - specify concentration polarization modulus,
+    **ConcentrationPolarizationType.calculated** - complete calculation membrane interface concentration.}"""))
+    CONFIG.declare("mass_transfer_coefficient", ConfigValue(
+        default=MassTransferCoefficient.none,
+        domain=In(MassTransferCoefficient),
+        description="Mass transfer coefficient in RO feed channel",
+        doc="""Options to account for mass transfer coefficient,
+    **default** - MassTransferCoefficient.none. 
+    **Valid values:** {
+    **ConcentrationPolarizationType.none** - assume no concentration polarization,
+    **ConcentrationPolarizationType.fixed** - specify concentration polarization modulus,
+    **ConcentrationPolarizationType.calculated** - complete calculation membrane interface concentration.}"""))
+
+    def _process_config(self):
+        """Check for configuration errors
+        """
+        if (self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated
+                and self.config.mass_transfer_coefficient == MassTransferCoefficient.none):
+            raise ConfigurationError(
+                "mass_transfer_coefficient must be set to MassTransferCoefficient.fixed or "
+                "MassTransferCoefficient.calculated "
+                "to perform concentration polarization calculation")
+        if (self.config.concentration_polarization_type != ConcentrationPolarizationType.calculated
+                and self.config.mass_transfer_coefficient != MassTransferCoefficient.none):
+            raise ConfigurationError(
+                "mass_transfer_coefficient must be set to MassTransferCoefficient.none or "
+                "concentration_polarization_type must be set to ConcentrationPolarizationType.calculated")
 
     def build(self):
         # Call UnitModel.build to setup dynamics
