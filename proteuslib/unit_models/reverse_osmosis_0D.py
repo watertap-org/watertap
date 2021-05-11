@@ -596,18 +596,13 @@ class ReverseOsmosisData(UnitModelBlockData):
             def eq_area(b):
                 return b.area == b.length * b.width
 
-        if (self.config.pressure_change_type and self.config.has_pressure_change) == PressureChangeType.calculated:
+        if self.config.pressure_change_type == PressureChangeType.calculated:
             # Average density
             @self.Expression(self.flowsheet().config.time,
                              doc="average solution density expression")
             def dens_mass_phase_avg(b, t):
-                dens_mass_phase_sum = 0
-                for x in b.io_list:
-                    if x == 'in':
-                        dens_mass_phase_sum[t, 'Liq'] += b.feed_side.properties_in[t].dens_mass_phase['Liq']
-                    elif x == 'out':
-                        dens_mass_phase_sum[t, 'Liq'] += b.feed_side.properties_out[t].dens_mass_phase['Liq']
-                return 0.5 * dens_mass_phase_sum[t, 'Liq']
+                return (0.5 * (b.feed_side.properties_in[t].dens_mass_phase['Liq']
+                               + b.feed_side.properties_out[t].dens_mass_phase['Liq']))
 
             # Crossflow velocity at inlet and outlet
             @self.Constraint(self.flowsheet().config.time,
@@ -618,7 +613,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                     prop_io = b.feed_side.properties_in[t]
                 elif x == 'out':
                     prop_io = b.feed_side.properties_out[t]
-                return b.velocity[t, x] * b.area_cross == prop_io.flow_vol_phase['Liq']
+                return b.velocity_io[t, x] * b.area_cross == prop_io.flow_vol_phase['Liq']
 
             # Average crossflow velocity
             @self.Expression(self.flowsheet().config.time,
@@ -647,7 +642,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             def eq_pressure_change(b, t):
                 return (b.deltaP[t] * b.dh ==
                         -0.5 * b.friction_factor_darcy_avg[t] * b.length
-                        * b.dens_mass_phase_avg[t, 'Liq'] * b.velocity_avg[t]**2)
+                        * b.dens_mass_phase_avg[t] * b.velocity_avg[t]**2)
 
         # Bulk and interface connection on the feed-side
         @self.feed_side.Constraint(self.flowsheet().config.time,
