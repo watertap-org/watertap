@@ -8,14 +8,16 @@ from pyomo.environ import (ConcreteModel,
                            TransformationFactory,
                            units as pyunits)
 from pyomo.network import Arc
+import pyomo.util.infeasible as infeas
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (solve_indexed_blocks,
                                             propagate_state)
 from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
-from pyomo.util.check_units import assert_units_consistent
+from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
 
 # import proteuslib.property_models.seawater_prop_pack as props
 import proteuslib.property_models.NaCl_prop_pack as props
@@ -24,15 +26,39 @@ from proteuslib.unit_models.pressure_exchanger import PressureExchanger
 from proteuslib.unit_models.pump_isothermal import Pump
 import financials
 
-# solver set up
-solver = SolverFactory('ipopt')
-solver.options = {'nlp_scaling_method': 'user-scaling'}
+def main():
+    # solver set up
+    solver_str = 'ipopt'
+    solver_opt = {'nlp_scaling_method': 'user-scaling'}
+    solver = SolverFactory(solver_str)
+    solver.options = solver_opt
+
+    # build
+    m = build()
+
+    # set_conditions
+    set_operating_conditions(m, solver=solver)
+
+    # simulate
+    initialize_system(m, solver_str=solver_str, solver_opt=solver_opt)
+    solve(m, solver=solver)
+    print('\n***---Simulation results---****')
+    display_system(m)
+    display_design(m)
+    display_state(m)
+
+    # optimize
+    print('\n***---Optimization results---****')
+    optimize(m, solver=solver)
+    display_system(m)
+    display_design(m)
+    display_state(m)
+
 
 def build():
     # flowsheet set up
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={'dynamic': False})
-    # m.fs.properties = props.SeawaterParameterBlock()
     m.fs.properties = props.NaClParameterBlock()
     financials.add_costing_param_block(m.fs)
 
@@ -59,11 +85,11 @@ def build():
     product_flow_vol_total = m.fs.product.properties[0].flow_vol
     m.fs.recovery = Expression(
         expr=product_flow_vol_total/feed_flow_vol_total)
-    m.fs.AWP = Expression(
+    m.fs.annual_water_production = Expression(
         expr=pyunits.convert(product_flow_vol_total, to_units=pyunits.m ** 3 / pyunits.year)
              * m.fs.costing_param.load_factor)
     pump_power_total = m.fs.P1.work_mechanical[0] + m.fs.P2.work_mechanical[0]
-    m.fs.EC = Expression(
+    m.fs.specific_energy_consumption = Expression(
         expr=pyunits.convert(pump_power_total, to_units=pyunits.kW)
              / pyunits.convert(product_flow_vol_total, to_units=pyunits.m**3 / pyunits.hr))
 
@@ -87,180 +113,218 @@ def build():
     m.fs.s10 = Arc(source=m.fs.P2.outlet, destination=m.fs.M1.P2)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
-    # check build
-    assert_units_consistent(m)
+    # scaling
+    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
+    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
+    iscale.calculate_scaling_factors(m)
 
     return m
 
-def specify(m):
+
+def set_operating_conditions(m, solver=None):
     # ---specifications---
-    # parameters
-    pump_efi = 0.80  # pump efficiency [-]
-    PXR_efi = 0.95  # pressure exchanger efficiency [-]
-    RO_deltaP = -3e5  # pressure drop in membrane stage [Pa]
-    mem_A = 4.2e-12  # membrane water permeability coefficient [m/s-Pa]
-    mem_B = 3.5e-8  # membrane salt permeability coefficient [m/s]
-    pressure_atm = 101325  # atmospheric pressure [Pa]
-
-    # decision variables (determined and fixed in initialize_system function)
-    # RO_pressure = 50e5  # operating pressure [Pa]
-    # RO_area = 50  # membrane area [m2]
-
     # feed
     feed_flow_mass = 1  # feed mass flow rate [kg/s]
     feed_mass_frac_NaCl = 0.035  # feed NaCl mass fraction [-]
-    feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
-    feed_temperature = 273.15 + 25
-    feed_pressure = 101325
+    feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl # feed H20 mass fraction [-]
 
-    # feed block
     m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_flow_mass * feed_mass_frac_NaCl)
     m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(feed_flow_mass * feed_mass_frac_H2O)
-    m.fs.feed.pressure.fix(feed_pressure)
-    m.fs.feed.temperature.fix(feed_temperature)
+    m.fs.feed.pressure.fix(101325)  # atmospheric pressure [Pa]
+    m.fs.feed.temperature.fix(273.15 + 25)  # room temperature [K]
 
     # separator, no degrees of freedom (i.e. equal flow rates in PXR determines split fraction)
 
     # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
-    m.fs.P1.efficiency_pump.fix(pump_efi)
+    m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
+    operating_pressure = calculate_operating_pressure(
+        over_pressure=0.3,
+        water_recovery=0.5,
+        NaCl_passage=0.01,
+        feed_state_block=m.fs.feed.properties[0],
+        solver=solver)
+    m.fs.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
 
     # pressure exchanger
-    m.fs.PXR.efficiency_pressure_exchanger.fix(PXR_efi)
+    m.fs.PXR.efficiency_pressure_exchanger.fix(0.95)  # pressure exchanger efficiency [-]
 
     # pump 2, booster pump, 1 degree of freedom (efficiency, pressure must match high pressure pump)
-    m.fs.P2.efficiency_pump.fix(pump_efi)
+    m.fs.P2.efficiency_pump.fix(0.80)
 
     # mixer, no degrees of freedom
 
     # RO unit
-    m.fs.RO.deltaP.fix(RO_deltaP)
-    m.fs.RO.A_comp.fix(mem_A)
-    m.fs.RO.B_comp.fix(mem_B)
-    m.fs.RO.permeate.pressure[0].fix(pressure_atm)
+    m.fs.RO.deltaP.fix(-3e5)  # pressure drop in membrane stage [Pa]
+    m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
+    m.fs.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
+    m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
+    # initiate RO feed values to determine area
+    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'] = \
+        value(m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'H2O'])
+    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'NaCl'] = \
+        value(m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'NaCl'])
+    m.fs.RO.feed_side.properties_in[0].temperature = \
+        value(m.fs.feed.properties[0].temperature)
+    m.fs.RO.feed_side.properties_in[0].pressure = \
+        value(m.fs.P1.control_volume.properties_out[0].pressure)
+    RO_area = calculate_RO_area(unit=m.fs.RO, water_recovery=0.5, solver=solver)
+    m.fs.RO.area.fix(RO_area)
+
+    # check degrees of freedom
+    if degrees_of_freedom(m) != 0:
+        raise RuntimeError("The set_operating_conditions function resulted in {} "
+                           "degrees of freedom rather than 0. This error suggests "
+                           "that too many or not enough variables are fixed for a "
+                           "simulation.".format(degrees_of_freedom(m)))
+
 
 def calculate_operating_pressure(
-        m, water_recovery=0.5, salt_passage_estimate=0.01, over_pressure=0.3):
-    # ---estimate operating pressure from given recovery and over pressure---
+        over_pressure=0.15, water_recovery=0.5, NaCl_passage=0.01,
+        feed_state_block=None, solver=None):
+    """
+    estimate operating pressure for RO unit model given the following arguments:
+        over_pressure:  the amount of operating pressure above the brine osmotic pressure
+                        represented as a fraction (default=0.15)
+        water_recovery: the mass-based fraction of inlet H2O that becomes permeate
+                        (default=0.5)
+        NaCl_passage:   the mass-based fraction of inlet NaCl that becomes permeate
+                        (default=0.01)
+        feed_state_block:    the state block of the RO feed that has the non-pressure state
+                             variables initialized to their values (default=None)
+    """
     t = ConcreteModel()  # create temporary model
-    t.brine = m.fs.properties.build_state_block([0], default={})
+    prop = feed_state_block.config.parameters
+    t.brine = prop.build_state_block([0], default={})
+
+    # specify state block
     t.brine[0].flow_mass_phase_comp['Liq', 'H2O'].fix(
-        value(m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'H2O']) * (1 - water_recovery))
+        value(feed_state_block.flow_mass_phase_comp['Liq', 'H2O']) * (1 - water_recovery))
     t.brine[0].flow_mass_phase_comp['Liq', 'NaCl'].fix(
-        value(m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl']) * (1 - salt_passage_estimate))
-    t.brine[0].pressure.fix(value(m.fs.feed.pressure[0]))
-    t.brine[0].temperature.fix(value(m.fs.feed.temperature[0]))
-    t.brine[0].pressure_osm  # touch osmotic pressure for on demand creation
-    # solve for brine pressure
+        value(feed_state_block.flow_mass_phase_comp['Liq', 'NaCl']) * (1 - NaCl_passage))
+    t.brine[0].pressure.fix(101325)  # valid when osmotic pressure is independent of hydraulic pressure
+    t.brine[0].temperature.fix(value(feed_state_block.temperature))
+
+    # calculate osmotic pressure
+    # since properties are created on demand, we must touch the property to create it
+    t.brine[0].pressure_osm
+    # solve state block
     results = solve_indexed_blocks(solver, [t.brine])
-    assert results.solver.termination_condition == TerminationCondition.optimal
-    # extract operating pressure
-    operating_pressure = value(t.brine[0].pressure_osm) * (1 + over_pressure)
-    # m.fs.P1.control_volume.properties_out[0].pressure
-    del t  # remove temporary model
-    return operating_pressure
+    check_solve(results)
 
-def calculate_RO_area(m, water_recovery=0.5):
-    # ---initialize RO---
-    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'] = \
-        m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'H2O'].value
-    m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'NaCl'] = \
-        m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'NaCl'].value
-    m.fs.RO.feed_side.properties_in[0].temperature = \
-        m.fs.feed.properties[0].temperature.value
-    m.fs.RO.feed_side.properties_in[0].pressure = \
-        m.fs.P1.control_volume.properties_out[0].pressure.value
-    m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp['Liq', 'H2O'] = \
-        m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'H2O'].value * (1 - water_recovery)
-    # solve for area
-    m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp['Liq', 'H2O'].fix()
-    m.fs.RO.initialize(solver=solver, optarg=solver.options)
-    m.fs.RO.feed_side.properties_out[0].flow_mass_phase_comp['Liq', 'H2O'].unfix()
-    # m.fs.RO.area.fix()
-    return m.fs.RO.area.value
+    return value(t.brine[0].pressure_osm) * (1 + over_pressure)
 
-def initialize_system(m):
-    # check that feed state variables are fixed
-    assert m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'H2O'].is_fixed()
-    assert m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'].is_fixed()
-    assert m.fs.feed.pressure[0].is_fixed()
-    assert m.fs.feed.temperature[0].is_fixed()
-    # check that RO parameters are fixed
-    assert m.fs.RO.deltaP[0].is_fixed()
-    assert m.fs.RO.A_comp[0, 'H2O'].is_fixed()
-    assert m.fs.RO.B_comp[0, 'NaCl'].is_fixed()
-    assert m.fs.RO.permeate.pressure[0].is_fixed()
-    # check that pump and pressure exchanger parameters are fixed
-    assert m.fs.P1.efficiency_pump[0].is_fixed()
-    assert m.fs.P2.efficiency_pump[0].is_fixed()
-    assert m.fs.PXR.efficiency_pressure_exchanger[0].is_fixed()
 
-    # ensure system has 2 degrees of freedom (i.e. membrane area and operating pressure)
-    assert degrees_of_freedom(m) == 2
+def calculate_RO_area(unit=None, water_recovery=0.5, solver=None):
+    """
+    determine RO membrane area required to achieve the specified water recovery:
+        unit:  the RO unit model, e.g. m.fs.RO, it should have its inlet feed state block
+               initiated to the correct values (default=None)
+        water_recovery: the mass-based fraction of inlet H2O that becomes permeate
+                        (default=0.5)
+    """
+    # # fix inlet conditions
+    unit.feed_side.properties_in[0].flow_mass_phase_comp.fix()
+    unit.feed_side.properties_in[0].temperature.fix()
+    unit.feed_side.properties_in[0].pressure.fix()
+    # fix unit water recovery
+    unit.feed_side.properties_out[0].flow_mass_phase_comp['Liq', 'H2O'].fix(
+        unit.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'].value * (1 - water_recovery))
+    # solve for unit area
+    check_dof(unit)
+    results = solver.solve(unit)
+    check_solve(results)
+    # unfix variables
+    unit.feed_side.properties_in[0].flow_mass_phase_comp.unfix()
+    unit.feed_side.properties_in[0].temperature.unfix()
+    unit.feed_side.properties_in[0].pressure.unfix()
+    unit.feed_side.properties_out[0].flow_mass_phase_comp['Liq', 'H2O'].unfix()
+    return unit.area.value
 
-    # determine and fix operating pressure and RO area
-    operating_pressure = calculate_operating_pressure(
-        m, water_recovery=0.5, salt_passage_estimate=0.01, over_pressure=0.30)
-    m.fs.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
 
-    RO_area = calculate_RO_area(m, water_recovery=0.5)
-    m.fs.RO.area.fix(RO_area)
+def initialize_system(m, solver_str=None, solver_opt=None):
+    # set up solver
+    solver = SolverFactory(solver_str)
+    solver.options = solver_opt
+
+    # ---initialize feed block---
+    m.fs.feed.initialize(solver=solver_str, optarg=solver_opt)
 
     # ---initialize splitter and pressure exchanger---
     # pressure exchanger high pressure inlet
     propagate_state(m.fs.s06)  # propagate to PXR high pressure inlet from RO retentate
-    m.fs.PXR.high_pressure_side.properties_in.initialize(solver=solver, optarg=solver.options)
+    m.fs.PXR.high_pressure_side.properties_in.initialize(solver=solver_str, optarg=solver_opt)
+
     # splitter inlet
     propagate_state(m.fs.s01)  # propagate to splitter inlet from feed
-    m.fs.S1.mixed_state[0].mass_frac_phase_comp  # touch property
-    m.fs.S1.mixed_state.initialize(solver=solver, optarg=solver.options)
+    m.fs.S1.mixed_state[0].mass_frac_phase_comp  # touch property, so that it is built and can be solved for
+    m.fs.S1.mixed_state.initialize(solver=solver_str, optarg=solver_opt)
+
     # splitter outlet to PXR, enforce same flow_vol as PXR high pressure inlet
-    m.fs.S1.PXR_state[0].pressure.fix(m.fs.S1.mixed_state[0].pressure.value)
-    m.fs.S1.PXR_state[0].temperature.fix(m.fs.S1.mixed_state[0].temperature.value)
+    m.fs.S1.PXR_state[0].pressure.fix(value(m.fs.S1.mixed_state[0].pressure))
+    m.fs.S1.PXR_state[0].temperature.fix(value(m.fs.S1.mixed_state[0].temperature))
     m.fs.S1.PXR_state[0].flow_vol_phase['Liq'].fix(
-        m.fs.PXR.high_pressure_side.properties_in[0].flow_vol_phase['Liq'].value)
+        value(m.fs.PXR.high_pressure_side.properties_in[0].flow_vol_phase['Liq']))
     m.fs.S1.PXR_state[0].mass_frac_phase_comp['Liq', 'NaCl'].fix(
-        m.fs.S1.mixed_state[0].mass_frac_phase_comp['Liq', 'NaCl'].value)
-    assert degrees_of_freedom(m.fs.S1.PXR_state[0]) == 0
+        value(m.fs.S1.mixed_state[0].mass_frac_phase_comp['Liq', 'NaCl']))
+
+    check_dof(m.fs.S1.PXR_state[0])
     results = solve_indexed_blocks(solver, [m.fs.S1.PXR_state])
-    assert results.solver.termination_condition == TerminationCondition.optimal
+    check_solve(results)
+
     # unfix PXR_state state variables and properties
     m.fs.S1.PXR_state[0].pressure.unfix()
     m.fs.S1.PXR_state[0].temperature.unfix()
     m.fs.S1.PXR_state[0].flow_vol_phase['Liq'].unfix()
     m.fs.S1.PXR_state[0].mass_frac_phase_comp['Liq', 'NaCl'].unfix()
     m.fs.S1.PXR_state[0].flow_mass_phase_comp['Liq', 'NaCl'].fix()
+
     # splitter initialization
-    m.fs.S1.initialize(solver='ipopt', optarg=solver.options)
+    m.fs.S1.initialize(solver=solver_str, optarg=solver_opt)
     m.fs.S1.PXR_state[0].flow_mass_phase_comp['Liq', 'NaCl'].unfix()
+
     # pressure exchanger low pressure inlet
     propagate_state(m.fs.s08)
+
     # pressure exchanger initialization
-    m.fs.PXR.initialize(solver=solver, optarg=solver.options)
+    m.fs.PXR.initialize(solver=solver_str, optarg=solver_opt)
 
     # ---initialize pump 1---
     propagate_state(m.fs.s02)
-    m.fs.P1.initialize(solver='ipopt', optarg=solver.options)
+    m.fs.P1.initialize(solver=solver_str, optarg=solver_opt)
 
     # ---initialize pump 2---
     propagate_state(m.fs.s09)
-    m.fs.P2.control_volume.properties_out[0].pressure.fix(operating_pressure)
-    m.fs.P2.initialize(solver='ipopt', optarg=solver.options)
+    m.fs.P2.control_volume.properties_out[0].pressure.fix(
+        value(m.fs.P2.control_volume.properties_out[0].pressure))
+    m.fs.P2.initialize(solver=solver_str, optarg=solver_opt)
     m.fs.P2.control_volume.properties_out[0].pressure.unfix()
 
     # ---initialize mixer---
     propagate_state(m.fs.s03)
     propagate_state(m.fs.s10)
-    m.fs.M1.initialize(solver='ipopt', optarg=solver.options)
+    m.fs.M1.initialize(solver=solver_str, optarg=solver_opt, outlvl=idaeslog.INFO)
 
-    # solve full system
-    assert degrees_of_freedom(m) == 0
-    solve(m)
 
-def solve(m):
-    results = solver.solve(m, tee=False)
-    assert results.solver.termination_condition == TerminationCondition.optimal
+def solve(m, solver=None, tee=False):
+    results = solver.solve(m, tee=tee)
+    check_solve(results)
 
-def optimize(m):
+
+def check_dof(blk, dof_expected=0):
+    if degrees_of_freedom(blk) != dof_expected:
+        raise RuntimeError("The degrees of freedom on {blk} were {dof} but {dof_e} "
+                           "were expected, check the fixed variables on that block".format(
+            blk=blk, dof=degrees_of_freedom(blk), dof_e=dof_expected))
+
+
+def check_solve(results):
+    if results.solver.termination_condition != TerminationCondition.optimal:
+        raise RuntimeError("The solver failed to converge to an optimal solution. "
+                           "This suggests that the user provided infeasible inputs "
+                           "or that the model is poorly scaled.")
+
+
+def optimize(m, solver=None):
     # objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
@@ -290,11 +354,11 @@ def optimize(m):
     iscale.constraint_scaling_transform(m.fs.eq_product_quality, 1e3)  # scaling constraint
 
     # ---checking model---
-    assert_units_consistent(m)
-    assert degrees_of_freedom(m) == 1
+    check_dof(m, dof_expected=1)
 
     # --solve---
-    solve(m)
+    solve(m, solver=solver)
+
 
 def display_system(m):
     print('---system metrics---')
@@ -307,12 +371,9 @@ def display_system(m):
     print('Product: %.3f kg/s, %.0f ppm' % (prod_flow_mass, prod_mass_frac_NaCl * 1e6))
 
     print('Recovery: %.1f%%' % (value(m.fs.recovery) * 100))
+    print('Energy Consumption: %.1f kWh/m3' % value(m.fs.specific_energy_consumption))
+    print('Levelized cost of water: %.2f $/m3' % value(m.fs.costing.LCOW))
 
-    EC = value(m.fs.EC)  # energy consumption [kWh/m3]
-    print('Energy Consumption: %.1f' % EC)
-
-    LCOW = value(m.fs.costing.LCOW)
-    print('Levelized cost of water: %.2f' % LCOW)
 
 def display_design(m):
     print('---decision variables---')
@@ -327,8 +388,9 @@ def display_design(m):
     print('Pump 2 \noutlet pressure: %.1f bar \npower %.2f kW'
           % (m.fs.P2.outlet.pressure[0].value / 1e5, m.fs.P2.work_mechanical[0].value / 1e3))
 
+
 def display_state(m):
-    print('---state variables---')
+    print('---state---')
 
     def print_state(s, b):
         flow_mass = sum(b.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
@@ -347,28 +409,13 @@ def display_state(m):
     print_state('RO reten  ', m.fs.RO.retentate)
     print_state('PXR HP out', m.fs.PXR.high_pressure_outlet)
 
+    m.fs.RO.feed_side.properties_in.display()
+    streams={'to RO': m.fs.RO.feed_side.properties_in}
+    table_df = create_stream_table_dataframe(streams, true_state=True)
+    print(table_df)
+    table_df = create_stream_table_dataframe(streams, true_state=False)
+    print(table_df)
 
-# build
-m = build()
 
-# scaling
-m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
-iscale.calculate_scaling_factors(m)
-
-# specify
-specify(m)
-
-# simulate
-initialize_system(m)
-print('\n***---Simulation results---****')
-display_system(m)
-display_design(m)
-display_state(m)
-
-# optimize
-print('\n***---Optimization results---****')
-optimize(m)
-display_system(m)
-display_design(m)
-display_state(m)
+if __name__ == "__main__":
+    main()
