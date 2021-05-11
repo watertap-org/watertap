@@ -25,16 +25,16 @@ schemas = {
             "parameter_data": {
                 "type": "object",
                 "properties": {
-                    "mw": {"$ref:": "#/definitions/value_units"},
-                    "pressure_crit": {"$ref:": "#/definitions/value_units"},
-                    "temperature_crit": {"$ref:": "#/definitions/value_units"},
+                    "mw": {"$ref": "#/definitions/value_units"},
+                    "pressure_crit": {"$ref": "#/definitions/value_units"},
+                    "temperature_crit": {"$ref": "#/definitions/value_units"},
                 },
                 "patternProperties": {
                     "_coeff": {
                         "type": "object",
-                        "additionalProperties": {"$ref:": "#/definitions/value_units"},
+                        "additionalProperties": {"$ref": "#/definitions/value_units"},
                     },
-                    "_ref": {"$ref:": "#/definitions/value_units"},
+                    "_ref": {"$ref": "#/definitions/value_units"},
                 },
                 "additionalProperties": False,
             },
@@ -72,7 +72,7 @@ schemas = {
             "parameter_data": {
                 "type": "object",
                 "properties": {"reaction_order": {"type": "object"}},
-                "patternProperties": {"_ref": {"$ref:": "#/definitions/value_units"}},
+                "patternProperties": {"_ref": {"$ref": "#/definitions/value_units"}},
                 "additionalProperties": False,
             },
         },
@@ -95,16 +95,21 @@ schemas = {
 def main():
     import argparse
     from json_schema_for_humans.generate import generate_from_file_object
-    from io import StringIO
     import json
     from pathlib import Path
 
-    prs = argparse.ArgumentParser()
+    prs = argparse.ArgumentParser(description="Generate schema docs")
     prs.add_argument("directory", help="Directory to put generated schema docs")
     args = prs.parse_args()
     output_dir = Path(args.directory)
     for schema in "component", "reaction":
-        schema_file = StringIO(json.dumps(schemas[schema]))
+        schema_file = output_dir / f"{schema}.json"
+        with schema_file.open("w") as f:
+            json.dump(schemas[schema], f)
         output_file = (output_dir / f"{schema}.html").open("w")
-        generate_from_file_object(schema_file, output_file)
-        print(f"Docs for {schema} at: {output_file}")
+        generate_from_file_object(schema_file.open("r"), output_file)
+        print(f"Docs for {schema} at: {output_file.name}")
+
+
+if __name__ == "__main__":
+    main()
