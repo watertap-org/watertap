@@ -732,26 +732,26 @@ class ReverseOsmosisData(UnitModelBlockData):
             if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
                 for (t, x) in self.N_Re_io.keys():
                     if iscale.get_scaling_factor(self.N_Re_io[t, x]) is None:
-                        iscale.set_scaling_factor(self.N_Re_io[t, x], 1e-3)
+                        iscale.set_scaling_factor(self.N_Re_io[t, x], 1)
                     if iscale.get_scaling_factor(self.N_Sc_io[t, x]) is None:
-                        iscale.set_scaling_factor(self.N_Sc_io[t, x], 1e-3)
+                        iscale.set_scaling_factor(self.N_Sc_io[t, x], 1)
                     if iscale.get_scaling_factor(self.N_Sh_io[t, x]) is None:
-                        iscale.set_scaling_factor(self.N_Sh_io[t, x], 1e-2)
+                        iscale.set_scaling_factor(self.N_Sh_io[t, x], 1)
 
                 if iscale.get_scaling_factor(self.length) is None:
-                    iscale.set_scaling_factor(self.length, 1e-2)
+                    iscale.set_scaling_factor(self.length, 1)
 
                 if iscale.get_scaling_factor(self.width) is None:
-                    iscale.set_scaling_factor(self.width, 1e-2)
+                    iscale.set_scaling_factor(self.width, 1)
 
                 if iscale.get_scaling_factor(self.channel_height) is None:
-                    iscale.set_scaling_factor(self.channel_height, 1e3)
+                    iscale.set_scaling_factor(self.channel_height, 1e2)
 
                 if iscale.get_scaling_factor(self.spacer_porosity) is None:
                     iscale.set_scaling_factor(self.spacer_porosity, 1)
 
                 if iscale.get_scaling_factor(self.dh) is None:
-                    iscale.set_scaling_factor(self.dh, 1e4)
+                    iscale.set_scaling_factor(self.dh, 1)
 
                 for ind, c in self.eq_Kf_io.items():
                     sf = iscale.get_scaling_factor(self.Kf_io[ind])

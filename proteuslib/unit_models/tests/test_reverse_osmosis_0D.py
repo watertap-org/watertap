@@ -472,9 +472,9 @@ class TestReverseOsmosis():
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
 
-        m.fs.unit.channel_height.fix(0.00075)
+        m.fs.unit.channel_height.fix(0.002)
         m.fs.unit.spacer_porosity.fix(0.75)
-        m.fs.unit.length.fix(8)  # needed to reduce by 1 DOF and chose to fix length
+        m.fs.unit.length.fix(20)  # needed to reduce by 1 DOF and chose to fix length
 
         # test statistics
         assert number_variables(m) == 109
@@ -485,8 +485,8 @@ class TestReverseOsmosis():
         assert degrees_of_freedom(m) == 0
 
         # test scaling
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1/(feed_mass_frac_H2O * feed_flow_mass), index=('Liq', 'H2O'))
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1/((feed_mass_frac_NaCl) * feed_flow_mass), index=('Liq', 'NaCl'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
 
         calculate_scaling_factors(m)
 
@@ -505,7 +505,7 @@ class TestReverseOsmosis():
 
         # check that all constraints have been scaled
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        # Uncomment the line below to see which vars are unscaled:
+        # Uncomment the line below to see which constraints are unscaled:
         # [print(unscaled_constraint_list[i]) for i in range(len(unscaled_constraint_list))]
         assert len(unscaled_constraint_list) == 0
 
@@ -514,11 +514,14 @@ class TestReverseOsmosis():
 
         # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(badly_scaled_var_lst[i]) for i in range(len(badly_scaled_var_lst))]
+        # Uncomment the line below to see which vars are poorly scaled:
+        [[print(v), print(k)] for v, k in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
         # test solve
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
+        solver.options = {'nlp_scaling_method': 'user-scaling', 'halt_on_ampl_error': 'yes'}
+        # solver.options['print_level'] = 12
+        # solver.options['output_file'] = "C:/Users/adama/Desktop/my_ipopt_log.txt"
         results = solver.solve(m, tee=True)
 
         # Check for optimal solution
@@ -527,20 +530,20 @@ class TestReverseOsmosis():
         assert results.solver.status == SolverStatus.ok
 
         # test solution
-        assert (pytest.approx(3.807e-3, rel=1e-3) ==
+        assert (pytest.approx(2.205e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
-        assert (pytest.approx(1.668e-6, rel=1e-3) ==
+        assert (pytest.approx(1.826e-6, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl']))
-        assert (pytest.approx(0.1904, rel=1e-3) ==
+        assert (pytest.approx(0.1103, rel=1e-3) ==
                 value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
-        assert (pytest.approx(8.342e-5, rel=1e-3) ==
+        assert (pytest.approx(9.129e-5, rel=1e-3) ==
                 value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
         assert (pytest.approx(35.751, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        assert (pytest.approx(46.123, rel=1e-3) ==
+        assert (pytest.approx(53.506, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_interface_in[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        assert (pytest.approx(44.321, rel=1e-3) ==
+        assert (pytest.approx(40.206, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        assert (pytest.approx(50.081, rel=1e-3) ==
+        assert (pytest.approx(52.475, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_interface_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
 
