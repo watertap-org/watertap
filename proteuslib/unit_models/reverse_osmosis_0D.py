@@ -500,9 +500,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                         + js / jw)
 
         # Mass transfer coefficient calculation
-        if self.config.mass_transfer_coefficient == MassTransferCoefficient.none:
-            pass
-        elif self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
+        if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
             @self.Constraint(self.flowsheet().config.time,
                                        self.io_list,
                                        self.solute_list,
@@ -564,11 +562,6 @@ class ReverseOsmosisData(UnitModelBlockData):
             @self.Constraint(doc="Membrane area")
             def eq_area(b):
                 return b.area == b.length * b.width
-        elif self.config.mass_transfer_coefficient == MassTransferCoefficient.fixed and self.Kf_io is None:
-            raise ConfigurationError("Values for the inlet and outlet mass transfer coefficient "
-                                     "must be fixed by the user")
-        else:
-            pass
 
         # Bulk and interface connection on the feed-side
         @self.feed_side.Constraint(self.flowsheet().config.time,
@@ -725,18 +718,20 @@ class ReverseOsmosisData(UnitModelBlockData):
                 sf = iscale.get_scaling_factor(self.cp_modulus)
                 iscale.set_scaling_factor(self.cp_modulus, sf)
 
-        elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
+        if self.config.mass_transfer_coefficient != MassTransferCoefficient.none:
             for (t, x, j) in self.Kf_io.keys():
                 if iscale.get_scaling_factor(self.Kf_io[t, x, j]) is None:
                     iscale.set_scaling_factor(self.Kf_io[t, x, j], 1e5)
             if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
                 for (t, x) in self.N_Re_io.keys():
                     if iscale.get_scaling_factor(self.N_Re_io[t, x]) is None:
-                        iscale.set_scaling_factor(self.N_Re_io[t, x], 1)
+                        iscale.set_scaling_factor(self.N_Re_io[t, x], 1e-3)
+
                     if iscale.get_scaling_factor(self.N_Sc_io[t, x]) is None:
-                        iscale.set_scaling_factor(self.N_Sc_io[t, x], 1)
+                        iscale.set_scaling_factor(self.N_Sc_io[t, x], 1e-3)
+
                     if iscale.get_scaling_factor(self.N_Sh_io[t, x]) is None:
-                        iscale.set_scaling_factor(self.N_Sh_io[t, x], 1)
+                        iscale.set_scaling_factor(self.N_Sh_io[t, x], 1e-2)
 
                 if iscale.get_scaling_factor(self.length) is None:
                     iscale.set_scaling_factor(self.length, 1)
@@ -751,29 +746,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                     iscale.set_scaling_factor(self.spacer_porosity, 1)
 
                 if iscale.get_scaling_factor(self.dh) is None:
-                    iscale.set_scaling_factor(self.dh, 1)
-
-                for ind, c in self.eq_Kf_io.items():
-                    sf = iscale.get_scaling_factor(self.Kf_io[ind])
-                    iscale.constraint_scaling_transform(c, sf)
-
-                for ind, c in self.eq_N_Re_io.items():
-                    sf = iscale.get_scaling_factor(self.N_Re_io[ind])
-                    iscale.constraint_scaling_transform(c, sf)
-
-                for ind, c in self.eq_N_Sc_io.items():
-                    sf = iscale.get_scaling_factor(self.N_Sc_io[ind])
-                    iscale.constraint_scaling_transform(c, sf)
-
-                for ind, c in self.eq_N_Sh_io.items():
-                    sf = iscale.get_scaling_factor(self.N_Sh_io[ind])
-                    iscale.constraint_scaling_transform(c, sf)
-
-                sf = iscale.get_scaling_factor(self.area)
-                iscale.constraint_scaling_transform(self.eq_area, sf)
-
-                sf = iscale.get_scaling_factor(self.dh)
-                iscale.constraint_scaling_transform(self.eq_dh, sf)
+                    iscale.set_scaling_factor(self.dh, 1e3)
 
         for (t, x, p, j), v in self.flux_mass_io_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
@@ -849,6 +822,29 @@ class ReverseOsmosisData(UnitModelBlockData):
                 prop_interface_io = self.feed_side.properties_interface_out[t]
             sf = iscale.get_scaling_factor(prop_interface_io.conc_mass_phase_comp['Liq', j])
             iscale.constraint_scaling_transform(c, sf)
+
+        if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
+            for ind, c in self.eq_Kf_io.items():
+                sf = iscale.get_scaling_factor(self.Kf_io[ind])
+                iscale.constraint_scaling_transform(c, sf)
+
+            for ind, c in self.eq_N_Re_io.items():
+                sf = iscale.get_scaling_factor(self.N_Re_io[ind])
+                iscale.constraint_scaling_transform(c, sf)
+
+            for ind, c in self.eq_N_Sc_io.items():
+                sf = iscale.get_scaling_factor(self.N_Sc_io[ind])
+                iscale.constraint_scaling_transform(c, sf)
+
+            for ind, c in self.eq_N_Sh_io.items():
+                sf = iscale.get_scaling_factor(self.N_Sh_io[ind])
+                iscale.constraint_scaling_transform(c, sf)
+
+            sf = iscale.get_scaling_factor(self.area)
+            iscale.constraint_scaling_transform(self.eq_area, sf)
+
+            sf = iscale.get_scaling_factor(self.dh)
+            iscale.constraint_scaling_transform(self.eq_dh, sf)
 
         for (t, x), c in self.feed_side.eq_equal_temp_interface_io.items():
             if x == 'in':

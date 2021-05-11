@@ -366,7 +366,8 @@ class TestReverseOsmosis():
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
-        m.fs.unit.Kf_io.fix(kf)
+        m.fs.unit.Kf_io[0, 'in', 'NaCl'].fix(kf)
+        m.fs.unit.Kf_io[0, 'out', 'NaCl'].fix(kf)
 
         # test statistics
         assert number_variables(m) == 94
@@ -491,12 +492,7 @@ class TestReverseOsmosis():
         calculate_scaling_factors(m)
 
         # check that all variables have scaling factors.
-        # TODO: Setting the "include_fixed" arg as True reveals
-        #  unscaled vars that weren't being accounted for previously. However, calling the whole block (i.e.,
-        #  m) shows that several NaCl property parameters are unscaled. For now, we are just interested in ensuring
-        #  unit variables are scaled (hence, calling m.fs.unit) but might need to revisit scaling and associated
-        #  testing for property models.
-
+        # TODO: see aforementioned TODO on revisiting scaling and associated testing for property models.
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
 
         # Uncomment the line below to see which vars are unscaled:
@@ -515,13 +511,11 @@ class TestReverseOsmosis():
         # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         # Uncomment the line below to see which vars are poorly scaled:
-        [[print(v), print(k)] for v, k in badly_scaled_var_lst]
+        # [[print(v), print(k)] for v, k in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
         # test solve
         solver.options = {'nlp_scaling_method': 'user-scaling', 'halt_on_ampl_error': 'yes'}
-        # solver.options['print_level'] = 12
-        # solver.options['output_file'] = "C:/Users/adama/Desktop/my_ipopt_log.txt"
         results = solver.solve(m, tee=True)
 
         # Check for optimal solution
