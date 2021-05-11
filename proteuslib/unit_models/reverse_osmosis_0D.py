@@ -55,6 +55,11 @@ class MassTransferCoefficient(Enum):
     # TODO: add option for users to define their own relationship?
 
 
+class PressureChangeType(Enum):
+    fixed = 1       # pressure drop across membrane channel is a user-specified value
+    calculated = 2  # pressure drop across membrane channel is calculated
+
+
 @declare_process_block_class("ReverseOsmosis0D")
 class ReverseOsmosisData(UnitModelBlockData):
     """
@@ -129,6 +134,15 @@ class ReverseOsmosisData(UnitModelBlockData):
     **Valid values:** {
     **True** - include pressure change terms,
     **False** - exclude pressure change terms.}"""))
+    CONFIG.declare("pressure_change_type", ConfigValue(
+        default=PressureChangeType.fixed,
+        domain=In(PressureChangeType),
+        description="Pressure change term construction flag",
+        doc="""Indicates whether terms for pressure change should be
+    **default** - PressureChangeType.fixed. 
+    **Valid values:** {
+    **PressureChangeType.fixed** - specify pressure drop across membrane channel,
+    **PressureChangeType.calculated** - complete calculation of pressure drop across membrane channel.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -155,7 +169,7 @@ class ReverseOsmosisData(UnitModelBlockData):
     **Valid values:** {
     **ConcentrationPolarizationType.none** - assume no concentration polarization,
     **ConcentrationPolarizationType.fixed** - specify concentration polarization modulus,
-    **ConcentrationPolarizationType.calculated** - complete calculation membrane interface concentration.}"""))
+    **ConcentrationPolarizationType.calculated** - complete calculation of membrane interface concentration.}"""))
     CONFIG.declare("mass_transfer_coefficient", ConfigValue(
         default=MassTransferCoefficient.none,
         domain=In(MassTransferCoefficient),
@@ -163,9 +177,9 @@ class ReverseOsmosisData(UnitModelBlockData):
         doc="""Options to account for mass transfer coefficient,
     **default** - MassTransferCoefficient.none. 
     **Valid values:** {
-    **ConcentrationPolarizationType.none** - assume no concentration polarization,
-    **ConcentrationPolarizationType.fixed** - specify concentration polarization modulus,
-    **ConcentrationPolarizationType.calculated** - complete calculation membrane interface concentration.}"""))
+    **MassTransferCoefficient.none** - mass transfer coefficient not included,
+    **MassTransferCoefficient.fixed** - specify mass transfer coefficient,
+    **MassTransferCoefficient.calculated** - complete calculation of mass transfer coefficient.}"""))
 
     def _process_config(self):
         """Check for configuration errors
@@ -188,6 +202,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 "'mass_transfer_coefficient' must be set to MassTransferCoefficient.none\nor "
                 "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated"
                 .format(self.config.mass_transfer_coefficient, self.config.concentration_polarization_type))
+        # if self.config.pressure_change_type and self.config.has_pressure_change) != 0:
 
     def build(self):
         # Call UnitModel.build to setup dynamics
@@ -341,6 +356,24 @@ class ReverseOsmosisData(UnitModelBlockData):
                     domain=NonNegativeReals,
                     units=pyunits.dimensionless,
                     doc="Sherwood number")
+
+        if self.config.pressure_change_type == PressureChangeType.calculated:
+            self.velocity_io = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                initialize=1,
+                bounds=(1e-8, 10),
+                domain=NonNegativeReals,
+                units=units_meta('length')/units_meta('time'),
+                doc="Crossflow velocity in feed channel")
+            self.friction_factor_darcy_io = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                initialize=1,
+                bounds=(1e-8, 10),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Darcy friction factor in feed channel")
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(default={
@@ -562,6 +595,59 @@ class ReverseOsmosisData(UnitModelBlockData):
             @self.Constraint(doc="Membrane area")
             def eq_area(b):
                 return b.area == b.length * b.width
+
+        if (self.config.pressure_change_type and self.config.has_pressure_change) == PressureChangeType.calculated:
+            # Average density
+            @self.Expression(self.flowsheet().config.time,
+                             doc="average solution density expression")
+            def dens_mass_phase_avg(b, t):
+                dens_mass_phase_sum = 0
+                for x in b.io_list:
+                    if x == 'in':
+                        dens_mass_phase_sum[t, 'Liq'] += b.feed_side.properties_in[t].dens_mass_phase['Liq']
+                    elif x == 'out':
+                        dens_mass_phase_sum[t, 'Liq'] += b.feed_side.properties_out[t].dens_mass_phase['Liq']
+                return 0.5 * dens_mass_phase_sum[t, 'Liq']
+
+            # Crossflow velocity at inlet and outlet
+            @self.Constraint(self.flowsheet().config.time,
+                             self.io_list,
+                             doc="Crossflow velocity constraint")
+            def eq_velocity_io(b, t, x):
+                if x == 'in':
+                    prop_io = b.feed_side.properties_in[t]
+                elif x == 'out':
+                    prop_io = b.feed_side.properties_out[t]
+                return b.velocity[t, x] * b.area_cross == prop_io.flow_vol_phase['Liq']
+
+            # Average crossflow velocity
+            @self.Expression(self.flowsheet().config.time,
+                             doc="average crossflow velocity expression")
+            def velocity_avg(b, t):
+                return 0.5 * sum(b.velocity_io[t, x] for x in b.io_list)
+
+            # Darcy friction factor based on eq. S27 in SI for Cost Optimization of Osmotically Assisted Reverse Osmosis
+            # TODO: this relationship for friction factor is specific to a particular spacer geometry. Add alternatives.
+            @self.Constraint(self.flowsheet().config.time,
+                             self.io_list,
+                             doc="Darcy friction factor constraint")
+            def eq_friction_factor_darcy_io(b, t, x):
+                return (b.friction_factor_darcy_io[t, x] - 0.42) * b.N_Re_io[t, x] == 189.3
+
+            # Average friction factor
+            @self.Expression(self.flowsheet().config.time,
+                             doc="average crossflow velocity expression")
+            def friction_factor_darcy_avg(b, t):
+                return 0.5 * sum(b.friction_factor_darcy_io[t, x] for x in b.io_list)
+
+            # Pressure change equation due to friction,
+            # -1/2*f*L/dh*dens_avg*V_avg^2
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="pressure change due to friction")
+            def eq_pressure_change(b, t):
+                return (b.deltaP[t] * b.dh ==
+                        -0.5 * b.friction_factor_darcy_avg[t] * b.length
+                        * b.dens_mass_phase_avg[t, 'Liq'] * b.velocity_avg[t]**2)
 
         # Bulk and interface connection on the feed-side
         @self.feed_side.Constraint(self.flowsheet().config.time,
