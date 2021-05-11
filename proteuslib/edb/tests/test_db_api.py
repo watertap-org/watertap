@@ -29,21 +29,25 @@ def edb():
     return ElectrolyteDB()
 
 
+@pytest.mark.component
 @requires_mongo
 def test_edb_init(edb):
     assert edb is not None
 
 
+@pytest.mark.component
 @requires_mongo
 def test_edb_get_components(edb):
     pass
 
 
+@pytest.mark.component
 @requires_mongo
 def test_edb_get_reactions():
     pass
 
 
+@pytest.mark.component
 @requires_mongo
 def test_edb_load():
     pass

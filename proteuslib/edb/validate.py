@@ -24,7 +24,7 @@ def validate_component(component) -> Dict:
     Returns:
         Validated data (validation may fill in constant values)
     """
-    return  _Validator(schemas["component"]).validate(component)
+    return _Validator(schemas["component"]).validate(component)
 
 
 def validate_reaction(reaction) -> Dict:
@@ -51,7 +51,7 @@ class _Validator:
         """Validate a JSON instance against the schema.
 
         Args:
-            instance: file, dict, or filename
+            instance: file, dict, filename
 
         Returns:
             Validated data
