@@ -829,6 +829,14 @@ class ReverseOsmosisData(UnitModelBlockData):
                 if iscale.get_scaling_factor(self.dh) is None:
                     iscale.set_scaling_factor(self.dh, 1e3)
 
+        if self.config.pressure_change_type == PressureChangeType.calculated:
+            for t in self.flowsheet().config.time:
+                for x in self.io_list:
+                    if iscale.get_scaling_factor(self.velocity_io[t, x]) is None:
+                        iscale.set_scaling_factor(self.velocity_io[t, x], 1)
+                    if iscale.get_scaling_factor(self.friction_factor_darcy_io[t, x]) is None:
+                        iscale.set_scaling_factor(self.friction_factor_darcy_io[t, x], 1)
+
         for (t, x, p, j), v in self.flux_mass_io_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 comp = self.config.property_package.get_component(j)
@@ -926,6 +934,19 @@ class ReverseOsmosisData(UnitModelBlockData):
 
             sf = iscale.get_scaling_factor(self.dh)
             iscale.constraint_scaling_transform(self.eq_dh, sf)
+
+        if self.config.pressure_change_type == PressureChangeType.calculated:
+            for t in self.flowsheet().config.time:
+                sf = iscale.get_scaling_factor(self.deltaP[t])
+                iscale.constraint_scaling_transform(self.eq_pressure_change[t], sf)
+                for x in self.io_list:
+                    sf = iscale.get_scaling_factor(self.velocity_io[t, x])
+                    iscale.constraint_scaling_transform(self.eq_velocity_io[t, x], sf)
+
+                    sf = iscale.get_scaling_factor(self.friction_factor_darcy_io[t, x])
+                    iscale.constraint_scaling_transform(self.eq_friction_factor_darcy_io[t, x], sf)
+
+
 
         for (t, x), c in self.feed_side.eq_equal_temp_interface_io.items():
             if x == 'in':
