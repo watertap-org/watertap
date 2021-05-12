@@ -324,7 +324,7 @@ class TestReverseOsmosis():
                 value(m.fs.unit.feed_side.properties_interface_out[0].conc_mass_phase_comp['Liq', 'NaCl'])
                 / value(m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_CP_calculation_with_kf_fixed(self):
         """ Testing 0D-RO with ConcentrationPolarizationType.calculated option enabled.
         This option makes use of an alternative constraint for the feed-side, membrane-interface concentration.
@@ -433,7 +433,7 @@ class TestReverseOsmosis():
         assert (pytest.approx(50.081, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_interface_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_CP_calculation_with_kf_calculation(self):
         """ Testing 0D-RO with ConcentrationPolarizationType.calculated option and MassTransferCoefficient.calculated
         option enabled.
