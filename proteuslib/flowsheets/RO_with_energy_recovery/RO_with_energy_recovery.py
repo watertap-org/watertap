@@ -11,7 +11,9 @@ from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (solve_indexed_blocks,
-                                            propagate_state)
+                                            propagate_state,
+                                            fix_state_vars,
+                                            revert_state_vars)
 from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
@@ -220,10 +222,8 @@ class ReverseOsmosisSystem():
             water_recovery: the mass-based fraction of inlet H2O that becomes permeate
                             (default=0.5)
         """
-        # # fix inlet conditions
-        unit.feed_side.properties_in[0].flow_mass_phase_comp.fix()
-        unit.feed_side.properties_in[0].temperature.fix()
-        unit.feed_side.properties_in[0].pressure.fix()
+        # fix inlet conditions
+        flags = fix_state_vars(unit.feed_side.properties_in)
         # fix unit water recovery
         unit.feed_side.properties_out[0].flow_mass_phase_comp['Liq', 'H2O'].fix(
             unit.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'].value * (1 - water_recovery))
@@ -232,9 +232,7 @@ class ReverseOsmosisSystem():
         results = self.solver.solve(unit)
         self.check_solve(results)
         # unfix variables
-        unit.feed_side.properties_in[0].flow_mass_phase_comp.unfix()
-        unit.feed_side.properties_in[0].temperature.unfix()
-        unit.feed_side.properties_in[0].pressure.unfix()
+        revert_state_vars(unit.feed_side.properties_in, flags)
         unit.feed_side.properties_out[0].flow_mass_phase_comp['Liq', 'H2O'].unfix()
         return unit.area.value
 
