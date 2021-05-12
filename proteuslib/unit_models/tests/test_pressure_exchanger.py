@@ -187,12 +187,10 @@ class TestPressureExchanger():
         calculate_scaling_factors(m)
 
         # check that all variables have scaling factors
-        unscaled_var_list = list(unscaled_variables_generator(m))
+        unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
         assert len(unscaled_var_list) == 0
         # check that all constraints have been scaled
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        for c in unscaled_constraint_list:
-            print(c)
         assert len(unscaled_constraint_list) == 0
 
     @pytest.mark.component

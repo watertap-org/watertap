@@ -8,14 +8,12 @@ from pyomo.environ import (ConcreteModel,
                            TransformationFactory,
                            units as pyunits)
 from pyomo.network import Arc
-import pyomo.util.infeasible as infeas
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (solve_indexed_blocks,
                                             propagate_state)
 from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
-from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -24,7 +22,7 @@ import proteuslib.property_models.NaCl_prop_pack as props
 from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 from proteuslib.unit_models.pressure_exchanger import PressureExchanger
 from proteuslib.unit_models.pump_isothermal import Pump
-import financials
+import proteuslib.flowsheets.RO_with_energy_recovery.financials as financials
 
 def main():
     RO_system = ReverseOsmosisSystem()
@@ -34,6 +32,7 @@ def main():
     RO_system.set_operating_conditions()
 
     RO_system.initialize_system()
+    RO_system.solve(RO_system.m)
 
     print('\n***---Simulation results---****')
     RO_system.display_system(RO_system.m)
@@ -48,7 +47,7 @@ def main():
     RO_system.display_state(RO_system.m)
 
 
-class ReverseOsmosisSystem:
+class ReverseOsmosisSystem():
     """
     This class contains methods that build, set operating conditions, initialize,
     and optimize an RO system with energy recovery through a pressure exchanger
