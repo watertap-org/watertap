@@ -39,6 +39,8 @@ class HasConfig:
         for key in src.merge_keys:
             if key in src_config:
                 if key in dst:
+                    if dst[key] is None:
+                        dst[key] = {}
                     dst[key].update(src_config[key])
                 else:
                     dst[key] = src_config[key]
@@ -61,19 +63,23 @@ class Component(HasConfig):
         Post:
             Input `data` will be modified.
         """
-        for k, v in data["parameter_data"].items():
+        self._data, self._eval_performed = data, False
+
+    def _evaluate(self):
+        """For lazy evaluation of units in the raw data.
+        """
+        if self._eval_performed:
+            return
+        parameter_data = self._data.get("parameter_data", {})
+        for k, v in parameter_data.items():
             if k.endswith("_coeff"):
                 for k2, v2 in v.items():
                     if v2[1] is not None:
                         v[k2] = (v2[0], self._build_units(v2[1]))
             else:
                 if v[1] is not None:
-                    data[k] = (v[0], self._build_units(v[1]))
-        self._data = data
-
-    @property
-    def data(self) -> Dict:
-        return self._data
+                    self._data[k] = (v[0], self._build_units(v[1]))
+        self._eval_performed = True
 
     @staticmethod
     def _build_units(x: str):
@@ -81,6 +87,7 @@ class Component(HasConfig):
 
     @property
     def config(self) -> Dict:
+        self._evaluate()
         return self._data
 
 
@@ -125,6 +132,8 @@ class Base(HasConfig):
     @property
     def config(self):
         if not self._dirty:  # do not penalize `<obj>.config` calls if it doesn't change
+            if self._prev_config is None:
+                self._prev_config = copy.deepcopy(self._data)
             return self._prev_config
         my_config = copy.deepcopy(self._data)   # allow multiple calls
         for item in self._to_merge:
