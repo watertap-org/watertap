@@ -258,11 +258,16 @@ class _NaClStateBlock(StateBlock):
                                            "zero during initialization.")
 
         # ---------------------------------------------------------------------
-        # Initialize properties
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solve_indexed_blocks(opt, [self], tee=slc.tee)
-        init_log.info("Property initialization: {}."
-                      .format(idaeslog.condition(results)))
+        skip_solve = True  # skip solve if only state variables are present
+        for k in self.keys():
+            if number_unfixed_variables(self[k]) != 0:
+                skip_solve = False
+
+        if not skip_solve:
+            # Initialize properties
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                results = solve_indexed_blocks(opt, [self], tee=slc.tee)
+            init_log.info_high("Property initialization: {}.".format(idaeslog.condition(results)))
 
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state
@@ -286,7 +291,7 @@ class _NaClStateBlock(StateBlock):
         # Unfix state variables
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
         revert_state_vars(self, flags)
-        init_log.info('{} State Released.'.format(self.name))
+        init_log.info_high('{} State Released.'.format(self.name))
 
 @declare_process_block_class("NaClStateBlock",
                              block_class=_NaClStateBlock)
@@ -302,7 +307,7 @@ class NaClStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=1,
-            bounds=(1e-8, 100),
+            bounds=(1e-8, None),
             domain=NonNegativeReals,
             units=pyunits.kg/pyunits.s,
             doc='Mass flow rate')
@@ -356,7 +361,7 @@ class NaClStateBlockData(StateBlockData):
         self.flow_vol_phase = Var(
             self.params.phase_list,
             initialize=1,
-            bounds=(1e-8, 1e8),
+            bounds=(1e-8, None),
             units=pyunits.m ** 3 / pyunits.s,
             doc="Volumetric flow rate")
 
@@ -391,7 +396,7 @@ class NaClStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=100,
-            bounds=(1e-6, 1e6),
+            bounds=(1e-6, None),
             units=pyunits.mol / pyunits.s,
             doc="Molar flowrate")
 
