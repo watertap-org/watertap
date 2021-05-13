@@ -237,8 +237,8 @@ class TestParallelManager():
             # Attempt to read in the data
             data = np.genfromtxt('pytest_output/global_results.csv', skip_header=1, delimiter=',')
 
-            truth_data = [4.000000e+05, 1.469657e-11, 2.922988e-05, 2.000000e+01]
+            truth_data = [4.000000e+05, 1.311175e-11, 2.612842e-05, 2.000000e+01]
 
             # Compare the last row of the imported data to truth
             for k in range(len(truth_data)):
-                assert data[-1, k] == pytest.approx(truth_data[k])
+                assert data[-1, k] == pytest.approx(truth_data[k], rel=1e-5)
