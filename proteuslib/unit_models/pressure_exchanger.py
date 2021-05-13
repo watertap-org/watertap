@@ -237,7 +237,7 @@ class PressureExchangerData(UnitModelBlockData):
             routine=None,
             outlvl=idaeslog.NOTSET,
             solver=None,
-            optarg={}):
+            optarg=None):
         """
         General wrapper for pressure exchanger initialization routine
         Keyword Arguments:
@@ -248,7 +248,8 @@ class PressureExchangerData(UnitModelBlockData):
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialization routine (default=idaeslog.NOTSET)
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object, if None provided an empty
+                     dictionary will be used (default=None)
             solver : solver object or string indicating which solver to use during
                      initialization, if None provided the default solver will be used
                      (default = None)
@@ -261,6 +262,8 @@ class PressureExchangerData(UnitModelBlockData):
 
         # Set solver and options
         # TODO: clean up once IDAES new API for initialize solvers is released
+        if optarg is None:
+            optarg = {}
         if isinstance(solver, str):
             opt = SolverFactory(solver)
             opt.options = optarg

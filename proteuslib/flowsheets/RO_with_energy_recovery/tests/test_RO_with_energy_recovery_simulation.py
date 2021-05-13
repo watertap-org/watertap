@@ -42,54 +42,54 @@ class TestEnergyRecoverySystem:
     @pytest.mark.unit
     def test_build(self, system):
         # model set up
-        isinstance(system, ReverseOsmosisSystem)
-        isinstance(system.m, ConcreteModel)
-        isinstance(system.m.fs, FlowsheetBlock)
-        isinstance(system.m.fs.properties, props.NaClParameterBlock)
-        isinstance(system.m.fs.costing, Block)
+        assert isinstance(system, ReverseOsmosisSystem)
+        assert isinstance(system.m, ConcreteModel)
+        assert isinstance(system.m.fs, FlowsheetBlock)
+        assert isinstance(system.m.fs.properties, props.NaClParameterBlock)
+        assert isinstance(system.m.fs.costing, Block)
 
         # unit models
         fs = system.m.fs
-        isinstance(fs.feed, Feed)
-        isinstance(fs.S1, Separator)
-        isinstance(fs.P1, Pump)
-        isinstance(fs.PXR, PressureExchanger)
-        isinstance(fs.P2, Pump)
-        isinstance(fs.M1, Mixer)
-        isinstance(fs.RO, ReverseOsmosis0D)
-        isinstance(fs.product, Product)
-        isinstance(fs.disposal, Product)
+        assert isinstance(fs.feed, Feed)
+        assert isinstance(fs.S1, Separator)
+        assert isinstance(fs.P1, Pump)
+        assert isinstance(fs.PXR, PressureExchanger)
+        assert isinstance(fs.P2, Pump)
+        assert isinstance(fs.M1, Mixer)
+        assert isinstance(fs.RO, ReverseOsmosis0D)
+        assert isinstance(fs.product, Product)
+        assert isinstance(fs.disposal, Product)
 
         # unit model options
         # separator
-        isinstance(fs.S1.P1, Port)
-        isinstance(fs.S1.PXR, Port)
+        assert isinstance(fs.S1.P1, Port)
+        assert isinstance(fs.S1.PXR, Port)
         # mixer
-        isinstance(fs.M1.P1, Port)
-        isinstance(fs.M1.P2, Port)
-        isinstance(fs.M1.pressure_equality_constraints, Constraint)
+        assert isinstance(fs.M1.P1, Port)
+        assert isinstance(fs.M1.P2, Port)
+        assert isinstance(fs.M1.pressure_equality_constraints, Constraint)
         # RO
-        isinstance(fs.RO.deltaP, Var)
+        assert isinstance(fs.RO.deltaP, Var)
 
         # additional expressions
-        isinstance(fs.recovery, Expression)
-        isinstance(fs.annual_water_production, Expression)
-        isinstance(fs.specific_energy_consumption, Expression)
+        assert isinstance(fs.recovery, Expression)
+        assert isinstance(fs.annual_water_production, Expression)
+        assert isinstance(fs.specific_energy_consumption, Expression)
 
         # costing blocks
         blk_str_list = ['P1', 'P2', 'RO', 'PXR']
         for blk_str in blk_str_list:
             blk = getattr(fs, blk_str)
             c_blk = getattr(blk, 'costing')
-            isinstance(c_blk, Block)
-            isinstance(getattr(c_blk, 'capital_cost'), Var)
-            isinstance(getattr(c_blk, 'operating_cost'), Var)
+            assert isinstance(c_blk, Block)
+            assert isinstance(getattr(c_blk, 'capital_cost'), Var)
+            assert isinstance(getattr(c_blk, 'operating_cost'), Var)
 
         var_str_list = ['capital_cost_total', 'investment_cost_total', 'operating_cost_MLC',
                         'operating_cost_total', 'LCOW']
         for var_str in var_str_list:
             var = getattr(fs.costing, var_str)
-            isinstance(var, Var)
+            assert isinstance(var, Var)
 
         # arcs
         arc_dict = {fs.s01: (fs.feed.outlet, fs.S1.inlet),
@@ -103,8 +103,8 @@ class TestEnergyRecoverySystem:
                     fs.s09: (fs.PXR.low_pressure_outlet, fs.P2.inlet),
                     fs.s10: (fs.P2.outlet, fs.M1.P2)}
         for arc, port_tpl in arc_dict.items():
-            assert arc.source == port_tpl[0]
-            assert arc.destination == port_tpl[1]
+            assert arc.source is port_tpl[0]
+            assert arc.destination is port_tpl[1]
 
         # units
         assert_units_consistent(fs)
@@ -180,6 +180,14 @@ class TestEnergyRecoverySystem:
         assert value(fs.recovery) == pytest.approx(0.4953, rel=1e-3)
         assert value(fs.specific_energy_consumption) == pytest.approx(2.795, rel=1e-3)
         assert value(fs.costing.LCOW) == pytest.approx(0.4287, rel=1e-3)
+
+        # check mass balance
+        assert (pytest.approx(value(fs.feed.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']), rel=1e-3)
+                == value(fs.product.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'])
+                + value(fs.disposal.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']))
+        assert (pytest.approx(value(fs.feed.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']), rel=1e-3)
+                == value(fs.product.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'])
+                + value(fs.disposal.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']))
 
     @pytest.mark.component
     def test_display_methods(self, system):
