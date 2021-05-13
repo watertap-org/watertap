@@ -41,12 +41,14 @@ def main():
 
     # simulate and display
     solve(m, solver=solver_dict['solver'])
+    print('\n***---Simulation results---***')
     display_system(m)
     display_design(m)
     display_state(m)
 
     # optimize and display
     optimize(m, solver=solver_dict['solver'])
+    print('\n***---Optimization results---***')
     display_system(m)
     display_design(m)
     display_state(m)
@@ -377,9 +379,9 @@ def display_design(m):
     print('---design variables---')
     print('Separator')
     print('Split fraction %.2f' % (m.fs.S1.split_fraction[0, 'PXR'].value*100))
-    print('Pump 1 \noutlet pressure: %.1f bar \npower %.2f kW'
+    print('Pump 1\noutlet pressure: %.1f bar\npower %.2f kW'
           % (m.fs.P1.outlet.pressure[0].value / 1e5, m.fs.P1.work_mechanical[0].value / 1e3))
-    print('Pump 2 \noutlet pressure: %.1f bar \npower %.2f kW'
+    print('Pump 2\noutlet pressure: %.1f bar\npower %.2f kW'
           % (m.fs.P2.outlet.pressure[0].value / 1e5, m.fs.P2.work_mechanical[0].value / 1e3))
 
 
@@ -390,7 +392,7 @@ def display_state(m):
         flow_mass = sum(b.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
         mass_frac_ppm = b.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / flow_mass * 1e6
         pressure_bar = b.pressure[0].value / 1e5
-        print(s + ': %.3f kg/s \t%.0f ppm \t%.1f bar' % (flow_mass, mass_frac_ppm, pressure_bar))
+        print(s + ': %.3f kg/s, %.0f ppm, %.1f bar' % (flow_mass, mass_frac_ppm, pressure_bar))
 
     print_state('Feed      ', m.fs.feed.outlet)
     print_state('Split 1   ', m.fs.S1.P1)

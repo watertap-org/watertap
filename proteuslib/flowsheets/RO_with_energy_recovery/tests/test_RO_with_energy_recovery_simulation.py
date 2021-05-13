@@ -199,11 +199,64 @@ class TestEnergyRecoverySystem:
                 + value(m.fs.disposal.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']))
 
     @pytest.mark.component
-    def test_display_methods(self, system_frame):
+    def test_display_system(self, system_frame, capsys):
         m = system_frame
         display_system(m)
+
+        captured = capsys.readouterr()
+
+        assert captured.out == \
+"""---system metrics---
+Feed: 1.00 kg/s, 35000 ppm
+Product: 0.483 kg/s, 151 ppm
+Recovery: 49.5%
+Energy Consumption: 2.8 kWh/m3
+Levelized cost of water: 0.43 $/m3
+"""
+
+    @pytest.mark.component
+    def test_display_design(self, system_frame, capsys):
+        m = system_frame
         display_design(m)
+
+        captured = capsys.readouterr()
+
+        assert captured.out == \
+"""---decision variables---
+Operating pressure 74.9 bar
+Membrane area 39.3 m2
+---design variables---
+Separator
+Split fraction 50.53
+Pump 1
+outlet pressure: 74.9 bar
+power 4.47 kW
+Pump 2
+outlet pressure: 74.9 bar
+power 0.40 kW
+"""
+
+
+    @pytest.mark.component
+    def test_display_state(self, system_frame, capsys):
+        m = system_frame
         display_state(m)
+
+        captured = capsys.readouterr()
+
+        assert captured.out == \
+"""---state---
+Feed      : 1.000 kg/s, 35000 ppm, 1.0 bar
+Split 1   : 0.495 kg/s, 35000 ppm, 1.0 bar
+P1 out    : 0.495 kg/s, 35000 ppm, 74.9 bar
+Split 2   : 0.505 kg/s, 35000 ppm, 1.0 bar
+PXR LP out: 0.505 kg/s, 35000 ppm, 68.4 bar
+P2 out    : 0.505 kg/s, 35000 ppm, 74.9 bar
+Mix out   : 1.000 kg/s, 35000 ppm, 74.9 bar
+RO perm   : 0.483 kg/s, 151 ppm, 1.0 bar
+RO reten  : 0.517 kg/s, 67501 ppm, 71.9 bar
+PXR HP out: 0.517 kg/s, 67501 ppm, 1.0 bar
+"""
 
     @pytest.mark.component
     def test_optimization(self, system_frame):
