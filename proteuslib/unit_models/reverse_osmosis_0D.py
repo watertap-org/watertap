@@ -821,7 +821,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                     iscale.set_scaling_factor(self.width, 1)
 
                 if iscale.get_scaling_factor(self.channel_height) is None:
-                    iscale.set_scaling_factor(self.channel_height, 1e2)
+                    iscale.set_scaling_factor(self.channel_height, 1e3)
 
                 if iscale.get_scaling_factor(self.spacer_porosity) is None:
                     iscale.set_scaling_factor(self.spacer_porosity, 1)
@@ -841,9 +841,15 @@ class ReverseOsmosisData(UnitModelBlockData):
             if iscale.get_scaling_factor(v) is None:
                 comp = self.config.property_package.get_component(j)
                 if comp.is_solvent():  # scaling based on solvent flux equation
+                    if x == 'in':
+                        prop_io = self.feed_side.properties_in[t]
+                    elif x == 'out':
+                        prop_io = self.feed_side.properties_out[t]
+                        prop_interface_io = self.feed_side.properties_interface_out[t]
+
                     sf = (iscale.get_scaling_factor(self.A_comp[t, j])
                           * iscale.get_scaling_factor(self.dens_solvent)
-                          * iscale.get_scaling_factor(self.feed_side.properties_in[t].pressure))
+                          * iscale.get_scaling_factor(prop_io.pressure)) # TODO: when Jw is very low (e.g.,1e-10), leads to poorly scaled var
                     iscale.set_scaling_factor(v, sf)
                 elif comp.is_solute():  # scaling based on solute flux equation
                     sf = (iscale.get_scaling_factor(self.B_comp[t, j])

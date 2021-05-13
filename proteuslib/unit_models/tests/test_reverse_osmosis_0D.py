@@ -43,7 +43,8 @@ from idaes.core.util.testing import (get_default_solver,
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_variables_generator,
                                      unscaled_constraints_generator,
-                                     badly_scaled_var_generator)
+                                     badly_scaled_var_generator,
+                                     get_scaling_factor)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -621,7 +622,11 @@ class TestReverseOsmosis():
         # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         # Uncomment the line below to see which vars are poorly scaled:
-        # [[print(v), print(k)] for v, k in badly_scaled_var_lst]
+        [[print(v), print(k)] for v, k in badly_scaled_var_lst]
+        print(get_scaling_factor(m.fs.unit.A_comp[0, 'H2O']), get_scaling_factor(m.fs.unit.dens_solvent),
+                                      get_scaling_factor(m.fs.unit.feed_side.properties_out[0].pressure),
+              get_scaling_factor(m.fs.unit.flux_mass_io_phase_comp[0.0,'out','Liq','H2O']))
+        print(value(m.fs.unit.feed_side.properties_out[0].pressure))
         assert badly_scaled_var_lst == []
 
         # test solve
