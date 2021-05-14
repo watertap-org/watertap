@@ -617,8 +617,8 @@ class TestReverseOsmosis():
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 113
-        assert number_total_constraints(m) == 84
+        assert number_variables(m) == 115
+        assert number_total_constraints(m) == 86
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
         # test degrees of freedom
@@ -633,7 +633,6 @@ class TestReverseOsmosis():
         # check that all variables have scaling factors.
         # TODO: see aforementioned TODO on revisiting scaling and associated testing for property models.
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
-
         assert len(unscaled_var_list) == 0
 
         # check that all constraints have been scaled
