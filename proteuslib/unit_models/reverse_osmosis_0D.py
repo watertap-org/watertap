@@ -37,6 +37,7 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.testing import get_default_solver
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -759,17 +760,25 @@ class ReverseOsmosisData(UnitModelBlockData):
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+            solver : solver object or string indicating which solver to use during
+                     initialization, if None provided the default solver will be used
+                     (default = None)
         Returns:
             None
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-        # Set solver options
-        # TODO: update with new initialization solver API for IDAES
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Set solver and options
+        # TODO: clean up once IDAES new API for initialize solvers is released
+        if isinstance(solver, str):
+            opt = SolverFactory(solver)
+            opt.options = optarg
+        else:
+            if solver is None:
+                opt = get_default_solver()
+            else:
+                opt = solver
+                opt.options = optarg
 
         # ---------------------------------------------------------------------
         # Initialize holdup block
