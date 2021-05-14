@@ -904,22 +904,10 @@ class ReverseOsmosisData(UnitModelBlockData):
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1e-4)
 
-        if hasattr(self, 'area_cross'):
-            if iscale.get_scaling_factor(self.area_cross) is None:
-                sf = iscale.get_scaling_factor(self.length) \
-                     * iscale.get_scaling_factor(self.width) \
-                     * iscale.get_scaling_factor(self.spacer_porosity)
-                iscale.set_scaling_factor(self.area_cross, sf)
         if hasattr(self, 'velocity_io'):
             for v in self.velocity_io.values():
                 if iscale.get_scaling_factor(v) is None:
-                    if x == 'in':
-                        prop_io = self.feed_side.properties_in[t]
-                    elif x == 'out':
-                        prop_io = self.feed_side.properties_out[t]
-                    sf = (iscale.get_scaling_factor(prop_io.flow_vol_phase['Liq'])
-                          / iscale.get_scaling_factor(self.area_cross))
-                    iscale.set_scaling_factor(v, sf)
+                    iscale.set_scaling_factor(v, 1)
 
         if hasattr(self, 'friction_factor_darcy_io'):
             for v in self.friction_factor_darcy_io.values():
@@ -1040,24 +1028,24 @@ class ReverseOsmosisData(UnitModelBlockData):
             iscale.constraint_scaling_transform(self.eq_dh, sf)
 
         if hasattr(self, 'eq_pressure_change'):
-            for t, v in self.deltaP.items():
+            for ind, v in self.deltaP.items():
                 sf = iscale.get_scaling_factor(v)
-                iscale.constraint_scaling_transform(self.eq_pressure_change[t], sf)
+                iscale.constraint_scaling_transform(self.eq_pressure_change[ind], sf)
 
         if hasattr(self, 'eq_velocity_io'):
-            for (t, x), v in self.velocity_io.items():
+            for ind, v in self.velocity_io.items():
                 sf = iscale.get_scaling_factor(v)
-                iscale.constraint_scaling_transform(self.eq_velocity_io[t, x], sf)
+                iscale.constraint_scaling_transform(self.eq_velocity_io[ind], sf)
 
         if hasattr(self, 'eq_friction_factor_darcy_io'):
-            for (t, x), v in self.friction_factor_darcy_io.items():
+            for ind, v in self.friction_factor_darcy_io.items():
                 sf = iscale.get_scaling_factor(v)
-                iscale.constraint_scaling_transform(self.eq_friction_factor_darcy_io[t, x], sf)
+                iscale.constraint_scaling_transform(self.eq_friction_factor_darcy_io[ind], sf)
 
         if hasattr(self, 'eq_dP_dx_io'):
-            for (t, x), v in self.dP_dx_io.items():
+            for ind, v in self.dP_dx_io.items():
                 sf = iscale.get_scaling_factor(v)
-                iscale.constraint_scaling_transform(self.eq_dP_dx_io[t, x], sf)
+                iscale.constraint_scaling_transform(self.eq_dP_dx_io[ind], sf)
 
         for (t, x), c in self.feed_side.eq_equal_temp_interface_io.items():
             if x == 'in':

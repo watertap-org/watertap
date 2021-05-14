@@ -421,9 +421,6 @@ class TestReverseOsmosis():
         #  testing for property models.
 
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
-
-        # Uncomment the line below to see which vars are unscaled:
-        # [print(unscaled_var_list[i]) for i in range(len(unscaled_var_list))]
         assert len(unscaled_var_list) == 0
 
         # check that all constraints have been scaled
@@ -526,15 +523,10 @@ class TestReverseOsmosis():
         # check that all variables have scaling factors.
         # TODO: see aforementioned TODO on revisiting scaling and associated testing for property models.
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
-
-        # Uncomment the line below to see which vars are unscaled:
-        # [print(unscaled_var_list[i]) for i in range(len(unscaled_var_list))]
         assert len(unscaled_var_list) == 0
 
         # check that all constraints have been scaled
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        # Uncomment the line below to see which constraints are unscaled:
-        # [print(unscaled_constraint_list[i]) for i in range(len(unscaled_constraint_list))]
         assert len(unscaled_constraint_list) == 0
 
         # test initialization
@@ -542,8 +534,6 @@ class TestReverseOsmosis():
 
         # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        # Uncomment the line below to see which vars are poorly scaled:
-        # [[print(v), print(k)] for v, k in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
         # test solve
@@ -837,13 +827,10 @@ class TestReverseOsmosis():
         # check that all variables have scaling factors.
         # TODO: see aforementioned TODO on revisiting scaling and associated testing for property models.
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
-        [print(unscaled_var_list[i]) for i in range(len(unscaled_var_list))]
         assert len(unscaled_var_list) == 0
 
         # check that all constraints have been scaled
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        [print(unscaled_constraint_list[i]) for i in range(len(unscaled_constraint_list))]
-
         assert len(unscaled_constraint_list) == 0
 
         # test initialization
