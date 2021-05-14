@@ -14,20 +14,13 @@
 import pytest
 import os
 import numpy as np
+import pyomo.environ as pyo
 
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
-                           value,
-                           Objective,
-                           SolverFactory)
+from pyomo.environ import value
 
-from idaes.core import FlowsheetBlock
 from idaes.core.util.testing import get_default_solver
 from idaes.core.util.scaling import calculate_scaling_factors
 
-from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
-import proteuslib.property_models.NaCl_prop_pack as props
 from proteuslib.tools.parameter_sweep import (_init_mpi,
                                                _build_and_divide_combinations,
                                                _update_model_values,
@@ -38,39 +31,23 @@ from proteuslib.tools.parameter_sweep import (_init_mpi,
 
 class TestParallelManager():
     @pytest.fixture(scope="class")
-    def RO_frame(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
+    def model(self):
+        m = pyo.ConcreteModel()
+        m.fs = fs = pyo.Block()
 
-        m.fs.properties = props.NaClParameterBlock()
+        fs.input = pyo.Var(['a','b'], within=pyo.UnitInterval, initialize=0.5)
+        fs.output = pyo.Var(['c', 'd'], within=pyo.UnitInterval, initialize=0.5)
 
-        m.fs.unit = ReverseOsmosis0D(default={
-            "property_package": m.fs.properties,
-            "has_pressure_change": True, })
+        fs.slack = pyo.Var(['ab_slack', 'cd_slack'], bounds=(0,0), initialize=0.0)
+        fs.slack_penalty = pyo.Param(default=1000., mutable=True, within=pyo.PositiveReals)
 
-        # fully specify system
-        feed_flow_mass = 1
-        feed_mass_frac_NaCl = 0.035
-        feed_pressure = 50e5
-        feed_temperature = 273.15 + 25
-        membrane_pressure_drop = 3e5
-        membrane_area = 50
-        A = 4.2e-12
-        B = 3.5e-8
-        pressure_atmospheric = 101325
+        fs.ab_constr = pyo.Constraint(expr=(fs.output['c'] + fs.slack['ab_slack'] == 2*fs.input['a']))
+        fs.cd_constr = pyo.Constraint(expr=(fs.output['d'] + fs.slack['cd_slack'] == 3*fs.input['b']))
 
-        feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
-        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
-            feed_flow_mass * feed_mass_frac_NaCl)
-        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
-            feed_flow_mass * feed_mass_frac_H2O)
-        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
-        m.fs.unit.deltaP.fix(-membrane_pressure_drop)
-        m.fs.unit.area.fix(membrane_area)
-        m.fs.unit.A_comp.fix(A)
-        m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
+        fs.performance = pyo.Expression(expr=pyo.summation(fs.output))
+
+        m.objective = pyo.Objective(expr=m.fs.performance - m.fs.slack_penalty*pyo.summation(m.fs.slack),
+                                    sense=pyo.maximize)
         return m
 
     @pytest.mark.unit
@@ -121,25 +98,22 @@ class TestParallelManager():
             assert test[-1, 2] == pytest.approx(range_C[1])
 
     @pytest.mark.component
-    def test_update_model_values(self, RO_frame):
-        m = RO_frame
+    def test_update_model_values(self, model):
+        m = model
 
         param_dict = dict()
-        param_dict['pressure'] = (m.fs.unit.inlet.pressure[0], None, None, None)
-        param_dict['area'] = (m.fs.unit.area, None, None, None)
+        param_dict['input_a'] = (m.fs.input['a'], None, None, None)
+        param_dict['input_b'] = (m.fs.input['b'], None, None, None)
 
-        assert hasattr(m.fs.unit.inlet, 'pressure')
-        assert hasattr(m.fs.unit, 'area')
+        original_a = value(m.fs.input['a'])
+        original_b = value(m.fs.input['b'])
 
-        original_pressure = value(m.fs.unit.inlet.pressure[0])
-        original_area = value(m.fs.unit.area)
-
-        new_values = [1.1*original_pressure, 1.1*original_area]
+        new_values = [1.1*original_a, 1.1*original_b]
 
         _update_model_values(m, param_dict, new_values)
 
-        assert value(m.fs.unit.inlet.pressure[0]) == pytest.approx(new_values[0])
-        assert value(m.fs.unit.area) == pytest.approx(new_values[1])
+        assert value(m.fs.input['a']) == pytest.approx(new_values[0])
+        assert value(m.fs.input['b']) == pytest.approx(new_values[1])
 
     @pytest.mark.unit
     def test_aggregate_results(self):
@@ -164,67 +138,24 @@ class TestParallelManager():
             assert global_results[-1, 1] == pytest.approx(num_procs*local_results[-1, 1])
 
     @pytest.mark.component
-    def test_parameter_sweep(self, RO_frame):
-        def optimization(m, objective, **kwargs):
-            if objective == 'Area':
-                m.fs.unit.area.unfix()
-                m.fs.unit.area.setlb(20)
-                m.fs.unit.area.setub(60)
-                m.fs.objective = Objective(expr=m.fs.unit.area)
-
-
-            m.fs.unit.B_comp.unfix()
-            m.fs.unit.B_comp.setlb(3.5e-8)
-            m.fs.unit.B_comp.setub(3.5e-8 * 1e3)
-        
-            m.fs.unit.A_comp.unfix()
-            m.fs.unit.A_comp.setlb(4.2e-12)
-            m.fs.unit.A_comp.setub(4.2e-12 * 1e3)
-
-            # solver = SolverFactory('ipopt')
-            solver = SolverFactory('ipopt')
-            solver.options = {'nlp_scaling_method': 'user-scaling'}
-            results = solver.solve(m, tee=True)
-
-            return m
-
-        def display_metrics(m, outputs, **kwargs):
-            metrics = dict()
-
-            metrics['A_comp'] = value(m.fs.unit.A_comp[0.0, 'H2O'])
-            metrics['B_comp'] = value(m.fs.unit.B_comp[0.0, 'NaCl'])
-            metrics['Area'] = value(m.fs.unit.area)
-
-            output_data = []
-
-            for k in outputs:
-                output_data.append(metrics[k])
-
-            return output_data
-
+    def test_parameter_sweep(self, model):
         comm, rank, num_procs = _init_mpi()
 
-        m = RO_frame
+        m = model
+        m.fs.slack_penalty = 1000.
+        m.fs.slack.setub(0)
 
-        calculate_scaling_factors(m)
-
-        solver = get_default_solver()
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
-        results = solver.solve(m)
-        # print(results)
-
-        assert results.solver.termination_condition == \
-               TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
-
-        sweep_params = dict()
-        sweep_params['pressure_drop'] = (m.fs.unit.deltaP, 2e5, 4e5, 3)
-        outputs = ['A_comp', 'B_comp', 'Area']
-
+        sweep_params = {'input_a' : (m.fs.input['a'], 0.1, 0.9, 3),
+                        'input_b' : (m.fs.input['b'], 0.0, 0.5, 3)}
+        outputs = {'output_c':m.fs.output['c'],
+                   'output_d':m.fs.output['d'],
+                   'performance':m.fs.performance}
         # Call the parameter_sweep function
-        parameter_sweep(m, sweep_params, outputs, objective='Area', 
-            output_dir='pytest_output', mpi_comm=comm, optimization=optimization,
-            display_metrics=display_metrics, save_debugging_data=True)
+        parameter_sweep(m, sweep_params, outputs,
+                results_file = 'pytest_output/global_results.csv',
+                optimize_fct=_optimization,
+                debugging_data_dir = 'pytest_output_debug',
+                mpi_comm = comm)
 
         # Check that the global results file is created
         assert os.path.isfile('pytest_output/global_results.csv')
@@ -232,13 +163,128 @@ class TestParallelManager():
         if rank == 0:
             # Check that all local output files have been created
             for k in range(num_procs):
-                assert os.path.isfile('pytest_output/local_results_%03d.csv' % (k))
+                assert os.path.isfile('pytest_output_debug/local_results_%03d.csv' % (k))
 
             # Attempt to read in the data
             data = np.genfromtxt('pytest_output/global_results.csv', skip_header=1, delimiter=',')
 
-            truth_data = [4.000000e+05, 1.469657e-11, 2.922988e-05, 2.000000e+01]
+            # Compare the last row of the imported data to truth
+            truth_data = [ 0.9, 0.5, np.nan, np.nan, np.nan]
+            assert np.allclose(data[-1], truth_data, equal_nan=True)
+
+    @pytest.mark.component
+    def test_parameter_sweep_optimize(self, model):
+        comm, rank, num_procs = _init_mpi()
+
+        m = model
+        m.fs.slack_penalty = 1000.
+        m.fs.slack.setub(0)
+
+        sweep_params = {'input_a' : (m.fs.input['a'], 0.1, 0.9, 3),
+                        'input_b' : (m.fs.input['b'], 0.0, 0.5, 3)}
+        outputs = {'output_c':m.fs.output['c'],
+                   'output_d':m.fs.output['d'],
+                   'performance':m.fs.performance,
+                   'objective':m.objective}
+        # Call the parameter_sweep function
+        parameter_sweep(m, sweep_params, outputs,
+                results_file = 'pytest_output/global_results_optimize.csv',
+                optimize_fct=_optimization,
+                optimize_kwargs={'relax_feasibility':True},
+                mpi_comm = comm)
+
+        # Check that the global results file is created
+        assert os.path.isfile('pytest_output/global_results_optimize.csv')
+
+        if rank == 0:
+            # Attempt to read in the data
+            data = np.genfromtxt('pytest_output/global_results_optimize.csv', skip_header=1, delimiter=',')
 
             # Compare the last row of the imported data to truth
-            for k in range(len(truth_data)):
-                assert data[-1, k] == pytest.approx(truth_data[k])
+            truth_data = [ 0.9, 0.5, 1.0, 1.0, 2.0, 2.0 - 1000.*((2.*0.9 - 1.) + (3.*0.5 - 1.))]
+            assert np.allclose(data[-1], truth_data, equal_nan=True)
+
+    @pytest.mark.component
+    def test_parameter_sweep_recover(self, model):
+        comm, rank, num_procs = _init_mpi()
+
+        m = model
+        m.fs.slack_penalty = 1000.
+        m.fs.slack.setub(0)
+
+        sweep_params = {'input_a' : (m.fs.input['a'], 0.1, 0.9, 3),
+                        'input_b' : (m.fs.input['b'], 0.0, 0.5, 3)}
+        outputs = {'output_c':m.fs.output['c'],
+                   'output_d':m.fs.output['d'],
+                   'performance':m.fs.performance,
+                   'objective':m.objective}
+        # Call the parameter_sweep function
+        parameter_sweep(m, sweep_params, outputs,
+                results_file = 'pytest_output/global_results_recover.csv',
+                optimize_fct=_optimization,
+                reinitialize_fct=_reinitialize,
+                reinitialize_kwargs={'slack_penalty':10.},
+                mpi_comm = comm)
+
+        # Check that the global results file is created
+        assert os.path.isfile('pytest_output/global_results_recover.csv')
+
+        if rank == 0:
+            # Attempt to read in the data
+            data = np.genfromtxt('pytest_output/global_results_recover.csv', skip_header=1, delimiter=',')
+
+            # Compare the last row of the imported data to truth
+            truth_data = [ 0.9, 0.5, 1.0, 1.0, 2.0, 2.0 - 10.*((2.*0.9 - 1.) + (3.*0.5 - 1.))]
+            assert np.allclose(data[-1], truth_data, equal_nan=True)
+
+    @pytest.mark.component
+    def test_parameter_sweep_bad_recover(self, model):
+        comm, rank, num_procs = _init_mpi()
+
+        m = model
+        m.fs.slack_penalty = 1000.
+        m.fs.slack.setub(0)
+
+        sweep_params = {'input_a' : (m.fs.input['a'], 0.1, 0.9, 3),
+                        'input_b' : (m.fs.input['b'], 0.0, 0.5, 3)}
+        outputs = {'output_c':m.fs.output['c'],
+                   'output_d':m.fs.output['d'],
+                   'performance':m.fs.performance,
+                   'objective':m.objective}
+        # Call the parameter_sweep function
+        parameter_sweep(m, sweep_params, outputs,
+                results_file = 'pytest_output/global_results_bad_recover.csv',
+                optimize_fct=_optimization,
+                reinitialize_fct=_bad_reinitialize,
+                reinitialize_kwargs={'slack_penalty':10.},
+                mpi_comm = comm)
+
+        # Check that the global results file is created
+        assert os.path.isfile('pytest_output/global_results_bad_recover.csv')
+
+        if rank == 0:
+            # Attempt to read in the data
+            data = np.genfromtxt('pytest_output/global_results_bad_recover.csv', skip_header=1, delimiter=',')
+
+            # Compare the last row of the imported data to truth
+            truth_data = [ 0.9, 0.5, np.nan, np.nan, np.nan, np.nan]
+            assert np.allclose(data[-1], truth_data, equal_nan=True)
+
+
+def _optimization(m, relax_feasibility=False):
+    if relax_feasibility:
+        m.fs.slack.setub(None)
+
+    solver = get_default_solver()
+    results = solver.solve(m)
+
+    assert results.solver.termination_condition == \
+           pyo.TerminationCondition.optimal
+    assert results.solver.status == pyo.SolverStatus.ok
+
+def _reinitialize(m, slack_penalty=10.):
+    m.fs.slack.setub(None)
+    m.fs.slack_penalty.value = slack_penalty
+
+def _bad_reinitialize(m, **kwargs):
+    pass
