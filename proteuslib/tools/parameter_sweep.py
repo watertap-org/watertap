@@ -2,6 +2,7 @@ import numpy as np
 import pyomo.core.base as pyobase
 import sys
 import os
+import itertools
 
 # ================================================================
 
@@ -97,31 +98,44 @@ def _aggregate_results(local_results, global_values, comm, num_procs):
 
 # ================================================================
 
-def parameter_sweep(m, sweep_params, outputs, objective=None, output_dir='output', mpi_comm=None,
-    num_stages=2, optimization=None, display_metrics=None, save_debugging_data=False):
+def parameter_sweep(m, sweep_params, outputs, results_file, optimize_fct,
+        optimize_kwargs=None, reinitialize_fct=None, reinitialize_kwargs=None,
+        mpi_comm=None, debugging_data_dir=None):
 
     '''
     This function offers a general way to perform repeated optimizations
     of a model for the purposes of exploring a parameter space while
-    monitoring multiple outputs:
+    monitoring multiple outputs.
+    Arguments:
         m : A Pyomo model containing a proteuslib flowsheet, for best results
             it should be initialized before being passed to this function
         sweep_params: A dictionary containing the values to vary with the 
                       format sweep_params['Short/Pretty-print Name'] =
                       (path.to.model.variable, lower_limit, upper_limit, num_samples)
-        outputs : A list of strings indicating which elements from the potential
-                  output dictionary to monitor
-        objective : A string indicating the objective function to use
-        output_dir : The directory to save all output files
-        mpi_comm : User-provided MPI communicator
-        num_stages : The number of stages to use (specific to the NStage model)
-        optimization : A user-defined function to perform the optimization of flowsheet m
-        display_metrics : Au ser-defined function to calculate outputs of flowsheet m
-        save_debugging_data : Optionally, save results on a per-process basis for 
-                              parallel debugging purposes
+        outputs : A dictionary containing "short names" as keys and and Pyomo objects on
+                    "m" whose values to report as values. Values should be a Pyomo
+                    object which the pyomo "value" function can be used on.
+        results_file : The file to save the results.
+        optimize_fct : A user-defined function to perform the optimization of flowsheet m and
+                           loads the results back into m.
+        optimize_kwargs (optional) : Dictionary of kwargs to pass into optimize_fct
+                                     The first arg will always be "m", e.g.,
+                                     optimize_fct(m, **optimize_kwargs). The
+                                     default uses no kwargs.
+        reinitialize_fct (optional) : A user-defined function to perform the re-initialize a
+                                      flowsheet m if the first call to optimize_fct fails,
+                                      e.g., raises an exception
+        reinitialize_kwargs (optional) : Dictionary of kwargs to pass into reinitialize_fct
+                                         The first arg will always be "m", e.g.,
+                                         reinitialize_fct(m, **reinitialize_kwargs). The
+                                         default uses no kwargs.
+        mpi_comm (optional) : User-provided MPI communicator. If None COMM_WORLD will be used.
+        debugging_data_dir (optional) : Optionally, save results on a per-process basis for
+                                        parallel debugging purposes. If None no data will be saved.
+
     Returns:
         None,
-        Writes global CSV file with all inputs and resulting outputs
+        Writes global CSV file to "results_file" with all inputs and resulting outputs
     '''
 
     # Get an MPI communicator
@@ -134,6 +148,13 @@ def parameter_sweep(m, sweep_params, outputs, objective=None, output_dir='output
     local_num_cases = np.shape(local_values)[0]
     local_results = np.zeros((local_num_cases, len(outputs)))
 
+    # Set up optimize_kwargs
+    if optimize_kwargs is None:
+        optimize_kwargs = dict()
+    # Set up reinitialize_kwargs
+    if reinitialize_kwargs is None:
+        reinitialize_kwargs = dict()
+
     # ================================================================
     # Run all optimization cases
     # ================================================================
@@ -144,7 +165,7 @@ def parameter_sweep(m, sweep_params, outputs, objective=None, output_dir='output
 
         try:
             # Simulate/optimize with this set of parameters
-            m = optimization(m, objective, N=num_stages)
+            optimize_fct(m, **optimize_kwargs)
 
         except:
             # If the run is infeasible, report nan
@@ -153,12 +174,21 @@ def parameter_sweep(m, sweep_params, outputs, objective=None, output_dir='output
 
         else:
             # If the simulation suceeds, report stats
-            local_results[k, :] = display_metrics(m, N=num_stages, outputs=outputs)
+            local_results[k, :] = [pyobase.value(outcome) for outcome in outputs.values()]
             previous_run_failed = False
 
-        if previous_run_failed:
-            # We might choose to re-initialize the model at this point
-            pass
+        if previous_run_failed and (reinitialize_fct is not None):
+            # We choose to re-initialize the model at this point
+            try:
+                reinitialize_fct(m, **reinitialize_kwargs)
+                optimize_fct(m, **optimize_kwargs)
+            except:
+                # do we raise an error here?
+                # nothing to do
+                pass
+            else:
+                local_results[k, :] = [pyobase.value(outcome) for outcome in outputs.values()]
+
 
     # ================================================================
     # Save results
@@ -168,20 +198,21 @@ def parameter_sweep(m, sweep_params, outputs, objective=None, output_dir='output
 
     # Make a directory for saved outputs
     if rank == 0:
-        os.makedirs('%s' % (output_dir), exist_ok=True)
+        dirname = os.path.dirname(results_file)
+        if dirname != '':
+            os.makedirs(dirname, exist_ok=True)
+        if debugging_data_dir is not None:
+            os.makedirs(debugging_data_dir, exist_ok=True)
 
     if num_procs > 1:
         comm.Barrier()
 
     # Write a header string for all data files
-    data_header = ''
-    for k, v in sweep_params.items():
-        data_header += '%s, ' % (k)
-    data_header += ', '.join(outputs)
+    data_header = ', '.join(itertools.chain(sweep_params,outputs))
 
-    if save_debugging_data:
+    if debugging_data_dir is not None:
         # Create the local filename and data
-        fname = '%s/local_results_%03d.csv' % (output_dir, rank)
+        fname = os.path.join(debugging_data_dir, 'local_results_%03d.csv' % (rank))
         save_data = np.hstack((local_values, local_results))
 
         # Save the local data
@@ -189,10 +220,9 @@ def parameter_sweep(m, sweep_params, outputs, objective=None, output_dir='output
 
     if rank == 0:
         # Create the global filename and data
-        fname = '%s/global_results.csv' % (output_dir)
         save_data = np.hstack((global_values, global_results))
 
         # Save the global data
-        np.savetxt(fname, save_data, header=data_header, delimiter=', ', fmt='%.6e')
+        np.savetxt(results_file, save_data, header=data_header, delimiter=', ', fmt='%.6e')
 
 # ================================================================
