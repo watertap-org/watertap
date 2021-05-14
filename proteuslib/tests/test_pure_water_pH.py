@@ -55,7 +55,7 @@ import idaes.logger as idaeslog
 from pyomo.util.check_units import assert_units_consistent
 
 # Import idaes methods to check the model during construction
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set,
@@ -278,7 +278,7 @@ thermo_only_config.update(thermo_config)
 del thermo_only_config["inherent_reactions"]
 
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 # Start test class
 class TestPureWater():
@@ -499,8 +499,8 @@ class TestPureWater():
         total_molar_density = \
             value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
         assert pytest.approx(55.2336, rel=1e-3) == total_molar_density
-        pH = -log10(value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])*total_molar_density)
-        pOH = -log10(value(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"])*total_molar_density)
+        pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
+        pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
         assert pytest.approx(7, rel=1e-3) == pH
         assert pytest.approx(7, rel=1e-3) == pOH
         assert pytest.approx(0.9999, rel=1e-3) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
@@ -516,96 +516,8 @@ class TestPureWater():
         total_molar_density = \
             value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
         assert pytest.approx(55.2336, rel=1e-3) == total_molar_density
-        pH = -log10(value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])*total_molar_density)
-        pOH = -log10(value(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"])*total_molar_density)
+        pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
+        pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
         assert pytest.approx(7, rel=1e-3) == pH
         assert pytest.approx(7, rel=1e-3) == pOH
         assert pytest.approx(0.9999, rel=1e-3) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
-
-
-# If this file is run alone, then run a basic simulation
-if __name__ == "__main__":
-    use_inherent = True
-    model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    if use_inherent == True:
-        model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
-        model.fs.rxn_params = GenericReactionParameterBlock(
-                default={"property_package": model.fs.thermo_params, **water_reaction_config})
-        model.fs.unit = EquilibriumReactor(default={
-                "property_package": model.fs.thermo_params,
-                "reaction_package": model.fs.rxn_params,
-                "has_rate_reactions": False,
-                "has_equilibrium_reactions": False,
-                "has_heat_transfer": False,
-                "has_heat_of_reaction": False,
-                "has_pressure_change": False})
-    else:
-        model.fs.thermo_params = GenericParameterBlock(default=thermo_only_config)
-        model.fs.rxn_params = GenericReactionParameterBlock(
-                default={"property_package": model.fs.thermo_params, **water_reaction_config})
-        model.fs.unit = EquilibriumReactor(default={
-                "property_package": model.fs.thermo_params,
-                "reaction_package": model.fs.rxn_params,
-                "has_rate_reactions": False,
-                "has_equilibrium_reactions": True,
-                "has_heat_transfer": False,
-                "has_heat_of_reaction": False,
-                "has_pressure_change": False})
-
-    print("Degrees of freedom = " + str(degrees_of_freedom(model) ) )
-    assert_units_consistent(model)
-    model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( 0. )
-    model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( 0. )
-    model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1. )
-    model.fs.unit.inlet.pressure.fix(101325.0)
-    model.fs.unit.inlet.temperature.fix(298.)
-    model.fs.unit.inlet.flow_mol.fix(10)
-    state_args = {'mole_frac_comp':
-                    {   'H2O': 1,
-                        'H_+': 10**-7/55.6,
-                        'OH_-': 10**-7/55.6
-                    },
-                    'pressure': 101325,
-                    'temperature': 298,
-                    'flow_mol': 10
-              }
-    print("Degrees of freedom = " + str(degrees_of_freedom(model) ) )
-    print("Number of Variables = " + str(number_variables(model) ) )
-    print("Number of Constraints = " + str(number_total_constraints(model) ) )
-    print("Unused Variables = " + str(number_unused_variables(model) ) )
-
-    assert hasattr(model.fs.thermo_params, 'component_list')
-    assert isinstance(model.fs.thermo_params.component('H_+'), Cation)
-
-    iscale.calculate_scaling_factors(model.fs.unit)
-
-    solver.options['bound_push'] = 1e-10
-    solver.options['mu_init'] = 1e-6
-    model.fs.unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
-    results = solver.solve(model, tee=True)
-
-    print("\n")
-    print("inlet.flow_mol\toutlet.flow_mol")
-    print(str(value(model.fs.unit.inlet.flow_mol[0]))+"\t"+str(value(model.fs.unit.outlet.flow_mol[0]))+"\n")
-
-    print("inlet.temperature\toutlet.temperature")
-    print(str(value(model.fs.unit.inlet.temperature[0]))+"\t"+str(value(model.fs.unit.outlet.temperature[0]))+"\n")
-
-    print("inlet.pressure\toutlet.pressure")
-    print(str(value(model.fs.unit.inlet.pressure[0]))+"\t"+str(value(model.fs.unit.outlet.pressure[0]))+"\n")
-
-    print("comp\tinlet.mole_frac\toutlet.mole_frac")
-    for i in model.fs.unit.inlet.mole_frac_comp:
-        print(str(i[1])+"\t"+str(value(model.fs.unit.inlet.mole_frac_comp[i[0], i[1]]))
-            +"\t"+str(value(model.fs.unit.outlet.mole_frac_comp[i[0], i[1]])))
-    print("\n")
-
-    total_molar_density = value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
-    print("Total Molar Density = " + str(total_molar_density))
-    print("\n")
-
-    pH = -log10(value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])*total_molar_density)
-    pOH = -log10(value(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"])*total_molar_density)
-    print("Outlet pH =\t"+ str(pH) )
-    print("Outlet pOH=\t"+ str(pOH) )
