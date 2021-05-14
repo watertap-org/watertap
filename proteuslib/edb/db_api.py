@@ -4,11 +4,11 @@ Database operations API
 # stdlib
 import logging
 import re
-from typing import Generator, List, Optional
+from typing import List, Optional
 # third-party
 from pymongo import MongoClient
 # package
-from .data_model import Result, Component, Reaction
+from .data_model import Result, Component, Reaction, Base
 
 __author__ = "Dan Gunter (LBNL)"
 
@@ -23,12 +23,11 @@ class ElectrolyteDB:
     DEFAULT_URL = "mongodb://localhost:27017"
     DEFAULT_DB = "electrolytedb"
 
+    _known_collections = ("base", "component", "reaction")
+
     def __init__(self, url=DEFAULT_URL, db=DEFAULT_DB):
         self._client = MongoClient(host=url)
         self._db = getattr(self._client, db)
-        self._comp, self._react = self._db.components, self._db.reactions
-        self._collection_map = {"component": self._db.components, "reaction": self._db.reactions}
-        self._process_fn_map = {"component": self._process_component, "reaction": self._process_reaction}
 
     def get_components(
         self, component_names: Optional[List[str]] = None
@@ -46,7 +45,8 @@ class ElectrolyteDB:
             query = {"name": {"$regex": regex}}
         else:
             query = {}
-        result = Result(iterator=self._comp.find(filter=query), item_class=Component)
+        collection = self._db.component
+        result = Result(iterator=collection.find(filter=query), item_class=Component)
         return result
 
     def get_reactions(
@@ -65,15 +65,26 @@ class ElectrolyteDB:
             query = {"components": {"$all": component_names}}
         else:
             query = {}
-        result = Result(iterator=self._comp.find(filter=query), item_class=Reaction)
+        collection = self._db.reaction
+        result = Result(iterator=collection.find(filter=query), item_class=Reaction)
+        return result
+
+    def get_base(self, name: str):
+        """Get base information by name of its type.
+        """
+        query = {"name": name}
+        collection = self._db.base
+        result = Result(iterator=collection.find(filter=query), item_class=Base)
         return result
 
     def load(self, data):
         num = 0
         for record in data:
             rec_type = record["type"]
-            coll = self._collection_map[rec_type]
-            processed_record = self._process_fn_map[rec_type](record)
+            assert rec_type in self._known_collections
+            coll = getattr(self._db, rec_type)
+            process_func = getattr(self, f"_process_{rec_type}")
+            processed_record = process_func(record)
             del record["type"]
             coll.insert_one(processed_record)
             num += 1
@@ -103,7 +114,7 @@ class ElectrolyteDB:
 
     @staticmethod
     def _process_species(s):
-        """Make species match http://jess.murdoch.edu.au/jess_spcdoc.shtml
+        """Make species match https://jess.murdoch.edu.au/jess_spcdoc.shtml
         """
         m = re.match(r"([a-zA-Z0-9]+)\s*(\d*[\-+])?", s)
         if m is None:
@@ -118,13 +129,14 @@ class ElectrolyteDB:
             charge = f"{sign}{num}"
         else:
             charge = input_charge
-        #print(f"{s} -> {symbols}{charge}")
+        # print(f"{s} -> {symbols}{charge}")
         return f"{symbols}{charge}"
+
 
 def get_elements(components):
     elements = set()
     for comp in components:
-        #print(f"Get elements from: {comp}")
+        # print(f"Get elements from: {comp}")
         for m in re.finditer(r"[A-Z][a-z]?", comp):
             element = comp[m.start(): m.end()]
             if element[0] == "K" and len(element) > 1:
@@ -132,4 +144,3 @@ def get_elements(components):
             else:
                 elements.add(element)
     return list(elements)
-

@@ -33,23 +33,74 @@ class HasConfig:
 
     @staticmethod
     def merge_config(dst, src) -> Dict:
-        """Merge on defined configuration keys.
-        """
+        """Merge on defined configuration keys."""
         src_config = src.config
         for key in src.merge_keys:
-            if key in src_config:
-                if key in dst:
-                    if dst[key] is None:
-                        dst[key] = {}
-                    dst[key].update(src_config[key])
-                else:
-                    dst[key] = src_config[key]
+            if key in dst:
+                dst[key].update(src_config)
+            else:
+                dst[key] = src_config
         return dst
 
 
-class Component(HasConfig):
+class DataWrapper:
+    """Marker class for data wrappers."""
 
-    merge_keys =  ("components",)
+    def __init__(self, data):
+        self._eval_performed = False
+        self._data = data
+
+    def _evaluate(self, eval_keys):
+        """For lazy evaluation of units in the raw data."""
+        if self._eval_performed:
+            return
+        for ekey in eval_keys:
+            values = self._find_key(ekey)
+            for k, v in values.items():
+                if isinstance(v, list) and len(v) > 0:
+                    if len(v) == 2 and isinstance(v[1], str) and "U." in v[1]:
+                        values[k] = (v[0], self._build_units(v[1]))
+                    # build units for a nested list of value,unit pairs
+                    elif isinstance(v[0], list):
+                        # re-do lists as dicts numbered from 1
+                        num, numbered_values = 1, {}
+                        for i, sub_v in enumerate(v):
+                            numbered_values[str(num)] = (sub_v[0], self._build_units(sub_v[1]))
+                            num += 1
+                        values[k] = numbered_values
+        for k, v in self._data.get("base_units", {}).items():
+            self._data["base_units"][k] = self._build_units(v)
+        self._eval_performed = True
+
+    def _find_key(self, key):
+        stack = [iter(self._data.items())]
+        while stack:
+            for k, v in stack[-1]:
+                if k == key:
+                    return v
+                elif isinstance(v, dict):
+                    stack.append(iter(v.items()))
+                    break
+            else:
+                stack.pop()
+        return {}
+
+    @staticmethod
+    def _build_units(x: str):
+        return eval(x, {"U": pyunits})
+
+    def _named_data(self):
+        name = self._data["name"]
+        return {
+            name: {
+                k: v for k, v in self._data.items() if k not in ("_id", "name", "type")
+            }
+        }
+
+
+class Component(DataWrapper, HasConfig):
+
+    merge_keys = ("components",)
 
     def __init__(self, data: Dict):
         """Wrap data in component interface.
@@ -63,35 +114,15 @@ class Component(HasConfig):
         Post:
             Input `data` will be modified.
         """
-        self._data, self._eval_performed = data, False
-
-    def _evaluate(self):
-        """For lazy evaluation of units in the raw data.
-        """
-        if self._eval_performed:
-            return
-        parameter_data = self._data.get("parameter_data", {})
-        for k, v in parameter_data.items():
-            if k.endswith("_coeff"):
-                for k2, v2 in v.items():
-                    if v2[1] is not None:
-                        v[k2] = (v2[0], self._build_units(v2[1]))
-            else:
-                if v[1] is not None:
-                    self._data[k] = (v[0], self._build_units(v[1]))
-        self._eval_performed = True
-
-    @staticmethod
-    def _build_units(x: str):
-        return eval(x, {"U": pyunits})
+        super().__init__(data)
 
     @property
     def config(self) -> Dict:
-        self._evaluate()
-        return self._data
+        self._evaluate(("parameter_data",))
+        return self._named_data()
 
 
-class Reaction(HasConfig):
+class Reaction(DataWrapper, HasConfig):
 
     merge_keys = ("equilibrium_reactions", "rate_reactions")
 
@@ -108,24 +139,25 @@ class Reaction(HasConfig):
             Input `data` may be modified.
 
         """
-        self._data = data
+        super().__init__(data)
 
     @property
     def config(self) -> Dict:
-        return self._data
+        self._evaluate(("parameter_data",))
+        return self._named_data()
 
 
-class Base(HasConfig):
-    """Wrapper for 'base' information to which a component or reaction is added.
-    """
+class Base(DataWrapper, HasConfig):
+    """Wrapper for 'base' information to which a component or reaction is added."""
+
     def __init__(self, data: Dict):
-        self._data = data
+        super().__init__(data)
         self._to_merge = []
         self._dirty, self._prev_config = False, None
+        self._evaluate(("parameter_data",))
 
     def add(self, item: HasConfig):
-        """Add something that implements HasConfig to this base config.
-        """
+        """Add something that implements HasConfig to this base config."""
         self._to_merge.append(item)
         self._dirty = True
 
@@ -135,7 +167,7 @@ class Base(HasConfig):
             if self._prev_config is None:
                 self._prev_config = copy.deepcopy(self._data)
             return self._prev_config
-        my_config = copy.deepcopy(self._data)   # allow multiple calls
+        my_config = copy.deepcopy(self._data)  # allow multiple calls
         for item in self._to_merge:
             self.merge_config(my_config, item)
         self._dirty, self._prev_config = False, my_config
@@ -145,6 +177,14 @@ class Base(HasConfig):
 class Result:
     def __init__(self, iterator=None, item_class=None):
         if iterator is not None:
-            assert issubclass(item_class, Reaction) or issubclass(item_class, Component)
+            assert issubclass(item_class, DataWrapper)
             self._it = iterator
             self._it_class = item_class
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        datum = next(self._it)
+        obj = self._it_class(datum)
+        return obj
