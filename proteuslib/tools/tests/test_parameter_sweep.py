@@ -18,9 +18,6 @@ import pyomo.environ as pyo
 
 from pyomo.environ import value
 
-from idaes.core.util.testing import get_default_solver
-from idaes.core.util.scaling import calculate_scaling_factors
-
 from proteuslib.tools.parameter_sweep import (_init_mpi,
                                                _build_and_divide_combinations,
                                                _update_model_values,
@@ -275,7 +272,7 @@ def _optimization(m, relax_feasibility=False):
     if relax_feasibility:
         m.fs.slack.setub(None)
 
-    solver = get_default_solver()
+    solver = pyo.SolverFactory('ipopt')
     results = solver.solve(m)
 
     assert results.solver.termination_condition == \
