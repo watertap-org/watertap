@@ -1,3 +1,9 @@
+# WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+#
+# This module is a work in progress. Do not use it for real work right now.
+#
+# WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+
 """
 Data model for electrolyte database.
 
@@ -8,9 +14,10 @@ Usage to get configuration for IDAES:
     # add all the components to the base
     for c in c_list:
         b.add(c)
-    # get the merged configuration for IDAES
+    # get the merged configuration for IDAES functions
     config = b.config
 """
+
 # stdlib
 import copy
 import logging
@@ -44,14 +51,19 @@ class HasConfig:
 
 
 class DataWrapper:
-    """Marker class for data wrappers."""
+    """Base class for data wrappers.
+    """
 
     def __init__(self, data):
         self._eval_performed = False
         self._data = data
 
     def _evaluate(self, eval_keys):
-        """For lazy evaluation of units in the raw data."""
+        """For lazy evaluation of units in the raw data.
+
+        XXX: Maybe change to _evaluate_units and move the other functionality into the
+        XXX: HasConfig class, since the rest is mostly about structuring the dict for IDAES
+        """
         if self._eval_performed:
             return
         for ekey in eval_keys:
@@ -114,6 +126,8 @@ class Component(DataWrapper, HasConfig):
         Post:
             Input `data` will be modified.
         """
+        if "name" not in data:
+            raise KeyError("'name' is required")
         super().__init__(data)
 
     @property
@@ -139,6 +153,8 @@ class Reaction(DataWrapper, HasConfig):
             Input `data` may be modified.
 
         """
+        if "name" not in data:
+            raise KeyError("'name' is required")
         super().__init__(data)
 
     @property

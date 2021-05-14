@@ -37,16 +37,20 @@ def test_result():
 def test_base(starting_value):
     starting = dict.fromkeys(Component.merge_keys, starting_value)
     foo_value = 12.34
-    starting["foo"] = foo_value
+    mk0 = Component.merge_keys[0]
+    starting[mk0] = {"foo": foo_value}
     b = Base(starting)
     assert b.config == starting
     # Add an empty component
-    c = Component({})
+    with pytest.raises(KeyError):
+        c = Component({})  # "name" is required
+    c = Component({"name": "bar"})
     b.add(c)
-    assert b.config == starting
+    assert b.config[mk0]["foo"] == starting[mk0]["foo"]
     # Add a non-empty component
-    key = Component.merge_keys[0]
-    component_data = {key: {"data": 1}}
+    name = "baz"
+    component_data = {"data": 1, "name": name}
     c = Component(component_data)
     b.add(c)
-    assert b.config[key] == component_data[key]
+    print(f"b.config={b.config} component_data={component_data}")
+    assert b.config[mk0][name]["data"] == component_data["data"]

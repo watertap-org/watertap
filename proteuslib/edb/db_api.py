@@ -1,6 +1,13 @@
+# WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+#
+# This module is a work in progress. Do not use it for real work right now.
+#
+# WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+
 """
 Database operations API
 """
+
 # stdlib
 import logging
 import re

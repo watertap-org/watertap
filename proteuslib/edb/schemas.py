@@ -1,8 +1,15 @@
+# WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+#
+# This module is a work in progress. Do not use it for real work right now.
+#
+# WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+
 """
 JSON schema embedded as variables for:
   - component
   - reaction
 """
+
 schemas = {
     "component": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -91,25 +98,3 @@ schemas = {
     }
 }
 
-
-def main():
-    import argparse
-    from json_schema_for_humans.generate import generate_from_file_object
-    import json
-    from pathlib import Path
-
-    prs = argparse.ArgumentParser(description="Generate schema docs")
-    prs.add_argument("directory", help="Directory to put generated schema docs")
-    args = prs.parse_args()
-    output_dir = Path(args.directory)
-    for schema in "component", "reaction":
-        schema_file = output_dir / f"{schema}.json"
-        with schema_file.open("w") as f:
-            json.dump(schemas[schema], f)
-        output_file = (output_dir / f"{schema}.html").open("w")
-        generate_from_file_object(schema_file.open("r"), output_file)
-        print(f"Docs for {schema} at: {output_file.name}")
-
-
-if __name__ == "__main__":
-    main()

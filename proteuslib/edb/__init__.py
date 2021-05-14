@@ -1,3 +1,9 @@
+# WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+#
+# This module is a work in progress. Do not use it for real work right now.
+#
+# WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+
 """
 Electrolyte database.
 
@@ -19,11 +25,11 @@ Design::
      │             │YES           │
      └─────────────┼──────────────┘
                    │                      ┌───────────────┐
-     DB API........│.....                 │  Reactions    │
+     DB API........│.....                 │  reaction     │
         ...    ┌───▼───┐ ..    ;;;;;;;;   ├───────────────┤
-       ..      │Load   ├──.───►;      ;   │  Components   │
+       ..      │Load   ├──.───►;      ;   │  component    │
       ..       └───────┘  .    ; DB   ;───┼───────────────┤
-     .          ▲         ..   ;      ;   │  Misc/Base    │
+     .          ▲         ..   ;      ;   │  base         │
     ..          │          .   ;;;;;;;;   ├───────────────┤
     .           │           ...           └───────────────┘
     .           │              ...        ...........................
@@ -42,6 +48,3 @@ Design::
                                        .....                ....
                                             ............ ...
 """
-#from .validate import validate_component, validate_reaction
-#from .db_api import ElectrolyteDB
-#from .data_model import Component, Reaction, Result
