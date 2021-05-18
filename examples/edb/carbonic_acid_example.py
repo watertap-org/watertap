@@ -195,10 +195,12 @@ def solve_model(model):
 
 
 def main():
+    from pprint import pprint
     component_names = ["H +", "H2CO3", "HCO3 -"]
     configs = get_configs(component_names)
     for key, value in configs.items():
-        print(f"{key} => {value}")
+        print(f"## {key}")
+        pprint(value)
     #model = create_model(**configs)
     #solve_model(model)
 

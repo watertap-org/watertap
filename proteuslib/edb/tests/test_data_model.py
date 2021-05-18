@@ -3,13 +3,13 @@ Tests for data_model module
 """
 import copy
 import pytest
-from ..data_model import HasConfig, Component, Reaction, Result, Base
+from ..data_model import GenerateConfig, Component, Reaction, Result, Base
 from .data import component_data, reaction_data
 
 
 @pytest.mark.unit
 def test_has_config():
-    hc = HasConfig()
+    hc = GenerateConfig()
 
 
 @pytest.mark.unit

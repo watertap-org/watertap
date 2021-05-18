@@ -26,91 +26,141 @@ from typing import Dict, Union
 # 3rd party
 from pyomo.environ import units as pyunits
 
+# IDAES core
+from idaes.core.phases import PhaseType
+from idaes.generic_models.properties.core.pure import Perrys
+from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
+from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import power_law_equil
+# IDE complains about these two
+# from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
+# from idaes.generic_models.properties.core.reactions.equilibrium_constant import gibbs_energy
+
+# package
+from .equations.equil_log_power_form import log_power_law
+from .equations.van_t_hoff_alt_form import van_t_hoff_aqueous
+
+
 _log = logging.getLogger(__name__)
 
 
-class HasConfig:
+class GenerateConfig:
     """Interface for getting an IDAES 'config' dict."""
 
     merge_keys = ()
 
-    @property
-    def config(self) -> Dict:
-        return {}  # subclasses should implement
-
-    @staticmethod
-    def merge_config(dst, src) -> Dict:
-        """Merge on defined configuration keys."""
-        src_config = src.config
-        for key in src.merge_keys:
-            if key in dst:
-                dst[key].update(src_config)
-            else:
-                dst[key] = src_config
-        return dst
-
-
-class DataWrapper:
-    """Base class for data wrappers.
-    """
-
     def __init__(self, data):
-        self._eval_performed = False
-        self._data = data
+        self._transform(data)
+        self.config = data
 
-    def _evaluate(self, eval_keys):
-        """For lazy evaluation of units in the raw data.
-
-        XXX: Maybe change to _evaluate_units and move the other functionality into the
-        XXX: HasConfig class, since the rest is mostly about structuring the dict for IDAES
-        """
-        if self._eval_performed:
-            return
-        for ekey in eval_keys:
-            values = self._find_key(ekey)
-            for k, v in values.items():
-                if isinstance(v, list) and len(v) > 0:
-                    if len(v) == 2 and isinstance(v[1], str) and "U." in v[1]:
-                        values[k] = (v[0], self._build_units(v[1]))
-                    # build units for a nested list of value,unit pairs
-                    elif isinstance(v[0], list):
-                        # re-do lists as dicts numbered from 1
-                        num, numbered_values = 1, {}
-                        for i, sub_v in enumerate(v):
-                            numbered_values[str(num)] = (sub_v[0], self._build_units(sub_v[1]))
-                            num += 1
-                        values[k] = numbered_values
-        for k, v in self._data.get("base_units", {}).items():
-            self._data["base_units"][k] = self._build_units(v)
-        self._eval_performed = True
-
-    def _find_key(self, key):
-        stack = [iter(self._data.items())]
-        while stack:
-            for k, v in stack[-1]:
-                if k == key:
-                    return v
-                elif isinstance(v, dict):
-                    stack.append(iter(v.items()))
-                    break
-            else:
-                stack.pop()
-        return {}
+    @classmethod
+    def _transform(cls, data):
+        pass # subclasses should implement
 
     @staticmethod
     def _build_units(x: str):
         return eval(x, {"U": pyunits})
 
-    def _named_data(self):
-        name = self._data["name"]
-        return {
-            name: {
-                k: v for k, v in self._data.items() if k not in ("_id", "name", "type")
-            }
-        }
+    ## shared
+
+    @classmethod
+    def _transform_parameter_data(cls, comp):
+        key = "parameter_data"
+        if key in comp:
+            params = comp[key]
+            for param_key in params:
+                if param_key.endswith("_coeff"):
+                    # list of N coefficients; transform to dictionary numbered 1..N
+                    num, coeff_table = 1, {}
+                    for coeff in params[param_key]:
+                        if coeff is None:
+                            continue  # XXX: should this really happen?
+                        coeff_table[str(num)] = (coeff[0], cls._build_units(coeff[1]))
+                        num += 1
+                    params[param_key] = coeff_table
+                else:
+                    p = params[param_key]
+                    params[param_key] = (p[0], cls._build_units(p[1]))
 
 
-class Component(DataWrapper, HasConfig):
+class ThermoConfig(GenerateConfig):
+
+    @classmethod
+    def _transform(cls, data):
+        """In-place data transformation.
+        """
+        components = data["components"]
+
+        # transform each component
+        for comp_name, comp in components.items():
+
+            key = "valid_phase_types"
+            if key in comp:
+                components[comp_name][key] = eval(comp[key], {"PT": PhaseType})
+
+            cls._transform_parameter_data(comp)
+
+            for key in filter(lambda k: k.endswith("_comp"), comp.keys()):
+                if comp[key] == "Perrys":
+                    comp[key] = Perrys
+
+            if "elements" in comp:
+                del comp["elements"]
+
+
+class ReactionConfig(GenerateConfig):
+    @classmethod
+    def _transform(cls, data):
+        """In-place data transformation.
+        """
+        reactions = data["equilibrium_reactions"]
+
+        # transform each reaction
+        for react_name, react_value in reactions.items():
+
+            # reformat stoichiometry to have tuple keys
+            key = "stoichiometry"
+            if key in react_value:
+                stoich = react_value[key]
+                stoich_table = {}
+                for phase in stoich:
+                    for component_name, num in stoich[phase].items():
+                        skey = (phase, component_name)
+                        stoich_table[skey] = num
+                react_value[key] = stoich_table
+
+            # evaluate special string constants
+            for key, value in react_value.items():
+                if key in ("heat_of_reaction",) or key.endswith("_form") or key.endswith("_constant"):
+                    react_value[key] = eval(react_value[key])
+
+
+class BaseConfig(GenerateConfig):
+    @classmethod
+    def _transform(cls, data):
+        # evaluate units in 'base_units'
+        base_units = "base_units"
+        if base_units in data:
+            bu = data[base_units]
+            for key, value in bu.items():
+                if isinstance(value, str):  # make sure it's not already evaluated
+                    bu[key] = cls._build_units(value)
+
+
+class DataWrapper:
+    """Interface to wrap data from DB in convenient ways for consumption by the rest of the library."""
+    def __init__(self, data, config_gen):
+        self._data, self._config_gen, self._config = data, config_gen, None
+
+    @property
+    def config(self) -> Dict:
+        """"Get an IDAES config dict."""
+        if self._config is None:
+            self._config = self._config_gen(self._data)
+        return self._config
+
+
+class Component(DataWrapper):
 
     merge_keys = ("components",)
 
@@ -128,15 +178,10 @@ class Component(DataWrapper, HasConfig):
         """
         if "name" not in data:
             raise KeyError("'name' is required")
-        super().__init__(data)
-
-    @property
-    def config(self) -> Dict:
-        self._evaluate(("parameter_data",))
-        return self._named_data()
+        super().__init__(data, ThermoConfig)
 
 
-class Reaction(DataWrapper, HasConfig):
+class Reaction(DataWrapper):
 
     merge_keys = ("equilibrium_reactions", "rate_reactions")
 
@@ -155,24 +200,18 @@ class Reaction(DataWrapper, HasConfig):
         """
         if "name" not in data:
             raise KeyError("'name' is required")
-        super().__init__(data)
-
-    @property
-    def config(self) -> Dict:
-        self._evaluate(("parameter_data",))
-        return self._named_data()
+        super().__init__(data, ReactionConfig)
 
 
-class Base(DataWrapper, HasConfig):
+class Base(DataWrapper):
     """Wrapper for 'base' information to which a component or reaction is added."""
 
     def __init__(self, data: Dict):
-        super().__init__(data)
+        super().__init__(data, BaseConfig)
         self._to_merge = []
-        self._dirty, self._prev_config = False, None
-        self._evaluate(("parameter_data",))
+        self._dirty, self._prev_config = False, self.config
 
-    def add(self, item: HasConfig):
+    def add(self, item: GenerateConfig):
         """Add something that implements HasConfig to this base config."""
         self._to_merge.append(item)
         self._dirty = True
@@ -180,20 +219,29 @@ class Base(DataWrapper, HasConfig):
     @property
     def config(self):
         if not self._dirty:  # do not penalize `<obj>.config` calls if it doesn't change
-            if self._prev_config is None:
-                self._prev_config = copy.deepcopy(self._data)
             return self._prev_config
         my_config = copy.deepcopy(self._data)  # allow multiple calls
         for item in self._to_merge:
-            self.merge_config(my_config, item)
+            self._merge_config(my_config, item)
         self._dirty, self._prev_config = False, my_config
         return my_config
+
+    @staticmethod
+    def _merge_config(dst, src) -> Dict:
+        """Merge on defined configuration keys."""
+        src_config = src.config
+        for key in src.merge_keys:
+            if key in dst:
+                dst[key].update(src_config)
+            else:
+                dst[key] = src_config
+        return dst
 
 
 class Result:
     def __init__(self, iterator=None, item_class=None):
         if iterator is not None:
-            assert issubclass(item_class, DataWrapper)
+            assert issubclass(item_class, GenerateConfig)
             self._it = iterator
             self._it_class = item_class
 
