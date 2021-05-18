@@ -20,6 +20,7 @@ from pyomo.environ import (Var,
                            SolverFactory,
                            Suffix,
                            NonNegativeReals,
+                           NegativeReals,
                            Reference,
                            Block,
                            units as pyunits,
@@ -54,6 +55,12 @@ class MassTransferCoefficient(Enum):
     fixed = 1       # mass transfer coefficient is a user specified value
     calculated = 2  # mass transfer coefficient is calculated
     # TODO: add option for users to define their own relationship?
+
+
+class PressureChangeType(Enum):
+    fixed_per_stage = 1        # pressure drop across membrane channel is a user-specified value
+    fixed_per_unit_length = 2  # pressure drop per unit length across membrane channel is a user-specified value
+    calculated = 3             # pressure drop across membrane channel is calculated
 
 
 @declare_process_block_class("ReverseOsmosis0D")
@@ -130,6 +137,16 @@ class ReverseOsmosisData(UnitModelBlockData):
     **Valid values:** {
     **True** - include pressure change terms,
     **False** - exclude pressure change terms.}"""))
+    CONFIG.declare("pressure_change_type", ConfigValue(
+        default=PressureChangeType.fixed_per_stage,
+        domain=In(PressureChangeType),
+        description="Pressure change term construction flag",
+        doc="""Indicates whether terms for pressure change should be
+    **default** - PressureChangeType.fixed_per_stage. 
+    **Valid values:** {
+    **PressureChangeType.fixed_per_stage** - user specifies pressure drop across membrane feed channel,
+    **PressureChangeType.fixed_per_unit_length - user specifies pressure drop per unit length (dP/dx),
+    **PressureChangeType.calculated** - complete calculation of pressure drop across membrane channel.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -156,7 +173,7 @@ class ReverseOsmosisData(UnitModelBlockData):
     **Valid values:** {
     **ConcentrationPolarizationType.none** - assume no concentration polarization,
     **ConcentrationPolarizationType.fixed** - specify concentration polarization modulus,
-    **ConcentrationPolarizationType.calculated** - complete calculation membrane interface concentration.}"""))
+    **ConcentrationPolarizationType.calculated** - complete calculation of membrane interface concentration.}"""))
     CONFIG.declare("mass_transfer_coefficient", ConfigValue(
         default=MassTransferCoefficient.none,
         domain=In(MassTransferCoefficient),
@@ -164,9 +181,9 @@ class ReverseOsmosisData(UnitModelBlockData):
         doc="""Options to account for mass transfer coefficient,
     **default** - MassTransferCoefficient.none. 
     **Valid values:** {
-    **ConcentrationPolarizationType.none** - assume no concentration polarization,
-    **ConcentrationPolarizationType.fixed** - specify concentration polarization modulus,
-    **ConcentrationPolarizationType.calculated** - complete calculation membrane interface concentration.}"""))
+    **MassTransferCoefficient.none** - mass transfer coefficient not included,
+    **MassTransferCoefficient.fixed** - specify mass transfer coefficient,
+    **MassTransferCoefficient.calculated** - complete calculation of mass transfer coefficient.}"""))
 
     def _process_config(self):
         """Check for configuration errors
@@ -177,7 +194,8 @@ class ReverseOsmosisData(UnitModelBlockData):
                 "\n'mass_transfer_coefficient' and 'concentration_polarization_type' options configured incorrectly:\n"
                 "'mass_transfer_coefficient' cannot be set to MassTransferCoefficient.none "
                 "while 'concentration_polarization_type' is set to ConcentrationPolarizationType.calculated.\n "
-                "\n\nSet 'mass_transfer_coefficient' to MassTransferCoefficient.fixed or MassTransferCoefficient.calculated"
+                "\n\nSet 'mass_transfer_coefficient' to MassTransferCoefficient.fixed or "
+                "MassTransferCoefficient.calculated "
                 "\nor set 'concentration_polarization_type' to ConcentrationPolarizationType.fixed or "
                 "ConcentrationPolarizationType.none")
         if (self.config.concentration_polarization_type != ConcentrationPolarizationType.calculated
@@ -189,6 +207,15 @@ class ReverseOsmosisData(UnitModelBlockData):
                 "'mass_transfer_coefficient' must be set to MassTransferCoefficient.none\nor "
                 "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated"
                 .format(self.config.mass_transfer_coefficient, self.config.concentration_polarization_type))
+        if (self.config.pressure_change_type is not PressureChangeType.fixed_per_stage
+                and self.config.has_pressure_change is False):
+            raise ConfigurationError(
+                "\nConflict between configuration options:\n"
+                "'has_pressure_change' cannot be False "
+                "while 'pressure_change_type' is set to {}.\n\n"
+                "'pressure_change_type' must be set to PressureChangeType.fixed_per_stage\nor "
+                "'has_pressure_change' must be set to True"
+                .format(self.config.pressure_change_type))
 
     def build(self):
         # Call UnitModel.build to setup dynamics
@@ -259,7 +286,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             initialize=1e-3,
             bounds=(1e-10, 1e6),
             units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
-            doc='Mass flux across membrane')
+            doc='Mass flux across membrane at inlet and outlet')
         self.area = Var(
             initialize=1,
             bounds=(1e-8, 1e6),
@@ -286,62 +313,102 @@ class ReverseOsmosisData(UnitModelBlockData):
                 bounds=(1e-10, 1),
                 domain=NonNegativeReals,
                 units=units_meta('length') * units_meta('time')**-1,
-                doc='Mass transfer coefficient in feed channel')
-            if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
-                self.length = Var(
-                    initialize=1,
-                    bounds=(1e-8, 1e6),
-                    domain=NonNegativeReals,
-                    units=units_meta('length'),
-                    doc='Effective membrane length')
-                self.width = Var(
-                    initialize=1,
-                    bounds=(1e-8, 1e6),
-                    domain=NonNegativeReals,
-                    units=units_meta('length'),
-                    doc='Effective membrane width')
-                self.channel_height = Var(
-                    initialize=7.5e-4,
-                    bounds=(1e-8, 1),
-                    domain=NonNegativeReals,
-                    units=units_meta('length'),
-                    doc='Feed-channel height')
-                self.spacer_porosity = Var(
-                    initialize=0.75,
-                    bounds=(0, 1),
-                    domain=NonNegativeReals,
-                    units=pyunits.dimensionless,
-                    doc='Feed-channel spacer porosity')
-                self.dh = Var(
-                    initialize=1,
-                    bounds=(1e-8, 1e6),
-                    domain=NonNegativeReals,
-                    units=units_meta('length'),
-                    doc='Hydraulic diameter of feed channel')
-                self.N_Re_io = Var(
-                    self.flowsheet().config.time,
-                    self.io_list,
-                    initialize=3e3,
-                    bounds=(1e-8, 1e6),
-                    domain=NonNegativeReals,
-                    units=pyunits.dimensionless,
-                    doc="Reynolds number")
-                self.N_Sc_io = Var(
-                    self.flowsheet().config.time,
-                    self.io_list,
-                    initialize=3e3,
-                    bounds=(1e-8, 1e6),
-                    domain=NonNegativeReals,
-                    units=pyunits.dimensionless,
-                    doc="Schmidt number")
-                self.N_Sh_io = Var(
-                    self.flowsheet().config.time,
-                    self.io_list,
-                    initialize=3e3,
-                    bounds=(1e-8, 1e6),
-                    domain=NonNegativeReals,
-                    units=pyunits.dimensionless,
-                    doc="Sherwood number")
+                doc='Mass transfer coefficient in feed channel at inlet and outlet')
+        if ((self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)
+                or self.config.pressure_change_type == PressureChangeType.calculated):
+            self.width = Var(
+                initialize=1,
+                bounds=(1e-8, 1e6),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Effective membrane width')
+            self.channel_height = Var(
+                initialize=7.5e-4,
+                bounds=(1e-8, 1),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Feed-channel height')
+            self.spacer_porosity = Var(
+                initialize=0.75,
+                bounds=(0, 1),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc='Feed-channel spacer porosity')
+            self.dh = Var(
+                initialize=1,
+                bounds=(1e-8, 1e6),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Hydraulic diameter of feed channel')
+            self.N_Re_io = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                initialize=3e3,
+                bounds=(1e-3, 1e6),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Reynolds number at inlet and outlet")
+        if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
+            self.N_Sc_io = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                initialize=3e3,
+                bounds=(1e-3, 1e6),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Schmidt number at inlet and outlet")
+            self.N_Sh_io = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                initialize=3e3,
+                bounds=(1e-8, 1e6),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Sherwood number at inlet and outlet")
+
+        if ((self.config.pressure_change_type != PressureChangeType.fixed_per_stage)
+                or (self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)):
+            self.length = Var(
+                initialize=1,
+                bounds=(1e-8, 1e6),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Effective membrane length')
+
+        if self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length:
+            self.dP_dx = Var(
+                self.flowsheet().config.time,
+                initialize=-1e5,
+                bounds=(None, -1e-10),
+                domain=NegativeReals,
+                units=units_meta('pressure')*units_meta('length')**-1,
+                doc="Decrease in pressure per unit length across feed channel")
+
+        if self.config.pressure_change_type == PressureChangeType.calculated:
+            self.velocity_io = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                initialize=1,
+                bounds=(1e-8, 10),
+                domain=NonNegativeReals,
+                units=units_meta('length')/units_meta('time'),
+                doc="Crossflow velocity in feed channel at inlet and outlet")
+            self.friction_factor_darcy_io = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                initialize=1,
+                bounds=(1e-8, 10),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Darcy friction factor in feed channel at inlet and outlet")
+            self.dP_dx_io = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                initialize=-1e5,
+                bounds=(None, -1e-10),
+                domain=NegativeReals,
+                units=units_meta('pressure')*units_meta('length')**-1,
+                doc="Pressure drop per unit length in feed channel at inlet and outlet")
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(default={
@@ -536,6 +603,12 @@ class ReverseOsmosisData(UnitModelBlockData):
                         / prop_io.dens_mass_phase['Liq']
                         / prop_io.diffus_phase['Liq'])
 
+            @self.Constraint(doc="Membrane area")
+            def eq_area(b):
+                return b.area == b.length * b.width
+
+        if (self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
+            or self.config.pressure_change_type == PressureChangeType.calculated):
             @self.Expression(doc="Cross-sectional area")
             def area_cross(b):
                 return b.channel_height * b.width * b.spacer_porosity
@@ -560,9 +633,58 @@ class ReverseOsmosisData(UnitModelBlockData):
                         2 * (b.channel_height * b.width)
                         / (b.channel_height + b.width))
 
-            @self.Constraint(doc="Membrane area")
-            def eq_area(b):
-                return b.area == b.length * b.width
+        if self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length:
+            # Pressure change equation when dP/dx = user-specified constant,
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="pressure change due to friction")
+            def eq_pressure_change(b, t):
+                return (b.deltaP[t] == b.dP_dx[t] * b.length)
+
+        elif self.config.pressure_change_type == PressureChangeType.calculated:
+            # Crossflow velocity at inlet and outlet
+            @self.Constraint(self.flowsheet().config.time,
+                             self.io_list,
+                             doc="Crossflow velocity constraint")
+            def eq_velocity_io(b, t, x):
+                if x == 'in':
+                    prop_io = b.feed_side.properties_in[t]
+                elif x == 'out':
+                    prop_io = b.feed_side.properties_out[t]
+                return b.velocity_io[t, x] * b.area_cross == prop_io.flow_vol_phase['Liq']
+
+            # Darcy friction factor based on eq. S27 in SI for Cost Optimization of Osmotically Assisted Reverse Osmosis
+            # TODO: this relationship for friction factor is specific to a particular spacer geometry. Add alternatives.
+            @self.Constraint(self.flowsheet().config.time,
+                             self.io_list,
+                             doc="Darcy friction factor constraint")
+            def eq_friction_factor_darcy_io(b, t, x):
+                return (b.friction_factor_darcy_io[t, x] - 0.42) * b.N_Re_io[t, x] == 189.3
+
+            # Pressure change per unit length due to friction,
+            # -1/2*f/dh*density*velocity^2
+            @self.Constraint(self.flowsheet().config.time,
+                             self.io_list,
+                             doc="pressure change per unit length due to friction")
+            def eq_dP_dx_io(b, t, x):
+                if x == 'in':
+                    prop_io = b.feed_side.properties_in[t]
+                elif x == 'out':
+                    prop_io = b.feed_side.properties_out[t]
+                return (b.dP_dx_io[t, x] * b.dh ==
+                        -0.5 * b.friction_factor_darcy_io[t, x]
+                        * prop_io.dens_mass_phase['Liq'] * b.velocity_io[t, x]**2)
+
+            # Average pressure change per unit length due to friction
+            @self.Expression(self.flowsheet().config.time,
+                             doc="expression for average pressure change per unit length due to friction")
+            def dP_dx_avg(b, t):
+                return 0.5 * sum(b.dP_dx_io[t, x] for x in b.io_list)
+
+            # Pressure change equation
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="pressure change due to friction")
+            def eq_pressure_change(b, t):
+                return b.deltaP[t] == b.dP_dx_avg[t] * b.length
 
         # Bulk and interface connection on the feed-side
         @self.feed_side.Constraint(self.flowsheet().config.time,
@@ -722,48 +844,83 @@ class ReverseOsmosisData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].dens_mass_phase['Liq'])
             iscale.set_scaling_factor(self.dens_solvent, sf)
 
-        if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
+        if hasattr(self, 'cp_modulus'):
             if iscale.get_scaling_factor(self.cp_modulus) is None:
                 sf = iscale.get_scaling_factor(self.cp_modulus)
                 iscale.set_scaling_factor(self.cp_modulus, sf)
 
-        if self.config.mass_transfer_coefficient != MassTransferCoefficient.none:
-            for (t, x, j) in self.Kf_io.keys():
+        if hasattr(self, 'Kf_io'):
+            for t, x, j in self.Kf_io.keys():
                 if iscale.get_scaling_factor(self.Kf_io[t, x, j]) is None:
                     iscale.set_scaling_factor(self.Kf_io[t, x, j], 1e5)
-            if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
-                for (t, x) in self.N_Re_io.keys():
-                    if iscale.get_scaling_factor(self.N_Re_io[t, x]) is None:
-                        iscale.set_scaling_factor(self.N_Re_io[t, x], 1e-3)
 
-                    if iscale.get_scaling_factor(self.N_Sc_io[t, x]) is None:
-                        iscale.set_scaling_factor(self.N_Sc_io[t, x], 1e-3)
+        if hasattr(self, 'N_Re_io'):
+            for t, x in self.N_Re_io.keys():
+                if iscale.get_scaling_factor(self.N_Re_io[t, x]) is None:
+                    iscale.set_scaling_factor(self.N_Re_io[t, x], 1e-3)
 
-                    if iscale.get_scaling_factor(self.N_Sh_io[t, x]) is None:
-                        iscale.set_scaling_factor(self.N_Sh_io[t, x], 1e-2)
+        if hasattr(self, 'N_Sc_io'):
+            for t, x in self.N_Sc_io.keys():
+                if iscale.get_scaling_factor(self.N_Sc_io[t, x]) is None:
+                    iscale.set_scaling_factor(self.N_Sc_io[t, x], 1e-3)
 
-                if iscale.get_scaling_factor(self.length) is None:
-                    iscale.set_scaling_factor(self.length, 1)
+        if hasattr(self, 'N_Sh_io'):
+            for t, x in self.N_Sh_io.keys():
+                if iscale.get_scaling_factor(self.N_Sh_io[t, x]) is None:
+                     iscale.set_scaling_factor(self.N_Sh_io[t, x], 1e-2)
 
-                if iscale.get_scaling_factor(self.width) is None:
-                    iscale.set_scaling_factor(self.width, 1)
+        if hasattr(self, 'length'):
+            if iscale.get_scaling_factor(self.length) is None:
+                iscale.set_scaling_factor(self.length, 1)
 
-                if iscale.get_scaling_factor(self.channel_height) is None:
-                    iscale.set_scaling_factor(self.channel_height, 1e2)
+        if hasattr(self, 'width'):
+            if iscale.get_scaling_factor(self.width) is None:
+                iscale.set_scaling_factor(self.width, 1)
 
-                if iscale.get_scaling_factor(self.spacer_porosity) is None:
-                    iscale.set_scaling_factor(self.spacer_porosity, 1)
+        if hasattr(self, 'channel_height'):
+            if iscale.get_scaling_factor(self.channel_height) is None:
+                iscale.set_scaling_factor(self.channel_height, 1e3)
 
-                if iscale.get_scaling_factor(self.dh) is None:
-                    iscale.set_scaling_factor(self.dh, 1e3)
+        if hasattr(self, 'spacer_porosity'):
+            if iscale.get_scaling_factor(self.spacer_porosity) is None:
+                iscale.set_scaling_factor(self.spacer_porosity, 1)
+
+        if hasattr(self, 'dh'):
+            if iscale.get_scaling_factor(self.dh) is None:
+                iscale.set_scaling_factor(self.dh, 1e3)
+
+        if hasattr(self, 'dP_dx'):
+            for v in self.dP_dx.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1e-4)
+
+        if hasattr(self, 'velocity_io'):
+            for v in self.velocity_io.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, 'friction_factor_darcy_io'):
+            for v in self.friction_factor_darcy_io.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, 'dP_dx_io'):
+            for v in self.dP_dx_io.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1e-4)
 
         for (t, x, p, j), v in self.flux_mass_io_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 comp = self.config.property_package.get_component(j)
                 if comp.is_solvent():  # scaling based on solvent flux equation
+                    if x == 'in':
+                        prop_io = self.feed_side.properties_in[t]
+                    elif x == 'out':
+                        prop_io = self.feed_side.properties_out[t]
+                        prop_interface_io = self.feed_side.properties_interface_out[t]
                     sf = (iscale.get_scaling_factor(self.A_comp[t, j])
                           * iscale.get_scaling_factor(self.dens_solvent)
-                          * iscale.get_scaling_factor(self.feed_side.properties_in[t].pressure))
+                          * iscale.get_scaling_factor(prop_io.pressure))
                     iscale.set_scaling_factor(v, sf)
                 elif comp.is_solute():  # scaling based on solute flux equation
                     sf = (iscale.get_scaling_factor(self.B_comp[t, j])
@@ -795,7 +952,7 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         for t, v in self.feed_side.enthalpy_transfer.items():
             if iscale.get_scaling_factor(v) is None:
-                sf = (iscale.get_scaling_factor(self.feed_side.properties_in[t].enth_flow))
+                sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].enth_flow)
                 iscale.set_scaling_factor(v, sf)
                 iscale.constraint_scaling_transform(self.feed_side.enthalpy_balances[t], sf)
 
@@ -832,28 +989,53 @@ class ReverseOsmosisData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(prop_interface_io.conc_mass_phase_comp['Liq', j])
             iscale.constraint_scaling_transform(c, sf)
 
-        if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
+        if hasattr(self, 'eq_Kf_io'):
             for ind, c in self.eq_Kf_io.items():
                 sf = iscale.get_scaling_factor(self.Kf_io[ind])
                 iscale.constraint_scaling_transform(c, sf)
 
+        if hasattr(self, 'eq_N_Re_io'):
             for ind, c in self.eq_N_Re_io.items():
                 sf = iscale.get_scaling_factor(self.N_Re_io[ind])
                 iscale.constraint_scaling_transform(c, sf)
 
+        if hasattr(self, 'eq_N_Sc_io'):
             for ind, c in self.eq_N_Sc_io.items():
                 sf = iscale.get_scaling_factor(self.N_Sc_io[ind])
                 iscale.constraint_scaling_transform(c, sf)
 
+        if hasattr(self, 'eq_N_Sh_io'):
             for ind, c in self.eq_N_Sh_io.items():
                 sf = iscale.get_scaling_factor(self.N_Sh_io[ind])
                 iscale.constraint_scaling_transform(c, sf)
 
+        if hasattr(self, 'eq_area'):
             sf = iscale.get_scaling_factor(self.area)
             iscale.constraint_scaling_transform(self.eq_area, sf)
 
+        if hasattr(self, 'eq_dh'):
             sf = iscale.get_scaling_factor(self.dh)
             iscale.constraint_scaling_transform(self.eq_dh, sf)
+
+        if hasattr(self, 'eq_pressure_change'):
+            for ind, c in self.eq_pressure_change.items():
+                sf = iscale.get_scaling_factor(self.deltaP[ind])
+                iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, 'eq_velocity_io'):
+            for ind, c in self.eq_velocity_io.items():
+                sf = iscale.get_scaling_factor(self.velocity_io[ind])
+                iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, 'eq_friction_factor_darcy_io'):
+            for ind, c in self.eq_friction_factor_darcy_io.items():
+                sf = iscale.get_scaling_factor(self.friction_factor_darcy_io[ind])
+                iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, 'eq_dP_dx_io'):
+            for ind, c in self.eq_dP_dx_io.items():
+                sf = iscale.get_scaling_factor(self.dP_dx_io[ind])
+                iscale.constraint_scaling_transform(c, sf)
 
         for (t, x), c in self.feed_side.eq_equal_temp_interface_io.items():
             if x == 'in':
