@@ -343,8 +343,6 @@ class SeawaterParameterData(PhysicalParameterBlock):
             within=Reals, initialize=-2.079e-5, units=enth_mass_units * t_inv_units**4,
             doc='Latent heat of pure water parameter 4')
 
-
-
         # traditional parameters are the only Vars currently on the block and should be fixed
         for v in self.component_objects(Var):
             v.fix()
