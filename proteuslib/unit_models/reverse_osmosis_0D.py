@@ -641,13 +641,6 @@ class ReverseOsmosisData(UnitModelBlockData):
                 return (b.deltaP[t] == b.dP_dx[t] * b.length)
 
         elif self.config.pressure_change_type == PressureChangeType.calculated:
-            # Average density
-            @self.Expression(self.flowsheet().config.time,
-                             doc="average solution density expression")
-            def dens_mass_phase_avg(b, t):
-                return (0.5 * (b.feed_side.properties_in[t].dens_mass_phase['Liq']
-                               + b.feed_side.properties_out[t].dens_mass_phase['Liq']))
-
             # Crossflow velocity at inlet and outlet
             @self.Constraint(self.flowsheet().config.time,
                              self.io_list,
@@ -659,12 +652,6 @@ class ReverseOsmosisData(UnitModelBlockData):
                     prop_io = b.feed_side.properties_out[t]
                 return b.velocity_io[t, x] * b.area_cross == prop_io.flow_vol_phase['Liq']
 
-            # Average crossflow velocity
-            @self.Expression(self.flowsheet().config.time,
-                             doc="average crossflow velocity expression")
-            def velocity_avg(b, t):
-                return 0.5 * sum(b.velocity_io[t, x] for x in b.io_list)
-
             # Darcy friction factor based on eq. S27 in SI for Cost Optimization of Osmotically Assisted Reverse Osmosis
             # TODO: this relationship for friction factor is specific to a particular spacer geometry. Add alternatives.
             @self.Constraint(self.flowsheet().config.time,
@@ -672,12 +659,6 @@ class ReverseOsmosisData(UnitModelBlockData):
                              doc="Darcy friction factor constraint")
             def eq_friction_factor_darcy_io(b, t, x):
                 return (b.friction_factor_darcy_io[t, x] - 0.42) * b.N_Re_io[t, x] == 189.3
-
-            # Average friction factor
-            @self.Expression(self.flowsheet().config.time,
-                             doc="average crossflow velocity expression")
-            def friction_factor_darcy_avg(b, t):
-                return 0.5 * sum(b.friction_factor_darcy_io[t, x] for x in b.io_list)
 
             # Pressure change per unit length due to friction,
             # -1/2*f/dh*density*velocity^2
@@ -699,7 +680,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             def dP_dx_avg(b, t):
                 return 0.5 * sum(b.dP_dx_io[t, x] for x in b.io_list)
 
-            # Average pressure change equation due to friction,
+            # Pressure change equation
             @self.Constraint(self.flowsheet().config.time,
                              doc="pressure change due to friction")
             def eq_pressure_change(b, t):
@@ -1037,24 +1018,24 @@ class ReverseOsmosisData(UnitModelBlockData):
             iscale.constraint_scaling_transform(self.eq_dh, sf)
 
         if hasattr(self, 'eq_pressure_change'):
-            for ind, v in self.deltaP.items():
-                sf = iscale.get_scaling_factor(v)
-                iscale.constraint_scaling_transform(self.eq_pressure_change[ind], sf)
+            for ind, c in self.eq_pressure_change.items():
+                sf = iscale.get_scaling_factor(self.deltaP[ind])
+                iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, 'eq_velocity_io'):
-            for ind, v in self.velocity_io.items():
-                sf = iscale.get_scaling_factor(v)
-                iscale.constraint_scaling_transform(self.eq_velocity_io[ind], sf)
+            for ind, c in self.eq_velocity_io.items():
+                sf = iscale.get_scaling_factor(self.velocity_io[ind])
+                iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, 'eq_friction_factor_darcy_io'):
-            for ind, v in self.friction_factor_darcy_io.items():
-                sf = iscale.get_scaling_factor(v)
-                iscale.constraint_scaling_transform(self.eq_friction_factor_darcy_io[ind], sf)
+            for ind, c in self.eq_friction_factor_darcy_io.items():
+                sf = iscale.get_scaling_factor(self.friction_factor_darcy_io[ind])
+                iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, 'eq_dP_dx_io'):
-            for ind, v in self.dP_dx_io.items():
-                sf = iscale.get_scaling_factor(v)
-                iscale.constraint_scaling_transform(self.eq_dP_dx_io[ind], sf)
+            for ind, c in self.eq_dP_dx_io.items():
+                sf = iscale.get_scaling_factor(self.dP_dx_io[ind])
+                iscale.constraint_scaling_transform(c, sf)
 
         for (t, x), c in self.feed_side.eq_equal_temp_interface_io.items():
             if x == 'in':
