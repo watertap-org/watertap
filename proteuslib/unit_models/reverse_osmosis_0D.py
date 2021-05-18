@@ -188,6 +188,12 @@ class ReverseOsmosisData(UnitModelBlockData):
     def _process_config(self):
         """Check for configuration errors
         """
+        if (len(self.config.property_package.phase_list) > 1
+                or 'Liq' not in [p for p in self.config.property_package.phase_list]):
+            raise ConfigurationError(
+                "RO model only supports one liquid phase ['Liq'],"
+                "the property package has specified the following phases {}"
+                .format([p for p in self.config.property_package.phase_list]))
         if (self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated
                 and self.config.mass_transfer_coefficient == MassTransferCoefficient.none):
             raise ConfigurationError(
@@ -217,6 +223,22 @@ class ReverseOsmosisData(UnitModelBlockData):
                 "'has_pressure_change' must be set to True"
                 .format(self.config.pressure_change_type))
 
+    def add_spacer_geometry(self):
+        '''
+        df: filament diameter
+        hsp: spacer height
+        lm: average filament length
+        '''
+        # Add variables
+        self.A_comp = Var(
+            self.flowsheet().config.time,
+            self.solvent_list,
+            initialize=1e-12,
+            bounds=(1e-18, 1e-6),
+            domain=NonNegativeReals,
+            units=units_meta('length') * units_meta('pressure') ** -1 * units_meta('time') ** -1,
+            doc='Solvent permeability coeff.')
+
     def build(self):
         # Call UnitModel.build to setup dynamics
         super().build()
@@ -224,13 +246,6 @@ class ReverseOsmosisData(UnitModelBlockData):
         self._process_config()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
-
-        if (len(self.config.property_package.phase_list) > 1
-                or 'Liq' not in [p for p in self.config.property_package.phase_list]):
-            raise ConfigurationError(
-                "RO model only supports one liquid phase ['Liq'],"
-                "the property package has specified the following phases {}"
-                    .format([p for p in self.config.property_package.phase_list]))
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
