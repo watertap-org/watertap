@@ -228,16 +228,22 @@ class ReverseOsmosisData(UnitModelBlockData):
         df: filament diameter
         hsp: spacer height
         lm: average filament length
+        area_effective
+        perimeter_wetted
         '''
         # Add variables
-        self.A_comp = Var(
-            self.flowsheet().config.time,
-            self.solvent_list,
-            initialize=1e-12,
-            bounds=(1e-18, 1e-6),
+        self.diameter_filament = Var(
+            initialize=1e-3,
+            bounds=(1e-8, 1),
             domain=NonNegativeReals,
-            units=units_meta('length') * units_meta('pressure') ** -1 * units_meta('time') ** -1,
-            doc='Solvent permeability coeff.')
+            units=units_meta('length'),
+            doc='spacer filament diameter')
+        self.spacer_height = Var(
+            initialize=1e-3,
+            bounds=(1e-8, 1),
+            domain=NonNegativeReals,
+            units=units_meta('length'),
+            doc='spacer height')
 
     def build(self):
         # Call UnitModel.build to setup dynamics
@@ -645,8 +651,8 @@ class ReverseOsmosisData(UnitModelBlockData):
             @self.Constraint(doc="Hydraulic diameter")  # TODO: add detail related to spacer geometry
             def eq_dh(b):
                 return (b.dh ==
-                        2 * (b.channel_height * b.width)
-                        / (b.channel_height + b.width))
+                        4 * b.area_cross
+                        / (b.perimeter_wetted)
 
         if self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length:
             # Pressure change equation when dP/dx = user-specified constant,
