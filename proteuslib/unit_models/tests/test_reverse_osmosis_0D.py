@@ -50,7 +50,6 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
 # Get default solver for testing
 solver = get_default_solver()
 
-
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
 def test_config():
@@ -537,7 +536,7 @@ class TestReverseOsmosis():
         assert badly_scaled_var_lst == []
 
         # test solve
-        solver.options = {'nlp_scaling_method': 'user-scaling', 'halt_on_ampl_error': 'yes'}
+        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m, tee=True)
 
         # Check for optimal solution
@@ -637,7 +636,7 @@ class TestReverseOsmosis():
         assert badly_scaled_var_lst == []
 
         # test solve
-        solver.options = {'nlp_scaling_method': 'user-scaling', 'halt_on_ampl_error': 'yes'}
+        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m, tee=True)
 
         # Check for optimal solution
@@ -646,6 +645,7 @@ class TestReverseOsmosis():
         assert results.solver.status == SolverStatus.ok
 
         # test solution
+        assert (pytest.approx(-9.173e5, rel=1e-3) == value(m.fs.unit.deltaP[0]))
         assert (pytest.approx(1.904e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
         assert (pytest.approx(1.727e-6, rel=1e-3) ==
@@ -739,7 +739,7 @@ class TestReverseOsmosis():
         assert badly_scaled_var_lst == []
 
         # test solve
-        solver.options = {'nlp_scaling_method': 'user-scaling', 'halt_on_ampl_error': 'yes'}
+        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m, tee=True)
 
         # Check for optimal solution
@@ -748,6 +748,7 @@ class TestReverseOsmosis():
         assert results.solver.status == SolverStatus.ok
 
         # test solution
+        assert (pytest.approx(-3.000e5, rel=1e-3) == value(m.fs.unit.deltaP[0]))
         assert (pytest.approx(2.205e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
         assert (pytest.approx(1.826e-6, rel=1e-3) ==
@@ -841,7 +842,7 @@ class TestReverseOsmosis():
         assert badly_scaled_var_lst == []
 
         # test solve
-        solver.options = {'nlp_scaling_method': 'user-scaling', 'halt_on_ampl_error': 'yes'}
+        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m, tee=True)
 
         # Check for optimal solution
@@ -850,6 +851,7 @@ class TestReverseOsmosis():
         assert results.solver.status == SolverStatus.ok
 
         # test solution
+        assert (pytest.approx(-3.000e5, rel=1e-3) == value(m.fs.unit.deltaP[0]))
         assert (pytest.approx(2.205e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
         assert (pytest.approx(1.826e-6, rel=1e-3) ==
