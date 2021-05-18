@@ -18,19 +18,21 @@ community in assessing existing and emerging water treatment technologies by 1) 
 involving the design, optimization, and performance of water treatment systems that will lead to improved energy
 efficiency and lower cost, 2) advancing the state of the art for the design of water treatment components, systems
 and networks to be comparable with, or even surpass, that in the chemical industry, and 3) disseminating these tools
-for active use by water treatment researchers and engineers.""".replace("\n", " ").strip()
+for active use by water treatment researchers and engineers.""".replace(
+    "\n", " "
+).strip()
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
 
 setup(
-    name='proteuslib',
-    url='https://github.com/nawi-hub/proteuslib',
-    version='0.0.1',
-    description='ProteusLib modeling library',
+    name="proteuslib",
+    url="https://github.com/nawi-hub/proteuslib",
+    version="0.0.1",
+    description="ProteusLib modeling library",
     long_description=long_description,
-    long_description_content_type='text/plain',
-    author='NAWI team',
+    long_description_content_type="text/plain",
+    author="NAWI team",
     # Classifiers help users find your project by categorizing it.
     #
     # For a list of valid classifiers, see https://pypi.org/classifiers/
@@ -38,7 +40,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        'Development Status :: 3 - Alpha',
+        "Development Status :: 3 - Alpha",
         "Intended Audience :: End Users/Desktop",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: BSD License",
@@ -55,21 +57,28 @@ setup(
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",
         "Topic :: Software Development :: Libraries :: Python Modules",
-        'Programming Language :: Python :: 3 :: Only',
+        "Programming Language :: Python :: 3 :: Only",
     ],
     keywords="water systems, chemical engineering, process modeling, filtration, desalination, nawi",
     packages=find_namespace_packages(),
-    python_requires='>=3.6, <4',
+    python_requires=">=3.6, <4",
     install_requires=[
-        'pytest'  # technically developer, but everyone likes tests
+        # the following requirements are for the electrolyte database (edb)
+        "pymongo>3",  # database interface
+        "pyomo",  # units
+        "fastjsonschema",  # schema validation
+        # other requirements
+        "pytest",  # technically developer, but everyone likes tests
     ],
     extras_require={
-        'dev': [
-            'Sphinx',
-            'sphinx_rtd_theme',
+        "dev": [
+            "Sphinx",  # docs
+            "sphinx_rtd_theme",  # docs
+            "json-schema-for-humans",  # pretty JSON schema in HTML
+            "black",  # code formatting
         ],
     },
-   package_data={  # Optional
+    package_data={  # Optional
         "": [
             "*.json",
         ],
