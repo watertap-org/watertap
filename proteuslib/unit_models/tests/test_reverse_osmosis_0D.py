@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+###############################################################################
+# ProteusLib Copyright (c) 2021, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National
+# Laboratory, National Renewable Energy Laboratory, and National Energy
+# Technology Laboratory (subject to receipt of any required approvals from
+# the U.S. Dept. of Energy). All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/nawi-hub/proteuslib/"
+#
+###############################################################################
 
 import pytest
 from pyomo.environ import (ConcreteModel,
@@ -173,6 +173,7 @@ def test_option_pressure_change_calculated():
     assert isinstance(m.fs.unit.spacer_porosity, Var)
     assert isinstance(m.fs.unit.N_Re_io, Var)
 
+    
 class TestReverseOsmosis():
     @pytest.fixture(scope="class")
     def RO_frame(self):
@@ -247,6 +248,8 @@ class TestReverseOsmosis():
         for obj in m.fs.unit.component_objects(
                 [Param, Var, Expression, Constraint], descend_into=False):
             obj_str = obj.local_name
+            if obj_str[0] == '_':
+                continue  # do not test hidden references
             assert obj_str in unit_objs_type_dict
 
         # test control volume and associated stateblocks
