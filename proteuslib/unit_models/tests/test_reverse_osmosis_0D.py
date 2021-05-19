@@ -173,6 +173,7 @@ def test_option_pressure_change_calculated():
     assert isinstance(m.fs.unit.spacer_porosity, Var)
     assert isinstance(m.fs.unit.N_Re_io, Var)
 
+    
 class TestReverseOsmosis():
     @pytest.fixture(scope="class")
     def RO_frame(self):
@@ -247,6 +248,8 @@ class TestReverseOsmosis():
         for obj in m.fs.unit.component_objects(
                 [Param, Var, Expression, Constraint], descend_into=False):
             obj_str = obj.local_name
+            if obj_str[0] == '_':
+                continue  # do not test hidden references
             assert obj_str in unit_objs_type_dict
 
         # test control volume and associated stateblocks
