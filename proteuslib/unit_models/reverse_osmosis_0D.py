@@ -223,43 +223,6 @@ class ReverseOsmosisData(UnitModelBlockData):
                 "'has_pressure_change' must be set to True"
                 .format(self.config.pressure_change_type))
 
-    def add_spacer_geometry(self):
-        '''
-        Build variables for channel and spacer geometry. Membrane length is included outside of this method.
-        '''
-        # Add variables
-        self.width = Var(
-            initialize=1,
-            bounds=(1e-8, 1e6),
-            domain=NonNegativeReals,
-            units=units_meta('length'),
-            doc='Effective feed-channel width')
-        self.channel_height = Var(
-            initialize=7.5e-4,
-            bounds=(1e-8, 1),
-            domain=NonNegativeReals,
-            units=units_meta('length'),
-            doc='Feed-channel height')
-        self.dh = Var(
-            initialize=1,
-            bounds=(1e-8, 1e6),
-            domain=NonNegativeReals,
-            units=units_meta('length'),
-            doc='Hydraulic diameter of feed channel')
-        self.diameter_filament = Var(
-            initialize=1e-3,
-            bounds=(1e-8, 1),
-            domain=NonNegativeReals,
-            units=units_meta('length'),
-            doc='spacer filament diameter')
-        self.spacer_porosity = Var(
-            initialize=0.75,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc='Feed-channel spacer porosity')
-
-
     def build(self):
         # Call UnitModel.build to setup dynamics
         super().build()
@@ -352,9 +315,42 @@ class ReverseOsmosisData(UnitModelBlockData):
                 doc='Mass transfer coefficient in feed channel at inlet and outlet')
         if ((self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)
                 or self.config.pressure_change_type == PressureChangeType.calculated):
-
-            self.add_unit_geometry
-
+            self.width = Var(
+                initialize=1,
+                bounds=(1e-8, 1e6),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Effective feed-channel width')
+            self.channel_height = Var(
+                initialize=7.5e-4,
+                bounds=(1e-8, 1),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Feed-channel height')
+            self.dh = Var(
+                initialize=1,
+                bounds=(1e-8, 1e6),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Hydraulic diameter of feed channel')
+            self.df = Var(
+                initialize=1e-3,
+                bounds=(1e-8, 1),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='spacer filament diameter')
+            self.dumdum = Var(
+                initialize=1e-3,
+                bounds=(1e-8, 1),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='spacer filament diameter')
+            self.spacer_porosity = Var(
+                initialize=0.75,
+                bounds=(0, 1),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc='Feed-channel spacer porosity')
             self.N_Re_io = Var(
                 self.flowsheet().config.time,
                 self.io_list,
@@ -642,12 +638,17 @@ class ReverseOsmosisData(UnitModelBlockData):
                         * b.dh
                         / prop_io.visc_d_phase['Liq'])
 
-            @self.Constraint(doc="Hydraulic diameter")  # eqn.
+            @self.Constraint(doc="Hydraulic diameter")  # eqn. 17 in Schock & Miquel, 1987
             def eq_dh(b):
                 return (b.dh ==
                         4 * b.spacer_porosity
                         / (2 / b.channel_height
                            + (1 - b.spacer_porosity) * 4 / b.df))
+
+            # Filament diameter cannot be larger than channel height
+            @self.Constraint(doc="filament diameter constraint")
+            def eq_df(b):
+                return b.df <= b.channel_height
 
         if self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length:
             # Pressure change equation when dP/dx = user-specified constant,
