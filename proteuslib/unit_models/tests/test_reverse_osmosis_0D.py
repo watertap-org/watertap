@@ -550,22 +550,22 @@ class TestReverseOsmosis():
         assert results.solver.status == SolverStatus.ok
 
         # test solution
-        # assert (pytest.approx(2.205e-3, rel=1e-3) ==
-        #         value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
-        # assert (pytest.approx(1.826e-6, rel=1e-3) ==
-        #         value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl']))
-        # assert (pytest.approx(0.1103, rel=1e-3) ==
-        #         value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
-        # assert (pytest.approx(9.129e-5, rel=1e-3) ==
-        #         value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
-        # assert (pytest.approx(35.751, rel=1e-3) ==
-        #         value(m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        # assert (pytest.approx(53.506, rel=1e-3) ==
-        #         value(m.fs.unit.feed_side.properties_interface_in[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        # assert (pytest.approx(40.206, rel=1e-3) ==
-        #         value(m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        # assert (pytest.approx(52.475, rel=1e-3) ==
-        #         value(m.fs.unit.feed_side.properties_interface_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
+        assert (pytest.approx(4.549e-3, rel=1e-3) ==
+                value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
+        assert (pytest.approx(1.594e-6, rel=1e-3) ==
+                value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl']))
+        assert (pytest.approx(0.2274, rel=1e-3) ==
+                value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
+        assert (pytest.approx(7.9713e-5, rel=1e-3) ==
+                value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
+        assert (pytest.approx(35.751, rel=1e-3) ==
+                value(m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp['Liq', 'NaCl']))
+        assert (pytest.approx(41.987, rel=1e-3) ==
+                value(m.fs.unit.feed_side.properties_interface_in[0].conc_mass_phase_comp['Liq', 'NaCl']))
+        assert (pytest.approx(46.524, rel=1e-3) ==
+                value(m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
+        assert (pytest.approx(49.811, rel=1e-3) ==
+                value(m.fs.unit.feed_side.properties_interface_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
 
     @pytest.mark.component
     def test_Pdrop_calculation(self):
@@ -584,7 +584,7 @@ class TestReverseOsmosis():
             "pressure_change_type": PressureChangeType.calculated})
 
         # fully specify system
-        feed_flow_mass = 1
+        feed_flow_mass = 5
         feed_mass_frac_NaCl = 0.035
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
         feed_pressure = 85e5
@@ -605,7 +605,7 @@ class TestReverseOsmosis():
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         # length = 20
-        void = 1
+        void = 0.75
         h = 0.001
         df = h/2
         m.fs.unit.channel_height.fix(h)
@@ -656,26 +656,26 @@ class TestReverseOsmosis():
         assert results.solver.status == SolverStatus.ok
 
         # test solution
-        assert (pytest.approx(1.104, rel=1e-3) == value(m.fs.unit.length))
-        assert (pytest.approx(18.115, rel=1e-3) == value(m.fs.unit.width))
-        assert (pytest.approx(-1.619e3, rel=1e-3) == value(m.fs.unit.deltaP[0]))
-        assert (pytest.approx(104.623, rel=1e-3) == value(m.fs.unit.N_Re_io[0, 'in']))
-        assert (pytest.approx(80.9908, rel=1e-3) == value(m.fs.unit.N_Re_io[0, 'out']))
-        assert (pytest.approx(1.0557e-2, rel=1e-3) ==
+        assert (pytest.approx(236.912, rel=1e-3) == value(m.fs.unit.N_Re_io[0, 'in']))
+        assert (pytest.approx(218.092, rel=1e-3) == value(m.fs.unit.N_Re_io[0, 'out']))
+        assert (pytest.approx(1.000, rel=1e-3) == value(m.fs.unit.length))
+        assert (pytest.approx(20.000, rel=1e-3) == value(m.fs.unit.width))
+        assert (pytest.approx(-8.4148e4, rel=1e-3) == value(m.fs.unit.deltaP[0]))
+        assert (pytest.approx(1.855e-2, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
-        assert (pytest.approx(2.4980e-6, rel=1e-3) ==
+        assert (pytest.approx(1.710e-6, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl']))
-        assert (pytest.approx(0.2111, rel=1e-3) ==
+        assert (pytest.approx(0.3709, rel=1e-3) ==
                 value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
-        assert (pytest.approx(4.996e-5, rel=1e-3) ==
+        assert (pytest.approx(3.421e-5, rel=1e-3) ==
                 value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
         assert (pytest.approx(35.751, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        assert (pytest.approx(67.3383, rel=1e-3) ==
+        assert (pytest.approx(47.366, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_interface_in[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        assert (pytest.approx(45.5702, rel=1e-3) ==
+        assert (pytest.approx(38.6885, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        assert (pytest.approx(75.8771, rel=1e-3) ==
+        assert (pytest.approx(50.5471, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_interface_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
 
     @pytest.mark.component
@@ -765,19 +765,19 @@ class TestReverseOsmosis():
 
         # test solution
         assert (pytest.approx(-3.000e5, rel=1e-3) == value(m.fs.unit.deltaP[0]))
-        # assert (pytest.approx(2.205e-3, rel=1e-3) ==
-        #         value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
-        # assert (pytest.approx(1.826e-6, rel=1e-3) ==
-        #         value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl']))
-        # assert (pytest.approx(0.1103, rel=1e-3) ==
-        #         value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
-        # assert (pytest.approx(9.129e-5, rel=1e-3) ==
-        #         value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
-        # assert (pytest.approx(35.751, rel=1e-3) ==
-        #         value(m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        # assert (pytest.approx(53.506, rel=1e-3) ==
-        #         value(m.fs.unit.feed_side.properties_interface_in[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        # assert (pytest.approx(40.207, rel=1e-3) ==
-        #         value(m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        # assert (pytest.approx(52.476, rel=1e-3) ==
-        #         value(m.fs.unit.feed_side.properties_interface_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
+        assert (pytest.approx(4.549e-3, rel=1e-3) ==
+                value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
+        assert (pytest.approx(1.594e-6, rel=1e-3) ==
+                value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl']))
+        assert (pytest.approx(0.2274, rel=1e-3) ==
+                value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
+        assert (pytest.approx(7.9713e-5, rel=1e-3) ==
+                value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
+        assert (pytest.approx(35.751, rel=1e-3) ==
+                value(m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp['Liq', 'NaCl']))
+        assert (pytest.approx(41.987, rel=1e-3) ==
+                value(m.fs.unit.feed_side.properties_interface_in[0].conc_mass_phase_comp['Liq', 'NaCl']))
+        assert (pytest.approx(46.524, rel=1e-3) ==
+                value(m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
+        assert (pytest.approx(49.811, rel=1e-3) ==
+                value(m.fs.unit.feed_side.properties_interface_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
