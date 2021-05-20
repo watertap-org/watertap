@@ -1,6 +1,9 @@
 """
 Shared input data for tests
 """
+from pyomo.environ import units as pyunits
+from idaes.core.phases import PhaseType as PT
+import idaes.generic_models.properties.core.pure.Perrys as Perrys
 
 reaction_data = [
     {
@@ -133,3 +136,51 @@ component_data = [
         "name": "Ca 2+",
     },
 ]
+
+Ca_thermo_config = {
+    "components": {
+        'Ca 2+': {"type": "Component",
+                  "valid_phase_types": PT.liquidPhase,
+                  # Define the methods used to calculate the following properties
+                  "dens_mol_liq_comp": Perrys,
+                  "enth_mol_liq_comp": Perrys,
+                  "cp_mol_liq_comp": Perrys,
+                  "entr_mol_liq_comp": Perrys,
+                  # Parameter data is always associated with the methods defined above
+                  "parameter_data": {
+                      "mw": (40.078, pyunits.g / pyunits.mol),
+                      "dens_mol_liq_comp_coeff": {
+                          '1': (13.5, pyunits.kmol * pyunits.m ** -3),
+                          '2': (1, pyunits.dimensionless),
+                          '3': (1, pyunits.K),
+                          '4': (1, pyunits.dimensionless)},
+                      "enth_mol_form_liq_comp_ref": (-542.83, pyunits.J / pyunits.mol),
+                      "cp_mol_liq_comp_coeff": {
+                          '1': (2.7637E5, pyunits.J / pyunits.kmol / pyunits.K),
+                          '2': (-2.0901E3, pyunits.J / pyunits.kmol / pyunits.K ** 2),
+                          '3': (8.125, pyunits.J / pyunits.kmol / pyunits.K ** 3),
+                          '4': (-1.4116E-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
+                          '5': (9.3701E-6, pyunits.J / pyunits.kmol / pyunits.K ** 5)},
+                      "entr_mol_form_liq_comp_ref": (-53, pyunits.J / pyunits.K / pyunits.mol)
+                  },
+                  # End parameter_data
+                  }
+    }
+    # End Component list
+}
+# End thermo_config definition
+
+Ca_thermo_data = {"_id": {"$oid": "6099cd12507b1e55f1707555"}, "type": "component",
+                  "valid_phase_types": "PT.liquidPhase", "dens_mol_liq_comp": "Perrys", "enth_mol_liq_comp": "Perrys",
+                  "cp_mol_liq_comp": "Perrys", "entr_mol_liq_comp": "Perrys",
+                  "parameter_data": {"mw": [40.078, "U.g/U.mol"],
+                                     "dens_mol_liq_comp_coeff": [[13.5, "U.kmol*U.m**-3"], [1, "U.dimensionless"],
+                                                                 [1, "U.K"], [1, "U.dimensionless"]],
+                                     "enth_mol_form_liq_comp_ref": [-542.83, "U.J/U.mol"],
+                                     "cp_mol_liq_comp_coeff": [[276370, "U.J/U.kmol/U.K"],
+                                                               [-2090.1, "U.J/U.kmol/U.K**2"],
+                                                               [8.125, "U.J/U.kmol/U.K**3"],
+                                                               [-0.014116, "U.J/U.kmol/U.K**4"],
+                                                               [0.0000093701, "U.J/U.kmol/U.K**5"]],
+                                     "entr_mol_form_liq_comp_ref": [-53, "U.J/U.K/U.mol"]}, "name": "Ca 2+",
+                  "elements": ["Ca"]}

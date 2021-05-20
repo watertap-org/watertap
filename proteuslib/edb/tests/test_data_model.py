@@ -2,9 +2,27 @@
 Tests for data_model module
 """
 import copy
+from pprint import pprint  # for debugging
 import pytest
 from ..data_model import GenerateConfig, Component, Reaction, Result, Base
-from .data import component_data, reaction_data
+from . import data as testdata
+from typing import Dict
+
+
+def assert_configuration_equal(a: Dict, b: Dict):
+    assert len(a) == len(b)
+    a_components, b_components = a.get("components", {}), b.get("components", {})
+    assert len(a_components) == len(b_components)
+    for name in a_components:
+        assert name in b_components
+        a_comp, b_comp = a_components[name], b_components[name]
+        for key in a_comp:
+            assert key in b_comp
+            if key == "parameter_data":
+                for key2, value2 in a_comp[key].items():
+                    assert key2 in b_comp[key]
+                    if isinstance(value2, tuple) and len(value2) == 2:  # number, unit pair
+                        assert b_comp[key][key2][0] == pytest.approx(value2[0])
 
 
 @pytest.mark.unit
@@ -13,14 +31,18 @@ def test_has_config():
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("data", component_data)
-def test_component(data):
-    data = copy.deepcopy(data)
-    c = Component(data)
+def test_component_ca_thermo():
+    comp = Component(testdata.Ca_thermo_data)
+    generated_config = comp.config
+    print("Config generated from data:")
+    pprint(generated_config)
+    print("Expected config:")
+    pprint(testdata.Ca_thermo_config)
+    assert_configuration_equal(comp.config, testdata.Ca_thermo_config)
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("data", reaction_data)
+@pytest.mark.parametrize("data", testdata.reaction_data)
 def test_reaction(data):
     data = copy.deepcopy(data)
     r = Reaction(data)

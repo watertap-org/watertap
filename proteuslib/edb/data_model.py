@@ -21,7 +21,7 @@ Usage to get configuration for IDAES:
 # stdlib
 import copy
 import logging
-from typing import Dict, Union
+from typing import Dict, Type
 
 # 3rd party
 from pyomo.environ import units as pyunits
@@ -82,6 +82,31 @@ class GenerateConfig:
                     p = params[param_key]
                     params[param_key] = (p[0], cls._build_units(p[1]))
 
+    @classmethod
+    def _wrap_component(cls, data: Dict):
+        """Put all `data` inside {components: <name>: { /data/ }}.
+        Also removes keys 'name' and _id from the `data`.
+        Changes input argument.
+        """
+        comp_name = data["name"]
+        # create new location for component data
+        if "components" not in data:
+            data["components"] = {}
+        assert comp_name not in data["components"], "trying to add existing component"
+        data["components"][comp_name]  = {}
+        # copy existing to new location
+        to_delete = set()  # cannot delete while iterating, so store keys to delete here
+        for key, value in data.items():
+            # if this is not a special field, add it to the the component
+            if key not in ("name", "_id", "base_units", "components"):
+                data["components"][comp_name][key] = value
+            # mark field for deletion, if not top-level field
+            if key not in ("base_units", "components"):
+                to_delete.add(key)
+        # remove copied fields from old location
+        for key in to_delete:
+            del data[key]
+
 
 class ThermoConfig(GenerateConfig):
 
@@ -89,23 +114,20 @@ class ThermoConfig(GenerateConfig):
     def _transform(cls, data):
         """In-place data transformation.
         """
-        components = data["components"]
+        key = "valid_phase_types"
+        if key in data:
+            data[key] = eval(data[key], {"PT": PhaseType})
 
-        # transform each component
-        for comp_name, comp in components.items():
+        cls._transform_parameter_data(data)
 
-            key = "valid_phase_types"
-            if key in comp:
-                components[comp_name][key] = eval(comp[key], {"PT": PhaseType})
+        for key in filter(lambda k: k.endswith("_comp"), data.keys()):
+            if data[key] == "Perrys":
+                data[key] = Perrys
 
-            cls._transform_parameter_data(comp)
+        if "elements" in data:
+            del data["elements"]
 
-            for key in filter(lambda k: k.endswith("_comp"), comp.keys()):
-                if comp[key] == "Perrys":
-                    comp[key] = Perrys
-
-            if "elements" in comp:
-                del comp["elements"]
+        cls._wrap_component(data)
 
 
 class ReactionConfig(GenerateConfig):
@@ -148,15 +170,26 @@ class BaseConfig(GenerateConfig):
 
 
 class DataWrapper:
-    """Interface to wrap data from DB in convenient ways for consumption by the rest of the library."""
-    def __init__(self, data, config_gen):
-        self._data, self._config_gen, self._config = data, config_gen, None
+    """Interface to wrap data from DB in convenient ways for consumption by the rest of the library.
+
+    Feed the data (from the database) and the appropriate subclass of GenerateConfig to the constructor.
+    Then the IDAES config will be available from the `config` attribute. Note that no conversion work
+    is done before the first access, and the converted result is cached to avoid extra work on repeated accesses.
+    """
+    def __init__(self, data: Dict, config_gen_class: Type[GenerateConfig]):
+        """Ctor.
+
+        Args:
+            data: Data from the DB
+            config_gen_class: Used to transform DB data to IDAES config
+        """
+        self._data, self._config_gen, self._config = data, config_gen_class, None
 
     @property
     def config(self) -> Dict:
         """"Get an IDAES config dict."""
         if self._config is None:
-            self._config = self._config_gen(self._data)
+            self._config = self._config_gen(self._data).config
         return self._config
 
 
