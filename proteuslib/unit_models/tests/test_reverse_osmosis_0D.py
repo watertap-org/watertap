@@ -658,23 +658,23 @@ class TestReverseOsmosis():
         # test solution
         assert (pytest.approx(15.342, rel=1e-3) == value(m.fs.unit.length))
         assert (pytest.approx(3.259, rel=1e-3) == value(m.fs.unit.width))
-
         assert (pytest.approx(-26.429e5, rel=1e-3) == value(m.fs.unit.deltaP[0]))
-        assert (pytest.approx(1.904e-3, rel=1e-3) ==
+
+        assert (pytest.approx(5.462e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
-        assert (pytest.approx(1.727e-6, rel=1e-3) ==
+        assert (pytest.approx(2.453e-6, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl']))
-        assert (pytest.approx(0.0952, rel=1e-3) ==
+        assert (pytest.approx(0.27311, rel=1e-3) ==
                 value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
-        assert (pytest.approx(8.637e-5, rel=1e-3) ==
+        assert (pytest.approx(1.2265e-4, rel=1e-3) ==
                 value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
         assert (pytest.approx(35.751, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        assert (pytest.approx(53.561, rel=1e-3) ==
+        assert (pytest.approx(77.838, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_interface_in[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        assert (pytest.approx(39.524, rel=1e-3) ==
+        assert (pytest.approx(49.490, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        assert (pytest.approx(46.958, rel=1e-3) ==  # TODO: expected this value to be higher than interface concentration at inlet, but bypassing for now- has to do with pressure drop
+        assert (pytest.approx(63.2312, rel=1e-3) ==  # TODO: expected this value to be higher than interface concentration at inlet, but bypassing for now- has to do with pressure drop
                 value(m.fs.unit.feed_side.properties_interface_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
 
     @pytest.mark.component

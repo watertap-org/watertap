@@ -863,7 +863,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         if hasattr(self, 'Kf_io'):
             for t, x, j in self.Kf_io.keys():
                 if iscale.get_scaling_factor(self.Kf_io[t, x, j]) is None:
-                    iscale.set_scaling_factor(self.Kf_io[t, x, j], 1e6)
+                    iscale.set_scaling_factor(self.Kf_io[t, x, j], 1e5)
 
         if hasattr(self, 'N_Re_io'):
             for t, x in self.N_Re_io.keys():
