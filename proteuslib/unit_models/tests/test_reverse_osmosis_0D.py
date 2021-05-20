@@ -589,7 +589,7 @@ class TestReverseOsmosis():
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
         feed_pressure = 85e5
         feed_temperature = 273.15 + 25
-        membrane_area = 50
+        membrane_area = 20
         A = 4.2e-12
         B = 3.5e-8
         pressure_atmospheric = 101325
@@ -656,25 +656,26 @@ class TestReverseOsmosis():
         assert results.solver.status == SolverStatus.ok
 
         # test solution
-        assert (pytest.approx(15.342, rel=1e-3) == value(m.fs.unit.length))
-        assert (pytest.approx(3.259, rel=1e-3) == value(m.fs.unit.width))
-        assert (pytest.approx(-26.429e5, rel=1e-3) == value(m.fs.unit.deltaP[0]))
-
-        assert (pytest.approx(5.462e-3, rel=1e-3) ==
+        assert (pytest.approx(1.104, rel=1e-3) == value(m.fs.unit.length))
+        assert (pytest.approx(18.115, rel=1e-3) == value(m.fs.unit.width))
+        assert (pytest.approx(-1.619e3, rel=1e-3) == value(m.fs.unit.deltaP[0]))
+        assert (pytest.approx(104.623, rel=1e-3) == value(m.fs.unit.N_Re_io[0, 'in']))
+        assert (pytest.approx(80.9908, rel=1e-3) == value(m.fs.unit.N_Re_io[0, 'out']))
+        assert (pytest.approx(1.0557e-2, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
-        assert (pytest.approx(2.453e-6, rel=1e-3) ==
+        assert (pytest.approx(2.4980e-6, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl']))
-        assert (pytest.approx(0.27311, rel=1e-3) ==
+        assert (pytest.approx(0.2111, rel=1e-3) ==
                 value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
-        assert (pytest.approx(1.2265e-4, rel=1e-3) ==
+        assert (pytest.approx(4.996e-5, rel=1e-3) ==
                 value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
         assert (pytest.approx(35.751, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_in[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        assert (pytest.approx(77.838, rel=1e-3) ==
+        assert (pytest.approx(67.3383, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_interface_in[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        assert (pytest.approx(49.490, rel=1e-3) ==
+        assert (pytest.approx(45.5702, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
-        assert (pytest.approx(63.2312, rel=1e-3) ==  # TODO: expected this value to be higher than interface concentration at inlet, but bypassing for now- has to do with pressure drop
+        assert (pytest.approx(75.8771, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_interface_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
 
     @pytest.mark.component

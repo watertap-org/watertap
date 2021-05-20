@@ -627,7 +627,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 elif x == 'out':
                     prop_io = b.feed_side.properties_out[t]
                 return (b.N_Re_io[t, x] ==
-                        sum(prop_io.flow_mass_phase_comp['Liq', j] for j in b.solute_list)
+                        sum(prop_io.flow_mass_phase_comp['Liq', j] for j in b.config.property_package.component_list)
                         / b.area_cross
                         * b.dh
                         / prop_io.visc_d_phase['Liq'])
