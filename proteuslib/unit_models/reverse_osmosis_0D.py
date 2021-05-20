@@ -339,12 +339,6 @@ class ReverseOsmosisData(UnitModelBlockData):
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='spacer filament diameter')
-            self.dumdum = Var(
-                initialize=1e-3,
-                bounds=(1e-8, 1),
-                domain=NonNegativeReals,
-                units=units_meta('length'),
-                doc='spacer filament diameter')
             self.spacer_porosity = Var(
                 initialize=0.75,
                 bounds=(0, 1),

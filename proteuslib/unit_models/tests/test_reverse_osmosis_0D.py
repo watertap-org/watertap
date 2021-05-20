@@ -296,17 +296,17 @@ class TestReverseOsmosis():
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
         assert len(unscaled_constraint_list) == 0
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_initialize(self, RO_frame):
         initialization_tester(RO_frame)
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_var_scaling(self, RO_frame):
         m = RO_frame
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_solve(self, RO_frame):
         m = RO_frame
         solver.options = {'nlp_scaling_method': 'user-scaling'}
@@ -317,7 +317,7 @@ class TestReverseOsmosis():
                TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_conservation(self, RO_frame):
         m = RO_frame
         b = m.fs.unit
@@ -339,7 +339,7 @@ class TestReverseOsmosis():
             - flow_mass_permeate * b.properties_permeate[0].enth_mass_phase['Liq']
         )) <= 1e-6)
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_solution(self, RO_frame):
         m = RO_frame
         assert (pytest.approx(4.682e-3, rel=1e-3) ==
@@ -358,7 +358,7 @@ class TestReverseOsmosis():
                 / value(m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
         assert (pytest.approx(-3.000e5, rel=1e-3) == value(m.fs.unit.deltaP[0]))
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_CP_calculation_with_kf_fixed(self):
         """ Testing 0D-RO with ConcentrationPolarizationType.calculated option enabled.
         This option makes use of an alternative constraint for the feed-side, membrane-interface concentration.
@@ -464,7 +464,7 @@ class TestReverseOsmosis():
         assert (pytest.approx(50.081, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_interface_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_CP_calculation_with_kf_calculation(self):
         """ Testing 0D-RO with ConcentrationPolarizationType.calculated option and MassTransferCoefficient.calculated
         option enabled.
@@ -566,7 +566,7 @@ class TestReverseOsmosis():
         assert (pytest.approx(52.475, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_interface_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_Pdrop_calculation(self):
         """ Testing 0D-RO with PressureChangeType.calculated option.
         """
@@ -667,7 +667,7 @@ class TestReverseOsmosis():
         assert (pytest.approx(46.958, rel=1e-3) ==  # TODO: expected this value to be higher than interface concentration at inlet, but bypassing for now- has to do with pressure drop
                 value(m.fs.unit.feed_side.properties_interface_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_Pdrop_fixed_per_unit_length(self):
         """ Testing 0D-RO with PressureChangeType.fixed_per_unit_length option.
         """
