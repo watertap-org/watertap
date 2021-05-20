@@ -309,38 +309,38 @@ class ReverseOsmosisData(UnitModelBlockData):
                 self.io_list,
                 self.solute_list,
                 initialize=1e-5,
-                bounds=(1e-10, 1),
+                bounds=(1e-8, 1),
                 domain=NonNegativeReals,
                 units=units_meta('length') * units_meta('time')**-1,
                 doc='Mass transfer coefficient in feed channel at inlet and outlet')
         if ((self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)
                 or self.config.pressure_change_type == PressureChangeType.calculated):
             self.width = Var(
-                initialize=1,
-                bounds=(1e-8, 1e6),
+                initialize=5,
+                bounds=(1, 1e6),
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='Effective feed-channel width')
             self.channel_height = Var(
-                initialize=7.5e-4,
+                initialize=1e-3,
                 bounds=(1e-8, 1),
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='Feed-channel height')
             self.dh = Var(
-                initialize=1,
-                bounds=(1e-8, 1e6),
+                initialize=1e-3,
+                bounds=(1e-7, 1e6),
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='Hydraulic diameter of feed channel')
             self.df = Var(
                 initialize=1e-3,
-                bounds=(1e-8, 1),
+                bounds=(1e-5, 1),
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='spacer filament diameter')
             self.spacer_porosity = Var(
-                initialize=0.75,
+                initialize=0.97,
                 bounds=(0, 1),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
@@ -348,7 +348,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             self.N_Re_io = Var(
                 self.flowsheet().config.time,
                 self.io_list,
-                initialize=3e3,
+                initialize=1e2,
                 bounds=(1e-3, 1e6),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
@@ -374,8 +374,8 @@ class ReverseOsmosisData(UnitModelBlockData):
         if ((self.config.pressure_change_type != PressureChangeType.fixed_per_stage)
                 or (self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)):
             self.length = Var(
-                initialize=1,
-                bounds=(1e-8, 1e6),
+                initialize=10,
+                bounds=(1, 1e6),
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='Effective membrane length')
@@ -863,7 +863,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         if hasattr(self, 'Kf_io'):
             for t, x, j in self.Kf_io.keys():
                 if iscale.get_scaling_factor(self.Kf_io[t, x, j]) is None:
-                    iscale.set_scaling_factor(self.Kf_io[t, x, j], 1e5)
+                    iscale.set_scaling_factor(self.Kf_io[t, x, j], 1e6)
 
         if hasattr(self, 'N_Re_io'):
             for t, x in self.N_Re_io.keys():
@@ -899,6 +899,10 @@ class ReverseOsmosisData(UnitModelBlockData):
         if hasattr(self, 'dh'):
             if iscale.get_scaling_factor(self.dh) is None:
                 iscale.set_scaling_factor(self.dh, 1e3)
+
+        if hasattr(self, 'df'):
+            if iscale.get_scaling_factor(self.df) is None:
+                iscale.set_scaling_factor(self.df, 1e3)
 
         if hasattr(self, 'dP_dx'):
             for v in self.dP_dx.values():
@@ -1027,6 +1031,10 @@ class ReverseOsmosisData(UnitModelBlockData):
         if hasattr(self, 'eq_dh'):
             sf = iscale.get_scaling_factor(self.dh)
             iscale.constraint_scaling_transform(self.eq_dh, sf)
+
+        if hasattr(self, 'eq_df'):
+            sf = iscale.get_scaling_factor(self.df)
+            iscale.constraint_scaling_transform(self.eq_df, sf)
 
         if hasattr(self, 'eq_pressure_change'):
             for ind, c in self.eq_pressure_change.items():
