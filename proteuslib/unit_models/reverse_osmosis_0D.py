@@ -309,7 +309,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 self.io_list,
                 self.solute_list,
                 initialize=1e-5,
-                bounds=(1e-8, 1),
+                bounds=(1e-6, 1),
                 domain=NonNegativeReals,
                 units=units_meta('length') * units_meta('time')**-1,
                 doc='Mass transfer coefficient in feed channel at inlet and outlet')
@@ -317,7 +317,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 or self.config.pressure_change_type == PressureChangeType.calculated):
             self.width = Var(
                 initialize=5,
-                bounds=(1, 1e6),
+                bounds=(1e-3, 1e6),
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='Effective feed-channel width')
@@ -329,7 +329,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 doc='Feed-channel height')
             self.dh = Var(
                 initialize=1e-3,
-                bounds=(1e-7, 1e6),
+                bounds=(1e-5, 1e-2),
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='Hydraulic diameter of feed channel')
@@ -375,7 +375,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 or (self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)):
             self.length = Var(
                 initialize=10,
-                bounds=(1, 1e6),
+                bounds=(1e-3, 1e6),
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='Effective membrane length')
