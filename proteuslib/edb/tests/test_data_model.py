@@ -10,9 +10,16 @@ from typing import Dict
 
 
 def assert_configuration_equal(a: Dict, b: Dict):
+    """Walk through and compare things in two config dicts.
+
+    This is needed because simple comparison will also compare objects that may not have appropriate
+    equality methods defined and therefore fail for the simple reason that they have different object ids.
+    """
     assert len(a) == len(b)
+
     a_components, b_components = a.get("components", {}), b.get("components", {})
     assert len(a_components) == len(b_components)
+
     for name in a_components:
         assert name in b_components
         a_comp, b_comp = a_components[name], b_components[name]
@@ -34,10 +41,13 @@ def test_has_config():
 def test_component_ca_thermo():
     comp = Component(testdata.Ca_thermo_data)
     generated_config = comp.config
+
+    # for debugging
     print("Config generated from data:")
     pprint(generated_config)
     print("Expected config:")
     pprint(testdata.Ca_thermo_config)
+
     assert_configuration_equal(comp.config, testdata.Ca_thermo_config)
 
 
