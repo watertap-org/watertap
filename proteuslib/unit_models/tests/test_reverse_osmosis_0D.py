@@ -604,14 +604,16 @@ class TestReverseOsmosis():
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
-        length = 20
+        # length = 20
         void = 1
-        m.fs.unit.channel_height.fix(0.001)
+        h = 0.001
+        df = h/2
+        m.fs.unit.channel_height.fix(h)
         m.fs.unit.spacer_porosity.fix(void)
         # m.fs.unit.length.fix(length)
-        dh = 4 * void/ (2/0.001 + (1 - void) * 4/0.001)
+        dh = 4 * void/ (2/h + (1 - void) * 4/df)
         m.fs.unit.dh.fix(dh)
-        m.fs.unit.df.fix(0.0005)
+        m.fs.unit.df.fix(df)
 
         # test statistics
         assert number_variables(m) == 116
@@ -654,7 +656,10 @@ class TestReverseOsmosis():
         assert results.solver.status == SolverStatus.ok
 
         # test solution
-        assert (pytest.approx(-9.173e5, rel=1e-3) == value(m.fs.unit.deltaP[0]))
+        assert (pytest.approx(15.342, rel=1e-3) == value(m.fs.unit.length))
+        assert (pytest.approx(3.259, rel=1e-3) == value(m.fs.unit.width))
+
+        assert (pytest.approx(-26.429e5, rel=1e-3) == value(m.fs.unit.deltaP[0]))
         assert (pytest.approx(1.904e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
         assert (pytest.approx(1.727e-6, rel=1e-3) ==
