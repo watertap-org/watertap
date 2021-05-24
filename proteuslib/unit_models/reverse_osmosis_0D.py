@@ -639,11 +639,6 @@ class ReverseOsmosisData(UnitModelBlockData):
                         / (2 / b.channel_height
                            + (1 - b.spacer_porosity) * 4 / b.df))
 
-            # Filament diameter cannot be larger than channel height
-            @self.Constraint(doc="filament diameter constraint")
-            def eq_df(b):
-                return b.df <= b.channel_height
-
         if self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length:
             # Pressure change equation when dP/dx = user-specified constant,
             @self.Constraint(self.flowsheet().config.time,
@@ -1031,10 +1026,6 @@ class ReverseOsmosisData(UnitModelBlockData):
         if hasattr(self, 'eq_dh'):
             sf = iscale.get_scaling_factor(self.dh)
             iscale.constraint_scaling_transform(self.eq_dh, sf)
-
-        if hasattr(self, 'eq_df'):
-            sf = iscale.get_scaling_factor(self.df)
-            iscale.constraint_scaling_transform(self.eq_df, sf)
 
         if hasattr(self, 'eq_pressure_change'):
             for ind, c in self.eq_pressure_change.items():
