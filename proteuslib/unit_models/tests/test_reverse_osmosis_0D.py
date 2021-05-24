@@ -605,15 +605,10 @@ class TestReverseOsmosis():
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
-
-        length = 16
-        void = 0.97
-        h = 0.001
-        df = h/2
-        m.fs.unit.channel_height.fix(h)
-        m.fs.unit.spacer_porosity.fix(void)
-        m.fs.unit.length.fix(length)
-        m.fs.unit.df.fix(df)
+        m.fs.unit.channel_height.fix(0.001)
+        m.fs.unit.spacer_porosity.fix(0.97)
+        m.fs.unit.length.fix(16)
+        m.fs.unit.df.fix(0.0005)
 
         # test statistics
         assert number_variables(m) == 116
@@ -626,14 +621,6 @@ class TestReverseOsmosis():
         # test scaling
         m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
         m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
-
-        # set_scaling_factor(m.fs.unit.flux_mass_io_phase_comp[0.0, 'in', 'Liq', 'NaCl'], 1)
-        # set_scaling_factor(m.fs.unit.feed_side.properties_out[0.0].flow_mass_phase_comp['Liq', 'NaCl'], 1)
-
-        # set_scaling_factor(m.fs.unit.flux_mass_io_phase_comp[0.0, 'in', 'Liq', 'NaCl'], 1)
-        # set_scaling_factor(m.fs.unit.flux_mass_io_phase_comp[0.0, 'out', 'Liq', 'NaCl'], 1)
-        # set_scaling_factor(m.fs.unit.flux_mass_io_phase_comp[0.0, 'out', 'Liq', 'NaCl'], 1)
-        # set_scaling_factor(m.fs.unit.mass_transfer_phase_comp[0.0, 'Liq', 'NaCl'], 1)
 
         calculate_scaling_factors(m)
 
@@ -651,7 +638,6 @@ class TestReverseOsmosis():
 
         # # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(k, v) for k, v in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
         # test solve
