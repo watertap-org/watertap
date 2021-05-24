@@ -315,12 +315,6 @@ class ReverseOsmosisData(UnitModelBlockData):
                 doc='Mass transfer coefficient in feed channel at inlet and outlet')
         if ((self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)
                 or self.config.pressure_change_type == PressureChangeType.calculated):
-            self.width = Var(
-                initialize=5,
-                bounds=(1e-3, 1e6),
-                domain=NonNegativeReals,
-                units=units_meta('length'),
-                doc='Effective feed-channel width')
             self.channel_height = Var(
                 initialize=1e-3,
                 bounds=(1e-8, 1),
@@ -379,6 +373,12 @@ class ReverseOsmosisData(UnitModelBlockData):
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='Effective membrane length')
+            self.width = Var(
+                initialize=1,
+                bounds=(1e-3, 1e6),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Effective feed-channel width')
 
         if self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length:
             self.dP_dx = Var(
@@ -410,7 +410,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 self.flowsheet().config.time,
                 self.io_list,
                 initialize=-1e5,
-                bounds=(None, -1e-10),
+                bounds=(None, -1e2),
                 domain=NegativeReals,
                 units=units_meta('pressure')*units_meta('length')**-1,
                 doc="Pressure drop per unit length in feed channel at inlet and outlet")
@@ -608,6 +608,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                         / prop_io.dens_mass_phase['Liq']
                         / prop_io.diffus_phase['Liq'])
 
+        if hasattr(self, 'length') or hasattr(self, 'width'):
             @self.Constraint(doc="Membrane area")
             def eq_area(b):
                 return b.area == b.length * b.width
