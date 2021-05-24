@@ -832,17 +832,39 @@ class TestSeawaterAlkalinity():
     def test_initialize_inherent(self, inherent_reactions_config):
         model = inherent_reactions_config
 
+        orig_fixed_vars = fixed_variables_set(model)
+        orig_act_consts = activated_constraints_set(model)
+
         solver.options['bound_push'] = 1e-10
         solver.options['mu_init'] = 1e-6
         model.fs.unit.initialize(optarg=solver.options)
+
+        fin_fixed_vars = fixed_variables_set(model)
+        fin_act_consts = activated_constraints_set(model)
+
+        assert degrees_of_freedom(model) == 0
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
 
     @pytest.mark.component
     def test_initialize_equilibrium(self, equilibrium_reactions_config):
         model = equilibrium_reactions_config
 
+        orig_fixed_vars = fixed_variables_set(model)
+        orig_act_consts = activated_constraints_set(model)
+
         solver.options['bound_push'] = 1e-10
         solver.options['mu_init'] = 1e-6
         model.fs.unit.initialize(optarg=solver.options)
+
+        fin_fixed_vars = fixed_variables_set(model)
+        fin_act_consts = activated_constraints_set(model)
+
+        assert degrees_of_freedom(model) == 0
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
 
     @pytest.mark.component
     def test_solve_inherent(self, inherent_reactions_config):
