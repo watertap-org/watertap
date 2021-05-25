@@ -276,7 +276,6 @@ class ReverseOsmosisData(UnitModelBlockData):
             units=units_meta('mass')*units_meta('length')**-3,
             doc='Pure water density')
 
-
         # Add unit variables
         self.flux_mass_io_phase_comp = Var(
             self.flowsheet().config.time,
@@ -293,6 +292,29 @@ class ReverseOsmosisData(UnitModelBlockData):
             domain=NonNegativeReals,
             units=units_meta('length')**2,
             doc='Membrane area')
+        self.recovery_mass_phase_comp = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            initialize=0.1,
+            bounds=(1e-8, 1),
+            units=pyunits.dimensionless,
+            doc='Mass-based component recovery')
+        self.recovery_vol_phase = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            initialize=0.1,
+            bounds=(1e-8, 1),
+            units=pyunits.dimensionless,
+            doc='Volumetric-based recovery')
+        self.rejection_phase_comp = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.solute_list,
+            initialize=0.1,
+            bounds=(1e-8, 1),
+            units=pyunits.dimensionless,
+            doc='Bulk concentration based component rejection')
 
         if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
             self.cp_modulus = Var(
@@ -726,6 +748,27 @@ class ReverseOsmosisData(UnitModelBlockData):
             return prop_interface_io.flow_vol_phase['Liq'] ==\
                    prop_io.flow_vol_phase['Liq']
 
+        # constraints for additional variables (i.e. variables not used in other constraints)
+        @self.Constraint(self.flowsheet().config.time)
+        def eq_recovery_vol_phase(b, t):
+            return (b.recovery_vol_phase[t, 'Liq'] ==
+                    b.properties_permeate[t].flow_vol_phase['Liq'] /
+                    b.feed_side.properties_in[t].flow_vol_phase['Liq'])
+
+        @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.component_list)
+        def eq_recovery_mass_phase_comp(b, t, j):
+            return (b.recovery_mass_phase_comp[t, 'Liq', j] ==
+                    b.properties_permeate[t].flow_mass_phase_comp['Liq', j] /
+                    b.feed_side.properties_in[t].flow_mass_phase_comp['Liq', j])
+
+        @self.Constraint(self.flowsheet().config.time,
+                         self.solute_list)
+        def eq_rejection_phase_comp(b, t, j):
+            return (b.rejection_phase_comp[t, 'Liq', j] ==
+                    1 - (b.properties_permeate[t].conc_mass_phase_comp['Liq', j] /
+                         b.feed_side.properties_in[t].conc_mass_phase_comp['Liq', j]))
+
     def initialize(
             blk,
             state_args=None,
@@ -843,6 +886,17 @@ class ReverseOsmosisData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.dens_solvent) is None:
             sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].dens_mass_phase['Liq'])
             iscale.set_scaling_factor(self.dens_solvent, sf)
+
+        if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
+            iscale.set_scaling_factor(self.recovery_vol_phase, 1)
+
+        for v in self.recovery_mass_phase_comp.values():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, 1)
+
+        for v in self.rejection_phase_comp.values():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, 1)
 
         if hasattr(self, 'cp_modulus'):
             if iscale.get_scaling_factor(self.cp_modulus) is None:
@@ -1061,4 +1115,14 @@ class ReverseOsmosisData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(prop_interface_io.flow_vol_phase['Liq'])
             iscale.constraint_scaling_transform(c, sf)
 
+        for t, c in self.eq_recovery_vol_phase.items():
+            sf = iscale.get_scaling_factor(self.recovery_vol_phase[t, 'Liq'])
+            iscale.constraint_scaling_transform(c, sf)
 
+        for (t, j), c in self.eq_recovery_mass_phase_comp.items():
+            sf = iscale.get_scaling_factor(self.recovery_mass_phase_comp[t, 'Liq', j])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for (t, j), c in self.eq_rejection_phase_comp.items():
+            sf = iscale.get_scaling_factor(self.rejection_phase_comp[t, 'Liq', j])
+            iscale.constraint_scaling_transform(c, sf)

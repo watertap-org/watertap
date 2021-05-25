@@ -231,6 +231,9 @@ class TestReverseOsmosis():
                                'B_comp': Var,
                                'flux_mass_io_phase_comp': Var,
                                'area': Var,
+                               'recovery_vol_phase': Var,
+                               'recovery_mass_phase_comp': Var,
+                               'rejection_phase_comp': Var,
                                'deltaP': Var,
                                'cp_modulus': Var,
                                'mass_transfer_phase_comp': Var,
@@ -240,7 +243,10 @@ class TestReverseOsmosis():
                                'eq_flux_io': Constraint,
                                'eq_connect_mass_transfer': Constraint,
                                'eq_connect_enthalpy_transfer': Constraint,
-                               'eq_permeate_isothermal': Constraint}
+                               'eq_permeate_isothermal': Constraint,
+                               'eq_recovery_vol_phase': Constraint,
+                               'eq_recovery_mass_phase_comp': Constraint,
+                               'eq_rejection_phase_comp': Constraint}
         for (obj_str, obj_type) in unit_objs_type_dict.items():
             obj = getattr(m.fs.unit, obj_str)
             assert isinstance(obj, obj_type)
@@ -272,8 +278,8 @@ class TestReverseOsmosis():
         assert isinstance(m.fs.unit.properties_permeate, props.NaClStateBlock)
 
         # test statistics
-        assert number_variables(m) == 93
-        assert number_total_constraints(m) == 65
+        assert number_variables(m) == 98
+        assert number_total_constraints(m) == 70
         assert number_unused_variables(m) == 7  # vars from property package parameters
 
     @pytest.mark.unit
@@ -404,8 +410,8 @@ class TestReverseOsmosis():
         m.fs.unit.Kf_io[0, 'out', 'NaCl'].fix(kf)
 
         # test statistics
-        assert number_variables(m) == 94
-        assert number_total_constraints(m) == 65
+        assert number_variables(m) == 99
+        assert number_total_constraints(m) == 70
         assert number_unused_variables(m) == 7  # vars from property package parameters
 
         # test degrees of freedom
@@ -510,8 +516,8 @@ class TestReverseOsmosis():
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 109
-        assert number_total_constraints(m) == 79
+        assert number_variables(m) == 114
+        assert number_total_constraints(m) == 84
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
         # test degrees of freedom
@@ -610,8 +616,8 @@ class TestReverseOsmosis():
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 115
-        assert number_total_constraints(m) == 86
+        assert number_variables(m) == 120
+        assert number_total_constraints(m) == 91
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
         # test degrees of freedom
@@ -713,8 +719,8 @@ class TestReverseOsmosis():
         m.fs.unit.dP_dx.fix(-membrane_pressure_drop / length)
 
         # test statistics
-        assert number_variables(m) == 110
-        assert number_total_constraints(m) == 80
+        assert number_variables(m) == 115
+        assert number_total_constraints(m) == 85
         assert number_unused_variables(m) == 0
 
         # test degrees of freedom
