@@ -509,10 +509,9 @@ class TestReverseOsmosis():
         m.fs.unit.channel_height.fix(0.002)
         m.fs.unit.spacer_porosity.fix(0.75)
         m.fs.unit.length.fix(length)
-        m.fs.unit.df.fix(0.001)
 
         # test statistics
-        assert number_variables(m) == 110
+        assert number_variables(m) == 109
         assert number_total_constraints(m) == 79
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
@@ -608,10 +607,9 @@ class TestReverseOsmosis():
         m.fs.unit.channel_height.fix(0.001)
         m.fs.unit.spacer_porosity.fix(0.97)
         m.fs.unit.length.fix(16)
-        m.fs.unit.df.fix(0.0005)
 
         # test statistics
-        assert number_variables(m) == 116
+        assert number_variables(m) == 115
         assert number_total_constraints(m) == 86
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
@@ -636,7 +634,7 @@ class TestReverseOsmosis():
         # test initialization
         initialization_tester(m)
 
-        # # test variable scaling
+        # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
 
@@ -717,10 +715,9 @@ class TestReverseOsmosis():
         m.fs.unit.spacer_porosity.fix(0.75)
         m.fs.unit.length.fix(length)
         m.fs.unit.dP_dx.fix(-membrane_pressure_drop / length)
-        m.fs.unit.df.fix(0.001)
 
         # test statistics
-        assert number_variables(m) == 111
+        assert number_variables(m) == 110
         assert number_total_constraints(m) == 80
         assert number_unused_variables(m) == 0
 

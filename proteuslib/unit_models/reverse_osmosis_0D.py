@@ -287,7 +287,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Mass flux across membrane at inlet and outlet')
         self.area = Var(
-            initialize=1,
+            initialize=10,
             bounds=(1e-8, 1e6),
             domain=NonNegativeReals,
             units=units_meta('length')**2,
@@ -327,12 +327,6 @@ class ReverseOsmosisData(UnitModelBlockData):
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='Hydraulic diameter of feed channel')
-            self.df = Var(
-                initialize=1e-3,
-                bounds=(1e-5, 1),
-                domain=NonNegativeReals,
-                units=units_meta('length'),
-                doc='spacer filament diameter')
             self.spacer_porosity = Var(
                 initialize=0.97,
                 bounds=(0, 1),
@@ -409,8 +403,8 @@ class ReverseOsmosisData(UnitModelBlockData):
             self.dP_dx_io = Var(
                 self.flowsheet().config.time,
                 self.io_list,
-                initialize=-1e5,
-                bounds=(None, -1e2),
+                initialize=-1e4,
+                bounds=(-1e6, -1e1),
                 domain=NegativeReals,
                 units=units_meta('pressure')*units_meta('length')**-1,
                 doc="Pressure drop per unit length in feed channel at inlet and outlet")
@@ -638,7 +632,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 return (b.dh ==
                         4 * b.spacer_porosity
                         / (2 / b.channel_height
-                           + (1 - b.spacer_porosity) * 4 / b.df))
+                           + (1 - b.spacer_porosity) * 8 / b.channel_height))
 
         if self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length:
             # Pressure change equation when dP/dx = user-specified constant,
@@ -895,10 +889,6 @@ class ReverseOsmosisData(UnitModelBlockData):
         if hasattr(self, 'dh'):
             if iscale.get_scaling_factor(self.dh) is None:
                 iscale.set_scaling_factor(self.dh, 1e3)
-
-        if hasattr(self, 'df'):
-            if iscale.get_scaling_factor(self.df) is None:
-                iscale.set_scaling_factor(self.df, 1e3)
 
         if hasattr(self, 'dP_dx'):
             for v in self.dP_dx.values():
