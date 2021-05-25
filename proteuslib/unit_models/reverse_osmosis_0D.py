@@ -188,6 +188,12 @@ class ReverseOsmosisData(UnitModelBlockData):
     def _process_config(self):
         """Check for configuration errors
         """
+        if (len(self.config.property_package.phase_list) > 1
+                or 'Liq' not in [p for p in self.config.property_package.phase_list]):
+            raise ConfigurationError(
+                "RO model only supports one liquid phase ['Liq'],"
+                "the property package has specified the following phases {}"
+                .format([p for p in self.config.property_package.phase_list]))
         if (self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated
                 and self.config.mass_transfer_coefficient == MassTransferCoefficient.none):
             raise ConfigurationError(
@@ -224,13 +230,6 @@ class ReverseOsmosisData(UnitModelBlockData):
         self._process_config()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
-
-        if (len(self.config.property_package.phase_list) > 1
-                or 'Liq' not in [p for p in self.config.property_package.phase_list]):
-            raise ConfigurationError(
-                "RO model only supports one liquid phase ['Liq'],"
-                "the property package has specified the following phases {}"
-                    .format([p for p in self.config.property_package.phase_list]))
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
@@ -288,7 +287,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Mass flux across membrane at inlet and outlet')
         self.area = Var(
-            initialize=1,
+            initialize=10,
             bounds=(1e-8, 1e6),
             domain=NonNegativeReals,
             units=units_meta('length')**2,
@@ -310,40 +309,34 @@ class ReverseOsmosisData(UnitModelBlockData):
                 self.io_list,
                 self.solute_list,
                 initialize=1e-5,
-                bounds=(1e-10, 1),
+                bounds=(1e-6, 1),
                 domain=NonNegativeReals,
                 units=units_meta('length') * units_meta('time')**-1,
                 doc='Mass transfer coefficient in feed channel at inlet and outlet')
         if ((self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)
                 or self.config.pressure_change_type == PressureChangeType.calculated):
-            self.width = Var(
-                initialize=1,
-                bounds=(1e-8, 1e6),
-                domain=NonNegativeReals,
-                units=units_meta('length'),
-                doc='Effective membrane width')
             self.channel_height = Var(
-                initialize=7.5e-4,
+                initialize=1e-3,
                 bounds=(1e-8, 1),
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='Feed-channel height')
+            self.dh = Var(
+                initialize=1e-3,
+                bounds=(1e-5, 1e-2),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Hydraulic diameter of feed channel')
             self.spacer_porosity = Var(
-                initialize=0.75,
+                initialize=0.97,
                 bounds=(0, 1),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc='Feed-channel spacer porosity')
-            self.dh = Var(
-                initialize=1,
-                bounds=(1e-8, 1e6),
-                domain=NonNegativeReals,
-                units=units_meta('length'),
-                doc='Hydraulic diameter of feed channel')
             self.N_Re_io = Var(
                 self.flowsheet().config.time,
                 self.io_list,
-                initialize=3e3,
+                initialize=1e2,
                 bounds=(1e-3, 1e6),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
@@ -369,11 +362,17 @@ class ReverseOsmosisData(UnitModelBlockData):
         if ((self.config.pressure_change_type != PressureChangeType.fixed_per_stage)
                 or (self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)):
             self.length = Var(
-                initialize=1,
-                bounds=(1e-8, 1e6),
+                initialize=10,
+                bounds=(1e-3, 1e6),
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='Effective membrane length')
+            self.width = Var(
+                initialize=1,
+                bounds=(1e-3, 1e6),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Effective feed-channel width')
 
         if self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length:
             self.dP_dx = Var(
@@ -404,8 +403,8 @@ class ReverseOsmosisData(UnitModelBlockData):
             self.dP_dx_io = Var(
                 self.flowsheet().config.time,
                 self.io_list,
-                initialize=-1e5,
-                bounds=(None, -1e-10),
+                initialize=-1e4,
+                bounds=(-1e6, -1e1),
                 domain=NegativeReals,
                 units=units_meta('pressure')*units_meta('length')**-1,
                 doc="Pressure drop per unit length in feed channel at inlet and outlet")
@@ -603,6 +602,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                         / prop_io.dens_mass_phase['Liq']
                         / prop_io.diffus_phase['Liq'])
 
+        if hasattr(self, 'length') or hasattr(self, 'width'):
             @self.Constraint(doc="Membrane area")
             def eq_area(b):
                 return b.area == b.length * b.width
@@ -622,16 +622,17 @@ class ReverseOsmosisData(UnitModelBlockData):
                 elif x == 'out':
                     prop_io = b.feed_side.properties_out[t]
                 return (b.N_Re_io[t, x] ==
-                        sum(prop_io.flow_mass_phase_comp['Liq', j] for j in b.solute_list)
+                        sum(prop_io.flow_mass_phase_comp['Liq', j] for j in b.config.property_package.component_list)
                         / b.area_cross
                         * b.dh
                         / prop_io.visc_d_phase['Liq'])
 
-            @self.Constraint(doc="Hydraulic diameter")  # TODO: add detail related to spacer geometry
+            @self.Constraint(doc="Hydraulic diameter")  # eqn. 17 in Schock & Miquel, 1987
             def eq_dh(b):
                 return (b.dh ==
-                        2 * (b.channel_height * b.width)
-                        / (b.channel_height + b.width))
+                        4 * b.spacer_porosity
+                        / (2 / b.channel_height
+                           + (1 - b.spacer_porosity) * 8 / b.channel_height))
 
         if self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length:
             # Pressure change equation when dP/dx = user-specified constant,
