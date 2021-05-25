@@ -135,7 +135,7 @@ class TestParallelManager():
             assert global_results[-1, 1] == pytest.approx(num_procs*local_results[-1, 1])
 
     @pytest.mark.component
-    def test_parameter_sweep(self, model):
+    def test_parameter_sweep(self, model, tmp_path):
         comm, rank, num_procs = _init_mpi()
 
         m = model
@@ -147,30 +147,31 @@ class TestParallelManager():
         outputs = {'output_c':m.fs.output['c'],
                    'output_d':m.fs.output['d'],
                    'performance':m.fs.performance}
+        results_file = os.path.join(tmp_path, 'global_results.csv')
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs,
-                results_file = 'pytest_output/global_results.csv',
+                results_file = results_file,
                 optimize_fct=_optimization,
-                debugging_data_dir = 'pytest_output_debug',
+                debugging_data_dir = tmp_path,
                 mpi_comm = comm)
 
         # Check that the global results file is created
-        assert os.path.isfile('pytest_output/global_results.csv')
+        assert os.path.isfile(results_file)
 
         if rank == 0:
             # Check that all local output files have been created
             for k in range(num_procs):
-                assert os.path.isfile('pytest_output_debug/local_results_%03d.csv' % (k))
+                assert os.path.isfile(os.path.join(tmp_path,f'local_results_{k}.csv'))
 
             # Attempt to read in the data
-            data = np.genfromtxt('pytest_output/global_results.csv', skip_header=1, delimiter=',')
+            data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
 
             # Compare the last row of the imported data to truth
             truth_data = [ 0.9, 0.5, np.nan, np.nan, np.nan]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
     @pytest.mark.component
-    def test_parameter_sweep_optimize(self, model):
+    def test_parameter_sweep_optimize(self, model, tmp_path):
         comm, rank, num_procs = _init_mpi()
 
         m = model
@@ -183,26 +184,27 @@ class TestParallelManager():
                    'output_d':m.fs.output['d'],
                    'performance':m.fs.performance,
                    'objective':m.objective}
+        results_file = os.path.join(tmp_path, 'global_results_optimize.csv')
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs,
-                results_file = 'pytest_output/global_results_optimize.csv',
+                results_file = results_file,
                 optimize_fct=_optimization,
                 optimize_kwargs={'relax_feasibility':True},
                 mpi_comm = comm)
 
         # Check that the global results file is created
-        assert os.path.isfile('pytest_output/global_results_optimize.csv')
+        assert os.path.isfile(results_file)
 
         if rank == 0:
             # Attempt to read in the data
-            data = np.genfromtxt('pytest_output/global_results_optimize.csv', skip_header=1, delimiter=',')
+            data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
 
             # Compare the last row of the imported data to truth
             truth_data = [ 0.9, 0.5, 1.0, 1.0, 2.0, 2.0 - 1000.*((2.*0.9 - 1.) + (3.*0.5 - 1.))]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
     @pytest.mark.component
-    def test_parameter_sweep_recover(self, model):
+    def test_parameter_sweep_recover(self, model, tmp_path):
         comm, rank, num_procs = _init_mpi()
 
         m = model
@@ -215,27 +217,28 @@ class TestParallelManager():
                    'output_d':m.fs.output['d'],
                    'performance':m.fs.performance,
                    'objective':m.objective}
+        results_file = os.path.join(tmp_path, 'global_results_recover.csv')
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs,
-                results_file = 'pytest_output/global_results_recover.csv',
+                results_file = results_file,
                 optimize_fct=_optimization,
                 reinitialize_fct=_reinitialize,
                 reinitialize_kwargs={'slack_penalty':10.},
                 mpi_comm = comm)
 
         # Check that the global results file is created
-        assert os.path.isfile('pytest_output/global_results_recover.csv')
+        assert os.path.isfile(results_file)
 
         if rank == 0:
             # Attempt to read in the data
-            data = np.genfromtxt('pytest_output/global_results_recover.csv', skip_header=1, delimiter=',')
+            data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
 
             # Compare the last row of the imported data to truth
             truth_data = [ 0.9, 0.5, 1.0, 1.0, 2.0, 2.0 - 10.*((2.*0.9 - 1.) + (3.*0.5 - 1.))]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
     @pytest.mark.component
-    def test_parameter_sweep_bad_recover(self, model):
+    def test_parameter_sweep_bad_recover(self, model, tmp_path):
         comm, rank, num_procs = _init_mpi()
 
         m = model
@@ -248,20 +251,21 @@ class TestParallelManager():
                    'output_d':m.fs.output['d'],
                    'performance':m.fs.performance,
                    'objective':m.objective}
+        results_file = os.path.join(tmp_path, 'global_results_bad_recover.csv')
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs,
-                results_file = 'pytest_output/global_results_bad_recover.csv',
+                results_file = results_file,
                 optimize_fct=_optimization,
                 reinitialize_fct=_bad_reinitialize,
                 reinitialize_kwargs={'slack_penalty':10.},
                 mpi_comm = comm)
 
         # Check that the global results file is created
-        assert os.path.isfile('pytest_output/global_results_bad_recover.csv')
+        assert os.path.isfile(results_file)
 
         if rank == 0:
             # Attempt to read in the data
-            data = np.genfromtxt('pytest_output/global_results_bad_recover.csv', skip_header=1, delimiter=',')
+            data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
 
             # Compare the last row of the imported data to truth
             truth_data = [ 0.9, 0.5, np.nan, np.nan, np.nan, np.nan]
