@@ -25,7 +25,7 @@ author = 'NAWI'
 # The full version, including alpha/beta/rc tags
 release = '0.0.1'
 # The short X.Y version
-version = '0.0'
+version = '0.0.1'
 
 # -- General configuration ---------------------------------------------------
 
@@ -56,3 +56,17 @@ html_theme = 'sphinx_rtd_theme'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+html_css_files = [
+    'custom.css'
+]
+
+# The name of an image file (relative to this directory) to place at the top
+# of the sidebar.
+#
+html_logo = "_static/NAWI_logo.png"
+
+# The name of an image file (relative to this directory) to use as a favicon of
+# the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
+# pixels large.
+#
+html_favicon = "_static/favicon.ico"
