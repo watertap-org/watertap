@@ -20,7 +20,8 @@ from pyomo.environ import (ConcreteModel,
                            Expression,
                            Constraint,
                            value,
-                           units as pyunits)
+                           units as pyunits,
+                           SolverStatus)
 from pyomo.util.check_units import assert_units_consistent, check_units_equivalent
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import (degrees_of_freedom,
@@ -377,3 +378,21 @@ class PropertyComponentTestHarness(object):
 
         badly_scaled_var_list = list(badly_scaled_var_generator(m))
         assert len(badly_scaled_var_list) == 0
+
+
+def property_regression_test(blk, results_dict, solver=solver, optarg=solver.options):
+
+    results = solver.solve(blk)
+
+    # check solver found a solution
+    assert results.solver.status == SolverStatus.ok
+
+    # check results
+    for (v_str, ind), val in results_dict.items():
+        var = getattr(blk, v_str)
+        if not pytest.approx(val, rel=1e-3) == value(var[ind]):
+            raise Exception(
+                "Variable {v_str} with index {ind} is expected to have a value of {val}, but it "
+                "has a value of {val_t}. \nPlease update results_dict that is provided to "
+                "the property_regression_test function".format(
+                    v_str=v_str, ind=ind, val=val, val_t=value(var[ind])))
