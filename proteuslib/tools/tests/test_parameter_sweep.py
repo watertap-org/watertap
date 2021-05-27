@@ -137,6 +137,7 @@ class TestParallelManager():
     @pytest.mark.component
     def test_parameter_sweep(self, model, tmp_path):
         comm, rank, num_procs = _init_mpi()
+        tmp_path = _get_rank0_path(comm, tmp_path)
 
         m = model
         m.fs.slack_penalty = 1000.
@@ -155,10 +156,14 @@ class TestParallelManager():
                 debugging_data_dir = tmp_path,
                 mpi_comm = comm)
 
-        # Check that the global results file is created
-        assert os.path.isfile(results_file)
-
+        # NOTE: rank 0 "owns" tmp_path, so it needs to be
+        #       responsible for doing any output file checking
+        #       tmp_path can be deleted as soon as this method
+        #       returns
         if rank == 0:
+            # Check that the global results file is created
+            assert os.path.isfile(results_file)
+
             # Check that all local output files have been created
             for k in range(num_procs):
                 assert os.path.isfile(os.path.join(tmp_path,f'local_results_{k:03}.csv'))
@@ -170,9 +175,11 @@ class TestParallelManager():
             truth_data = [ 0.9, 0.5, np.nan, np.nan, np.nan]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
+
     @pytest.mark.component
     def test_parameter_sweep_optimize(self, model, tmp_path):
         comm, rank, num_procs = _init_mpi()
+        tmp_path = _get_rank0_path(comm, tmp_path)
 
         m = model
         m.fs.slack_penalty = 1000.
@@ -192,10 +199,14 @@ class TestParallelManager():
                 optimize_kwargs={'relax_feasibility':True},
                 mpi_comm = comm)
 
-        # Check that the global results file is created
-        assert os.path.isfile(results_file)
-
+        # NOTE: rank 0 "owns" tmp_path, so it needs to be
+        #       responsible for doing any output file checking
+        #       tmp_path can be deleted as soon as this method
+        #       returns
         if rank == 0:
+            # Check that the global results file is created
+            assert os.path.isfile(results_file)
+
             # Attempt to read in the data
             data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
 
@@ -206,6 +217,7 @@ class TestParallelManager():
     @pytest.mark.component
     def test_parameter_sweep_recover(self, model, tmp_path):
         comm, rank, num_procs = _init_mpi()
+        tmp_path = _get_rank0_path(comm, tmp_path)
 
         m = model
         m.fs.slack_penalty = 1000.
@@ -226,10 +238,14 @@ class TestParallelManager():
                 reinitialize_kwargs={'slack_penalty':10.},
                 mpi_comm = comm)
 
-        # Check that the global results file is created
-        assert os.path.isfile(results_file)
-
+        # NOTE: rank 0 "owns" tmp_path, so it needs to be
+        #       responsible for doing any output file checking
+        #       tmp_path can be deleted as soon as this method
+        #       returns
         if rank == 0:
+            # Check that the global results file is created
+            assert os.path.isfile(results_file)
+
             # Attempt to read in the data
             data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
 
@@ -237,9 +253,11 @@ class TestParallelManager():
             truth_data = [ 0.9, 0.5, 1.0, 1.0, 2.0, 2.0 - 10.*((2.*0.9 - 1.) + (3.*0.5 - 1.))]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
+
     @pytest.mark.component
     def test_parameter_sweep_bad_recover(self, model, tmp_path):
         comm, rank, num_procs = _init_mpi()
+        tmp_path = _get_rank0_path(comm, tmp_path)
 
         m = model
         m.fs.slack_penalty = 1000.
@@ -260,10 +278,14 @@ class TestParallelManager():
                 reinitialize_kwargs={'slack_penalty':10.},
                 mpi_comm = comm)
 
-        # Check that the global results file is created
-        assert os.path.isfile(results_file)
-
+        # NOTE: rank 0 "owns" tmp_path, so it needs to be
+        #       responsible for doing any output file checking
+        #       tmp_path can be deleted as soon as this method
+        #       returns
         if rank == 0:
+            # Check that the global results file is created
+            assert os.path.isfile(results_file)
+
             # Attempt to read in the data
             data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
 
@@ -289,3 +311,8 @@ def _reinitialize(m, slack_penalty=10.):
 
 def _bad_reinitialize(m, **kwargs):
     pass
+
+def _get_rank0_path(comm, tmp_path):
+    if comm is None:
+        return tmp_path
+    return comm.bcast(tmp_path, root=0)
