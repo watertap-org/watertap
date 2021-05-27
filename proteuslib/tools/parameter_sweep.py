@@ -224,7 +224,7 @@ def parameter_sweep(m, sweep_params, outputs, results_file, optimize_fct,
 
     if debugging_data_dir is not None:
         # Create the local filename and data
-        fname = os.path.join(debugging_data_dir, f'local_results_{rank}.csv')
+        fname = os.path.join(debugging_data_dir, f'local_results_{rank:03}.csv')
         save_data = np.hstack((local_values, local_results))
 
         # Save the local data

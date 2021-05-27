@@ -161,7 +161,7 @@ class TestParallelManager():
         if rank == 0:
             # Check that all local output files have been created
             for k in range(num_procs):
-                assert os.path.isfile(os.path.join(tmp_path,f'local_results_{k}.csv'))
+                assert os.path.isfile(os.path.join(tmp_path,f'local_results_{k:03}.csv'))
 
             # Attempt to read in the data
             data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
