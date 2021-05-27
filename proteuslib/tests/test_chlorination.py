@@ -719,6 +719,38 @@ class TestChlorination():
         assert (number_total_constraints(model) == 87)
         assert (number_unused_variables(model) == 82)
 
+    @pytest.mark.unit
+    def test_custom_log_power_law_eps_options(self, chlorination_obj):
+        model = chlorination_obj
+
+        assert hasattr(model.fs.thermo_params, 'reaction_H2O_Kw')
+        assert hasattr(model.fs.thermo_params.reaction_H2O_Kw, 'eps')
+
+        assert hasattr(model.fs.rxn_params, 'reaction_NH2Cl_K')
+        assert hasattr(model.fs.rxn_params.reaction_NH2Cl_K, 'eps')
+
+        eps = 1e-30
+
+        # Inherent reactions have eps in the 'thermo_params'
+        model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
+        model.fs.thermo_params.reaction_NH4_Ka.eps.value = eps
+        model.fs.thermo_params.reaction_HOCl_Ka.eps.value = eps
+
+        # Equilibiurm reactions have eps in the 'rxn_params'
+        model.fs.rxn_params.reaction_NH2Cl_K.eps.value = eps
+        model.fs.rxn_params.reaction_NHCl2_K.eps.value = eps
+        model.fs.rxn_params.reaction_NCl3_K.eps.value = eps
+
+        assert model.fs.thermo_params.reaction_H2O_Kw.eps.value == eps
+        assert model.fs.thermo_params.reaction_NH4_Ka.eps.value == eps
+        assert model.fs.thermo_params.reaction_HOCl_Ka.eps.value == eps
+
+        assert model.fs.rxn_params.reaction_NH2Cl_K.eps.value == eps
+        assert model.fs.rxn_params.reaction_NHCl2_K.eps.value == eps
+        assert model.fs.rxn_params.reaction_NCl3_K.eps.value == eps
+
+
+
     @pytest.mark.component
     def test_scaling(self, chlorination_obj):
         model = chlorination_obj
@@ -758,111 +790,34 @@ class TestChlorination():
     @pytest.mark.component
     def test_solve(self, chlorination_obj):
         model = chlorination_obj
-        solver.options['max_iter'] = 10000
+        solver.options['max_iter'] = 2
         results = solver.solve(model)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
+    @pytest.mark.component
+    def test_solution(self, chlorination_obj):
+        model = chlorination_obj
 
-if __name__ == "__main__":
-    model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
-    model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params, **reaction_config})
-    model.fs.unit = EquilibriumReactor(default={
-            "property_package": model.fs.thermo_params,
-            "reaction_package": model.fs.rxn_params,
-            "has_rate_reactions": False,
-            "has_equilibrium_reactions": True,
-            "has_heat_transfer": False,
-            "has_heat_of_reaction": False,
-            "has_pressure_change": False})
+        assert pytest.approx(300.0016, rel=1e-3) == value(model.fs.unit.outlet.temperature[0])
+        assert pytest.approx(10, rel=1e-3) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(101325, rel=1e-3) == value(model.fs.unit.outlet.pressure[0])
 
-    model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( 0. )
-    model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( 0. )
-    model.fs.unit.inlet.mole_frac_comp[0, "OCl_-"].fix( 0. )
-    model.fs.unit.inlet.mole_frac_comp[0, "NH4_+"].fix( 0. )
+        total_molar_density = \
+            value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
+        assert pytest.approx(55.20446, rel=1e-3) == total_molar_density
 
-    model.fs.unit.inlet.mole_frac_comp[0, "NH2Cl"].fix( 0. )
-    model.fs.unit.inlet.mole_frac_comp[0, "NHCl2"].fix( 0. )
-    model.fs.unit.inlet.mole_frac_comp[0, "NCl3"].fix( 0. )
+        pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
+        pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
+        assert pytest.approx(6.0413, rel=1e-3) == pH
+        assert pytest.approx(7.8945, rel=1e-3) == pOH
 
-    waste_stream_ammonia = 1 #mg/L
-    total_molar_density = 54.8 #mol/L
-    total_ammonia_inlet = waste_stream_ammonia/17000 # mol/L
-    total_molar_density+=total_ammonia_inlet
+        hypo_remaining = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"])/1000
+        hypo_remaining += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"])/1000
+        combined_chlorine = 0
+        combined_chlorine += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","NH2Cl"])/1000
+        combined_chlorine += 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","NHCl2"])/1000
+        combined_chlorine += 3*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","NCl3"])/1000
 
-    # Free Chlorine (mg-Cl2/L) = total_chlorine_inlet (mol/L) * 70,900
-    free_chlorine_added = 15 #mg/L as Cl2
-    total_chlorine_inlet = free_chlorine_added/70900 # mol/L
-    total_molar_density+=total_chlorine_inlet
-
-    model.fs.unit.inlet.mole_frac_comp[0, "NH3"].fix( total_ammonia_inlet/total_molar_density )
-    model.fs.unit.inlet.mole_frac_comp[0, "HOCl"].fix( total_chlorine_inlet/total_molar_density )
-
-    # Perform a summation of all non-H2O molefractions to find the H2O molefraction
-    sum = 0
-    for i in model.fs.unit.inlet.mole_frac_comp:
-        # NOTE: i will be a tuple with format (time, component)
-        if i[1] != "H2O":
-            sum += value(model.fs.unit.inlet.mole_frac_comp[i[0], i[1]])
-
-    model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1-sum )
-
-    model.fs.unit.inlet.pressure.fix(101325.0)
-    model.fs.unit.inlet.temperature.fix(300.)
-    model.fs.unit.inlet.flow_mol.fix(10)
-
-    eps = 1e-30
-
-    model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
-    model.fs.thermo_params.reaction_NH4_Ka.eps.value = eps
-    model.fs.thermo_params.reaction_HOCl_Ka.eps.value = eps
-
-    model.fs.rxn_params.reaction_NH2Cl_K.eps.value = eps
-    model.fs.rxn_params.reaction_NHCl2_K.eps.value = eps
-    model.fs.rxn_params.reaction_NCl3_K.eps.value = eps
-
-
-    iscale.calculate_scaling_factors(model.fs.unit)
-
-    solver.options['bound_push'] = 1e-10
-    solver.options['mu_init'] = 1e-6
-    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-
-    solver.options['max_iter'] = 2
-    results = solver.solve(model,tee=True)
-
-    total_molar_density = value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
-
-    print()
-    try:
-        pHo = -log10(value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","H_+"])/1000)
-    except:
-        pHo = "FAIL"
-    try:
-        pOHo = -log10(value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OH_-"])/1000)
-    except:
-        pOHo = "FAIL"
-
-    hypo_remaining = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"])/1000
-    hypo_remaining += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"])/1000
-    combined_chlorine = 0
-    combined_chlorine += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","NH2Cl"])/1000
-    combined_chlorine += 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","NHCl2"])/1000
-    combined_chlorine += 3*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","NCl3"])/1000
-    print("Outlet pH =\t"+ str(pHo) )
-    print("Outlet pOH=\t"+ str(pOHo) )
-    print()
-    print("Added Free Chlorine (mg/L) =\t"+str(free_chlorine_added))
-    print("Residual Free Chlorine (mg/L) =\t"+str(hypo_remaining*70900))
-    print("Residual Combined Chlorine (mg/L) =\t"+str(combined_chlorine*70900))
-
-    print()
-    print("inlet.temperature\toutlet.temperature")
-    print(str(value(model.fs.unit.inlet.temperature[0]))+"\t"+str(value(model.fs.unit.outlet.temperature[0]))+"\n")
-
-    print("\nTable of molar concentrations")
-    for item in model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp:
-        print("\t["+str(item[1])+"] =\t" + str(value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[item[0],item[1]])/1000))
+        assert pytest.approx(2.506835, rel=1e-3) == hypo_remaining*70900
+        assert pytest.approx(12.603826, rel=1e-3) == combined_chlorine*70900
