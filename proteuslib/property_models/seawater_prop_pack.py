@@ -124,18 +124,19 @@ class SeawaterParameterData(PhysicalParameterBlock):
             within=Reals, initialize=-1.613e-5, units=dens_units * t_inv_units**2,
             doc='Mass density parameter B5')
 
+        visc_d_units = pyunits.Pa * pyunits.s
         # dynamic viscosity parameters, eq. 22 and 23 in Sharqawy
         self.visc_d_param_muw_A = Var(
-            within=Reals, initialize=4.2844e-5, units=pyunits.Pa * pyunits.s,
+            within=Reals, initialize=4.2844e-5, units=visc_d_units,
             doc='Dynamic viscosity parameter A for pure water')
         self.visc_d_param_muw_B = Var(
-            within=Reals, initialize=0.157, units=t_inv_units**2 * pyunits.Pa**-1 * pyunits.s**-1,
+            within=Reals, initialize=0.157, units=t_inv_units**2 * visc_d_units**-1,
             doc='Dynamic viscosity parameter B for pure water')
         self.visc_d_param_muw_C = Var(
             within=Reals, initialize=64.993, units=pyunits.K,
             doc='Dynamic viscosity parameter C for pure water')
         self.visc_d_param_muw_D = Var(
-            within=Reals, initialize=91.296, units=pyunits.Pa**-1 * pyunits.s**-1,
+            within=Reals, initialize=91.296, units=visc_d_units**-1,
             doc='Dynamic viscosity parameter D for pure water')
         self.visc_d_param_A_1 = Var(
             within=Reals, initialize=1.541, units=pyunits.dimensionless,
@@ -517,7 +518,7 @@ class SeawaterStateBlockData(StateBlockData):
         self.flow_mass_phase_comp = Var(
             self.params.phase_list,
             self.params.component_list,
-            initialize=1,
+            initialize={('Liq', 'H2O'): 0.965, ('Liq', 'TDS'): 0.035},
             bounds=(1e-8, None),
             domain=NonNegativeReals,
             units=pyunits.kg/pyunits.s,
