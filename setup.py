@@ -81,6 +81,7 @@ setup(
         "fastjsonschema",  # schema validation
         # other requirements
         "pytest",  # technically developer, but everyone likes tests
+        "pytest-cov", # technically developer, but everyone likes tests
     ],
     extras_require={
         "dev": [
