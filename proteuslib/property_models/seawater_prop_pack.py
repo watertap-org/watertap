@@ -517,7 +517,7 @@ class SeawaterStateBlockData(StateBlockData):
         self.flow_mass_phase_comp = Var(
             self.params.phase_list,
             self.params.component_list,
-            initialize=1,
+            initialize={('Liq', 'H2O'): 0.965, ('Liq', 'TDS'): 0.035},
             bounds=(1e-8, None),
             domain=NonNegativeReals,
             units=pyunits.kg/pyunits.s,
