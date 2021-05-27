@@ -19,7 +19,7 @@ from pyomo.environ import (ConcreteModel,
                            Var,
                            Expression,
                            Constraint,
-                           Block,
+                           value,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent, check_units_equivalent
 from idaes.core import FlowsheetBlock
@@ -31,6 +31,8 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_variables_generator,
                                      unscaled_constraints_generator,
                                      badly_scaled_var_generator)
+from idaes.core.util.exceptions import (PropertyPackageError,
+                                        PropertyNotSupportedError)
 from idaes.core.util import get_solver
 
 # -----------------------------------------------------------------------------
@@ -44,7 +46,7 @@ class PropertyUnitTestHarness(object):
     def configure_class(self, m):
         self.prop_pack = None
         self.param_args = {}
-        self.set_default_scaling_dict = {}  # keys = var string, value = list of (scaling factor, tuple index)
+        self.set_default_scaling_dict = {}  # keys = (var string, tuple index), value = scaling factor
 
         self.component_dict = {}  # keys = component string, value = component type
         self.phase_dict = {}  # keys = phase string, value = phase type
@@ -55,7 +57,7 @@ class PropertyUnitTestHarness(object):
         self.stateblock_obj_dict = {}  # keys = pyomo object string, value = (type, units)
 
         self.statistics_dict = {}  # keys = statistic string, value = number
-        self.general_methods_dict = {}  # keys = method name string, value = (var, list of tuple indices)
+        self.general_methods_dict = {}  # keys = (method name string, tuple index), value = (var, tuple index)
         self.default_methods_dict = {}  # keys = method name string, value = class attribute
 
         self.configure()
@@ -122,11 +124,8 @@ class PropertyUnitTestHarness(object):
         m.fs.stream = m.fs.properties.build_state_block(
             [0], default=self.param_args)
 
-        for v_str, temp_list in self.set_default_scaling_dict.items():
-            for temp in temp_list:
-                sf = temp[0]
-                ind = temp[1]
-                m.fs.properties.set_default_scaling(v_str, sf, index=ind)
+        for (v_str, ind), sf in self.set_default_scaling_dict.items():
+            m.fs.properties.set_default_scaling(v_str, sf, index=ind)
 
         return m
 
@@ -167,7 +166,6 @@ class PropertyUnitTestHarness(object):
         m = frame
 
         assert isinstance(m.fs.properties.default_scaling_factor, dict)
-        assert len(m.default_scaling_factor_dict) == len(m.fs.properties.default_scaling_factor)
         for t, sf in m.fs.properties.default_scaling_factor.items():
             assert t in m.default_scaling_factor_dict.keys()
             assert m.default_scaling_factor_dict[t] == sf
@@ -235,6 +233,7 @@ class PropertyUnitTestHarness(object):
         assert number_variables(m) == m.statistics_dict['number_variables']
         assert number_total_constraints(m) == m.statistics_dict['number_total_constraints']
         assert number_unused_variables(m) == m.statistics_dict['number_unused_variables']
+        assert degrees_of_freedom(m) == m.statistics_dict['default_degrees_of_freedom']
 
     @pytest.mark.unit
     def test_general_methods(self, frame):
@@ -244,25 +243,28 @@ class PropertyUnitTestHarness(object):
         # general methods requirements
         required_general_methods_list = ['get_material_flow_terms',
                                          'get_enthalpy_flow_terms']
+        tested_general_methods_list = []
+        for (method_name, ind) in m.general_methods_dict.keys():
+            if method_name not in tested_general_methods_list:
+                tested_general_methods_list.append(method_name)
         for i in required_general_methods_list:
-            assert i in m.general_methods_dict
+            assert i in tested_general_methods_list
 
-        for k, (v_str, ind_list) in m.general_methods_dict.items():
-            assert hasattr(m.fs.stream[0], k)
-            general_method = getattr(m.fs.stream[0], k)
+        for (m_str, m_ind), (v_str, v_ind) in m.general_methods_dict.items():
+            assert hasattr(m.fs.stream[0], m_str)
+            general_method = getattr(m.fs.stream[0], m_str)
             var = getattr(m.fs.stream[0], v_str)
-            for ind in ind_list:
-                if ind is None:
-                    assert var == general_method(None)
-                elif len(ind) == 1:
-                    assert var[ind] == general_method(ind[0])
-                elif len(ind) == 2:
-                    assert var[ind] == general_method(ind[0], ind[1])
-                else:
-                    raise Exception(
-                        "general method {k} was assigned an index of {ind} with a length of "
-                        "{ind_length}, but a length of 2 or less is expected.".format(
-                            k=k, ind=ind, ind_length=len(ind)))
+            if m_ind is None:
+                assert var[v_ind] == general_method(m_ind)
+            elif len(m_ind) == 1:
+                assert var[v_ind] == general_method(m_ind[0])
+            elif len(m_ind) == 2:
+                assert var[v_ind] == general_method(m_ind[0], m_ind[1])
+            else:
+                raise Exception(
+                    "general method {m_str} was assigned an index of {m_ind} with a length of "
+                    "{ind_length}, but a length of 2 or less is expected.".format(
+                        m_str=m_str, m_ind=m_ind, ind_length=len(m_ind)))
 
     @pytest.mark.unit
     def test_default_methods(self, frame):
@@ -292,12 +294,86 @@ class PropertyUnitTestHarness(object):
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
         assert len(unscaled_constraint_list) == 0
 
+    @pytest.mark.unit
+    def test_units_consistent(self, frame):
+        m = frame
+        assert_units_consistent(m)
 
 
-    # @pytest.mark.unit
-    # def test_default_scaling(self, frame):
-    #     pass
-    #
-    # @pytest.mark.unit
-    # def test_fail(self):
-    #     assert False
+class PropertyComponentTestHarness(object):
+    def configure_class(self, m):
+        self.prop_pack = None
+        self.param_args = {}
+        self.set_default_scaling_dict = {}  # keys = (var string, tuple index), value = scaling factor
+
+        self.default_state_values_dict = {}  # keys = var string, value = list of (tuple index, value)
+        self.default_initialize_results_dict = {}  # keys = var string, value = list of (tuple index, value)
+
+        self.configure()
+
+        # attaching objects to model
+        m.default_state_values_dict = self.default_state_values_dict
+        m.default_initialize_results_dict = self.default_initialize_results_dict
+
+    def configure(self):
+        # Placeholder method to allow user to setup test harness
+        pass
+
+    @pytest.fixture(scope='class')
+    def frame(self):
+        m = ConcreteModel()
+        self.configure_class(m)
+
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.properties = self.prop_pack()
+        m.fs.stream = m.fs.properties.build_state_block(
+            [0], default=self.param_args)
+
+        for (v_str, ind), sf in self.set_default_scaling_dict.items():
+            m.fs.properties.set_default_scaling(v_str, sf, index=ind)
+
+        return m
+
+    def test_default_value_initialize(self, frame):
+        m = frame
+
+        # # check state variables are at expected initial values
+        for (v_str, ind), val in m.default_state_values_dict.items():
+            var = getattr(m.fs.stream[0], v_str)
+            if not pytest.approx(val, rel=1e-3) == value(var[ind]):
+                raise Exception(
+                    "State variable {v_str} with index {ind} is expected to have a value of {val}, but it "
+                    "has a value of {val_t}. \nPlease update default_state_values_dict in the configure "
+                    "function that sets up the PropertyComponentTestHarness".format(
+                        v_str=v_str, ind=ind, val=val, val_t=value(var[ind])))
+
+        # touch properties
+        metadata = m.fs.properties.get_metadata().properties
+        for v_str in metadata.keys():
+            getattr(m.fs.stream[0], v_str)
+            try:
+                getattr(m.fs.stream[0], v_str)
+            except PropertyPackageError or PropertyNotSupportedError:
+                pass  # errors in metadata entries are tested in unit test harness
+
+        # scale model
+        calculate_scaling_factors(m)
+
+        # initialize
+        m.fs.stream.initialize(solver=solver, optarg=solver.options)
+
+        # check results
+        for (v_str, ind), val in m.default_initialize_results_dict.items():
+            var = getattr(m.fs.stream[0], v_str)
+            if not pytest.approx(val, rel=1e-3) == value(var[ind]):
+                raise Exception(
+                    "Variable {v_str} with index {ind} is expected to have a value of {val}, but it "
+                    "has a value of {val_t}. \nPlease update default_initialize_results_dict in the configure "
+                    "function that sets up the PropertyComponentTestHarness".format(
+                        v_str=v_str, ind=ind, val=val, val_t=value(var[ind])))
+
+    def test_badly_scaled(self, frame):
+        m = frame
+
+        badly_scaled_var_list = list(badly_scaled_var_generator(m))
+        assert len(badly_scaled_var_list) == 0
