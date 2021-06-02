@@ -1,6 +1,8 @@
 """
 Carbonic acid dissociation in water
 """
+import logging
+
 from pyomo.environ import (Block,
                            SolverFactory,
                            ConcreteModel,
@@ -27,23 +29,30 @@ from pyomo.environ import units as pyunits
 from idaes.core import LiquidPhase, VaporPhase, Component
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
+from idaes.core import FlowsheetBlock
 
 from proteuslib.edb.db_api import ElectrolyteDB
 
+_log = idaeslog.getLogger(__name__)
+
 
 def get_configs(component_names):
+    print("@@ get_configs.start")
+
     db = ElectrolyteDB(db="edb")
+
     thermo_base = next(db.get_base("thermo"))
     result = db.get_components(component_names)
     for comp in result:
         thermo_base.add(comp)
+
     water_reaction_base = next(db.get_base("water_reaction"))
     for react in db.get_reactions(component_names):
         water_reaction_base.add(react)
 
-    return {"thermo_config": thermo_base.config, "reaction_config": water_reaction_base.config}
+    return {"thermo_config": thermo_base.idaes_config, "reaction_config": water_reaction_base.idaes_config}
 
-    # # Pass a list of the thermo config dictionaries to the stitcher
+    # # Pass a list of the thermo idaes_config dictionaries to the stitcher
     # # First argument is a starter dict, second arg is a list of component dicts
     # thermo_config = stitch_thermo_configs(starter_thermo_config,
     #                                         [H2O_thermo_config,
@@ -53,7 +62,7 @@ def get_configs(component_names):
     #                                         HCO3_thermo_config,
     #                                         CO3_thermo_config])
     #
-    # # Pass a list of the reaction config dictionaries to the stitcher
+    # # Pass a list of the reaction idaes_config dictionaries to the stitcher
     # reaction_config = stitch_reaction_configs([water_reaction_config,
     #                                             carbonic_acid_reaction_config,
     #                                             bicarbonate_reaction_config
@@ -62,6 +71,11 @@ def get_configs(component_names):
 
 
 def create_model(thermo_config=None, reaction_config=None):
+    # DEBUG
+    _log.info("create_model.start")
+    _log.debug(f"create_model: thermo_config={thermo_config}")
+    _log.debug(f"create_model: reaction_config={reaction_config}")
+
     # Create a pyomo model object
     model = ConcreteModel()
 
@@ -165,6 +179,8 @@ def create_model(thermo_config=None, reaction_config=None):
 
     print("Degrees of freedom = " + str(degrees_of_freedom(model) ) )
 
+    _log.info("create_model.end")
+
     return model
 
 
@@ -196,12 +212,16 @@ def solve_model(model):
 
 def main():
     from pprint import pprint
+
+    # DEBUG
+    _log.setLevel(logging.DEBUG)
+
     component_names = ["H +", "H2CO3", "HCO3 -"]
     configs = get_configs(component_names)
     for key, value in configs.items():
         print(f"## {key}")
         pprint(value)
-    #model = create_model(**configs)
+    model = create_model(**configs)
     #solve_model(model)
 
 

@@ -9,13 +9,61 @@ Data model for electrolyte database.
 
 Usage to get configuration for IDAES:
 
-    b = <query database for Base config of interest>
+    base = <query database for Base config of interest>
     c_list = <get Components from database>
     # add all the components to the base
     for c in c_list:
-        b.add(c)
+        base.add(c)
     # get the merged configuration for IDAES functions
-    config = b.config
+    config = base.idaes_config
+
+*** WIP ***
+        ┌────────────────────────────────┐
+        │ ConfigGenerator   <<abstract>> │
+uses    ├────────────────────────────────┤
+ ┌─────►│+ConfigGenerator(data)          │
+ │      │                                │
+ │      ├────────────────────────────────┤
+ │      │+config                         │
+ │      │_transform(data)                │
+ │      └────────────┬───────────────────┘
+ │                   │
+ │                   ├───────────┬───────────────────────┐
+ │                   │           │                       │
+ │    ┌──────────────┴┐       ┌──┴──────────┐      ┌─────┴─────┐
+ │    │ ReactionConfig│       │ ThermoConfig│      │ BaseConfig│
+ │    └─────▲─────────┘       └─▲───────────┘      └───────▲───┘
+ │          │                   │                          │
+ │          │                   │                          │
+ │          │                   │                          │
+ │          │uses               │uses                      │uses
+ │          │                   │                          │
+ │          │                   │                          │
+ │  ┌───────┼───────────────────┼──────────────────────────┼────────────┐
+ │  │       │                   │                          │            │
+ │  │  ┌────┴─────┐   ┌─────────┴───┐    ┌─────────────────┴─────────┐  │
+ │  │  │ Reaction │   │  Component  │    │ Base                      │  │
+ │  │  └─────┬────┘   └──────┬──────┘    │                           │  │
+ │  │        │               │           │ +add(item:DataWrapper)    │  │
+ │  │        │               │           └─────────┬─────────────────┘  │
+ │  │        │               │                     │                    │
+ │  │        │               │                     │                    │
+ │  │        ├───────────────┴─────────────────────┘                    │
+ │  │        │                                                          │
+ │  │        │                                                          │
+ │  └────────┼──────────────────────────────────────────────────┬───────┘
+ │           │                                                  │
+ │           │                                                  │
+ │           │                                         ┌────────┴─────────────┐
+ │           │ subclass                                │                      │
+ │   ┌───────▼────────────────────────────┐            │ Public interface to  │
+ │   │DataWrapper      <<abstract>>       │            │ the rest of          │
+ │   ├────────────────────────────────────┤            │ ProteusLib           │
+ │   │+DataWrapper(data, config_gen_class)│            │                      │
+ └───┼────────────────────────────────────┤            └──────────────────────┘
+     │+idaes_config: dict                 │
+     │+merge_keys: tuple[str]             │
+     └────────────────────────────────────┘
 """
 
 # stdlib
@@ -46,22 +94,26 @@ from .equations.van_t_hoff_alt_form import van_t_hoff_aqueous
 _log = logging.getLogger(__name__)
 
 
-class GenerateConfig:
-    """Interface for getting an IDAES 'config' dict."""
+class ConfigGenerator:
+    """Interface for getting an IDAES 'idaes_config' dict."""
 
     merge_keys = ()
 
     def __init__(self, data):
-        self._transform(data)
-        self.config = data
+        data_copy = copy.deepcopy(data)
+        self._transform(data_copy)
+        self.config = data_copy
+        print(f"@@ transformed data for class {type(self)}")
 
     @classmethod
     def _transform(cls, data):
-        pass # subclasses should implement
+        pass  # subclasses should implement
 
     @staticmethod
-    def _build_units(x: str):
-        return eval(x, {"U": pyunits})
+    def _build_units(x: str = None):
+        if not x:
+            x = "U.dimensionless"
+        return eval(x, {"U": pyunits, "os": None, "sys": None})
 
     # shared
 
@@ -95,7 +147,7 @@ class GenerateConfig:
     def _wrap_section(cls, section: str, data: Dict):
         """Put all `data` inside {<section>: <name>: { /data/ }}.
         The `<name>` is taken from `data["name"]`.
-        Also removes keys 'name' and _id from the `data`.
+        Also removes keys 'name' and special keys starting with underscore like _id from the `data`.
         Changes input argument.
         Section will be, e.g., "components" or "equilibrium_reactions"
         """
@@ -109,7 +161,7 @@ class GenerateConfig:
         to_delete = set()  # cannot delete while iterating, so store keys to delete here
         for key, value in data.items():
             # if this is not a special field, add it to the the component
-            if key not in ("name", "_id", "base_units", section):
+            if key not in ("name", "base_units", section, "_id"):
                 data[section][comp_name][key] = value
             # mark field for deletion, if not top-level field
             if key not in ("base_units", section):
@@ -117,9 +169,19 @@ class GenerateConfig:
         # remove copied fields from old location
         for key in to_delete:
             del data[key]
+        # remove special
+        cls._remove_special(data)
+
+    @classmethod
+    def _remove_special(cls, data):
+        """Remove 'special' keys starting with an underscore (e.g. _id) as well as 'name'.
+        """
+        for key in list(data.keys()):
+            if key.startswith("_") or key == "name":
+                del data[key]
 
 
-class ThermoConfig(GenerateConfig):
+class ThermoConfig(ConfigGenerator):
 
     @classmethod
     def _transform(cls, data):
@@ -141,11 +203,11 @@ class ThermoConfig(GenerateConfig):
         cls._wrap_section("components", data)
 
 
-class ReactionConfig(GenerateConfig):
+class ReactionConfig(ConfigGenerator):
     @classmethod
     def _transform(cls, data):
         """In-place data transformation from standard storage format to
-        format expected by IDAES config methods
+        format expected by IDAES idaes_config methods
         """
 
         cls._transform_parameter_data(data)
@@ -171,7 +233,7 @@ class ReactionConfig(GenerateConfig):
         cls._wrap_section("equilibrium_reactions", data)
 
 
-class BaseConfig(GenerateConfig):
+class BaseConfig(ConfigGenerator):
     @classmethod
     def _transform(cls, data):
         # evaluate units in 'base_units'
@@ -182,27 +244,38 @@ class BaseConfig(GenerateConfig):
                 if isinstance(value, str):  # make sure it's not already evaluated
                     bu[key] = cls._build_units(value)
 
+        cls._remove_special(data)
+
 
 class DataWrapper:
     """Interface to wrap data from DB in convenient ways for consumption by the rest of the library.
 
-    Feed the data (from the database) and the appropriate subclass of GenerateConfig to the constructor.
-    Then the IDAES config will be available from the `config` attribute. Note that no conversion work
-    is done before the first access, and the converted result is cached to avoid extra work on repeated accesses.
+    Do not use this class directly.
+
+    Derived classes will feed the data (from the database) and the appropriate subclass of GenerateConfig to the
+    constructor. Then the IDAES config will be available from the `idaes_config` attribute.
+    Note that no conversion work is done before the first access, and the converted result is cached to
+    avoid extra work on repeated accesses.
     """
-    def __init__(self, data: Dict, config_gen_class: Type[GenerateConfig]):
+    #: Subclasses should set this to the list of top-level keys that should be added, i.e. merged,
+    #: into the result when an instance is added to the base data wrapper.
+    merge_keys = ()
+
+    def __init__(self, data: Dict, config_gen_class: Type[ConfigGenerator]):
         """Ctor.
 
         Args:
             data: Data from the DB
-            config_gen_class: Used to transform DB data to IDAES config
+            config_gen_class: Used to transform DB data to IDAES idaes_config
         """
         self._data, self._config_gen, self._config = data, config_gen_class, None
 
     @property
-    def config(self) -> Dict:
-        """"Get an IDAES config dict."""
+    def idaes_config(self) -> Dict:
+        """"Get the data as an IDAES config dict."""
         if self._config is None:
+            print(f"@@ Calling {self._config_gen.__name__}(data). data = {self._data}")
+            # the config_gen() call will copy its input, so get the result from the .config attr
             self._config = self._config_gen(self._data).config
         return self._config
 
@@ -219,9 +292,6 @@ class Component(DataWrapper):
 
         Pre:
             Data conforms to the schema in `schemas.schemas["component"]` from this package.
-
-        Post:
-            Input `data` will be modified.
         """
         if "name" not in data:
             raise KeyError("'name' is required")
@@ -240,10 +310,6 @@ class Reaction(DataWrapper):
 
         Pre:
             Data conforms to the schema in `schemas.schemas["component"]` from this package.
-
-        Post:
-            Input `data` may be modified.
-
         """
         if "name" not in data:
             raise KeyError("'name' is required")
@@ -256,39 +322,49 @@ class Base(DataWrapper):
     def __init__(self, data: Dict):
         super().__init__(data, BaseConfig)
         self._to_merge = []
-        self._dirty, self._prev_config = False, self.config
+        self._dirty = True
+        self._idaes_config = None
 
-    def add(self, item: GenerateConfig):
-        """Add something that implements HasConfig to this base config."""
+    def add(self, item: DataWrapper):
+        """Add wrapped data to this base object."""
         self._to_merge.append(item)
         self._dirty = True
 
     @property
-    def config(self):
-        if not self._dirty:  # do not penalize `<obj>.config` calls if it doesn't change
-            return self._prev_config
-        my_config = copy.deepcopy(self._data)  # allow multiple calls
+    def idaes_config(self):
+        # if there is no change, return previously merged value
+        if not self._dirty:
+            return self._idaes_config
+        # if the base config has not yet been created, do that now
+        if self._idaes_config is None:
+            self._idaes_config = super().idaes_config
+        # merge in items that were added with the `add()` method
         for item in self._to_merge:
-            self._merge_config(my_config, item)
-        self._dirty, self._prev_config = False, my_config
-        return my_config
+            self._merge(self._idaes_config, item)
+        # reset for more calls to `add()` or this method
+        self._dirty, self._to_merge = False, []
+
+        # return merged value
+        return self._idaes_config
 
     @staticmethod
-    def _merge_config(dst, src) -> Dict:
+    def _merge(dst, src: DataWrapper) -> Dict:
         """Merge on defined configuration keys."""
-        src_config = src.config
+        src_config = src.idaes_config
         for key in src.merge_keys:
+            if key not in src_config:
+                continue
             if key in dst:
-                dst[key].update(src_config)
+                dst[key].update(src_config[key])
             else:
-                dst[key] = src_config
+                dst[key] = src_config[key]
         return dst
 
 
 class Result:
     def __init__(self, iterator=None, item_class=None):
         if iterator is not None:
-            assert issubclass(item_class, GenerateConfig)
+            assert issubclass(item_class, DataWrapper)
             self._it = iterator
             self._it_class = item_class
 

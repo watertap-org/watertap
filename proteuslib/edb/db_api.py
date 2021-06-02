@@ -65,11 +65,13 @@ class ElectrolyteDB:
             component_names: List of component names
 
         Returns:
-            All reactions containing all of the names (or all reactions,
+            All reactions containing any of the names (or all reactions,
             if not specified)
         """
+        # if it has a space and a charge, take the formula part only
         if component_names:
-            query = {"components": {"$all": component_names}}
+            cnames = [c.split(" ", 1)[0] for c in component_names]
+            query = {"components": {"$in": cnames}}
         else:
             query = {}
         collection = self._db.reaction

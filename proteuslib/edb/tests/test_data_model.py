@@ -4,7 +4,7 @@ Tests for data_model module
 import copy
 from pprint import pprint  # for debugging
 import pytest
-from ..data_model import GenerateConfig, Component, Reaction, Result, Base
+from ..data_model import ConfigGenerator, Component, Reaction, Result, Base
 from . import data as testdata
 from typing import Dict
 
@@ -33,42 +33,42 @@ def assert_configuration_equal(a: Dict, b: Dict):
 
 
 @pytest.mark.unit
-def test_has_config():
-    hc = GenerateConfig()
+def test_config_generator():
+    hc = ConfigGenerator({})
 
 
 @pytest.mark.unit
 def test_component_ca_thermo():
     comp = Component(testdata.Ca_thermo_data)
-    generated_config = comp.config
+    generated_config = comp.idaes_config
 
     # for debugging
     print("Config generated from data:")
     pprint(generated_config)
-    print("Expected config:")
+    print("Expected idaes_config:")
     pprint(testdata.Ca_thermo_config)
 
-    assert_configuration_equal(comp.config, testdata.Ca_thermo_config)
+    assert_configuration_equal(comp.idaes_config, testdata.Ca_thermo_config)
 
 
 @pytest.mark.unit
 def test_reaction_bicarbonate():
     react = Reaction(testdata.bicarbonate_reaction_data)
-    generated_config = react.config
+    generated_config = react.idaes_config
 
     # for debugging
     print("Config generated from data:")
     pprint(generated_config)
-    print("Expected config:")
+    print("Expected idaes_config:")
     pprint(testdata.bicarbonate_reaction_config)
 
     assert_configuration_equal(generated_config, testdata.bicarbonate_reaction_config)
 
+
 @pytest.mark.unit
 @pytest.mark.parametrize("data", testdata.reaction_data)
 def test_reaction(data):
-    data = copy.deepcopy(data)
-    r = Reaction(data)
+    reaction = Reaction(data)
 
 
 @pytest.mark.unit
@@ -85,17 +85,17 @@ def test_base(starting_value):
     mk0 = Component.merge_keys[0]
     starting[mk0] = {"foo": foo_value}
     b = Base(starting)
-    assert b.config == starting
+    assert b.idaes_config == starting
     # Add an empty component
     with pytest.raises(KeyError):
         c = Component({})  # "name" is required
     c = Component({"name": "bar"})
     b.add(c)
-    assert b.config[mk0]["foo"] == starting[mk0]["foo"]
+    assert b.idaes_config[mk0]["foo"] == starting[mk0]["foo"]
     # Add a non-empty component
     name = "baz"
     component_data = {"data": 1, "name": name}
     c = Component(component_data)
     b.add(c)
-    print(f"b.config={b.config} component_data={component_data}")
-    assert b.config[mk0][name]["data"] == component_data["data"]
+    print(f"b.idaes_config={b.idaes_config} component_data={component_data}")
+    assert b.idaes_config[mk0][name]["data"] == component_data["data"]
