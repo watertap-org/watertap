@@ -4,6 +4,11 @@ Shared input data for tests
 from pyomo.environ import units as pyunits
 from idaes.core.phases import PhaseType as PT
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
+from proteuslib.edb.equations.van_t_hoff_alt_form import van_t_hoff_aqueous
+from proteuslib.edb.equations.equil_log_power_form import log_power_law
+from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
+
 
 reaction_data = [
     {
@@ -184,3 +189,46 @@ Ca_thermo_data = {"_id": {"$oid": "6099cd12507b1e55f1707555"}, "type": "componen
                                                                [0.0000093701, "U.J/U.kmol/U.K**5"]],
                                      "entr_mol_form_liq_comp_ref": [-53, "U.J/U.K/U.mol"]}, "name": "Ca 2+",
                   "elements": ["Ca"]}
+
+bicarbonate_reaction_config = {
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K},
+    "equilibrium_reactions": {
+        "H2CO3_Ka2": {
+            "stoichiometry": {("Liq", "HCO3 -"): -1,
+                              ("Liq", "H +"): 1,
+                              ("Liq", "CO3 2-"): 1},
+            "heat_of_reaction": constant_dh_rxn,
+            "equilibrium_constant": van_t_hoff_aqueous,
+            # "equilibrium_constant": gibbs_energy,
+            "equilibrium_form": log_power_law,
+            "concentration_form": ConcentrationForm.molarity,
+            "parameter_data": {
+                "dh_rxn_ref": (14.9, pyunits.kJ / pyunits.mol),
+                "ds_rxn_ref": (-148.1, pyunits.J / pyunits.mol / pyunits.K),
+                # "T_eq_ref": (300, pyunits.K),
+
+                # By default, reaction orders follow stoichiometry
+                #    manually set reaction order here to override
+                "reaction_order": {("Liq", "HCO3 -"): -1,
+                                   ("Liq", "H +"): 1,
+                                   ("Liq", "CO3 2-"): 1}
+            }
+        }
+    }
+}
+
+bicarbonate_reaction_data = {"_id": {"$oid": "6099cd12507b1e55f1707546"},
+                             "stoichiometry": {"Liq": {"HCO3-": -1, "H+": 1, "CO3-2": 1}},
+                             "heat_of_reaction": "constant_dh_rxn", "equilibrium_constant": "van_t_hoff_aqueous",
+                             "equilibrium_form": "log_power_law", "concentration_form": "ConcentrationForm.molarity",
+                             "parameter_data": {"dh_rxn_ref": [14.9, "U.kJ/U.mol"],
+                                                "ds_rxn_ref": [-148.1, "U.J/U.mol/U.K"],
+                                                "reaction_order": {"Liq/HCO3 -": -1, "Liq/H +": 1, "Liq/CO3 2-": 1}},
+                             "type": "reaction", "reaction_type": "equilibrium", "name": "H2CO3_Ka2",
+                             "components": ["H2CO3", "Ka2"],
+                             "base_units": {"time": "U.s", "length": "U.m", "mass": "U.kg", "amount": "U.mol",
+                                            "temperature": "U.K"}, "reactant_elements": ["H", "O", "C"]}

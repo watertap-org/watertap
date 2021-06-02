@@ -32,6 +32,8 @@ from idaes.generic_models.properties.core.pure import Perrys
 from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import power_law_equil
+from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
 # IDE complains about these two
 # from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
 # from idaes.generic_models.properties.core.reactions.equilibrium_constant import gibbs_energy
@@ -61,7 +63,7 @@ class GenerateConfig:
     def _build_units(x: str):
         return eval(x, {"U": pyunits})
 
-    ## shared
+    # shared
 
     @classmethod
     def _transform_parameter_data(cls, comp):
@@ -78,30 +80,39 @@ class GenerateConfig:
                         coeff_table[str(num)] = (coeff[0], cls._build_units(coeff[1]))
                         num += 1
                     params[param_key] = coeff_table
+                elif param_key == "reaction_order":
+                    # { "Liq/HCO3 -": -1, ..} -> {("Liq", "HCO3 -"): -1, ...}
+                    reaction_order_table, value = {}, params[param_key]
+                    for rkey, rvalue in value.items():
+                        phase, comp = rkey.split("/")
+                        reaction_order_table[(phase, comp)] = rvalue
+                    params[param_key] = reaction_order_table
                 else:
                     p = params[param_key]
                     params[param_key] = (p[0], cls._build_units(p[1]))
 
     @classmethod
-    def _wrap_component(cls, data: Dict):
-        """Put all `data` inside {components: <name>: { /data/ }}.
+    def _wrap_section(cls, section: str, data: Dict):
+        """Put all `data` inside {<section>: <name>: { /data/ }}.
+        The `<name>` is taken from `data["name"]`.
         Also removes keys 'name' and _id from the `data`.
         Changes input argument.
+        Section will be, e.g., "components" or "equilibrium_reactions"
         """
         comp_name = data["name"]
         # create new location for component data
-        if "components" not in data:
-            data["components"] = {}
-        assert comp_name not in data["components"], "trying to add existing component"
-        data["components"][comp_name]  = {}
+        if section not in data:
+            data[section] = {}
+        assert comp_name not in data[section], "trying to add existing component"
+        data[section][comp_name]  = {}
         # copy existing to new location
         to_delete = set()  # cannot delete while iterating, so store keys to delete here
         for key, value in data.items():
             # if this is not a special field, add it to the the component
-            if key not in ("name", "_id", "base_units", "components"):
-                data["components"][comp_name][key] = value
+            if key not in ("name", "_id", "base_units", section):
+                data[section][comp_name][key] = value
             # mark field for deletion, if not top-level field
-            if key not in ("base_units", "components"):
+            if key not in ("base_units", section):
                 to_delete.add(key)
         # remove copied fields from old location
         for key in to_delete:
@@ -127,34 +138,37 @@ class ThermoConfig(GenerateConfig):
         if "elements" in data:
             del data["elements"]
 
-        cls._wrap_component(data)
+        cls._wrap_section("components", data)
 
 
 class ReactionConfig(GenerateConfig):
     @classmethod
     def _transform(cls, data):
-        """In-place data transformation.
+        """In-place data transformation from standard storage format to
+        format expected by IDAES config methods
         """
-        reactions = data["equilibrium_reactions"]
 
-        # transform each reaction
-        for react_name, react_value in reactions.items():
+        cls._transform_parameter_data(data)
 
+        for key in list(data.keys()):
+            value = data[key]
             # reformat stoichiometry to have tuple keys
-            key = "stoichiometry"
-            if key in react_value:
-                stoich = react_value[key]
+            if key == "stoichiometry":
+                stoich = value
                 stoich_table = {}
                 for phase in stoich:
                     for component_name, num in stoich[phase].items():
                         skey = (phase, component_name)
                         stoich_table[skey] = num
-                react_value[key] = stoich_table
-
+                data[key] = stoich_table
             # evaluate special string constants
-            for key, value in react_value.items():
-                if key in ("heat_of_reaction",) or key.endswith("_form") or key.endswith("_constant"):
-                    react_value[key] = eval(react_value[key])
+            elif isinstance(value, str):
+                if value in ("heat_of_reaction",) or value.endswith("_form") or value.endswith("_constant"):
+                    data[key] = eval(value)
+            else:
+                pass  # let it be, let it be..
+
+        cls._wrap_section("equilibrium_reactions", data)
 
 
 class BaseConfig(GenerateConfig):

@@ -52,6 +52,19 @@ def test_component_ca_thermo():
 
 
 @pytest.mark.unit
+def test_reaction_bicarbonate():
+    react = Reaction(testdata.bicarbonate_reaction_data)
+    generated_config = react.config
+
+    # for debugging
+    print("Config generated from data:")
+    pprint(generated_config)
+    print("Expected config:")
+    pprint(testdata.bicarbonate_reaction_config)
+
+    assert_configuration_equal(generated_config, testdata.bicarbonate_reaction_config)
+
+@pytest.mark.unit
 @pytest.mark.parametrize("data", testdata.reaction_data)
 def test_reaction(data):
     data = copy.deepcopy(data)
