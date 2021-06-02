@@ -235,6 +235,7 @@ class TestReverseOsmosis():
                                'recovery_vol_phase': Var,
                                'recovery_mass_phase_comp': Var,
                                'rejection_phase_comp': Var,
+                               'over_pressure': Var,
                                'deltaP': Var,
                                'cp_modulus': Var,
                                'mass_transfer_phase_comp': Var,
@@ -247,7 +248,8 @@ class TestReverseOsmosis():
                                'eq_permeate_isothermal': Constraint,
                                'eq_recovery_vol_phase': Constraint,
                                'eq_recovery_mass_phase_comp': Constraint,
-                               'eq_rejection_phase_comp': Constraint}
+                               'eq_rejection_phase_comp': Constraint,
+                               'eq_over_pressure': Constraint}
         for (obj_str, obj_type) in unit_objs_type_dict.items():
             obj = getattr(m.fs.unit, obj_str)
             assert isinstance(obj, obj_type)
@@ -279,8 +281,8 @@ class TestReverseOsmosis():
         assert isinstance(m.fs.unit.properties_permeate, props.NaClStateBlock)
 
         # test statistics
-        assert number_variables(m) == 98
-        assert number_total_constraints(m) == 70
+        assert number_variables(m) == 102
+        assert number_total_constraints(m) == 74
         assert number_unused_variables(m) == 7  # vars from property package parameters
 
     @pytest.mark.unit
@@ -338,13 +340,13 @@ class TestReverseOsmosis():
             b.properties_permeate[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
 
         assert (abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate
-                          )) <= 1e-6)
+                          )) <= 1e-5)
 
         assert (abs(value(
             flow_mass_inlet * b.feed_side.properties_in[0].enth_mass_phase['Liq']
             - flow_mass_retentate * b.feed_side.properties_out[0].enth_mass_phase['Liq']
             - flow_mass_permeate * b.properties_permeate[0].enth_mass_phase['Liq']
-        )) <= 1e-6)
+        )) <= 1e-5)
 
     @pytest.mark.component
     def test_solution(self, RO_frame):
@@ -411,8 +413,8 @@ class TestReverseOsmosis():
         m.fs.unit.Kf_io[0, 'out', 'NaCl'].fix(kf)
 
         # test statistics
-        assert number_variables(m) == 99
-        assert number_total_constraints(m) == 70
+        assert number_variables(m) == 103
+        assert number_total_constraints(m) == 74
         assert number_unused_variables(m) == 7  # vars from property package parameters
 
         # test degrees of freedom
@@ -517,8 +519,8 @@ class TestReverseOsmosis():
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 114
-        assert number_total_constraints(m) == 84
+        assert number_variables(m) == 118
+        assert number_total_constraints(m) == 88
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
         # test degrees of freedom
@@ -615,8 +617,8 @@ class TestReverseOsmosis():
         m.fs.unit.length.fix(16)
 
         # test statistics
-        assert number_variables(m) == 120
-        assert number_total_constraints(m) == 91
+        assert number_variables(m) == 124
+        assert number_total_constraints(m) == 95
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
         # test degrees of freedom
@@ -723,8 +725,8 @@ class TestReverseOsmosis():
         m.fs.unit.dP_dx.fix(-membrane_pressure_drop / length)
 
         # test statistics
-        assert number_variables(m) == 115
-        assert number_total_constraints(m) == 85
+        assert number_variables(m) == 119
+        assert number_total_constraints(m) == 89
         assert number_unused_variables(m) == 0
 
         # test degrees of freedom

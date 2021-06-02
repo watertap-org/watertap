@@ -313,7 +313,13 @@ class ReverseOsmosisData(UnitModelBlockData):
             initialize=0.1,
             bounds=(1e-8, 1),
             units=pyunits.dimensionless,
-            doc='Bulk concentration based component rejection')
+            doc='Observed solute rejection')
+        self.over_pressure = Var(
+            self.flowsheet().config.time,
+            initialize=0.1,
+            bounds=(1e-8, 100),
+            units=pyunits.dimensionless,
+            doc='Over pressure fraction')
 
         if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
             self.cp_modulus = Var(
@@ -770,6 +776,13 @@ class ReverseOsmosisData(UnitModelBlockData):
                     1 - (b.properties_permeate[t].conc_mass_phase_comp['Liq', j] /
                          b.feed_side.properties_in[t].conc_mass_phase_comp['Liq', j]))
 
+        @self.Constraint(self.flowsheet().config.time)
+        def eq_over_pressure(b, t):
+            return (b.over_pressure[t] ==
+                    b.feed_side.properties_out[t].pressure
+                    / b.feed_side.properties_out[t].pressure_osm
+                    - 1)
+
     def initialize(
             blk,
             state_args=None,
@@ -815,7 +828,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         )
         init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
-        # Initialize permeate
+        # Initialize other state blocks
         # Set state_args from inlet state
         if state_args is None:
             state_args = {}
@@ -836,6 +849,20 @@ class ReverseOsmosisData(UnitModelBlockData):
             solver=solver,
             state_args=state_args,
         )
+        if hasattr(blk.feed_side, 'properties_interface_in'):
+            blk.feed_side.properties_interface_in.initialize(
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                state_args=state_args,
+            )
+        if hasattr(blk.feed_side, 'properties_interface_out'):
+            blk.feed_side.properties_interface_out.initialize(
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                state_args=state_args,
+            )
         init_log.info_high("Initialization Step 2 Complete.")
 
         # ---------------------------------------------------------------------
@@ -898,6 +925,9 @@ class ReverseOsmosisData(UnitModelBlockData):
         for v in self.rejection_phase_comp.values():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, 1)
+
+        if iscale.get_scaling_factor(self.over_pressure) is None:
+            iscale.set_scaling_factor(self.over_pressure, 1)
 
         if hasattr(self, 'cp_modulus'):
             if iscale.get_scaling_factor(self.cp_modulus) is None:
@@ -1126,4 +1156,8 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         for (t, j), c in self.eq_rejection_phase_comp.items():
             sf = iscale.get_scaling_factor(self.rejection_phase_comp[t, 'Liq', j])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for t, c in self.eq_over_pressure.items():
+            sf = iscale.get_scaling_factor(self.over_pressure[t])
             iscale.constraint_scaling_transform(c, sf)
