@@ -280,17 +280,18 @@ class ReverseOsmosisData(UnitModelBlockData):
         # Add unit variables
         def flux_mass_io_phase_comp_initialize(b, t, io, p, j):
             if j in self.solvent_list:
-                return 1e-3
+                return 5e-4
             elif j in self.solute_list:
                 return 1e-6
 
         def flux_mass_io_phase_comp_bounds(b, t, io, p, j):
-            ub = 3e-2
             if j in self.solvent_list:
-                lb = 1e-5
+                ub = 3e-2
+                lb = 1e-4
             elif j in self.solute_list:
+                ub = 1e-3
                 lb = 1e-8
-            return (lb, ub)
+            return lb, ub
 
         self.flux_mass_io_phase_comp = Var(
             self.flowsheet().config.time,
@@ -321,7 +322,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 lb = 1e-2
             elif j in self.solute_list:
                 lb = 1e-5
-            return (lb, ub)
+            return lb, ub
 
         self.recovery_mass_phase_comp = Var(
             self.flowsheet().config.time,
