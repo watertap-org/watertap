@@ -333,8 +333,8 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         self.over_pressure = Var(
             self.flowsheet().config.time,
-            initialize=0.1,
-            bounds=(1e-8, 100),
+            initialize=0.3,
+            bounds=(1e-3, 5),
             units=pyunits.dimensionless,
             doc='Over pressure fraction')
 
