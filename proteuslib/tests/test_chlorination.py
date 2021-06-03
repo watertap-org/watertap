@@ -35,8 +35,6 @@
         NH2Cl + HOCl <---> NHCl2 + H2O
         NHCl2 + HOCl <---> NCl3 + H2O
 '''
-import logging
-
 # Importing testing libraries
 import unittest
 import pytest
@@ -45,18 +43,14 @@ import pytest
 from pyomo.environ import units as pyunits
 
 # Imports from idaes core
-from idaes.core import LiquidPhase, Component, AqueousPhase, VaporPhase
-from idaes.core.components import Solvent, Solute, Apparent, Cation, Anion
+from idaes.core import AqueousPhase
+from idaes.core.components import Solvent, Solute, Cation, Anion
 from idaes.core.phases import PhaseType as PT
 
 # Imports from idaes generic models
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
-from idaes.generic_models.properties.core.pure.NIST import NIST
-from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.phase_equil import SmoothVLE
-from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBubbleDew
 
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
 from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
@@ -74,10 +68,7 @@ from idaes.generic_models.properties.core.reactions.equilibrium_constant import 
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
 
 # Import specific pyomo objects
-from pyomo.environ import (Block,
-                           SolverFactory,
-                           ConcreteModel,
-                           Set,
+from pyomo.environ import (ConcreteModel,
                            SolverStatus,
                            TerminationCondition,
                            value,
@@ -107,22 +98,14 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 
 # Import the idaes object for the EquilibriumReactor unit model
 from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
-from idaes.generic_models.unit_models import Mixer, Heater
-from idaes.generic_models.unit_models.mixer import MaterialBalanceType, MomentumMixingType
-from idaes.generic_models.unit_models.heater import EnergyBalanceType
 
 # Import the core idaes objects for Flowsheets and types of balances
-from idaes.core import (FlowsheetBlock,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType, useDefault)
+from idaes.core import FlowsheetBlock
 
 # Import log10 function from pyomo
 from pyomo.environ import log10
 
 __author__ = "Austin Ladshaw"
-
-_log = logging.getLogger(__name__)
 
 # Configuration dictionary
 thermo_config = {
@@ -133,9 +116,6 @@ thermo_config = {
               "enth_mol_liq_comp": Perrys,
               "cp_mol_liq_comp": Perrys,
               "entr_mol_liq_comp": Perrys,
-              "enth_mol_ig_comp": NIST,
-              "pressure_sat_comp": NIST,
-              "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
               # Parameter data is always associated with the methods defined above
               "parameter_data": {
                     "mw": (18.0153, pyunits.g/pyunits.mol),
@@ -229,9 +209,6 @@ thermo_config = {
                 "enth_mol_liq_comp": Perrys,
                 "cp_mol_liq_comp": Perrys,
                 "entr_mol_liq_comp": Perrys,
-                "enth_mol_ig_comp": NIST,
-                "pressure_sat_comp": NIST,
-                "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
                 "parameter_data": {
                     "mw": (17.031, pyunits.g/pyunits.mol),
                     "pressure_crit": (113E5, pyunits.Pa),
@@ -425,17 +402,17 @@ thermo_config = {
 
         "state_definition": FTPx,
         "state_bounds": {"flow_mol": (0, 50, 100),
-                     "temperature": (273.15, 300, 650),
-                     "pressure": (5e4, 1e5, 1e6)
-                     },
+                         "temperature": (273.15, 300, 650),
+                         "pressure": (5e4, 1e5, 1e6)
+                        },
 
         "pressure_ref": 1e5,
         "temperature_ref": 300,
         "base_units": {"time": pyunits.s,
-                   "length": pyunits.m,
-                   "mass": pyunits.kg,
-                   "amount": pyunits.mol,
-                   "temperature": pyunits.K},
+                       "length": pyunits.m,
+                       "mass": pyunits.kg,
+                       "amount": pyunits.mol,
+                       "temperature": pyunits.K},
 
         # Inherent reactions
         "inherent_reactions": {
@@ -702,7 +679,7 @@ class TestChlorination():
         assert hasattr(model.fs.thermo_params, 'Liq')
         assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_units(self, chlorination_obj):
         model = chlorination_obj
         assert_units_consistent(model)
@@ -715,9 +692,9 @@ class TestChlorination():
     @pytest.mark.unit
     def test_stats(self, chlorination_obj):
         model = chlorination_obj
-        assert (number_variables(model) == 314)
+        assert (number_variables(model) == 292)
         assert (number_total_constraints(model) == 87)
-        assert (number_unused_variables(model) == 82)
+        assert (number_unused_variables(model) == 60)
 
     @pytest.mark.unit
     def test_custom_log_power_law_eps_options(self, chlorination_obj):
@@ -748,8 +725,6 @@ class TestChlorination():
         assert model.fs.rxn_params.reaction_NH2Cl_K.eps.value == eps
         assert model.fs.rxn_params.reaction_NHCl2_K.eps.value == eps
         assert model.fs.rxn_params.reaction_NCl3_K.eps.value == eps
-
-
 
     @pytest.mark.component
     def test_scaling(self, chlorination_obj):
@@ -799,18 +774,18 @@ class TestChlorination():
     def test_solution(self, chlorination_obj):
         model = chlorination_obj
 
-        assert pytest.approx(300.0016, rel=1e-3) == value(model.fs.unit.outlet.temperature[0])
-        assert pytest.approx(10, rel=1e-3) == value(model.fs.unit.outlet.flow_mol[0])
-        assert pytest.approx(101325, rel=1e-3) == value(model.fs.unit.outlet.pressure[0])
+        assert pytest.approx(300.0016, rel=1e-5) == value(model.fs.unit.outlet.temperature[0])
+        assert pytest.approx(10, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(101325, rel=1e-5) == value(model.fs.unit.outlet.pressure[0])
 
         total_molar_density = \
             value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
-        assert pytest.approx(55.20446, rel=1e-3) == total_molar_density
+        assert pytest.approx(55.20446, rel=1e-5) == total_molar_density
 
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-        assert pytest.approx(6.0413, rel=1e-3) == pH
-        assert pytest.approx(7.8945, rel=1e-3) == pOH
+        assert pytest.approx(6.0413, rel=1e-5) == pH
+        assert pytest.approx(7.8945, rel=1e-5) == pOH
 
         hypo_remaining = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"])/1000
         hypo_remaining += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"])/1000
@@ -819,5 +794,5 @@ class TestChlorination():
         combined_chlorine += 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","NHCl2"])/1000
         combined_chlorine += 3*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","NCl3"])/1000
 
-        assert pytest.approx(2.506835, rel=1e-3) == hypo_remaining*70900
-        assert pytest.approx(12.603826, rel=1e-3) == combined_chlorine*70900
+        assert pytest.approx(2.506835, rel=1e-5) == hypo_remaining*70900
+        assert pytest.approx(12.603826, rel=1e-5) == combined_chlorine*70900
