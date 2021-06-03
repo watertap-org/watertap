@@ -637,46 +637,35 @@ class TestChlorination():
         assert hasattr(model.fs.thermo_params, 'component_list')
         assert len(model.fs.thermo_params.component_list) == 10
         assert 'H2O' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'H2O')
         assert isinstance(model.fs.thermo_params.H2O, Solvent)
         assert 'H_+' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'H_+')
         assert isinstance(model.fs.thermo_params.component('H_+'), Cation)
         assert 'OH_-' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'OH_-')
         assert isinstance(model.fs.thermo_params.component('OH_-'), Anion)
 
         assert 'OCl_-' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'OCl_-')
         assert isinstance(model.fs.thermo_params.component('OCl_-'), Anion)
 
         assert 'NH4_+' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'NH4_+')
         assert isinstance(model.fs.thermo_params.component('NH4_+'), Cation)
 
         assert 'NH2Cl' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'NH2Cl')
         assert isinstance(model.fs.thermo_params.component('NH2Cl'), Solute)
 
         assert 'NHCl2' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'NHCl2')
         assert isinstance(model.fs.thermo_params.component('NHCl2'), Solute)
 
         assert 'NCl3' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'NCl3')
         assert isinstance(model.fs.thermo_params.NCl3, Solute)
 
         assert 'NH3' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'NH3')
         assert isinstance(model.fs.thermo_params.NH3, Solute)
 
         assert 'HOCl' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'HOCl')
         assert isinstance(model.fs.thermo_params.HOCl, Solute)
 
         assert hasattr(model.fs.thermo_params, 'phase_list')
         assert len(model.fs.thermo_params.phase_list) == 1
-        assert hasattr(model.fs.thermo_params, 'Liq')
         assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
 
     @pytest.mark.component
@@ -718,29 +707,17 @@ class TestChlorination():
         model.fs.rxn_params.reaction_NHCl2_K.eps.value = eps
         model.fs.rxn_params.reaction_NCl3_K.eps.value = eps
 
-        assert model.fs.thermo_params.reaction_H2O_Kw.eps.value == eps
-        assert model.fs.thermo_params.reaction_NH4_Ka.eps.value == eps
-        assert model.fs.thermo_params.reaction_HOCl_Ka.eps.value == eps
-
-        assert model.fs.rxn_params.reaction_NH2Cl_K.eps.value == eps
-        assert model.fs.rxn_params.reaction_NHCl2_K.eps.value == eps
-        assert model.fs.rxn_params.reaction_NCl3_K.eps.value == eps
-
     @pytest.mark.component
     def test_scaling(self, chlorination_obj):
         model = chlorination_obj
         iscale.calculate_scaling_factors(model.fs.unit)
 
-        assert hasattr(model.fs.unit.control_volume, 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
 
-        assert hasattr(model.fs.unit.control_volume.properties_out[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
 
-        assert hasattr(model.fs.unit.control_volume.properties_in[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
-        assert hasattr(model.fs.unit.control_volume.reactions[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.reactions[0.0].scaling_factor, Suffix)
 
     @pytest.mark.component
