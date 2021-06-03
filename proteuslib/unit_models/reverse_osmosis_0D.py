@@ -797,10 +797,10 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         @self.Constraint(self.flowsheet().config.time)
         def eq_over_pressure(b, t):
-            return (b.over_pressure[t] ==
-                    b.feed_side.properties_out[t].pressure
-                    / b.feed_side.properties_out[t].pressure_osm
-                    - 1)
+            return (b.feed_side.properties_out[t].pressure ==
+                    (b.over_pressure[t] + 1)
+                    * (b.feed_side.properties_out[t].pressure_osm
+                       - b.properties_permeate[t].pressure_osm))
 
     def initialize(
             blk,
