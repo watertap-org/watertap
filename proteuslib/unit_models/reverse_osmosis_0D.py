@@ -283,19 +283,28 @@ class ReverseOsmosisData(UnitModelBlockData):
                 return 1e-3
             elif j in self.solute_list:
                 return 1e-6
+
+        def flux_mass_io_phase_comp_bounds(b, t, io, p, j):
+            ub = 3e-2
+            if j in self.solvent_list:
+                lb = 1e-5
+            elif j in self.solute_list:
+                lb = 1e-8
+            return (lb, ub)
+
         self.flux_mass_io_phase_comp = Var(
             self.flowsheet().config.time,
             self.io_list,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=flux_mass_io_phase_comp_initialize,
-            bounds=(1e-10, 1e6),
+            bounds=flux_mass_io_phase_comp_bounds,
             units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Mass flux across membrane at inlet and outlet')
 
         self.area = Var(
             initialize=10,
-            bounds=(1e-8, 1e6),
+            bounds=(1e-1, 1e3),
             domain=NonNegativeReals,
             units=units_meta('length')**2,
             doc='Membrane area')
@@ -305,12 +314,21 @@ class ReverseOsmosisData(UnitModelBlockData):
                 return 0.1
             elif j in self.solute_list:
                 return 0.01
+
+        def recovery_mass_phase_comp_bounds(b, t, p, j):
+            ub = 1 - 1e-6
+            if j in self.solvent_list:
+                lb = 1e-2
+            elif j in self.solute_list:
+                lb = 1e-5
+            return (lb, ub)
+
         self.recovery_mass_phase_comp = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=recovery_mass_phase_comp_initialize,
-            bounds=(1e-8, 1),
+            bounds=recovery_mass_phase_comp_bounds,
             units=pyunits.dimensionless,
             doc='Mass-based component recovery')
 
@@ -318,7 +336,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             initialize=0.1,
-            bounds=(1e-8, 1),
+            bounds=(1e-2, 1 - 1e-6),
             units=pyunits.dimensionless,
             doc='Volumetric-based recovery')
 
@@ -327,7 +345,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.solute_list,
             initialize=0.9,
-            bounds=(1e-8, 1),
+            bounds=(1e-2, 1 - 1e-6),
             units=pyunits.dimensionless,
             doc='Observed solute rejection')
 
