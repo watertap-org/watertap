@@ -277,14 +277,11 @@ class ReverseOsmosisData(UnitModelBlockData):
             doc='Pure water density')
 
         # Add unit variables
-        flux_mass_io_phase_comp_initialize = {}
-        for t in self.flowsheet().config.time:
-            for io in self.io_list:
-                for j in self.config.property_package.component_list:
-                    if j in self.solvent_list:
-                        flux_mass_io_phase_comp_initialize[(t, io, 'Liq', j)] = 1e-3
-                    elif j in self.solute_list:
-                        flux_mass_io_phase_comp_initialize[(t, io, 'Liq', j)] = 1e-6
+        def flux_mass_io_phase_comp_initialize(b, t, io, p, j):
+            if j in self.solvent_list:
+                return 1e-3
+            elif j in self.solute_list:
+                return 1e-6
         self.flux_mass_io_phase_comp = Var(
             self.flowsheet().config.time,
             self.io_list,
@@ -302,13 +299,11 @@ class ReverseOsmosisData(UnitModelBlockData):
             units=units_meta('length')**2,
             doc='Membrane area')
 
-        recovery_mass_phase_comp_initialize = {}
-        for t in self.flowsheet().config.time:
-            for j in self.config.property_package.component_list:
-                if j in self.solvent_list:
-                    recovery_mass_phase_comp_initialize[(t, 'Liq', j)] = 0.1
-                elif j in self.solute_list:
-                    recovery_mass_phase_comp_initialize[(t, 'Liq', j)] = 0.01
+        def recovery_mass_phase_comp_initialize(b, t, p, j):
+            if j in self.solvent_list:
+                return 0.1
+            elif j in self.solute_list:
+                return 0.01
         self.recovery_mass_phase_comp = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
@@ -326,15 +321,11 @@ class ReverseOsmosisData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc='Volumetric-based recovery')
 
-        rejection_phase_comp_initialize = {}
-        for t in self.flowsheet().config.time:
-            for j in self.solute_list:
-                rejection_phase_comp_initialize[(t, 'Liq', j)] = 0.9
         self.rejection_phase_comp = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.solute_list,
-            initialize=rejection_phase_comp_initialize,
+            initialize=0.9,
             bounds=(1e-8, 1),
             units=pyunits.dimensionless,
             doc='Observed solute rejection')
