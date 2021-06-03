@@ -13,6 +13,7 @@
 
 
 from enum import Enum
+from copy import deepcopy
 # Import Pyomo libraries
 from pyomo.environ import (Var,
                            Set,
@@ -804,6 +805,7 @@ class ReverseOsmosisData(UnitModelBlockData):
 
     def initialize(
             blk,
+            initialize_guess=None,
             state_args=None,
             outlvl=idaeslog.NOTSET,
             solver="ipopt",
@@ -811,10 +813,19 @@ class ReverseOsmosisData(UnitModelBlockData):
         """
         General wrapper for pressure changer initialization routines
         Keyword Arguments:
+            initialize_guess : a dict of guesses for solvent_recovery, solute_recovery,
+                               and cp_modulus. These guesses offset the initial values
+                               for the retentate, permeate, and membrane interface
+                               state blocks from the inlet feed
+                               (default =
+                               {'deltaP': -1e4,
+                               'solvent_recovery': 0.5,
+                               'solute_recovery': 0.01,
+                               'cp_modulus': 1.1})
             state_args : a dict of arguments to be passed to the property
-                         package(s) to provide an initial state for
-                         initialization (see documentation of the specific
-                         property package) (default = {}).
+                         package(s) to provide an initial state for the inlet
+                         feed side state block (see documentation of the specific
+                         property package) (default = None).
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : solver object or string indicating which solver to use during
@@ -837,18 +848,20 @@ class ReverseOsmosisData(UnitModelBlockData):
                 opt = solver
                 opt.options = optarg
 
-        # ---------------------------------------------------------------------
-        # Initialize control volume
-        flags = blk.feed_side.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args,)
-        init_log.info_high("Initialization Step 1 Complete.")
+        # assumptions
+        if initialize_guess is None:
+            initialize_guess = {}
+        if 'deltaP' not in initialize_guess:
+            initialize_guess['deltaP'] = -1e4
+        if 'solvent_recovery' not in initialize_guess:
+            initialize_guess['solvent_recovery'] = 0.5
+        if 'solute_recovery' not in initialize_guess:
+            initialize_guess['solute_recovery'] = 0.01
+        if 'cp_modulus' not in initialize_guess:
+            initialize_guess['cp_modulus'] = 1.1
 
         # ---------------------------------------------------------------------
-        # Initialize other state blocks
-        # Set state_args from inlet state
+        # Extract initial state of inlet feed
         if state_args is None:
             state_args = {}
             state_dict = blk.feed_side.properties_in[
@@ -862,25 +875,71 @@ class ReverseOsmosisData(UnitModelBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
+
+        # Initialize feed inlet state block
+        flags = blk.feed_side.properties_in.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+            hold_state=True)
+
+        init_log.info_high("Initialization Step 1 Complete.")
+        # ---------------------------------------------------------------------
+        # Initialize other state blocks
+        # base properties on inlet state block
+
+        if 'flow_mass_phase_comp' not in state_args.keys():
+            raise ConfigurationError('ReverseOsmosis0D initialization routine expects '
+                                     'flow_mass_phase_comp as a state variable. Check '
+                                     'that the property package supports this state '
+                                     'variable or that the state_args provided to the '
+                                     'initialize call includes this state variable')
+
+        # slightly modify initial values for other state blocks
+        state_args_retentate = deepcopy(state_args)
+        state_args_permeate = deepcopy(state_args)
+
+        state_args_retentate['pressure'] += initialize_guess['deltaP']
+        state_args_permeate['pressure'] = blk.properties_permeate[0].pressure.value
+        for j in blk.solvent_list:
+            state_args_retentate['flow_mass_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solvent_recovery'])
+            state_args_permeate['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['solvent_recovery']
+        for j in blk.solute_list:
+            state_args_retentate['flow_mass_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solute_recovery'])
+            state_args_permeate['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['solute_recovery']
+
+        state_args_interface_in = deepcopy(state_args)
+        state_args_interface_out = deepcopy(state_args_retentate)
+
+        for j in blk.solute_list:
+            state_args_interface_in['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
+            state_args_interface_out['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
+
+        blk.feed_side.properties_out.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args_retentate,)
         blk.properties_permeate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args,)
+            state_args=state_args_permeate,)
         blk.feed_side.properties_interface_in.initialize(
                 outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
-                state_args=state_args,)
+                state_args=state_args_interface_in,)
         blk.feed_side.properties_interface_out.initialize(
                 outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
-                state_args=state_args,)
+                state_args=state_args_interface_out,)
         init_log.info_high("Initialization Step 2 Complete.")
 
         # ---------------------------------------------------------------------
-        # # Solve unit
+        # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         init_log.info_high(
