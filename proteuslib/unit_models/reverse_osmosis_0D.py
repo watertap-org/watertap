@@ -373,7 +373,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 self.io_list,
                 self.solute_list,
                 initialize=5e-5,
-                bounds=(1e-6, 1),  # TODO: tighten bound
+                bounds=(1e-6, 1e-3),
                 domain=NonNegativeReals,
                 units=units_meta('length') * units_meta('time')**-1,
                 doc='Mass transfer coefficient in feed channel at inlet and outlet')
@@ -401,7 +401,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 self.flowsheet().config.time,
                 self.io_list,
                 initialize=5e2,
-                bounds=(10, 1e5),  # TODO: tighten bound
+                bounds=(10, 5e3),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="Reynolds number at inlet and outlet")
@@ -629,9 +629,11 @@ class ReverseOsmosisData(UnitModelBlockData):
                 jw = self.flux_mass_io_phase_comp[t, x, 'Liq', 'H2O'] / self.dens_solvent
                 js = self.flux_mass_io_phase_comp[t, x, 'Liq', j]
                 return (prop_interface_io.conc_mass_phase_comp['Liq', j] ==
-                        (prop_io.conc_mass_phase_comp['Liq', j] - js / jw)
-                        * exp(jw / self.Kf_io[t, x, j])
-                        + js / jw)
+                        # (prop_io.conc_mass_phase_comp['Liq', j] - js / jw)  # TODO: ask why this was written like this
+                        # * exp(jw / self.Kf_io[t, x, j])
+                        # + js / jw)
+                        prop_io.conc_mass_phase_comp['Liq', j] * exp(jw / self.Kf_io[t, x, j])
+                        - js / jw * (exp(jw / self.Kf_io[t, x, j]) - 1))
 
         # Mass transfer coefficient calculation
         if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
@@ -644,9 +646,8 @@ class ReverseOsmosisData(UnitModelBlockData):
                     prop_io = b.feed_side.properties_in[t]
                 elif x == 'out':
                     prop_io = b.feed_side.properties_out[t]
-                return (b.Kf_io[t, x, j] ==
+                return (b.Kf_io[t, x, j] * b.dh ==
                         prop_io.diffus_phase['Liq']  # TODO: add diff coefficient to SW prop and consider multi-components
-                        / b.dh
                         * b.N_Sh_io[t, x])
 
             @self.Constraint(self.flowsheet().config.time,
@@ -664,10 +665,8 @@ class ReverseOsmosisData(UnitModelBlockData):
                     prop_io = b.feed_side.properties_in[t]
                 elif x == 'out':
                     prop_io = b.feed_side.properties_out[t]
-                return (b.N_Sc_io[t, x] ==
-                        prop_io.visc_d_phase['Liq']
-                        / prop_io.dens_mass_phase['Liq']
-                        / prop_io.diffus_phase['Liq'])
+                return (b.N_Sc_io[t, x] * prop_io.dens_mass_phase['Liq'] * prop_io.diffus_phase['Liq'] ==
+                        prop_io.visc_d_phase['Liq'])
 
         if hasattr(self, 'length') or hasattr(self, 'width'):
             @self.Constraint(doc="Membrane area")
@@ -688,11 +687,9 @@ class ReverseOsmosisData(UnitModelBlockData):
                     prop_io = b.feed_side.properties_in[t]
                 elif x == 'out':
                     prop_io = b.feed_side.properties_out[t]
-                return (b.N_Re_io[t, x] ==
+                return (b.N_Re_io[t, x] * b.area_cross * prop_io.visc_d_phase['Liq'] ==
                         sum(prop_io.flow_mass_phase_comp['Liq', j] for j in b.config.property_package.component_list)
-                        / b.area_cross
-                        * b.dh
-                        / prop_io.visc_d_phase['Liq'])
+                        * b.dh)
 
             @self.Constraint(doc="Hydraulic diameter")  # eqn. 17 in Schock & Miquel, 1987
             def eq_dh(b):
@@ -706,7 +703,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             @self.Constraint(self.flowsheet().config.time,
                              doc="pressure change due to friction")
             def eq_pressure_change(b, t):
-                return (b.deltaP[t] == b.dP_dx[t] * b.length)
+                return b.deltaP[t] == b.dP_dx[t] * b.length
 
         elif self.config.pressure_change_type == PressureChangeType.calculated:
             # Crossflow velocity at inlet and outlet
@@ -817,7 +814,7 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         @self.Constraint(self.flowsheet().config.time)
         def eq_over_pressure(b, t):
-            over_pressure_plus_one = b.over_pressure[t] + 1
+            over_pressure_plus_one = b.over_pressure[t] + 1  # TODO: make over_pressure_ratio the variable
             return (b.feed_side.properties_out[t].pressure ==
                     over_pressure_plus_one * b.feed_side.properties_out[t].pressure_osm
                     - over_pressure_plus_one * b.properties_permeate[t].pressure_osm)
@@ -1119,19 +1116,6 @@ class ReverseOsmosisData(UnitModelBlockData):
                 if comp.is_solute:
                     sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
                 iscale.set_scaling_factor(v, sf)
-
-        # TODO: update IDAES control volume to scale mass_transfer and enthalpy_transfer
-        for ind, v in self.feed_side.mass_transfer_term.items():
-            (t, p, j) = ind
-            if iscale.get_scaling_factor(v) is None:
-                sf = iscale.get_scaling_factor(self.feed_side.mass_transfer_term[t, p, j])
-                iscale.constraint_scaling_transform(self.feed_side.material_balances[t, j], sf)
-
-        for t, v in self.feed_side.enthalpy_transfer.items():
-            if iscale.get_scaling_factor(v) is None:
-                sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].enth_flow)
-                iscale.set_scaling_factor(v, sf)
-                iscale.constraint_scaling_transform(self.feed_side.enthalpy_balances[t], sf)
 
         # transforming constraints
         for ind, c in self.eq_mass_transfer_term.items():
