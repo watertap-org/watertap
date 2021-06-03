@@ -350,12 +350,12 @@ class ReverseOsmosisData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc='Observed solute rejection')
 
-        self.over_pressure = Var(
+        self.over_pressure_ratio = Var(
             self.flowsheet().config.time,
-            initialize=0.1,
-            bounds=(1e-2, 5),
+            initialize=1.1,
+            bounds=(0.5, 5),
             units=pyunits.dimensionless,
-            doc='Over pressure fraction')
+            doc='Over pressure ratio')
 
         if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
             self.cp_modulus = Var(
@@ -813,11 +813,11 @@ class ReverseOsmosisData(UnitModelBlockData):
                          b.feed_side.properties_in[t].conc_mass_phase_comp['Liq', j]))
 
         @self.Constraint(self.flowsheet().config.time)
-        def eq_over_pressure(b, t):
-            over_pressure_plus_one = b.over_pressure[t] + 1  # TODO: make over_pressure_ratio the variable
+        def eq_over_pressure_ratio(b, t):
             return (b.feed_side.properties_out[t].pressure ==
-                    over_pressure_plus_one * b.feed_side.properties_out[t].pressure_osm
-                    - over_pressure_plus_one * b.properties_permeate[t].pressure_osm)
+                    b.over_pressure_ratio[t]
+                    * (b.feed_side.properties_out[t].pressure_osm
+                    - b.properties_permeate[t].pressure_osm))
 
     def initialize(
             blk,
@@ -1015,8 +1015,8 @@ class ReverseOsmosisData(UnitModelBlockData):
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, 1)
 
-        if iscale.get_scaling_factor(self.over_pressure) is None:
-            iscale.set_scaling_factor(self.over_pressure, 1)
+        if iscale.get_scaling_factor(self.over_pressure_ratio) is None:
+            iscale.set_scaling_factor(self.over_pressure_ratio, 1)
 
         if hasattr(self, 'cp_modulus'):
             if iscale.get_scaling_factor(self.cp_modulus) is None:
@@ -1234,6 +1234,6 @@ class ReverseOsmosisData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.rejection_phase_comp[t, 'Liq', j])
             iscale.constraint_scaling_transform(c, sf)
 
-        for t, c in self.eq_over_pressure.items():
-            sf = iscale.get_scaling_factor(self.over_pressure[t])
+        for t, c in self.eq_over_pressure_ratio.items():
+            sf = iscale.get_scaling_factor(self.over_pressure_ratio[t])
             iscale.constraint_scaling_transform(c, sf)

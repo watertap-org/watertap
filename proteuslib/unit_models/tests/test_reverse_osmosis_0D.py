@@ -235,7 +235,7 @@ class TestReverseOsmosis():
                                'recovery_vol_phase': Var,
                                'recovery_mass_phase_comp': Var,
                                'rejection_phase_comp': Var,
-                               'over_pressure': Var,
+                               'over_pressure_ratio': Var,
                                'deltaP': Var,
                                'cp_modulus': Var,
                                'mass_transfer_phase_comp': Var,
@@ -249,7 +249,7 @@ class TestReverseOsmosis():
                                'eq_recovery_vol_phase': Constraint,
                                'eq_recovery_mass_phase_comp': Constraint,
                                'eq_rejection_phase_comp': Constraint,
-                               'eq_over_pressure': Constraint}
+                               'eq_over_pressure_ratio': Constraint}
         for (obj_str, obj_type) in unit_objs_type_dict.items():
             obj = getattr(m.fs.unit, obj_str)
             assert isinstance(obj, obj_type)
