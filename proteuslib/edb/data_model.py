@@ -68,6 +68,7 @@ uses    ├───────────────────────
 
 # stdlib
 import copy
+from fnmatch import fnmatchcase
 import logging
 from typing import Dict, Type
 
@@ -77,11 +78,21 @@ from pyomo.environ import units as pyunits
 # IDAES core
 from idaes.core.phases import PhaseType
 from idaes.generic_models.properties.core.pure import Perrys
-from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
+from idaes.core import LiquidPhase, VaporPhase
+from idaes.generic_models.properties.core.state_definitions import FTPx
+from idaes.generic_models.properties.core.eos.ideal import Ideal
+from idaes.generic_models.properties.core.generic.generic_reaction import (
+    ConcentrationForm,
+)
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import power_law_equil
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+    power_law_equil,
+)
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
+from idaes.generic_models.properties.core.generic.generic_reaction import (
+    ConcentrationForm,
+)
+
 # IDE complains about these two
 # from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
 # from idaes.generic_models.properties.core.reactions.equilibrium_constant import gibbs_energy
@@ -98,12 +109,13 @@ class ConfigGenerator:
     """Interface for getting an IDAES 'idaes_config' dict."""
 
     merge_keys = ()
+    substitute_values = {}
+    SUBST_UNITS = "units"
 
     def __init__(self, data):
         data_copy = copy.deepcopy(data)
         self._transform(data_copy)
         self.config = data_copy
-        print(f"@@ transformed data for class {type(self)}")
 
     @classmethod
     def _transform(cls, data):
@@ -156,12 +168,12 @@ class ConfigGenerator:
         if section not in data:
             data[section] = {}
         assert comp_name not in data[section], "trying to add existing component"
-        data[section][comp_name]  = {}
+        data[section][comp_name] = {}
         # copy existing to new location
         to_delete = set()  # cannot delete while iterating, so store keys to delete here
         for key, value in data.items():
             # if this is not a special field, add it to the the component
-            if key not in ("name", "base_units", section, "_id"):
+            if key not in ("name", "type", "base_units", "reaction_type", "components", "reactant_elements", section, "_id"):
                 data[section][comp_name][key] = value
             # mark field for deletion, if not top-level field
             if key not in ("base_units", section):
@@ -174,28 +186,85 @@ class ConfigGenerator:
 
     @classmethod
     def _remove_special(cls, data):
-        """Remove 'special' keys starting with an underscore (e.g. _id) as well as 'name'.
-        """
+        """Remove 'special' keys starting with an underscore (e.g. _id) as well as 'name'."""
         for key in list(data.keys()):
             if key.startswith("_") or key == "name":
                 del data[key]
 
+    @classmethod
+    def _substitute(cls, data):
+        def dicty(d):
+            return hasattr(d, "keys")
+
+        def substitute_value(d, subst, key):
+            """Find string value at 'd[key]' in mapping 'subst' and substitute mapped value.
+            Return True if found, False otherwise.
+            """
+            str_value = d[key]
+            if dicty(subst):
+                if str_value in subst:
+                    d[key] = subst[str_value]
+                    return True
+                return False
+            elif subst == cls.SUBST_UNITS:
+                if isinstance(str_value, str):  # make sure it's not already evaluated
+                    d[key] = cls._build_units(str_value)
+
+        sv = cls.substitute_values
+        for sv_section in sv:
+            # get parent dict at dotted path given by 'sv_section'
+            key_list = sv_section.split(".")
+            data_section = data
+            # walk down the dotted path to the terminal dict
+            while dicty(data_section) and len(key_list) > 1:
+                subsection = key_list.pop(0)
+                if subsection in data_section:
+                    data_section = data_section[subsection]
+                else:
+                    data_section = None  # not present
+            #  if found, perform substitution(s)
+            if dicty(data_section):
+                sv_key = key_list.pop()
+                # if it is a wildcard, allow multiple substitutions
+                if "*" in sv_key:
+                    matches = [k for k in data_section if fnmatchcase(k, sv_key)]
+                    for match_key in matches:
+                        did_subst = substitute_value(
+                            data_section, sv[sv_section], match_key
+                        )
+                        if not did_subst:
+                            _log.warning(
+                                f"Could not find substitution: section={sv_section} match={match_key} "
+                                f"value={data_section[match_key]}"
+                            )
+                # if not a wildcard, do zero or one substitutions
+                elif sv_key in data_section:
+                    did_subst = substitute_value(data_section, sv[sv_section], sv_key)
+                    if not did_subst:
+                        _log.warning(
+                            f"Could not find substitution: section={sv_section} "
+                            f"value={data_section[sv_key]}"
+                        )
+
 
 class ThermoConfig(ConfigGenerator):
 
+    substitute_values = {
+        "valid_phase_types": {
+            "PT.liquidPhase": PhaseType.liquidPhase,
+            "PT.solidPhase": PhaseType.solidPhase,
+            "PT.vaporPhase": PhaseType.vaporPhase,
+            "PT.aqueousPhase": PhaseType.aqueousPhase,
+        },
+        "*_comp": {
+            "Perrys": Perrys,
+        },
+    }
+
     @classmethod
     def _transform(cls, data):
-        """In-place data transformation.
-        """
-        key = "valid_phase_types"
-        if key in data:
-            data[key] = eval(data[key], {"PT": PhaseType})
-
         cls._transform_parameter_data(data)
-
-        for key in filter(lambda k: k.endswith("_comp"), data.keys()):
-            if data[key] == "Perrys":
-                data[key] = Perrys
+        cls._substitute(data)
 
         if "elements" in data:
             del data["elements"]
@@ -204,6 +273,16 @@ class ThermoConfig(ConfigGenerator):
 
 
 class ReactionConfig(ConfigGenerator):
+
+    substitute_values = {
+        "heat_of_reaction": {"constant_dh_rxn": constant_dh_rxn},
+        "*_form": {
+            "log_power_law": log_power_law,
+            "ConcentrationForm.molarity": ConcentrationForm.molarity,
+        },
+        "*_constant": {"van_t_hoff_aqueous": van_t_hoff_aqueous},
+    }
+
     @classmethod
     def _transform(cls, data):
         """In-place data transformation from standard storage format to
@@ -212,8 +291,7 @@ class ReactionConfig(ConfigGenerator):
 
         cls._transform_parameter_data(data)
 
-        for key in list(data.keys()):
-            value = data[key]
+        for key, value in data.items():
             # reformat stoichiometry to have tuple keys
             if key == "stoichiometry":
                 stoich = value
@@ -223,27 +301,23 @@ class ReactionConfig(ConfigGenerator):
                         skey = (phase, component_name)
                         stoich_table[skey] = num
                 data[key] = stoich_table
-            # evaluate special string constants
-            elif isinstance(value, str):
-                if value in ("heat_of_reaction",) or value.endswith("_form") or value.endswith("_constant"):
-                    data[key] = eval(value)
-            else:
-                pass  # let it be, let it be..
 
+        cls._substitute(data)
         cls._wrap_section("equilibrium_reactions", data)
 
 
 class BaseConfig(ConfigGenerator):
+
+    substitute_values = {
+        "state_definition": {"FTPx": FTPx},
+        "phases.Liq.type": {"LiquidPhase": LiquidPhase},
+        "phases.Liq.equation_of_state": {"Ideal": Ideal},
+        "base_units.*": ConfigGenerator.SUBST_UNITS
+    }
+
     @classmethod
     def _transform(cls, data):
-        # evaluate units in 'base_units'
-        base_units = "base_units"
-        if base_units in data:
-            bu = data[base_units]
-            for key, value in bu.items():
-                if isinstance(value, str):  # make sure it's not already evaluated
-                    bu[key] = cls._build_units(value)
-
+        cls._substitute(data)
         cls._remove_special(data)
 
 
@@ -257,11 +331,12 @@ class DataWrapper:
     Note that no conversion work is done before the first access, and the converted result is cached to
     avoid extra work on repeated accesses.
     """
+
     #: Subclasses should set this to the list of top-level keys that should be added, i.e. merged,
     #: into the result when an instance is added to the base data wrapper.
     merge_keys = ()
 
-    def __init__(self, data: Dict, config_gen_class: Type[ConfigGenerator]):
+    def __init__(self, data: Dict, config_gen_class: Type[ConfigGenerator] = None):
         """Ctor.
 
         Args:
@@ -274,7 +349,6 @@ class DataWrapper:
     def idaes_config(self) -> Dict:
         """"Get the data as an IDAES config dict."""
         if self._config is None:
-            print(f"@@ Calling {self._config_gen.__name__}(data). data = {self._data}")
             # the config_gen() call will copy its input, so get the result from the .config attr
             self._config = self._config_gen(self._data).config
         return self._config

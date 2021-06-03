@@ -7,7 +7,7 @@ import pytest
 from ..data_model import ConfigGenerator, Component, Reaction, Result, Base
 from . import data as testdata
 from typing import Dict
-
+from pyomo.environ import units as pyunits
 
 def assert_configuration_equal(a: Dict, b: Dict):
     """Walk through and compare things in two config dicts.
@@ -28,7 +28,9 @@ def assert_configuration_equal(a: Dict, b: Dict):
             if key == "parameter_data":
                 for key2, value2 in a_comp[key].items():
                     assert key2 in b_comp[key]
-                    if isinstance(value2, tuple) and len(value2) == 2:  # number, unit pair
+                    if (
+                        isinstance(value2, tuple) and len(value2) == 2
+                    ):  # number, unit pair
                         assert b_comp[key][key2][0] == pytest.approx(value2[0])
 
 
@@ -99,3 +101,44 @@ def test_base(starting_value):
     b.add(c)
     print(f"b.idaes_config={b.idaes_config} component_data={component_data}")
     assert b.idaes_config[mk0][name]["data"] == component_data["data"]
+
+
+subst_foo, subst_bar, subst_y1, subst_y2 = "foo_obj", "bar_obj", 1, 2
+
+
+class SubstituteTestGenerator(ConfigGenerator):
+    pass
+
+
+@pytest.mark.unit
+def test_config_generator_substitute():
+    SubstituteTestGenerator.substitute_values = {
+        "a.b": {"foo": subst_foo},
+        "x.*_bla": {"foo": subst_foo, "bar": subst_bar},
+        "y": {"1": subst_y1, "2": subst_y2},
+        "d.e.e.p": {"number_one": subst_y1},
+        "d.e.e.p.e.*": {"number_two": subst_y2},
+        "z.*": SubstituteTestGenerator.SUBST_UNITS
+    }
+    data = {
+        "a": {"b": "foo"},
+        "x": {"one_bla": "bar", "two_bla": "hello", "three_bla": "foo", "ignore": "me"},
+        "y": "1",
+        "z": {"time": "U.s", "ignored_due_to_value": 0.123},
+        "d": {"e": {"e": {"p": "number_one"}}},
+    }
+    print(f"before: {data}")
+    SubstituteTestGenerator._substitute(data)
+    print(f"after: {data}")
+    assert data == {
+        "a": {"b": "foo_obj"},
+        "x": {
+            "one_bla": "bar_obj",
+            "two_bla": "hello",
+            "three_bla": "foo_obj",
+            "ignore": "me",
+        },
+        "y": 1,
+        "z": {"time": pyunits.s, "ignored_due_to_value": 0.123},
+        "d": {"e": {"e": {"p": 1}}},
+    }
