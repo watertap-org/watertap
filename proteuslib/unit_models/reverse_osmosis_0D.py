@@ -362,7 +362,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 self.flowsheet().config.time,
                 self.solute_list,
                 initialize=1.1,
-                bounds=(1e-8, 10),
+                bounds=(0.9, 3),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc='Concentration polarization modulus')
@@ -373,7 +373,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 self.io_list,
                 self.solute_list,
                 initialize=5e-5,
-                bounds=(1e-6, 1),
+                bounds=(1e-6, 1),  # TODO: tighten bound
                 domain=NonNegativeReals,
                 units=units_meta('length') * units_meta('time')**-1,
                 doc='Mass transfer coefficient in feed channel at inlet and outlet')
@@ -381,19 +381,19 @@ class ReverseOsmosisData(UnitModelBlockData):
                 or self.config.pressure_change_type == PressureChangeType.calculated):
             self.channel_height = Var(
                 initialize=1e-3,
-                bounds=(1e-8, 1),
+                bounds=(1e-4, 5e-3),
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='Feed-channel height')
             self.dh = Var(
                 initialize=1e-3,
-                bounds=(1e-5, 1e-2),
+                bounds=(1e-4, 5e-3),
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='Hydraulic diameter of feed channel')
             self.spacer_porosity = Var(
                 initialize=0.95,
-                bounds=(0, 1),
+                bounds=(0.1, 0.99),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc='Feed-channel spacer porosity')
@@ -401,7 +401,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 self.flowsheet().config.time,
                 self.io_list,
                 initialize=5e2,
-                bounds=(1e-3, 1e6),
+                bounds=(10, 1e5),  # TODO: tighten bound
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="Reynolds number at inlet and outlet")
@@ -410,7 +410,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 self.flowsheet().config.time,
                 self.io_list,
                 initialize=5e2,
-                bounds=(1e-3, 1e6),
+                bounds=(1e2, 2e3),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="Schmidt number at inlet and outlet")
@@ -418,7 +418,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 self.flowsheet().config.time,
                 self.io_list,
                 initialize=1e2,
-                bounds=(1e-8, 1e6),
+                bounds=(1, 3e2),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="Sherwood number at inlet and outlet")
@@ -427,13 +427,13 @@ class ReverseOsmosisData(UnitModelBlockData):
                 or (self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)):
             self.length = Var(
                 initialize=10,
-                bounds=(1e-3, 1e6),
+                bounds=(0.1, 5e2),
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='Effective membrane length')
             self.width = Var(
                 initialize=1,
-                bounds=(1e-3, 1e6),
+                bounds=(0.1, 5e2),
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc='Effective feed-channel width')
@@ -442,7 +442,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             self.dP_dx = Var(
                 self.flowsheet().config.time,
                 initialize=-5e4,
-                bounds=(-1e6, -1e-10),
+                bounds=(-2e5, -1e3),
                 domain=NegativeReals,
                 units=units_meta('pressure')*units_meta('length')**-1,
                 doc="Decrease in pressure per unit length across feed channel")
@@ -452,7 +452,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 self.flowsheet().config.time,
                 self.io_list,
                 initialize=0.5,
-                bounds=(1e-8, 10),
+                bounds=(1e-2, 5),
                 domain=NonNegativeReals,
                 units=units_meta('length')/units_meta('time'),
                 doc="Crossflow velocity in feed channel at inlet and outlet")
@@ -460,15 +460,15 @@ class ReverseOsmosisData(UnitModelBlockData):
                 self.flowsheet().config.time,
                 self.io_list,
                 initialize=0.5,
-                bounds=(1e-8, 10),
+                bounds=(1e-2, 5),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="Darcy friction factor in feed channel at inlet and outlet")
             self.dP_dx_io = Var(
                 self.flowsheet().config.time,
                 self.io_list,
-                initialize=-1e4,
-                bounds=(-1e6, -1e1),
+                initialize=-5e4,
+                bounds=(-2e5, -1e3),
                 domain=NegativeReals,
                 units=units_meta('pressure')*units_meta('length')**-1,
                 doc="Pressure drop per unit length in feed channel at inlet and outlet")
@@ -529,7 +529,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         # mass transfer
         def mass_transfer_phase_comp_initialize(b, t, p, j):
             return value(self.feed_side.properties_in[t].get_material_flow_terms('Liq', j)
-                              * self.recovery_mass_phase_comp[t, 'Liq', j])
+                         * self.recovery_mass_phase_comp[t, 'Liq', j])
         self.mass_transfer_phase_comp = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
