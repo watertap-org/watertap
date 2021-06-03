@@ -507,11 +507,8 @@ class ReverseOsmosisData(UnitModelBlockData):
             self.deltaP = Reference(self.feed_side.deltaP)
 
         # mass transfer
-        mass_transfer_phase_comp_initialize = {}
-        for t in self.flowsheet().config.time:
-            for j in self.config.property_package.component_list:
-                    mass_transfer_phase_comp_initialize[(t, 'Liq', j)] = \
-                        value(self.feed_side.properties_in[t].get_material_flow_terms('Liq', j)
+        def mass_transfer_phase_comp_initialize(b, t, p, j):
+            return value(self.feed_side.properties_in[t].get_material_flow_terms('Liq', j)
                               * self.recovery_mass_phase_comp[t, 'Liq', j])
         self.mass_transfer_phase_comp = Var(
             self.flowsheet().config.time,
