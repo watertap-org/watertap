@@ -277,9 +277,9 @@ PXR HP out: 0.517 kg/s, 67501 ppm, 1.0 bar
         optimize(m, solver=solver)
 
         # check decision variables
-        assert value(m.fs.RO.inlet.pressure[0]) == pytest.approx(6240131, rel=1e-3)
-        assert value(m.fs.RO.area) == pytest.approx(70.13, rel=1e-3)
+        assert value(m.fs.RO.inlet.pressure[0]) == pytest.approx(6307972, rel=1e-3)
+        assert value(m.fs.RO.area) == pytest.approx(67.46, rel=1e-3)
         # check system metrics
         assert value(m.fs.recovery) == 0.5
-        assert value(m.fs.specific_energy_consumption) == pytest.approx(2.335, rel=1e-3)
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.3973, rel=1e-3)
+        assert value(m.fs.specific_energy_consumption) == pytest.approx(2.359, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.3980, rel=1e-3)

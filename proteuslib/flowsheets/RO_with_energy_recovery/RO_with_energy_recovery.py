@@ -20,6 +20,7 @@ from pyomo.environ import (ConcreteModel,
                            TransformationFactory,
                            units as pyunits)
 from pyomo.network import Arc
+import pyomo.util.infeasible as infeas
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (solve_indexed_blocks,
@@ -31,7 +32,6 @@ from idaes.generic_models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-# import proteuslib.property_models.seawater_prop_pack as props
 import proteuslib.property_models.NaCl_prop_pack as props
 from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 from proteuslib.unit_models.pressure_exchanger import PressureExchanger
@@ -53,17 +53,21 @@ def main():
 
     # simulate and display
     solve(m, solver=solver_dict['solver'])
-    print('\n***---Simulation results---***')
-    display_system(m)
-    display_design(m)
-    display_state(m)
+    # print('\n***---Simulation results---***')
+    # display_system(m)
+    # display_design(m)
+    # display_state(m)
 
     # optimize and display
     optimize(m, solver=solver_dict['solver'])
-    print('\n***---Optimization results---***')
-    display_system(m)
-    display_design(m)
-    display_state(m)
+    # print('\n***---Optimization results---***')
+    # display_system(m)
+    # display_design(m)
+    # display_state(m)
+
+    m.fs.RO.flux_mass_io_phase_comp.display()
+    infeas.log_close_to_bounds(m)
+    infeas.log_infeasible_constraints(m)
 
 
 def build():
@@ -354,12 +358,15 @@ def optimize(m, solver=None):
     # additional specifications
     product_recovery = 0.5  # product mass flow rate fraction of feed [-]
     product_salinity = 500e-6  # product NaCl mass fraction [-]
+    minimum_water_flux = 1 / 3600  # minimum water flux [kg/m2-s]
 
     # additional constraints
     m.fs.eq_recovery = Constraint(expr=product_recovery == m.fs.recovery)
     m.fs.eq_product_quality = Constraint(
         expr=m.fs.product.properties[0].mass_frac_phase_comp['Liq', 'NaCl'] <= product_salinity)
     iscale.constraint_scaling_transform(m.fs.eq_product_quality, 1e3)  # scaling constraint
+    m.fs.eq_minimum_water_flux = Constraint(
+        expr=m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'] >= minimum_water_flux)
 
     # ---checking model---
     check_dof(m, dof_expected=1)
