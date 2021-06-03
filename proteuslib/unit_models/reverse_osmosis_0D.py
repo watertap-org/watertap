@@ -24,7 +24,8 @@ from pyomo.environ import (Var,
                            Reference,
                            Block,
                            units as pyunits,
-                           exp)
+                           exp,
+                           value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -276,29 +277,47 @@ class ReverseOsmosisData(UnitModelBlockData):
             doc='Pure water density')
 
         # Add unit variables
+        flux_mass_io_phase_comp_initialize = {}
+        for t in self.flowsheet().config.time:
+            for io in self.io_list:
+                for j in self.config.property_package.component_list:
+                    if j in self.solvent_list:
+                        flux_mass_io_phase_comp_initialize[(t, io, 'Liq', j)] = 1e-3
+                    elif j in self.solute_list:
+                        flux_mass_io_phase_comp_initialize[(t, io, 'Liq', j)] = 1e-6
         self.flux_mass_io_phase_comp = Var(
             self.flowsheet().config.time,
             self.io_list,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
-            initialize=1e-3,
+            initialize=flux_mass_io_phase_comp_initialize,
             bounds=(1e-10, 1e6),
             units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Mass flux across membrane at inlet and outlet')
+
         self.area = Var(
             initialize=10,
             bounds=(1e-8, 1e6),
             domain=NonNegativeReals,
             units=units_meta('length')**2,
             doc='Membrane area')
+
+        recovery_mass_phase_comp_initialize = {}
+        for t in self.flowsheet().config.time:
+            for j in self.config.property_package.component_list:
+                if j in self.solvent_list:
+                    recovery_mass_phase_comp_initialize[(t, 'Liq', j)] = 0.1
+                elif j in self.solute_list:
+                    recovery_mass_phase_comp_initialize[(t, 'Liq', j)] = 0.01
         self.recovery_mass_phase_comp = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
-            initialize=0.1,
+            initialize=recovery_mass_phase_comp_initialize,
             bounds=(1e-8, 1),
             units=pyunits.dimensionless,
             doc='Mass-based component recovery')
+
         self.recovery_vol_phase = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
@@ -306,14 +325,20 @@ class ReverseOsmosisData(UnitModelBlockData):
             bounds=(1e-8, 1),
             units=pyunits.dimensionless,
             doc='Volumetric-based recovery')
+
+        rejection_phase_comp_initialize = {}
+        for t in self.flowsheet().config.time:
+            for j in self.solute_list:
+                rejection_phase_comp_initialize[(t, 'Liq', j)] = 0.9
         self.rejection_phase_comp = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.solute_list,
-            initialize=0.1,
+            initialize=rejection_phase_comp_initialize,
             bounds=(1e-8, 1),
             units=pyunits.dimensionless,
             doc='Observed solute rejection')
+
         self.over_pressure = Var(
             self.flowsheet().config.time,
             initialize=0.1,
@@ -325,7 +350,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             self.cp_modulus = Var(
                 self.flowsheet().config.time,
                 self.solute_list,
-                initialize=1,
+                initialize=1.1,
                 bounds=(1e-8, 10),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
@@ -336,7 +361,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 self.flowsheet().config.time,
                 self.io_list,
                 self.solute_list,
-                initialize=1e-5,
+                initialize=5e-5,
                 bounds=(1e-6, 1),
                 domain=NonNegativeReals,
                 units=units_meta('length') * units_meta('time')**-1,
@@ -356,7 +381,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 units=units_meta('length'),
                 doc='Hydraulic diameter of feed channel')
             self.spacer_porosity = Var(
-                initialize=0.97,
+                initialize=0.95,
                 bounds=(0, 1),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
@@ -364,7 +389,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             self.N_Re_io = Var(
                 self.flowsheet().config.time,
                 self.io_list,
-                initialize=1e2,
+                initialize=5e2,
                 bounds=(1e-3, 1e6),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
@@ -373,7 +398,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             self.N_Sc_io = Var(
                 self.flowsheet().config.time,
                 self.io_list,
-                initialize=3e3,
+                initialize=5e2,
                 bounds=(1e-3, 1e6),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
@@ -381,7 +406,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             self.N_Sh_io = Var(
                 self.flowsheet().config.time,
                 self.io_list,
-                initialize=3e3,
+                initialize=1e2,
                 bounds=(1e-8, 1e6),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
@@ -405,8 +430,8 @@ class ReverseOsmosisData(UnitModelBlockData):
         if self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length:
             self.dP_dx = Var(
                 self.flowsheet().config.time,
-                initialize=-1e5,
-                bounds=(None, -1e-10),
+                initialize=-5e4,
+                bounds=(-1e6, -1e-10),
                 domain=NegativeReals,
                 units=units_meta('pressure')*units_meta('length')**-1,
                 doc="Decrease in pressure per unit length across feed channel")
@@ -415,7 +440,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             self.velocity_io = Var(
                 self.flowsheet().config.time,
                 self.io_list,
-                initialize=1,
+                initialize=0.5,
                 bounds=(1e-8, 10),
                 domain=NonNegativeReals,
                 units=units_meta('length')/units_meta('time'),
@@ -423,7 +448,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             self.friction_factor_darcy_io = Var(
                 self.flowsheet().config.time,
                 self.io_list,
-                initialize=1,
+                initialize=0.5,
                 bounds=(1e-8, 10),
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
@@ -491,11 +516,17 @@ class ReverseOsmosisData(UnitModelBlockData):
             self.deltaP = Reference(self.feed_side.deltaP)
 
         # mass transfer
+        mass_transfer_phase_comp_initialize = {}
+        for t in self.flowsheet().config.time:
+            for j in self.config.property_package.component_list:
+                    mass_transfer_phase_comp_initialize[(t, 'Liq', j)] = \
+                        value(self.feed_side.properties_in[t].get_material_flow_terms('Liq', j)
+                              * self.recovery_mass_phase_comp[t, 'Liq', j])
         self.mass_transfer_phase_comp = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
-            initialize=1,
+            initialize=mass_transfer_phase_comp_initialize,
             bounds=(1e-8, 1e6),
             domain=NonNegativeReals,
             units=units_meta('mass') * units_meta('time')**-1,
@@ -819,14 +850,14 @@ class ReverseOsmosisData(UnitModelBlockData):
                 opt.options = optarg
 
         # ---------------------------------------------------------------------
-        # Initialize holdup block
+        # Initialize control volume
         flags = blk.feed_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args,
-        )
+            state_args=state_args,)
         init_log.info_high("Initialization Step 1 Complete.")
+
         # ---------------------------------------------------------------------
         # Initialize other state blocks
         # Set state_args from inlet state
@@ -847,26 +878,21 @@ class ReverseOsmosisData(UnitModelBlockData):
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args,
-        )
-        if hasattr(blk.feed_side, 'properties_interface_in'):
-            blk.feed_side.properties_interface_in.initialize(
+            state_args=state_args,)
+        blk.feed_side.properties_interface_in.initialize(
                 outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
-                state_args=state_args,
-            )
-        if hasattr(blk.feed_side, 'properties_interface_out'):
-            blk.feed_side.properties_interface_out.initialize(
+                state_args=state_args,)
+        blk.feed_side.properties_interface_out.initialize(
                 outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
-                state_args=state_args,
-            )
+                state_args=state_args,)
         init_log.info_high("Initialization Step 2 Complete.")
 
         # ---------------------------------------------------------------------
-        # Solve unit
+        # # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         init_log.info_high(
@@ -874,7 +900,7 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.feed_side.release_state(flags, outlvl + 1)
+        blk.feed_side.release_state(flags, outlvl)
         init_log.info(
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )
