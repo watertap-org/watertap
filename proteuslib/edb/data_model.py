@@ -210,21 +210,37 @@ class ConfigGenerator:
             return hasattr(d, "keys")
 
         def substitute_value(d, subst, key):
-            """Find string value at 'd[key]' in mapping 'subst' and substitute mapped value.
+            """Find string value(s) at 'd[key]' in mapping 'subst' and substitute mapped value.
             Return True if found, False otherwise.
             """
-            str_value = d[key]
-            if dicty(subst):
-                if str_value in subst:
-                    d[key] = subst[str_value]
-                    return True
-                return False
-            elif subst == cls.SUBST_UNITS:
-                if isinstance(str_value, str):  # make sure it's not already evaluated
-                    _log.debug(f"Substituting units: set d[{key}] = units('{str_value}') where d={d}")
-                    d[key] = cls._build_units(str_value)
-                    return True
-            return False
+            # make a single string into a list of length 1, but remember whether it's a list or not
+            if isinstance(d[key], str):
+                str_values = [d[key]]
+                is_list = False
+            else:
+                str_values = list(d[key])
+                is_list = True
+            # substitute all values in the list, with the result in `new_list`
+            num_subst, new_list = 0, []
+            for str_value in str_values:
+                new_value = None
+                if dicty(subst):
+                    if str_value in subst:
+                        new_value = subst[str_value]
+                        num_subst += 1
+                elif subst == cls.SUBST_UNITS:
+                    if isinstance(str_value, str):  # make sure it's not already evaluated
+                        _log.debug(f"Substituting units: set d[{key}] = units('{str_value}') where d={d}")
+                        new_value = cls._build_units(str_value)
+                if new_value is None:
+                    new_list.append(str_value)  # unsubstituted value
+                else:
+                    new_list.append(new_value)
+                    num_subst += 1
+            # change input to substituted list (or single value)
+            d[key] = new_list if is_list else new_list[0]
+            # return True only if all values were substituted
+            return num_subst == len(new_list)
 
         sv = cls.substitute_values
         for sv_section in sv:
@@ -243,7 +259,6 @@ class ConfigGenerator:
                 sv_key = key_list.pop()
                 # if it is a wildcard, allow multiple substitutions
                 if "*" in sv_key:
-                    print(f"@@ matching key {sv_key} in data section = {data_section}")
                     matches = [k for k in data_section if fnmatchcase(k, sv_key)]
                     for match_key in matches:
                         did_subst = substitute_value(
