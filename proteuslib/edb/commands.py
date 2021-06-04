@@ -106,6 +106,8 @@ def load_data(input_file, data_type, url, database, validate):
     filename = input_file.name
     _log.debug(f"Reading records from input file '{filename}'")
     input_data = json.load(input_file)
+    if isinstance(input_data, dict):  # make single record into a list of length one
+        input_data = [input_data]
     _log.info(f"Read {len(input_data)} records from input file '{filename}'")
     if validate:
         _log.info("Validating records")
@@ -125,6 +127,9 @@ def load_data(input_file, data_type, url, database, validate):
                 d = vld(record)
             except ValidationError as err:
                 click.echo(f"Validation failed: {err}")
+                if print_messages:
+                    click.echo("Record:")
+                    click.echo(json.dumps(record, indent=2))
                 return -1
             data.append(d)
     else:
