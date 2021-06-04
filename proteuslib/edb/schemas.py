@@ -10,24 +10,51 @@ JSON schema embedded as variables for:
   - reaction
 """
 
+_parameter_def = {
+    "type": "array",
+    "description": "List of parameter values",
+    "items": {
+        "type": "object",
+        "description": "Value, units, etc. for a parameter",
+        "properties": {
+            "v": {"description": "value", "type": "number"},
+            "u": {"description": "units", "type": "string"},
+            "i": {
+                "oneOf": [
+                    {"type": "string", "description": "string index"},
+                    {"type": "number", "description": "numeric index"},
+                ]
+            },
+        },
+        "required": ["v", "u"],
+    },
+}
+
 schemas = {
     "component": {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "$id": "https://nawi-hub.github.com/electrolytedb/component",
-        "title": "Electrolyte database component",
+        "title": "Component",
         "type": "object",
-        "description": "Electrolyte component schema",
+        "description": "A chemical species that is a component in a reaction",
         "properties": {
-            "type": {"type": "string", "const": "component"},
             "name": {
                 "description": "The chemical name of the component",
                 "examples": ["HPO4 2-", "H3PO4", "NH4 +"],
                 "type": "string",
             },
-            "valid_phase_types": {"type": "string"},
+            "valid_phase_types": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "description": "Valid phase types should start with 'PT.' and then match "
+                    "attributes in idaes.core.phases.PhaseType",
+                    "examples": [["PT.liquidPhase"]],
+                },
+            },
             "phase_equilibrium_form": {
                 "type": "object",
-                "properties": {"vap": {"type": "string"}, "liq": {"type": "string"}},
+                "properties": {"Vap": {"type": "string"}, "Liq": {"type": "string"}},
             },
             "parameter_data": {
                 "type": "object",
@@ -37,46 +64,36 @@ schemas = {
                     "temperature_crit": {"$ref": "#/definitions/parameter"},
                 },
                 "patternProperties": {
-                    "_coeff": {
-                        "type": "object",
-                        "additionalProperties": {"$ref": "#/definitions/parameter"},
-                    },
-                    "_ref": {"$ref": "#/definitions/parameter"},
+                    "^.*_coeff$": {"$ref": "#/definitions/parameter"},
+                    "^.*_ref$": {"$ref": "#/definitions/parameter"},
                 },
                 "additionalProperties": False,
             },
         },
-        "required": ["name", "type"],
+        "required": ["name", "parameter_data"],
         "patternProperties": {"_comp": {"type": "string"}},
         "additionalProperties": False,
-        "definitions": {
-            "parameter": {
-                "type": "object",
-                "description": "Value, units, etc. for a parameter",
-                "properties": {
-                    "v": {"description": "value", "type": "number"},
-                    "u": {"description": "units", "type": "string"},
-                    "i": {"description": "index", "type": "number"}
-                },
-                "required": ["v", "u"]
-            }
-        },
+        "definitions": {"parameter": _parameter_def},
     },
     "reaction": {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "$id": "https://nawi-hub.github.com/electrolytedb/reaction",
-        "title": "Electrolyte database reaction",
-        "description": "Electrolyte reaction schema",
+        "title": "Reaction",
+        "description": "The stoichiometry and properties of a reaction",
         "type": "object",
         "properties": {
-            "type": {"type": "string", "enum": ["equilibrium"], "description": "Type of reaction"},
+            "type": {
+                "type": "string",
+                "enum": ["equilibrium"],
+                "description": "Type of reaction",
+            },
             "name": {"type": "string", "description": "Name of reaction"},
             "stoichiometry": {
                 "type": "object",
                 "properties": {
                     "Liq": {"$ref": "#/definitions/stoichiometry"},
-                    "Vap": {"$ref": "#/definitions/stoichiometry"}
-                }
+                    "Vap": {"$ref": "#/definitions/stoichiometry"},
+                },
             },
             "heat_of_reaction": {"type": "string"},
             "equilibrium_constant": {"type": "string"},
@@ -88,33 +105,19 @@ schemas = {
                 "additionalProperties": False,
             },
         },
-        "required": ["name", "type"],
+        "required": ["name", "parameter_data"],
         "definitions": {
-            "parameter": {
-                "type": "array",
-                "description": "List of parameter values",
-                "items": {
-                    "type": "object",
-                    "description": "Value, units, etc. for a parameter",
-                    "properties": {
-                        "v": {"description": "value", "type": "number"},
-                        "u": {"description": "units", "type": "string"},
-                        "i": {"description": "index", "type": "number"}
-                    },
-                    "required": ["v", "u"]
-                }
-            },
+            "parameter": _parameter_def,
             "stoichiometry": {
                 "type": "object",
                 "description": "Stoichiometry for a reaction",
                 "patternProperties": {
                     "^[A-Z].*$": {
                         "type": "number",
-                        "description": "Moles for the given species in the reaction. Negative for LHS, positive for RHS"
+                        "description": "Moles for the given species in the reaction. Negative for LHS, positive for RHS",
                     }
-                }
-            }
-        }
-    }
+                },
+            },
+        },
+    },
 }
-
