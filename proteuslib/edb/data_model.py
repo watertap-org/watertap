@@ -372,6 +372,13 @@ class DataWrapper:
             self._config = self._config_gen(self._data, name=self.name).config
         return self._config
 
+    @property
+    def json_data(self) -> Dict:
+        """Get the data in its "natural" form as a dict that can be serialized to JSON."""
+        copy = self._data.copy()  # shallow copy is fine
+        del copy["_id"]
+        return copy
+
 
 class Component(DataWrapper):
 
