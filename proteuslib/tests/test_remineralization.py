@@ -1,0 +1,673 @@
+###############################################################################
+# ProteusLib Copyright (c) 2021, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National
+# Laboratory, National Renewable Energy Laboratory, and National Energy
+# Technology Laboratory (subject to receipt of any required approvals from
+# the U.S. Dept. of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/nawi-hub/proteuslib/"
+#
+###############################################################################
+
+'''
+    This test is to establish that the core chemistry packages in IDAES
+    can solve a more complex aqueous speciation problem meant to mimic
+    the salinity, pH, and alkalinity of real seawater. Note that not all
+    possible reactions in seawater are being considered for this test,
+    only those most relevant to salinity and alkalinity calculations.
+
+    Reactions:
+        H2O <---> H + OH
+        H2CO3 <---> H + HCO3
+        HCO3 <---> H + CO3
+        NaHCO3 <---> Na + HCO3
+    Other species:
+        Cl
+'''
+# Importing testing libraries
+import unittest
+import pytest
+
+# Importing the object for units from pyomo
+from pyomo.environ import units as pyunits
+
+# Imports from idaes core
+from idaes.core import AqueousPhase, VaporPhase
+from idaes.core.components import Solvent, Solute, Cation, Anion, Apparent
+from idaes.core.phases import PhaseType as PT
+from idaes.core import EnergyBalanceType
+
+# Imports from idaes generic models
+import idaes.generic_models.properties.core.pure.Perrys as Perrys
+from idaes.generic_models.properties.core.state_definitions import FTPx
+from idaes.generic_models.properties.core.eos.ideal import Ideal
+from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
+from idaes.generic_models.properties.core.generic.generic_property import StateIndex
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
+from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBubbleDew
+from idaes.generic_models.properties.core.phase_equil.forms import fugacity
+from idaes.generic_models.properties.core.pure.NIST import NIST
+
+# Importing the enum for concentration unit basis used in the 'get_concentration_term' function
+from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
+
+# Import the object/function for heat of reaction
+from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+
+# Import safe log power law equation
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
+
+# Import built-in Gibb's Energy function
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import gibbs_energy
+
+# Import built-in van't Hoff function
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
+
+# Import specific pyomo objects
+from pyomo.environ import (ConcreteModel,
+                           SolverStatus,
+                           TerminationCondition,
+                           value,
+                           Suffix)
+
+from idaes.core.util import scaling as iscale
+
+import idaes.logger as idaeslog
+
+# Import pyomo methods to check the system units
+from pyomo.util.check_units import assert_units_consistent
+
+# Import idaes methods to check the model during construction
+from idaes.core.util import get_solver
+from idaes.core.util.model_statistics import (degrees_of_freedom,
+                                              fixed_variables_set,
+                                              activated_constraints_set,
+                                              number_variables,
+                                              number_total_constraints,
+                                              number_unused_variables)
+
+# Import the idaes objects for Generic Properties and Reactions
+from idaes.generic_models.properties.core.generic.generic_property import (
+        GenericParameterBlock)
+from idaes.generic_models.properties.core.generic.generic_reaction import (
+        GenericReactionParameterBlock)
+
+# Import the idaes object for the EquilibriumReactor unit model
+from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
+
+# Import the core idaes objects for Flowsheets and types of balances
+from idaes.core import FlowsheetBlock
+
+# Import log10 function from pyomo
+from pyomo.environ import log10
+
+__author__ = "Austin Ladshaw"
+
+# Configuration dictionary
+thermo_config = {
+    "components": {
+        'H2O': {"type": Solvent,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Perrys,
+              "enth_mol_liq_comp": Perrys,
+              "cp_mol_liq_comp": Perrys,
+              "entr_mol_liq_comp": Perrys,
+              "enth_mol_ig_comp": NIST,
+              "pressure_sat_comp": NIST,
+              "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (18.0153, pyunits.g/pyunits.mol),
+                    "pressure_crit": (220.64E5, pyunits.Pa),
+                    "temperature_crit": (647, pyunits.K),
+                    # Comes from Perry's Handbook:  p. 2-98
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (5.459, pyunits.kmol*pyunits.m**-3),
+                        '2': (0.30542, pyunits.dimensionless),
+                        '3': (647.13, pyunits.K),
+                        '4': (0.081, pyunits.dimensionless)},
+                    "enth_mol_form_liq_comp_ref": (-285.830, pyunits.kJ/pyunits.mol),
+                    "enth_mol_form_vap_comp_ref": (0, pyunits.kJ/pyunits.mol),
+                    # Comes from Perry's Handbook:  p. 2-174
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (2.7637E5, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (-2.0901E3, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (8.125, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (-1.4116E-2, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (9.3701E-6, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "cp_mol_ig_comp_coeff": {
+                        'A': (30.09200, pyunits.J/pyunits.mol/pyunits.K),
+                        'B': (6.832514, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-1),
+                        'C': (6.793435, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-2),
+                        'D': (-2.534480, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-3),
+                        'E': (0.082139, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**2),
+                        'F': (-250.8810, pyunits.kJ/pyunits.mol),
+                        'G': (223.3967, pyunits.J/pyunits.mol/pyunits.K),
+                        'H': (0, pyunits.kJ/pyunits.mol)},
+                    "entr_mol_form_liq_comp_ref": (69.95, pyunits.J/pyunits.K/pyunits.mol),
+                    "pressure_sat_comp_coeff": {
+                        'A': (4.6543, None),  # [1], temperature range 255.9 K - 373 K
+                        'B': (1435.264, pyunits.K),
+                        'C': (-64.848, pyunits.K)}
+                                },
+                    },
+        'CO2': {"type": Solute,
+                "dens_mol_liq_comp": Perrys,
+                "enth_mol_liq_comp": Perrys,
+                "cp_mol_liq_comp": Perrys,
+                "entr_mol_liq_comp": Perrys,
+                "enth_mol_ig_comp": NIST,
+                "pressure_sat_comp": NIST,
+                "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
+                "parameter_data": {
+                    "mw": (44.0095, pyunits.g/pyunits.mol),
+                    "pressure_crit": (73.825E5, pyunits.Pa),
+                    "temperature_crit": (304.23, pyunits.K),
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (2.768, pyunits.kmol*pyunits.m**-3),
+                        '2': (0.26212, None),
+                        '3': (304.21, pyunits.K),
+                        '4': (0.2908, None)},
+                    "cp_mol_ig_comp_coeff": {
+                       'A': (24.99735, pyunits.J/pyunits.mol/pyunits.K),
+                       'B': (55.18696, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-1),
+                       'C': (-33.69137, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-2),
+                       'D': (7.948387, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-3),
+                       'E': (-0.136638, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**2),
+                       'F': (-403.6075, pyunits.kJ/pyunits.mol),
+                       'G': (228.2431, pyunits.J/pyunits.mol/pyunits.K),
+                       'H': (0, pyunits.kJ/pyunits.mol)},
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (-8.3043E6, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (1.0437E5, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (4.333E2, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (6.0052E-1, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (0, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "enth_mol_form_liq_comp_ref": (-285.83, pyunits.kJ/pyunits.mol),
+                    "enth_mol_form_vap_comp_ref": (-393.52, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol),
+                    "entr_mol_form_vap_comp_ref": (213.6, pyunits.J/pyunits.mol),
+                    "pressure_sat_comp_coeff": {
+                        'A': (6.81228, None),
+                        'B': (1301.679, pyunits.K),
+                        'C': (-3.494, pyunits.K)}
+                                }
+                    },
+        'H_+': {"type": Cation, "charge": 1,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Perrys,
+              "enth_mol_liq_comp": Perrys,
+              "cp_mol_liq_comp": Perrys,
+              "entr_mol_liq_comp": Perrys,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (1.00784, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (5.459, pyunits.kmol*pyunits.m**-3),
+                        '2': (0.30542, pyunits.dimensionless),
+                        '3': (647.13, pyunits.K),
+                        '4': (0.081, pyunits.dimensionless)},
+                    "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ/pyunits.mol),
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (2.7637E5, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (-2.0901E3, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (8.125, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (-1.4116E-2, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (9.3701E-6, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "entr_mol_form_liq_comp_ref": (-10.75, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'OH_-': {"type": Anion,
+                "charge": -1,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Perrys,
+              "enth_mol_liq_comp": Perrys,
+              "cp_mol_liq_comp": Perrys,
+              "entr_mol_liq_comp": Perrys,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (17.008, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (5.459, pyunits.kmol*pyunits.m**-3),
+                        '2': (0.30542, pyunits.dimensionless),
+                        '3': (647.13, pyunits.K),
+                        '4': (0.081, pyunits.dimensionless)},
+                    "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ/pyunits.mol),
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (2.7637E5, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (-2.0901E3, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (8.125, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (-1.4116E-2, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (9.3701E-6, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "entr_mol_form_liq_comp_ref": (-10.75, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'Na_+': {"type": Cation, "charge": 1,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Perrys,
+              "enth_mol_liq_comp": Perrys,
+              "cp_mol_liq_comp": Perrys,
+              "entr_mol_liq_comp": Perrys,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (22.989769, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (5.252, pyunits.kmol*pyunits.m**-3),
+                        '2': (0.347, pyunits.dimensionless),
+                        '3': (1595.8, pyunits.K),
+                        '4': (0.6598, pyunits.dimensionless)},
+                    "enth_mol_form_liq_comp_ref": (-240.1, pyunits.J/pyunits.mol),
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (167039, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (0, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (0, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (0, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (0, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "entr_mol_form_liq_comp_ref": (59, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'Ca_2+': {"type": Cation, "charge": 2,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Perrys,
+              "enth_mol_liq_comp": Perrys,
+              "cp_mol_liq_comp": Perrys,
+              "entr_mol_liq_comp": Perrys,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (40.078, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (13.5, pyunits.kmol*pyunits.m**-3),
+                        '2': (1, pyunits.dimensionless),
+                        '3': (1, pyunits.K),
+                        '4': (1, pyunits.dimensionless)},
+                    "enth_mol_form_liq_comp_ref": (-542.83, pyunits.J/pyunits.mol),
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (2.7637E5, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (-2.0901E3, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (8.125, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (-1.4116E-2, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (9.3701E-6, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "entr_mol_form_liq_comp_ref": (-53, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'H2CO3': {"type": Solute, "valid_phase_types": PT.aqueousPhase,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Perrys,
+              "enth_mol_liq_comp": Perrys,
+              "cp_mol_liq_comp": Perrys,
+              "entr_mol_liq_comp": Perrys,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (62.03, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (5.4495, pyunits.kmol*pyunits.m**-3),
+                        '2': (0.427, pyunits.dimensionless),
+                        '3': (429.69, pyunits.K),
+                        '4': (0.259, pyunits.dimensionless)},
+                    "enth_mol_form_liq_comp_ref": (-699.7, pyunits.kJ/pyunits.mol),
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (135749.9, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (0, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (0, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (0, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (0, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "entr_mol_form_liq_comp_ref": (187, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'HCO3_-': {"type": Anion, "charge": -1,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Perrys,
+              "enth_mol_liq_comp": Perrys,
+              "cp_mol_liq_comp": Perrys,
+              "entr_mol_liq_comp": Perrys,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (61.0168, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (5.4495, pyunits.kmol*pyunits.m**-3),
+                        '2': (0.427, pyunits.dimensionless),
+                        '3': (429.69, pyunits.K),
+                        '4': (0.259, pyunits.dimensionless)},
+                    "enth_mol_form_liq_comp_ref": (-692, pyunits.kJ/pyunits.mol),
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (135749.9, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (0, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (0, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (0, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (0, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "entr_mol_form_liq_comp_ref": (91.2, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'CO3_2-': {"type": Anion, "charge": -2,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Perrys,
+              "enth_mol_liq_comp": Perrys,
+              "cp_mol_liq_comp": Perrys,
+              "entr_mol_liq_comp": Perrys,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (60.01, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (5.4495, pyunits.kmol*pyunits.m**-3),
+                        '2': (0.427, pyunits.dimensionless),
+                        '3': (429.69, pyunits.K),
+                        '4': (0.259, pyunits.dimensionless)},
+                    "enth_mol_form_liq_comp_ref": (-677.1, pyunits.J/pyunits.mol),
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (135749.9, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (0, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (0, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (0, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (0, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "entr_mol_form_liq_comp_ref": (-56.9, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'NaHCO3': {  "type": Apparent,  "valid_phase_types": PT.aqueousPhase,
+                    "dissociation_species": {"Na_+":1, "HCO3_-":1},
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
+                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
+                            },
+                    # End parameter_data
+                    },
+        'Ca(OH)2': {  "type": Apparent,  "valid_phase_types": PT.aqueousPhase,
+                    "dissociation_species": {"Ca_2+":1, "OH_-":2},
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
+                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
+                            },
+                    # End parameter_data
+                    },
+        'NaOH': {  "type": Apparent,  "valid_phase_types": PT.aqueousPhase,
+                    "dissociation_species": {"Na_+":1, "OH_-":1},
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
+                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
+                            },
+                    # End parameter_data
+                    },
+        'CaCO3': {  "type": Apparent,  "valid_phase_types": PT.aqueousPhase,
+                    "dissociation_species": {"Ca_2+":1, "CO3_2-":1},
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
+                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
+                            },
+                    # End parameter_data
+                    },
+              },
+              # End Component list
+        "phases":  {'Liq': {"type": AqueousPhase,
+                            "equation_of_state": Ideal},
+                    },
+        #"phases":  {'Liq': {"type": AqueousPhase,
+        #                    "equation_of_state": Ideal},
+        #            'Vap': {"type": VaporPhase,
+        #                    "equation_of_state": Ideal}},
+
+        "state_definition": FTPx,
+        "state_bounds": {"flow_mol": (0, 50, 100),
+                         "temperature": (273.15, 300, 650),
+                         "pressure": (5e4, 1e5, 1e6)
+                     },
+        "state_components": StateIndex.true,
+        #"state_components": StateIndex.apparent,
+
+        "pressure_ref": 1e5,
+        "temperature_ref": 300,
+        "base_units": {"time": pyunits.s,
+                       "length": pyunits.m,
+                       "mass": pyunits.kg,
+                       "amount": pyunits.mol,
+                       "temperature": pyunits.K},
+
+        # Inherent reactions
+        "inherent_reactions": {
+            "H2O_Kw": {
+                    "stoichiometry": {("Liq", "H2O"): -1,
+                                     ("Liq", "H_+"): 1,
+                                     ("Liq", "OH_-"): 1},
+                   "heat_of_reaction": constant_dh_rxn,
+                   "equilibrium_constant": gibbs_energy,
+                   "equilibrium_form": log_power_law_equil,
+                   "concentration_form": ConcentrationForm.molarity,
+                   "parameter_data": {
+                       "dh_rxn_ref": (55.830, pyunits.kJ/pyunits.mol),
+                       "ds_rxn_ref": (-80.7, pyunits.J/pyunits.mol/pyunits.K),
+                       "T_eq_ref": (300, pyunits.K),
+
+                       # By default, reaction orders follow stoichiometry
+                       #    manually set reaction order here to override
+                       "reaction_order": {("Liq", "H2O"): 0,
+                                        ("Liq", "H_+"): 1,
+                                        ("Liq", "OH_-"): 1}
+                        }
+                        # End parameter_data
+                   },
+                   # End R1
+            "H2CO3_Ka1": {
+                    "stoichiometry": {("Liq", "H2CO3"): -1,
+                                     ("Liq", "H_+"): 1,
+                                     ("Liq", "HCO3_-"): 1},
+                   "heat_of_reaction": constant_dh_rxn,
+                   "equilibrium_constant": gibbs_energy,
+                   "equilibrium_form": log_power_law_equil,
+                   "concentration_form": ConcentrationForm.molarity,
+                   "parameter_data": {
+                       "dh_rxn_ref": (7.7, pyunits.kJ/pyunits.mol),
+                       "ds_rxn_ref": (-95.8, pyunits.J/pyunits.mol/pyunits.K),
+                       "T_eq_ref": (300, pyunits.K),
+
+                       # By default, reaction orders follow stoichiometry
+                       #    manually set reaction order here to override
+                       "reaction_order": {("Liq", "H2CO3"): -1,
+                                        ("Liq", "H_+"): 1,
+                                        ("Liq", "HCO3_-"): 1}
+                        }
+                        # End parameter_data
+                   },
+                   # End R2
+            "H2CO3_Ka2": {
+                    "stoichiometry": {("Liq", "HCO3_-"): -1,
+                                     ("Liq", "H_+"): 1,
+                                     ("Liq", "CO3_2-"): 1},
+                   "heat_of_reaction": constant_dh_rxn,
+                   "equilibrium_constant": gibbs_energy,
+                   "equilibrium_form": log_power_law_equil,
+                   "concentration_form": ConcentrationForm.molarity,
+                   "parameter_data": {
+                       "dh_rxn_ref": (14.9, pyunits.kJ/pyunits.mol),
+                       "ds_rxn_ref": (-148.1, pyunits.J/pyunits.mol/pyunits.K),
+                       "T_eq_ref": (300, pyunits.K),
+
+                       # By default, reaction orders follow stoichiometry
+                       #    manually set reaction order here to override
+                       "reaction_order": {("Liq", "HCO3_-"): -1,
+                                        ("Liq", "H_+"): 1,
+                                        ("Liq", "CO3_2-"): 1}
+                        }
+                        # End parameter_data
+                   },
+                   # End R3
+            "CO2_to_H2CO3": {
+                    "stoichiometry": {("Liq", "H2O"): -1,
+                                     ("Liq", "CO2"): -1,
+                                     ("Liq", "H2CO3"): 1},
+                   "heat_of_reaction": constant_dh_rxn,
+                   "equilibrium_constant": van_t_hoff,
+                   "equilibrium_form": log_power_law_equil,
+                   "concentration_form": ConcentrationForm.molarity,
+                   "parameter_data": {
+                       "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
+                       "k_eq_ref": (1.7*10**-3,None),
+                       "T_eq_ref": (300, pyunits.K),
+
+                       # By default, reaction orders follow stoichiometry
+                       #    manually set reaction order here to override
+                       "reaction_order": {("Liq", "H2CO3"): 1,
+                                        ("Liq", "CO2"): -1,
+                                        ("Liq", "H2O"): 0}
+                        }
+                        # End parameter_data
+                   },
+             }
+             # End equilibrium_reactions
+    }
+    # End thermo_config definition
+
+# This config is REQUIRED to use EquilibriumReactor even if we have no equilibrium reactions
+reaction_config = {
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K},
+    "equilibrium_reactions": {
+        "dummy": {
+                "stoichiometry": {},
+                "equilibrium_form": log_power_law_equil,
+               }
+         }
+         # End equilibrium_reactions
+    }
+    # End reaction_config definition
+
+
+# Get default solver for testing
+solver = get_solver()
+
+# Start test class
+class TestRemineralization():
+    @pytest.fixture(scope="class")
+    def remineralization(self):
+        model = ConcreteModel()
+
+
+        return model
+
+# # TODO: Ask Andres/Andrew why I can't do VaporPhase equil with Apparent 
+if __name__ == "__main__":
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+    model.fs.rxn_params = GenericReactionParameterBlock(
+            default={"property_package": model.fs.thermo_params, **reaction_config })
+    model.fs.unit = EquilibriumReactor(default={
+            "property_package": model.fs.thermo_params,
+            "reaction_package": model.fs.rxn_params,
+            "has_rate_reactions": False,
+            "has_equilibrium_reactions": False,
+            "has_heat_transfer": False,
+            "has_heat_of_reaction": False,
+            "has_pressure_change": False,
+            "energy_balance_type": EnergyBalanceType.none
+            })
+
+    print(degrees_of_freedom(model))
+
+    model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( 0. )
+    model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( 0. )
+    model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( 0. )
+
+    # Add in our species as if they were Ca(OH)2 and NaHCO3
+    #       These are typical addatives for remineralization
+    Ca_OH_2 = 6e-4  #mol/L
+    NaHCO3 = 0.00206  #mol/L
+    total = 55.6 + Ca_OH_2 + NaHCO3      #mol/L
+
+    model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( NaHCO3/total )
+    model.fs.unit.inlet.mole_frac_comp[0, "Ca_2+"].fix( Ca_OH_2/total )
+    model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( 2*Ca_OH_2/total )
+    model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( NaHCO3/total )
+    model.fs.unit.inlet.mole_frac_comp[0, "CO2"].fix( 0.0005 )
+
+    # Perform a summation of all non-H2O molefractions to find the H2O molefraction
+    sum = 0
+    for i in model.fs.unit.inlet.mole_frac_comp:
+        # NOTE: i will be a tuple with format (time, component)
+        if i[1] != "H2O":
+            sum += value(model.fs.unit.inlet.mole_frac_comp[i[0], i[1]])
+
+    model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1-sum )
+
+    model.fs.unit.inlet.pressure.fix(101325.0)
+    model.fs.unit.inlet.temperature.fix(298.)
+    model.fs.unit.outlet.temperature.fix(298.)
+    model.fs.unit.inlet.flow_mol.fix(10)
+
+    print(degrees_of_freedom(model))
+
+    model.fs.unit.inlet.pprint()
+
+    #iscale.calculate_scaling_factors(model.fs.unit)
+    # works better without scaling
+    # [WARNING] idaes.core.util.scaling: Missing scaling factor for fs.unit.control_volume.inherent_reaction_extent[0.0,H2CO3_Ka1]
+
+    solver.options['bound_push'] = 1e-10
+    solver.options['mu_init'] = 1e-6
+    #model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+    model.fs.unit.initialize(optarg=solver.options)
+
+    results = solver.solve(model, tee=True)
+
+    # Extract solution information
+    model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp.display()
+    model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase.display()
+    model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp.display()
+    total_molar_density = value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
+
+    print("Mole fraction H + =\t"+ str(value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])))
+    print("Conc H + =\t"+ str(value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density*1000)))
+    pHo = -log10(value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])*total_molar_density)
+    pOHo = -log10(value(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"])*total_molar_density)
+    print("Outlet pH =\t"+ str(pHo) )
+    print("Outlet pOH =\t"+ str(pOHo) )
+
+    print("inlet.temperature\toutlet.temperature")
+    print(str(value(model.fs.unit.inlet.temperature[0]))+"\t"+str(value(model.fs.unit.outlet.temperature[0]))+"\n")
+
+    print("inlet.pressure\toutlet.pressure")
+    print(str(value(model.fs.unit.inlet.pressure[0]))+"\t"+str(value(model.fs.unit.outlet.pressure[0]))+"\n")
+
+    print("inlet.flow_mol\toutlet.flow_mol")
+    print(str(value(model.fs.unit.inlet.flow_mol[0]))+"\t"+str(value(model.fs.unit.outlet.flow_mol[0]))+"\n")
