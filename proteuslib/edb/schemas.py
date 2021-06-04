@@ -32,16 +32,16 @@ schemas = {
             "parameter_data": {
                 "type": "object",
                 "properties": {
-                    "mw": {"$ref": "#/definitions/value_units"},
-                    "pressure_crit": {"$ref": "#/definitions/value_units"},
-                    "temperature_crit": {"$ref": "#/definitions/value_units"},
+                    "mw": {"$ref": "#/definitions/parameter"},
+                    "pressure_crit": {"$ref": "#/definitions/parameter"},
+                    "temperature_crit": {"$ref": "#/definitions/parameter"},
                 },
                 "patternProperties": {
                     "_coeff": {
                         "type": "object",
-                        "additionalProperties": {"$ref": "#/definitions/value_units"},
+                        "additionalProperties": {"$ref": "#/definitions/parameter"},
                     },
-                    "_ref": {"$ref": "#/definitions/value_units"},
+                    "_ref": {"$ref": "#/definitions/parameter"},
                 },
                 "additionalProperties": False,
             },
@@ -50,14 +50,15 @@ schemas = {
         "patternProperties": {"_comp": {"type": "string"}},
         "additionalProperties": False,
         "definitions": {
-            "value_units": {
-                "type": "array",
-                "description": "Value and units as a pair in an array",
-                "items": [
-                    {"description": "value", "type": "number"},
-                    {"description": "units", "type": "string"},
-                ],
-                "additionalItems": False,
+            "parameter": {
+                "type": "object",
+                "description": "Value, units, etc. for a parameter",
+                "properties": {
+                    "v": {"description": "value", "type": "number"},
+                    "u": {"description": "units", "type": "string"},
+                    "i": {"description": "index", "type": "number"}
+                },
+                "required": ["v", "u"]
             }
         },
     },
@@ -68,31 +69,50 @@ schemas = {
         "description": "Electrolyte reaction schema",
         "type": "object",
         "properties": {
-            "type": {"type": "string", "const": "reaction"},
-            "reaction_type": {"type": "string", "enum": ["equilibrium"]},
-            "name": {"type": "string"},
-            "stoichiometry": {"type": "object"},
+            "type": {"type": "string", "enum": ["equilibrium"], "description": "Type of reaction"},
+            "name": {"type": "string", "description": "Name of reaction"},
+            "stoichiometry": {
+                "type": "object",
+                "properties": {
+                    "Liq": {"$ref": "#/definitions/stoichiometry"},
+                    "Vap": {"$ref": "#/definitions/stoichiometry"}
+                }
+            },
             "heat_of_reaction": {"type": "string"},
             "equilibrium_constant": {"type": "string"},
             "equilibrium_form": {"type": "string"},
             "concentration_form": {"type": "string"},
             "parameter_data": {
                 "type": "object",
-                "properties": {"reaction_order": {"type": "object"}},
-                "patternProperties": {"_ref": {"$ref": "#/definitions/value_units"}},
+                "patternProperties": {"_ref": {"$ref": "#/definitions/parameter"}},
                 "additionalProperties": False,
             },
         },
         "required": ["name", "type"],
         "definitions": {
-            "value_units": {
+            "parameter": {
                 "type": "array",
-                "description": "Value and units as a pair in an array",
-                "items": [
-                    {"description": "value", "type": "number"},
-                    {"description": "units", "type": "string"},
-                ],
-                "additionalItems": False,
+                "description": "List of parameter values",
+                "items": {
+                    "type": "object",
+                    "description": "Value, units, etc. for a parameter",
+                    "properties": {
+                        "v": {"description": "value", "type": "number"},
+                        "u": {"description": "units", "type": "string"},
+                        "i": {"description": "index", "type": "number"}
+                    },
+                    "required": ["v", "u"]
+                }
+            },
+            "stoichiometry": {
+                "type": "object",
+                "description": "Stoichiometry for a reaction",
+                "patternProperties": {
+                    "^[A-Z].*$": {
+                        "type": "number",
+                        "description": "Moles for the given species in the reaction. Negative for LHS, positive for RHS"
+                    }
+                }
             }
         }
     }
