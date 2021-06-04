@@ -90,13 +90,16 @@ class ElectrolyteDB:
         return result
 
     def load(self, data, rec_type=None):
+        """Load a single record or list of records.
+        """
         assert rec_type in self._known_collections
+        if isinstance(data, dict):
+            data = [data]
         num = 0
         for record in data:
             coll = getattr(self._db, rec_type)
             process_func = getattr(self, f"_process_{rec_type}")
             processed_record = process_func(record)
-            del record["type"]
             coll.insert_one(processed_record)
             num += 1
         return num
