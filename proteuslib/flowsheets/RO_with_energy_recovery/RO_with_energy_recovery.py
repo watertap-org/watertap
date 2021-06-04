@@ -20,6 +20,7 @@ from pyomo.environ import (ConcreteModel,
                            TransformationFactory,
                            units as pyunits)
 from pyomo.network import Arc
+import pyomo.util.infeasible as infeas
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (solve_indexed_blocks,
@@ -31,9 +32,11 @@ from idaes.generic_models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-# import proteuslib.property_models.seawater_prop_pack as props
 import proteuslib.property_models.NaCl_prop_pack as props
-from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
+from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
+                                                       ConcentrationPolarizationType,
+                                                       MassTransferCoefficient,
+                                                       PressureChangeType)
 from proteuslib.unit_models.pressure_exchanger import PressureExchanger
 from proteuslib.unit_models.pump_isothermal import Pump
 import proteuslib.flowsheets.RO_with_energy_recovery.financials as financials
@@ -48,7 +51,7 @@ def main():
 
     # build, set, and initialize
     m = build()
-    set_operating_conditions(m, solver=solver_dict['solver'])
+    set_operating_conditions(m, solver_dict=solver_dict)
     initialize_system(m, solver_dict=solver_dict)
 
     # simulate and display
@@ -87,7 +90,11 @@ def build():
         "inlet_list": ['P1', 'P2']})
     m.fs.RO = ReverseOsmosis0D(default={
         "property_package": m.fs.properties,
-        "has_pressure_change": True})
+        "has_pressure_change": True,
+        "pressure_change_type": PressureChangeType.calculated,
+        "mass_transfer_coefficient": MassTransferCoefficient.calculated,
+        "concentration_polarization_type": ConcentrationPolarizationType.calculated,
+    })
     m.fs.product = Product(default={'property_package': m.fs.properties})
     m.fs.disposal = Product(default={'property_package': m.fs.properties})
 
@@ -132,7 +139,7 @@ def build():
     return m
 
 
-def set_operating_conditions(m, solver=None):
+def set_operating_conditions(m, solver_dict=None):
     # ---specifications---
     # feed
     feed_flow_mass = 1  # feed mass flow rate [kg/s]
@@ -153,7 +160,7 @@ def set_operating_conditions(m, solver=None):
         over_pressure=0.3,
         water_recovery=0.5,
         NaCl_passage=0.01,
-        solver=solver)
+        solver=solver_dict['solver'])
     m.fs.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
 
     # pressure exchanger
@@ -165,10 +172,12 @@ def set_operating_conditions(m, solver=None):
     # mixer, no degrees of freedom
 
     # RO unit
-    m.fs.RO.deltaP.fix(-3e5)  # pressure drop in membrane stage [Pa]
     m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
     m.fs.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
+    m.fs.RO.channel_height.fix(1e-3)  # channel height in membrane stage [m]
+    m.fs.RO.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
+    m.fs.RO.width.fix(5)  # membrane stage width [m]
     # initiate RO feed values to determine area
     m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'] = \
         value(m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'H2O'])
@@ -178,7 +187,7 @@ def set_operating_conditions(m, solver=None):
         value(m.fs.feed.properties[0].temperature)
     m.fs.RO.feed_side.properties_in[0].pressure = \
         value(m.fs.P1.control_volume.properties_out[0].pressure)
-    RO_area = calculate_RO_area(unit=m.fs.RO, water_recovery=0.5, solver=solver)
+    RO_area = calculate_RO_area(unit=m.fs.RO, water_recovery=0.5, solver_dict=solver_dict)
     m.fs.RO.area.fix(RO_area)
 
     # check degrees of freedom
@@ -186,7 +195,7 @@ def set_operating_conditions(m, solver=None):
         raise RuntimeError("The set_operating_conditions function resulted in {} "
                            "degrees of freedom rather than 0. This error suggests "
                            "that too many or not enough variables are fixed for a "
-                       "simulation.".format(degrees_of_freedom(m)))
+                           "simulation.".format(degrees_of_freedom(m)))
 
 
 def calculate_operating_pressure(feed_state_block=None, over_pressure=0.15,
@@ -225,7 +234,7 @@ def calculate_operating_pressure(feed_state_block=None, over_pressure=0.15,
     return value(t.brine[0].pressure_osm) * (1 + over_pressure)
 
 
-def calculate_RO_area(unit=None, water_recovery=0.5, solver=None):
+def calculate_RO_area(unit=None, water_recovery=0.5, solver_dict=None):
     """
     determine RO membrane area required to achieve the specified water recovery:
         unit:  the RO unit model, e.g. m.fs.RO, it should have its inlet feed state block
@@ -234,6 +243,8 @@ def calculate_RO_area(unit=None, water_recovery=0.5, solver=None):
                         (default=0.5)
         solver: solver object to be used (default=None)
     """
+    # intialize unit
+    unit.initialize(solver=solver_dict['solver_str'], optarg=solver_dict['solver_opt'])
     # fix inlet conditions
     flags = fix_state_vars(unit.feed_side.properties_in)
     # fix unit water recovery
@@ -241,7 +252,7 @@ def calculate_RO_area(unit=None, water_recovery=0.5, solver=None):
         unit.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'].value * (1 - water_recovery))
     # solve for unit area
     check_dof(unit)
-    solve(unit, solver=solver)
+    solve(unit, solver=solver_dict['solver'])
     # unfix variables
     revert_state_vars(unit.feed_side.properties_in, flags)
     unit.feed_side.properties_out[0].flow_mass_phase_comp['Liq', 'H2O'].unfix()
@@ -354,12 +365,15 @@ def optimize(m, solver=None):
     # additional specifications
     product_recovery = 0.5  # product mass flow rate fraction of feed [-]
     product_salinity = 500e-6  # product NaCl mass fraction [-]
+    minimum_water_flux = 1 / 3600  # minimum water flux [kg/m2-s]
 
     # additional constraints
     m.fs.eq_recovery = Constraint(expr=product_recovery == m.fs.recovery)
     m.fs.eq_product_quality = Constraint(
         expr=m.fs.product.properties[0].mass_frac_phase_comp['Liq', 'NaCl'] <= product_salinity)
     iscale.constraint_scaling_transform(m.fs.eq_product_quality, 1e3)  # scaling constraint
+    m.fs.eq_minimum_water_flux = Constraint(
+        expr=m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'] >= minimum_water_flux)
 
     # ---checking model---
     check_dof(m, dof_expected=1)
