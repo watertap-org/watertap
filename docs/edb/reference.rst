@@ -7,10 +7,8 @@ EDB Reference
 
 edb
 ---
-The 'edb' command-line program lets you interact with the database and the data schemas from a terminal.
-
-The 'edb' command, by itself, doesn't do anything besides set verbosity and provide help on the
-subcommands.
+The ``edb`` command-line program lets you interact with the database and the data schemas from a terminal.
+The work of the program is all done by subcommands.
 
 edb options
 ^^^^^^^^^^^
@@ -34,7 +32,7 @@ edb options
 edb load
 --------
 
-Load JSON records into the Electrolyte Database
+Load JSON records into the EDB.
 
 edb load options
 ^^^^^^^^^^^^^^^^
@@ -64,7 +62,7 @@ edb load options
 edb dump
 --------
 
-Dump JSON records from the Electrolyte Database to a file.
+Dump JSON records from the EDB to a file.
 
 edb dump options
 ^^^^^^^^^^^^^^^^
@@ -90,7 +88,7 @@ edb dump options
 edb schema
 ----------
 
-Show JSON schemas, in raw or readable forms.
+Show JSON schemas, in raw or readable forms, for the different record types.
 
 edb schema options
 ^^^^^^^^^^^^^^^^^^
