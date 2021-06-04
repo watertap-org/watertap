@@ -26,8 +26,6 @@
     Other species:
         Cl
 '''
-import logging
-
 # Importing testing libraries
 import unittest
 import pytest
@@ -36,18 +34,14 @@ import pytest
 from pyomo.environ import units as pyunits
 
 # Imports from idaes core
-from idaes.core import LiquidPhase, Component, AqueousPhase, VaporPhase
-from idaes.core.components import Solvent, Solute, Apparent, Cation, Anion
+from idaes.core import AqueousPhase
+from idaes.core.components import Solvent, Solute, Cation, Anion
 from idaes.core.phases import PhaseType as PT
 
 # Imports from idaes generic models
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
-from idaes.generic_models.properties.core.pure.NIST import NIST
-from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.phase_equil import SmoothVLE
-from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBubbleDew
 
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
 from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
@@ -61,11 +55,11 @@ from idaes.generic_models.properties.core.reactions.equilibrium_forms import log
 # Import built-in Gibb's Energy function
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import gibbs_energy
 
+# Import built-in van't Hoff function
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
+
 # Import specific pyomo objects
-from pyomo.environ import (Block,
-                           SolverFactory,
-                           ConcreteModel,
-                           Set,
+from pyomo.environ import (ConcreteModel,
                            SolverStatus,
                            TerminationCondition,
                            value,
@@ -95,22 +89,14 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 
 # Import the idaes object for the EquilibriumReactor unit model
 from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
-from idaes.generic_models.unit_models import Mixer, Heater
-from idaes.generic_models.unit_models.mixer import MaterialBalanceType, MomentumMixingType
-from idaes.generic_models.unit_models.heater import EnergyBalanceType
 
 # Import the core idaes objects for Flowsheets and types of balances
-from idaes.core import (FlowsheetBlock,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType, useDefault)
+from idaes.core import FlowsheetBlock
 
 # Import log10 function from pyomo
 from pyomo.environ import log10
 
 __author__ = "Austin Ladshaw"
-
-_log = logging.getLogger(__name__)
 
 # Configuration dictionary
 thermo_config = {
@@ -121,9 +107,6 @@ thermo_config = {
               "enth_mol_liq_comp": Perrys,
               "cp_mol_liq_comp": Perrys,
               "entr_mol_liq_comp": Perrys,
-              "enth_mol_ig_comp": NIST,
-              "pressure_sat_comp": NIST,
-              "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
               # Parameter data is always associated with the methods defined above
               "parameter_data": {
                     "mw": (18.0153, pyunits.g/pyunits.mol),
@@ -370,17 +353,17 @@ thermo_config = {
 
         "state_definition": FTPx,
         "state_bounds": {"flow_mol": (0, 50, 100),
-                     "temperature": (273.15, 300, 650),
-                     "pressure": (5e4, 1e5, 1e6)
+                         "temperature": (273.15, 300, 650),
+                         "pressure": (5e4, 1e5, 1e6)
                      },
 
         "pressure_ref": 1e5,
         "temperature_ref": 300,
         "base_units": {"time": pyunits.s,
-                   "length": pyunits.m,
-                   "mass": pyunits.kg,
-                   "amount": pyunits.mol,
-                   "temperature": pyunits.K},
+                       "length": pyunits.m,
+                       "mass": pyunits.kg,
+                       "amount": pyunits.mol,
+                       "temperature": pyunits.K},
 
         # Inherent reactions
         "inherent_reactions": {
@@ -691,36 +674,26 @@ class TestSeawaterAlkalinity():
         assert hasattr(model.fs.thermo_params, 'component_list')
         assert len(model.fs.thermo_params.component_list) == 9
         assert 'H2O' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'H2O')
         assert isinstance(model.fs.thermo_params.H2O, Solvent)
         assert 'H_+' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'H_+')
         assert isinstance(model.fs.thermo_params.component('H_+'), Cation)
         assert 'OH_-' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'OH_-')
         assert isinstance(model.fs.thermo_params.component('OH_-'), Anion)
         assert 'Na_+' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'Na_+')
         assert isinstance(model.fs.thermo_params.component('Na_+'), Cation)
         assert 'Cl_-' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'Cl_-')
         assert isinstance(model.fs.thermo_params.component('Cl_-'), Anion)
         assert 'HCO3_-' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'HCO3_-')
         assert isinstance(model.fs.thermo_params.component('HCO3_-'), Anion)
         assert 'CO3_2-' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'CO3_2-')
         assert isinstance(model.fs.thermo_params.component('CO3_2-'), Anion)
         assert 'H2CO3' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'H2CO3')
         assert isinstance(model.fs.thermo_params.H2CO3, Solute)
         assert 'NaHCO3' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'NaHCO3')
         assert isinstance(model.fs.thermo_params.NaHCO3, Solute)
 
         assert hasattr(model.fs.thermo_params, 'phase_list')
         assert len(model.fs.thermo_params.phase_list) == 1
-        assert hasattr(model.fs.thermo_params, 'Liq')
         assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
 
     @pytest.mark.unit
@@ -730,36 +703,26 @@ class TestSeawaterAlkalinity():
         assert hasattr(model.fs.thermo_params, 'component_list')
         assert len(model.fs.thermo_params.component_list) == 9
         assert 'H2O' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'H2O')
         assert isinstance(model.fs.thermo_params.H2O, Solvent)
         assert 'H_+' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'H_+')
         assert isinstance(model.fs.thermo_params.component('H_+'), Cation)
         assert 'OH_-' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'OH_-')
         assert isinstance(model.fs.thermo_params.component('OH_-'), Anion)
         assert 'Na_+' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'Na_+')
         assert isinstance(model.fs.thermo_params.component('Na_+'), Cation)
         assert 'Cl_-' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'Cl_-')
         assert isinstance(model.fs.thermo_params.component('Cl_-'), Anion)
         assert 'HCO3_-' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'HCO3_-')
         assert isinstance(model.fs.thermo_params.component('HCO3_-'), Anion)
         assert 'CO3_2-' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'CO3_2-')
         assert isinstance(model.fs.thermo_params.component('CO3_2-'), Anion)
         assert 'H2CO3' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'H2CO3')
         assert isinstance(model.fs.thermo_params.H2CO3, Solute)
         assert 'NaHCO3' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'NaHCO3')
         assert isinstance(model.fs.thermo_params.NaHCO3, Solute)
 
         assert hasattr(model.fs.thermo_params, 'phase_list')
         assert len(model.fs.thermo_params.phase_list) == 1
-        assert hasattr(model.fs.thermo_params, 'Liq')
         assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
 
     @pytest.mark.unit
@@ -785,29 +748,26 @@ class TestSeawaterAlkalinity():
     @pytest.mark.unit
     def test_stats_inherent(self, inherent_reactions_config):
         model = inherent_reactions_config
-        assert (number_variables(model) == 279)
+        assert (number_variables(model) == 268)
         assert (number_total_constraints(model) == 59)
-        assert (number_unused_variables(model) == 99)
+        assert (number_unused_variables(model) == 88)
 
     @pytest.mark.unit
     def test_stats_equilibrium(self, equilibrium_reactions_config):
         model = equilibrium_reactions_config
-        assert (number_variables(model) == 231)
+        assert (number_variables(model) == 220)
         assert (number_total_constraints(model) == 59)
-        assert (number_unused_variables(model) == 51)
+        assert (number_unused_variables(model) == 40)
 
     @pytest.mark.component
     def test_scaling_inherent(self, inherent_reactions_config):
         model = inherent_reactions_config
         iscale.calculate_scaling_factors(model.fs.unit)
 
-        assert hasattr(model.fs.unit.control_volume, 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
 
-        assert hasattr(model.fs.unit.control_volume.properties_out[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
 
-        assert hasattr(model.fs.unit.control_volume.properties_in[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
     @pytest.mark.component
@@ -815,17 +775,13 @@ class TestSeawaterAlkalinity():
         model = equilibrium_reactions_config
         iscale.calculate_scaling_factors(model.fs.unit)
 
-        assert hasattr(model.fs.unit.control_volume, 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
 
-        assert hasattr(model.fs.unit.control_volume.properties_out[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
 
-        assert hasattr(model.fs.unit.control_volume.properties_in[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
         # When using equilibrium reactions, there are another set of scaling factors calculated
-        assert hasattr(model.fs.unit.control_volume.reactions[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.reactions[0.0].scaling_factor, Suffix)
 
     @pytest.mark.component
@@ -886,72 +842,72 @@ class TestSeawaterAlkalinity():
     def test_solution_inherent(self, inherent_reactions_config):
         model = inherent_reactions_config
 
-        assert pytest.approx(297.9, rel=1e-3) == value(model.fs.unit.outlet.temperature[0])
-        assert pytest.approx(10, rel=1e-3) == value(model.fs.unit.outlet.flow_mol[0])
-        assert pytest.approx(101325, rel=1e-3) == value(model.fs.unit.outlet.pressure[0])
+        assert pytest.approx(297.9, rel=1e-5) == value(model.fs.unit.outlet.temperature[0])
+        assert pytest.approx(10.0002908, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(101325, rel=1e-5) == value(model.fs.unit.outlet.pressure[0])
 
         total_molar_density = \
             value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
-        assert pytest.approx(54.83, rel=1e-3) == total_molar_density
+        assert pytest.approx(54.836892, rel=1e-5) == total_molar_density
 
         total_salt = value(model.fs.unit.outlet.mole_frac_comp[0, "Na_+"])*total_molar_density*23
         total_salt += value(model.fs.unit.outlet.mole_frac_comp[0, "Cl_-"])*total_molar_density*35.44
         total_salt += value(model.fs.unit.outlet.mole_frac_comp[0, "NaHCO3"])*total_molar_density*84
         psu = total_salt/(total_molar_density*18)*1000
-        assert pytest.approx(32.66, rel=1e-3) == psu
+        assert pytest.approx(32.6610588, rel=1e-5) == psu
 
         total_carbonate = value(model.fs.unit.outlet.mole_frac_comp[0, "NaHCO3"])*total_molar_density
         total_carbonate += value(model.fs.unit.outlet.mole_frac_comp[0, "H2CO3"])*total_molar_density
         total_carbonate += value(model.fs.unit.outlet.mole_frac_comp[0, "HCO3_-"])*total_molar_density
         total_carbonate += value(model.fs.unit.outlet.mole_frac_comp[0, "CO3_2-"])*total_molar_density
-        assert pytest.approx(0.00206, rel=1e-3) == total_carbonate
+        assert pytest.approx(0.002061326858, rel=1e-5) == total_carbonate
 
         carbonate_alk = value(model.fs.unit.outlet.mole_frac_comp[0, "HCO3_-"])*total_molar_density
         carbonate_alk += 2*value(model.fs.unit.outlet.mole_frac_comp[0, "CO3_2-"])*total_molar_density
         carbonate_alk += value(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"])*total_molar_density
         carbonate_alk -= value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])*total_molar_density
         carbonate_alk = carbonate_alk*50000
-        assert pytest.approx(79.75, rel=1e-3) == carbonate_alk
+        assert pytest.approx(79.75170863, rel=1e-5) == carbonate_alk
 
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-        assert pytest.approx(8.32, rel=1e-3) == pH
-        assert pytest.approx(5.68, rel=1e-3) == pOH
-        assert pytest.approx(0.97986, rel=1e-3) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
+        assert pytest.approx(8.32259791, rel=1e-5) == pH
+        assert pytest.approx(5.68181555, rel=1e-5) == pOH
+        assert pytest.approx(0.97986, rel=1e-5) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
 
     @pytest.mark.component
     def test_solution_equilibrium(self, equilibrium_reactions_config):
         model = equilibrium_reactions_config
 
-        assert pytest.approx(297.9, rel=1e-3) == value(model.fs.unit.outlet.temperature[0])
-        assert pytest.approx(10, rel=1e-3) == value(model.fs.unit.outlet.flow_mol[0])
-        assert pytest.approx(101325, rel=1e-3) == value(model.fs.unit.outlet.pressure[0])
+        assert pytest.approx(297.9, rel=1e-5) == value(model.fs.unit.outlet.temperature[0])
+        assert pytest.approx(10.0002908, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(101325, rel=1e-5) == value(model.fs.unit.outlet.pressure[0])
 
         total_molar_density = \
             value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
-        assert pytest.approx(54.83, rel=1e-3) == total_molar_density
+        assert pytest.approx(54.836892, rel=1e-5) == total_molar_density
 
         total_salt = value(model.fs.unit.outlet.mole_frac_comp[0, "Na_+"])*total_molar_density*23
         total_salt += value(model.fs.unit.outlet.mole_frac_comp[0, "Cl_-"])*total_molar_density*35.44
         total_salt += value(model.fs.unit.outlet.mole_frac_comp[0, "NaHCO3"])*total_molar_density*84
         psu = total_salt/(total_molar_density*18)*1000
-        assert pytest.approx(32.66, rel=1e-3) == psu
+        assert pytest.approx(32.6610588, rel=1e-5) == psu
 
         total_carbonate = value(model.fs.unit.outlet.mole_frac_comp[0, "NaHCO3"])*total_molar_density
         total_carbonate += value(model.fs.unit.outlet.mole_frac_comp[0, "H2CO3"])*total_molar_density
         total_carbonate += value(model.fs.unit.outlet.mole_frac_comp[0, "HCO3_-"])*total_molar_density
         total_carbonate += value(model.fs.unit.outlet.mole_frac_comp[0, "CO3_2-"])*total_molar_density
-        assert pytest.approx(0.00206, rel=1e-3) == total_carbonate
+        assert pytest.approx(0.002061326858, rel=1e-5) == total_carbonate
 
         carbonate_alk = value(model.fs.unit.outlet.mole_frac_comp[0, "HCO3_-"])*total_molar_density
         carbonate_alk += 2*value(model.fs.unit.outlet.mole_frac_comp[0, "CO3_2-"])*total_molar_density
         carbonate_alk += value(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"])*total_molar_density
         carbonate_alk -= value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])*total_molar_density
         carbonate_alk = carbonate_alk*50000
-        assert pytest.approx(79.75, rel=1e-3) == carbonate_alk
+        assert pytest.approx(79.75170863, rel=1e-5) == carbonate_alk
 
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-        assert pytest.approx(8.32, rel=1e-3) == pH
-        assert pytest.approx(5.68, rel=1e-3) == pOH
-        assert pytest.approx(0.97986, rel=1e-3) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
+        assert pytest.approx(8.32259791, rel=1e-5) == pH
+        assert pytest.approx(5.68181555, rel=1e-5) == pOH
+        assert pytest.approx(0.97986, rel=1e-5) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
