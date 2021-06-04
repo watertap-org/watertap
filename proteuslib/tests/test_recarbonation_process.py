@@ -13,18 +13,14 @@
 
 '''
     This file is to run the example of running a phase change for the dissolution
-    of CO2 into water. 
+    of CO2 into water.
 '''
 # =================== Import Statements ==============================
-
 import unittest
 import pytest
 
 # Import specific pyomo objects
-from pyomo.environ import (Block,
-                           SolverFactory,
-                           ConcreteModel,
-                           Set,
+from pyomo.environ import (ConcreteModel,
                            SolverStatus,
                            TerminationCondition,
                            value,
@@ -60,18 +56,15 @@ from idaes.generic_models.properties.core.reactions.equilibrium_forms import log
 
 # Import the idaes object for the EquilibriumReactor unit model
 from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
-from idaes.generic_models.properties.core.pure.Perrys import *
+from idaes.generic_models.properties.core.pure.Perrys import Perrys
 from idaes.generic_models.properties.core.pure.NIST import NIST
 
 # Import the core idaes objects for Flowsheets and types of balances
-from idaes.core import (FlowsheetBlock,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType, useDefault)
+from idaes.core import FlowsheetBlock
 
 # Import statements to be used in the starter config dict
-from idaes.core import LiquidPhase, VaporPhase, Component, AqueousPhase
-from idaes.core.components import Solvent, Solute, Apparent, Cation, Anion
+from idaes.core import VaporPhase, AqueousPhase
+from idaes.core.components import Solvent, Solute, Cation, Anion
 from idaes.core.phases import PhaseType as PT
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.generic_models.properties.core.state_definitions import FTPx
@@ -81,6 +74,8 @@ from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBub
 
 # Import log10 function from pyomo
 from pyomo.environ import log10
+
+__author__ = "Srikanth Allu"
 
 # Create a thermo_config dictionary
 thermo_config = {
@@ -463,20 +458,15 @@ class TestCarbonationProcess():
         assert hasattr(model.fs.thermo_params, 'component_list')
         assert len(model.fs.thermo_params.component_list) == 7
         assert 'H2O' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'H2O')
         assert isinstance(model.fs.thermo_params.H2O, Solvent)
         assert 'H_+' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'H_+')
         assert isinstance(model.fs.thermo_params.component('H_+'), Cation)
         assert 'OH_-' in model.fs.thermo_params.component_list
-        assert hasattr(model.fs.thermo_params, 'OH_-')
         assert isinstance(model.fs.thermo_params.component('OH_-'), Anion)
 
         assert hasattr(model.fs.thermo_params, 'phase_list')
         assert len(model.fs.thermo_params.phase_list) == 2
-        assert hasattr(model.fs.thermo_params, 'Liq')
         assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
-        assert hasattr(model.fs.thermo_params, 'Vap')
         assert isinstance(model.fs.thermo_params.Vap, VaporPhase)
 
     @pytest.mark.unit
@@ -494,17 +484,13 @@ class TestCarbonationProcess():
         model = equilibrium_config
         iscale.calculate_scaling_factors(model.fs.unit)
 
-        assert hasattr(model.fs.unit.control_volume, 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
 
-        assert hasattr(model.fs.unit.control_volume.properties_out[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
 
-        assert hasattr(model.fs.unit.control_volume.properties_in[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
         # When using equilibrium reactions, there are another set of scaling factors calculated
-        assert hasattr(model.fs.unit.control_volume.reactions[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.reactions[0.0].scaling_factor, Suffix)
 
     @pytest.mark.component
@@ -528,18 +514,17 @@ class TestCarbonationProcess():
     def test_solution_equilibrium(self, equilibrium_config):
         model = equilibrium_config
 
-        assert pytest.approx(300, rel=1e-3) == value(model.fs.unit.outlet.temperature[0])
-        assert pytest.approx(10, rel=1e-3) == value(model.fs.unit.outlet.flow_mol[0])
-        assert pytest.approx(101325, rel=1e-3) == value(model.fs.unit.outlet.pressure[0])
+        assert pytest.approx(300, rel=1e-5) == value(model.fs.unit.outlet.temperature[0])
+        assert pytest.approx(10, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(101325, rel=1e-5) == value(model.fs.unit.outlet.pressure[0])
 
         total_molar_density = \
             value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
-        assert pytest.approx(55.2336, rel=1e-3) == total_molar_density
+        assert pytest.approx(55.1847856, rel=1e-5) == total_molar_density
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-        assert pytest.approx(5.336, rel=1e-3) == pH
-        assert pytest.approx(8.598, rel=1e-3) == pOH
+        assert pytest.approx(5.33698164, rel=1e-5) == pH
+        assert pytest.approx(8.598909, rel=1e-5) == pOH
 
         CO2_sorbed = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'CO2')])
-        assert pytest.approx(27.54, rel=1e-3) == CO2_sorbed
-
+        assert pytest.approx(27.5409958, rel=1e-5) == CO2_sorbed
