@@ -2,6 +2,7 @@
 Carbonic acid dissociation in water
 """
 import logging
+from pprint import pformat
 
 from pyomo.environ import (Block,
                            SolverFactory,
@@ -37,17 +38,20 @@ _log = idaeslog.getLogger(__name__)
 
 
 def get_configs(component_names):
-    print("@@ get_configs.start")
+    _log.info("get_configs.start")
 
     db = ElectrolyteDB(db="edb")
 
     thermo_base = next(db.get_base("thermo"))
+    print(f"@@ thermo_base")
     result = db.get_components(component_names)
     for comp in result:
+        _log.info(f"adding component '{comp.name}'")
         thermo_base.add(comp)
 
     water_reaction_base = next(db.get_base("water_reaction"))
     for react in db.get_reactions(component_names):
+        _log.info(f"adding reaction '{react.name}'")
         water_reaction_base.add(react)
 
     return {"thermo_config": thermo_base.idaes_config, "reaction_config": water_reaction_base.idaes_config}
@@ -73,8 +77,9 @@ def get_configs(component_names):
 def create_model(thermo_config=None, reaction_config=None):
     # DEBUG
     _log.info("create_model.start")
-    _log.debug(f"create_model: thermo_config={thermo_config}")
-    _log.debug(f"create_model: reaction_config={reaction_config}")
+    if _log.isEnabledFor(logging.DEBUG):
+        _log.debug(f"create_model: thermo_config:\n{pformat(thermo_config)}")
+        _log.debug(f"create_model: reaction_config:\n{pformat(reaction_config)}")
 
     # Create a pyomo model object
     model = ConcreteModel()
@@ -211,16 +216,13 @@ def solve_model(model):
 
 
 def main():
-    from pprint import pprint
-
+    import logging
     # DEBUG
     _log.setLevel(logging.DEBUG)
+    idaeslog.getLogger("idaes.proteuslib.edb").setLevel(logging.DEBUG)
 
-    component_names = ["H +", "H2CO3", "HCO3 -"]
+    component_names = ["H +", "H2CO3", "HCO3 -", "H2O"]
     configs = get_configs(component_names)
-    for key, value in configs.items():
-        print(f"## {key}")
-        pprint(value)
     model = create_model(**configs)
     #solve_model(model)
 

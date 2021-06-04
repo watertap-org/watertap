@@ -76,6 +76,7 @@ from typing import Dict, Type
 from pyomo.environ import units as pyunits
 
 # IDAES core
+from idaes import logger
 from idaes.core.phases import PhaseType
 from idaes.generic_models.properties.core.pure import Perrys
 from idaes.core import LiquidPhase, VaporPhase
@@ -89,9 +90,6 @@ from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
     power_law_equil,
 )
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.generic.generic_reaction import (
-    ConcentrationForm,
-)
 
 # IDE complains about these two
 # from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
@@ -102,7 +100,7 @@ from .equations.equil_log_power_form import log_power_law
 from .equations.van_t_hoff_alt_form import van_t_hoff_aqueous
 
 
-_log = logging.getLogger(__name__)
+_log = logger.getLogger(__name__)
 
 
 class ConfigGenerator:
@@ -112,9 +110,11 @@ class ConfigGenerator:
     substitute_values = {}
     SUBST_UNITS = "units"
 
-    def __init__(self, data):
+    def __init__(self, data, name="unknown"):
         data_copy = copy.deepcopy(data)
+        _log.info(f"transform to IDAES config.start: name={name}")
         self._transform(data_copy)
+        _log.info(f"transform to IDAES config.end: name={name}")
         self.config = data_copy
 
     @classmethod
@@ -124,6 +124,7 @@ class ConfigGenerator:
     @staticmethod
     def _build_units(x: str = None):
         if not x:
+            _log.warning("setting dimensionless unit")
             x = "U.dimensionless"
         return eval(x, {"U": pyunits, "os": None, "sys": None})
 
@@ -136,13 +137,14 @@ class ConfigGenerator:
             params = comp[key]
             for param_key in params:
                 if param_key.endswith("_coeff"):
-                    # list of N coefficients; transform to dictionary numbered 1..N
-                    num, coeff_table = 1, {}
-                    for coeff in params[param_key]:
+                    coeff_table = {}
+                    for index, coeff in cls._iterate_dict_or_list(params[param_key]):
                         if coeff is None:
                             continue  # XXX: should this really happen?
-                        coeff_table[str(num)] = (coeff[0], cls._build_units(coeff[1]))
-                        num += 1
+                        elif not hasattr(coeff, "append"):
+                            raise TypeError(f"coefficient value should be a list, got type={type(coeff)}: {coeff}")
+                        _log.debug(f"add coefficient entry for ({coeff[0]}, {coeff[1]})")
+                        coeff_table[index] = (coeff[0], cls._build_units(coeff[1]))
                     params[param_key] = coeff_table
                 elif param_key == "reaction_order":
                     # { "Liq/HCO3 -": -1, ..} -> {("Liq", "HCO3 -"): -1, ...}
@@ -154,6 +156,17 @@ class ConfigGenerator:
                 else:
                     p = params[param_key]
                     params[param_key] = (p[0], cls._build_units(p[1]))
+
+    @staticmethod
+    def _iterate_dict_or_list(value):
+        # if the value is a dict, use dict keys as indexes, so really just do `.items()`
+        if hasattr(value, "keys"):
+            return value.items()
+        # otherwise number from 1..N
+        elif hasattr(value, "append"):
+            num = 1
+            for item in value:
+                yield str(num), item
 
     @classmethod
     def _wrap_section(cls, section: str, data: Dict):
@@ -208,7 +221,10 @@ class ConfigGenerator:
                 return False
             elif subst == cls.SUBST_UNITS:
                 if isinstance(str_value, str):  # make sure it's not already evaluated
+                    _log.debug(f"Substituting units: set d[{key}] = units('{str_value}') where d={d}")
                     d[key] = cls._build_units(str_value)
+                    return True
+            return False
 
         sv = cls.substitute_values
         for sv_section in sv:
@@ -227,6 +243,7 @@ class ConfigGenerator:
                 sv_key = key_list.pop()
                 # if it is a wildcard, allow multiple substitutions
                 if "*" in sv_key:
+                    print(f"@@ matching key {sv_key} in data section = {data_section}")
                     matches = [k for k in data_section if fnmatchcase(k, sv_key)]
                     for match_key in matches:
                         did_subst = substitute_value(
@@ -306,6 +323,7 @@ class ReactionConfig(ConfigGenerator):
         cls._wrap_section("equilibrium_reactions", data)
 
 
+
 class BaseConfig(ConfigGenerator):
 
     substitute_values = {
@@ -344,13 +362,14 @@ class DataWrapper:
             config_gen_class: Used to transform DB data to IDAES idaes_config
         """
         self._data, self._config_gen, self._config = data, config_gen_class, None
+        self.name = data.get("name", "")
 
     @property
     def idaes_config(self) -> Dict:
         """"Get the data as an IDAES config dict."""
         if self._config is None:
             # the config_gen() call will copy its input, so get the result from the .config attr
-            self._config = self._config_gen(self._data).config
+            self._config = self._config_gen(self._data, name=self.name).config
         return self._config
 
 

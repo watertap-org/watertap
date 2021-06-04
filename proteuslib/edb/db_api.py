@@ -86,11 +86,10 @@ class ElectrolyteDB:
         result = Result(iterator=collection.find(filter=query), item_class=Base)
         return result
 
-    def load(self, data):
+    def load(self, data, rec_type=None):
+        assert rec_type in self._known_collections
         num = 0
         for record in data:
-            rec_type = record["type"]
-            assert rec_type in self._known_collections
             coll = getattr(self._db, rec_type)
             process_func = getattr(self, f"_process_{rec_type}")
             processed_record = process_func(record)
@@ -106,16 +105,6 @@ class ElectrolyteDB:
 
     @classmethod
     def _process_reaction(cls, rec):
-        # stoichiometry
-        rec_stoich = rec["stoichiometry"]
-        liq = {}
-        for key, value in rec_stoich.items():
-            if not key.startswith("Liq/"):
-                raise ValueError(f"Non-liquid in stoichiometry at: {rec}")
-            species = cls._process_species(key[4:])
-            liq[species] = value
-        rec["stoichiometry"] = {"Liq": liq}
-
         # elements (for search)
         rec["reactant_elements"] = get_elements(rec["components"])
 

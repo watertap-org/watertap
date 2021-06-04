@@ -67,6 +67,7 @@ setup(
         "pymongo>3",  # database interface
         "pyomo",  # units
         "fastjsonschema",  # schema validation
+        "click",  # command-line tools with Click
         # other requirements
         "pytest",  # technically developer, but everyone likes tests
     ],
@@ -82,5 +83,11 @@ setup(
         "": [
             "*.json",
         ],
+    },
+    entry_points={
+        # add edb CLI commands
+        "console_scripts": [
+            "edb = proteuslib.edb.commands:command_base",
+        ]
     },
 )
