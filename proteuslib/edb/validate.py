@@ -14,6 +14,7 @@ import logging
 from pathlib import Path
 from typing import Union, Dict
 # 3rd party
+import fastjsonschema
 from fastjsonschema import compile
 # package
 from .schemas import schemas
@@ -25,17 +26,31 @@ __author__ = "Dan Gunter (LBNL)"
 _log = logging.getLogger(__name__)
 
 
+class ValidationError(Exception):
+    """Validation error.
+    """
+    def __init__(self, err):
+        msg = f"{err}"
+        super().__init__(msg)
+
+
 def validate_component(component) -> Dict:
     """Validate a 'component' input.
 
     Returns:
         Validated data (validation may fill in constant values)
+
+    Raises:
+        ValidationError
     """
     return _Validator(schemas["component"]).validate(component)
 
 
 def validate_reaction(reaction) -> Dict:
     """Validate a 'reaction' input.
+
+    Raises:
+        ValidationError
     """
     return _Validator(schemas["reaction"]).validate(reaction)
 
@@ -72,5 +87,8 @@ class _Validator:
             f = open(str(instance))
         if f is not None:
             d = json.load(f)
-        result = self._validate_func(d)
+        try:
+            result = self._validate_func(d)
+        except fastjsonschema.JsonSchemaException as err:
+            raise ValidationError(err)
         return result
