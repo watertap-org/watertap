@@ -78,10 +78,13 @@ class ElectrolyteDB:
         result = Result(iterator=collection.find(filter=query), item_class=Reaction)
         return result
 
-    def get_base(self, name: str):
+    def get_base(self, name: str = None):
         """Get base information by name of its type.
         """
-        query = {"name": name}
+        if name:
+            query = {"name": name}
+        else:
+            query = {}
         collection = self._db.base
         result = Result(iterator=collection.find(filter=query), item_class=Base)
         return result
