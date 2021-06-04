@@ -68,6 +68,7 @@ setup(
         "pyomo",  # units
         "fastjsonschema",  # schema validation
         "click",  # command-line tools with Click
+        "json-schema-for-humans",  # pretty JSON schema in HTML/Markdown
         # other requirements
         "pytest",  # technically developer, but everyone likes tests
     ],
@@ -75,7 +76,6 @@ setup(
         "dev": [
             "Sphinx",  # docs
             "sphinx_rtd_theme",  # docs
-            "json-schema-for-humans",  # pretty JSON schema in HTML
             "black",  # code formatting
         ],
     },
