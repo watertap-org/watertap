@@ -51,26 +51,22 @@ def main():
 
     # build, set, and initialize
     m = build()
-    set_operating_conditions(m, solver=solver_dict['solver'])
+    set_operating_conditions(m, solver_dict=solver_dict)
     initialize_system(m, solver_dict=solver_dict)
 
     # simulate and display
     solve(m, solver=solver_dict['solver'])
-    # print('\n***---Simulation results---***')
-    # display_system(m)
-    # display_design(m)
-    # display_state(m)
+    print('\n***---Simulation results---***')
+    display_system(m)
+    display_design(m)
+    display_state(m)
 
     # optimize and display
     optimize(m, solver=solver_dict['solver'])
-    # print('\n***---Optimization results---***')
-    # display_system(m)
-    # display_design(m)
-    # display_state(m)
-
-    m.fs.RO.flux_mass_io_phase_comp.display()
-    infeas.log_close_to_bounds(m)
-    infeas.log_infeasible_constraints(m)
+    print('\n***---Optimization results---***')
+    display_system(m)
+    display_design(m)
+    display_state(m)
 
 
 def build():
@@ -143,7 +139,7 @@ def build():
     return m
 
 
-def set_operating_conditions(m, solver=None):
+def set_operating_conditions(m, solver_dict=None):
     # ---specifications---
     # feed
     feed_flow_mass = 1  # feed mass flow rate [kg/s]
@@ -164,7 +160,7 @@ def set_operating_conditions(m, solver=None):
         over_pressure=0.3,
         water_recovery=0.5,
         NaCl_passage=0.01,
-        solver=solver)
+        solver=solver_dict['solver'])
     m.fs.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
 
     # pressure exchanger
@@ -191,7 +187,7 @@ def set_operating_conditions(m, solver=None):
         value(m.fs.feed.properties[0].temperature)
     m.fs.RO.feed_side.properties_in[0].pressure = \
         value(m.fs.P1.control_volume.properties_out[0].pressure)
-    RO_area = calculate_RO_area(unit=m.fs.RO, water_recovery=0.5, solver=solver)
+    RO_area = calculate_RO_area(unit=m.fs.RO, water_recovery=0.5, solver_dict=solver_dict)
     m.fs.RO.area.fix(RO_area)
 
     # check degrees of freedom
@@ -238,7 +234,7 @@ def calculate_operating_pressure(feed_state_block=None, over_pressure=0.15,
     return value(t.brine[0].pressure_osm) * (1 + over_pressure)
 
 
-def calculate_RO_area(unit=None, water_recovery=0.5, solver=None):
+def calculate_RO_area(unit=None, water_recovery=0.5, solver_dict=None):
     """
     determine RO membrane area required to achieve the specified water recovery:
         unit:  the RO unit model, e.g. m.fs.RO, it should have its inlet feed state block
@@ -247,6 +243,8 @@ def calculate_RO_area(unit=None, water_recovery=0.5, solver=None):
                         (default=0.5)
         solver: solver object to be used (default=None)
     """
+    # intialize unit
+    unit.initialize(solver=solver_dict['solver_str'], optarg=solver_dict['solver_opt'])
     # fix inlet conditions
     flags = fix_state_vars(unit.feed_side.properties_in)
     # fix unit water recovery
@@ -254,7 +252,7 @@ def calculate_RO_area(unit=None, water_recovery=0.5, solver=None):
         unit.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'].value * (1 - water_recovery))
     # solve for unit area
     check_dof(unit)
-    solve(unit, solver=solver)
+    solve(unit, solver=solver_dict['solver'])
     # unfix variables
     revert_state_vars(unit.feed_side.properties_in, flags)
     unit.feed_side.properties_out[0].flow_mass_phase_comp['Liq', 'H2O'].unfix()

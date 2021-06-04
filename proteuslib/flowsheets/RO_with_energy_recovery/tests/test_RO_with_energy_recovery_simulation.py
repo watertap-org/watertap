@@ -44,6 +44,9 @@ solver_str = 'ipopt'
 solver_opt = {'nlp_scaling_method': 'user-scaling'}
 solver = SolverFactory('ipopt')
 solver.options = solver_opt
+solver_dict = {'solver_str': solver_str,
+               'solver_opt': solver_opt,
+               'solver': solver}
 
 # -----------------------------------------------------------------------------
 class TestEnergyRecoverySystem:
@@ -128,7 +131,7 @@ class TestEnergyRecoverySystem:
     def test_set_operating_conditions(self, system_frame):
         m = system_frame
 
-        set_operating_conditions(m, solver=solver)
+        set_operating_conditions(m, solver_dict=solver_dict)
 
         # check fixed variables
         # feed
@@ -172,9 +175,6 @@ class TestEnergyRecoverySystem:
     def test_initialize_system(self, system_frame):
         m = system_frame
 
-        solver_dict = {'solver_str': solver_str,
-                       'solver_opt': solver_opt,
-                       'solver': solver}
         initialize_system(m, solver_dict=solver_dict)
 
         # check results across pressure exchanger, proxy for both upstream and downstream of RO
