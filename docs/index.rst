@@ -12,7 +12,7 @@ Welcome to ProteusLib's documentation!
 
    unit_models/index
    property_models/index
-
+   edb/index
 
 
 Indices and tables
