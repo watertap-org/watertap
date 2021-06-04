@@ -1,15 +1,24 @@
 """
 Commands for Electrolyte Database
 """
-import click
-import logging
+# stdlib
 import json
+import logging
+import pathlib
+import sys
+import tempfile
+
+# third-party
+import click
+from json_schema_for_humans import generate as schema_gen
+from json_schema_for_humans.generation_configuration import GenerationConfiguration
 
 # package
 from .db_api import ElectrolyteDB
-from .validate import validate_reaction, validate_component
+from .validate import validate_reaction, validate_component, ValidationError
+from .schemas import schemas as edb_schemas
 
-_log = logging.getLogger("nawi.commands")
+_log = logging.getLogger(__name__)
 _h = logging.StreamHandler()
 _h.setFormatter(logging.Formatter("%(levelname)-7s %(name)s: %(message)s"))
 _log.addHandler(_h)
@@ -59,9 +68,10 @@ def command_base(verbose, quiet):
         _log.setLevel(level_from_verbosity(-quiet))
 
 
-################################
-# LOAD command                 #
-################################
+#################################################################################
+# LOAD command
+# Load JSON records into the database.
+#################################################################################
 @command_base.command(
     name="load", help="Load JSON records into the Electrolyte Database"
 )
@@ -92,26 +102,151 @@ def command_base(verbose, quiet):
     "--validate/--no-validate", " /-n", help="Turn on or off validation of input", default=True
 )
 def load_data(input_file, data_type, url, database, validate):
+    print_messages = _log.isEnabledFor(logging.ERROR)
+    filename = input_file.name
+    _log.debug(f"Reading records from input file '{filename}'")
     input_data = json.load(input_file)
+    _log.info(f"Read {len(input_data)} records from input file '{filename}'")
     if validate:
+        _log.info("Validating records")
         if data_type == "component":
             vld = validate_component
         elif data_type == "reaction":
             vld = validate_reaction
         elif data_type == "base":
-            vld = lambda x: x  # no validation yet
+            def vld(x):
+                _log.warning("No validation for records of type 'base' (yet)")
+                return x
         else:
             raise RuntimeError(f"Unexpected data type: {data_type}")
         data = []
         for record in input_data:
-            d = vld(record)
-            if d is None:
-                click.echo("Validation failed")
+            try:
+                d = vld(record)
+            except ValidationError as err:
+                click.echo(f"Validation failed: {err}")
                 return -1
             data.append(d)
     else:
         data = input_data
+    _log.info(f"Connecting to MongoDB at: {url}/{database}")
     db = ElectrolyteDB(url=url, db=database)
-    click.echo(f"Loading records into {database}.{data_type} ...")
+    _log.info(f"Loading records into collection '{data_type}'")
     n = db.load(data, rec_type=data_type)
-    click.echo(f"Loaded {n} records")
+    if print_messages:
+        click.echo(f"Loaded {n} record(s) into collection '{data_type}'")
+
+
+#################################################################################
+# DUMP command
+#################################################################################
+@command_base.command(
+    name="dump", help="Dump JSON records from the Electrolyte Database"
+)
+@click.option(
+    "-f",
+    "--file",
+    "output_file",
+    required=True,
+    help="File to create (will overwrite existing files!)",
+    type=click.File("w"),
+)
+@click.option(
+    "-t",
+    "--type",
+    "data_type",
+    required=True,
+    help="Type of records (MongoDB collection name)",
+    type=click.Choice(["component", "reaction", "base"], case_sensitive=False),
+    default=None,
+)
+@click.option(
+    "-u", "--url", help="Database connection URL", default=ElectrolyteDB.DEFAULT_URL
+)
+@click.option(
+    "-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB
+)
+def dump_data(output_file, data_type, url, database):
+    print_messages = _log.isEnabledFor(logging.ERROR)
+    filename = output_file.name
+    _log.debug(f"Writing records to output file '{filename}'")
+
+    _log.info(f"Connecting to MongoDB at: {url}/{database}")
+    db = ElectrolyteDB(url=url, db=database)
+
+    _log.debug("Retrieving records")
+    if data_type == "component":
+        records = db.get_components()
+    elif data_type == "reaction":
+        records = db.get_reactions()
+    elif data_type == "base":
+        records = db.get_base()
+    else:
+        raise RuntimeError(f"Unexpected data type: {data_type}")
+
+    record_list = [r.json_data for r in records]
+    n = len(record_list)
+    json.dump(record_list, output_file)
+    if print_messages:
+        click.echo(f"Wrote {n} record(s) from collection '{data_type}' to file '{filename}'")
+
+
+#################################################################################
+# SCHEMA command
+#################################################################################
+@command_base.command(
+    name="schema", help="Show JSON schemas, in raw or readable forms"
+)
+@click.option(
+    "-f",
+    "--file",
+    "output_file",
+    help="Write output to this file instead of printing to the screen",
+    type=click.File("w"),
+)
+@click.option(
+    "-o",
+    "--format",
+    "output_format",
+    help="Output format",
+    default="markdown",
+    type=click.Choice(["json", "markdown", "html", "html-js"], case_sensitive=False)
+)
+@click.option(
+    "-t",
+    "--type",
+    "data_type",
+    required=True,
+    help="Type of records",
+    type=click.Choice(["component", "reaction"], case_sensitive=False),
+    default=None,
+)
+@click.option(
+    "-u", "--url", help="Database connection URL", default=ElectrolyteDB.DEFAULT_URL
+)
+@click.option(
+    "-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB
+)
+def schema(output_file, output_format, data_type, url, database):
+    print_messages = _log.isEnabledFor(logging.ERROR)
+    if output_file:
+        stream = output_file
+    else:
+        stream = sys.stdout
+    schema_data = edb_schemas[data_type]
+    if output_format == "json":
+        json.dump(schema_data, stream, indent=2)
+    else:
+        if output_format == "markdown":
+            tmpl = "md"
+        elif output_format == "html":
+            tmpl = "flat"
+        elif output_format == "html-js":
+            tmpl = "js"
+        config = GenerationConfiguration(template_name=tmpl)
+        with tempfile.TemporaryDirectory() as tmpdir_name:
+            schema_path = pathlib.Path(tmpdir_name) / "schema.json"
+            with schema_path.open("w+", encoding="utf-8") as schema_file:
+                json.dump(schema_data, schema_file)
+                schema_file.seek(0)
+                schema_gen.generate_from_file_object(schema_file, stream, config=config)
