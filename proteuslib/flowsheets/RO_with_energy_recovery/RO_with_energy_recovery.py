@@ -33,7 +33,10 @@ import idaes.logger as idaeslog
 
 # import proteuslib.property_models.seawater_prop_pack as props
 import proteuslib.property_models.NaCl_prop_pack as props
-from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
+from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
+                                                       ConcentrationPolarizationType,
+                                                       MassTransferCoefficient,
+                                                       PressureChangeType)
 from proteuslib.unit_models.pressure_exchanger import PressureExchanger
 from proteuslib.unit_models.pump_isothermal import Pump
 import proteuslib.flowsheets.RO_with_energy_recovery.financials as financials
@@ -87,7 +90,11 @@ def build():
         "inlet_list": ['P1', 'P2']})
     m.fs.RO = ReverseOsmosis0D(default={
         "property_package": m.fs.properties,
-        "has_pressure_change": True})
+        "has_pressure_change": True,
+        "pressure_change_type": PressureChangeType.calculated,
+        "mass_transfer_coefficient": MassTransferCoefficient.calculated,
+        "concentration_polarization_type": ConcentrationPolarizationType.calculated,
+    })
     m.fs.product = Product(default={'property_package': m.fs.properties})
     m.fs.disposal = Product(default={'property_package': m.fs.properties})
 
@@ -165,10 +172,12 @@ def set_operating_conditions(m, solver=None):
     # mixer, no degrees of freedom
 
     # RO unit
-    m.fs.RO.deltaP.fix(-3e5)  # pressure drop in membrane stage [Pa]
     m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
     m.fs.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
+    m.fs.RO.channel_height.fix(1e-3)  # channel height in membrane stage [m]
+    m.fs.RO.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
+    m.fs.RO.width.fix(5)  # membrane stage width [m]
     # initiate RO feed values to determine area
     m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'] = \
         value(m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'H2O'])
@@ -186,7 +195,7 @@ def set_operating_conditions(m, solver=None):
         raise RuntimeError("The set_operating_conditions function resulted in {} "
                            "degrees of freedom rather than 0. This error suggests "
                            "that too many or not enough variables are fixed for a "
-                       "simulation.".format(degrees_of_freedom(m)))
+                           "simulation.".format(degrees_of_freedom(m)))
 
 
 def calculate_operating_pressure(feed_state_block=None, over_pressure=0.15,
