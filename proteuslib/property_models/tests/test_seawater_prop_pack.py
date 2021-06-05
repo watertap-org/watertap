@@ -18,15 +18,9 @@ from proteuslib.property_models.tests.property_test_harness import (PropertyUnit
 from idaes.generic_models.properties.tests.test_harness import \
     PropertyTestHarness as PropertyTestHarness_idaes
 from pyomo.environ import (ConcreteModel,
-                           Constraint,
-                           TerminationCondition,
-                           SolverStatus,
-                           value,
-                           Suffix,
                            Param,
                            Expression,
                            Var,
-                           Set,
                            units as pyunits)
 from idaes.core import (FlowsheetBlock,
                         MaterialFlowBasis,
@@ -36,11 +30,6 @@ from idaes.core.components import Solute, Solvent
 from idaes.core.phases import LiquidPhase
 from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.util import get_solver
-
-# -----------------------------------------------------------------------------
-# Get default solver for testing
-solver = get_solver()
-solver.options["nlp_scaling_method"] = "user-scaling"
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
@@ -206,6 +195,9 @@ class TestSeawaterPropertyComponent(PropertyComponentTestHarness):
         self.param_args = {}
         self.set_default_scaling_dict = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1,
                                          ('flow_mass_phase_comp', ('Liq', 'TDS')): 1e2}
+
+        self.solver = 'ipopt'
+        self.optarg = {'nlp_scaling_method': 'user-scaling'}
 
         self.default_state_values_dict = {('flow_mass_phase_comp', ('Liq', 'H2O')): 0.965,
                                           ('flow_mass_phase_comp', ('Liq', 'TDS')): 0.035,

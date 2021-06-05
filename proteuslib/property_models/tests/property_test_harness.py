@@ -33,7 +33,8 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_constraints_generator,
                                      badly_scaled_var_generator)
 from idaes.core.util.exceptions import (PropertyPackageError,
-                                        PropertyNotSupportedError)
+                                        PropertyNotSupportedError,
+                                        ConfigurationError)
 from idaes.core.util import get_solver
 
 # -----------------------------------------------------------------------------
@@ -45,45 +46,78 @@ solver.options["nlp_scaling_method"] = "user-scaling"
 # -----------------------------------------------------------------------------
 class PropertyUnitTestHarness(object):
     def configure_class(self, m):
-        self.prop_pack = None
-        self.param_args = {}
-        self.set_default_scaling_dict = {}  # keys = (var string, tuple index), value = scaling factor
-
-        self.component_dict = {}  # keys = component string, value = component type
-        self.phase_dict = {}  # keys = phase string, value = phase type
-        self.param_obj_dict = {}  # keys = pyomo object string, value = (type, units)
-        self.default_scaling_factor_dict = {}  # keys = (var string, index), value = scaling factor
-
-        self.state_vars_list = None
-        self.stateblock_obj_dict = {}  # keys = pyomo object string, value = (type, units)
-
-        self.statistics_dict = {}  # keys = statistic string, value = number
-        self.general_methods_dict = {}  # keys = (method name string, tuple index), value = (var, tuple index)
-        self.default_methods_dict = {}  # keys = method name string, value = class attribute
-
         self.configure()
 
-        # attaching objects to model
-        m.component_dict = self.component_dict
-        m.phase_dict = self.phase_dict
-        m.param_obj_dict = self.param_obj_dict
-        m.default_scaling_factor_dict = self.default_scaling_factor_dict
-
-        m.stateblock_obj_dict = self.stateblock_obj_dict
-        m.state_vars_list = self.state_vars_list
-
-        m.statistics_dict = self.statistics_dict
-        m.general_methods_dict = self.general_methods_dict
-        m.default_methods_dict = self.default_methods_dict
+        # attaching objects to model to use in pytest frame
+        obj_list = ['component_dict', 'phase_dict', 'param_obj_dict',
+                    'default_scaling_factor_dict', 'stateblock_obj_dict', 'state_vars_list',
+                    'statistics_dict', 'general_methods_dict', 'default_methods_dict']
+        for obj_str in obj_list:
+            if not hasattr(self, obj_str):
+                raise ConfigurationError(
+                    "{obj_str} is a required attribute for the PropertyComponentTestHarness. "
+                    "Add {obj_str} to the configure function that sets up the test harness.".
+                        format(obj_str=obj_str))
+            obj = getattr(self, obj_str)
+            setattr(m, obj_str, obj)
 
 
     def configure(self):
-        # Placeholder method to allow user to setup test harness
+        """
+        Placeholder method to allow user to setup test harness.
+
+        The configure function must set the attributes:
+
+        prop_pack: property package parameter block
+
+        param_args: dictionary for property parameter arguments
+
+        set_default_scaling_dict: dictionary for default scaling
+            keys = (string name of variable, tuple index), values = scaling factor
+
+        component_dict: dictionary of components
+            keys = string name of component, values = component type
+
+        phase_dict: dictionary of phases
+            keys = string name of phase, values = phase type
+
+        self.param_obj_dict: dictionary of pyomo objects on property parameter block
+            keys = string name of pyomo object, values = (pyomo type, pyomo units)
+
+        state_vars_list: list of string name of state variables
+
+        stateblock_obj_dict: dictionary of pyomo objects on property state block
+            keys = string name of pyomo object, values = (pyomo type, pyomo units)
+
+        statistics_dict: dictionary of model statistics
+            {'number_variables': VALUE,
+             'number_total_constraints': VALUE,
+             'number_unused_variables': VALUE,
+             'default_degrees_of_freedom': VALUE}
+
+        general_methods_dict: dictionary of general methods
+            keys = (string name of method, tuple index), values = (var, tuple index)
+            required methods - get_material_flow_terms, get_enthalpy_flow_terms
+
+        default_methods_dict: dictionary of default methods
+           keys = string name of method, values = class attribute
+           required methods - default_material_balance_type, default_energy_balance_type, get_material_flow_basis
+        """
         pass
 
     @staticmethod
     def check_block_obj(blk, obj_dict):
-        """check that all objects are their expected type and have their expected units"""
+        """Method to check that all pyomo objects are their expected type and have their expected units
+
+        Args:
+            blk: pyomo block that will be checked
+            obj_dict: dictionary with pyomo objects and their expected type and units.
+                Units are only checked for pyomo Vars and Expressions.
+                keys = string name of pyomo object, values = (pyomo type, pyomo units)
+
+        Returns:
+            None
+            """
         for (obj_str, (obj_type, obj_units)) in obj_dict.items():
             obj = getattr(blk, obj_str)
             if not isinstance(obj, obj_type):
@@ -106,7 +140,17 @@ class PropertyUnitTestHarness(object):
     @staticmethod
     def check_block_obj_coverage(blk, obj_dict,
                          type_tpl=(Param, Var, Expression, Constraint)):
-        """check that all pyomo objects on block are in the testing dictionary"""
+        """Method to check that all pyomo objects on block are in the testing dictionary.
+
+        Args:
+            blk: pyomo block that will be checked
+            obj_dict: dictionary with pyomo objects and their expected type and units.
+                keys = string name of pyomo object, values = (pyomo type, pyomo units)
+            type_tpl: tuple including all pyomo types that will be assesed
+
+        Returns:
+            None
+            """
         for obj in blk.component_objects(type_tpl, descend_into=False):
             obj_str = obj.local_name
             if obj_str not in obj_dict:
@@ -303,21 +347,45 @@ class PropertyUnitTestHarness(object):
 
 class PropertyComponentTestHarness(object):
     def configure_class(self, m):
-        self.prop_pack = None
-        self.param_args = {}
-        self.set_default_scaling_dict = {}  # keys = (var string, tuple index), value = scaling factor
-
-        self.default_state_values_dict = {}  # keys = var string, value = list of (tuple index, value)
-        self.default_initialize_results_dict = {}  # keys = var string, value = list of (tuple index, value)
+        self.solver = None  # string for solver, if None use IDAES default
+        self.optarg = None  # dictionary for solver options, if None use IDAES default
 
         self.configure()
 
-        # attaching objects to model
-        m.default_state_values_dict = self.default_state_values_dict
-        m.default_initialize_results_dict = self.default_initialize_results_dict
+        # attaching objects to model to use in pytest frame
+        obj_list = ['solver', 'optarg', 'default_state_values_dict', 'default_initialize_results_dict']
+        for obj_str in obj_list:
+            if not hasattr(self, obj_str):
+                raise ConfigurationError(
+                    "{obj_str} is a required attribute for the PropertyComponentTestHarness. "
+                    "Add {obj_str} to the configure function that sets up the test harness.".
+                    format(obj_str=obj_str))
+            obj = getattr(self, obj_str)
+            setattr(m, obj_str, obj)
 
     def configure(self):
-        # Placeholder method to allow user to setup test harness
+        """
+        Placeholder method to allow user to setup test harness.
+
+        The configure function must set the attributes:
+
+        prop_pack: property package parameter block
+
+        param_args: dictionary for property parameter arguments
+
+        set_default_scaling_dict: dictionary for default scaling
+            keys = (string name of variable, tuple index), values = scaling factor
+
+        solver: string name for solver, if None will use IDAES default
+
+        optarg: dictionary of solver options, if None will use IDAES default
+
+        default_state_values_dict: dictionary of state variables and their default values
+            keys = (string name of variable, tuple index), values = value of variable
+
+        default_initialize_results_dict: dictionary of property values for default state
+            keys = (string name of variable, tuple index), values = value of variable
+        """
         pass
 
     @pytest.fixture(scope='class')
@@ -361,7 +429,7 @@ class PropertyComponentTestHarness(object):
         calculate_scaling_factors(m)
 
         # initialize
-        m.fs.stream.initialize(solver=solver, optarg=solver.options)
+        m.fs.stream.initialize(solver=m.solver, optarg=m.optarg)
 
         # check results
         for (v_str, ind), val in m.default_initialize_results_dict.items():
@@ -380,9 +448,10 @@ class PropertyComponentTestHarness(object):
         assert len(badly_scaled_var_list) == 0
 
 
-def property_regression_test(blk, results_dict, solver=solver, optarg=solver.options):
+def property_regression_test(blk, results_dict, solver=None, optarg=None):
 
-    results = solver.solve(blk)
+    opt = get_solver(solver, optarg)
+    results = opt.solve(blk)
 
     # check solver found a solution
     assert results.solver.status == SolverStatus.ok
