@@ -10,6 +10,7 @@ Welcome to ProteusLib's documentation!
    unit_models/index
    property_models/index
    edb/index
+   Modules <apidoc/proteuslib>
    license
    copyright
 
