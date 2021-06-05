@@ -116,6 +116,10 @@ class ElectrolyteDB:
 
         return rec
 
+    @classmethod
+    def _process_base(cls, rec):
+        return rec
+
     @staticmethod
     def _process_species(s):
         """Make species match https://jess.murdoch.edu.au/jess_spcdoc.shtml

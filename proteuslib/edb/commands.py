@@ -12,6 +12,7 @@ import tempfile
 import click
 from json_schema_for_humans import generate as schema_gen
 from json_schema_for_humans.generation_configuration import GenerationConfiguration
+from pymongo import MongoClient
 
 # package
 from .db_api import ElectrolyteDB
@@ -20,9 +21,22 @@ from .schemas import schemas as edb_schemas
 
 _log = logging.getLogger(__name__)
 _h = logging.StreamHandler()
-_h.setFormatter(logging.Formatter("%(levelname)-7s %(name)s: %(message)s"))
+_h.setFormatter(logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s"))
 _log.addHandler(_h)
 _log.propagate = False
+
+
+def get_edb_data(filename: str) -> pathlib.Path:
+    """Get an installed electrolyte DB data file `filename`.
+
+    Args:
+        filename: File to get
+
+    Returns:
+        Path object for file.
+    """
+    from proteuslib import _ROOT
+    return _ROOT / "edb" / "data" / filename
 
 
 def level_from_verbosity(vb):
@@ -79,15 +93,14 @@ def command_base(verbose, quiet):
     "-f",
     "--file",
     "input_file",
-    required=True,
     help="File to load",
     type=click.File("r"),
+    default=None
 )
 @click.option(
     "-t",
     "--type",
     "data_type",
-    required=True,
     help="Type of records",
     type=click.Choice(["component", "reaction", "base"], case_sensitive=False),
     default=None,
@@ -101,7 +114,29 @@ def command_base(verbose, quiet):
 @click.option(
     "--validate/--no-validate", " /-n", help="Turn on or off validation of input", default=True
 )
-def load_data(input_file, data_type, url, database, validate):
+@click.option(
+    "-b", "--bootstrap", help="Bootstrap a new database by loading in the standard base data", is_flag=True,
+    default=False
+)
+def load_data(input_file, data_type, url, database, validate, bootstrap):
+    if bootstrap:
+        if _db_is_empty(url, database):
+            _load_bootstrap(url, database)
+        else:
+            click.echo(f"Cannot bootstrap: database {database} at {url} already exists "
+                       f"and has one or more of the EDB collections")
+            return -1
+    else:
+        if input_file is None:
+            click.echo("Error: -f/--file is required")
+            return -1
+        if data_type is None:
+            click.echo("Error: -t/--type is required")
+            return -2
+        _load(input_file, data_type, url, database, validate)
+
+
+def _load(input_file, data_type, url, database, validate):
     print_messages = _log.isEnabledFor(logging.ERROR)
     filename = input_file.name
     _log.debug(f"Reading records from input file '{filename}'")
@@ -141,6 +176,28 @@ def load_data(input_file, data_type, url, database, validate):
     if print_messages:
         click.echo(f"Loaded {n} record(s) into collection '{data_type}'")
 
+
+def _db_is_empty(url, database):
+    client = MongoClient(host=url)
+    if database not in client.list_database_names():
+        return True
+    db = getattr(client, database)
+    collections = set(db.list_collection_names())
+    if not collections:
+        return True
+    if not {"base", "component", "reaction"}.intersection(collections):
+        _log.warning("Bootstrapping into non-empty database, but without any EDB collections")
+        return True
+    return False
+
+def _load_bootstrap(url, database):
+    _log.info(f"Start: Bootstrapping database {database} at {url}")
+    for t in "base", "component", "reaction":
+        _log.info(f"Loading collection: {t}")
+        filename = t + ".json"
+        path = get_edb_data(filename)
+        _load(path.open("r"), t, url, database, False)
+    _log.info(f"Done: Bootstrapping database {database} at {url}")
 
 #################################################################################
 # DUMP command
