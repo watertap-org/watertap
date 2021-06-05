@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+###############################################################################
+# ProteusLib Copyright (c) 2021, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National
+# Laboratory, National Renewable Energy Laboratory, and National Energy
+# Technology Laboratory (subject to receipt of any required approvals from
+# the U.S. Dept. of Energy). All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/nawi-hub/proteuslib/"
+#
+###############################################################################
 """
 Initial property package for seawater system
 """
@@ -343,8 +343,6 @@ class SeawaterParameterData(PhysicalParameterBlock):
             within=Reals, initialize=-2.079e-5, units=enth_mass_units * t_inv_units**4,
             doc='Latent heat of pure water parameter 4')
 
-
-
         # traditional parameters are the only Vars currently on the block and should be fixed
         for v in self.component_objects(Var):
             v.fix()
@@ -519,7 +517,7 @@ class SeawaterStateBlockData(StateBlockData):
         self.flow_mass_phase_comp = Var(
             self.params.phase_list,
             self.params.component_list,
-            initialize=1,
+            initialize={('Liq', 'H2O'): 0.965, ('Liq', 'TDS'): 0.035},
             bounds=(1e-8, None),
             domain=NonNegativeReals,
             units=pyunits.kg/pyunits.s,

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+###############################################################################
+# ProteusLib Copyright (c) 2021, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National
+# Laboratory, National Renewable Energy Laboratory, and National Energy
+# Technology Laboratory (subject to receipt of any required approvals from
+# the U.S. Dept. of Energy). All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/nawi-hub/proteuslib/"
+#
+###############################################################################
 
 import pytest
 import proteuslib.property_models.NaCl_prop_pack as props
@@ -24,6 +24,7 @@ from pyomo.environ import (ConcreteModel,
                            Param,
                            Expression,
                            Var,
+                           Set,
                            units)
 from idaes.core import (FlowsheetBlock,
                         MaterialFlowBasis,
@@ -78,42 +79,50 @@ class TestNaClPropPack():
         m = frame
 
         # test components, package only supports H2O and NaCl
-        assert hasattr(m.fs.properties, 'component_list')
+        assert isinstance(m.fs.properties.component_list, Set)
         assert len(m.fs.properties.component_list) == 2
         assert 'H2O' in m.fs.properties.component_list
-        assert hasattr(m.fs.properties, 'H2O')
         assert isinstance(m.fs.properties.H2O, Solvent)
         assert 'NaCl' in m.fs.properties.component_list
-        assert hasattr(m.fs.properties, 'NaCl')
         assert isinstance(m.fs.properties.NaCl, Solute)
 
         # test phase, package only supports Liquid
-        assert hasattr(m.fs.properties, 'phase_list')
+        assert isinstance(m.fs.properties.phase_list, Set)
         assert len(m.fs.properties.phase_list) == 1
-        assert hasattr(m.fs.properties, 'Liq')
         assert isinstance(m.fs.properties.Liq, LiquidPhase)
+
+    @staticmethod
+    def check_block_obj(blk, obj_type_dict):
+        # check that all objects are their expected type
+        for (obj_str, obj_type) in obj_type_dict.items():
+            obj = getattr(blk, obj_str)
+            assert isinstance(obj, obj_type)
+
+    @staticmethod
+    def check_block_obj_coverage(blk, obj_type_dict,
+                         type_tpl= (Param, Var, Expression, Constraint)):
+        # check that all added objects are tested
+        for obj in blk.component_objects(type_tpl, descend_into=False):
+            obj_str = obj.local_name
+            assert obj_str in obj_type_dict
 
     @pytest.mark.unit
     def test_parameters(self, frame):
         m = frame
 
-        assert hasattr(m.fs.properties, 'mw_comp')
-        assert isinstance(m.fs.properties.mw_comp, Param)
-
-        assert hasattr(m.fs.properties, 'dens_mass_param')
-        assert isinstance(m.fs.properties.dens_mass_param, Var)
-        assert hasattr(m.fs.properties, 'visc_d_param')
-        assert isinstance(m.fs.properties.visc_d_param, Var)
-        assert hasattr(m.fs.properties, 'diffus_param')
-        assert isinstance(m.fs.properties.diffus_param, Var)
-        assert hasattr(m.fs.properties, 'osm_coeff_param')
-        assert isinstance(m.fs.properties.osm_coeff_param, Var)
+        # create a dictionary with all pyomo objects and their type on the parameter block
+        param_obj_type_dict = {'mw_comp': Param,
+                                'dens_mass_param': Var,
+                                'visc_d_param': Var,
+                                'diffus_param': Var,
+                                'osm_coeff_param': Var}
 
         enth_mass_param_end_list = ['A1', 'A2', 'A3', 'A4', 'B1', 'B2']
         for e in enth_mass_param_end_list:
-            assert hasattr(m.fs.properties, 'enth_mass_param_' + e)
-            v = getattr(m.fs.properties, 'enth_mass_param_' + e)
-            assert isinstance(v, Var)
+            param_obj_type_dict['enth_mass_param_' + e] = Var
+
+        self.check_block_obj(m.fs.properties, param_obj_type_dict)
+        self.check_block_obj_coverage(m.fs.properties, param_obj_type_dict)
 
         # test that the parameter variables are fixed
         for var in m.fs.properties.component_objects(Var):
@@ -124,18 +133,19 @@ class TestNaClPropPack():
     def test_default_scaling(self, frame):
         m = frame
 
-        assert hasattr(m.fs.properties, 'default_scaling_factor')
-        default_scaling_var_dict = {('temperature', None): 1e-2,
-                                    ('pressure', None): 1e-6,
-                                    ('dens_mass_phase', 'Liq'): 1e-3,
-                                    ('visc_d_phase', 'Liq'): 1e3,
-                                    ('diffus_phase', 'Liq'): 1e9,
-                                    ('osm_coeff', None): 1e0,
-                                    ('enth_mass_phase', 'Liq'): 1e-5}
-        assert len(default_scaling_var_dict) == len(m.fs.properties.default_scaling_factor)
-        for t, sf in default_scaling_var_dict.items():
-            assert t in m.fs.properties.default_scaling_factor.keys()
-            assert m.fs.properties.default_scaling_factor[t] == sf
+        assert isinstance(m.fs.properties.default_scaling_factor, dict)
+        default_scaling_factor_test = {('temperature', None): 1e-2,
+                                       ('pressure', None): 1e-6,
+                                       ('dens_mass_phase', 'Liq'): 1e-3,
+                                       ('visc_d_phase', 'Liq'): 1e3,
+                                       ('diffus_phase', 'Liq'): 1e9,
+                                       ('osm_coeff', None): 1e0,
+                                       ('enth_mass_phase', 'Liq'): 1e-5}
+
+        assert len(default_scaling_factor_test) == len(m.fs.properties.default_scaling_factor)
+        for t, sf in m.fs.properties.default_scaling_factor.items():
+            assert t in default_scaling_factor_test.keys()
+            assert default_scaling_factor_test[t] == sf
 
     @pytest.mark.unit
     def test_metadata_exists(self, frame):
@@ -146,47 +156,48 @@ class TestNaClPropPack():
     def test_build(self, frame):
         m = frame
 
-        # test scaling factor
-        assert hasattr(m.fs.stream[0], 'scaling_factor')
-        assert isinstance(m.fs.stream[0].scaling_factor, Suffix)
+        # create a dictionary with all pyomo objects and their type on the state block
+        sb_obj_type_dict = {}
 
-        # test state variables
+        def add_obj_type_from_list(obj_str_list=None, obj_type=None):
+            for obj_str in obj_str_list:
+                sb_obj_type_dict[obj_str] = obj_type
+
+        # scaling factor
+        sb_obj_type_dict['scaling_factor'] = Suffix
+
+        # state variables
         state_vars_list = ['flow_mass_phase_comp', 'temperature', 'pressure']
         state_vars_dict = m.fs.stream[0].define_state_vars()
         assert len(state_vars_dict) == len(state_vars_list)
-        for sv in state_vars_list:
-            assert sv in state_vars_dict
-            assert hasattr(m.fs.stream[0], sv)
-            var = getattr(m.fs.stream[0], sv)
-            assert isinstance(var, Var)
+        add_obj_type_from_list(obj_str_list=state_vars_list, obj_type=Var)
 
-        # test on demand variables
-        var_list = ['mass_frac_phase_comp', 'dens_mass_phase', 'flow_vol_phase',
-                    'conc_mass_phase_comp', 'flow_mol_phase_comp', 'mole_frac_phase_comp',
-                    'molality_comp', 'visc_d_phase', 'diffus_phase', 'osm_coeff',
-                    'pressure_osm', 'enth_mass_phase']
-        for v in var_list:  # test that they are not built when not demanded
-            assert not m.fs.stream[0].is_property_constructed(v)
-        for v in var_list:  # test they are built on demand
-            assert hasattr(m.fs.stream[0], v)
-            var = getattr(m.fs.stream[0], v)
-            assert isinstance(var, Var)
+        # on demand properties
+        var_str_list = ['mass_frac_phase_comp', 'dens_mass_phase', 'flow_vol_phase',
+                        'conc_mass_phase_comp', 'flow_mol_phase_comp', 'mole_frac_phase_comp',
+                        'molality_comp', 'visc_d_phase', 'diffus_phase', 'osm_coeff',
+                        'pressure_osm', 'enth_mass_phase']
+        add_obj_type_from_list(obj_str_list=var_str_list, obj_type=Var)
 
-        # test on demand constraints
-        for v in var_list:
-            assert hasattr(m.fs.stream[0], '_' + v)  # check method
-            assert hasattr(m.fs.stream[0], 'eq_' + v)  # check constraint
-            c = getattr(m.fs.stream[0], 'eq_' + v)
-            assert isinstance(c, Constraint)
+        exp_str_list = ['flow_vol', 'enth_flow']
+        add_obj_type_from_list(obj_str_list=exp_str_list, obj_type=Expression)
 
-        # test on demand expressions
-        exp_list = ['flow_vol', 'enth_flow']
-        for e in exp_list:  # test that they are not built when not demanded
-            assert not m.fs.stream[0].is_property_constructed(e)
-        for e in exp_list:  # test they are built on demand
-            assert hasattr(m.fs.stream[0], e)
-            exp = getattr(m.fs.stream[0], e)
-            assert isinstance(exp, Expression)
+        # test that properties are not built if not demanded
+        for obj_str in var_str_list + exp_str_list:
+            assert not m.fs.stream[0].is_property_constructed(obj_str)
+
+        # test that properties are built on demand
+        for obj_str in var_str_list + exp_str_list:
+            assert hasattr(m.fs.stream[0], obj_str)
+
+        # constraints for on demand variables
+        con_str_list = []
+        for obj_str in var_str_list:
+            con_str_list.append('eq_' + obj_str)
+        add_obj_type_from_list(obj_str_list=con_str_list, obj_type=Constraint)
+
+        self.check_block_obj(m.fs.stream[0], sb_obj_type_dict)
+        self.check_block_obj_coverage(m.fs.stream[0], sb_obj_type_dict)
 
     @pytest.mark.unit
     def test_statistics(self, frame):
