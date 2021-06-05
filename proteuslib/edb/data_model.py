@@ -19,7 +19,7 @@
 """
 Data model for electrolyte database.
 
-Usage to get configuration for IDAES:
+Usage to get configuration for IDAES::
 
     base = <query database for Base config of interest>
     c_list = <get Components from database>
@@ -29,53 +29,54 @@ Usage to get configuration for IDAES:
     # get the merged configuration for IDAES functions
     config = base.idaes_config
 
-*** WIP ***
-        ┌────────────────────────────────┐
-        │ ConfigGenerator   <<abstract>> │
-uses    ├────────────────────────────────┤
- ┌─────►│+ConfigGenerator(data)          │
- │      │                                │
- │      ├────────────────────────────────┤
- │      │+config                         │
- │      │_transform(data)                │
- │      └────────────┬───────────────────┘
- │                   │
- │                   ├───────────┬───────────────────────┐
- │                   │           │                       │
- │    ┌──────────────┴┐       ┌──┴──────────┐      ┌─────┴─────┐
- │    │ ReactionConfig│       │ ThermoConfig│      │ BaseConfig│
- │    └─────▲─────────┘       └─▲───────────┘      └───────▲───┘
- │          │                   │                          │
- │          │                   │                          │
- │          │                   │                          │
- │          │uses               │uses                      │uses
- │          │                   │                          │
- │          │                   │                          │
- │  ┌───────┼───────────────────┼──────────────────────────┼────────────┐
- │  │       │                   │                          │            │
- │  │  ┌────┴─────┐   ┌─────────┴───┐    ┌─────────────────┴─────────┐  │
- │  │  │ Reaction │   │  Component  │    │ Base                      │  │
- │  │  └─────┬────┘   └──────┬──────┘    │                           │  │
- │  │        │               │           │ +add(item:DataWrapper)    │  │
- │  │        │               │           └─────────┬─────────────────┘  │
- │  │        │               │                     │                    │
- │  │        │               │                     │                    │
- │  │        ├───────────────┴─────────────────────┘                    │
- │  │        │                                                          │
- │  │        │                                                          │
- │  └────────┼──────────────────────────────────────────────────┬───────┘
- │           │                                                  │
- │           │                                                  │
- │           │                                         ┌────────┴─────────────┐
- │           │ subclass                                │                      │
- │   ┌───────▼────────────────────────────┐            │ Public interface to  │
- │   │DataWrapper      <<abstract>>       │            │ the rest of          │
- │   ├────────────────────────────────────┤            │ ProteusLib           │
- │   │+DataWrapper(data, config_gen_class)│            │                      │
- └───┼────────────────────────────────────┤            └──────────────────────┘
-     │+idaes_config: dict                 │
-     │+merge_keys: tuple[str]             │
-     └────────────────────────────────────┘
+Class diagram::
+
+                ┌────────────────────────────────┐
+                │ ConfigGenerator   <<abstract>> │
+        uses    ├────────────────────────────────┤
+         ┌─────►│+ConfigGenerator(data)          │
+         │      │                                │
+         │      ├────────────────────────────────┤
+         │      │+config                         │
+         │      │_transform(data)                │
+         │      └────────────┬───────────────────┘
+         │                   │
+         │                   ├───────────┬───────────────────────┐
+         │                   │           │                       │
+         │    ┌──────────────┴┐       ┌──┴──────────┐      ┌─────┴─────┐
+         │    │ ReactionConfig│       │ ThermoConfig│      │ BaseConfig│
+         │    └─────▲─────────┘       └─▲───────────┘      └───────▲───┘
+         │          │                   │                          │
+         │          │                   │                          │
+         │          │                   │                          │
+         │          │uses               │uses                      │uses
+         │          │                   │                          │
+         │          │                   │                          │
+         │  ┌───────┼───────────────────┼──────────────────────────┼────────────┐
+         │  │       │                   │                          │            │
+         │  │  ┌────┴─────┐   ┌─────────┴───┐    ┌─────────────────┴─────────┐  │
+         │  │  │ Reaction │   │  Component  │    │ Base                      │  │
+         │  │  └─────┬────┘   └──────┬──────┘    │                           │  │
+         │  │        │               │           │ +add(item:DataWrapper)    │  │
+         │  │        │               │           └─────────┬─────────────────┘  │
+         │  │        │               │                     │                    │
+         │  │        │               │                     │                    │
+         │  │        ├───────────────┴─────────────────────┘                    │
+         │  │        │                                                          │
+         │  │        │                                                          │
+         │  └────────┼──────────────────────────────────────────────────┬───────┘
+         │           │                                                  │
+         │           │                                                  │
+         │           │                                         ┌────────┴─────────────┐
+         │           │ subclass                                │                      │
+         │   ┌───────▼────────────────────────────┐            │ Public interface to  │
+         │   │DataWrapper      <<abstract>>       │            │ the rest of          │
+         │   ├────────────────────────────────────┤            │ ProteusLib           │
+         │   │+DataWrapper(data, config_gen_class)│            │                      │
+         └───┼────────────────────────────────────┤            └──────────────────────┘
+             │+idaes_config: dict                 │
+             │+merge_keys: tuple[str]             │
+             └────────────────────────────────────┘
 """
 
 # stdlib
@@ -489,6 +490,18 @@ class Base(DataWrapper):
 
 
 class Result:
+    """Encapsulate one or more JSON objects in the appropriate :class:`DataWrapper` subclass.
+
+    Users won't need to instantiate this directly, just iterate over it to retrieve the result of
+    a database query or other operation that returns EDB data objects.
+
+    For example::
+
+        result = db.get_reactions(..search-params...)
+        for reaction_obj in result:
+            # ..work with instance of class Reaction..
+            print(reaction_obj.name)
+    """
     def __init__(self, iterator=None, item_class=None):
         if iterator is not None:
             assert issubclass(item_class, DataWrapper)
