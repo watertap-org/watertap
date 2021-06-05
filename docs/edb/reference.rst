@@ -1,6 +1,10 @@
 EDB Reference
 =============
 
+.. contents::
+    :local:
+    :depth: 2
+
 .. _edb-cli:
 
 .. program:: edb
@@ -8,10 +12,15 @@ EDB Reference
 edb
 ---
 The ``edb`` command-line program lets you interact with the database and the data schemas from a terminal.
+
+
+edb base
+^^^^^^^^
+
 The work of the program is all done by subcommands.
 
-edb options
-^^^^^^^^^^^
+edb base options
+++++++++++++++++
 
 .. option:: --help
 
@@ -30,12 +39,12 @@ edb options
 .. ###########################################################
 
 edb load
---------
+^^^^^^^^
 
 Load JSON records into the EDB.
 
 edb load options
-^^^^^^^^^^^^^^^^
+++++++++++++++++
 
 .. option::  -f, --file FILENAME
 
@@ -57,15 +66,19 @@ edb load options
 
     Turn on or off validation of input
 
+.. option:: -b, --bootstrap
+
+    Bootstrap a new database by loading in the standard base data.
+
 .. ###########################################################
 
 edb dump
---------
+^^^^^^^^
 
 Dump JSON records from the EDB to a file.
 
 edb dump options
-^^^^^^^^^^^^^^^^
+++++++++++++++++
 
 .. option::  -f, --file FILENAME
 
@@ -86,12 +99,12 @@ edb dump options
 .. ###########################################################
 
 edb schema
-----------
+^^^^^^^^^^
 
 Show JSON schemas, in raw or readable forms, for the different record types.
 
 edb schema options
-^^^^^^^^^^^^^^^^^^
+++++++++++++++++++
 
 .. option:: -f, --file FILENAME
 
@@ -114,3 +127,38 @@ edb schema options
     Database name
 
 .. ###########################################################
+
+.. edb-schemata
+
+EDB schemas
+-----------
+The EDB data is encoded in `JSON <https://json.org>`_.
+Naturally, the expected form of the records is specified as `JSON Schema <https://json-schema.org/>`_.
+There are schemas for the `component` and `reaction` records. Currently, there is no schema for `base` data (this
+will change soon, though).
+
+Component schema
+^^^^^^^^^^^^^^^^
+
+.. only:: html
+
+    .. raw:: html
+        :file: schemas/component.html
+
+.. only:: latex or epub or text
+
+    .. include:: schemas/component.json
+        :literal:
+
+Reaction schema
+^^^^^^^^^^^^^^^
+
+.. only:: html
+
+    .. raw:: html
+        :file: schemas/reaction.html
+
+.. only:: latex or epub or text
+
+    .. include:: schemas/reaction.json
+        :literal:

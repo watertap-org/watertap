@@ -46,7 +46,6 @@ schemas = {
     "component": {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "$id": "https://nawi-hub.github.com/electrolytedb/component",
-        "title": "Component",
         "type": "object",
         "description": "A chemical species that is a component in a reaction",
         "properties": {
@@ -90,7 +89,6 @@ schemas = {
     "reaction": {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "$id": "https://nawi-hub.github.com/electrolytedb/reaction",
-        "title": "Reaction",
         "description": "The stoichiometry and properties of a reaction",
         "type": "object",
         "properties": {

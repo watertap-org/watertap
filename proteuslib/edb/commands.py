@@ -272,7 +272,7 @@ def dump_data(output_file, data_type, url, database):
     "output_format",
     help="Output format",
     default="markdown",
-    type=click.Choice(["json", "markdown", "html", "html-js"], case_sensitive=False)
+    type=click.Choice(["json", "json-compact", "markdown", "html", "html-js"], case_sensitive=False)
 )
 @click.option(
     "-t",
