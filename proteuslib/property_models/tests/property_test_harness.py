@@ -55,7 +55,7 @@ class PropertyUnitTestHarness(object):
         for obj_str in obj_list:
             if not hasattr(self, obj_str):
                 raise ConfigurationError(
-                    "{obj_str} is a required attribute for the PropertyComponentTestHarness. "
+                    "{obj_str} is a required attribute for the PropertyUnitTestHarness. "
                     "Add {obj_str} to the configure function that sets up the test harness.".
                         format(obj_str=obj_str))
             obj = getattr(self, obj_str)
@@ -146,7 +146,7 @@ class PropertyUnitTestHarness(object):
             blk: pyomo block that will be checked
             obj_dict: dictionary with pyomo objects and their expected type and units.
                 keys = string name of pyomo object, values = (pyomo type, pyomo units)
-            type_tpl: tuple including all pyomo types that will be assesed
+            type_tpl: tuple including all pyomo types that will be assessed
 
         Returns:
             None
@@ -447,21 +447,86 @@ class PropertyComponentTestHarness(object):
         badly_scaled_var_list = list(badly_scaled_var_generator(m))
         assert len(badly_scaled_var_list) == 0
 
+class PropertyRegressionTest(object):
+    def configure_class(self):
+        self.solver = None  # string for solver, if None use IDAES default
+        self.optarg = None  # dictionary for solver options, if None use IDAES default
 
-def property_regression_test(blk, results_dict, solver=None, optarg=None):
+        self.configure()
 
-    opt = get_solver(solver, optarg)
-    results = opt.solve(blk)
+        # check required objects have been added to instance
+        obj_list = ['prop_pack', 'param_args', 'set_default_scaling_dict', 'solver', 'optarg',
+                    'set_state_dict', 'results_dict']
+        for obj_str in obj_list:
+            if not hasattr(self, obj_str):
+                raise ConfigurationError(
+                    "{obj_str} is a required attribute for the PropertyRegressionTest. "
+                    "Add {obj_str} to the configure function that sets up the test harness.".
+                    format(obj_str=obj_str))
 
-    # check solver found a solution
-    assert results.solver.status == SolverStatus.ok
+    def configure(self):
+        """
+        Placeholder method to allow user to setup test harness.
 
-    # check results
-    for (v_str, ind), val in results_dict.items():
-        var = getattr(blk, v_str)
-        if not pytest.approx(val, rel=1e-3) == value(var[ind]):
-            raise Exception(
-                "Variable {v_str} with index {ind} is expected to have a value of {val}, but it "
-                "has a value of {val_t}. \nPlease update results_dict that is provided to "
-                "the property_regression_test function".format(
-                    v_str=v_str, ind=ind, val=val, val_t=value(var[ind])))
+        The configure function must set the attributes:
+
+        prop_pack: property package parameter block
+
+        param_args: dictionary for property parameter arguments
+
+        set_default_scaling_dict: dictionary for default scaling
+            keys = (string name of variable, tuple index), values = scaling factor
+
+        solver: string name for solver, if None will use IDAES default
+
+        optarg: dictionary of solver options, if None will use IDAES default
+
+        set_state_dict: dictionary of state variables and their values for the regression test
+            keys = (string name of variable, tuple index), values = value of variable
+
+        results_dict: dictionary of property values for the regression test
+            keys = (string name of variable, tuple index), values = value of variable
+        """
+        pass
+
+    def test_property_solution(self):
+        self.configure_class()
+
+        # create model
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.properties = self.prop_pack()
+        m.fs.stream = m.fs.properties.build_state_block(
+            [0], default=self.param_args)
+
+        # set default scaling
+        for (v_str, ind), sf in self.set_default_scaling_dict.items():
+            m.fs.properties.set_default_scaling(v_str, sf, index=ind)
+
+        # set state variables
+        for (v_str, ind), val in self.set_state_dict.items():
+            var = getattr(m.fs.stream[0], v_str)
+            var[ind].fix(val)
+
+        # touch all properties
+        metadata = m.fs.properties.get_metadata().properties
+        for v_str in metadata.keys():
+            getattr(m.fs.stream[0], v_str)
+
+        # scale model
+        calculate_scaling_factors(m.fs)
+
+        # solve model
+        opt = get_solver(self.solver, self.optarg)
+        results = opt.solve(m)
+        assert results.solver.status == SolverStatus.ok
+
+        # check results
+        for (v_str, ind), val in self.results_dict.items():
+            var = getattr(m.fs.stream[0], v_str)
+            if not pytest.approx(val, rel=1e-3) == value(var[ind]):
+                raise Exception(
+                    "Variable {v_str} with index {ind} is expected to have a value of {val}, but it "
+                    "has a value of {val_t}. \nPlease update results_dict in the configure function "
+                    "that sets up the PropertyRegressionTest".format(
+                        v_str=v_str, ind=ind, val=val, val_t=value(var[ind])))
