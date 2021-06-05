@@ -1,0 +1,45 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: MPI tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        auto-update-conda: true
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        conda install --quiet --yes mpi4py
+        python -m pip install --upgrade pip
+        python -m pip install pytest
+        python -m pip install git+https://github.com/nawi-hub/idaes-pse@main
+        idaes get-extensions --verbose
+        # make ipopt (and other idaes extensions) accessable
+        echo "$HOME/.idaes/bin" >> $GITHUB_PATH
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Conda info
+      run: conda info
+    - name: Test parallel pytest
+      run: |
+        mpirun -n 2 pytest proteuslib/tools/tests/test_parameter_sweep.py --no-cov
