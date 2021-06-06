@@ -100,6 +100,8 @@ schemas = {
             "name": {"type": "string", "description": "Name of reaction"},
             "stoichiometry": {
                 "type": "object",
+                "description": "Moles for the given species in the reaction. Negative for LHS, positive for RHS. "
+                "Grouped by phase.",
                 "properties": {
                     "Liq": {"$ref": "#/definitions/stoichiometry"},
                     "Vap": {"$ref": "#/definitions/stoichiometry"},
@@ -119,14 +121,16 @@ schemas = {
         "definitions": {
             "parameter": _parameter_def,
             "stoichiometry": {
+                "description": "One part of the stoichiometry",
+                "examples": ['{"NH4 +": -1}'],
                 "type": "object",
-                "description": "Stoichiometry for a reaction",
                 "patternProperties": {
                     "^[A-Z].*$": {
                         "type": "number",
                         "description": "Moles for the given species in the reaction. Negative for LHS, positive for RHS",
                     }
                 },
+                "additionalProperties": False,
             },
         },
     },

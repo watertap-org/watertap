@@ -145,30 +145,41 @@ class ConfigGenerator:
 
     @classmethod
     def _transform_parameter_data(cls, comp):
-        key = "parameter_data"
-        if key in comp:
-            params = comp[key]
-            for param_key in params:
-                if param_key.endswith("_coeff"):
-                    coeff_table = {}
-                    for index, coeff in cls._iterate_dict_or_list(params[param_key]):
-                        if coeff is None:
-                            continue  # XXX: should this really happen?
-                        elif not hasattr(coeff, "append"):
-                            raise TypeError(f"coefficient value should be a list, got type={type(coeff)}: {coeff}")
-                        _log.debug(f"add coefficient entry for ({coeff[0]}, {coeff[1]})")
-                        coeff_table[index] = (coeff[0], cls._build_units(coeff[1]))
-                    params[param_key] = coeff_table
-                elif param_key == "reaction_order":
-                    # { "Liq/HCO3 -": -1, ..} -> {("Liq", "HCO3 -"): -1, ...}
-                    reaction_order_table, value = {}, params[param_key]
-                    for rkey, rvalue in value.items():
-                        phase, comp = rkey.split("/")
-                        reaction_order_table[(phase, comp)] = rvalue
-                    params[param_key] = reaction_order_table
-                else:
-                    p = params[param_key]
-                    params[param_key] = (p[0], cls._build_units(p[1]))
+        debugging = _log.isEnabledFor(logging.DEBUG)
+        params = comp.get("parameter_data", None)
+        if not params:
+            return
+        for param_key in params:
+            val = params[param_key]
+            if param_key == "reaction_order":
+                reaction_order_table = {}
+                for phase in val:
+                    for species, num in val[phase].items():
+                        reaction_order_table[(phase, species)] = num
+                params[param_key] = reaction_order_table
+            elif len(val) > 1:
+                # List of objects with 'v', 'u', and maybe 'i' keys
+                # -> transform into dict of tuples with key `i` and value (<value>, built(<units>))
+                coeff_table = {}
+                if debugging:
+                    _log.debug(f"start: transform parameter list key={param_key}")
+                for item in val:
+                    index = item.get("i", 0)
+                    built_units = cls._build_units(item["u"])
+                    coeff_table[index] = (item["v"], built_units)
+                params[param_key] = coeff_table
+                if debugging:
+                    _log.debug(f"done: transform parameter list key={param_key}")
+            else:
+                # Single object with 'v', 'u' keys
+                # -> transform into single tuple (<value>, built(<units>))
+                if debugging:
+                    _log.debug(f"start: transform single parameter key={param_key}")
+                item = val[0]
+                built_units = cls._build_units(item["u"])
+                params[param_key] = (item["v"], built_units)
+                if debugging:
+                    _log.debug(f"done: transform single parameter key={param_key}")
 
     @staticmethod
     def _iterate_dict_or_list(value):
@@ -219,6 +230,8 @@ class ConfigGenerator:
 
     @classmethod
     def _substitute(cls, data):
+        debugging = _log.isEnabledFor(logging.DEBUG)
+
         def dicty(d):
             return hasattr(d, "keys")
 
@@ -226,8 +239,10 @@ class ConfigGenerator:
             """Find string value(s) at 'd[key]' in mapping 'subst' and substitute mapped value.
             Return True if found, False otherwise.
             """
-            # make a single string into a list of length 1, but remember whether it's a list or not
-            if isinstance(d[key], str):
+            if debugging:
+                _log.debug(f"substitute value: d={d} subst={subst} key={key}")
+            # make a scalar into a list of length 1, but remember whether it's a list or not
+            if isinstance(d[key], str) or isinstance(d[key], int) or isinstance(d[key], float):
                 str_values = [d[key]]
                 is_list = False
             else:
@@ -257,6 +272,8 @@ class ConfigGenerator:
 
         sv = cls.substitute_values
         for sv_section in sv:
+            if debugging:
+                _log.debug(f"start: substitute section {sv_section}")
             # get parent dict at dotted path given by 'sv_section'
             key_list = sv_section.split(".")
             data_section = data
@@ -290,6 +307,8 @@ class ConfigGenerator:
                             f"Could not find substitution: section={sv_section} "
                             f"value={data_section[sv_key]}"
                         )
+            if debugging:
+                _log.debug(f"done: substitute section {sv_section}")
 
 
 class ThermoConfig(ConfigGenerator):

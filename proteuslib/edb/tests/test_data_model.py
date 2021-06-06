@@ -13,13 +13,14 @@
 """
 Tests for data_model module
 """
-import copy
+import logging
 from pprint import pprint  # for debugging
 import pytest
 from ..data_model import ConfigGenerator, Component, Reaction, Result, Base
 from . import data as testdata
 from typing import Dict
 from pyomo.environ import units as pyunits
+
 
 def assert_configuration_equal(a: Dict, b: Dict):
     """Walk through and compare things in two config dicts.
@@ -53,6 +54,7 @@ def test_config_generator():
 
 @pytest.mark.unit
 def test_component_ca_thermo():
+    logging.getLogger("idaes.proteuslib.edb.data_model").setLevel(logging.DEBUG)
     comp = Component(testdata.Ca_thermo_data)
     generated_config = comp.idaes_config
 
@@ -63,6 +65,7 @@ def test_component_ca_thermo():
     pprint(testdata.Ca_thermo_config)
 
     assert_configuration_equal(comp.idaes_config, testdata.Ca_thermo_config)
+    logging.getLogger("idaes.proteuslib.edb.data_model").setLevel(logging.INFO)
 
 
 @pytest.mark.unit
@@ -124,6 +127,7 @@ class SubstituteTestGenerator(ConfigGenerator):
 
 @pytest.mark.unit
 def test_config_generator_substitute():
+    logging.getLogger("idaes.proteuslib.edb.data_model").setLevel(logging.DEBUG)
     SubstituteTestGenerator.substitute_values = {
         "a.b": {"foo": subst_foo},
         "x.*_bla": {"foo": subst_foo, "bar": subst_bar},
@@ -154,3 +158,4 @@ def test_config_generator_substitute():
         "z": {"time": pyunits.s, "ignored_due_to_value": 0.123},
         "d": {"e": {"e": {"p": 1}}},
     }
+    logging.getLogger("idaes.proteuslib.edb.data_model").setLevel(logging.INFO)
