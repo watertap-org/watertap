@@ -8,14 +8,7 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
 # "https://github.com/nawi-hub/proteuslib/"
-#
 ###############################################################################
-# WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
-#
-# This module is a work in progress. Do not use it for real work right now.
-#
-# WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
-
 """
 Data model for electrolyte database.
 
@@ -78,6 +71,7 @@ Class diagram::
              │+merge_keys: tuple[str]             │
              └────────────────────────────────────┘
 """
+__author__ = "Dan Gunter"
 
 # stdlib
 import copy
@@ -111,7 +105,7 @@ from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rx
 # package
 from .equations.equil_log_power_form import log_power_law
 from .equations.van_t_hoff_alt_form import van_t_hoff_aqueous
-
+from .error import ConfigGeneratorError
 
 _log = logger.getLogger(__name__)
 
@@ -145,9 +139,10 @@ class ConfigGenerator:
 
     @classmethod
     def _transform_parameter_data(cls, comp):
-        debugging = _log.isEnabledFor(logging.DEBUG)
+        debugging, comp_name = _log.isEnabledFor(logging.DEBUG), comp.get('name', '?')
         params = comp.get("parameter_data", None)
         if not params:
+            _log.warning(f"No parameter data found in data name={comp_name}")
             return
         for param_key in params:
             val = params[param_key]
@@ -164,8 +159,11 @@ class ConfigGenerator:
                 if debugging:
                     _log.debug(f"start: transform parameter list key={param_key}")
                 for item in val:
-                    index = item.get("i", 0)
-                    built_units = cls._build_units(item["u"])
+                    try:
+                        index = item.get("i", 0)
+                        built_units = cls._build_units(item["u"])
+                    except (AttributeError, TypeError, ValueError) as err:
+                        raise ConfigGeneratorError(f"Cannot extract parameter. name='{comp_name}', item='{item}': {err}")
                     coeff_table[index] = (item["v"], built_units)
                 params[param_key] = coeff_table
                 if debugging:
@@ -413,7 +411,11 @@ class DataWrapper:
 
     @property
     def idaes_config(self) -> Dict:
-        """"Get the data as an IDAES config dict."""
+        """"Get the data as an IDAES config dict.
+
+        Returns:
+            Python dict that can be passed to the IDAES as a config.
+        """
         if self._config is None:
             # the config_gen() call will copy its input, so get the result from the .config attr
             self._config = self._config_gen(self._data, name=self.name).config
