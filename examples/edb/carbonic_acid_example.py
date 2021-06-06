@@ -45,17 +45,22 @@ from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.core import FlowsheetBlock
 
 from proteuslib.edb.db_api import ElectrolyteDB
+from proteuslib.edb.error import Error as EDBError
 
-_log = idaeslog.getLogger(__name__)
+# Produce similar output to IDAES logger
+_log = logging.getLogger("carbonic_acid_example")
+_hnd = logging.StreamHandler()
+_fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+_hnd.setFormatter(_fmt)
+_log.addHandler(_hnd)
 
 
 def get_configs(component_names):
     _log.info("get_configs.start")
-
+    _log.info("Connecting to MongoDB database=edb")
     db = ElectrolyteDB(db="edb")
 
     thermo_base = next(db.get_base("thermo"))
-    print(f"@@ thermo_base")
     result = db.get_components(component_names)
     for comp in result:
         _log.info(f"adding component '{comp.name}'")
@@ -65,6 +70,18 @@ def get_configs(component_names):
     for react in db.get_reactions(component_names):
         _log.info(f"adding reaction '{react.name}'")
         water_reaction_base.add(react)
+
+    try:
+        _ = thermo_base.idaes_config
+    except EDBError as err:
+        _log.fatal(f"couldn't get IDAES config for thermo components: {err}")
+        return {}
+
+    try:
+        _ = water_reaction_base.idaes_config
+    except EDBError as err:
+        _log.fatal(f"couldn't get IDAES config for water reaction: {err}")
+        return {}
 
     return {"thermo_config": thermo_base.idaes_config, "reaction_config": water_reaction_base.idaes_config}
 
@@ -230,14 +247,20 @@ def solve_model(model):
 def main():
     import logging
     # DEBUG
-    _log.setLevel(logging.DEBUG)
-    idaeslog.getLogger("idaes.proteuslib.edb").setLevel(logging.DEBUG)
+    #_log.setLevel(logging.DEBUG)
+    #idaeslog.getLogger("idaes.proteuslib.edb").setLevel(logging.DEBUG)
+    _log.setLevel(logging.INFO)
 
-    component_names = ["H +", "H2CO3", "HCO3 -", "H2O"]
+    component_names = ["H2O", "H +",  "OH -", "H2CO3", "HCO3 -", "CO3 2-"]
     configs = get_configs(component_names)
+    if not configs:
+        _log.fatal("Failed to get IDAES configurations")
+        return -1
     model = create_model(**configs)
     #solve_model(model)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main())
