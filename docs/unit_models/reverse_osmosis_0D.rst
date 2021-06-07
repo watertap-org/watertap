@@ -6,7 +6,7 @@ This reverse osmosis (RO) unit model:
    * supports steady-state only
 
 .. index::
-   pair: proteuslib.unit_models.reverse_osmosis_0D;ReverseOsmosis0D
+   pair: proteuslib.unit_models.reverse_osmosis_0D;reverse_osmosis_0D
 
 .. currentmodule:: proteuslib.unit_models.reverse_osmosis_0D
 

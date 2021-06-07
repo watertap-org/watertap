@@ -819,16 +819,12 @@ class ReverseOsmosisData(UnitModelBlockData):
                     * (b.feed_side.properties_out[t].pressure_osm
                     - b.properties_permeate[t].pressure_osm))
 
-    def initialize(
-            blk,
-            initialize_guess=None,
-            state_args=None,
-            outlvl=idaeslog.NOTSET,
-            solver="ipopt",
-            optarg={"tol": 1e-6}):
+    def initialize(blk, initialize_guess=None, state_args=None, outlvl=idaeslog.NOTSET, solver="ipopt", optarg={"tol": 1e-6}):
         """
-        General wrapper for pressure changer initialization routines
+        General wrapper for RO initialization routines
+
         Keyword Arguments:
+
             initialize_guess : a dict of guesses for solvent_recovery, solute_recovery,
                                and cp_modulus. These guesses offset the initial values
                                for the retentate, permeate, and membrane interface
