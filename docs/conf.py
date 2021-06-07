@@ -34,7 +34,17 @@ version = '0.0.1'
 # ones.
 extensions = [
     'sphinx_rtd_theme',
-    'sphinx.ext.autodoc'
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.coverage',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.ifconfig',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.githubpages',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.autosectionlabel',
+    'sphinx.ext.doctest'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
