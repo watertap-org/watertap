@@ -12,17 +12,10 @@
 ###############################################################################
 
 '''
-    This test is to establish that the core chemistry packages in IDAES
-    can solve a more complex aqueous speciation problem meant to mimic
-    the salinity, pH, and alkalinity of real seawater. Note that not all
-    possible reactions in seawater are being considered for this test,
-    only those most relevant to salinity and alkalinity calculations.
-
+    This test is to establish ...
     Reactions:
         H2O <---> H + OH
-        H2CO3 <---> H + HCO3
-        HCO3 <---> H + CO3
-        NaHCO3 <---> Na + HCO3
+
     Other species:
         Cl
 '''
@@ -437,13 +430,18 @@ thermo_config = {
                     },
               },
               # End Component list
-        "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": Ideal},
-                    },
         #"phases":  {'Liq': {"type": AqueousPhase,
         #                    "equation_of_state": Ideal},
-        #            'Vap': {"type": VaporPhase,
-        #                    "equation_of_state": Ideal}},
+        #            },
+        "phases":  {'Liq': {"type": AqueousPhase,
+                            "equation_of_state": Ideal},
+                    'Vap': {"type": VaporPhase,
+                            "equation_of_state": Ideal}},
+
+        # Defining phase equilibria
+        "phases_in_equilibrium": [("Vap", "Liq")],
+        "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
+        "bubble_dew_method": IdealBubbleDew,
 
         "state_definition": FTPx,
         "state_bounds": {"flow_mol": (0, 50, 100),
@@ -582,10 +580,8 @@ class TestRemineralization():
     def remineralization(self):
         model = ConcreteModel()
 
-
         return model
 
-# # TODO: Ask Andres/Andrew why I can't do VaporPhase equil with Apparent 
 if __name__ == "__main__":
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
@@ -639,11 +635,18 @@ if __name__ == "__main__":
 
     model.fs.unit.inlet.pprint()
 
-    #iscale.calculate_scaling_factors(model.fs.unit)
+    #Custom eps factors
+    eps = 1e-30
+    model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
+    model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
+    model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
+    model.fs.thermo_params.reaction_CO2_to_H2CO3.eps.value = eps
+
+    iscale.calculate_scaling_factors(model.fs.unit)
     # works better without scaling
     # [WARNING] idaes.core.util.scaling: Missing scaling factor for fs.unit.control_volume.inherent_reaction_extent[0.0,H2CO3_Ka1]
 
-    solver.options['bound_push'] = 1e-10
+    solver.options['bound_push'] = 1e-20
     solver.options['mu_init'] = 1e-6
     #model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
     model.fs.unit.initialize(optarg=solver.options)
@@ -671,3 +674,50 @@ if __name__ == "__main__":
 
     print("inlet.flow_mol\toutlet.flow_mol")
     print(str(value(model.fs.unit.inlet.flow_mol[0]))+"\t"+str(value(model.fs.unit.outlet.flow_mol[0]))+"\n")
+
+    # Compute Hardness
+    #   Total Hardness (TH) = Carbonate Hardness (CH) + Non-Carbonate Hardness (NCH)
+    #
+    #       TH (mg CaCO3/L) = 50,000 * SUM( all divalent cations, n*C)
+    #       NCH = TH - 50,000*(C_HCO3 + 2*C_CO3)
+    #       CH = TH - NCH
+    TH = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'Ca_2+')])/1000
+    TH = TH*50000
+    print("Total Hardness (mg-CaCO3/L) =\t"+str(TH))
+
+    # Calculating carbonate alkalinity to determine the split of total hardness
+    CarbAlk = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'CO3_2-')])/1000
+    CarbAlk += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'HCO3_-')])/1000
+    CarbAlk = 50000*CarbAlk
+
+    # Non-Carbonate Hardness only exists if there is excess hardness above alkalinity
+    if TH <= CarbAlk:
+        NCH = 0
+    else:
+        NCH = TH - CarbAlk
+    print("Non-Carbonate Hardness (mg-CaCO3/L) =\t"+str(NCH))
+    print("Carbonate Hardness (mg-CaCO3/L) =\t"+str(TH - NCH))
+    print("Alkalinity (mg-CaCO3/L) =\t"+str(CarbAlk))
+    print()
+
+    print()
+    print("mole_frac -> phase_comp_apparent")
+    for i in model.fs.thermo_params.apparent_phase_component_set:
+        print("mole_frac_phase_comp_apparent[{0},{1}]: ".format(i[0],i[1]), value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent[i[0],i[1]]))
+    print()
+
+    '''
+    mole_frac -> phase_comp_apparent
+    mole_frac_phase_comp_apparent[Liq,H2O]:  0.9994844083936842
+    mole_frac_phase_comp_apparent[Liq,CO2]:  0.00047809463730816103
+    mole_frac_phase_comp_apparent[Liq,H2CO3]:  8.127608106508284e-07
+    mole_frac_phase_comp_apparent[Liq,NaHCO3]:  3.650722651892883e-05
+    mole_frac_phase_comp_apparent[Liq,Ca(OH)2]:  5.335418437832851e-09
+    mole_frac_phase_comp_apparent[Liq,NaOH]:  1.8318269969892792e-08
+    mole_frac_phase_comp_apparent[Liq,CaCO3]:  1.5332798938541626e-07
+    mole_frac_phase_comp_apparent[Vap,H2O]:  0.44089091063655955
+    mole_frac_phase_comp_apparent[Vap,CO2]:  0.5591090892109298
+    '''
+
+    # Next Test: A model built with these molefractions at the inlet should give
+    #   the same results for pH, alkalinity, and hardness
