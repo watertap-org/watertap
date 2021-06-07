@@ -55,6 +55,7 @@ Configuration Options
 ---------------------
 In addition to the core configuration options that are normally included for an IDAES process block, the RO unit model
 contains options that account for concentration polarization, the mass transfer coefficient, and pressure drop.
+#TODO:
 
 .. csv-table::
    :header: "Keyword", "Value"
@@ -66,18 +67,17 @@ contains options that account for concentration polarization, the mass transfer 
 
 Degrees of Freedom
 ------------------
-This reverse osmosis (RO) unit model:
-   * is a 0-dimensional model
-   * supports a single liquid phase only
-   * supports steady-state only
+#TODO:Fill in later
 
 Model Structure
 ------------------
-Feed-side: 0-D control volume
+#TODO: Feed-side: 0-D control volume
 Permeate-side: state block
 
 Variables
 ----------
+#TODO:
+
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
 
@@ -99,16 +99,8 @@ Variables
 
 Constraints
 -----------
-.. csv-table::
-   :header: "Description", "Symbol", "Variable", "Index", "Units"
+#TODO:
 
-   "Component mole flowrate", ":math:`N_j`", "flow_mol_phase_comp", "[p, j]", ":math:`\text{mole/s}`"
-   "Component mole fraction", ":math:`y_j`", "mole_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`" 
-   "Molality", ":math:`Cm`", "molality_comp", "['TDS']", ":math:`\text{mole/kg}`"
-   "Osmotic pressure", ":math:`\pi`", "pressure_osm", "None", ":math:`\text{Pa}`"
-
-Relationships
--------------
 .. csv-table::
    :header: "Description", "Equation"
 
