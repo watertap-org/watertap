@@ -20,6 +20,8 @@ The example below shows how to setup a simple RO unit model.
     import proteuslib.property_models.NaCl_prop_pack as props
     # Import utility tool for calculating scaling factors
     import idaes.core.util.scaling as calculate_scaling_factors
+    #Import RO model
+    from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 
     # Create a concrete model, flowsheet, and NaCl property parameter block.
     m = ConcreteModel()
