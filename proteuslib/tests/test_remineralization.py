@@ -593,19 +593,312 @@ solver = get_solver()
 # Start test class
 class TestRemineralization():
     @pytest.fixture(scope="class")
-    def remineralization_appr(self):
+    def remineralization_appr_equ(self):
+        model = ConcreteModel()
+        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+        model.fs.rxn_params = GenericReactionParameterBlock(
+                default={"property_package": model.fs.thermo_params, **reaction_config })
+        model.fs.unit = EquilibriumReactor(default={
+                "property_package": model.fs.thermo_params,
+                "reaction_package": model.fs.rxn_params,
+                "has_rate_reactions": False,
+                "has_equilibrium_reactions": False,
+                "has_heat_transfer": False,
+                "has_heat_of_reaction": False,
+                "has_pressure_change": False,
+                "energy_balance_type": EnergyBalanceType.none
+                })
+
+        model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( 0. )
+        model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( 0. )
+        model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( 0. )
+
+        # Add in our species as if they were Ca(OH)2 and NaHCO3
+        #       These are typical addatives for remineralization
+        Ca_OH_2 = 6e-4  #mol/L
+        NaHCO3 = 0.00206  #mol/L
+        total = 55.6 + Ca_OH_2 + NaHCO3      #mol/L
+
+        model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( NaHCO3/total )
+        model.fs.unit.inlet.mole_frac_comp[0, "Ca_2+"].fix( Ca_OH_2/total )
+        model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( 2*Ca_OH_2/total )
+        model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( NaHCO3/total )
+
+        # Add in a typical CO2 concentration for equilibrium reactor
+        model.fs.unit.inlet.mole_frac_comp[0, "CO2"].fix( 0.0005 )
+
+        # Perform a summation of all non-H2O molefractions to find the H2O molefraction
+        sum = 0
+        for i in model.fs.unit.inlet.mole_frac_comp:
+            if i[1] != "H2O":
+                sum += value(model.fs.unit.inlet.mole_frac_comp[i[0], i[1]])
+
+        model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1-sum )
+
+        model.fs.unit.inlet.pressure.fix(101325.0)
+        model.fs.unit.inlet.temperature.fix(298.)
+        model.fs.unit.outlet.temperature.fix(298.)
+        model.fs.unit.inlet.flow_mol.fix(10)
+
+        return model
+
+    @pytest.mark.unit
+    def test_build_appr_equ(self, remineralization_appr_equ):
+        model = remineralization_appr_equ
+
+        assert hasattr(model.fs.thermo_params, 'component_list')
+        assert len(model.fs.thermo_params.component_list) == 14
+        assert 'H2O' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.H2O, Solvent)
+        assert 'H_+' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('H_+'), Cation)
+        assert 'OH_-' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('OH_-'), Anion)
+
+        assert 'CO2' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('CO2'), Solute)
+
+        assert 'Na_+' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('Na_+'), Cation)
+
+        assert 'Ca_2+' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('Ca_2+'), Cation)
+
+        assert 'H2CO3' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('H2CO3'), Solute)
+
+        assert 'HCO3_-' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('HCO3_-'), Anion)
+
+        assert 'CO3_2-' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('CO3_2-'), Anion)
+
+        assert 'NaHCO3' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('NaHCO3'), Apparent)
+
+        assert 'Ca(OH)2' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('Ca(OH)2'), Apparent)
+
+        assert 'NaOH' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('NaOH'), Apparent)
+
+        assert 'CaCO3' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('CaCO3'), Apparent)
+
+        assert 'Ca(HCO3)2' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('Ca(HCO3)2'), Apparent)
+
+        assert hasattr(model.fs.thermo_params, 'phase_list')
+        assert len(model.fs.thermo_params.phase_list) == 2
+        assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
+        assert isinstance(model.fs.thermo_params.Vap, VaporPhase)
+
+    @pytest.mark.unit
+    def test_units_appr_equ(self, remineralization_appr_equ):
+        model = remineralization_appr_equ
+        assert_units_consistent(model)
+
+    @pytest.mark.unit
+    def test_dof_appr_equ(self, remineralization_appr_equ):
+        model = remineralization_appr_equ
+        assert (degrees_of_freedom(model) == 0)
+
+    @pytest.mark.component
+    def test_scaling_appr_equ(self, remineralization_appr_equ):
+        model = remineralization_appr_equ
+
+        #Custom eps factors for reaction constraints
+        eps = 1e-30
+        model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
+        model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
+        model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
+        model.fs.thermo_params.reaction_CO2_to_H2CO3.eps.value = eps
+
+        #Add scaling factors for reaction extent
+        for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 1/scale)
+
+        iscale.calculate_scaling_factors(model.fs.unit)
+
+        assert hasattr(model.fs.unit.control_volume, 'scaling_factor')
+        assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+
+        assert hasattr(model.fs.unit.control_volume.properties_out[0.0], 'scaling_factor')
+        assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
+
+        assert hasattr(model.fs.unit.control_volume.properties_in[0.0], 'scaling_factor')
+        assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
+
+    @pytest.mark.component
+    def test_initialize_solver_appr_equ(self, remineralization_appr_equ):
+        model = remineralization_appr_equ
+        solver.options['bound_push'] = 1e-20
+        solver.options['mu_init'] = 1e-6
+        model.fs.unit.initialize(optarg=solver.options)
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.component
+    def test_solve_appr_equ(self, remineralization_appr_equ):
+        model = remineralization_appr_equ
+        solver.options['max_iter'] = 2
+        results = solver.solve(model)
+        print(results.solver.termination_condition)
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_solution_appr_equ(self, remineralization_appr_equ):
+        model = remineralization_appr_equ
+
+        total_molar_density = value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
+        pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
+        pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
+
+        assert pytest.approx(8.205408733919795, rel=1e-5) == pH
+        assert pytest.approx(5.795760555786688, rel=1e-5) == pOH
+
+        # Calculate total hardness
+        TH = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'Ca_2+')])/1000
+        TH = TH*50000
+        assert pytest.approx(59.57980910667752, rel=1e-5) == TH
+
+        # Calculating carbonate alkalinity to determine the split of total hardness
+        CarbAlk = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'CO3_2-')])/1000
+        CarbAlk += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'HCO3_-')])/1000
+        CarbAlk = 50000*CarbAlk
+        assert pytest.approx(161.77877097185672, rel=1e-5) == CarbAlk
+
+        # Non-Carbonate Hardness only exists if there is excess hardness above alkalinity
+        if TH <= CarbAlk:
+            NCH = 0
+        else:
+            NCH = TH - CarbAlk
+        CH = TH - NCH
+        assert pytest.approx(TH, rel=1e-5) == CH
+
+    @pytest.mark.component
+    def test_validation_appr_equ(self, remineralization_appr_equ):
+        model = remineralization_appr_equ
+
+        # Check the apparent species for valid distribution of ions
+        #   i.e., if you use these as input values for apparent species to another
+        #           process, then the model will result in same pH, hardness, and
+        #           alkalinity, assuming same reaction sets apply
+        nahco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','NaHCO3'])
+        assert pytest.approx( 3.650683833103911e-05, rel=1e-5) == nahco3
+
+        h2co3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','H2CO3'])
+        assert pytest.approx( 8.127521460828011e-07, rel=1e-5) == h2co3
+
+        caoh = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','Ca(OH)2'])
+        assert pytest.approx( 5.335361713728932e-09, rel=1e-5) == caoh
+
+        naoh = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','NaOH'])
+        assert pytest.approx( 1.8318075217136e-08, rel=1e-5) == naoh
+
+        caco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','CaCO3'])
+        assert pytest.approx( 1.533263603046767e-07, rel=1e-5) == caco3
+
+        cahco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','Ca(HCO3)2'])
+        assert pytest.approx( 1.0633059708069641e-05, rel=1e-5) == cahco3
+
+        # The test below may be overkill
+        check = ConcreteModel()
+        check.fs = FlowsheetBlock(default={"dynamic": False})
+        check.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+        check.fs.rxn_params = GenericReactionParameterBlock(
+                default={"property_package": check.fs.thermo_params, **reaction_config })
+        check.fs.unit = EquilibriumReactor(default={
+                "property_package": check.fs.thermo_params,
+                "reaction_package": check.fs.rxn_params,
+                "has_rate_reactions": False,
+                "has_equilibrium_reactions": False,
+                "has_heat_transfer": False,
+                "has_heat_of_reaction": False,
+                "has_pressure_change": False,
+                "energy_balance_type": EnergyBalanceType.none
+                })
+
+        # Set inlet values based on prior model solution
+        #       NOTE: These inlets are different from the original run, however,
+        #           if the apparent species system is correctly converting true
+        #           species to apparent, then the two systems should result in
+        #           nearly identical solution properties
+        check.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( 0. )
+        check.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( h2co3 )
+        check.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( nahco3 + naoh )
+        check.fs.unit.inlet.mole_frac_comp[0, "Ca_2+"].fix( caoh + caco3 + cahco3 )
+        check.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( 2*caoh + naoh )
+        check.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( nahco3 + 2*cahco3 )
+        check.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( caco3 )
+        check.fs.unit.inlet.mole_frac_comp[0, "CO2"].fix( 0.0005 )
+
+        sum = 0
+        for i in check.fs.unit.inlet.mole_frac_comp:
+            if i[1] != "H2O":
+                sum += value(check.fs.unit.inlet.mole_frac_comp[i[0], i[1]])
+
+        check.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1-sum )
+
+        check.fs.unit.inlet.pressure.fix(101325.0)
+        check.fs.unit.inlet.temperature.fix(298.)
+        check.fs.unit.outlet.temperature.fix(298.)
+        check.fs.unit.inlet.flow_mol.fix(10)
+
+        #Custom eps factors
+        eps = 1e-30
+        check.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
+        check.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
+        check.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
+        check.fs.thermo_params.reaction_CO2_to_H2CO3.eps.value = eps
+
+        solver.options['bound_push'] = 1e-20
+        solver.options['mu_init'] = 1e-6
+        solver.options['max_iter'] = 1000
+        check.fs.unit.initialize(optarg=solver.options)
+
+        results = solver.solve(check, tee=True)
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        #NOTE: The tolerances below are intentionally loosened, due to the inexact nature
+        #       of the conversion between true and apparent species
+        total_molar_density = value(check.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
+        pH = -value(log10(check.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
+        pOH = -value(log10(check.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
+
+        assert pytest.approx(8.205408733919795 - pH, rel=1) == 0
+        assert pytest.approx(5.795760555786688 - pOH, rel=1) == 0
+
+        # Calculate total hardness
+        TH = 2*value(check.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'Ca_2+')])/1000
+        TH = TH*50000
+        assert pytest.approx(59.57980910667752 - TH, rel=1) == 0
+
+        # Calculating carbonate alkalinity to determine the split of total hardness
+        CarbAlk = 2*value(check.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'CO3_2-')])/1000
+        CarbAlk += value(check.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'HCO3_-')])/1000
+        CarbAlk = 50000*CarbAlk
+        assert pytest.approx(161.77877097185672 - CarbAlk, rel=1) == 0
+
+        # Non-Carbonate Hardness only exists if there is excess hardness above alkalinity
+        if TH <= CarbAlk:
+            NCH = 0
+        else:
+            NCH = TH - CarbAlk
+        CH = TH - NCH
+        assert pytest.approx(TH - CH, rel=1) == 0
+
+    @pytest.fixture(scope="class")
+    def remineralization_cstr_kin(self):
         model = ConcreteModel()
 
         return model
 
     @pytest.fixture(scope="class")
-    def remineralization_cstr(self):
-        model = ConcreteModel()
-
-        return model
-
-    @pytest.fixture(scope="class")
-    def remineralization_pfr(self):
+    def remineralization_pfr_kin(self):
         model = ConcreteModel()
 
         return model
@@ -626,153 +919,3 @@ if __name__ == "__main__":
             "has_pressure_change": False,
             "energy_balance_type": EnergyBalanceType.none
             })
-
-    print(degrees_of_freedom(model))
-
-    model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( 0. )
-    model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( 0. )
-    model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( 0. )
-
-    # Add in our species as if they were Ca(OH)2 and NaHCO3
-    #       These are typical addatives for remineralization
-    Ca_OH_2 = 6e-4  #mol/L
-    NaHCO3 = 0.00206  #mol/L
-    total = 55.6 + Ca_OH_2 + NaHCO3      #mol/L
-
-    model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( NaHCO3/total )
-    model.fs.unit.inlet.mole_frac_comp[0, "Ca_2+"].fix( Ca_OH_2/total )
-    model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( 2*Ca_OH_2/total )
-    model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( NaHCO3/total )
-    model.fs.unit.inlet.mole_frac_comp[0, "CO2"].fix( 0.0005 )
-
-    # Perform a summation of all non-H2O molefractions to find the H2O molefraction
-    sum = 0
-    for i in model.fs.unit.inlet.mole_frac_comp:
-        # NOTE: i will be a tuple with format (time, component)
-        if i[1] != "H2O":
-            sum += value(model.fs.unit.inlet.mole_frac_comp[i[0], i[1]])
-
-    model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1-sum )
-
-    model.fs.unit.inlet.pressure.fix(101325.0)
-    model.fs.unit.inlet.temperature.fix(298.)
-    model.fs.unit.outlet.temperature.fix(298.)
-    model.fs.unit.inlet.flow_mol.fix(10)
-
-    print(degrees_of_freedom(model))
-
-    #Custom eps factors
-    eps = 1e-30
-    model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
-    model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
-    model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
-    model.fs.thermo_params.reaction_CO2_to_H2CO3.eps.value = eps
-
-    #Add scaling factors for equilibrium extent
-    for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
-        scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
-        iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 1/scale)
-
-    #iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp, 1000)
-    #iscale.set_scaling_factor(model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp, 1000)
-
-    min=1
-    for index in model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp:
-        if min >= value(model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp[index]) and value(model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp[index]) > 0:
-            min=value(model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp[index])
-
-    # Setting these scale factors does not help much
-    #iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp, 1/min)
-    #iscale.set_scaling_factor(model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp, 1/min)
-
-    iscale.calculate_scaling_factors(model.fs.unit)
-    # works better without scaling, if no apparent species given (otherwise, scaling is needed?)
-    # [WARNING] idaes.core.util.scaling: Missing scaling factor for fs.unit.control_volume.inherent_reaction_extent[0.0,H2CO3_Ka1]
-
-    solver.options['bound_push'] = 1e-20
-    solver.options['mu_init'] = 1e-6
-    #model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-    model.fs.unit.initialize(optarg=solver.options)
-
-    results = solver.solve(model, tee=True)
-
-    # Extract solution information
-    model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp.display()
-    model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase.display()
-    model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp.display()
-    total_molar_density = value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
-
-    print("Mole fraction H + =\t"+ str(value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])))
-    print("Conc H + =\t"+ str(value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density*1000)))
-    pHo = -log10(value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])*total_molar_density)
-    pOHo = -log10(value(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"])*total_molar_density)
-    print("Outlet pH =\t"+ str(pHo) )
-    print("Outlet pOH =\t"+ str(pOHo) )
-
-    print("inlet.temperature\toutlet.temperature")
-    print(str(value(model.fs.unit.inlet.temperature[0]))+"\t"+str(value(model.fs.unit.outlet.temperature[0]))+"\n")
-
-    print("inlet.pressure\toutlet.pressure")
-    print(str(value(model.fs.unit.inlet.pressure[0]))+"\t"+str(value(model.fs.unit.outlet.pressure[0]))+"\n")
-
-    print("inlet.flow_mol\toutlet.flow_mol")
-    print(str(value(model.fs.unit.inlet.flow_mol[0]))+"\t"+str(value(model.fs.unit.outlet.flow_mol[0]))+"\n")
-
-    # Compute Hardness
-    #   Total Hardness (TH) = Carbonate Hardness (CH) + Non-Carbonate Hardness (NCH)
-    #
-    #       TH (mg CaCO3/L) = 50,000 * SUM( all divalent cations, n*C)
-    #       NCH = TH - 50,000*(C_HCO3 + 2*C_CO3)
-    #       CH = TH - NCH
-    TH = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'Ca_2+')])/1000
-    TH = TH*50000
-    print("Total Hardness (mg-CaCO3/L) =\t"+str(TH))
-
-    # Calculating carbonate alkalinity to determine the split of total hardness
-    CarbAlk = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'CO3_2-')])/1000
-    CarbAlk += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'HCO3_-')])/1000
-    CarbAlk = 50000*CarbAlk
-
-    # Non-Carbonate Hardness only exists if there is excess hardness above alkalinity
-    if TH <= CarbAlk:
-        NCH = 0
-    else:
-        NCH = TH - CarbAlk
-    print("Non-Carbonate Hardness (mg-CaCO3/L) =\t"+str(NCH))
-    print("Carbonate Hardness (mg-CaCO3/L) =\t"+str(TH - NCH))
-    print("Alkalinity (mg-CaCO3/L) =\t"+str(CarbAlk))
-    print()
-
-    print()
-    print("mole_frac -> phase_comp_apparent")
-    for i in model.fs.thermo_params.apparent_phase_component_set:
-        print("mole_frac_phase_comp_apparent[{0},{1}]: ".format(i[0],i[1]), value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent[i[0],i[1]]))
-    print()
-
-    '''
-    NOTE: If you do not give ALL possible 'apparent' species, then this conversion
-            will ALWAYS be wrong!!!
-
-    mole_frac -> phase_comp_apparent ========= THESE ARE WRONG ============
-    mole_frac_phase_comp_apparent[Liq,H2O]:  0.9994844083936842
-    mole_frac_phase_comp_apparent[Liq,CO2]:  0.00047809463730816103
-    mole_frac_phase_comp_apparent[Liq,H2CO3]:  8.127608106508284e-07
-    mole_frac_phase_comp_apparent[Liq,NaHCO3]:  3.650722651892883e-05
-    mole_frac_phase_comp_apparent[Liq,Ca(OH)2]:  5.335418437832851e-09
-    mole_frac_phase_comp_apparent[Liq,NaOH]:  1.8318269969892792e-08
-    mole_frac_phase_comp_apparent[Liq,CaCO3]:  1.5332798938541626e-07
-    mole_frac_phase_comp_apparent[Vap,H2O]:  0.44089091063655955
-    mole_frac_phase_comp_apparent[Vap,CO2]:  0.5591090892109298
-
-    ========== These are "approximatly" correct, though off by ~0.1% =========
-    mole_frac_phase_comp_apparent[Liq,H2O]:  0.9994737808162926
-    mole_frac_phase_comp_apparent[Liq,CO2]:  0.00047808955372523706
-    mole_frac_phase_comp_apparent[Liq,H2CO3]:  8.127521460828011e-07
-    mole_frac_phase_comp_apparent[Liq,NaHCO3]:  3.650683833103911e-05
-    mole_frac_phase_comp_apparent[Liq,Ca(OH)2]:  5.335361713728932e-09
-    mole_frac_phase_comp_apparent[Liq,NaOH]:  1.8318075217136e-08
-    mole_frac_phase_comp_apparent[Liq,CaCO3]:  1.533263603046767e-07
-    mole_frac_phase_comp_apparent[Liq,Ca(HCO3)2]:  1.0633059708069641e-05
-    mole_frac_phase_comp_apparent[Vap,H2O]:  0.4408909107207288
-    mole_frac_phase_comp_apparent[Vap,CO2]:  0.5591090892792712
-    '''
