@@ -869,19 +869,19 @@ class TestRemineralization():
         pH = -value(log10(check.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(check.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
 
-        assert pytest.approx(8.205408733919795 - pH, rel=1) == 0
-        assert pytest.approx(5.795760555786688 - pOH, rel=1) == 0
+        assert pytest.approx(8.182189388725178, rel=1e-5) == pH
+        assert pytest.approx(5.818979926705361, rel=1e-5) == pOH
 
         # Calculate total hardness
         TH = 2*value(check.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'Ca_2+')])/1000
         TH = TH*50000
-        assert pytest.approx(59.57980910667752 - TH, rel=1) == 0
+        assert pytest.approx(59.58239143431564, rel=1e-5) == TH
 
         # Calculating carbonate alkalinity to determine the split of total hardness
         CarbAlk = 2*value(check.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'CO3_2-')])/1000
         CarbAlk += value(check.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'HCO3_-')])/1000
         CarbAlk = 50000*CarbAlk
-        assert pytest.approx(161.77877097185672 - CarbAlk, rel=1) == 0
+        assert pytest.approx(160.3367559866467, rel=1e-5) == CarbAlk
 
         # Non-Carbonate Hardness only exists if there is excess hardness above alkalinity
         if TH <= CarbAlk:
@@ -889,7 +889,7 @@ class TestRemineralization():
         else:
             NCH = TH - CarbAlk
         CH = TH - NCH
-        assert pytest.approx(TH - CH, rel=1) == 0
+        assert pytest.approx(TH, rel=1e-5) == CH
 
     @pytest.fixture(scope="class")
     def remineralization_cstr_kin(self):
