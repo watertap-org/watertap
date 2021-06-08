@@ -6,6 +6,11 @@ This reverse osmosis (RO) unit model:
    * supports steady-state only
    * is based on the solution-diffusion model and film theory
 
+.. index::
+   pair: proteuslib.unit_models.reverse_osmosis_0D;reverse_osmosis_0D
+
+.. currentmodule:: proteuslib.unit_models.reverse_osmosis_0D
+
 Example
 -------
 The example below shows how to setup a simple RO unit model.
