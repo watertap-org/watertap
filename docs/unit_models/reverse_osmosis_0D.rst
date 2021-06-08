@@ -4,11 +4,7 @@ This reverse osmosis (RO) unit model:
    * is a 0-dimensional model
    * supports a single liquid phase only
    * supports steady-state only
-
-.. index::
-   pair: proteuslib.unit_models.reverse_osmosis_0D;reverse_osmosis_0D
-
-.. currentmodule:: proteuslib.unit_models.reverse_osmosis_0D
+   * is based on the solution-diffusion model and film theory
 
 Example
 -------
