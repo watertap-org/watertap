@@ -106,6 +106,7 @@ schemas = {
                     "Liq": {"$ref": "#/definitions/stoichiometry"},
                     "Vap": {"$ref": "#/definitions/stoichiometry"},
                 },
+                "additionalProperties": False,
             },
             "heat_of_reaction": {"type": "string"},
             "equilibrium_constant": {"type": "string"},

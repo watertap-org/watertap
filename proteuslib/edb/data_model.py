@@ -74,10 +74,12 @@ Class diagram::
 __author__ = "Dan Gunter"
 
 # stdlib
+from contextlib import contextmanager
 import copy
 from fnmatch import fnmatchcase
 import logging
-from typing import Dict, Type
+import re
+from typing import Dict, Type, List
 
 # 3rd party
 from pyomo.environ import units as pyunits
@@ -85,7 +87,10 @@ from pyomo.environ import units as pyunits
 # IDAES core
 from idaes import logger
 from idaes.core.phases import PhaseType
+# - methods
 from idaes.generic_models.properties.core.pure import Perrys
+from idaes.generic_models.properties.core.pure.NIST import NIST
+from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.core import LiquidPhase, VaporPhase
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
@@ -105,9 +110,15 @@ from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rx
 # package
 from .equations.equil_log_power_form import log_power_law
 from .equations.van_t_hoff_alt_form import van_t_hoff_aqueous
-from .error import ConfigGeneratorError
+from .error import ConfigGeneratorError, BadConfiguration
 
 _log = logger.getLogger(__name__)
+
+
+@contextmanager
+def field(f):
+    """Clean way to use a field in block (see code below for lots of examples)."""
+    yield f
 
 
 class ConfigGenerator:
@@ -132,8 +143,9 @@ class ConfigGenerator:
     def _build_units(x: str = None):
         if not x:
             _log.warning("setting dimensionless unit")
-            x = "U.dimensionless"
-        return eval(x, {"U": pyunits, "os": None, "sys": None})
+            x = "dimensionless"
+        s = re.sub(r"([A-Za-z]+)", r"U.\1", x)
+        return eval(x, {"U": pyunits})
 
     # shared
 
@@ -428,6 +440,46 @@ class DataWrapper:
         del copy["_id"]
         return copy
 
+    @classmethod
+    def from_idaes_config(cls, config: Dict) -> List[DataWrapper]:
+        """The inverse of the `idaes_config` property, this method constructs a new
+        instance of the wrapped data from the IDAES config information.
+
+        Args:
+             config: Valid IDAES configuration dictionary
+
+        Raises:
+            BadConfiguration: If the configuration can't be transformed into the EDB form due
+                              to missing/invalid fields.
+        """
+        pass  # subclasses need to define this, using helper functions in this class
+
+    _method_str = {
+        Perrys: "Perrys",
+        NIST: "NIST",
+        fugacity: "fugacity"
+    }
+
+    @classmethod
+    def _method_to_str(cls, fld, src, tgt, required=False, default=None):
+        """Convert a method object to a string representation.
+
+        Raises:
+            BadConfiguration: if field is missing and required, or unrecognized without a default
+        """
+        if fld in src:
+            value = src[fld]
+            try:
+                str_value = cls._method_str[value]
+            except KeyError:
+                if default is not None:
+                    str_value = default
+                else:
+                    raise BadConfiguration(config=src, why=f"Unknown value for {fld}")
+            tgt[fld] = str_value
+        elif required:
+            raise BadConfiguration(config=src, missing=fld)
+
 
 class Component(DataWrapper):
 
@@ -445,6 +497,41 @@ class Component(DataWrapper):
         if "name" not in data:
             raise KeyError("'name' is required")
         super().__init__(data, ThermoConfig)
+
+    @classmethod
+    def from_idaes_config(cls, config: Dict):
+        """See documentation on parent class."""
+        whoami = "Component.from_idaes_config"
+        if "components" not in config:
+            raise BadConfiguration(config=config, whoami=whoami, missing="components")
+        result = []
+        for name, c in config["components"].items():
+            d = {"name": name}
+            cls._method_to_str("valid_phase_types", c, d)
+            for fld in c:
+                if fld.endswith("_comp"):
+                    cls._method_to_str(fld, c, d)
+            with field("phase_equilibrium_form") as fld:
+                if fld in c:
+                    d[fld] = {}
+                    key, value = c.items()[0]
+                    for phase in key:
+                        cls._method_to_str(phase, {phase: value}, d[fld])
+            with field("parameter_data") as fld:
+                if fld in c:
+                    for param, value in c.items():
+                        if isinstance(value, tuple):
+                            d[fld][param] = [{"v": value[0], "u": str(value[1])}]
+                        else:
+                            param_list = []
+                            for i, value2 in value.items():
+                                try:
+                                    i = int(i)
+                                except ValueError:
+                                    pass
+                                param_list.append({"i": i, "v": value2[0], "u": str(value2[1])})
+                            d[fld][param] = param_list
+            result.append(d)
 
 
 class Reaction(DataWrapper):
