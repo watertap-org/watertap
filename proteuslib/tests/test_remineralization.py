@@ -428,6 +428,22 @@ thermo_config = {
                             },
                     # End parameter_data
                     },
+        'Ca(HCO3)2': {  "type": Apparent,  "valid_phase_types": PT.aqueousPhase,
+                    "dissociation_species": {"Ca_2+":1, "HCO3_-":2},
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
+                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
+                            },
+                    # End parameter_data
+                    },
               },
               # End Component list
         #"phases":  {'Liq': {"type": AqueousPhase,
@@ -577,7 +593,19 @@ solver = get_solver()
 # Start test class
 class TestRemineralization():
     @pytest.fixture(scope="class")
-    def remineralization(self):
+    def remineralization_appr(self):
+        model = ConcreteModel()
+
+        return model
+
+    @pytest.fixture(scope="class")
+    def remineralization_cstr(self):
+        model = ConcreteModel()
+
+        return model
+
+    @pytest.fixture(scope="class")
+    def remineralization_pfr(self):
         model = ConcreteModel()
 
         return model
@@ -633,8 +661,6 @@ if __name__ == "__main__":
 
     print(degrees_of_freedom(model))
 
-    model.fs.unit.inlet.pprint()
-
     #Custom eps factors
     eps = 1e-30
     model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
@@ -642,8 +668,25 @@ if __name__ == "__main__":
     model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
     model.fs.thermo_params.reaction_CO2_to_H2CO3.eps.value = eps
 
+    #Add scaling factors for equilibrium extent
+    for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
+        scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
+        iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 1/scale)
+
+    #iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp, 1000)
+    #iscale.set_scaling_factor(model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp, 1000)
+
+    min=1
+    for index in model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp:
+        if min >= value(model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp[index]) and value(model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp[index]) > 0:
+            min=value(model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp[index])
+
+    # Setting these scale factors does not help much
+    #iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp, 1/min)
+    #iscale.set_scaling_factor(model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp, 1/min)
+
     iscale.calculate_scaling_factors(model.fs.unit)
-    # works better without scaling
+    # works better without scaling, if no apparent species given (otherwise, scaling is needed?)
     # [WARNING] idaes.core.util.scaling: Missing scaling factor for fs.unit.control_volume.inherent_reaction_extent[0.0,H2CO3_Ka1]
 
     solver.options['bound_push'] = 1e-20
@@ -707,7 +750,10 @@ if __name__ == "__main__":
     print()
 
     '''
-    mole_frac -> phase_comp_apparent
+    NOTE: If you do not give ALL possible 'apparent' species, then this conversion
+            will ALWAYS be wrong!!!
+
+    mole_frac -> phase_comp_apparent ========= THESE ARE WRONG ============
     mole_frac_phase_comp_apparent[Liq,H2O]:  0.9994844083936842
     mole_frac_phase_comp_apparent[Liq,CO2]:  0.00047809463730816103
     mole_frac_phase_comp_apparent[Liq,H2CO3]:  8.127608106508284e-07
@@ -717,7 +763,16 @@ if __name__ == "__main__":
     mole_frac_phase_comp_apparent[Liq,CaCO3]:  1.5332798938541626e-07
     mole_frac_phase_comp_apparent[Vap,H2O]:  0.44089091063655955
     mole_frac_phase_comp_apparent[Vap,CO2]:  0.5591090892109298
-    '''
 
-    # Next Test: A model built with these molefractions at the inlet should give
-    #   the same results for pH, alkalinity, and hardness
+    ========== These are "approximatly" correct, though off by ~0.1% =========
+    mole_frac_phase_comp_apparent[Liq,H2O]:  0.9994737808162926
+    mole_frac_phase_comp_apparent[Liq,CO2]:  0.00047808955372523706
+    mole_frac_phase_comp_apparent[Liq,H2CO3]:  8.127521460828011e-07
+    mole_frac_phase_comp_apparent[Liq,NaHCO3]:  3.650683833103911e-05
+    mole_frac_phase_comp_apparent[Liq,Ca(OH)2]:  5.335361713728932e-09
+    mole_frac_phase_comp_apparent[Liq,NaOH]:  1.8318075217136e-08
+    mole_frac_phase_comp_apparent[Liq,CaCO3]:  1.533263603046767e-07
+    mole_frac_phase_comp_apparent[Liq,Ca(HCO3)2]:  1.0633059708069641e-05
+    mole_frac_phase_comp_apparent[Vap,H2O]:  0.4408909107207288
+    mole_frac_phase_comp_apparent[Vap,CO2]:  0.5591090892792712
+    '''
