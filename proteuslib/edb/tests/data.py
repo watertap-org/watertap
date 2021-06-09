@@ -184,4 +184,5 @@ bicarbonate_reaction_data = {
     "name": "H2CO3_Ka2",
     "components": ["H2CO3", "Ka2"],
     "reactant_elements": ["H", "O", "C"],
+    "type": "equilibrium"
 }
