@@ -31,19 +31,12 @@ from fastjsonschema import compile
 # package
 from .schemas import schemas
 from . import data_model
+from .error import ValidationError
 
 __author__ = "Dan Gunter (LBNL)"
 
 
 _log = logging.getLogger(__name__)
-
-
-class ValidationError(Exception):
-    """Validation error.
-    """
-    def __init__(self, err):
-        msg = f"{err}"
-        super().__init__(msg)
 
 
 def validate(obj: Union[Dict, TextIO, Path, str, data_model.DataWrapper], obj_type=""):
