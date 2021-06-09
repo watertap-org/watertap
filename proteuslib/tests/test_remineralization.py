@@ -12,12 +12,31 @@
 ###############################################################################
 
 '''
-    This test is to establish ...
-    Reactions:
-        H2O <---> H + OH
+    This test is to establish: (i) that IDAES can solve dilute system associated
+    with remineralization processes, (ii) that IDAES can correctly assign ions
+    to a set of apparent species, (iii) the solution of the system with the IDAES
+    assigned apparent species set is the same as the prior solve used to establish
+    that set, and (iv) that IDAES can mix-and-match inherent reactions with kinetic
+    reactions to emulate more realistic solution chemistry. Solutions are checked
+    with approximations to solution pH, alkalinity, and hardness after a typical
+    remineralization process.
 
-    Other species:
-        Cl
+    Inherent Reactions:
+        H2O <---> H + OH
+        H2CO3 <---> H + HCO3
+        HCO3 <---> H + CO3
+        H2O + CO2 <--> H2CO3
+
+    Additional Apparent species:
+        NaHCO3
+        Ca(OH)2
+        Ca(HCO3)2
+        NaOH
+        CaCO3
+
+    Kinetic Reactions:
+        NaHCO3 --> Na + HCO3
+        Ca(OH)2 --> Ca + 2 OH
 '''
 # Importing testing libraries
 import unittest
@@ -95,6 +114,7 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 # Import the idaes object for the EquilibriumReactor unit model
 from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
 from idaes.generic_models.unit_models.cstr import CSTR
+from idaes.generic_models.unit_models.plug_flow_reactor import PFR
 
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock
@@ -1564,7 +1584,7 @@ if __name__ == "__main__":
     model.fs.thermo_params = GenericParameterBlock(default=thermo_config_cstr)
     model.fs.rxn_params = GenericReactionParameterBlock(
             default={"property_package": model.fs.thermo_params, **reaction_config_cstr })
-    model.fs.unit = CSTR(default={"property_package": model.fs.thermo_params,
+    model.fs.unit = PFR(default={"property_package": model.fs.thermo_params,
                                       "reaction_package": model.fs.rxn_params,
                                       "has_equilibrium_reactions": False,
                                       "has_heat_transfer": False,
@@ -1619,12 +1639,18 @@ if __name__ == "__main__":
 
     assert_units_consistent(model)
 
+    # NOTE: There are 20 DOF remaining for PFR!!!
+
     #Custom eps factors for reaction constraints
     eps = 1e-20
     model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
     model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
     model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
     model.fs.thermo_params.reaction_CO2_to_H2CO3.eps.value = eps
+
+    # =======================
+    # AttributeError: '_ScalarControlVolume1DBlock' object has no attribute 'properties_out'
+    # -========================
 
     #Add scaling factors for reaction extent
     for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
