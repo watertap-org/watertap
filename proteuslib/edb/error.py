@@ -33,3 +33,13 @@ class BadConfiguration(DataWrapperError):
         dumped = pformat(config)
         msg = f"Bad configuration provided to '{whoami}': {why}.\n{dumped}"
         super().__init__(msg)
+
+
+class ValidationError(Error):
+    """Validation error.
+    """
+    def __init__(self, err):
+        msg = f"{err}"
+        super().__init__(msg)
+
+
