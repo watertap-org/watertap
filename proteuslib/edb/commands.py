@@ -16,7 +16,7 @@ from pymongo import MongoClient
 
 # package
 from .db_api import ElectrolyteDB
-from .validate import validate_reaction, validate_component, ValidationError
+from .validate import validate, ValidationError
 from .schemas import schemas as edb_schemas
 
 _log = logging.getLogger(__name__)
