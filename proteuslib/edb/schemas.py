@@ -118,7 +118,7 @@ schemas = {
                 "additionalProperties": False,
             },
         },
-        "required": ["name", "parameter_data"],
+        "required": ["name", "parameter_data", "type"],
         "definitions": {
             "parameter": _parameter_def,
             "stoichiometry": {
