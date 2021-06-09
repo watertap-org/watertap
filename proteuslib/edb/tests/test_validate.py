@@ -14,17 +14,17 @@
 Tests for validate module
 """
 import pytest
-from ..validate import validate_reaction, validate_component
+from ..validate import validate
 from .data import component_data, reaction_data
 
 
 @pytest.mark.unit
 @pytest.mark.parametrize("comp", component_data)
 def test_validate_component(comp):
-    assert validate_component(comp)
+    validate(comp, obj_type="component")
 
 
 @pytest.mark.unit
 @pytest.mark.parametrize("reaction", reaction_data)
 def test_validate_reaction(reaction):
-    assert validate_reaction(reaction)
+    validate(reaction, obj_type="reaction")

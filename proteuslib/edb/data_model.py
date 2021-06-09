@@ -85,13 +85,14 @@ from typing import Dict, Type, List
 from pyomo.environ import units as pyunits
 
 # IDAES core
-from idaes import logger
 from idaes.core.phases import PhaseType
+
 # - methods
 from idaes.generic_models.properties.core.pure import Perrys
 from idaes.generic_models.properties.core.pure.NIST import NIST
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.core import LiquidPhase, VaporPhase
+from idaes.core import Component as IComponent
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.generic.generic_reaction import (
@@ -102,6 +103,7 @@ from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
     power_law_equil,
 )
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
 
 # IDE complains about these two
 # from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
@@ -112,7 +114,7 @@ from .equations.equil_log_power_form import log_power_law
 from .equations.van_t_hoff_alt_form import van_t_hoff_aqueous
 from .error import ConfigGeneratorError, BadConfiguration
 
-_log = logger.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 @contextmanager
@@ -144,14 +146,19 @@ class ConfigGenerator:
         if not x:
             _log.warning("setting dimensionless unit")
             x = "dimensionless"
-        s = re.sub(r"([A-Za-z]+)", r"U.\1", x)
-        return eval(x, {"U": pyunits})
+        s = re.sub(r"([A-Za-z]+)", r"U.\1", x).replace("U.None", "U.dimensionless")
+        try:
+            units = eval(s, {"U": pyunits})
+        # Syntax/NameError are just general badness, AttributeError is an unknown unit
+        except (SyntaxError, NameError, AttributeError) as err:
+            _log.error(f"while evaluating unit {s}: {err}")
+            raise
 
     # shared
 
     @classmethod
     def _transform_parameter_data(cls, comp):
-        debugging, comp_name = _log.isEnabledFor(logging.DEBUG), comp.get('name', '?')
+        debugging, comp_name = _log.isEnabledFor(logging.DEBUG), comp.get("name", "?")
         params = comp.get("parameter_data", None)
         if not params:
             _log.warning(f"No parameter data found in data name={comp_name}")
@@ -175,7 +182,9 @@ class ConfigGenerator:
                         index = item.get("i", 0)
                         built_units = cls._build_units(item["u"])
                     except (AttributeError, TypeError, ValueError) as err:
-                        raise ConfigGeneratorError(f"Cannot extract parameter. name='{comp_name}', item='{item}': {err}")
+                        raise ConfigGeneratorError(
+                            f"Cannot extract parameter. name='{comp_name}', item='{item}': {err}"
+                        )
                     coeff_table[index] = (item["v"], built_units)
                 params[param_key] = coeff_table
                 if debugging:
@@ -220,7 +229,15 @@ class ConfigGenerator:
         to_delete = set()  # cannot delete while iterating, so store keys to delete here
         for key, value in data.items():
             # if this is not a special field, add it to the the component
-            if key not in ("name", "type", "base_units", "reaction_type", "components", "reactant_elements", section, "_id"):
+            if key not in (
+                "name",
+                "base_units",
+                "reaction_type",
+                "components",
+                "reactant_elements",
+                section,
+                "_id",
+            ):
                 data[section][comp_name][key] = value
             # mark field for deletion, if not top-level field
             if key not in ("base_units", section):
@@ -252,7 +269,11 @@ class ConfigGenerator:
             if debugging:
                 _log.debug(f"substitute value: d={d} subst={subst} key={key}")
             # make a scalar into a list of length 1, but remember whether it's a list or not
-            if isinstance(d[key], str) or isinstance(d[key], int) or isinstance(d[key], float):
+            if (
+                isinstance(d[key], str)
+                or isinstance(d[key], int)
+                or isinstance(d[key], float)
+            ):
                 str_values = [d[key]]
                 is_list = False
             else:
@@ -267,8 +288,12 @@ class ConfigGenerator:
                         new_value = subst[str_value]
                         num_subst += 1
                 elif subst == cls.SUBST_UNITS:
-                    if isinstance(str_value, str):  # make sure it's not already evaluated
-                        _log.debug(f"Substituting units: set d[{key}] = units('{str_value}') where d={d}")
+                    if isinstance(
+                        str_value, str
+                    ):  # make sure it's not already evaluated
+                        _log.debug(
+                            f"Substituting units: set d[{key}] = units('{str_value}') where d={d}"
+                        )
                         new_value = cls._build_units(str_value)
                 if new_value is None:
                     new_list.append(str_value)  # unsubstituted value
@@ -343,6 +368,7 @@ class ThermoConfig(ConfigGenerator):
         if "elements" in data:
             del data["elements"]
 
+        data["type"] = IComponent
         cls._wrap_section("components", data)
 
 
@@ -354,7 +380,9 @@ class ReactionConfig(ConfigGenerator):
             "log_power_law": log_power_law,
             "ConcentrationForm.molarity": ConcentrationForm.molarity,
         },
-        "*_constant": {"van_t_hoff_aqueous": van_t_hoff_aqueous},
+        "*_constant": {"van_t_hoff_aqueous": van_t_hoff_aqueous,
+                       "van_t_hoff": van_t_hoff,
+       },
     }
 
     @classmethod
@@ -380,14 +408,13 @@ class ReactionConfig(ConfigGenerator):
         cls._wrap_section("equilibrium_reactions", data)
 
 
-
 class BaseConfig(ConfigGenerator):
 
     substitute_values = {
         "state_definition": {"FTPx": FTPx},
         "phases.Liq.type": {"LiquidPhase": LiquidPhase},
         "phases.Liq.equation_of_state": {"Ideal": Ideal},
-        "base_units.*": ConfigGenerator.SUBST_UNITS
+        "base_units.*": ConfigGenerator.SUBST_UNITS,
     }
 
     @classmethod
@@ -423,7 +450,7 @@ class DataWrapper:
 
     @property
     def idaes_config(self) -> Dict:
-        """"Get the data as an IDAES config dict.
+        """ "Get the data as an IDAES config dict.
 
         Returns:
             Python dict that can be passed to the IDAES as a config.
@@ -437,11 +464,12 @@ class DataWrapper:
     def json_data(self) -> Dict:
         """Get the data in its "natural" form as a dict that can be serialized to JSON."""
         copy = self._data.copy()  # shallow copy is fine
-        del copy["_id"]
+        if "_id" in copy:
+            del copy["_id"]
         return copy
 
     @classmethod
-    def from_idaes_config(cls, config: Dict) -> List[DataWrapper]:
+    def from_idaes_config(cls, config: Dict) -> List["DataWrapper"]:
         """The inverse of the `idaes_config` property, this method constructs a new
         instance of the wrapped data from the IDAES config information.
 
@@ -454,14 +482,10 @@ class DataWrapper:
         """
         pass  # subclasses need to define this, using helper functions in this class
 
-    _method_str = {
-        Perrys: "Perrys",
-        NIST: "NIST",
-        fugacity: "fugacity"
-    }
-
     @classmethod
-    def _method_to_str(cls, fld, src, tgt, required=False, default=None):
+    def _method_to_str(
+        cls, fld, src, tgt, subst, required=False, default=None, caller: str = None
+    ):
         """Convert a method object to a string representation.
 
         Raises:
@@ -470,15 +494,40 @@ class DataWrapper:
         if fld in src:
             value = src[fld]
             try:
-                str_value = cls._method_str[value]
+                str_value = subst[value]
             except KeyError:
                 if default is not None:
                     str_value = default
                 else:
-                    raise BadConfiguration(config=src, why=f"Unknown value for {fld}")
+                    raise BadConfiguration(
+                        caller, config=src, why=f"Unknown value for {fld}"
+                    )
             tgt[fld] = str_value
         elif required:
-            raise BadConfiguration(config=src, missing=fld)
+            raise BadConfiguration(caller, config=src, missing=fld)
+
+    @classmethod
+    def _convert_parameter_data(cls, src, tgt, caller="unknown"):
+        if "parameter_data" not in src:
+            raise BadConfiguration(caller, src, missing="parameter_data")
+        pd, data = src["parameter_data"], {}
+        for param, value in pd.items():
+            if isinstance(value, tuple):
+                data[param] = [{"v": value[0], "u": str(value[1])}]
+            elif isinstance(list(value.keys())[0], tuple):  # e.g., reaction_order
+                pass  # skip!
+            else:
+                param_list = []
+                for i, value2 in value.items():
+                    try:
+                        i = int(i)
+                    except ValueError:
+                        pass
+                    param_list.append(
+                        {"i": i, "v": value2[0], "u": str(value2[1])}
+                    )
+                data[param] = param_list
+        tgt["parameter_data"] = data
 
 
 class Component(DataWrapper):
@@ -499,39 +548,46 @@ class Component(DataWrapper):
         super().__init__(data, ThermoConfig)
 
     @classmethod
-    def from_idaes_config(cls, config: Dict):
+    def from_idaes_config(cls, config: Dict) -> List["Component"]:
         """See documentation on parent class."""
         whoami = "Component.from_idaes_config"
+
+        # get inverse mapping of strings and values from ThermoConfig.substitute_values, used
+        # for calls to _method_to_str()
+        subst_strings = {}
+        for _, mapping in ThermoConfig.substitute_values.items():
+            for k, v in mapping.items():
+                subst_strings[v] = k
+
         if "components" not in config:
             raise BadConfiguration(config=config, whoami=whoami, missing="components")
         result = []
         for name, c in config["components"].items():
             d = {"name": name}
-            cls._method_to_str("valid_phase_types", c, d)
+            with field("type") as fld:
+                if fld not in c:
+                    raise BadConfiguration(whoami, config, missing=fld)
+                if c[fld] != IComponent:
+                    raise BadConfiguration(
+                        whoami,
+                        config,
+                        why=f"Bad value for '{fld}': expected={IComponent}, "
+                        f"got='{c[fld]}'",
+                    )
+            cls._method_to_str("valid_phase_types", c, d, subst_strings, caller=whoami)
             for fld in c:
                 if fld.endswith("_comp"):
-                    cls._method_to_str(fld, c, d)
+                    cls._method_to_str(fld, c, d, subst_strings, caller=whoami)
             with field("phase_equilibrium_form") as fld:
                 if fld in c:
                     d[fld] = {}
-                    key, value = c.items()[0]
+                    for key, value in c[fld].items():
+                        break
                     for phase in key:
-                        cls._method_to_str(phase, {phase: value}, d[fld])
-            with field("parameter_data") as fld:
-                if fld in c:
-                    for param, value in c.items():
-                        if isinstance(value, tuple):
-                            d[fld][param] = [{"v": value[0], "u": str(value[1])}]
-                        else:
-                            param_list = []
-                            for i, value2 in value.items():
-                                try:
-                                    i = int(i)
-                                except ValueError:
-                                    pass
-                                param_list.append({"i": i, "v": value2[0], "u": str(value2[1])})
-                            d[fld][param] = param_list
-            result.append(d)
+                        cls._method_to_str(phase, {phase: value}, d[fld], subst_strings, caller=whoami)
+            cls._convert_parameter_data(c, d)
+            result.append(Component(d))
+        return result
 
 
 class Reaction(DataWrapper):
@@ -550,6 +606,35 @@ class Reaction(DataWrapper):
         if "name" not in data:
             raise KeyError("'name' is required")
         super().__init__(data, ReactionConfig)
+
+    @classmethod
+    def from_idaes_config(cls, config: Dict) -> List["Reaction"]:
+        """See documentation on parent class."""
+        whoami = "Reaction.from_idaes_config"  # for logging
+
+        # get inverse mapping of strings and values from ReactionConfig.substitute_values, used
+        # for calls to _method_to_str()
+        subst_strings = {}
+        for _, mapping in ReactionConfig.substitute_values.items():
+            for k, v in mapping.items():
+                subst_strings[v] = k
+
+        if "equilibrium_reactions" not in config:
+            raise BadConfiguration(config=config, whoami=whoami, missing="equilibrium_reactions")
+        result = []
+        # XXX: base units?
+        for name, r in config["equilibrium_reactions"].items():
+            d = {"name": name}
+            # convert all non-dictionary-valued fields into equivalent string values
+            for fld, val in r.items():
+                if isinstance(val, str):  # leave string values as-is
+                    d[fld] = val
+                elif not isinstance(val, dict):  # convert all other non-dict values
+                    cls._method_to_str(fld, r, d, subst_strings, caller=whoami)
+            cls._convert_parameter_data(r, d)
+            print(f"@@ adding reaction: {d}")
+            result.append(Reaction(d))
+        return result
 
 
 class Base(DataWrapper):
@@ -610,6 +695,7 @@ class Result:
             # ..work with instance of class Reaction..
             print(reaction_obj.name)
     """
+
     def __init__(self, iterator=None, item_class=None):
         if iterator is not None:
             assert issubclass(item_class, DataWrapper)
@@ -623,3 +709,4 @@ class Result:
         datum = next(self._it)
         obj = self._it_class(datum)
         return obj
+
