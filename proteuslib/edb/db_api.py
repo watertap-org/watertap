@@ -23,11 +23,11 @@ Database operations API
 # stdlib
 import logging
 import re
-from typing import List, Optional
+from typing import Dict, List, Optional, Union
 # third-party
 from pymongo import MongoClient
 # package
-from .data_model import Result, Component, Reaction, Base
+from .data_model import Result, Component, Reaction, Base, DataWrapper
 
 __author__ = "Dan Gunter (LBNL)"
 
@@ -42,6 +42,7 @@ class ElectrolyteDB:
     DEFAULT_URL = "mongodb://localhost:27017"
     DEFAULT_DB = "electrolytedb"
 
+    # make sure these match lowercase names of the DataWrapper subclasses in the `data_model` module
     _known_collections = ("base", "component", "reaction")
 
     def __init__(self, url=DEFAULT_URL, db=DEFAULT_DB):
@@ -101,15 +102,33 @@ class ElectrolyteDB:
         result = Result(iterator=collection.find(filter=query), item_class=Base)
         return result
 
-    def load(self, data, rec_type=None):
+    def load(self, data: Union[Dict, List[Dict], DataWrapper, List[DataWrapper]], rec_type: str = "base") -> int:
         """Load a single record or list of records.
+
+        Args:
+            data: Data to load, as a single or list of dictionaries or :class:`DataWrapper` subclass
+            rec_type: If input is a dict, the type of record. This argument is ignored if the input is
+                      a subclass of DataWrapper.
+
+        Returns:
+            Number of records loaded
         """
-        assert rec_type in self._known_collections
-        if isinstance(data, dict):
+        is_object = False
+        if isinstance(data, DataWrapper):
             data = [data]
+            is_object = True
+        elif isinstance(data, dict):
+            data = [data]
+        else:
+            is_object = isinstance(data[0], DataWrapper)
+        if is_object:
+            rec_type = data[0].__class__.__name__.lower()
+        else:
+            assert rec_type in self._known_collections
         num = 0
-        for record in data:
+        for item in data:
             coll = getattr(self._db, rec_type)
+            record = item.json_data if is_object else item
             process_func = getattr(self, f"_process_{rec_type}")
             processed_record = process_func(record)
             coll.insert_one(processed_record)
