@@ -153,6 +153,7 @@ class ConfigGenerator:
         except (SyntaxError, NameError, AttributeError) as err:
             _log.error(f"while evaluating unit {s}: {err}")
             raise
+        return units
 
     # shared
 
@@ -292,7 +293,7 @@ class ConfigGenerator:
                         str_value, str
                     ):  # make sure it's not already evaluated
                         _log.debug(
-                            f"Substituting units: set d[{key}] = units('{str_value}') where d={d}"
+                            f"Substituting units: set {{'{key}': units('{str_value}')}} in {d}"
                         )
                         new_value = cls._build_units(str_value)
                 if new_value is None:
@@ -357,7 +358,11 @@ class ThermoConfig(ConfigGenerator):
         },
         "*_comp": {
             "Perrys": Perrys,
+            "NIST": NIST
         },
+        "phase_equilibrium_form.*": {
+            "fugacity": fugacity,
+        }
     }
 
     @classmethod
@@ -514,19 +519,32 @@ class DataWrapper:
         for param, value in pd.items():
             if isinstance(value, tuple):
                 data[param] = [{"v": value[0], "u": str(value[1])}]
-            elif isinstance(list(value.keys())[0], tuple):  # e.g., reaction_order
-                pass  # skip!
+            elif isinstance(value, dict) and len(value) > 0:
+                key0 = list(value.keys())[0]
+                if isinstance(key0, tuple):
+                    # process dict with tuple keys
+                    if param == "reaction_order":
+                        pass  # skip, not something we need to store in EDB
+                    else:
+                        pass # not implemented -- no other known values
+                else:
+                    # process dict with scalar keys
+                    param_list = []
+                    for i, value2 in value.items():
+                        try:
+                            i = int(i)
+                        except ValueError:
+                            pass
+                        except TypeError as err:
+                            raise BadConfiguration(caller, src, why=f"Unexpected key type in parameter_data: "
+                                                                    f"key='{i}' param={value}")
+                        param_list.append(
+                            {"i": i, "v": value2[0], "u": str(value2[1])}
+                        )
+                    data[param] = param_list
             else:
-                param_list = []
-                for i, value2 in value.items():
-                    try:
-                        i = int(i)
-                    except ValueError:
-                        pass
-                    param_list.append(
-                        {"i": i, "v": value2[0], "u": str(value2[1])}
-                    )
-                data[param] = param_list
+                raise BadConfiguration(caller, src, why=f"Unexpected value type for 'parameter_data': key='{param}', "
+                                                        f"value='{value}'")
         tgt["parameter_data"] = data
 
 
@@ -631,16 +649,10 @@ class Reaction(DataWrapper):
                     d[fld] = val
                 elif not isinstance(val, dict):  # convert all other non-dict values
                     cls._method_to_str(fld, r, d, subst_strings, caller=whoami)
-            with field("reaction_order") as fld:
-                reaction_order = {}
-                if fld in r["parameter_data"]:
-                    cls._convert_stoichiometry(r["parameter_data"][fld], reaction_order)
             cls._convert_parameter_data(r, d)
             with field("stoichiometry") as fld:
                 if fld in r:
                     cls._convert_stoichiometry(r[fld], d)
-            if reaction_order != r["stoichiometry"]:
-                d["parameter_data"]["reaction_order"] = reaction_order
             print(f"@@ adding reaction: {d}")
             result.append(Reaction(d))
         return result

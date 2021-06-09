@@ -16,7 +16,6 @@ Tests for data_model module
 import logging
 from pprint import pprint  # for debugging
 import pytest
-from ..data_model import ConfigGenerator, Component, Reaction, Result, Base
 from . import data as testdata
 from typing import Dict
 from pyomo.environ import units as pyunits
@@ -31,8 +30,18 @@ from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rx
 from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
 from ..equations.equil_log_power_form import log_power_law
 
+from ..data_model import ConfigGenerator, Component, Reaction, Result, Base, ThermoConfig
+
 # For validating DataWrapper contents
 from ..validate import validate
+
+@pytest.fixture
+def debug_logging():
+    """Use fixture cleanup ability to set and unset debug logging.
+    """
+    logging.getLogger("proteuslib.edb.data_model").setLevel(logging.DEBUG)
+    yield "debug"
+    logging.getLogger("proteuslib.edb.data_model").setLevel(logging.INFO)
 
 
 def assert_configuration_equal(a: Dict, b: Dict, fld: str):
@@ -75,7 +84,7 @@ def test_component_ca_thermo():
     print("Expected idaes_config:")
     pprint(testdata.Ca_thermo_config)
 
-    assert_configuration_equal(comp.idaes_config, testdata.Ca_thermo_config)
+    assert_configuration_equal(comp.idaes_config, testdata.Ca_thermo_config, "components")
     logging.getLogger("idaes.proteuslib.edb.data_model").setLevel(logging.INFO)
 
 
@@ -90,7 +99,7 @@ def test_reaction_bicarbonate():
     print("Expected idaes_config:")
     pprint(testdata.bicarbonate_reaction_config)
 
-    assert_configuration_equal(generated_config, testdata.bicarbonate_reaction_config)
+    assert_configuration_equal(generated_config, testdata.bicarbonate_reaction_config, "equilibrium_reactions")
 
 
 @pytest.mark.unit
@@ -137,7 +146,7 @@ class SubstituteTestGenerator(ConfigGenerator):
 
 
 @pytest.mark.unit
-def test_config_generator_substitute():
+def test_config_generator_substitute(debug_logging):
     logging.getLogger("idaes.proteuslib.edb.data_model").setLevel(logging.DEBUG)
     SubstituteTestGenerator.substitute_values = {
         "a.b": {"foo": subst_foo},
@@ -151,7 +160,7 @@ def test_config_generator_substitute():
         "a": {"b": "foo"},
         "x": {"one_bla": "bar", "two_bla": "hello", "three_bla": "foo", "ignore": "me"},
         "y": "1",
-        "z": {"time": "U.s", "ignored_due_to_value": 0.123},
+        "z": {"time": "s", "ignored_due_to_value": 0.123},
         "d": {"e": {"e": {"p": "number_one"}}},
     }
     print(f"before: {data}")
@@ -170,15 +179,6 @@ def test_config_generator_substitute():
         "d": {"e": {"e": {"p": 1}}},
     }
     logging.getLogger("idaes.proteuslib.edb.data_model").setLevel(logging.INFO)
-
-
-@pytest.fixture
-def debug_logging():
-    """Use fixture cleanup ability to set and unset debug logging.
-    """
-    logging.getLogger("proteuslib.edb.data_model").setLevel(logging.DEBUG)
-    yield "debug"
-    logging.getLogger("proteuslib.edb.data_model").setLevel(logging.INFO)
 
 
 def test_component_from_idaes_config(debug_logging):
@@ -279,5 +279,10 @@ def test_reaction_from_idaes_config(debug_logging):
     reaction = result[0]
     # make sure it is a valid Reaction
     validate(reaction)
+
+    # in the generated config 'reaction_order' will be dropped since it is a runtime addition, not something
+    # we store in the DB. So for comparison purposes drop it from the original config as well
+    del carbonation_reaction_config["equilibrium_reactions"]["CO2_to_H2CO3"]["parameter_data"]["reaction_order"]
+
     # create a config from the Reaction, i.e. round-trip, and compare
     assert_configuration_equal(carbonation_reaction_config, reaction.idaes_config, "equilibrium_reactions")

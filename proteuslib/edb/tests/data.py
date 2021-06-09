@@ -3,7 +3,7 @@
 # through Lawrence Berkeley National Laboratory, Oak Ridge National
 # Laboratory, National Renewable Energy Laboratory, and National Energy
 # Technology Laboratory (subject to receipt of any required approvals from
-# the U.S. Dept. of Energy). All rights reserved.
+# the S. Dept. of Energy). All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
@@ -31,18 +31,18 @@ _reaction = {
     "equilibrium_form": "log_power_law",
     "concentration_form": "ConcentrationForm.molarity",
     "parameter_data": {
-        "dh_rxn_ref": [{"v": 52.21, "u": "U.kJ/U.mol", "i": 0}],
-        "ds_rxn_ref": [{"v": -2.4, "u": "U.J/U.mol/U.K", "i": 0}],
+        "dh_rxn_ref": [{"v": 52.21, "u": "kJ/mol", "i": 0}],
+        "ds_rxn_ref": [{"v": -2.4, "u": "J/mol/K", "i": 0}],
     },
     "type": "equilibrium",
     "name": "NH4_Ka",
     "components": ["NH4", "Ka"],
     "base_units": {
-        "time": "U.s",
-        "length": "U.m",
-        "mass": "U.kg",
-        "amount": "U.mol",
-        "temperature": "U.K",
+        "time": "s",
+        "length": "m",
+        "mass": "kg",
+        "amount": "mol",
+        "temperature": "K",
     },
 }
 _component = {
@@ -52,22 +52,22 @@ _component = {
     "cp_mol_liq_comp": "Perrys",
     "entr_mol_liq_comp": "Perrys",
     "parameter_data": {
-        "mw": [{"v": 74.09, "u": "U.g/U.mol"}],
+        "mw": [{"v": 74.09, "u": "g/mol"}],
         "dens_mol_liq_comp_coeff": [
-            {"v": 13.5, "u": "U.kmol*U.m**-3", "i": 1},
-            {"v": 1, "u": "U.dimensionless", "i": 2},
-            {"v": 1, "u": "U.K", "i": 3},
-            {"v": 1, "u": "U.dimensionless", "i": 4},
+            {"v": 13.5, "u": "kmol*m**-3", "i": 1},
+            {"v": 1, "u": "dimensionless", "i": 2},
+            {"v": 1, "u": "K", "i": 3},
+            {"v": 1, "u": "dimensionless", "i": 4},
         ],
-        "enth_mol_form_liq_comp_ref": [{"v": -1003, "u": "U.kJ/U.mol"}],
+        "enth_mol_form_liq_comp_ref": [{"v": -1003, "u": "kJ/mol"}],
         "cp_mol_liq_comp_coeff": [
-            {"v": 276370.0, "u": "U.J/U.kmol/U.K", "i": "1"},
-            {"v": -2090.1, "u": "U.J/U.kmol/U.K**2", "i": "2"},
-            {"v": 8.125, "u": "U.J/U.kmol/U.K**3", "i": "3"},
-            {"v": -0.014116, "u": "U.J/U.kmol/U.K**4", "i": "4"},
-            {"v": 9.3701e-06, "u": "U.J/U.kmol/U.K**5", "i": "5"},
+            {"v": 276370.0, "u": "J/kmol/K", "i": "1"},
+            {"v": -2090.1, "u": "J/kmol/K**2", "i": "2"},
+            {"v": 8.125, "u": "J/kmol/K**3", "i": "3"},
+            {"v": -0.014116, "u": "J/kmol/K**4", "i": "4"},
+            {"v": 9.3701e-06, "u": "J/kmol/K**5", "i": "5"},
         ],
-        "entr_mol_form_liq_comp_ref": [{"v": -74.5, "u": "U.J/U.K/U.mol"}],
+        "entr_mol_form_liq_comp_ref": [{"v": -74.5, "u": "J/K/mol"}],
     },
     "name": "Ca[OH]2",
 }
@@ -107,12 +107,9 @@ Ca_thermo_config = {
                     pyunits.J / pyunits.K / pyunits.mol,
                 ),
             },
-            # End parameter_data
         }
     }
-    # End Component list
 }
-# End thermo_config definition
 
 Ca_thermo_data = {
     "_id": {"$oid": "6099cd12507b1e55f1707555"},
@@ -122,35 +119,28 @@ Ca_thermo_data = {
     "cp_mol_liq_comp": "Perrys",
     "entr_mol_liq_comp": "Perrys",
     "parameter_data": {
-        "mw": [{"v": 40.078, "u": "U.g/U.mol", "i": 0}],
+        "mw": [{"v": 40.078, "u": "g/mol", "i": 0}],
         "dens_mol_liq_comp_coeff": [
-            {"v": 13.5, "u": "U.kmol*U.m**-3", "i": 1},
-            {"v": 1, "u": "U.dimensionless", "i": 2},
-            {"v": 1, "u": "U.K", "i": 3},
-            {"v": 1, "u": "U.dimensionless", "i": 4},
+            {"v": 13.5, "u": "kmol*m**-3", "i": 1},
+            {"v": 1, "u": "dimensionless", "i": 2},
+            {"v": 1, "u": "K", "i": 3},
+            {"v": 1, "u": "dimensionless", "i": 4},
         ],
-        "enth_mol_form_liq_comp_ref": [{"v": -542.83, "u": "U.J/U.mol"}],
+        "enth_mol_form_liq_comp_ref": [{"v": -542.83, "u": "J/mol"}],
         "cp_mol_liq_comp_coeff": [
-            {"v": 276370, "u": "U.J/U.kmol/U.K", "i": 1},
-            {"v": -2090.1, "u": "U.J/U.kmol/U.K**2", "i": 2},
-            {"v": 8.125, "u": "U.J/U.kmol/U.K**3", "i": 3},
-            {"v": -0.014116, "u": "U.J/U.kmol/U.K**4", "i": 4},
-            {"v": 9.3701e-06, "u": "U.J/U.kmol/U.K**5", "i": 5},
+            {"v": 276370, "u": "J/kmol/K", "i": 1},
+            {"v": -2090.1, "u": "J/kmol/K**2", "i": 2},
+            {"v": 8.125, "u": "J/kmol/K**3", "i": 3},
+            {"v": -0.014116, "u": "J/kmol/K**4", "i": 4},
+            {"v": 9.3701e-06, "u": "J/kmol/K**5", "i": 5},
         ],
-        "entr_mol_form_liq_comp_ref": [{"v": -53, "u": "U.J/U.K/U.mol"}],
+        "entr_mol_form_liq_comp_ref": [{"v": -53, "u": "J/K/mol"}],
     },
     "name": "Ca 2+",
     "elements": ["Ca"],
 }
 
 bicarbonate_reaction_config = {
-    "base_units": {
-        "time": pyunits.s,
-        "length": pyunits.m,
-        "mass": pyunits.kg,
-        "amount": pyunits.mol,
-        "temperature": pyunits.K,
-    },
     "equilibrium_reactions": {
         "H2CO3_Ka2": {
             "stoichiometry": {
@@ -187,19 +177,11 @@ bicarbonate_reaction_data = {
     "equilibrium_form": "log_power_law",
     "concentration_form": "ConcentrationForm.molarity",
     "parameter_data": {
-        "dh_rxn_ref": [{"v": 14.9, "u": "U.kJ/U.mol"}],
-        "ds_rxn_ref": [{"v": -148.1, "u": "U.J/U.mol/U.K"}],
+        "dh_rxn_ref": [{"v": 14.9, "u": "kJ/mol"}],
+        "ds_rxn_ref": [{"v": -148.1, "u": "J/mol/K"}],
         "reaction_order": {"Liq": {"HCO3 -": -1, "H +": 1, "CO3 2-": 1}},
     },
-    "type": "equilibrium",
     "name": "H2CO3_Ka2",
     "components": ["H2CO3", "Ka2"],
-    "base_units": {
-        "time": "U.s",
-        "length": "U.m",
-        "mass": "U.kg",
-        "amount": "U.mol",
-        "temperature": "U.K",
-    },
     "reactant_elements": ["H", "O", "C"],
 }
