@@ -84,30 +84,21 @@ from typing import Dict, Type, List
 # 3rd party
 from pyomo.environ import units as pyunits
 
-# IDAES core
+# IDAES methods and constants
+from idaes.core import phases as IPhases
 from idaes.core.phases import PhaseType
-
-# - methods
+from idaes.core import Component as IComponent
+from idaes.generic_models.properties.core.eos.ideal import Ideal
+from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
+from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.generic_models.properties.core.pure import Perrys
 from idaes.generic_models.properties.core.pure.NIST import NIST
-from idaes.generic_models.properties.core.phase_equil.forms import fugacity
-from idaes.core import LiquidPhase, VaporPhase
-from idaes.core import Component as IComponent
-from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.generic.generic_reaction import (
-    ConcentrationForm,
-)
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
     power_law_equil,
 )
-from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
-
-# IDE complains about these two
-# from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
-# from idaes.generic_models.properties.core.reactions.equilibrium_constant import gibbs_energy
+from idaes.generic_models.properties.core.state_definitions import FTPx
 
 # package
 from .equations.equil_log_power_form import log_power_law
@@ -287,7 +278,6 @@ class ConfigGenerator:
                 if dicty(subst):
                     if str_value in subst:
                         new_value = subst[str_value]
-                        num_subst += 1
                 elif subst == cls.SUBST_UNITS:
                     if isinstance(
                         str_value, str
@@ -306,6 +296,17 @@ class ConfigGenerator:
             # return True only if all values were substituted
             return num_subst == len(new_list)
 
+        def stringish(x):
+            """String or list/tuple of strings?"""
+            if isinstance(x, str):
+                return True
+            if isinstance(x, list) or isinstance(x, tuple):
+                for item in x:
+                    if not isinstance(x, str):
+                        return False
+                return True
+            return False
+
         sv = cls.substitute_values
         for sv_section in sv:
             if debugging:
@@ -323,10 +324,13 @@ class ConfigGenerator:
             #  if found, perform substitution(s)
             if dicty(data_section):
                 sv_key = key_list.pop()
+                _log.debug(f"perform substitutions in data={data_section} for key='{sv_key}'")
                 # if it is a wildcard, allow multiple substitutions
                 if "*" in sv_key:
                     matches = [k for k in data_section if fnmatchcase(k, sv_key)]
                     for match_key in matches:
+                        if not stringish(data_section[match_key]):
+                            continue  # don't try to substitute non strings/string-lists
                         did_subst = substitute_value(
                             data_section, sv[sv_section], match_key
                         )
@@ -395,7 +399,6 @@ class ReactionConfig(ConfigGenerator):
         """In-place data transformation from standard storage format to
         format expected by IDAES idaes_config methods
         """
-
         cls._transform_parameter_data(data)
 
         for key, value in data.items():
@@ -410,14 +413,21 @@ class ReactionConfig(ConfigGenerator):
                 data[key] = stoich_table
 
         cls._substitute(data)
-        cls._wrap_section("equilibrium_reactions", data)
+
+        reaction_type = data["type"]
+        del data["type"]  # remove from output
+        if reaction_type == "equilibrium":
+            cls._wrap_section("equilibrium_reactions", data)
+        else:
+            raise RuntimeError(f"Unexpected reaction type while generating config: type={reaction_type} data={data}")
+
 
 
 class BaseConfig(ConfigGenerator):
 
     substitute_values = {
         "state_definition": {"FTPx": FTPx},
-        "phases.Liq.type": {"LiquidPhase": LiquidPhase},
+        "phases.Liq.type": {"LiquidPhase": IPhases.LiquidPhase},
         "phases.Liq.equation_of_state": {"Ideal": Ideal},
         "base_units.*": ConfigGenerator.SUBST_UNITS,
     }
@@ -642,7 +652,7 @@ class Reaction(DataWrapper):
         result = []
         # XXX: base units?
         for name, r in config["equilibrium_reactions"].items():
-            d = {"name": name}
+            d = {"name": name, "type": "equilibrium"}
             # convert all non-dictionary-valued fields into equivalent string values
             for fld, val in r.items():
                 if isinstance(val, str):  # leave string values as-is
@@ -653,7 +663,6 @@ class Reaction(DataWrapper):
             with field("stoichiometry") as fld:
                 if fld in r:
                     cls._convert_stoichiometry(r[fld], d)
-            print(f"@@ adding reaction: {d}")
             result.append(Reaction(d))
         return result
 
