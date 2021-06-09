@@ -631,10 +631,30 @@ class Reaction(DataWrapper):
                     d[fld] = val
                 elif not isinstance(val, dict):  # convert all other non-dict values
                     cls._method_to_str(fld, r, d, subst_strings, caller=whoami)
+            with field("reaction_order") as fld:
+                reaction_order = {}
+                if fld in r["parameter_data"]:
+                    cls._convert_stoichiometry(r["parameter_data"][fld], reaction_order)
             cls._convert_parameter_data(r, d)
+            with field("stoichiometry") as fld:
+                if fld in r:
+                    cls._convert_stoichiometry(r[fld], d)
+            if reaction_order != r["stoichiometry"]:
+                d["parameter_data"]["reaction_order"] = reaction_order
             print(f"@@ adding reaction: {d}")
             result.append(Reaction(d))
         return result
+
+    @classmethod
+    def _convert_stoichiometry(cls, src, tgt):
+        data = {}
+        for key, value in src.items():
+            phase, species = key
+            if phase in data:
+                data[phase][species] = value  # set species & quantity
+            else:
+                data[phase] = {species: value}  # create new dictionary
+        tgt["stoichiometry"] = data
 
 
 class Base(DataWrapper):
