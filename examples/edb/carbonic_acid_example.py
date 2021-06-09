@@ -244,6 +244,14 @@ def solve_model(model):
     print(str(value(model.fs.unit.inlet.temperature[0]))+"\t"+str(value(model.fs.unit.outlet.temperature[0]))+"\n")
 
 
+def dump_configs(configs):
+    for ctype in configs:
+        print("=========================================================")
+        print(ctype)
+        print("")
+        print(f"{pformat(configs[ctype])}")
+
+
 def main():
     import logging
     # DEBUG
@@ -251,11 +259,12 @@ def main():
     #idaeslog.getLogger("idaes.proteuslib.edb").setLevel(logging.DEBUG)
     _log.setLevel(logging.INFO)
 
-    component_names = ["H2O", "H +",  "OH -", "H2CO3", "HCO3 -", "CO3 2-"]
+    component_names = ["H2O", "H +",  "OH -", "H2CO3", "HCO3 -", "CO3 2-", "CO2"]
     configs = get_configs(component_names)
     if not configs:
         _log.fatal("Failed to get IDAES configurations")
         return -1
+    dump_configs(configs)
     model = create_model(**configs)
     #solve_model(model)
     return 0
