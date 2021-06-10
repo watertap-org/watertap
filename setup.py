@@ -76,7 +76,7 @@ setup(
     python_requires=">=3.6, <4",
     install_requires=[
         # primary requirements for unit and property models
-        "idaes",
+        "idaes-pse",
         "pyomo",  # (also needed for units in electrolyte database (edb))
         # the following requirements are for the edb
         "pymongo>3",  # database interface
