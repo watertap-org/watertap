@@ -212,8 +212,10 @@ Class Documentation
 
 .. autoclass:: ReverseOsmosis0D
    :members:
+   :noindex:
 
 .. autoclass:: ReverseOsmosisData
    :members:
+   :noindex:
 
 
