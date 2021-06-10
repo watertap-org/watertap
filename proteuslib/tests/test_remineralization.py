@@ -1215,7 +1215,7 @@ class TestRemineralization():
         #Add scaling factors for reaction extent
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 1/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
 
         iscale.calculate_scaling_factors(model.fs.unit)
 
@@ -1297,7 +1297,7 @@ class TestRemineralization():
         assert pytest.approx( 1.8318075217136e-08, rel=1e-5) == naoh
 
         caco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','CaCO3'])
-        assert pytest.approx( 1.5332214791494877e-07, rel=1e-5) == caco3
+        assert pytest.approx( 1.5332636545379076e-07, rel=1e-5) == caco3
 
         cahco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','Ca(HCO3)2'])
         assert pytest.approx( 1.0633059708069641e-05, rel=1e-5) == cahco3
