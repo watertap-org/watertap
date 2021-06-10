@@ -1206,7 +1206,7 @@ class TestRemineralization():
         model = remineralization_appr_equ
 
         #Custom eps factors for reaction constraints
-        eps = 1e-30
+        eps = 1e-20
         model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
         model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
         model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
@@ -1233,6 +1233,7 @@ class TestRemineralization():
         model = remineralization_appr_equ
         solver.options['bound_push'] = 1e-20
         solver.options['mu_init'] = 1e-6
+        solver.options['max_iter'] = 2000
         model.fs.unit.initialize(optarg=solver.options)
         assert degrees_of_freedom(model) == 0
 
@@ -1296,7 +1297,7 @@ class TestRemineralization():
         assert pytest.approx( 1.8318075217136e-08, rel=1e-5) == naoh
 
         caco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','CaCO3'])
-        assert pytest.approx( 1.533263603046767e-07, rel=1e-5) == caco3
+        assert pytest.approx( 1.5332214791494877e-07, rel=1e-5) == caco3
 
         cahco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','Ca(HCO3)2'])
         assert pytest.approx( 1.0633059708069641e-05, rel=1e-5) == cahco3
@@ -1530,6 +1531,7 @@ class TestRemineralization():
         model = remineralization_cstr_kin
         solver.options['bound_push'] = 1e-20
         solver.options['mu_init'] = 1e-6
+        solver.options['max_iter'] = 2000
         model.fs.unit.initialize(optarg=solver.options)
         assert degrees_of_freedom(model) == 0
 
@@ -1584,7 +1586,7 @@ if __name__ == "__main__":
     model.fs.thermo_params = GenericParameterBlock(default=thermo_config_cstr)
     model.fs.rxn_params = GenericReactionParameterBlock(
             default={"property_package": model.fs.thermo_params, **reaction_config_cstr })
-    model.fs.unit = PFR(default={"property_package": model.fs.thermo_params,
+    model.fs.unit = CSTR(default={"property_package": model.fs.thermo_params,
                                       "reaction_package": model.fs.rxn_params,
                                       "has_equilibrium_reactions": False,
                                       "has_heat_transfer": False,
