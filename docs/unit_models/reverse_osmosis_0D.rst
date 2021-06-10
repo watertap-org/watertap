@@ -90,7 +90,7 @@ Configuration Keyword: ``pressure_change_type``
 
 **Notes:**
     * **to use any of the** ``pressure_change_type`` **options to account for pressure drop, the configuration keyword** ``has_pressure_change`` **must also be set to** ``True`` **.**
-    * **if a value is specified for pressure drop, it should be negative.**
+    * **if a value is specified for pressure change, it should be negative.**
 
 .. csv-table::
     :header: "Configuration Options", "Description"
@@ -208,6 +208,7 @@ Constraints
 
 Class Documentation
 -------------------
+
 
 .. autoclass:: ReverseOsmosis0D
    :members:
