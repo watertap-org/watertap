@@ -14,20 +14,7 @@
 
 from enum import Enum
 from copy import deepcopy
-# Import Pyomo libraries
-from pyomo.environ import (Var,
-                           Set,
-                           Param,
-                           SolverFactory,
-                           Suffix,
-                           NonNegativeReals,
-                           NegativeReals,
-                           Reference,
-                           Block,
-                           units as pyunits,
-                           exp,
-                           value)
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -42,6 +29,21 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.testing import get_default_solver
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+
+# Import Pyomo libraries
+from pyomo.environ import (Var,
+                           Set,
+                           Param,
+                           SolverFactory,
+                           Suffix,
+                           NonNegativeReals,
+                           NegativeReals,
+                           Reference,
+                           Block,
+                           units as pyunits,
+                           exp,
+                           value)
+from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 _log = idaeslog.getLogger(__name__)
 
