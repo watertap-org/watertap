@@ -6,10 +6,10 @@ This reverse osmosis (RO) unit model
    * supports steady-state only
    * is based on the solution-diffusion model and film theory
 
-.. index::
-   pair: proteuslib.unit_models.reverse_osmosis_0D;reverse_osmosis_0D
+#.. index::
+   #pair: proteuslib.unit_models.reverse_osmosis_0D;reverse_osmosis_0D
 
-.. currentmodule:: proteuslib.unit_models.reverse_osmosis_0D
+#.. currentmodule:: proteuslib.unit_models.reverse_osmosis_0D
 
 Example A: Setting up the RO model
 ----------------------------------
@@ -210,12 +210,12 @@ Class Documentation
 -------------------
 
 
-.. autoclass:: ReverseOsmosis0D
-   :members:
-   :noindex:
+###.. autoclass:: ReverseOsmosis0D
+ #  #:members:
+ #  #:noindex:
 
-.. autoclass:: ReverseOsmosisData
-   :members:
-   :noindex:
+#.. autoclass:: ReverseOsmosisData
+ # # :members:
+  # :noindex:
 
 
