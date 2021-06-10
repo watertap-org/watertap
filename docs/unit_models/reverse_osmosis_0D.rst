@@ -6,10 +6,10 @@ This reverse osmosis (RO) unit model
    * supports steady-state only
    * is based on the solution-diffusion model and film theory
 
-#.. index::
-   #pair: proteuslib.unit_models.reverse_osmosis_0D;reverse_osmosis_0D
+.. index::
+   pair: proteuslib.unit_models.reverse_osmosis_0D;reverse_osmosis_0D
 
-#.. currentmodule:: proteuslib.unit_models.reverse_osmosis_0D
+.. currentmodule:: proteuslib.unit_models.reverse_osmosis_0D
 
 Example A: Setting up the RO model
 ----------------------------------
@@ -149,6 +149,7 @@ to eliminate that degree of freedom.
 On the other hand, in Example B, configuring the RO unit to calculate concentration polarization effects, mass transfer
 coefficient, and pressure drop would result in 3 more degrees of freedom than Example A. In this case, in addition to the
 previously fixed variables, we typically fix the following variables to fully specify the unit:
+
     * feed-spacer porosity
     * feed-channel height
     * membrane length *or* membrane width
@@ -210,12 +211,12 @@ Class Documentation
 -------------------
 
 
-###.. autoclass:: ReverseOsmosis0D
- #  #:members:
- #  #:noindex:
+.. autoclass:: ReverseOsmosis0D
+   :members:
+   :noindex:
 
-#.. autoclass:: ReverseOsmosisData
- # # :members:
-  # :noindex:
+.. autoclass:: ReverseOsmosisData
+   :members:
+   :noindex:
 
 
