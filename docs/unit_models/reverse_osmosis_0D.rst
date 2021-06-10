@@ -211,12 +211,12 @@ Class Documentation
 -------------------
 
 
-.. autoclass:: ReverseOsmosis0D
-   :members:
-   :noindex:
+#.. autoclass:: ReverseOsmosis0D
+   #:members:
+   #:noindex:
 
-.. autoclass:: ReverseOsmosisData
-   :members:
-   :noindex:
+#.. autoclass:: ReverseOsmosisData
+   #:members:
+   #:noindex:
 
 
