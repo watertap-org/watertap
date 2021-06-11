@@ -422,7 +422,6 @@ class ReactionConfig(ConfigGenerator):
             raise RuntimeError(f"Unexpected reaction type while generating config: type={reaction_type} data={data}")
 
 
-
 class BaseConfig(ConfigGenerator):
 
     substitute_values = {
@@ -461,7 +460,7 @@ class DataWrapper:
             config_gen_class: Used to transform DB data to IDAES idaes_config
         """
         self._data, self._config_gen, self._config = data, config_gen_class, None
-        self.name = data.get("name", "")
+        self.name = self._data.get("name", "")
 
     @property
     def idaes_config(self) -> Dict:
