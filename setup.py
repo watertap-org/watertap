@@ -75,9 +75,10 @@ setup(
     packages=find_namespace_packages(),
     python_requires=">=3.6, <4",
     install_requires=[
+        "idaes-pse",  # IDAES platform
         # the following requirements are for the electrolyte database (edb)
         "pymongo>3",  # database interface
-        "pyomo",  # units
+        "pyomo",  # units, etc.
         "fastjsonschema",  # schema validation
         "click",  # command-line tools with Click
         "json-schema-for-humans",  # pretty JSON schema in HTML/Markdown
