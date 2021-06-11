@@ -43,3 +43,6 @@ Design::
                                             ............ ...
 """
 __author__ = "Dan Gunter"
+
+# Convenience imports
+from .db_api import ElectrolyteDB
