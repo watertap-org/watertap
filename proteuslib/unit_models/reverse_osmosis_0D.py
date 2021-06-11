@@ -28,7 +28,6 @@ from pyomo.environ import (Var,
                            exp,
                            value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
@@ -79,7 +78,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         domain=In([False]),
         default=False,
         description="Dynamic model flag - must be False",
-        doc="""Indicates whether this model will be dynamic or not,
+        doc="""Indicates whether this model will be dynamic or not.
     **default** = False. RO units do not support dynamic
     behavior."""))
     CONFIG.declare("has_holdup", ConfigValue(
@@ -93,7 +92,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
-        doc="""Indicates what type of mass balance should be constructed,
+        doc="""Indicates what type of mass balance should be constructed.
     **default** - MaterialBalanceType.useDefault.
     **Valid values:** {
     **MaterialBalanceType.useDefault - refer to property package for default
@@ -107,7 +106,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         default=EnergyBalanceType.useDefault,
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed,
+        doc="""Indicates what type of energy balance should be constructed.
     **default** - EnergyBalanceType.useDefault.
     **Valid values:** {
     **EnergyBalanceType.useDefault - refer to property package for default
@@ -121,7 +120,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         default=MomentumBalanceType.pressureTotal,
         domain=In(MomentumBalanceType),
         description="Momentum balance construction flag",
-        doc="""Indicates what type of momentum balance should be constructed,
+        doc="""Indicates what type of momentum balance should be constructed.
     **default** - MomentumBalanceType.pressureTotal.
     **Valid values:** {
     **MomentumBalanceType.none** - exclude momentum balances,
@@ -133,8 +132,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         default=False,
         domain=In([True, False]),
         description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-    constructed,
+        doc="""Indicates whether terms for pressure change should be constructed.
     **default** - False.
     **Valid values:** {
     **True** - include pressure change terms,
@@ -143,7 +141,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         default=PressureChangeType.fixed_per_stage,
         domain=In(PressureChangeType),
         description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
+        doc="""Indicates what type of pressure change calculation will be made.
     **default** - PressureChangeType.fixed_per_stage. 
     **Valid values:** {
     **PressureChangeType.fixed_per_stage** - user specifies pressure drop across membrane feed channel,
@@ -162,7 +160,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         implicit=True,
         description="Arguments to use for constructing property packages",
         doc="""A ConfigBlock with arguments to be passed to a property block(s)
-    and used when constructing these,
+    and used when constructing these.
     **default** - None.
     **Valid values:** {
     see property package for documentation.}"""))
@@ -170,7 +168,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         default=ConcentrationPolarizationType.none,
         domain=In(ConcentrationPolarizationType),
         description="External concentration polarization effect in RO",
-        doc="""Options to account for concentration polarization,
+        doc="""Options to account for concentration polarization.
     **default** - ConcentrationPolarizationType.none. 
     **Valid values:** {
     **ConcentrationPolarizationType.none** - assume no concentration polarization,
@@ -180,7 +178,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         default=MassTransferCoefficient.none,
         domain=In(MassTransferCoefficient),
         description="Mass transfer coefficient in RO feed channel",
-        doc="""Options to account for mass transfer coefficient,
+        doc="""Options to account for mass transfer coefficient.
     **default** - MassTransferCoefficient.none. 
     **Valid values:** {
     **MassTransferCoefficient.none** - mass transfer coefficient not included,
@@ -819,16 +817,12 @@ class ReverseOsmosisData(UnitModelBlockData):
                     * (b.feed_side.properties_out[t].pressure_osm
                     - b.properties_permeate[t].pressure_osm))
 
-    def initialize(
-            blk,
-            initialize_guess=None,
-            state_args=None,
-            outlvl=idaeslog.NOTSET,
-            solver="ipopt",
-            optarg={"tol": 1e-6}):
+    def initialize(blk, initialize_guess=None, state_args=None, outlvl=idaeslog.NOTSET, solver="ipopt", optarg={"tol": 1e-6}):
         """
-        General wrapper for pressure changer initialization routines
+        General wrapper for RO initialization routines
+
         Keyword Arguments:
+
             initialize_guess : a dict of guesses for solvent_recovery, solute_recovery,
                                and cp_modulus. These guesses offset the initial values
                                for the retentate, permeate, and membrane interface

@@ -75,9 +75,11 @@ setup(
     packages=find_namespace_packages(),
     python_requires=">=3.6, <4",
     install_requires=[
-        # the following requirements are for the electrolyte database (edb)
+        # primary requirements for unit and property models
+        "idaes-pse",
+        "pyomo",  # (also needed for units in electrolyte database (edb))
+        # the following requirements are for the edb
         "pymongo>3",  # database interface
-        "pyomo",  # units
         "fastjsonschema",  # schema validation
         # other requirements
         "pytest",  # technically developer, but everyone likes tests
