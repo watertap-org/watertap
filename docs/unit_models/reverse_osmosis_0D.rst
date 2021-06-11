@@ -156,12 +156,22 @@ previously fixed variables, we typically fix the following variables to fully sp
 
 Model Structure
 ------------------
-#TODO: Feed-side: 0-D control volume
+Feed-side: 0-D control volume
 Permeate-side: state block
+
+Sets
+----
+.. csv-table::
+   :header: "Description", "Symbol", "Indices"
+
+   "time", ":math:`t`", "[0]"
+   "Inlet/outlet", ":math:`x`", "['in', 'out']"
+   "Phases", ":math:`p`", "['Liq']"
+   "Components", ":math:`j`", "['H2O', 'TDS']"
+
 
 Variables
 ----------
-#TODO:
 
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"

@@ -14,22 +14,6 @@
 
 from enum import Enum
 from copy import deepcopy
-
-
-# Import IDAES cores
-from idaes.core import (ControlVolume0DBlock,
-                        declare_process_block_class,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType,
-                        UnitModelBlockData,
-                        useDefault)
-from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.testing import get_default_solver
-import idaes.core.util.scaling as iscale
-import idaes.logger as idaeslog
-
 # Import Pyomo libraries
 from pyomo.environ import (Var,
                            Set,
@@ -44,6 +28,19 @@ from pyomo.environ import (Var,
                            exp,
                            value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+# Import IDAES cores
+from idaes.core import (ControlVolume0DBlock,
+                        declare_process_block_class,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MomentumBalanceType,
+                        UnitModelBlockData,
+                        useDefault)
+from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.testing import get_default_solver
+import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
