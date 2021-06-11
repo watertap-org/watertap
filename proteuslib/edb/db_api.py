@@ -61,9 +61,10 @@ class ElectrolyteDB:
             All components matching the names (or all if not specified)
         """
         if component_names:
-            regex = "|".join(component_names)
-            query = {"name": {"$regex": regex}}
+            query = {"$or": [{"name": n} for n in component_names]}
+            _log.debug(f"get_components. components={component_names} query={query}")
         else:
+            _log.debug(f"get_components. get all components (empty query)")
             query = {}
         collection = self._db.component
         result = Result(iterator=collection.find(filter=query), item_class=Component)
