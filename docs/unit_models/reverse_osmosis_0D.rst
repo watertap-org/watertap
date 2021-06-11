@@ -156,18 +156,19 @@ previously fixed variables, we typically fix the following variables to fully sp
 
 Model Structure
 ------------------
-Feed-side: 0-D control volume
-Permeate-side: state block
+This RO model consists of a ControlVolume0DBlock for the feed-channel of the membrane and a StateBlock for the permeate channel.
 
 Sets
 ----
 .. csv-table::
    :header: "Description", "Symbol", "Indices"
 
-   "time", ":math:`t`", "[0]"
+   "Time", ":math:`t`", "[0]"
    "Inlet/outlet", ":math:`x`", "['in', 'out']"
    "Phases", ":math:`p`", "['Liq']"
-   "Components", ":math:`j`", "['H2O', 'TDS']"
+   "Components", ":math:`j`", "['H2O', 'NaCl']*"
+
+* Solute depends on the imported property model; example shown here is for the NaCl property model.
 
 
 Variables
@@ -176,20 +177,13 @@ Variables
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
 
-   "Component mass fraction", ":math:`x_j`", "mass_frac_phase_comp", "[p, j]", ":math:`\text{dimensionless}`"
-   "Mass density of seawater", ":math:`\rho`", "dens_mass_phase", "[p]", ":math:`\text{kg/}\text{m}^3`"
-   "Mass density of pure water", ":math:`\rho_w`", "dens_mass_w_phase", "[p]", ":math:`\text{kg/}\text{m}^3`"
-   "Phase volumetric flowrate", ":math:`Q_p`", "flow_vol_phase", "[p]", ":math:`\text{m}^3\text{/s}`"
-   "Volumetric flowrate", ":math:`Q`", "flow_vol", "None", ":math:`\text{m}^3\text{/s}`"
-   "Mass concentration", ":math:`C_j`", "conc_mass_phase_comp", "[p, j]", ":math:`\text{kg/}\text{m}^3`"
-   "Dynamic viscosity", ":math:`\mu`", "visc_d_phase", "[p]", ":math:`\text{Pa}\cdotp\text{s}`"
-   "Osmotic coefficient", ":math:`\phi`", "osm_coeff", "None", ":math:`\text{dimensionless}`"
-   "Specific enthalpy", ":math:`\widehat{H}`", "enth_mass_phase", "[p]", ":math:`\text{J/kg}`"
-   "Enthalpy flow", ":math:`H`", "enth_flow", "None", ":math:`\text{J/s}`"
-   "Saturation pressure", ":math:`P_v`", "pressure_sat", "None", ":math:`\text{Pa}`"
-   "Specific heat capacity", ":math:`c_p`", "cp_phase", "[p]", ":math:`\text{J/kg/K}`"
-   "Thermal conductivity", ":math:`\kappa`", "therm_cond_phase", "[p]", ":math:`\text{W/m/K}`"
-   "Latent heat of vaporization", ":math:`h_{vap}`", "dh_vap", "None", ":math:`\text{J/kg}`"
+   "Solvent permeability coefficient", ":math:`A`", "A_comp", "[t, j]", ":math:`\text{m/Pa/s}`"
+   "Solvent permeability coefficient", ":math:`B`", "B_comp", "[t, j]", ":math:`\text{m/s}`"
+   "Mass density of pure water", ":math:`\rho_w`", "dens_solvent", "[p]", ":math:`\text{kg/}\text{m}^3`"
+   "Mass flux across membrane", ":math:`J`", "flux_mass_io_phase_comp", "[t, x, p, j]", ":math:`\text{kg/s}\text{/m}^2`"
+   "Membrane area", ":math:`A_m`", "area", "None", ":math:`\text{m}^2`"
+   "Component recovery rate", ":math:`R_j`", "recovery_mass_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
+   "Volumetric recovery rate", ":math:`R`", "recovery_vol_phase", "[t, p]", ":math:`\text{dimensionless}`"
 
 
 Constraints
@@ -199,22 +193,7 @@ Constraints
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Component mass fraction", ":math:`x_j = \frac{M_j}{\sum_{j} M_j}`"
-   "Mass density", "Equation 8 in Sharqawy et al. (2010)"
-   "Volumetric flowrate", ":math:`Q = \frac{\sum_{j} M_j}{\rho}`"
-   "Mass concentration", ":math:`C_j = x_j \cdotp \rho`"
-   "Dynamic viscosity", "Equations 22 and 23 in Sharqawy et al. (2010)"
-   "Osmotic coefficient", "Equation 49 in Sharqawy et al. (2010)"
-   "Specific enthalpy", "Equations 43 and 55 in Sharqawy et al. (2010)"
-   "Enthalpy flow", ":math:`H = \sum_{j} M_j \cdotp \widehat{H}`"
-   "Component mole flowrate", ":math:`N_j = \frac{M_j}{MW_j}`"
-   "Component mole fraction", ":math:`y_j = \frac{N_j}{\sum_{j} N_j}`"
-   "Molality", ":math:`Cm = \frac{x_{TDS}}{(1-x_{TDS}) \cdotp MW_{TDS}}`"
-   "Osmotic pressure", ":math:`\pi = \phi \cdotp Cm \cdotp \rho_w \cdotp R \cdotp T` [See note below]"
-   "Saturation pressure", "Equations 5 and 6 in Nayar et al. (2016)"
-   "Specific heat capacity", "Equation 9 in Sharqawy et al. (2010)"
-   "Thermal conductivity", "Equation 13 in Sharqawy et al. (2010)"
-   "Latent heat of vaporization", "Equations 37 and 55 in Sharqawy et al. (2010)"
+
 
 
 Class Documentation
