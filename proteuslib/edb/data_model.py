@@ -99,6 +99,7 @@ from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
     power_law_equil,
 )
 from idaes.generic_models.properties.core.state_definitions import FTPx
+from idaes.core.components import Solvent, Solute, Cation, Anion
 
 # package
 from .equations.equil_log_power_form import log_power_law
@@ -278,6 +279,9 @@ class ConfigGenerator:
                 if dicty(subst):
                     if str_value in subst:
                         new_value = subst[str_value]
+                    # add case-insensitivity
+                    elif str_value.lower() in subst:
+                        new_value = subst[str_value.lower()]
                 elif subst == cls.SUBST_UNITS:
                     if isinstance(
                         str_value, str
@@ -355,30 +359,55 @@ class ThermoConfig(ConfigGenerator):
 
     substitute_values = {
         "valid_phase_types": {
-            "PT.liquidPhase": PhaseType.liquidPhase,
-            "PT.solidPhase": PhaseType.solidPhase,
-            "PT.vaporPhase": PhaseType.vaporPhase,
-            "PT.aqueousPhase": PhaseType.aqueousPhase,
+            "pt.liquidPhase": PhaseType.liquidPhase,
+            "pt.solidPhase": PhaseType.solidPhase,
+            "pt.vaporPhase": PhaseType.vaporPhase,
+            "pt.aqueousPhase": PhaseType.aqueousPhase,
         },
         "*_comp": {
-            "Perrys": Perrys,
-            "NIST": NIST
+            "perrys": Perrys,
+            "nist": NIST
         },
         "phase_equilibrium_form.*": {
             "fugacity": fugacity,
+        },
+        "type": {
+            "solvent": Solvent,
+            "solute": Solute,
+            "cation": Cation,
+            "anion": Anion,
+            "component": IComponent,
         }
     }
 
     @classmethod
     def _transform(cls, data):
+        cls._set_type(data)
         cls._transform_parameter_data(data)
         cls._substitute(data)
-
-        if "elements" in data:
-            del data["elements"]
-
-        data["type"] = IComponent
+        del data["elements"]
         cls._wrap_section("components", data)
+
+    @classmethod
+    def _set_type(cls, data):
+        if "type" in data:
+            return  # already present
+        name, elements = None, None
+        try:
+            name = data["name"]
+            elements = data["elements"]
+        except KeyError:
+            missing = "name" if name is None else "elements"
+            raise BadConfiguration("ThermoConfig._set_type", data, missing=missing)
+        if name.endswith("-"):  # negatively charged
+            component_type = "anion"
+        elif name.endswith("+"):  # positively charged
+            component_type = "cation"
+        elif set(elements) == {"H", "O"}:  # water
+            component_type = "solvent"
+        else:  # anything else neutral
+            component_type = "solute"
+        data["type"] = component_type
 
 
 class ReactionConfig(ConfigGenerator):
@@ -387,7 +416,7 @@ class ReactionConfig(ConfigGenerator):
         "heat_of_reaction": {"constant_dh_rxn": constant_dh_rxn},
         "*_form": {
             "log_power_law": log_power_law,
-            "ConcentrationForm.molarity": ConcentrationForm.molarity,
+            "concentrationform.molarity": ConcentrationForm.molarity,
         },
         "*_constant": {"van_t_hoff_aqueous": van_t_hoff_aqueous,
                        "van_t_hoff": van_t_hoff,
@@ -594,11 +623,13 @@ class Component(DataWrapper):
             with field("type") as fld:
                 if fld not in c:
                     raise BadConfiguration(whoami, config, missing=fld)
-                if c[fld] != IComponent:
+                possible = {Solvent, Solute, Cation, Anion, IComponent}
+                if c[fld] not in possible:
+                    possible_list = ", ".join([str(t) for t in possible])
                     raise BadConfiguration(
                         whoami,
                         config,
-                        why=f"Bad value for '{fld}': expected={IComponent}, "
+                        why=f"Bad value for '{fld}': expected one of: {possible_list}; "
                         f"got='{c[fld]}'",
                     )
             cls._method_to_str("valid_phase_types", c, d, subst_strings, caller=whoami)

@@ -54,6 +54,21 @@ schemas = {
                 "examples": ["HPO4 2-", "H3PO4", "NH4 +"],
                 "type": "string",
             },
+            "elements": {
+                "description": "List of elements",
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "description": "Name of an individual element"
+                }
+            },
+            "type": {
+                "description": "Component type",
+                "examples": ["Solvent", "solvent"],
+                "type": "string",
+                "enum": ["solvent", "solute", "anion", "cation",
+                         "Solvent", "Solute", "Anion", "Cation"]
+            },
             "valid_phase_types": {
                 "type": "array",
                 "items": {
@@ -81,7 +96,7 @@ schemas = {
                 "additionalProperties": False,
             },
         },
-        "required": ["name", "parameter_data"],
+        "required": ["name", "elements", "parameter_data"],
         "patternProperties": {"_comp": {"type": "string"}},
         "additionalProperties": False,
         "definitions": {"parameter": _parameter_def},

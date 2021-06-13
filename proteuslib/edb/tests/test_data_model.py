@@ -29,6 +29,8 @@ from idaes.generic_models.properties.core.reactions.equilibrium_constant import 
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
 from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
 from ..equations.equil_log_power_form import log_power_law
+from idaes.core.components import Solvent, Solute, Cation, Anion
+
 
 from ..data_model import ConfigGenerator, Component, Reaction, Result, Base, ThermoConfig
 
@@ -294,3 +296,86 @@ def test_reaction_from_idaes_config(debug_logging):
 
     # create a config from the Reaction, i.e. round-trip, and compare
     assert_configuration_equal(carbonation_reaction_config, reaction.idaes_config, "equilibrium_reactions")
+
+
+def test_thermoconfig_set_type():
+    # water -> solvent
+    data = {
+        "parameter_data": {
+            "mw": [{
+                "v": 18.0153,
+                "u": "g/mol",
+                "i": 0
+            }],
+        },
+        "name": "H2O",
+        "elements": ["O", "H"]
+    }
+    thermo = Component(data)
+    config = thermo.idaes_config
+    assert config["type"] == Solvent
+
+    # neutral non-water -> solute
+    data = {
+        "parameter_data": {
+            "mw": [{
+                "v": 96.994,
+                "u": "g/mol",
+                "i": 0
+            }],
+        },
+        "name": "H2PO4",
+        "elements": ["O", "H", "P"]
+    }
+    thermo = Component(data)
+    config = thermo.idaes_config
+    assert config["type"] == Solute
+
+    # positive charge -> cation
+    data = {
+        "parameter_data": {
+            "mw": [{
+                "v": 57.002,
+                "u": "g/mol",
+                "i": 0
+            }],
+        },
+        "name": "CaOH +",
+        "elements": ["Ca", "O", "H"]
+    }
+    thermo = Component(data)
+    config = thermo.idaes_config
+    assert config["type"] == Cation
+
+    # negative charge -> anion
+    data = {
+        "parameter_data": {
+            "mw": [{
+                "v": 17.008,
+                "u": "g/mol",
+                "i": 0
+            }],
+        },
+        "name": "OH -",
+        "elements": ["O", "H"]
+    }
+    thermo = Component(data)
+    config = thermo.idaes_config
+    assert config["type"] == Anion
+
+    # already present, even if wrong, leave alone
+    data = {
+        "type": "solvent",
+        "parameter_data": {
+            "mw": [{
+                "v": 17.008,
+                "u": "g/mol",
+                "i": 0
+            }],
+        },
+        "name": "OH -",
+        "elements": ["O", "H"]
+    }
+    thermo = Component(data)
+    config = thermo.idaes_config
+    assert config["type"] == Solvent
