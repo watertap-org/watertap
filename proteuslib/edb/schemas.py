@@ -96,7 +96,7 @@ schemas = {
                 "additionalProperties": False,
             },
         },
-        "required": ["name", "elements", "parameter_data"],
+        "required": ["name", "elements", "parameter_data", "type"],
         "patternProperties": {"_comp": {"type": "string"}},
         "additionalProperties": False,
         "definitions": {"parameter": _parameter_def},

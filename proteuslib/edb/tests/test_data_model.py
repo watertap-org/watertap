@@ -25,22 +25,36 @@ from idaes.generic_models.properties.core.pure import Perrys
 from idaes.generic_models.properties.core.pure.NIST import NIST
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.core import Component as IComponent
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+    van_t_hoff,
+)
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
+from idaes.generic_models.properties.core.generic.generic_reaction import (
+    ConcentrationForm,
+)
 from ..equations.equil_log_power_form import log_power_law
 from idaes.core.components import Solvent, Solute, Cation, Anion
 
 
-from ..data_model import ConfigGenerator, Component, Reaction, Result, Base, ThermoConfig
+from ..data_model import (
+    ConfigGenerator,
+    Component,
+    Reaction,
+    Result,
+    Base,
+    ThermoConfig,
+)
 
 # For validating DataWrapper contents
 from ..validate import validate
 
+# errors
+from ..error import BadConfiguration, ValidationError
+
+
 @pytest.fixture
 def debug_logging():
-    """Use fixture cleanup ability to set and unset debug logging.
-    """
+    """Use fixture cleanup ability to set and unset debug logging."""
     logging.getLogger("proteuslib.edb.data_model").setLevel(logging.DEBUG)
     yield "debug"
     logging.getLogger("proteuslib.edb.data_model").setLevel(logging.INFO)
@@ -86,7 +100,9 @@ def test_component_ca_thermo():
     print("Expected idaes_config:")
     pprint(testdata.Ca_thermo_config)
 
-    assert_configuration_equal(comp.idaes_config, testdata.Ca_thermo_config, "components")
+    assert_configuration_equal(
+        comp.idaes_config, testdata.Ca_thermo_config, "components"
+    )
     logging.getLogger("idaes.proteuslib.edb.data_model").setLevel(logging.INFO)
 
 
@@ -102,7 +118,9 @@ def test_reaction_bicarbonate():
     print("Expected idaes_config:")
     pprint(testdata.bicarbonate_reaction_config)
 
-    assert_configuration_equal(generated_config, testdata.bicarbonate_reaction_config, "equilibrium_reactions")
+    assert_configuration_equal(
+        generated_config, testdata.bicarbonate_reaction_config, "equilibrium_reactions"
+    )
 
 
 @pytest.mark.unit
@@ -118,6 +136,30 @@ def test_result():
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    "data_wrapper_class,required",
+    [
+        (
+            Component,
+            {"name": "foo", "elements": ["H"], "type": "solvent", "parameter_data": {}},
+        ),
+        (Reaction, {"name": "foo", "type": "equilibrium", "parameter_data": {}}),
+    ],
+)
+def test_config_generator_required(data_wrapper_class, required):
+    # make sure it fails with any missing required field(s)
+    all_fields = list(required.keys())
+    for i in range(len(all_fields)):
+        except_i = all_fields[:i] + all_fields[i+1:]
+        missing_a_field = {f: required[f] for f in except_i}
+        with pytest.raises(ValidationError):
+            _ = data_wrapper_class(missing_a_field).idaes_config
+    # add all required fields and make sure it passes
+    d = {r: required[r] for r in required}
+    _ = data_wrapper_class(d).idaes_config
+
+
+@pytest.mark.unit
 @pytest.mark.parametrize("starting_value", [None, {}])
 def test_base(starting_value):
     starting = dict.fromkeys(Component.merge_keys, starting_value)
@@ -127,9 +169,9 @@ def test_base(starting_value):
     b = Base(starting)
     assert b.idaes_config == starting
     # Add an empty component
-    with pytest.raises(KeyError):
+    with pytest.raises(ValidationError):
         c = Component({})  # "name" is required
-    c = Component({"name": "bar"})
+    # also required: elements, parameter_data
     b.add(c)
     assert b.idaes_config[mk0]["foo"] == starting[mk0]["foo"]
     # Add a non-empty component
@@ -156,7 +198,7 @@ def test_config_generator_substitute(debug_logging):
         "y": {"1": subst_y1, "2": subst_y2},
         "d.e.e.p": {"number_one": subst_y1},
         "d.e.e.p.e.*": {"number_two": subst_y2},
-        "z.*": SubstituteTestGenerator.SUBST_UNITS
+        "z.*": SubstituteTestGenerator.SUBST_UNITS,
     }
     data = {
         "a": {"b": "foo"},
@@ -184,7 +226,9 @@ def test_config_generator_substitute(debug_logging):
 
 def test_substitute_phases(debug_logging):
     data = {"phases": {"Liq": {"type": "LiquidPhase"}}}
-    SubstituteTestGenerator.substitute_values = {"phases.Liq.type": {"LiquidPhase": NIST}}
+    SubstituteTestGenerator.substitute_values = {
+        "phases.Liq.type": {"LiquidPhase": NIST}
+    }
     print(f"before: {data}")
     SubstituteTestGenerator._substitute(data)
     print(f"after: {data}")
@@ -194,51 +238,83 @@ def test_substitute_phases(debug_logging):
 def test_component_from_idaes_config(debug_logging):
     H2O_thermo_config = {
         "components": {
-            'H2O': {"type": IComponent,
-                    # Define the methods used to calculate the following properties
-                    "dens_mol_liq_comp": Perrys,
-                    "enth_mol_liq_comp": Perrys,
-                    "cp_mol_liq_comp": Perrys,
-                    "entr_mol_liq_comp": Perrys,
-                    "enth_mol_ig_comp": NIST,
-                    "pressure_sat_comp": NIST,
-                    "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
-                    # Parameter data is always associated with the methods defined above
-                    "parameter_data": {
-                        "mw": (18.0153, pyunits.g / pyunits.mol),
-                        "pressure_crit": (220.64E5, pyunits.Pa),
-                        "temperature_crit": (647, pyunits.K),
-                        # Comes from Perry's Handbook:  p. 2-98
-                        "dens_mol_liq_comp_coeff": {
-                            '1': (5.459, pyunits.kmol * pyunits.m ** -3),
-                            '2': (0.30542, pyunits.dimensionless),
-                            '3': (647.13, pyunits.K),
-                            '4': (0.081, pyunits.dimensionless)},
-                        "enth_mol_form_liq_comp_ref": (-285.830, pyunits.kJ / pyunits.mol),
-                        "enth_mol_form_vap_comp_ref": (0, pyunits.kJ / pyunits.mol),
-                        # Comes from Perry's Handbook:  p. 2-174
-                        "cp_mol_liq_comp_coeff": {
-                            '1': (2.7637E5, pyunits.J / pyunits.kmol / pyunits.K),
-                            '2': (-2.0901E3, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                            '3': (8.125, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                            '4': (-1.4116E-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                            '5': (9.3701E-6, pyunits.J / pyunits.kmol / pyunits.K ** 5)},
-                        "cp_mol_ig_comp_coeff": {
-                            'A': (30.09200, pyunits.J / pyunits.mol / pyunits.K),
-                            'B': (6.832514, pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -1),
-                            'C': (6.793435, pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -2),
-                            'D': (-2.534480, pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -3),
-                            'E': (0.082139, pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** 2),
-                            'F': (-250.8810, pyunits.kJ / pyunits.mol),
-                            'G': (223.3967, pyunits.J / pyunits.mol / pyunits.K),
-                            'H': (0, pyunits.kJ / pyunits.mol)},
-                        "entr_mol_form_liq_comp_ref": (69.95, pyunits.J / pyunits.K / pyunits.mol),
-                        "pressure_sat_comp_coeff": {
-                            'A': (4.6543, None),  # [1], temperature range 255.9 K - 373 K
-                            'B': (1435.264, pyunits.K),
-                            'C': (-64.848, pyunits.K)}
+            "H2O": {
+                "type": IComponent,
+                # Define the methods used to calculate the following properties
+                "dens_mol_liq_comp": Perrys,
+                "enth_mol_liq_comp": Perrys,
+                "cp_mol_liq_comp": Perrys,
+                "entr_mol_liq_comp": Perrys,
+                "enth_mol_ig_comp": NIST,
+                "pressure_sat_comp": NIST,
+                "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
+                # Parameter data is always associated with the methods defined above
+                "parameter_data": {
+                    "mw": (18.0153, pyunits.g / pyunits.mol),
+                    "pressure_crit": (220.64e5, pyunits.Pa),
+                    "temperature_crit": (647, pyunits.K),
+                    # Comes from Perry's Handbook:  p. 2-98
+                    "dens_mol_liq_comp_coeff": {
+                        "1": (5.459, pyunits.kmol * pyunits.m ** -3),
+                        "2": (0.30542, pyunits.dimensionless),
+                        "3": (647.13, pyunits.K),
+                        "4": (0.081, pyunits.dimensionless),
                     },
-                    }
+                    "enth_mol_form_liq_comp_ref": (-285.830, pyunits.kJ / pyunits.mol),
+                    "enth_mol_form_vap_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                    # Comes from Perry's Handbook:  p. 2-174
+                    "cp_mol_liq_comp_coeff": {
+                        "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
+                        "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K ** 2),
+                        "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K ** 3),
+                        "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
+                        "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    },
+                    "cp_mol_ig_comp_coeff": {
+                        "A": (30.09200, pyunits.J / pyunits.mol / pyunits.K),
+                        "B": (
+                            6.832514,
+                            pyunits.J
+                            * pyunits.mol ** -1
+                            * pyunits.K ** -1
+                            * pyunits.kiloK ** -1,
+                        ),
+                        "C": (
+                            6.793435,
+                            pyunits.J
+                            * pyunits.mol ** -1
+                            * pyunits.K ** -1
+                            * pyunits.kiloK ** -2,
+                        ),
+                        "D": (
+                            -2.534480,
+                            pyunits.J
+                            * pyunits.mol ** -1
+                            * pyunits.K ** -1
+                            * pyunits.kiloK ** -3,
+                        ),
+                        "E": (
+                            0.082139,
+                            pyunits.J
+                            * pyunits.mol ** -1
+                            * pyunits.K ** -1
+                            * pyunits.kiloK ** 2,
+                        ),
+                        "F": (-250.8810, pyunits.kJ / pyunits.mol),
+                        "G": (223.3967, pyunits.J / pyunits.mol / pyunits.K),
+                        "H": (0, pyunits.kJ / pyunits.mol),
+                    },
+                    "entr_mol_form_liq_comp_ref": (
+                        69.95,
+                        pyunits.J / pyunits.K / pyunits.mol,
+                    ),
+                    "pressure_sat_comp_coeff": {
+                        "A": (4.6543, None),  # [1], temperature range 255.9 K - 373 K
+                        "B": (1435.264, pyunits.K),
+                        "C": (-64.848, pyunits.K),
+                    },
+                },
+            }
         }
     }
     logging.getLogger("proteuslib.edb.data_model").setLevel(logging.DEBUG)
@@ -255,16 +331,20 @@ def test_component_from_idaes_config(debug_logging):
 
 def test_reaction_from_idaes_config(debug_logging):
     carbonation_reaction_config = {
-        "base_units": {"time": pyunits.s,
-                       "length": pyunits.m,
-                       "mass": pyunits.kg,
-                       "amount": pyunits.mol,
-                       "temperature": pyunits.K},
+        "base_units": {
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        },
         "equilibrium_reactions": {
             "CO2_to_H2CO3": {
-                "stoichiometry": {("Liq", "H2O"): -1,
-                                  ("Liq", "CO2"): -1,
-                                  ("Liq", "H2CO3"): 1},
+                "stoichiometry": {
+                    ("Liq", "H2O"): -1,
+                    ("Liq", "CO2"): -1,
+                    ("Liq", "H2CO3"): 1,
+                },
                 "heat_of_reaction": constant_dh_rxn,
                 "equilibrium_constant": van_t_hoff,
                 # "equilibrium_constant": gibbs_energy,
@@ -276,12 +356,14 @@ def test_reaction_from_idaes_config(debug_logging):
                     # "ds_rxn_ref": (-53.0, pyunits.J/pyunits.mol/pyunits.K),
                     "k_eq_ref": (1.7 * 10 ** -3, None),
                     "T_eq_ref": (300, pyunits.K),
-                    "reaction_order": {("Liq", "H2CO3"): 1,
-                                       ("Liq", "CO2"): -1,
-                                       ("Liq", "H2O"): 0}
-                }
+                    "reaction_order": {
+                        ("Liq", "H2CO3"): 1,
+                        ("Liq", "CO2"): -1,
+                        ("Liq", "H2O"): 0,
+                    },
+                },
             }
-        }
+        },
     }
     # create Component from the config
     result = Reaction.from_idaes_config(carbonation_reaction_config)
@@ -292,90 +374,78 @@ def test_reaction_from_idaes_config(debug_logging):
 
     # in the generated config 'reaction_order' will be dropped since it is a runtime addition, not something
     # we store in the DB. So for comparison purposes drop it from the original config as well
-    del carbonation_reaction_config["equilibrium_reactions"]["CO2_to_H2CO3"]["parameter_data"]["reaction_order"]
+    del carbonation_reaction_config["equilibrium_reactions"]["CO2_to_H2CO3"][
+        "parameter_data"
+    ]["reaction_order"]
 
     # create a config from the Reaction, i.e. round-trip, and compare
-    assert_configuration_equal(carbonation_reaction_config, reaction.idaes_config, "equilibrium_reactions")
+    assert_configuration_equal(
+        carbonation_reaction_config, reaction.idaes_config, "equilibrium_reactions"
+    )
 
 
 def test_thermoconfig_set_type():
+    def _type(d):
+        keys = list(d["components"].keys())
+        return d["components"][keys[0]]["type"]
+
     # water -> solvent
     data = {
         "parameter_data": {
-            "mw": [{
-                "v": 18.0153,
-                "u": "g/mol",
-                "i": 0
-            }],
+            "mw": [{"v": 18.0153, "u": "g/mol", "i": 0}],
         },
         "name": "H2O",
-        "elements": ["O", "H"]
+        "elements": ["O", "H"],
     }
     thermo = Component(data)
     config = thermo.idaes_config
-    assert config["type"] == Solvent
+    assert _type(config) == Solvent
 
     # neutral non-water -> solute
     data = {
         "parameter_data": {
-            "mw": [{
-                "v": 96.994,
-                "u": "g/mol",
-                "i": 0
-            }],
+            "mw": [{"v": 96.994, "u": "g/mol", "i": 0}],
         },
         "name": "H2PO4",
-        "elements": ["O", "H", "P"]
+        "elements": ["O", "H", "P"],
     }
     thermo = Component(data)
     config = thermo.idaes_config
-    assert config["type"] == Solute
+    assert _type(config) == Solute
 
     # positive charge -> cation
     data = {
         "parameter_data": {
-            "mw": [{
-                "v": 57.002,
-                "u": "g/mol",
-                "i": 0
-            }],
+            "mw": [{"v": 57.002, "u": "g/mol", "i": 0}],
         },
         "name": "CaOH +",
-        "elements": ["Ca", "O", "H"]
+        "elements": ["Ca", "O", "H"],
     }
     thermo = Component(data)
     config = thermo.idaes_config
-    assert config["type"] == Cation
+    assert _type(config) == Cation
 
     # negative charge -> anion
     data = {
         "parameter_data": {
-            "mw": [{
-                "v": 17.008,
-                "u": "g/mol",
-                "i": 0
-            }],
+            "mw": [{"v": 17.008, "u": "g/mol", "i": 0}],
         },
         "name": "OH -",
-        "elements": ["O", "H"]
+        "elements": ["O", "H"],
     }
     thermo = Component(data)
     config = thermo.idaes_config
-    assert config["type"] == Anion
+    assert _type(config) == Anion
 
     # already present, even if wrong, leave alone
     data = {
         "type": "solvent",
         "parameter_data": {
-            "mw": [{
-                "v": 17.008,
-                "u": "g/mol",
-                "i": 0
-            }],
+            "mw": [{"v": 17.008, "u": "g/mol", "i": 0}],
         },
         "name": "OH -",
-        "elements": ["O", "H"]
+        "elements": ["O", "H"],
     }
     thermo = Component(data)
     config = thermo.idaes_config
-    assert config["type"] == Solvent
+    assert _type(config) == Solvent

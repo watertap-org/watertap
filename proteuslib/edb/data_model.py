@@ -117,12 +117,17 @@ def field(f):
 
 class ConfigGenerator:
     """Interface for getting an IDAES 'idaes_config' dict."""
-
     merge_keys = ()
     substitute_values = {}
     SUBST_UNITS = "units"
 
-    def __init__(self, data, name="unknown"):
+    def __init__(self, data: Dict, name=None):
+        """Constructor.
+
+        Args:
+            data: Input data
+            name: Name of the component, e.g. "H2O"
+        """
         data_copy = copy.deepcopy(data)
         _log.info(f"transform to IDAES config.start: name={name}")
         self._transform(data_copy)
@@ -380,6 +385,23 @@ class ThermoConfig(ConfigGenerator):
         }
     }
 
+    def __init__(self, data, name="unknown", validation=True):
+        """Constructor.
+
+        Args:
+            data: Input data
+            name: Name of the component, e.g. "H2O"
+            validation: If True, perform schema validation against input.
+
+        Raises:
+            ValidationError: If the input is bad.
+        """
+        if validation:
+            from .validate import validate  # put here to avoid circular import
+            validate(data, obj_type="component")
+        super().__init__(data, name=name)
+
+
     @classmethod
     def _transform(cls, data):
         cls._set_type(data)
@@ -422,6 +444,22 @@ class ReactionConfig(ConfigGenerator):
                        "van_t_hoff": van_t_hoff,
        },
     }
+
+    def __init__(self, data, name="unknown", validation=True):
+        """Constructor.
+
+        Args:
+            data: Input data
+            name: Name of the component, e.g. "H2O"
+            validation: If True, perform schema validation against input.
+
+        Raises:
+            ValidationError: If the input is bad.
+        """
+        if validation:
+            from .validate import validate  # put here to avoid circular import
+            validate(data, obj_type="reaction")
+        super().__init__(data, name=name)
 
     @classmethod
     def _transform(cls, data):
@@ -599,8 +637,6 @@ class Component(DataWrapper):
         Pre:
             Data conforms to the schema in `schemas.schemas["component"]` from this package.
         """
-        if "name" not in data:
-            raise KeyError("'name' is required")
         super().__init__(data, ThermoConfig)
 
     @classmethod
@@ -661,8 +697,6 @@ class Reaction(DataWrapper):
         Pre:
             Data conforms to the schema in `schemas.schemas["component"]` from this package.
         """
-        if "name" not in data:
-            raise KeyError("'name' is required")
         super().__init__(data, ReactionConfig)
 
     @classmethod
