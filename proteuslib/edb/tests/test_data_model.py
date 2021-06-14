@@ -397,7 +397,7 @@ def test_thermoconfig_set_type():
         "name": "H2O",
         "elements": ["O", "H"],
     }
-    thermo = Component(data)
+    thermo = Component(data, validation=False)
     config = thermo.idaes_config
     assert _type(config) == Solvent
 

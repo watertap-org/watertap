@@ -78,6 +78,7 @@ from contextlib import contextmanager
 import copy
 from fnmatch import fnmatchcase
 import logging
+from pprint import pformat
 import re
 from typing import Dict, Type, List
 
@@ -128,6 +129,7 @@ class ConfigGenerator:
             data: Input data
             name: Name of the component, e.g. "H2O"
         """
+        self._preprocess(data)
         data_copy = copy.deepcopy(data)
         _log.info(f"transform to IDAES config.start: name={name}")
         self._transform(data_copy)
@@ -396,40 +398,18 @@ class ThermoConfig(ConfigGenerator):
         Raises:
             ValidationError: If the input is bad.
         """
+        super().__init__(data, name=name)
         if validation:
             from .validate import validate  # put here to avoid circular import
+            print(f"@@ validating:\n{pformat(data)}")
             validate(data, obj_type="component")
-        super().__init__(data, name=name)
-
 
     @classmethod
     def _transform(cls, data):
-        cls._set_type(data)
         cls._transform_parameter_data(data)
         cls._substitute(data)
         del data["elements"]
         cls._wrap_section("components", data)
-
-    @classmethod
-    def _set_type(cls, data):
-        if "type" in data:
-            return  # already present
-        name, elements = None, None
-        try:
-            name = data["name"]
-            elements = data["elements"]
-        except KeyError:
-            missing = "name" if name is None else "elements"
-            raise BadConfiguration("ThermoConfig._set_type", data, missing=missing)
-        if name.endswith("-"):  # negatively charged
-            component_type = "anion"
-        elif name.endswith("+"):  # positively charged
-            component_type = "cation"
-        elif set(elements) == {"H", "O"}:  # water
-            component_type = "solvent"
-        else:  # anything else neutral
-            component_type = "solute"
-        data["type"] = component_type
 
 
 class ReactionConfig(ConfigGenerator):
@@ -456,10 +436,10 @@ class ReactionConfig(ConfigGenerator):
         Raises:
             ValidationError: If the input is bad.
         """
+        super().__init__(data, name=name)
         if validation:
             from .validate import validate  # put here to avoid circular import
             validate(data, obj_type="reaction")
-        super().__init__(data, name=name)
 
     @classmethod
     def _transform(cls, data):
@@ -519,7 +499,7 @@ class DataWrapper:
     #: into the result when an instance is added to the base data wrapper.
     merge_keys = ()
 
-    def __init__(self, data: Dict, config_gen_class: Type[ConfigGenerator] = None):
+    def __init__(self, data: Dict, config_gen_class: Type[ConfigGenerator] = None, validate_as_type=None):
         """Ctor.
 
         Args:
@@ -528,6 +508,15 @@ class DataWrapper:
         """
         self._data, self._config_gen, self._config = data, config_gen_class, None
         self.name = self._data.get("name", "")
+        if "_id" in self._data:
+            del self._data["_id"]
+        self._preprocess()  # additional subclass-specific preprocessing
+        if validate_as_type:
+            from .validate import validate
+            validate(self._data, obj_type=validate_as_type)
+
+    def _preprocess(self):
+        pass  # define in subclasses
 
     @property
     def idaes_config(self) -> Dict:
@@ -628,16 +617,36 @@ class Component(DataWrapper):
 
     merge_keys = ("components",)
 
-    def __init__(self, data: Dict):
-        """Wrap data in component interface.
+    def __init__(self, data: Dict, validation=True):
+        """Constructor.
 
         Args:
-            data: Data for this component.
-
-        Pre:
-            Data conforms to the schema in `schemas.schemas["component"]` from this package.
+            data: Data from the DB
+            validation: If true, do schema validation of input
         """
-        super().__init__(data, ThermoConfig)
+        vtype = "component" if validation else None
+        super().__init__(data, ThermoConfig, validate_as_type=vtype)
+
+    def _preprocess(self):
+        # set "type" field
+        if "type" in self._data:
+            return  # already present
+        name, elements = None, None
+        try:
+            name = self._data["name"]
+            elements = self._data["elements"]
+        except KeyError:
+            missing = "name" if name is None else "elements"
+            raise BadConfiguration("Component._preprocess", self._data, missing=missing)
+        if name.endswith("-"):  # negatively charged
+            component_type = "anion"
+        elif name.endswith("+"):  # positively charged
+            component_type = "cation"
+        elif set(elements) == {"H", "O"}:  # water
+            component_type = "solvent"
+        else:  # anything else neutral
+            component_type = "solute"
+        self._data["type"] = component_type
 
     @classmethod
     def from_idaes_config(cls, config: Dict) -> List["Component"]:
@@ -688,16 +697,15 @@ class Reaction(DataWrapper):
 
     merge_keys = ("equilibrium_reactions", "rate_reactions")
 
-    def __init__(self, data: Dict):
-        """Create wrapper for reaction data.
+    def __init__(self, data: Dict, validation=True):
+        """Constructor.
 
         Args:
-            data: Reaction data.
-
-        Pre:
-            Data conforms to the schema in `schemas.schemas["component"]` from this package.
+            data: Data from the DB
+            validation: If true, do schema validation of input
         """
-        super().__init__(data, ReactionConfig)
+        vtype = "reaction" if validation else None
+        super().__init__(data, ReactionConfig, validate_as_type=vtype)
 
     @classmethod
     def from_idaes_config(cls, config: Dict) -> List["Reaction"]:
