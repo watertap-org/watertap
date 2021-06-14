@@ -91,6 +91,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_total_constraints,
                                               number_unused_variables)
 
+# # TODO: Remove this import
+import idaes.logger as idaeslog
 __author__ = "Austin Ladshaw"
 
 # Configuration dictionary
@@ -1016,7 +1018,6 @@ thermo_config_cstr = {
     }
     # End thermo_config definition
 
-# This config is REQUIRED to use EquilibriumReactor even if we have no equilibrium reactions
 reaction_config_cstr = {
     "base_units": {"time": pyunits.s,
                    "length": pyunits.m,
@@ -1555,13 +1556,12 @@ if __name__ == "__main__":
     model.fs.thermo_params = GenericParameterBlock(default=thermo_config_cstr)
     model.fs.rxn_params = GenericReactionParameterBlock(
             default={"property_package": model.fs.thermo_params, **reaction_config_cstr })
-    model.fs.unit = CSTR(default={"property_package": model.fs.thermo_params,
+    model.fs.unit = PFR(default={"property_package": model.fs.thermo_params,
                                       "reaction_package": model.fs.rxn_params,
                                       "has_equilibrium_reactions": False,
                                       "has_heat_transfer": False,
                                       "has_heat_of_reaction": False,
-                                      "has_pressure_change": False,
-                                      "energy_balance_type": EnergyBalanceType.none
+                                      "has_pressure_change": False
                                       })
 
     #Set up the problem by closing the DoF and setting inlet streams
@@ -1569,11 +1569,17 @@ if __name__ == "__main__":
 
     model.fs.unit.inlet.pressure.fix(101325.0)
     model.fs.unit.inlet.temperature.fix(298.0)
-    model.fs.unit.outlet.temperature.fix(298.0)
+
+    #NOTE: Cannot specify that there is no energy balance unless
+    #       we also set the temperature at every node in the mesh
+    #model.fs.unit.outlet.temperature.fix(298.0)
     print( degrees_of_freedom(model) )
 
-    model.fs.unit.volume.fix(100)
+    # You set 2 of 3 size attributes: (i) volume, (ii) length, and (iii) area
+    #model.fs.unit.volume.fix(100)
     model.fs.unit.inlet.flow_mol.fix(10)
+    model.fs.unit.length.fix(100)
+    model.fs.unit.area.fix(1)
     print( degrees_of_freedom(model) )
 
     # Add in our species as if they were Ca(OH)2 and NaHCO3
@@ -1625,19 +1631,24 @@ if __name__ == "__main__":
 
     #Add scaling factors for reaction extent
     for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
-        scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
-        iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 1/scale)
+        for index in model.fs.unit.control_volume.inherent_reaction_extent:
+            #model.fs.unit.control_volume.properties[index].pprint()
+            #exit()
+            #scale = value(model.fs.unit.control_volume.properties[index].k_eq[i[1]].expr)
+            scale = 1000
+            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[index], 1/scale)
 
-    for i in model.fs.unit.control_volume.rate_reaction_extent:
-        scale = value(model.fs.unit.control_volume.reactions[0.0].k_rxn[i[1]].expr)
-        scale_rate = value(model.fs.unit.control_volume.reactions[0.0].reaction_rate[i[1]].expr)
-        iscale.set_scaling_factor(model.fs.unit.control_volume.rate_reaction_extent[0.0,i[1]], 1/scale)
-        #iscale.set_scaling_factor(model.fs.unit.control_volume.rate_reaction_extent[0.0,i[1]], 1/scale_rate)
+    #for i in model.fs.unit.control_volume.rate_reaction_extent:
+    #    scale = value(model.fs.unit.control_volume.reactions[0.0].k_rxn[i[1]].expr)
+    #    scale_rate = value(model.fs.unit.control_volume.reactions[0.0].reaction_rate[i[1]].expr)
+    #    iscale.set_scaling_factor(model.fs.unit.control_volume.rate_reaction_extent[0.0,i[1]], 1/scale)
+    #    #iscale.set_scaling_factor(model.fs.unit.control_volume.rate_reaction_extent[0.0,i[1]], 1/scale_rate)
 
-    iscale.calculate_scaling_factors(model.fs.unit)
+    #iscale.calculate_scaling_factors(model.fs.unit)
 
     solver.options['bound_push'] = 1e-20
     solver.options['mu_init'] = 1e-6
+    solver.options['max_iter'] = 200
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
     #model.fs.unit.initialize(optarg=solver.options)
 
