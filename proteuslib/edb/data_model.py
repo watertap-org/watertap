@@ -365,10 +365,10 @@ class ThermoConfig(ConfigGenerator):
 
     substitute_values = {
         "valid_phase_types": {
-            "pt.liquidPhase": PhaseType.liquidPhase,
-            "pt.solidPhase": PhaseType.solidPhase,
-            "pt.vaporPhase": PhaseType.vaporPhase,
-            "pt.aqueousPhase": PhaseType.aqueousPhase,
+            "pt.liquidphase": PhaseType.liquidPhase,
+            "pt.solidphase": PhaseType.solidPhase,
+            "pt.vaporphase": PhaseType.vaporPhase,
+            "pt.aqueousphase": PhaseType.aqueousPhase,
         },
         "*_comp": {
             "perrys": Perrys,
@@ -408,6 +408,9 @@ class ThermoConfig(ConfigGenerator):
     def _transform(cls, data):
         cls._transform_parameter_data(data)
         cls._substitute(data)
+        with field("valid_phase_types") as fld:
+            if isinstance(data.get(fld, None), (list, tuple)) and len(data[fld]) == 1:
+                data[fld] = data[fld][0]
         del data["elements"]
         cls._wrap_section("components", data)
 
@@ -519,6 +522,10 @@ class DataWrapper:
 
     def _preprocess(self):
         pass  # define in subclasses
+
+    @property
+    def data(self):
+        return self._data
 
     @property
     def idaes_config(self) -> Dict:
@@ -642,8 +649,14 @@ class Component(DataWrapper):
             raise BadConfiguration("Component._preprocess", self._data, missing=missing)
         if name.endswith("-"):  # negatively charged
             component_type = "anion"
+            match = re.match(r".*(\d+)-$", name)
+            charge = -1 if match is None else -int(match.group(1))
+            self._data["charge"] = charge
         elif name.endswith("+"):  # positively charged
             component_type = "cation"
+            match = re.match(r".*(\d+)\+$", name)
+            charge = 1 if match is None else int(match.group(1))
+            self._data["charge"] = charge
         elif set(elements) == {"H", "O"}:  # water
             component_type = "solvent"
         else:  # anything else neutral

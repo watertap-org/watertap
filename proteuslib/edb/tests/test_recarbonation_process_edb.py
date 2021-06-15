@@ -14,7 +14,7 @@
 This file is to run the example of running a phase change for the dissolution
 of CO2 into water.
 """
-from pprint import pformat
+from pprint import pformat, pprint
 import pytest
 
 # Import specific pyomo objects
@@ -30,7 +30,6 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.environ import units as pyunits
 
-import idaes.logger as idaeslog
 from idaes.core.util import scaling as iscale
 
 from idaes.core.util import get_solver
@@ -53,9 +52,7 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 
 
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
-    gibbs_energy,
-)
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import gibbs_energy
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
     van_t_hoff,
 )
@@ -87,6 +84,7 @@ from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBub
 from pyomo.environ import log10
 
 from proteuslib.edb import ElectrolyteDB
+from . import data as test_data
 
 __author__ = "Srikanth Allu, Dan Gunter"
 
@@ -109,9 +107,26 @@ component_names = ["H2O", "CO2", "H +", "OH -", "H2CO3", "HCO3 -", "CO3 2-"]
 @pytest.fixture
 def thermo_config():
     thermo_base = next(electrolyte_db.get_base("thermo"))
+    # Defining phase equilibria
+    thermo_base.data.update(
+        {
+            "phases_in_equilibrium": [("Vap", "Liq")],
+            "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
+            "bubble_dew_method": IdealBubbleDew,
+        }
+    )
+    thermo_base.data["phases"]["Vap"] = {"type": VaporPhase, "equation_of_state": Ideal}
+    thermo_base.data["phases"]["Liq"]["type"] = AqueousPhase
     for comp in electrolyte_db.get_components(component_names):
         thermo_base.add(comp)
-    return thermo_base.idaes_config
+    result = thermo_base.idaes_config
+    for name, component in result["components"].items():
+        if name == "H2CO3":
+            component["valid_phase_types"] = PT.aqueousPhase
+        elif "valid_phase_types" in component.keys():
+            del component["valid_phase_types"]
+    assert compare_configs("thermo", result, reference=test_data.recarbonation_thermo_config) is not False
+    return result
 
 
 @pytest.fixture
@@ -122,7 +137,52 @@ def reaction_config():
     print(f"Got reactions: {', '.join([r.name for r in reactions])}")
     for react in reactions:
         reaction_base.add(react)
-    return reaction_base.idaes_config
+    result = reaction_base.idaes_config
+    assert compare_configs("reaction", result, reference=test_data.recarbonation_reaction_config) is not False
+    return result
+
+
+def compare_configs(name, conf, reference=None):
+    print(f"Diffing {name} generated and reference")
+    result = dict_diff(conf, reference)
+    if result:
+        print(f"They are different\nHow:")
+        for difference in result:
+            print(difference)
+        return False  # different
+    return True
+
+
+def dict_diff(d1, d2, result=[], pfx=""):
+    if isinstance(d1, list) and isinstance(d2, list):
+        if len(d1) != len(d2):
+            result.append(f"Array length at {pfx} first({len(d1)}) != second({len(d2)})")
+        else:
+            pass  # good enough
+    elif not isinstance(d1, dict) or not isinstance(d2, dict):
+        if type(d1) == type(d2):
+            same = None
+            try:
+                same = d1 == d2
+            except:   # cannot compare them
+                pass  # good enough
+            if same is False:
+                result.append(f"value at {pfx} first != second")
+        else:
+            result.append(f"type of value at {pfx} first({type(d1)} != second({type(d2)}")
+    else:
+        if set(d1.keys()) != set(d2.keys()):
+            for k in d1:
+                if k not in d2:
+                    result.append(f"{pfx}{k} in first, not in second")
+            for k in d2:
+                if k not in d1:
+                    result.append(f"{pfx}{k} in first, not in second")
+        for k in d1:
+            if k in d2:
+                pfx += f"{k}."
+                dict_diff(d1[k], d2[k], result=result, pfx=pfx)
+    return result
 
 
 @pytest.fixture
@@ -167,7 +227,9 @@ def equilibrium_config(thermo_config, reaction_config):
     model.fs.unit.inlet.mole_frac_comp[0, "CO2"].fix(0.0005)
     model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix(1 - 0.0005)
 
-    print(f"thermo_params components: {model.fs.thermo_params.component_list.value_list}")
+    print(
+        f"thermo_params components: {model.fs.thermo_params.component_list.value_list}"
+    )
     return model
 
 
@@ -246,18 +308,12 @@ def test_solve_equilibrium(equilibrium_config, solver):
 def test_solution_equilibrium(equilibrium_config):
     model = equilibrium_config
 
-    assert pytest.approx(300, rel=1e-5) == value(
-        model.fs.unit.outlet.temperature[0]
-    )
+    assert pytest.approx(300, rel=1e-5) == value(model.fs.unit.outlet.temperature[0])
     assert pytest.approx(10, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
-    assert pytest.approx(101325, rel=1e-5) == value(
-        model.fs.unit.outlet.pressure[0]
-    )
+    assert pytest.approx(101325, rel=1e-5) == value(model.fs.unit.outlet.pressure[0])
 
     total_molar_density = (
-        value(
-            model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase["Liq"]
-        )
+        value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase["Liq"])
         / 1000
     )
     assert pytest.approx(55.1847856, rel=1e-5) == total_molar_density

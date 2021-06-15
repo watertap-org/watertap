@@ -98,7 +98,7 @@ schemas = {
         },
         "required": ["name", "elements", "parameter_data", "type"],
         "patternProperties": {"_comp": {"type": "string"}},
-        "additionalProperties": False,
+        "additionalProperties": True,
         "definitions": {"parameter": _parameter_def},
     },
     "reaction": {
