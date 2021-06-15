@@ -70,6 +70,8 @@ _component = {
         "entr_mol_form_liq_comp_ref": [{"v": -74.5, "u": "J/K/mol"}],
     },
     "name": "Ca[OH]2",
+    "type": "solute",
+    "elements": ["Ca", "O", "H"]
 }
 
 reaction_data = [_reaction, _reaction]
@@ -157,13 +159,6 @@ bicarbonate_reaction_config = {
                 "dh_rxn_ref": (14.9, pyunits.kJ / pyunits.mol),
                 "ds_rxn_ref": (-148.1, pyunits.J / pyunits.mol / pyunits.K),
                 # "T_eq_ref": (300, pyunits.K),
-                # By default, reaction orders follow stoichiometry
-                #    manually set reaction order here to override
-                "reaction_order": {
-                    ("Liq", "HCO3 -"): -1,
-                    ("Liq", "H +"): 1,
-                    ("Liq", "CO3 2-"): 1,
-                },
             },
         }
     },
@@ -179,7 +174,6 @@ bicarbonate_reaction_data = {
     "parameter_data": {
         "dh_rxn_ref": [{"v": 14.9, "u": "kJ/mol"}],
         "ds_rxn_ref": [{"v": -148.1, "u": "J/mol/K"}],
-        "reaction_order": {"Liq": {"HCO3 -": -1, "H +": 1, "CO3 2-": 1}},
     },
     "name": "H2CO3_Ka2",
     "components": ["H2CO3", "Ka2"],

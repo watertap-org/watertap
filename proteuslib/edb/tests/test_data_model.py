@@ -152,8 +152,13 @@ def test_config_generator_required(data_wrapper_class, required):
     for i in range(len(all_fields)):
         except_i = all_fields[:i] + all_fields[i+1:]
         missing_a_field = {f: required[f] for f in except_i}
-        with pytest.raises(ValidationError):
+        print(f"Data missing field '{all_fields[i]}': {missing_a_field}")
+        if data_wrapper_class is Component and all_fields[i] == "type":
+            # type field will be filled by pre-processor for components
             _ = data_wrapper_class(missing_a_field).idaes_config
+        else:
+            with pytest.raises(ValidationError):
+                _ = data_wrapper_class(missing_a_field).idaes_config
     # add all required fields and make sure it passes
     d = {r: required[r] for r in required}
     _ = data_wrapper_class(d).idaes_config
@@ -169,18 +174,21 @@ def test_base(starting_value):
     b = Base(starting)
     assert b.idaes_config == starting
     # Add an empty component
-    with pytest.raises(ValidationError):
+    with pytest.raises(BadConfiguration):
         c = Component({})  # "name" is required
     # also required: elements, parameter_data
+    c = Component({"name": "a", "elements": ["H +"], "parameter_data": {}})
     b.add(c)
     assert b.idaes_config[mk0]["foo"] == starting[mk0]["foo"]
     # Add a non-empty component
     name = "baz"
-    component_data = {"data": 1, "name": name}
+    component_data = {"name": name, "elements": [], "parameter_data": {"foo_coeff": [{"i": 0, "v": 1, "u": "g"}]}}
     c = Component(component_data)
     b.add(c)
     print(f"b.idaes_config={b.idaes_config} component_data={component_data}")
-    assert b.idaes_config[mk0][name]["data"] == component_data["data"]
+    config_foo_coeff_value = b.idaes_config[mk0][name]["parameter_data"]["foo_coeff"][0]
+    data_foo_coeff_value = component_data["parameter_data"]["foo_coeff"][0]["v"]
+    assert config_foo_coeff_value == data_foo_coeff_value
 
 
 subst_foo, subst_bar, subst_y1, subst_y2 = "foo_obj", "bar_obj", 1, 2

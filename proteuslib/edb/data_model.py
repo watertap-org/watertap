@@ -129,7 +129,6 @@ class ConfigGenerator:
             data: Input data
             name: Name of the component, e.g. "H2O"
         """
-        self._preprocess(data)
         data_copy = copy.deepcopy(data)
         _log.info(f"transform to IDAES config.start: name={name}")
         self._transform(data_copy)
@@ -401,7 +400,8 @@ class ThermoConfig(ConfigGenerator):
         super().__init__(data, name=name)
         if validation:
             from .validate import validate  # put here to avoid circular import
-            print(f"@@ validating:\n{pformat(data)}")
+            if _log.isEnabledFor(logging.DEBUG):
+                _log.debug(f"Validating Component:\n{pformat(data)}")
             validate(data, obj_type="component")
 
     @classmethod
@@ -439,6 +439,8 @@ class ReactionConfig(ConfigGenerator):
         super().__init__(data, name=name)
         if validation:
             from .validate import validate  # put here to avoid circular import
+            if _log.isEnabledFor(logging.DEBUG):
+                _log.debug(f"Validating Reaction:\n{pformat(data)}")
             validate(data, obj_type="reaction")
 
     @classmethod
@@ -688,6 +690,8 @@ class Component(DataWrapper):
                         break
                     for phase in key:
                         cls._method_to_str(phase, {phase: value}, d[fld], subst_strings, caller=whoami)
+            # extract elements from name
+            d["elements"] = re.findall(r"[A-Z][a-z]?", name)
             cls._convert_parameter_data(c, d)
             result.append(Component(d))
         return result
