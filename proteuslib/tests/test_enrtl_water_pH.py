@@ -216,12 +216,18 @@ thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "OH_-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": gibbs_energy,
+                   #"equilibrium_constant": gibbs_energy,
+                   "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
                    "concentration_form": ConcentrationForm.activity,
                    "parameter_data": {
-                       "dh_rxn_ref": (55.830, pyunits.kJ/pyunits.mol),
-                       "ds_rxn_ref": (-80.7, pyunits.J/pyunits.mol/pyunits.K),
+                       #"dh_rxn_ref": (55.830, pyunits.kJ/pyunits.mol),
+                       #"ds_rxn_ref": (-80.7, pyunits.J/pyunits.mol/pyunits.K),
+                       #"T_eq_ref": (300, pyunits.K),
+                       "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
+                       #NOTE: The k value on the activity basis is UNITLESS
+                       #        based on a standard molar concentration of 1 mol/L
+                       "k_eq_ref": (10**-14/1000**2,pyunits.mol**2/pyunits.L**2),
                        "T_eq_ref": (300, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
@@ -273,45 +279,56 @@ water_reaction_config = {
     }
     # End reaction_config definition
 
+# Get default solver for testing
+solver = get_solver()
+
 if __name__ == "__main__":
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
     model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
     model.fs.rxn_params = GenericReactionParameterBlock(
             default={"property_package": model.fs.thermo_params, **water_reaction_config})
-
-    # Fails to build EquilibriumReactor
-    #'''
-    #    ERROR: Rule failed when generating expression for constraint
-    #        fs.unit.control_volume.properties_out[0.0].inherent_equilibrium_constraint
-    #        with index H2O_Kw: PropertyNotSupportedError:
-    #        fs.unit.control_volume.properties_out[0.0] package property metadata
-    #        method does not contain a method for act_phase_comp_true. Please select a
-    #        package which supports the necessary properties for your process.
-    #    ERROR: Constructing component
-    #        'fs.unit.control_volume.properties_out[0.0].inherent_equilibrium_constrain
-    #        t' from data=None failed: PropertyNotSupportedError:
-    #        fs.unit.control_volume.properties_out[0.0] package property metadata
-    #        method does not contain a method for act_phase_comp_true. Please select a
-    #        package which supports the necessary properties for your process.
-    #        2021-06-15 14:52:00 [ERROR] idaes.core.process_block: Failure in build: fs.unit.control_volume.properties_out[0.0]
-    #    Traceback (most recent call last):
-    #        File "c:\users\1pi\projects\idaes-pse\idaes\core\property_base.py", line 899, in __getattr__
-    #        if m[attr]['method'] is None:
-    #            KeyError: 'act_phase_comp_true'
-    #'''
     model.fs.unit = EquilibriumReactor(default={
             "property_package": model.fs.thermo_params,
             "reaction_package": model.fs.rxn_params,
             "has_rate_reactions": False,
-            "has_equilibrium_reactions": True,
+            "has_equilibrium_reactions": False,
             "has_heat_transfer": False,
             "has_heat_of_reaction": False,
             "has_pressure_change": False})
 
-    model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( 0. )
-    model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( 0. )
-    model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1. )
+    zero = 1e-20
+    model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( zero )
+    model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( zero )
+    model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1.-2*zero )
     model.fs.unit.inlet.pressure.fix(101325.0)
     model.fs.unit.inlet.temperature.fix(298.)
     model.fs.unit.inlet.flow_mol.fix(10)
+
+    iscale.calculate_scaling_factors(model.fs.unit)
+
+    solver.options['bound_push'] = 1e-20
+    solver.options['mu_init'] = 1e-6
+    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+
+    results = solver.solve(model, tee=True)
+
+    print("comp\tinlet.mole_frac\toutlet.mole_frac")
+    for i in model.fs.unit.inlet.mole_frac_comp:
+        print(str(i[1])+"\t"+str(value(model.fs.unit.inlet.mole_frac_comp[i[0], i[1]]))
+            +"\t"+str(value(model.fs.unit.outlet.mole_frac_comp[i[0], i[1]])))
+    print("\n")
+
+    pHo = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"]))
+    pOHo = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","OH_-"]))
+
+    print("Outlet pH =\t"+ str(pHo) )
+    print("Outlet pOH=\t"+ str(pOHo) )
+    print()
+
+    for index in model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp:
+        print(index)
+        print(value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[index]))
+        print(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp[index]))
+        print(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp_true[index]))
+        print()
