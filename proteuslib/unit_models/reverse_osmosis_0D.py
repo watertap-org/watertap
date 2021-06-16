@@ -248,7 +248,6 @@ class ReverseOsmosisData(UnitModelBlockData):
                 "'pressure_change_type' must be set to PressureChangeType.fixed_per_stage\nor "
                 "'has_pressure_change' must be set to True"
                 .format(self.config.pressure_change_type))
-
         for c in self.config.property_package.component_list:
             comp = self.config.property_package.get_component(c)
             try:
