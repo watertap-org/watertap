@@ -83,3 +83,23 @@ html_logo = "_static/NAWI_logo.png"
 # pixels large.
 #
 html_favicon = "_static/favicon.ico"
+
+## for MyST (Markdown)
+
+myst_enable_extensions = [
+    "dollarmath",
+    "amsmath",
+    "deflist",
+    "html_admonition",
+    "html_image",
+    "colon_fence",
+    "smartquotes",
+    "replacements",
+    "linkify",
+    "substitution",
+    "tasklist",
+]
+myst_heading_anchors = 2
+myst_footnote_transition = True
+myst_dmath_double_inline = True
+panels_add_bootstrap_css = False

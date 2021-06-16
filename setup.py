@@ -83,6 +83,7 @@ setup(
         "fastjsonschema",  # schema validation
         "click",  # command-line tools with Click
         "json-schema-for-humans",  # pretty JSON schema in HTML/Markdown
+        "myst-parser",  # markdown support for Sphinx
     ],
     extras_require={
         "dev": [
@@ -91,8 +92,7 @@ setup(
             "black",  # code formatting
             # other requirements
             "pytest",  # test framework
-            "pytest-cov", # code coverage
-            "myst-parser",  # markdown support for Sphinx
+            "pytest-cov",  # code coverage
         ],
     },
     package_data={  # Optional
