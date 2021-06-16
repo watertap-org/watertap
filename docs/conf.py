@@ -14,7 +14,7 @@ import os
 import sys
 import sphinx_rtd_theme
 sys.path.insert(0, os.path.abspath('..'))
-sys.path.insert(0,os.path.dirname(sys.path[0]))
+# sys.path.insert(0,os.path.dirname(sys.path[0]))
 
 # -- Project information -----------------------------------------------------
 
@@ -26,8 +26,8 @@ author = 'NAWI'
 release = '0.0.1'
 # The short X.Y version
 version = '0.0.1'
-
 # -- General configuration ---------------------------------------------------
+
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -36,20 +36,18 @@ extensions = [
     'sphinx_rtd_theme',
     'sphinx.ext.napoleon',  # Google and NumPy-style docstrings
     'sphinx.ext.autodoc',
-    'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
-    'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel',
     'sphinx.ext.doctest'
 ]
 
 autosectionlabel_prefix_document = True
-
+autodoc_warningiserror = False  # suppress warnings during autodoc
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

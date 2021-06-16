@@ -12,9 +12,10 @@ Welcome to ProteusLib's documentation!
    technical_reference/index
    background/index
    edb/index
-   Modules <apidoc/modules>
    license
    copyright
+
+..    Modules <apidoc/modules>
 
 
 Indices and tables
