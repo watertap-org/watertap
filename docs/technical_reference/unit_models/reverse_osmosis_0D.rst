@@ -61,8 +61,16 @@ Variables
    "Volumetric recovery rate", ":math:`R`", "recovery_vol_phase", "[t, p]", ":math:`\text{dimensionless}`"
    "Observed solute rejection", ":math:`r_s`", "rejection_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
    "Over-pressure ratio", ":math:`P_{f,out}/Δ\pi_{out}`", "over_pressure_ratio", "[t]", ":math:`\text{dimensionless}`"
+   "Mass transfer to permeate", ":math:`M_p`", "mass_transfer_phase_comp", "[t, p, j]", ":math:`\text{kg/s}`"
 
 The following variables are only built when specific configuration key-value pairs are selected.
+
+if ``has_pressure_change`` is set to ``True``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Pressure drop", ":math:`ΔP`", "deltaP", "[t]", ":math:`\text{Pa}`"
 
 if ``concentration_polarization_type`` is set to ``ConcentrationPolarizationType.fixed``:
 
@@ -126,10 +134,16 @@ if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
 
 Equations
 -----------
-#TODO:
 
-#.. csv-table::
-   #:header: "Description", "Equation"
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Water flux across membrane", ":math:`J_{w, x} = \rho_w A(P_{f,x} - P_p - (\pi_{f,m,x}-\pi_{p,x}))`"
+   "Solute flux across membrane", ":math:`J_{s, x} = B(C_{f,m,x} - C_p)`"
+   "Average water flux across membrane", ":math:`J_{w, avg} = \frac{1}{2}\sum_{x} J_{w, x}`"
+   "Average solute flux across membrane", ":math:`J_{s, avg} = \frac{1}{2}\sum_{x} J_{s, x}`"
+   "Permeate mass flow by component j", ":math:`M_{p, j} = A_m J_{j,avg}`"
+
 
 
 
