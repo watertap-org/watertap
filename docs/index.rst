@@ -7,8 +7,10 @@ Welcome to ProteusLib's documentation!
 .. toctree::
    :maxdepth: 2
 
-   unit_models/index
-   property_models/index
+   getting_started/index
+   how_to/index
+   technical_reference/index
+   background/index
    edb/index
    Modules <apidoc/proteuslib>
    license
