@@ -92,6 +92,7 @@ setup(
             # other requirements
             "pytest",  # test framework
             "pytest-cov", # code coverage
+            "myst-parser",  # markdown support for Sphinx
         ],
     },
     package_data={  # Optional

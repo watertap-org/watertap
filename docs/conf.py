@@ -43,7 +43,8 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinx.ext.autosectionlabel',
-    'sphinx.ext.doctest'
+    'sphinx.ext.doctest',
+    'myst_parser'
 ]
 
 autosectionlabel_prefix_document = True

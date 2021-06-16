@@ -14,8 +14,7 @@ Welcome to ProteusLib's documentation!
    edb/index
    license
    copyright
-
-..    Modules <apidoc/modules>
+    Modules <apidoc/modules>
 
 
 Indices and tables
