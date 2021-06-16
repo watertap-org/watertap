@@ -85,6 +85,7 @@ component_data = [_component, _component]
 Ca_thermo_config = {
     "components": {
         "Ca 2+": {
+            "charge": 2,
             "type": "Component",
             "valid_phase_types": PT.liquidPhase,
             # Define the methods used to calculate the following properties
