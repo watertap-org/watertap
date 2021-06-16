@@ -114,44 +114,50 @@ def parameter_sweep(model, sweep_params, outputs, results_file, optimize_functio
 
     Arguments:
 
-        model : A Pyomo ConcreteModel containing a proteuslib flowsheet, for best results
-                it should be initialized before being passed to this function
+        model : A Pyomo ConcreteModel containing a proteuslib flowsheet, for best 
+                results it should be initialized before being passed to this
+                function.
 
-        sweep_params: A dictionary containing the values to vary with the 
-                      format `sweep_params['Short/Pretty-print Name'] =
+        sweep_params: A dictionary containing the values to vary with the format
+                      `sweep_params['Short/Pretty-print Name'] =
                       (model.fs.variable_or_param[index], lower_limit, upper_limit, num_samples)`.
-                      A uniform number of samples `num_samples` will be take between the 
-                      `lower_limit` and `upper_limit`.
+                      A uniform number of samples `num_samples` will be take between
+                      the `lower_limit` and `upper_limit`.
 
-        outputs : A dictionary containing "short names" as keys and and Pyomo objects on
-                    `model` whose values to report as values. E.g., `outputs['Short/Pretty-print Name'] =
-                    model.fs.variable_or_expression_to_report`.
+        outputs : A dictionary containing "short names" as keys and and Pyomo objects
+                  on `model` whose values to report as values. E.g.,
+                  `outputs['Short/Pretty-print Name'] = model.fs.variable_or_expression_to_report`.
 
-        results_file : The file to save the results.
+        results_file : The path and file name where the results are to be saved; subdirectories
+                       will be created as needed.
 
-        optimize_function : A user-defined function to perform the optimization of flowsheet `model` and
-                           loads the results back into `model`. The first argument of this function
-                           is `model`.
+        optimize_function : A user-defined function to perform the optimization of flowsheet `model`
+                            and loads the results back into `model`. The first argument of this
+                            function is `model`.
 
-        optimize_kwargs (optional) : Dictionary of kwargs to pass into every call to `optimize_function`
-                                     The first arg will always be `model`, e.g.,
-                                     optimize_function(m, **optimize_kwargs). The
-                                     default uses no kwargs.
+        optimize_kwargs (optional) : Dictionary of kwargs to pass into every call to
+                                     `optimize_function`. The first arg will always be `model`,
+                                     e.g., optimize_function(m, **optimize_kwargs). The default
+                                     uses no kwargs.
 
         reinitialize_function (optional) : A user-defined function to perform the re-initialize the 
-                                           flowsheet `model` if the first call to `optimize_function` fails
-                                           for any reason. After `reinitialize_function`, the parameter sweep
-                                           tool will immediately call `optimize_function` again.
+                                           flowsheet `model` if the first call to `optimize_function`
+                                           fails for any reason. After `reinitialize_function`, the
+                                           parameter sweep tool will immediately call
+                                           `optimize_function` again.
 
         reinitialize_kwargs (optional) : Dictionary or kwargs to pass into every call to 
-                                         `reinitialize_function`. The first arg will always be `model`, e.g.,
-                                         reinitialize_function(m, **reinitialize_kwargs). The default uses no kwargs.
+                                         `reinitialize_function`. The first arg will always be
+                                         `model`, e.g.,
+                                         `reinitialize_function(m, **reinitialize_kwargs)`.
+                                         The default uses no kwargs.
 
         mpi_comm (optional) : User-provided MPI communicator for parallel parameter sweeps.
-                              If None COMM_WORLD will be used. The default is sufficient for most users.
+                              If None COMM_WORLD will be used. The default is sufficient for most
+                              users.
 
-        debugging_data_dir (optional) : Save results on a per-process basis for parallel debugging purposes.
-                                        If None no data _additional_ will be saved.
+        debugging_data_dir (optional) : Save results on a per-process basis for parallel debugging
+                                        purposes. If None no _debugging_ data will be saved.
 
     Returns:
         None
