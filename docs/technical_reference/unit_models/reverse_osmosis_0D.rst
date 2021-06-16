@@ -77,7 +77,7 @@ if ``concentration_polarization_type`` is set to ``ConcentrationPolarizationType
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Concentration polarization modulus", ":math:`C_{f,m}/C_f`", "cp_modulus", "[t, j]", ":math:`\text{dimensionless}`"
+   "Concentration polarization modulus", ":math:`CP_{mod}`", "cp_modulus", "[t, j]", ":math:`\text{dimensionless}`"
 
 if ``concentration_polarization_type`` is set to ``ConcentrationPolarizationType.calculated``:
 
@@ -120,7 +120,7 @@ if ``pressure_change_type`` is set to ``PressureChangeType.fixed_per_unit_length
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Pressure drop per unit length of feed channel", ":math:`ΔP/Δx`", "dP_dx", "[t]", ":math:`\text{Pa/m}`"
+   "Average pressure drop per unit length of feed channel", ":math:`(frac{ΔP}{Δx})_avg`", "dP_dx", "[t]", ":math:`\text{Pa/m}`"
 
 if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
 
@@ -143,10 +143,21 @@ Equations
    "Average water flux across membrane", ":math:`J_{w, avg} = \frac{1}{2}\sum_{x} J_{w, x}`"
    "Average solute flux across membrane", ":math:`J_{s, avg} = \frac{1}{2}\sum_{x} J_{s, x}`"
    "Permeate mass flow by component j", ":math:`M_{p, j} = A_m J_{j,avg}`"
-
-
-
-
+   "Membrane-interface concentration", ":math:`C_{f,m}=CP_{mod}*C_f=C_f\exp(\frac{J_w}{k_f})-\frac{J_s}{J_w}(\exp(\frac{J_w}{k_f})-1)`"
+   "Concentration polarization modulus",":math:`C_{f,m}/C_f`"
+   "Mass transfer coefficient",":math:`k_f=\frac{D Sh}{d_h}`"
+   "Sherwood number",":math:`Sh=0.46 (Re Sc)^{0.36}`"
+   "Schmidt number",":math:`Sc=\frac{\mu}{\rho D}`"
+   "Reynolds number",":math:`Re=\frac{\rho v_f d_h}{\mu}`"
+   "Hydraulic diameter",":math:`d_h=\frac{4\epsilon_{sp}}{2/h_{ch} + (1-\epsilon_{sp})8/h_{ch}}`"
+   "Cross-sectional area",":math:`A_c=h_{ch}W\epsilon_{sp}`"
+   "Membrane area",":math:`A_m=LW`"
+   "Pressure drop",":math:`ΔP=(\frac{ΔP}{Δx})_{avg}L`"
+   "Feed-channel velocity",":math:`v_f=Q_f/A_c`"
+   "Friction factor",":math:`f=0.42+\frac{189.3}{Re}`"
+   "Pressure drop per unit length",":math:`\frac{ΔP}{Δx}=\frac{1}{2d_h}f\rho v_f^{2}`"
+   "Component recovery rate",":math:`R_j=\frac{M_{p,j}}{M_{f,in,j}}`"
+   "Volumetric recovery rate",":math:`R=\frac{Q_{p}}{Q_{f,in}}`"
 
 Class Documentation
 -------------------
