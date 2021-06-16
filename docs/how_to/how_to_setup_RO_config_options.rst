@@ -13,13 +13,13 @@ Example: Configure the RO model to account for concentration polarization and pr
                                                            ConcentrationPolarizationType,
                                                            MassTransferCoefficient,
                                                            PressureChangeType)
+
     # Import concrete model from Pyomo
     from pyomo.environ import ConcreteModel
     # Import flowsheet block from IDAES core
     from idaes.core import FlowsheetBlock
     # Import NaCl property model
     import proteuslib.property_models.NaCl_prop_pack as props
-
 
     # Create a concrete model, flowsheet, and NaCl property parameter block.
     m = ConcreteModel()
