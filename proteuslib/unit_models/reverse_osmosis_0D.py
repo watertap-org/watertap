@@ -474,7 +474,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 bounds=(-2e5, -1e3),
                 domain=NegativeReals,
                 units=units_meta('pressure')*units_meta('length')**-1,
-                doc="Decrease in pressure per unit length across feed channel")
+                doc="pressure drop per unit length across feed channel")
 
         if self.config.pressure_change_type == PressureChangeType.calculated:
             self.velocity_io = Var(
@@ -500,7 +500,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 bounds=(-2e5, -1e3),
                 domain=NegativeReals,
                 units=units_meta('pressure')*units_meta('length')**-1,
-                doc="Pressure drop per unit length in feed channel at inlet and outlet")
+                doc="Pressure drop per unit length of feed channel at inlet and outlet")
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(default={

@@ -46,27 +46,85 @@ Sets
 
 *Solute depends on the imported property model; example shown here is for the NaCl property model.
 
-
 Variables
 ----------
 
-
 .. csv-table::
-   :header: "Description", "Symbol", "Variable", "Index", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Solvent permeability coefficient", ":math:`A`", "A_comp", "[t, j]", ":math:`\text{m/Pa/s}`"
-   "Solvent permeability coefficient", ":math:`B`", "B_comp", "[t, j]", ":math:`\text{m/s}`"
+   "Solute permeability coefficient", ":math:`B`", "B_comp", "[t, j]", ":math:`\text{m/s}`"
    "Mass density of pure water", ":math:`\rho_w`", "dens_solvent", "[p]", ":math:`\text{kg/}\text{m}^3`"
    "Mass flux across membrane", ":math:`J`", "flux_mass_io_phase_comp", "[t, x, p, j]", ":math:`\text{kg/s}\text{/m}^2`"
    "Membrane area", ":math:`A_m`", "area", "None", ":math:`\text{m}^2`"
    "Component recovery rate", ":math:`R_j`", "recovery_mass_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
    "Volumetric recovery rate", ":math:`R`", "recovery_vol_phase", "[t, p]", ":math:`\text{dimensionless}`"
    "Observed solute rejection", ":math:`r_s`", "rejection_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
-   "Over-pressure ratio", ":math:`P_{f,out}/delta/pi`", "over_pressure_ratio", "[t]", ":math:`\text{dimensionless}`"
+   "Over-pressure ratio", ":math:`P_{f,out}/Δ\pi_{out}`", "over_pressure_ratio", "[t]", ":math:`\text{dimensionless}`"
+
+The following variables are only built when specific configuration key-value pairs are selected.
+
+if ``concentration_polarization_type`` is set to ``ConcentrationPolarizationType.fixed``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Concentration polarization modulus", ":math:`C_{f,m}/C_f`", "cp_modulus", "[t, j]", ":math:`\text{dimensionless}`"
+
+if ``concentration_polarization_type`` is set to ``ConcentrationPolarizationType.calculated``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Mass transfer coefficient in feed channel", ":math:`k_f`", "Kf_io", "[t, x, j]", ":math:`\text{m/s}`"
+
+if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``
+or ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Feed-channel height", ":math:`h_{ch}`", "channel_height", "None", ":math:`\text{m}`"
+   "Hydraulic diameter", ":math:`d_h`", "dh", "None", ":math:`\text{m}`"
+   "Spacer porosity", ":math:`\epsilon_{sp}`", "spacer_porosity", "None", ":math:`\text{dimensionless}`"
+   "Reynolds number", ":math:`Re`", "N_Re_io", "[t, x]", ":math:`\text{dimensionless}`"
 
 
+if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``:
 
-Constraints
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Schmidt number", ":math:`Sc`", "N_Sc_io", "[t, x]", ":math:`\text{dimensionless}`"
+   "Sherwood number", ":math:`Sh`", "N_Sh_io", "[t, x]", ":math:`\text{dimensionless}`"
+
+if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``
+or ``pressure_change_type`` is **NOT** set to ``PressureChangeType.fixed_per_stage``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Membrane length", ":math:`L`", "length", "None", ":math:`\text{m}`"
+   "Membrane width", ":math:`W`", "width", "None", ":math:`\text{m}`"
+
+if ``pressure_change_type`` is set to ``PressureChangeType.fixed_per_unit_length``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Pressure drop per unit length of feed channel", ":math:`ΔP/Δx`", "dP_dx", "[t]", ":math:`\text{Pa/m}`"
+
+if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Feed-channel velocity", ":math:`v_f`", "velocity_io", "[t, x]", ":math:`\text{m/s}`"
+   "Friction factor", ":math:`f`", "friction_factor_darcy_io", "[t, x]", ":math:`\text{dimensionless}`"
+   "Pressure drop per unit length of feed channel at inlet/outlet", ":math:`ΔP/Δx`", "dP_dx_io", "[t, x]", ":math:`\text{Pa/m}`"
+
+
+Equations
 -----------
 #TODO:
 
@@ -79,14 +137,9 @@ Constraints
 Class Documentation
 -------------------
 
-
-.. autoclass:: ReverseOsmosis0D
+.. automodule:: proteuslib.unit_models.reverse_osmosis_0D
    :members:
-
-
-.. autoclass:: ReverseOsmosisData
-   :members:
-
+   :noindex:
 
 
 
