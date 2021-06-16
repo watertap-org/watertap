@@ -11,7 +11,7 @@
 #
 ###############################################################################
 import numpy as np
-import pyomo.core.base as pyobase
+import pyomo.environ as pyo
 import sys
 import os
 import itertools
@@ -64,28 +64,20 @@ def _build_and_divide_combinations(d, rank, num_procs):
 
 def _update_model_values(m, param_dict, values):
 
-    for k, item in enumerate(param_dict.items()):
+    for k, item in enumerate(param_dict.values()):
 
-        key = item[0]
-        param = item[1][0]
+        param = item[0]
 
-        if isinstance(param, pyobase.var._GeneralVarData):
-            if param.is_indexed():
-                # If an indexed variable, fix all values to values[k]
-                for p in param:
-                    p.fix(values[k])
-            else:
-                # Otherwise, fix the single value to values[k]
-                param.fix(values[k])
+        if param.is_variable_type():
+            # Fix the single value to values[k]
+            param.fix(values[k])
 
-        elif isinstance(param, pyobase.param._ParamData):
-            if param.is_indexed():
-                # If an indexed param, set all values to values[k]
-                for p in param:
-                    p.value(values[k])
-            else:
-                # Otherwise, set the single value to values[k]
-                param.value(values[k])
+        elif param.is_parameter_type():
+            # Otherwise, set the single value
+            param.value(values[k])
+
+        else:
+            raise RuntimeError(f"Unrecognized Pyomo object {param}")
 
 # ================================================================
 
@@ -110,44 +102,65 @@ def _aggregate_results(local_results, global_values, comm, num_procs):
 
 # ================================================================
 
-def parameter_sweep(m, sweep_params, outputs, results_file, optimize_fct,
-        optimize_kwargs=None, reinitialize_fct=None, reinitialize_kwargs=None,
+def parameter_sweep(model, sweep_params, outputs, results_file, optimize_function,
+        optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
         mpi_comm=None, debugging_data_dir=None):
 
     '''
     This function offers a general way to perform repeated optimizations
     of a model for the purposes of exploring a parameter space while
-    monitoring multiple outputs.
+    monitoring multiple outputs. 
+    Writes single CSV file to `results_file` with all inputs and resulting outputs.
+
     Arguments:
-        m : A Pyomo model containing a proteuslib flowsheet, for best results
-            it should be initialized before being passed to this function
-        sweep_params: A dictionary containing the values to vary with the 
-                      format sweep_params['Short/Pretty-print Name'] =
-                      (path.to.model.variable, lower_limit, upper_limit, num_samples)
-        outputs : A dictionary containing "short names" as keys and and Pyomo objects on
-                    "m" whose values to report as values. Values should be a Pyomo
-                    object which the pyomo "value" function can be used on.
-        results_file : The file to save the results.
-        optimize_fct : A user-defined function to perform the optimization of flowsheet m and
-                           loads the results back into m.
-        optimize_kwargs (optional) : Dictionary of kwargs to pass into optimize_fct
-                                     The first arg will always be "m", e.g.,
-                                     optimize_fct(m, **optimize_kwargs). The
-                                     default uses no kwargs.
-        reinitialize_fct (optional) : A user-defined function to perform the re-initialize a
-                                      flowsheet m if the first call to optimize_fct fails,
-                                      e.g., raises an exception
-        reinitialize_kwargs (optional) : Dictionary of kwargs to pass into reinitialize_fct
-                                         The first arg will always be "m", e.g.,
-                                         reinitialize_fct(m, **reinitialize_kwargs). The
-                                         default uses no kwargs.
-        mpi_comm (optional) : User-provided MPI communicator. If None COMM_WORLD will be used.
-        debugging_data_dir (optional) : Optionally, save results on a per-process basis for
-                                        parallel debugging purposes. If None no data will be saved.
+
+        model : A Pyomo ConcreteModel containing a proteuslib flowsheet, for best 
+                results it should be initialized before being passed to this
+                function.
+
+        sweep_params: A dictionary containing the values to vary with the format
+                      `sweep_params['Short/Pretty-print Name'] =
+                      (model.fs.variable_or_param[index], lower_limit, upper_limit, num_samples)`.
+                      A uniform number of samples `num_samples` will be take between
+                      the `lower_limit` and `upper_limit`.
+
+        outputs : A dictionary containing "short names" as keys and and Pyomo objects
+                  on `model` whose values to report as values. E.g.,
+                  `outputs['Short/Pretty-print Name'] = model.fs.variable_or_expression_to_report`.
+
+        results_file : The path and file name where the results are to be saved; subdirectories
+                       will be created as needed.
+
+        optimize_function : A user-defined function to perform the optimization of flowsheet `model`
+                            and loads the results back into `model`. The first argument of this
+                            function is `model`.
+
+        optimize_kwargs (optional) : Dictionary of kwargs to pass into every call to
+                                     `optimize_function`. The first arg will always be `model`,
+                                     e.g., optimize_function(m, **optimize_kwargs). The default
+                                     uses no kwargs.
+
+        reinitialize_function (optional) : A user-defined function to perform the re-initialize the 
+                                           flowsheet `model` if the first call to `optimize_function`
+                                           fails for any reason. After `reinitialize_function`, the
+                                           parameter sweep tool will immediately call
+                                           `optimize_function` again.
+
+        reinitialize_kwargs (optional) : Dictionary or kwargs to pass into every call to 
+                                         `reinitialize_function`. The first arg will always be
+                                         `model`, e.g.,
+                                         `reinitialize_function(m, **reinitialize_kwargs)`.
+                                         The default uses no kwargs.
+
+        mpi_comm (optional) : User-provided MPI communicator for parallel parameter sweeps.
+                              If None COMM_WORLD will be used. The default is sufficient for most
+                              users.
+
+        debugging_data_dir (optional) : Save results on a per-process basis for parallel debugging
+                                        purposes. If None no _debugging_ data will be saved.
 
     Returns:
-        None,
-        Writes global CSV file to "results_file" with all inputs and resulting outputs
+        None
     '''
 
     # Get an MPI communicator
@@ -173,11 +186,11 @@ def parameter_sweep(m, sweep_params, outputs, results_file, optimize_fct,
 
     for k in range(local_num_cases):
         # Update the model values with a single combination from the parameter space
-        _update_model_values(m, sweep_params, local_values[k, :])
+        _update_model_values(model, sweep_params, local_values[k, :])
 
         try:
             # Simulate/optimize with this set of parameters
-            optimize_fct(m, **optimize_kwargs)
+            optimize_function(model, **optimize_kwargs)
 
         except:
             # If the run is infeasible, report nan
@@ -186,20 +199,20 @@ def parameter_sweep(m, sweep_params, outputs, results_file, optimize_fct,
 
         else:
             # If the simulation suceeds, report stats
-            local_results[k, :] = [pyobase.value(outcome) for outcome in outputs.values()]
+            local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
             previous_run_failed = False
 
-        if previous_run_failed and (reinitialize_fct is not None):
+        if previous_run_failed and (reinitialize_function is not None):
             # We choose to re-initialize the model at this point
             try:
-                reinitialize_fct(m, **reinitialize_kwargs)
-                optimize_fct(m, **optimize_kwargs)
+                reinitialize_function(model, **reinitialize_kwargs)
+                optimize_function(model, **optimize_kwargs)
             except:
                 # do we raise an error here?
                 # nothing to do
                 pass
             else:
-                local_results[k, :] = [pyobase.value(outcome) for outcome in outputs.values()]
+                local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
 
 
     # ================================================================
