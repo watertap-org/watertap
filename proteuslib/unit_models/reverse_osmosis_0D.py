@@ -271,7 +271,6 @@ class ReverseOsmosisData(UnitModelBlockData):
         # Call UnitModel.build to setup dynamics
         super().build()
 
-
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
         units_meta = self.config.property_package.get_metadata().get_derived_units

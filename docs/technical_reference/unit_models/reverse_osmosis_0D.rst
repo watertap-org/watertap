@@ -16,18 +16,14 @@ Degrees of Freedom
 Aside from the feed temperature, feed pressure, and component mass flow rates at the inlet, the RO model typically has
 at least 4 degrees of freedom that should be fixed for the unit to be fully specified.
 
-In Example A, the following variables were fixed, in addition to state variables at the inlet:
+Typically, the following variables are fixed, in addition to state variables at the inlet:
     * membrane water permeability, A
     * membrane salt permeability, B
     * permeate pressure
     * membrane area
 
-The degrees of freedom will depend on which RO configuration options are selected. For example, setting
-``has_pressure_change= True`` adds 1 degree of freedom. In this case, the pressure drop ``deltaP`` would need to be fixed
-to eliminate that degree of freedom.
-
-On the other hand, in Example B, configuring the RO unit to calculate concentration polarization effects, mass transfer
-coefficient, and pressure drop would result in 3 more degrees of freedom than Example A. In this case, in addition to the
+On the other hand, configuring the RO unit to calculate concentration polarization effects, mass transfer
+coefficient, and pressure drop would result in 7 degrees of freedom. In this case, in addition to the
 previously fixed variables, we typically fix the following variables to fully specify the unit:
 
     * feed-spacer porosity
@@ -65,6 +61,9 @@ Variables
    "Membrane area", ":math:`A_m`", "area", "None", ":math:`\text{m}^2`"
    "Component recovery rate", ":math:`R_j`", "recovery_mass_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
    "Volumetric recovery rate", ":math:`R`", "recovery_vol_phase", "[t, p]", ":math:`\text{dimensionless}`"
+   "Observed solute rejection", ":math:`r_s`", "rejection_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
+   "Over-pressure ratio", ":math:`P_{f,out}/delta/pi`", "over_pressure_ratio", "[t]", ":math:`\text{dimensionless}`"
+
 
 
 Constraints
