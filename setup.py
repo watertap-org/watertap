@@ -84,6 +84,7 @@ setup(
         "click",  # command-line tools with Click
         "json-schema-for-humans",  # pretty JSON schema in HTML/Markdown
         "myst-parser",  # markdown support for Sphinx
+        "linkify-it-py",
     ],
     extras_require={
         "dev": [
