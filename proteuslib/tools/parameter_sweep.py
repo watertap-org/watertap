@@ -137,7 +137,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file, optimize_functio
 
         optimize_kwargs (optional) : Dictionary of kwargs to pass into every call to
                                      `optimize_function`. The first arg will always be `model`,
-                                     e.g., optimize_function(m, **optimize_kwargs). The default
+                                     e.g., `optimize_function(m, **optimize_kwargs)`. The default
                                      uses no kwargs.
 
         reinitialize_function (optional) : A user-defined function to perform the re-initialize the 
