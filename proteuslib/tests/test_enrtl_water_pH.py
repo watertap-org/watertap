@@ -91,7 +91,7 @@ from pyomo.environ import log10
 __author__ = "Austin Ladshaw"
 
 # Configuration dictionary
-thermo_config = {
+water_thermo_config = {
     "components": {
         'H2O': {"type": Solvent,
               # Define the methods used to calculate the following properties
@@ -285,7 +285,7 @@ solver = get_solver()
 if __name__ == "__main__":
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+    model.fs.thermo_params = GenericParameterBlock(default=water_thermo_config)
     model.fs.rxn_params = GenericReactionParameterBlock(
             default={"property_package": model.fs.thermo_params, **water_reaction_config})
     model.fs.unit = EquilibriumReactor(default={
@@ -297,6 +297,7 @@ if __name__ == "__main__":
             "has_heat_of_reaction": False,
             "has_pressure_change": False})
 
+    #NOTE: ENRTL model cannot initialize if the inlet values are 0
     zero = 1e-20
     model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( zero )
     model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( zero )
