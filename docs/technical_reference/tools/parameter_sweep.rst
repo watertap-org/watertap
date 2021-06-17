@@ -1,0 +1,66 @@
+Parameter Sweep Tool
+====================
+
+.. index::
+   pair: proteuslib.tools.parameter_sweep;parameter_sweep
+
+.. currentmodule:: proteuslib.tools.parameter_sweep
+
+Overview
+--------
+
+The parameter sweep tool systematically fixes variables or modifies
+mutable parameters on a flowsheet (or Pyomo ConcreteModel), optimizes
+the flowsheet, and reports user-specified results.
+
+For each item the user wants to change, they specify a "short" name
+as a key, and then a tuple specifying the Pyomo object to be changed,
+a lower limit, an upper limit, and the number of elements to be sampled 
+for this parameter between the lower limit and upper limit.
+Each item should be sampled at least twice to capture the upper and lower
+limit. The parameter sweep tool will evaluate the cross product of all
+the specified parameters, and report the values of the Pyomo objects (Vars,
+Expressions, etc.), that the user specifies in `outputs`.
+
+In addition to the parameters to sweep and the values to track for output,
+the user must provide an `optimize_function`, which takes the `model` as an
+attribute calls an optimization routine to solve it for the updated parameters.
+Should the call to `optimize_function` fail, and a `reinitialize_function` is not
+specified, the outputs will be reported as `NaN` for that parameter set.
+
+The user can optionally specify a `reinitialize_function` in case any piece
+of the `optimize_function` fails -- after the call to `reinitialize_function`
+the model should be in a state ready to optimize again. If the `reinitialize_function`
+or the second call to the `optimize_function` fail for any reason, the outputs will
+be reported as `NaN` for that parameter set.
+
+The parameter sweep tool maintains the state of the flowsheet / Pyomo model between
+calls to `optimize_function` to take advantage of initializations provided by
+earlier solutions. If this behavior is undesirable, the user should re-initialize
+their flowsheet as part of their `optimize_function`.
+
+Finally, the user must specify a path, `results_file`, which is a CSV summary of
+the parameter sweep. Each column specifies a fixed parameter or the associated
+output, and each row is a single run with the specified parameters and resulting
+outputs.
+
+Parallel Usage
+--------------
+
+The parameter sweep tool can optionally utilize `mpi4py` to split the parameter
+sweep over multiple processors. If `mpi4py` is installed in the user's conda environment,
+a script utilizing the parameter sweep tool can be run in parallel, in this example
+using two threads.
+
+.. code:: bash
+
+   mpirun -n 2 python parameter_sweep_script.py
+
+For advanced users, the parameter sweep tool can optionally take a MPI communicator
+as an argument.
+
+Function Documentation
+----------------------
+
+.. automodule:: proteuslib.tools.parameter_sweep
+   :members:

@@ -6,3 +6,4 @@ Technical Reference
    
    unit_models/index
    property_models/index
+   tools/index
