@@ -152,7 +152,7 @@ class TestParallelManager():
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs,
                 results_file = results_file,
-                optimize_fct=_optimization,
+                optimize_function=_optimization,
                 debugging_data_dir = tmp_path,
                 mpi_comm = comm)
 
@@ -195,7 +195,7 @@ class TestParallelManager():
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs,
                 results_file = results_file,
-                optimize_fct=_optimization,
+                optimize_function=_optimization,
                 optimize_kwargs={'relax_feasibility':True},
                 mpi_comm = comm)
 
@@ -233,8 +233,8 @@ class TestParallelManager():
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs,
                 results_file = results_file,
-                optimize_fct=_optimization,
-                reinitialize_fct=_reinitialize,
+                optimize_function=_optimization,
+                reinitialize_function=_reinitialize,
                 reinitialize_kwargs={'slack_penalty':10.},
                 mpi_comm = comm)
 
@@ -273,8 +273,8 @@ class TestParallelManager():
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs,
                 results_file = results_file,
-                optimize_fct=_optimization,
-                reinitialize_fct=_bad_reinitialize,
+                optimize_function=_optimization,
+                reinitialize_function=_bad_reinitialize,
                 reinitialize_kwargs={'slack_penalty':10.},
                 mpi_comm = comm)
 
