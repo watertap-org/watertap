@@ -21,7 +21,6 @@ import idaes.logger as idaeslog
 from pyomo.environ import Constraint, Expression, log, Reals, NonNegativeReals, \
     Var, Set, Param, sqrt, log10, TerminationCondition, Suffix
 from pyomo.environ import units as pyunits
-from pyomo.opt import SolverFactory
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -38,7 +37,7 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.misc import add_object_reference, extract_data
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom, \
     number_unfixed_variables
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
@@ -187,9 +186,9 @@ class _NaClStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(self, state_args={}, state_vars_fixed=False,
+    def initialize(self, state_args=None, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         """
         Initialization routine for property package.
         Keyword Arguments:
@@ -205,7 +204,7 @@ class _NaClStateBlock(StateBlock):
                          pressure : value at which to initialize pressure
                          temperature : value at which to initialize temperature
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None)
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
                               - True - states have already been fixed by the
@@ -236,16 +235,7 @@ class _NaClStateBlock(StateBlock):
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="properties")
 
         # Set solver and options
-        # TODO: clean up once IDAES new API for initialize solvers is released
-        if isinstance(solver, str):
-            opt = SolverFactory(solver)
-            opt.options = optarg
-        else:
-            if solver is None:
-                opt = get_default_solver()
-            else:
-                opt = solver
-                opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # Fix state variables
         flags = fix_state_vars(self, state_args)
