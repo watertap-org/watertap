@@ -216,19 +216,22 @@ water_thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "OH_-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   #"equilibrium_constant": gibbs_energy,
                    "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
                    "concentration_form": ConcentrationForm.activity,
                    "parameter_data": {
-                       #"dh_rxn_ref": (55.830, pyunits.kJ/pyunits.mol),
-                       #"ds_rxn_ref": (-80.7, pyunits.J/pyunits.mol/pyunits.K),
-                       #"T_eq_ref": (300, pyunits.K),
-                       "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
                        #NOTE: The k value on the activity basis is UNITLESS
                        #        based on a standard molar concentration of 1 mol/L
+                       #        HOWEVER, the typical Kw dissociation constant of
+                       #        1e-14 is defined on a molar basis. Thus, we must
+                       #        divide by the standard concentration raised to the
+                       #        net reaction order (i.e., 2 in this case). Furthermore,
+                       #        IDAES internally does molar basis as mol/m**3, thus,
+                       #        we divide here by 1000**2 to perform both necessary
+                       #        unit conversions in line.
+                       "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
                        "k_eq_ref": (10**-14/1000**2,pyunits.mol**2/pyunits.L**2),
-                       "T_eq_ref": (300, pyunits.K),
+                       "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
                        #    manually set reaction order here to override
@@ -245,35 +248,18 @@ water_thermo_config = {
     # End thermo_config definition
 
 # Define the reaction_config for water dissociation
-water_reaction_config = {
+# This config is REQUIRED to use EquilibriumReactor even if we have no equilibrium reactions
+reaction_config = {
     "base_units": {"time": pyunits.s,
                    "length": pyunits.m,
                    "mass": pyunits.kg,
                    "amount": pyunits.mol,
                    "temperature": pyunits.K},
     "equilibrium_reactions": {
-        "H2O_Kw": {
-                "stoichiometry": {("Liq", "H2O"): -1,
-                                 ("Liq", "H_+"): 1,
-                                 ("Liq", "OH_-"): 1},
-               "heat_of_reaction": constant_dh_rxn,
-               "equilibrium_constant": gibbs_energy,
-               "equilibrium_form": log_power_law_equil,
-               "concentration_form": ConcentrationForm.activity,
-               "parameter_data": {
-                   "dh_rxn_ref": (55.830, pyunits.kJ/pyunits.mol),
-                   "ds_rxn_ref": (-80.7, pyunits.J/pyunits.mol/pyunits.K),
-                   "T_eq_ref": (300, pyunits.K),
-
-                   # By default, reaction orders follow stoichiometry
-                   #    manually set reaction order here to override
-                   "reaction_order": {("Liq", "H2O"): 0,
-                                    ("Liq", "H_+"): 1,
-                                    ("Liq", "OH_-"): 1}
-                    }
-                    # End parameter_data
+        "dummy": {
+                "stoichiometry": {},
+                "equilibrium_form": log_power_law_equil,
                }
-               # End R1
          }
          # End equilibrium_reactions
     }
@@ -282,12 +268,397 @@ water_reaction_config = {
 # Get default solver for testing
 solver = get_solver()
 
+# Start test class
+class TestENRTLwater():
+    @pytest.fixture(scope="class")
+    def water_model(self):
+        model = ConcreteModel()
+        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs.thermo_params = GenericParameterBlock(default=water_thermo_config)
+        model.fs.rxn_params = GenericReactionParameterBlock(
+                default={"property_package": model.fs.thermo_params, **reaction_config})
+        model.fs.unit = EquilibriumReactor(default={
+                "property_package": model.fs.thermo_params,
+                "reaction_package": model.fs.rxn_params,
+                "has_rate_reactions": False,
+                "has_equilibrium_reactions": False,
+                "has_heat_transfer": False,
+                "has_heat_of_reaction": False,
+                "has_pressure_change": False})
+
+        #NOTE: ENRTL model cannot initialize if the inlet values are 0
+        zero = 1e-20
+        model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1.-2*zero )
+        model.fs.unit.inlet.pressure.fix(101325.0)
+        model.fs.unit.inlet.temperature.fix(298.)
+        model.fs.unit.inlet.flow_mol.fix(10)
+
+        return model
+
+    @pytest.mark.unit
+    def test_build_water(self, water_model):
+        model = water_model
+
+        assert hasattr(model.fs.thermo_params, 'component_list')
+        assert len(model.fs.thermo_params.component_list) == 3
+        assert 'H2O' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.H2O, Solvent)
+        assert 'H_+' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('H_+'), Cation)
+        assert 'OH_-' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('OH_-'), Anion)
+
+    @pytest.mark.unit
+    def test_units_water(self, water_model):
+        model = water_model
+        assert_units_consistent(model)
+
+    @pytest.mark.unit
+    def test_dof_water(self, water_model):
+        model = water_model
+        assert (degrees_of_freedom(model) == 0)
+
+    @pytest.mark.component
+    def test_scaling_water(self, water_model):
+        model = water_model
+
+        #Custom eps factors for reaction constraints
+        eps = 1e-20
+        model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
+
+        #Add scaling factors for reaction extent
+        for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
+
+        iscale.calculate_scaling_factors(model.fs.unit)
+
+        assert hasattr(model.fs.unit.control_volume, 'scaling_factor')
+        assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+
+        assert hasattr(model.fs.unit.control_volume.properties_out[0.0], 'scaling_factor')
+        assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
+
+        assert hasattr(model.fs.unit.control_volume.properties_in[0.0], 'scaling_factor')
+        assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
+
+    @pytest.mark.component
+    def test_initialize_solver_water(self, water_model):
+        model = water_model
+        solver.options['bound_push'] = 1e-20
+        solver.options['mu_init'] = 1e-6
+        model.fs.unit.initialize(optarg=solver.options)
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.component
+    def test_solve_water(self, water_model):
+        model = water_model
+        solver.options['max_iter'] = 2
+        results = solver.solve(model)
+        print(results.solver.termination_condition)
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_solution_water(self, water_model):
+        model = water_model
+
+        pH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"]))
+        pOH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","OH_-"]))
+
+        assert pytest.approx(7.00000, rel=1e-5) == pH
+        assert pytest.approx(7.00000, rel=1e-5) == pOH
+
+# Configuration dictionary
+carbonic_thermo_config = {
+    "components": {
+        'H2O': {"type": Solvent,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Perrys,
+              "enth_mol_liq_comp": Perrys,
+              "cp_mol_liq_comp": Perrys,
+              "entr_mol_liq_comp": Perrys,
+              "relative_permittivity_liq_comp": relative_permittivity_constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (18.0153, pyunits.g/pyunits.mol),
+                    "relative_permittivity_liq_comp": 78.54,
+                    "pressure_crit": (220.64E5, pyunits.Pa),
+                    "temperature_crit": (647, pyunits.K),
+                    # Comes from Perry's Handbook:  p. 2-98
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (5.459, pyunits.kmol*pyunits.m**-3),
+                        '2': (0.30542, pyunits.dimensionless),
+                        '3': (647.13, pyunits.K),
+                        '4': (0.081, pyunits.dimensionless)},
+                    "enth_mol_form_liq_comp_ref": (-285.830, pyunits.kJ/pyunits.mol),
+                    "enth_mol_form_vap_comp_ref": (0, pyunits.kJ/pyunits.mol),
+                    # Comes from Perry's Handbook:  p. 2-174
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (2.7637E5, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (-2.0901E3, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (8.125, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (-1.4116E-2, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (9.3701E-6, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "cp_mol_ig_comp_coeff": {
+                        'A': (30.09200, pyunits.J/pyunits.mol/pyunits.K),
+                        'B': (6.832514, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-1),
+                        'C': (6.793435, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-2),
+                        'D': (-2.534480, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-3),
+                        'E': (0.082139, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**2),
+                        'F': (-250.8810, pyunits.kJ/pyunits.mol),
+                        'G': (223.3967, pyunits.J/pyunits.mol/pyunits.K),
+                        'H': (0, pyunits.kJ/pyunits.mol)},
+                    "entr_mol_form_liq_comp_ref": (69.95, pyunits.J/pyunits.K/pyunits.mol),
+                    "pressure_sat_comp_coeff": {
+                        'A': (4.6543, None),  # [1], temperature range 255.9 K - 373 K
+                        'B': (1435.264, pyunits.K),
+                        'C': (-64.848, pyunits.K)}
+                                },
+                    # End parameter_data
+                    },
+        'H_+': {"type": Cation, "charge": 1,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Perrys,
+              "enth_mol_liq_comp": Perrys,
+              "cp_mol_liq_comp": Perrys,
+              "entr_mol_liq_comp": Perrys,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (1.00784, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (5.459, pyunits.kmol*pyunits.m**-3),
+                        '2': (0.30542, pyunits.dimensionless),
+                        '3': (647.13, pyunits.K),
+                        '4': (0.081, pyunits.dimensionless)},
+                    "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ/pyunits.mol),
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (2.7637E5, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (-2.0901E3, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (8.125, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (-1.4116E-2, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (9.3701E-6, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "entr_mol_form_liq_comp_ref": (-10.75, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'OH_-': {"type": Anion,
+                "charge": -1,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Perrys,
+              "enth_mol_liq_comp": Perrys,
+              "cp_mol_liq_comp": Perrys,
+              "entr_mol_liq_comp": Perrys,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (17.008, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (5.459, pyunits.kmol*pyunits.m**-3),
+                        '2': (0.30542, pyunits.dimensionless),
+                        '3': (647.13, pyunits.K),
+                        '4': (0.081, pyunits.dimensionless)},
+                    "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ/pyunits.mol),
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (2.7637E5, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (-2.0901E3, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (8.125, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (-1.4116E-2, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (9.3701E-6, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "entr_mol_form_liq_comp_ref": (-10.75, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'H2CO3': {"type": Solute, "valid_phase_types": PT.aqueousPhase,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Perrys,
+              "enth_mol_liq_comp": Perrys,
+              "cp_mol_liq_comp": Perrys,
+              "entr_mol_liq_comp": Perrys,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (62.03, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (5.4495, pyunits.kmol*pyunits.m**-3),
+                        '2': (0.427, pyunits.dimensionless),
+                        '3': (429.69, pyunits.K),
+                        '4': (0.259, pyunits.dimensionless)},
+                    "enth_mol_form_liq_comp_ref": (-699.7, pyunits.kJ/pyunits.mol),
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (135749.9, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (0, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (0, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (0, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (0, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "entr_mol_form_liq_comp_ref": (187, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'HCO3_-': {"type": Anion, "charge": -1,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Perrys,
+              "enth_mol_liq_comp": Perrys,
+              "cp_mol_liq_comp": Perrys,
+              "entr_mol_liq_comp": Perrys,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (61.0168, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (5.4495, pyunits.kmol*pyunits.m**-3),
+                        '2': (0.427, pyunits.dimensionless),
+                        '3': (429.69, pyunits.K),
+                        '4': (0.259, pyunits.dimensionless)},
+                    "enth_mol_form_liq_comp_ref": (-692, pyunits.kJ/pyunits.mol),
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (135749.9, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (0, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (0, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (0, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (0, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "entr_mol_form_liq_comp_ref": (91.2, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'CO3_2-': {"type": Anion, "charge": -2,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Perrys,
+              "enth_mol_liq_comp": Perrys,
+              "cp_mol_liq_comp": Perrys,
+              "entr_mol_liq_comp": Perrys,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (60.01, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (5.4495, pyunits.kmol*pyunits.m**-3),
+                        '2': (0.427, pyunits.dimensionless),
+                        '3': (429.69, pyunits.K),
+                        '4': (0.259, pyunits.dimensionless)},
+                    "enth_mol_form_liq_comp_ref": (-677.1, pyunits.J/pyunits.mol),
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (135749.9, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (0, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (0, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (0, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (0, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "entr_mol_form_liq_comp_ref": (-56.9, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    }
+              },
+              # End Component list
+        "phases":  {'Liq': {"type": AqueousPhase,
+                            "equation_of_state": ENRTL},
+                    },
+
+        "state_definition": FTPx,
+        "state_bounds": {"flow_mol": (0, 50, 100),
+                         "temperature": (273.15, 300, 650),
+                         "pressure": (5e4, 1e5, 1e6)
+                     },
+
+        "pressure_ref": 1e5,
+        "temperature_ref": 300,
+        "base_units": {"time": pyunits.s,
+                       "length": pyunits.m,
+                       "mass": pyunits.kg,
+                       "amount": pyunits.mol,
+                       "temperature": pyunits.K},
+
+        # Inherent reactions
+        "inherent_reactions": {
+            "H2O_Kw": {
+                    "stoichiometry": {("Liq", "H2O"): -1,
+                                     ("Liq", "H_+"): 1,
+                                     ("Liq", "OH_-"): 1},
+                   "heat_of_reaction": constant_dh_rxn,
+                   "equilibrium_constant": van_t_hoff,
+                   "equilibrium_form": log_power_law_equil,
+                   "concentration_form": ConcentrationForm.activity,
+                   "parameter_data": {
+                       #NOTE: The k value on the activity basis is UNITLESS
+                       #        based on a standard molar concentration of 1 mol/L
+                       #        HOWEVER, the typical Kw dissociation constant of
+                       #        1e-14 is defined on a molar basis. Thus, we must
+                       #        divide by the standard concentration raised to the
+                       #        net reaction order (i.e., 2 in this case). Furthermore,
+                       #        IDAES internally does molar basis as mol/m**3, thus,
+                       #        we divide here by 1000**2 to perform both necessary
+                       #        unit conversions in line.
+                       "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
+                       "k_eq_ref": (10**-14/1000**2,pyunits.mol**2/pyunits.L**2),
+                       "T_eq_ref": (298, pyunits.K),
+
+                       # By default, reaction orders follow stoichiometry
+                       #    manually set reaction order here to override
+                       "reaction_order": {("Liq", "H2O"): 0,
+                                        ("Liq", "H_+"): 1,
+                                        ("Liq", "OH_-"): 1}
+                        }
+                        # End parameter_data
+                   },
+                   # End R1
+            "H2CO3_Ka1": {
+                    "stoichiometry": {("Liq", "H2CO3"): -1,
+                                     ("Liq", "H_+"): 1,
+                                     ("Liq", "HCO3_-"): 1},
+                   "heat_of_reaction": constant_dh_rxn,
+                   "equilibrium_constant": van_t_hoff,
+                   "equilibrium_form": log_power_law_equil,
+                   "concentration_form": ConcentrationForm.activity,
+                   "parameter_data": {
+                       #"dh_rxn_ref": (7.7, pyunits.kJ/pyunits.mol),
+                       #"ds_rxn_ref": (-95.8, pyunits.J/pyunits.mol/pyunits.K),
+                       #"T_eq_ref": (300, pyunits.K),
+                       "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
+                       "k_eq_ref": (10**-6.33/1000,pyunits.mol/pyunits.L),
+                       "T_eq_ref": (300, pyunits.K),
+
+                       # By default, reaction orders follow stoichiometry
+                       #    manually set reaction order here to override
+                       "reaction_order": {("Liq", "H2CO3"): -1,
+                                        ("Liq", "H_+"): 1,
+                                        ("Liq", "HCO3_-"): 1}
+                        }
+                        # End parameter_data
+                   },
+                   # End R2
+            "H2CO3_Ka2": {
+                    "stoichiometry": {("Liq", "HCO3_-"): -1,
+                                     ("Liq", "H_+"): 1,
+                                     ("Liq", "CO3_2-"): 1},
+                   "heat_of_reaction": constant_dh_rxn,
+                   "equilibrium_constant": van_t_hoff,
+                   "equilibrium_form": log_power_law_equil,
+                   "concentration_form": ConcentrationForm.activity,
+                   "parameter_data": {
+                       #"dh_rxn_ref": (14.9, pyunits.kJ/pyunits.mol),
+                       #"ds_rxn_ref": (-148.1, pyunits.J/pyunits.mol/pyunits.K),
+                       #"T_eq_ref": (300, pyunits.K),
+                       "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
+                       "k_eq_ref": (10**-10.35/1000,pyunits.mol/pyunits.L),
+                       "T_eq_ref": (300, pyunits.K),
+
+                       # By default, reaction orders follow stoichiometry
+                       #    manually set reaction order here to override
+                       "reaction_order": {("Liq", "HCO3_-"): -1,
+                                        ("Liq", "H_+"): 1,
+                                        ("Liq", "CO3_2-"): 1}
+                        }
+                        # End parameter_data
+                   }
+                   # End R3
+             }
+             # End equilibrium_reactions
+    }
+    # End thermo_config definition
+
 if __name__ == "__main__":
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
     model.fs.thermo_params = GenericParameterBlock(default=water_thermo_config)
     model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params, **water_reaction_config})
+            default={"property_package": model.fs.thermo_params, **reaction_config})
     model.fs.unit = EquilibriumReactor(default={
             "property_package": model.fs.thermo_params,
             "reaction_package": model.fs.rxn_params,
