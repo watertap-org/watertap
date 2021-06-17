@@ -103,8 +103,10 @@ from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.core.components import Solvent, Solute, Cation, Anion
 
 # package
-from .equations.equil_log_power_form import log_power_law
-from .equations.van_t_hoff_alt_form import van_t_hoff_aqueous
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+    van_t_hoff,
+)
 from .error import ConfigGeneratorError, BadConfiguration
 
 _log = logging.getLogger(__name__)
@@ -420,10 +422,10 @@ class ReactionConfig(ConfigGenerator):
     substitute_values = {
         "heat_of_reaction": {"constant_dh_rxn": constant_dh_rxn},
         "*_form": {
-            "log_power_law": log_power_law,
+            "log_power_law": log_power_law_equil,
             "concentrationform.molarity": ConcentrationForm.molarity,
         },
-        "*_constant": {"van_t_hoff_aqueous": van_t_hoff_aqueous,
+        "*_constant": {"van_t_hoff_aqueous": van_t_hoff,
                        "van_t_hoff": van_t_hoff,
        },
     }

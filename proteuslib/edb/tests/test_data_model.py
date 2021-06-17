@@ -24,6 +24,7 @@ from pyomo.environ import units as pyunits
 from idaes.generic_models.properties.core.pure import Perrys
 from idaes.generic_models.properties.core.pure.NIST import NIST
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
 from idaes.core import Component as IComponent
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
     van_t_hoff,
@@ -32,7 +33,6 @@ from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rx
 from idaes.generic_models.properties.core.generic.generic_reaction import (
     ConcentrationForm,
 )
-from ..equations.equil_log_power_form import log_power_law
 from idaes.core.components import Solvent, Solute, Cation, Anion
 
 
@@ -356,7 +356,7 @@ def test_reaction_from_idaes_config(debug_logging):
                 "heat_of_reaction": constant_dh_rxn,
                 "equilibrium_constant": van_t_hoff,
                 # "equilibrium_constant": gibbs_energy,
-                "equilibrium_form": log_power_law,
+                "equilibrium_form": log_power_law_equil,
                 "concentration_form": ConcentrationForm.molarity,
                 "parameter_data": {
                     "dh_rxn_ref": (0, pyunits.kJ / pyunits.mol),

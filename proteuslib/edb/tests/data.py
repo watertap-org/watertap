@@ -16,8 +16,10 @@ Shared input data for tests
 from pyomo.environ import units as pyunits
 from idaes.core.phases import PhaseType as PT
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
-from proteuslib.edb.equations.van_t_hoff_alt_form import van_t_hoff_aqueous
-from proteuslib.edb.equations.equil_log_power_form import log_power_law
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+    van_t_hoff,
+)
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
 from idaes.generic_models.properties.core.generic.generic_reaction import (
     ConcentrationForm,
@@ -157,9 +159,9 @@ bicarbonate_reaction_config = {
                 ("Liq", "CO3 2-"): 1,
             },
             "heat_of_reaction": constant_dh_rxn,
-            "equilibrium_constant": van_t_hoff_aqueous,
+            "equilibrium_constant": van_t_hoff,
             # "equilibrium_constant": gibbs_energy,
-            "equilibrium_form": log_power_law,
+            "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.molarity,
             "parameter_data": {
                 "dh_rxn_ref": (14.9, pyunits.kJ / pyunits.mol),
