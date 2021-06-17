@@ -544,6 +544,31 @@ carbonic_thermo_config = {
                     "entr_mol_form_liq_comp_ref": (-56.9, pyunits.J/pyunits.K/pyunits.mol)
                                 },
                     # End parameter_data
+                    },
+        'Na_+': {"type": Cation, "charge": 1,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Perrys,
+              "enth_mol_liq_comp": Perrys,
+              "cp_mol_liq_comp": Perrys,
+              "entr_mol_liq_comp": Perrys,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (22.989769, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (5.252, pyunits.kmol*pyunits.m**-3),
+                        '2': (0.347, pyunits.dimensionless),
+                        '3': (1595.8, pyunits.K),
+                        '4': (0.6598, pyunits.dimensionless)},
+                    "enth_mol_form_liq_comp_ref": (-240.1, pyunits.J/pyunits.mol),
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (167039, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (0, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (0, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (0, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (0, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "entr_mol_form_liq_comp_ref": (59, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
                     }
               },
               # End Component list
@@ -572,10 +597,14 @@ carbonic_thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "OH_-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
+                   #"equilibrium_constant": gibbs_energy,
                    "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
                    "concentration_form": ConcentrationForm.activity,
                    "parameter_data": {
+                       #"dh_rxn_ref": (55.830, pyunits.kJ/pyunits.mol),
+                       #"ds_rxn_ref": (-80.7, pyunits.J/pyunits.mol/pyunits.K),
+                       #"T_eq_ref": (300, pyunits.K),
                        #NOTE: The k value on the activity basis is UNITLESS
                        #        based on a standard molar concentration of 1 mol/L
                        #        HOWEVER, the typical Kw dissociation constant of
@@ -585,8 +614,9 @@ carbonic_thermo_config = {
                        #        IDAES internally does molar basis as mol/m**3, thus,
                        #        we divide here by 1000**2 to perform both necessary
                        #        unit conversions in line.
+
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                       "k_eq_ref": (10**-14/1000**2,pyunits.mol**2/pyunits.L**2),
+                       "k_eq_ref": (10**-14/1000/1000/55.2/55.2,pyunits.mol**2/pyunits.L**2),
                        "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
@@ -603,6 +633,7 @@ carbonic_thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "HCO3_-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
+                   #"equilibrium_constant": gibbs_energy,
                    "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
                    "concentration_form": ConcentrationForm.activity,
@@ -610,8 +641,10 @@ carbonic_thermo_config = {
                        #"dh_rxn_ref": (7.7, pyunits.kJ/pyunits.mol),
                        #"ds_rxn_ref": (-95.8, pyunits.J/pyunits.mol/pyunits.K),
                        #"T_eq_ref": (300, pyunits.K),
+
+
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                       "k_eq_ref": (10**-6.33/1000,pyunits.mol/pyunits.L),
+                       "k_eq_ref": (10**-6.33/1000/55.2,pyunits.mol/pyunits.L),
                        "T_eq_ref": (300, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
@@ -628,6 +661,7 @@ carbonic_thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "CO3_2-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
+                   #"equilibrium_constant": gibbs_energy,
                    "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
                    "concentration_form": ConcentrationForm.activity,
@@ -635,8 +669,10 @@ carbonic_thermo_config = {
                        #"dh_rxn_ref": (14.9, pyunits.kJ/pyunits.mol),
                        #"ds_rxn_ref": (-148.1, pyunits.J/pyunits.mol/pyunits.K),
                        #"T_eq_ref": (300, pyunits.K),
+
+
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                       "k_eq_ref": (10**-10.35/1000,pyunits.mol/pyunits.L),
+                       "k_eq_ref": (10**-10.35/1000/55.2,pyunits.mol/pyunits.L),
                        "T_eq_ref": (300, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
@@ -656,7 +692,7 @@ carbonic_thermo_config = {
 if __name__ == "__main__":
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=water_thermo_config)
+    model.fs.thermo_params = GenericParameterBlock(default=carbonic_thermo_config)
     model.fs.rxn_params = GenericReactionParameterBlock(
             default={"property_package": model.fs.thermo_params, **reaction_config})
     model.fs.unit = EquilibriumReactor(default={
@@ -670,12 +706,43 @@ if __name__ == "__main__":
 
     #NOTE: ENRTL model cannot initialize if the inlet values are 0
     zero = 1e-20
+    acid = 0.00206/(55.2+0.00206)
+    #acid = 1e-10/(55.2+1e-10)
     model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( zero )
     model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( zero )
-    model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1.-2*zero )
+
+    # Added as acid form (should be pH ~ 4.5 --> Got pH ~ 4.5 (4.5 ideal))
+    #model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( zero )
+    #model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( zero )
+    #model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( acid )
+    #model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( zero )
+
+    # Added as conjugate base form (should be pH ~ 8.3  --> Got pH ~ 9.1 (8.3 ideal))
+    #model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( zero )
+    #model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( acid )
+    #model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( zero )
+    #model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( acid )
+
+    # Added as most basic form (should be pH ~ 10.8  --> Got pH ~ 11.5 (10.8 ideal))
+    model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( acid )
+    model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( zero )
+    model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( zero )
+    model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( 2*acid )
+
+    model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1.-4*zero-acid-value(model.fs.unit.inlet.mole_frac_comp[0, "Na_+"]) )
     model.fs.unit.inlet.pressure.fix(101325.0)
     model.fs.unit.inlet.temperature.fix(298.)
     model.fs.unit.inlet.flow_mol.fix(10)
+
+    eps = 1e-20
+    model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
+    model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
+    model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
+
+    #Add scaling factors for reaction extent
+    for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
+        scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
+        iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
 
     iscale.calculate_scaling_factors(model.fs.unit)
 
@@ -691,16 +758,49 @@ if __name__ == "__main__":
             +"\t"+str(value(model.fs.unit.outlet.mole_frac_comp[i[0], i[1]])))
     print("\n")
 
-    pHo = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"]))
-    pOHo = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","OH_-"]))
+    pH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"])*55.2)
+    pOH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","OH_-"])*55.2)
 
-    print("Outlet pH =\t"+ str(pHo) )
-    print("Outlet pOH=\t"+ str(pOHo) )
+    print("Outlet pH =\t"+ str(pH) )
+    print("Outlet pOH=\t"+ str(pOH) )
+    print()
+
+    pHo = -log10(value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","H_+"])/1000*value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"])/value(model.fs.unit.outlet.mole_frac_comp[0,"H_+"]))
+    pOHo = -log10(value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OH_-"])/1000*value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","OH_-"])/value(model.fs.unit.outlet.mole_frac_comp[0,"OH_-"]))
+
+    print("Outlet pHo =\t"+ str(pHo) )
+    print("Outlet pOHo=\t"+ str(pOHo) )
     print()
 
     for index in model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp:
         print(index)
-        print(value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[index]))
-        print(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp[index]))
-        print(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp_true[index]))
+        print("C (M) = " + str(value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[index])/1000))
+        print("a (-) = " + str(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp[index])))
+        gamma = value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp[index])*1/(value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[index])/1000)
+        print("gamma_C = "+ str(gamma))
+        gamma = value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp[index])/value(model.fs.unit.outlet.mole_frac_comp[0,index[1]])
+        print("gamma_x = "+ str(gamma))
         print()
+
+    Kw = value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"])*value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","OH_-"])
+    print("pKw_a = " + str(-log10(Kw)))
+    Ka1 = value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"])*value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","HCO3_-"])/value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H2CO3"])
+    print("pKa1_a = " + str(-log10(Ka1)))
+    Ka2 = value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"])*value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","CO3_2-"])/value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","HCO3_-"])
+    print("pKa2_a = " + str(-log10(Ka2)))
+    print()
+
+    Kw = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","H_+"])/1000*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OH_-"])/1000
+    print("pKw_C = " + str(-log10(Kw)))
+    Ka1 = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","H_+"])*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HCO3_-"])/value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","H2CO3"])/1000
+    print("pKa1_C = " + str(-log10(Ka1)))
+    Ka2 = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","H_+"])*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","CO3_2-"])/value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HCO3_-"])/1000
+    print("pKa2_C = " + str(-log10(Ka2)))
+
+    total_acid = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","H2CO3"])/1000
+    total_acid += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HCO3_-"])/1000
+    total_acid += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","CO3_2-"])/1000
+
+    print()
+    print("Acid Added = " +str(acid*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","H2O"])/1000))
+    print("Final Acid = " + str(total_acid))
