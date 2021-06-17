@@ -190,8 +190,8 @@ Constraints
 -----------
 #TODO:
 
-.. csv-table::
-   :header: "Description", "Equation"
+.. .. csv-table::
+..   :header: "Description", "Equation"
 
 
 
