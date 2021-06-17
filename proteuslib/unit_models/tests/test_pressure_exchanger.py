@@ -17,8 +17,7 @@ from pyomo.environ import (ConcreteModel,
                            Constraint,
                            TerminationCondition,
                            SolverStatus,
-                           value,
-                           SolverFactory)
+                           value)
 from pyomo.network import Port
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
@@ -33,8 +32,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set,
                                               number_unused_variables)
-from idaes.core.util.testing import (get_default_solver,
-                                     initialization_tester)
+from idaes.core.util import get_solver
+from idaes.core.util.testing import initialization_tester
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError
 from idaes.core.util.scaling import (calculate_scaling_factors,
@@ -44,7 +43,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # # -----------------------------------------------------------------------------
@@ -169,8 +168,7 @@ class TestPressureExchanger():
         m.fs.unit.high_pressure_side.properties_in[0].temperature.fix(temperature)
 
         # solve inlet conditions and only fix state variables (i.e. unfix flow_vol and mass_frac_phase)
-        solver = SolverFactory('ipopt')
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
+        solver.options['nlp_scaling_method'] = 'user-scaling'
         results = solver.solve(m.fs.unit.low_pressure_side.properties_in[0])
         assert results.solver.termination_condition == TerminationCondition.optimal
         m.fs.unit.low_pressure_side.properties_in[0].flow_mass_phase_comp['Liq', 'TDS'].fix()
@@ -208,7 +206,7 @@ class TestPressureExchanger():
     @pytest.mark.component
     def test_initialize(self, unit_frame):
         m = unit_frame
-        kwargs = {'solver': solver,
+        kwargs = {'solver': 'ipopt',
                   'optarg': {'nlp_scaling_method': 'user-scaling'}}
         initialization_tester(unit_frame, **kwargs)
 

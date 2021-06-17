@@ -33,13 +33,13 @@ from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
 import proteuslib.property_models.NaCl_prop_pack\
     as props
 
+from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
                                               number_unused_variables,
                                               variables_set)
-from idaes.core.util.testing import (get_default_solver,
-                                     initialization_tester)
+from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_variables_generator,
                                      unscaled_constraints_generator,
@@ -49,7 +49,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
