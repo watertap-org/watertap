@@ -8,19 +8,18 @@ Example: Configure the RO model to account for concentration polarization and pr
 
 .. code-block:: python
 
+    #Import RO model and configuration classes
+    from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
+                                                           ConcentrationPolarizationType,
+                                                           MassTransferCoefficient,
+                                                           PressureChangeType)
+
     # Import concrete model from Pyomo
     from pyomo.environ import ConcreteModel
     # Import flowsheet block from IDAES core
     from idaes.core import FlowsheetBlock
     # Import NaCl property model
     import proteuslib.property_models.NaCl_prop_pack as props
-    # Import utility tool for calculating scaling factors
-    import idaes.core.util.scaling as calculate_scaling_factors
-    #Import RO model and configuration classes
-    from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
-                                                           ConcentrationPolarizationType,
-                                                           MassTransferCoefficient,
-                                                           PressureChangeType)
 
     # Create a concrete model, flowsheet, and NaCl property parameter block.
     m = ConcreteModel()
