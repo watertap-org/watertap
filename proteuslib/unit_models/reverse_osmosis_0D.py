@@ -18,7 +18,6 @@ from copy import deepcopy
 from pyomo.environ import (Var,
                            Set,
                            Param,
-                           SolverFactory,
                            Suffix,
                            NonNegativeReals,
                            NegativeReals,
@@ -38,7 +37,7 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -141,12 +140,58 @@ class ReverseOsmosisData(UnitModelBlockData):
         default=PressureChangeType.fixed_per_stage,
         domain=In(PressureChangeType),
         description="Pressure change term construction flag",
-        doc="""Indicates what type of pressure change calculation will be made.
-    **default** - PressureChangeType.fixed_per_stage. 
-    **Valid values:** {
-    **PressureChangeType.fixed_per_stage** - user specifies pressure drop across membrane feed channel,
-    **PressureChangeType.fixed_per_unit_length - user specifies pressure drop per unit length (dP/dx),
-    **PressureChangeType.calculated** - complete calculation of pressure drop across membrane channel.}"""))
+        doc="""
+        Indicates what type of pressure change calculation will be made. To use any of the 
+        ``pressure_change_type`` options to account for pressure drop, the configuration keyword 
+        ``has_pressure_change`` must also be set to ``True``. Also, if a value is specified for pressure 
+        change, it should be negative to represent pressure drop. 
+        
+        **default** - ``PressureChangeType.fixed_per_stage`` 
+
+
+    .. csv-table::
+        :header: "Configuration Options", "Description"
+
+        "``PressureChangeType.fixed_per_stage``", "Specify an estimated value for pressure drop across the membrane feed channel"
+        "``PressureChangeType.fixed_per_unit_length``", "Specify an estimated value for pressure drop per unit length across the membrane feed channel"
+        "``PressureChangeType.calculated``", "Allow model to perform calculation of pressure drop across the membrane feed channel"
+
+"""))
+    CONFIG.declare("concentration_polarization_type", ConfigValue(
+        default=ConcentrationPolarizationType.none,
+        domain=In(ConcentrationPolarizationType),
+        description="External concentration polarization effect in RO",
+        doc="""
+        Options to account for concentration polarization.
+        
+        **default** - ``ConcentrationPolarizationType.none`` 
+
+    .. csv-table::
+        :header: "Configuration Options", "Description"
+
+        "``ConcentrationPolarizationType.none``", "Simplifying assumption to ignore concentration polarization"
+        "``ConcentrationPolarizationType.fixed``", "Specify an estimated value for the concentration polarization modulus"
+        "``ConcentrationPolarizationType.calculated``", "Allow model to perform calculation of membrane-interface concentration"
+
+    """))
+    CONFIG.declare("mass_transfer_coefficient", ConfigValue(
+        default=MassTransferCoefficient.none,
+        domain=In(MassTransferCoefficient),
+        description="Mass transfer coefficient in RO feed channel",
+        doc="""
+        Options to account for mass transfer coefficient.
+    
+        **default** - ``MassTransferCoefficient.none`` 
+    
+    .. csv-table::
+        :header: "Configuration Options", "Description"
+    
+        "``MassTransferCoefficient.none``", "Mass transfer coefficient not used in calculations"
+        "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
+        "``MassTransferCoefficient.calculated``", "Allow model to perform calculation of mass transfer coefficient"
+
+"""))
+
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -164,26 +209,6 @@ class ReverseOsmosisData(UnitModelBlockData):
     **default** - None.
     **Valid values:** {
     see property package for documentation.}"""))
-    CONFIG.declare("concentration_polarization_type", ConfigValue(
-        default=ConcentrationPolarizationType.none,
-        domain=In(ConcentrationPolarizationType),
-        description="External concentration polarization effect in RO",
-        doc="""Options to account for concentration polarization.
-    **default** - ConcentrationPolarizationType.none. 
-    **Valid values:** {
-    **ConcentrationPolarizationType.none** - assume no concentration polarization,
-    **ConcentrationPolarizationType.fixed** - specify concentration polarization modulus,
-    **ConcentrationPolarizationType.calculated** - complete calculation of membrane interface concentration.}"""))
-    CONFIG.declare("mass_transfer_coefficient", ConfigValue(
-        default=MassTransferCoefficient.none,
-        domain=In(MassTransferCoefficient),
-        description="Mass transfer coefficient in RO feed channel",
-        doc="""Options to account for mass transfer coefficient.
-    **default** - MassTransferCoefficient.none. 
-    **Valid values:** {
-    **MassTransferCoefficient.none** - mass transfer coefficient not included,
-    **MassTransferCoefficient.fixed** - specify mass transfer coefficient,
-    **MassTransferCoefficient.calculated** - complete calculation of mass transfer coefficient.}"""))
 
     def _process_config(self):
         """Check for configuration errors
@@ -222,21 +247,6 @@ class ReverseOsmosisData(UnitModelBlockData):
                 "'pressure_change_type' must be set to PressureChangeType.fixed_per_stage\nor "
                 "'has_pressure_change' must be set to True"
                 .format(self.config.pressure_change_type))
-
-    def build(self):
-        # Call UnitModel.build to setup dynamics
-        super().build()
-
-        self._process_config()
-
-        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
-
-        units_meta = self.config.property_package.get_metadata().get_derived_units
-
-        # TODO: update IDAES such that solvent and solute lists are automatically created on the parameter block
-        self.io_list = Set(initialize=['in', 'out'])  # inlet/outlet set
-        self.solvent_list = Set()
-        self.solute_list = Set()
         for c in self.config.property_package.component_list:
             comp = self.config.property_package.get_component(c)
             try:
@@ -253,6 +263,26 @@ class ReverseOsmosisData(UnitModelBlockData):
                                      "the provided property package has specified {} solvent components"
                                      .format(len(self.solvent_list)))
 
+    def build(self):
+        """
+        Build the RO model.
+        """
+        # Call UnitModel.build to setup dynamics
+        super().build()
+
+        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
+
+        units_meta = self.config.property_package.get_metadata().get_derived_units
+
+        # TODO: update IDAES such that solvent and solute lists are automatically created on the parameter block
+        self.io_list = Set(initialize=['in', 'out'])  # inlet/outlet set
+        self.solvent_list = Set()
+        self.solute_list = Set()
+
+        # Check configuration errors
+        self._process_config()
+
+
         # Add unit parameters
         self.A_comp = Var(
             self.flowsheet().config.time,
@@ -261,7 +291,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             bounds=(1e-18, 1e-6),
             domain=NonNegativeReals,
             units=units_meta('length')*units_meta('pressure')**-1*units_meta('time')**-1,
-            doc='Solvent permeability coeff.')
+            doc="""Solvent permeability coeff.""")
         self.B_comp = Var(
             self.flowsheet().config.time,
             self.solute_list,
@@ -443,7 +473,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 bounds=(-2e5, -1e3),
                 domain=NegativeReals,
                 units=units_meta('pressure')*units_meta('length')**-1,
-                doc="Decrease in pressure per unit length across feed channel")
+                doc="pressure drop per unit length across feed channel")
 
         if self.config.pressure_change_type == PressureChangeType.calculated:
             self.velocity_io = Var(
@@ -469,7 +499,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 bounds=(-2e5, -1e3),
                 domain=NegativeReals,
                 units=units_meta('pressure')*units_meta('length')**-1,
-                doc="Pressure drop per unit length in feed channel at inlet and outlet")
+                doc="Pressure drop per unit length of feed channel at inlet and outlet")
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(default={
@@ -817,7 +847,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                     * (b.feed_side.properties_out[t].pressure_osm
                     - b.properties_permeate[t].pressure_osm))
 
-    def initialize(blk, initialize_guess=None, state_args=None, outlvl=idaeslog.NOTSET, solver="ipopt", optarg={"tol": 1e-6}):
+    def initialize(blk, initialize_guess=None, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         """
         General wrapper for RO initialization routines
 
@@ -837,7 +867,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                          feed side state block (see documentation of the specific
                          property package) (default = None).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default=None)
             solver : solver object or string indicating which solver to use during
                      initialization, if None provided the default solver will be used
                      (default = None)
@@ -847,16 +877,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver and options
-        # TODO: clean up once IDAES new API for initialize solvers is released
-        if isinstance(solver, str):
-            opt = SolverFactory(solver)
-            opt.options = optarg
-        else:
-            if solver is None:
-                opt = get_default_solver()
-            else:
-                opt = solver
-                opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # assumptions
         if initialize_guess is None:

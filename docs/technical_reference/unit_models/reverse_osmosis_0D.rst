@@ -11,143 +11,19 @@ This reverse osmosis (RO) unit model
 
 .. currentmodule:: proteuslib.unit_models.reverse_osmosis_0D
 
-Example A: Setting up the RO model
-----------------------------------
-The example below shows how to setup a simple RO unit model.
-
-.. code-block:: python
-
-    # Import concrete model from Pyomo
-    from pyomo.environ import ConcreteModel
-    # Import flowsheet block from IDAES core
-    from idaes.core import FlowsheetBlock
-    # Import NaCl property model
-    import proteuslib.property_models.NaCl_prop_pack as props
-    # Import utility tool for calculating scaling factors
-    from idaes.core.util.scaling import calculate_scaling_factors
-    # Import RO model
-    from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
-
-
-    # Create a concrete model, flowsheet, and NaCl property parameter block.
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = props.NaClParameterBlock()
-
-    # Add an RO unit to the flowsheet.
-    m.fs.unit = ReverseOsmosis0D(default={"property_package": m.fs.properties})
-
-    # Specify system variables.
-    m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(0.035)  # mass flow rate of NaCl
-    m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(0.965)  # mass flow rate of water
-    m.fs.unit.inlet.pressure[0].fix(50e5)  # feed pressure
-    m.fs.unit.inlet.temperature[0].fix(298.15)  # feed temperature
-    m.fs.unit.area.fix(50)  # membrane area
-    m.fs.unit.A_comp.fix(4.2e-12)  # membrane water permeability
-    m.fs.unit.B_comp.fix(3.5e-8)  # membrane salt permeability
-    m.fs.unit.permeate.pressure[0].fix(101325)  # permeate pressure
-
-    # Set scaling factors for component mass flowrates.
-    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
-
-    # Calculate scaling factors.
-    calculate_scaling_factors(m)
-
-    # Initialize the model.
-    m.fs.unit.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
-
-Configuration Options
----------------------
-In addition to the core configuration options that are normally included for an IDAES control volume, the RO unit model
-contains options that account for concentration polarization, the mass transfer coefficient, and pressure drop.
-
-**Default options denoted by** **
-
-Configuration Keyword: ``concentration_polarization_type``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. csv-table::
-    :header: "Configuration Options", "Description"
-
-    "``ConcentrationPolarizationType.none`` **", "Simplifying assumption to ignore concentration polarization"
-    "``ConcentrationPolarizationType.fixed``", "Specify an estimated value for the concentration polarization modulus"
-    "``ConcentrationPolarizationType.calculated``", "Allow model to perform calculation of membrane-interface concentration"
-
-Configuration Keyword: ``mass_transfer_coefficient``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. csv-table::
-    :header: "Configuration Options", "Description"
-
-    "``MassTransferCoefficient.none`` **", "Mass transfer coefficient not used in calculations"
-    "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
-    "``MassTransferCoefficient.calculated``", "Allow model to perform calculation of mass transfer coefficient"
-
-
-Configuration Keyword: ``pressure_change_type``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-**Notes:**
-    * **to use any of the** ``pressure_change_type`` **options to account for pressure drop, the configuration keyword** ``has_pressure_change`` **must also be set to** ``True`` **.**
-    * **if a value is specified for pressure change, it should be negative.**
-
-.. csv-table::
-    :header: "Configuration Options", "Description"
-
-    "``PressureChangeType.fixed_per_stage`` **", "Specify an estimated value for pressure drop across the membrane feed channel"
-    "``PressureChangeType.fixed_per_unit_length``", "Specify an estimated value for pressure drop per unit length across the membrane feed channel"
-    "``PressureChangeType.calculated``", "Allow model to perform calculation of pressure drop across the membrane feed channel"
-
-Example B: Configure the RO model to account for concentration polarization and pressure drop
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: python
-
-    # Import concrete model from Pyomo
-    from pyomo.environ import ConcreteModel
-    # Import flowsheet block from IDAES core
-    from idaes.core import FlowsheetBlock
-    # Import NaCl property model
-    import proteuslib.property_models.NaCl_prop_pack as props
-    # Import utility tool for calculating scaling factors
-    import idaes.core.util.scaling as calculate_scaling_factors
-    #Import RO model and configuration classes
-    from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
-                                                           ConcentrationPolarizationType,
-                                                           MassTransferCoefficient,
-                                                           PressureChangeType)
-
-    # Create a concrete model, flowsheet, and NaCl property parameter block.
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = props.NaClParameterBlock()
-
-    # Add an RO unit to the flowsheet and specify configuration options to calculate effects of
-    # concentration polarization and pressure drop.
-    m.fs.unit = ReverseOsmosis0D(default={"property_package": m.fs.properties,
-                                          "has_pressure_change": True,
-                                          "concentration_polarization_type": ConcentrationPolarizationType.calculated,
-                                          "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-                                          "pressure_change_type": PressureChangeType.calculated})
-
 Degrees of Freedom
 ------------------
 Aside from the feed temperature, feed pressure, and component mass flow rates at the inlet, the RO model typically has
 at least 4 degrees of freedom that should be fixed for the unit to be fully specified.
 
-In Example A, the following variables were fixed, in addition to state variables at the inlet:
+Typically, the following variables are fixed, in addition to state variables at the inlet:
     * membrane water permeability, A
     * membrane salt permeability, B
     * permeate pressure
     * membrane area
 
-The degrees of freedom will depend on which RO configuration options are selected. For example, setting
-``has_pressure_change= True`` adds 1 degree of freedom. In this case, the pressure drop ``deltaP`` would need to be fixed
-to eliminate that degree of freedom.
-
-On the other hand, in Example B, configuring the RO unit to calculate concentration polarization effects, mass transfer
-coefficient, and pressure drop would result in 3 more degrees of freedom than Example A. In this case, in addition to the
+On the other hand, configuring the RO unit to calculate concentration polarization effects, mass transfer
+coefficient, and pressure drop would result in 7 degrees of freedom. In this case, in addition to the
 previously fixed variables, we typically fix the following variables to fully specify the unit:
 
     * feed-spacer porosity
@@ -168,44 +44,126 @@ Sets
    "Phases", ":math:`p`", "['Liq']"
    "Components", ":math:`j`", "['H2O', 'NaCl']*"
 
-* Solute depends on the imported property model; example shown here is for the NaCl property model.
-
+*Solute depends on the imported property model; example shown here is for the NaCl property model.
 
 Variables
 ----------
 
 .. csv-table::
-   :header: "Description", "Symbol", "Variable", "Index", "Units"
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Solvent permeability coefficient", ":math:`A`", "A_comp", "[t, j]", ":math:`\text{m/Pa/s}`"
-   "Solvent permeability coefficient", ":math:`B`", "B_comp", "[t, j]", ":math:`\text{m/s}`"
+   "Solute permeability coefficient", ":math:`B`", "B_comp", "[t, j]", ":math:`\text{m/s}`"
    "Mass density of pure water", ":math:`\rho_w`", "dens_solvent", "[p]", ":math:`\text{kg/}\text{m}^3`"
    "Mass flux across membrane", ":math:`J`", "flux_mass_io_phase_comp", "[t, x, p, j]", ":math:`\text{kg/s}\text{/m}^2`"
    "Membrane area", ":math:`A_m`", "area", "None", ":math:`\text{m}^2`"
    "Component recovery rate", ":math:`R_j`", "recovery_mass_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
    "Volumetric recovery rate", ":math:`R`", "recovery_vol_phase", "[t, p]", ":math:`\text{dimensionless}`"
+   "Observed solute rejection", ":math:`r_s`", "rejection_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
+   "Over-pressure ratio", ":math:`P_{f,out}/Δ\pi_{out}`", "over_pressure_ratio", "[t]", ":math:`\text{dimensionless}`"
+   "Mass transfer to permeate", ":math:`M_p`", "mass_transfer_phase_comp", "[t, p, j]", ":math:`\text{kg/s}`"
+
+The following variables are only built when specific configuration key-value pairs are selected.
+
+if ``has_pressure_change`` is set to ``True``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Pressure drop", ":math:`ΔP`", "deltaP", "[t]", ":math:`\text{Pa}`"
+
+if ``concentration_polarization_type`` is set to ``ConcentrationPolarizationType.fixed``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Concentration polarization modulus", ":math:`CP_{mod}`", "cp_modulus", "[t, j]", ":math:`\text{dimensionless}`"
+
+if ``concentration_polarization_type`` is set to ``ConcentrationPolarizationType.calculated``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Mass transfer coefficient in feed channel", ":math:`k_f`", "Kf_io", "[t, x, j]", ":math:`\text{m/s}`"
+
+if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``
+or ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Feed-channel height", ":math:`h_{ch}`", "channel_height", "None", ":math:`\text{m}`"
+   "Hydraulic diameter", ":math:`d_h`", "dh", "None", ":math:`\text{m}`"
+   "Spacer porosity", ":math:`\epsilon_{sp}`", "spacer_porosity", "None", ":math:`\text{dimensionless}`"
+   "Reynolds number", ":math:`Re`", "N_Re_io", "[t, x]", ":math:`\text{dimensionless}`"
 
 
-Constraints
+if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Schmidt number", ":math:`Sc`", "N_Sc_io", "[t, x]", ":math:`\text{dimensionless}`"
+   "Sherwood number", ":math:`Sh`", "N_Sh_io", "[t, x]", ":math:`\text{dimensionless}`"
+
+if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``
+or ``pressure_change_type`` is **NOT** set to ``PressureChangeType.fixed_per_stage``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Membrane length", ":math:`L`", "length", "None", ":math:`\text{m}`"
+   "Membrane width", ":math:`W`", "width", "None", ":math:`\text{m}`"
+
+if ``pressure_change_type`` is set to ``PressureChangeType.fixed_per_unit_length``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Average pressure drop per unit length of feed channel", ":math:`(frac{ΔP}{Δx})_avg`", "dP_dx", "[t]", ":math:`\text{Pa/m}`"
+
+if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Feed-channel velocity", ":math:`v_f`", "velocity_io", "[t, x]", ":math:`\text{m/s}`"
+   "Friction factor", ":math:`f`", "friction_factor_darcy_io", "[t, x]", ":math:`\text{dimensionless}`"
+   "Pressure drop per unit length of feed channel at inlet/outlet", ":math:`ΔP/Δx`", "dP_dx_io", "[t, x]", ":math:`\text{Pa/m}`"
+
+
+Equations
 -----------
-#TODO:
 
 .. csv-table::
    :header: "Description", "Equation"
 
-
-
+   "Water flux across membrane", ":math:`J_{w, x} = \rho_w A(P_{f,x} - P_p - (\pi_{f,m,x}-\pi_{p,x}))`"
+   "Solute flux across membrane", ":math:`J_{s, x} = B(C_{f,m,x} - C_p)`"
+   "Average water flux across membrane", ":math:`J_{w, avg} = \frac{1}{2}\sum_{x} J_{w, x}`"
+   "Average solute flux across membrane", ":math:`J_{s, avg} = \frac{1}{2}\sum_{x} J_{s, x}`"
+   "Permeate mass flow by component j", ":math:`M_{p, j} = A_m J_{j,avg}`"
+   "Membrane-interface concentration", ":math:`C_{f,m}=CP_{mod}*C_f=C_f\exp(\frac{J_w}{k_f})-\frac{J_s}{J_w}(\exp(\frac{J_w}{k_f})-1)`"
+   "Concentration polarization modulus",":math:`C_{f,m}/C_f`"
+   "Mass transfer coefficient",":math:`k_f=\frac{D Sh}{d_h}`"
+   "Sherwood number",":math:`Sh=0.46 (Re Sc)^{0.36}`"
+   "Schmidt number",":math:`Sc=\frac{\mu}{\rho D}`"
+   "Reynolds number",":math:`Re=\frac{\rho v_f d_h}{\mu}`"
+   "Hydraulic diameter",":math:`d_h=\frac{4\epsilon_{sp}}{2/h_{ch} + (1-\epsilon_{sp})8/h_{ch}}`"
+   "Cross-sectional area",":math:`A_c=h_{ch}W\epsilon_{sp}`"
+   "Membrane area",":math:`A_m=LW`"
+   "Pressure drop",":math:`ΔP=(\frac{ΔP}{Δx})_{avg}L`"
+   "Feed-channel velocity",":math:`v_f=Q_f/A_c`"
+   "Friction factor",":math:`f=0.42+\frac{189.3}{Re}`"
+   "Pressure drop per unit length",":math:`\frac{ΔP}{Δx}=\frac{1}{2d_h}f\rho v_f^{2}`"
+   "Component recovery rate",":math:`R_j=\frac{M_{p,j}}{M_{f,in,j}}`"
+   "Volumetric recovery rate",":math:`R=\frac{Q_{p}}{Q_{f,in}}`"
 
 Class Documentation
 -------------------
 
-
-.. autoclass:: ReverseOsmosis0D
+.. automodule:: proteuslib.unit_models.reverse_osmosis_0D
    :members:
-   :noindex:
 
-.. autoclass:: ReverseOsmosisData
-   :members:
-   :noindex:
 
 
