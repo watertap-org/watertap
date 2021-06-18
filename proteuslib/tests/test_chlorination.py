@@ -714,9 +714,6 @@ class TestChlorination():
         model.fs.rxn_params.reaction_NHCl2_K.eps.value = eps
         model.fs.rxn_params.reaction_NCl3_K.eps.value = eps
 
-        for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
-            iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 1/1e10)
-
         iscale.calculate_scaling_factors(model.fs.unit)
 
         assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
