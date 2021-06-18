@@ -695,21 +695,28 @@ class TestChlorination():
         assert hasattr(model.fs.rxn_params, 'reaction_NH2Cl_K')
         assert hasattr(model.fs.rxn_params.reaction_NH2Cl_K, 'eps')
 
-        eps = 1e-30
+    @pytest.mark.component
+    def test_scaling(self, chlorination_obj):
+        model = chlorination_obj
+        eps = 1e-20
 
         # Inherent reactions have eps in the 'thermo_params'
         model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
         model.fs.thermo_params.reaction_NH4_Ka.eps.value = eps
         model.fs.thermo_params.reaction_HOCl_Ka.eps.value = eps
 
+        for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 1/scale)
+
         # Equilibiurm reactions have eps in the 'rxn_params'
         model.fs.rxn_params.reaction_NH2Cl_K.eps.value = eps
         model.fs.rxn_params.reaction_NHCl2_K.eps.value = eps
         model.fs.rxn_params.reaction_NCl3_K.eps.value = eps
 
-    @pytest.mark.component
-    def test_scaling(self, chlorination_obj):
-        model = chlorination_obj
+        for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
+            iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 1/1e10)
+
         iscale.calculate_scaling_factors(model.fs.unit)
 
         assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
