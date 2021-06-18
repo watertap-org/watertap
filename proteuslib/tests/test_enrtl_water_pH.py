@@ -230,7 +230,7 @@ water_thermo_config = {
                        #        we divide here by 1000**2 to perform both necessary
                        #        unit conversions in line.
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                       "k_eq_ref": (10**-14/1000**2,pyunits.mol**2/pyunits.L**2),
+                       "k_eq_ref": (10**-14/1000**2/55.2**2,pyunits.mol**2/pyunits.L**2),
                        "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
@@ -365,8 +365,8 @@ class TestENRTLwater():
     def test_solution_water(self, water_model):
         model = water_model
 
-        pH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"]))
-        pOH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","OH_-"]))
+        pH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"])*55.2)
+        pOH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","OH_-"])*55.2)
 
         assert pytest.approx(7.00000, rel=1e-5) == pH
         assert pytest.approx(7.00000, rel=1e-5) == pOH
@@ -718,16 +718,16 @@ if __name__ == "__main__":
     #model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( zero )
 
     # Added as conjugate base form (should be pH ~ 8.3  --> Got pH ~ 9.1 (8.3 ideal))
-    #model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( zero )
-    #model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( acid )
-    #model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( zero )
-    #model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( acid )
+    model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( zero )
+    model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( acid )
+    model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( zero )
+    model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( acid )
 
     # Added as most basic form (should be pH ~ 10.8  --> Got pH ~ 11.5 (10.8 ideal))
-    model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( acid )
-    model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( zero )
-    model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( zero )
-    model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( 2*acid )
+    #model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( acid )
+    #model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( zero )
+    #model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( zero )
+    #model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( 2*acid )
 
     model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1.-4*zero-acid-value(model.fs.unit.inlet.mole_frac_comp[0, "Na_+"]) )
     model.fs.unit.inlet.pressure.fix(101325.0)
