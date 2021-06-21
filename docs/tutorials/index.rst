@@ -9,10 +9,5 @@ and IDAES share this common base, we refer users unfamiliar with Python or Pyomo
 the IDAES tutorials `Short introduction to Python and Pyomo <https://idaes.github.io/examples-pse/latest/Tutorials/Basics/introduction_short_solution_doc.html>`_ or the 
 `Longer introduction to Python and Pyomo <https://idaes.github.io/examples-pse/latest/Tutorials/Basics/introduction_solution_doc.html>`_.
 
-All of the tutorials below are available in the "tutorials" directory on the ProteusLib
-GitHub Homepage: `<https://github.com/nawi-hub/proteuslib/tree/main/tutorials>`_.
-
-.. toctree::
-   :maxdepth: 1
-
-   tutorial_notebooks/reverse_osmosis_0D.ipynb
+The tutorials included with ProteusLib are available in the "tutorials" directory
+on the ProteusLib GitHub Homepage: `<https://github.com/nawi-hub/proteuslib/tree/main/tutorials>`_.
