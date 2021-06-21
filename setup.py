@@ -82,14 +82,18 @@ setup(
         "pymongo>3",  # database interface
         "fastjsonschema",  # schema validation
         "click",  # command-line tools with Click
-        "json-schema-for-humans",  # pretty JSON schema in HTML/Markdown
-        "myst-parser",  # markdown support for Sphinx
-        "linkify-it-py",
+        # tutorial tests
+        "nbformat"
     ],
     extras_require={
         "dev": [
+            "myst-parser",  # markdown support for Sphinx
+            # other requirements
+            "linkify-it-py",
             "Sphinx",  # docs
             "sphinx_rtd_theme",  # docs
+            "nbsphinx", # docs - convert Jupyter notebooks
+            "json-schema-for-humans",  # pretty JSON schema in HTML
             "black",  # code formatting
             # other requirements
             "pytest",  # test framework

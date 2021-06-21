@@ -18,7 +18,6 @@ from copy import deepcopy
 from pyomo.environ import (Var,
                            Set,
                            Param,
-                           SolverFactory,
                            Suffix,
                            NonNegativeReals,
                            NegativeReals,
@@ -38,7 +37,7 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -271,7 +270,6 @@ class ReverseOsmosisData(UnitModelBlockData):
         # Call UnitModel.build to setup dynamics
         super().build()
 
-
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
@@ -475,7 +473,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 bounds=(-2e5, -1e3),
                 domain=NegativeReals,
                 units=units_meta('pressure')*units_meta('length')**-1,
-                doc="Decrease in pressure per unit length across feed channel")
+                doc="pressure drop per unit length across feed channel")
 
         if self.config.pressure_change_type == PressureChangeType.calculated:
             self.velocity_io = Var(
@@ -501,7 +499,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 bounds=(-2e5, -1e3),
                 domain=NegativeReals,
                 units=units_meta('pressure')*units_meta('length')**-1,
-                doc="Pressure drop per unit length in feed channel at inlet and outlet")
+                doc="Pressure drop per unit length of feed channel at inlet and outlet")
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(default={
@@ -849,7 +847,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                     * (b.feed_side.properties_out[t].pressure_osm
                     - b.properties_permeate[t].pressure_osm))
 
-    def initialize(blk, initialize_guess=None, state_args=None, outlvl=idaeslog.NOTSET, solver="ipopt", optarg={"tol": 1e-6}):
+    def initialize(blk, initialize_guess=None, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         """
         General wrapper for RO initialization routines
 
@@ -869,7 +867,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                          feed side state block (see documentation of the specific
                          property package) (default = None).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default=None)
             solver : solver object or string indicating which solver to use during
                      initialization, if None provided the default solver will be used
                      (default = None)
@@ -879,16 +877,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver and options
-        # TODO: clean up once IDAES new API for initialize solvers is released
-        if isinstance(solver, str):
-            opt = SolverFactory(solver)
-            opt.options = optarg
-        else:
-            if solver is None:
-                opt = get_default_solver()
-            else:
-                opt = solver
-                opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # assumptions
         if initialize_guess is None:

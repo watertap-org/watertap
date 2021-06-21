@@ -22,9 +22,9 @@ from idaes.core import FlowsheetBlock
 from proteuslib.unit_models.pump_isothermal import Pump
 import proteuslib.property_models.seawater_prop_pack as props
 
+from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import (get_default_solver,
-                                     initialization_tester)
+from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_variables_generator,
                                      unscaled_constraints_generator,
@@ -34,7 +34,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
