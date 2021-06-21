@@ -34,6 +34,7 @@ from idaes.generic_models.properties.core.pure.electrolyte import relative_permi
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.eos.enrtl import ENRTL
+from idaes.generic_models.properties.core.eos.enrtl_reference_states import Unsymmetric
 
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
 from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
@@ -573,7 +574,10 @@ carbonic_thermo_config = {
               },
               # End Component list
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL},
+                            "equation_of_state": ENRTL,
+                            "equation_of_state_options": {
+                                    "reference_state": Unsymmetric}
+                            },
                     },
 
         "state_definition": FTPx,
@@ -746,9 +750,9 @@ if __name__ == "__main__":
 
     iscale.calculate_scaling_factors(model.fs.unit)
 
-    solver.options['bound_push'] = 1e-20
+    #solver.options['bound_push'] = 1e-20
     solver.options['mu_init'] = 1e-6
-    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+    #model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     results = solver.solve(model, tee=True)
 
