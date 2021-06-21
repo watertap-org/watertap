@@ -8,6 +8,7 @@ Welcome to ProteusLib's documentation!
    :maxdepth: 2
 
    getting_started/index
+   tutorials/index
    how_to/index
    technical_reference/index
    background/index

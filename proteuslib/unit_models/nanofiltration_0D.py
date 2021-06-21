@@ -16,7 +16,6 @@ from pyomo.environ import (Block,
                            Set,
                            Var,
                            Param,
-                           SolverFactory,
                            Suffix,
                            NonNegativeReals,
                            Reference,
@@ -31,6 +30,7 @@ from idaes.core import (ControlVolume0DBlock,
                         MomentumBalanceType,
                         UnitModelBlockData,
                         useDefault)
+from idaes.core.util import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
@@ -402,8 +402,8 @@ class NanoFiltrationData(UnitModelBlockData):
             blk,
             state_args=None,
             outlvl=idaeslog.NOTSET,
-            solver="ipopt",
-            optarg={"tol": 1e-6}):
+            solver=None,
+            optarg=None):
         """
         General wrapper for pressure changer initialization routines
         Keyword Arguments:
@@ -412,18 +412,16 @@ class NanoFiltrationData(UnitModelBlockData):
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None)
         Returns:
             None
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver options
-        # TODO: update with new initialization solver API for IDAES
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize holdup block
