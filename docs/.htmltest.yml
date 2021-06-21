@@ -1,0 +1,11 @@
+---
+# Configuration file for 'htmltest'.
+#
+# To use:
+#   1) install htmltest  https://github.com/wjdp/htmltest
+#   2) chdir to the docs directory (where this file is)
+#   3) run 'htmltest'
+#   4) observe your broken links
+
+# Directory to scan for HTML files
+DirectoryPath: _build/html
