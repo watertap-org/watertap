@@ -84,6 +84,8 @@ setup(
         # other requirements
         "pytest",  # technically developer, but everyone likes tests
         "pytest-cov", # technically developer, but everyone likes tests
+        # tutorial tests
+        "nbformat",
     ],
     extras_require={
         "dev": [
