@@ -44,7 +44,8 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel',
-    'sphinx.ext.doctest'
+    'sphinx.ext.doctest',
+    'nbsphinx',
 ]
 
 autosectionlabel_prefix_document = True

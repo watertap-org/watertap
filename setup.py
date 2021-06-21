@@ -89,6 +89,7 @@ setup(
         "dev": [
             "Sphinx",  # docs
             "sphinx_rtd_theme",  # docs
+            "nbsphinx", # docs - convert Jupyter notebooks
             "json-schema-for-humans",  # pretty JSON schema in HTML
             "black",  # code formatting
         ],
