@@ -187,4 +187,5 @@ for a chemical system that contains only water.
 There is a significant amount to breakdown here, so let's discuss a couple of things
 step by step...
 
-1. All components need a "type". For this, you have a number of "type" options within IDAES. 
+1. All components need a ``"type"``. For this, you have a number of ``"type"`` options within IDAES.
+Generally, the ``"H2O"`` component should always be a ``Solvent`` within ProteusLib. 
