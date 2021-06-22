@@ -4,19 +4,22 @@ How to Explore a Model with Parameter Sweep
 Overview
 --------
 
-This guide shows you how to use the parameter sweep tool to explore the effect of changing model parameters or decision variables within your ProteusLib model.  This is might be useful, for example, if you have an existing model of a multi-stage treatment train and you'd like to see the effect of varying Pump 1 pressure and Pump 2 pressure independently (where all possible combinations of Pump 1 and Pump 2 pressure will be explicitly tested).  The type and quantity of parameters to be varied are easily changed following steps like the ones below.
+This guide shows you how to use the parameter sweep tool to explore the effect of changing model parameters or decision variables within your ProteusLib model.
+This might be useful, for example, if you have an existing model of a multi-stage treatment train and you'd like to see the effect of varying Pump 1 pressure
+and Pump 2 pressure independently (where all possible combinations of Pump 1 and Pump 2 pressure will be explicitly tested).
+The type and quantity of parameters to be varied are easily changed following steps like the ones below.
 
 How To
 ------
 
-Begin by importing or explicitly programming any functions relating to the following steps
+Begin by importing or explicitly programming any functions relating to the following steps:
 
 1. Building the Pyomo flowsheet model
 2. Simulating the model using an initial condition
 3. Setting up the optimization (e.g., unfixing and setting bounds)
 4. Performing the optimization
 
-For example, the code below imports the 4 critical functions from an existing flowsheet ::
+For example, the code below imports the 4 critical functions from an existing flowsheet for low-salt-rejection RO ::
 
     from LSRRO_model import build_model, simulate, set_up_optimization, optimize
 
