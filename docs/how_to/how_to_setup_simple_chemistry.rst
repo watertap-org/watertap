@@ -12,14 +12,14 @@ to use these built-in objects within your own unit process.
 What you will need
 ^^^^^^^^^^^^^^^^^^
 
-1. [Required] A thermo-properties configuration dictionary
-2. [Optional] A reaction-properties configuration dictionary
-3. [Required] A unit model upon which to build the chemistry module
+1. [Required] A **thermo-properties** configuration dictionary
+2. [Optional] A **reaction-properties** configuration dictionary
+3. [Required] A **unit model** upon which to build the chemistry module
 
 .. note::
 
-    The reaction-properties dictionary is optional for certain unit models and
+    The **reaction-properties** dictionary is optional for certain unit models and
     required for others. Additionally, certain reactions can actually be defined
-    in the thermo-properties dictionary and would therefore NOT be included in
-    the reaction-properties dictionary. The differences will be covered in another
-    how-to guide. 
+    in the **thermo-properties** dictionary and would therefore NOT be included in
+    the **reaction-properties** dictionary. The differences will be covered in another
+    how-to guide.
