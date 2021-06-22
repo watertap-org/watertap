@@ -215,6 +215,12 @@ of state, see `Phases`_ and `EquationOfState`_.
 **(4)** We chose to define the ``"state_definition"`` as ``FTPx``, however, there are many more
 options available. More information can be found in `StateDefinition`_.
 
+.. note::
+
+    Much of the difficulties and complications with setting up a proper **thermo-properties**
+    configuration dictionary can be handled by the **Electrolyte Database** system in
+    ProteusLib (Not yet documented...)
+
 
 The **reaction-properties** configuration dictionary
 ----------------------------------------------------
