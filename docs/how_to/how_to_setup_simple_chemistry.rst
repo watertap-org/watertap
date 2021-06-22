@@ -18,6 +18,7 @@ objects in IDAES. These objects can be used in conjunction with any unit process
 where chemical reactions need to be considered. In this guide, we will cover how
 to use these built-in objects within your own unit process.
 
+
 What you will need
 ------------------
 
@@ -32,6 +33,7 @@ What you will need
     in the **thermo-properties** dictionary and would therefore NOT be included in
     the **reaction-properties** dictionary. The differences will be covered in another
     how-to guide.
+
 
 The **thermo-properties** configuration dictionary
 --------------------------------------------------
@@ -212,3 +214,23 @@ of state, see `Phases`_ and `EquationOfState`_.
 
 **(4)** We chose to define the ``"state_definition"`` as ``FTPx``, however, there are many more
 options available. More information can be found in `StateDefinition`_.
+
+
+The **reaction-properties** configuration dictionary
+----------------------------------------------------
+
+If you did not include reactions in the **thermo-properties** dictionary (a topic
+discussed later) and your system involves reactions, then you MUST also create and
+provide a **reaction-properties** configuration dictionary. Unlike the **thermo-properties**
+configuration dictionary, most of the keys within the **reaction-properties** dictionary
+are optional and depend on your system. The major keys to be aware of are as follows...
+
++-----------------------+-------------------------------------------------------------------------------------------+
+|     Key               |  Description                                                                              |
++=======================+===========================================================================================+
+| base_units            | dictionary containing the base units the model uses (same as the **thermo-properties**)   |
++-----------------------+-------------------------------------------------------------------------------------------+
+| equilibrium_reactions | dictionary containing the full set of equilibrium reactions in the system                 |
++-----------------------+-------------------------------------------------------------------------------------------+
+| rate_reactions        | dictionary containing the full set of rate reactions in the system                        |
++-----------------------+-------------------------------------------------------------------------------------------+
