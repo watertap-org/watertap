@@ -188,4 +188,8 @@ There is a significant amount to breakdown here, so let's discuss a couple of th
 step by step...
 
 1. All components need a ``"type"``. For this, you have a number of ``"type"`` options within IDAES.
-Generally, the ``"H2O"`` component should always be a ``Solvent`` within ProteusLib. 
+Generally, the ``"H2O"`` component should always be a ``Solvent`` within ProteusLib. Charged species
+will always be either a ``Cation`` or ``Anion`` depending on the sign of their actual ``"charge"``.
+More information on ``"components"`` can be found at `Components`_.
+
+2. 
