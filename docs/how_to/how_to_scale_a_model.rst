@@ -23,16 +23,51 @@ would be between 0.01 and 100. For example, if a variable is expected to have a 
 Scaling factors are located in the ``scaling_factor`` object on each block of a model. 
 This object is a Pyomo Suffix and can be displayed to show what variables have scaling factors and their values as shown below:
 
-.. code-block:: python
+.. testsetup:: [scaling_factor]
+
+   # quiet idaes logs
+   import idaes.logger as idaeslogger
+   idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
+   idaeslogger.getLogger('ideas.core.util.scaling').setLevel('CRITICAL')
+   idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
+
+   from pyomo.environ import ConcreteModel
+   from idaes.core import FlowsheetBlock
+   import proteuslib.property_models.NaCl_prop_pack as props
+   from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
+
+   m = ConcreteModel()
+   m.fs = FlowsheetBlock(default={"dynamic": False})
+   m.fs.properties = props.NaClParameterBlock()
+
+   m.fs.unit = ReverseOsmosis0D(default={"property_package": m.fs.properties})
+
+   blk = m.fs.unit
+
+   var = blk.A_comp
+   sf = 1e11
+   ind = (0, 'H2O')
+
+   # same index as blk.A_comp
+   con = blk.eq_recovery_mass_phase_comp
+
+.. testcode:: [scaling_factor]
 
     # where blk is the block of interest (e.g. m.fs.unit)
     blk.scaling_factor.display()
+
+..
+    accept any output from display
+
+.. testoutput:: [scaling_factor]
+
+   ...
 
 For most variables, the scaling factors are set by default or calculated with the ``calculate_scaling_factors`` function (described later). 
 However, several extensive variables (e.g. flowrates, work, area) are case specific and should be set by the user. 
 A warning will be provided if users do not set the scaling factors for extensive variables. Users can set a scaling factor for a variable with the following:
 
-.. code-block:: python
+.. testcode:: [scaling_factor]
 
     from idaes.core.util.scaling import set_scaling_factor
     # var is the variable, and sf is the scaling factor
@@ -45,7 +80,28 @@ A warning will be provided if users do not set the scaling factors for extensive
 Typically, a user would like to set the scaling factor for extensive variables on all property StateBlocks on a flowsheet, rather than for each individual StateBlock. 
 A user can achieve this by setting the default scaling at the property ParameterBlock as shown below:
 
-.. code-block:: python
+.. testsetup:: [set_default_scaling]
+
+   # quiet idaes logs
+   import idaes.logger as idaeslogger
+   idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
+   idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
+
+   from pyomo.environ import ConcreteModel
+   from idaes.core import FlowsheetBlock
+   import proteuslib.property_models.NaCl_prop_pack as props
+   from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
+
+   m = ConcreteModel()
+   m.fs = FlowsheetBlock(default={"dynamic": False})
+   m.fs.properties = props.NaClParameterBlock()
+
+   prop = m.fs.properties
+   var_name = 'flow_mass_phase_comp'
+   sf = 1e1
+   ind = ('Liq', 'H2O')
+
+.. testcode:: [set_default_scaling]
 
     # where prop is the property parameter block, var_name is the variable string name, ind is the variable index as a tuple, and sf is the scaling factor
     prop.set_default_scaling(var_name, sf, index=ind)
@@ -60,7 +116,7 @@ For example, a mass balance constraint should be scaled with the scaling factor 
 
 Unlike the variables, constraints are directly transformed before passing the model to the IPOPT solver. Users can transform the constraints with the following:
 
-.. code-block:: python
+.. testcode:: [scaling_factor]
 
     from idaes.core.util.scaling import constraint_scaling_transform
     # where con is the constraint, ind is the constraint index, and sf is the scaling factor
@@ -69,10 +125,16 @@ Unlike the variables, constraints are directly transformed before passing the mo
 The scaling factor used to transform each constraint is recorded in the ``constraint_transformed_scaling_factor`` Pyomo Suffix. 
 Users can observe these values by displaying the suffix as follows:
 
-.. code-block:: python
+.. testcode:: [scaling_factor]
 
     # where blk is the block of interest (e.g. m.fs.unit)
     blk.constraint_transformed_scaling_factor.display()
+..
+    accept any output from display
+
+.. testoutput:: [scaling_factor]
+
+   ...
 
 .. note::
 
@@ -86,7 +148,7 @@ developer provided default values and user provided case specific scaling factor
 the function will use a non-case specific default value and provide a warning that states what scaling factor is missing. The function can be used as follows: 
 
 
-.. code-block:: python
+.. testcode:: [scaling_factor]
 
     from idaes.core.util.scaling import calculate_scaling_factors
     calculate_scaling_factors(m)
@@ -101,7 +163,7 @@ Passing scaling factors to the solver
 
 In order to pass scaling factors to IPOPT, the user-scaling option must be specified as shown below.
 
-.. code-block:: python
+.. testcode:: [scaling_factor]
 
     from pyomo.environ import SolverFactory
     # Create IPOPT solver object
