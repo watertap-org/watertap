@@ -87,11 +87,11 @@ The user can specify the scaling factors for component mass flowrates with the f
    # relevant assignments
    m = ConcreteModel()
    m.fs = FlowsheetBlock(default={"dynamic": False})
-   m.fs.properties = props.SeawaterParameterBlock()
+   m.fs.properties = props.NaClParameterBlock()
 
    # set scaling for component mass flowrate
-   m.fs.properties.set_default_scaling('flow_mass_comp', 1, index='H2O')
-   m.fs.properties.set_default_scaling('flow_mass_comp', 1e2, index='NaCl')
+   m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
+   m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
 
    # calculate scaling factors
    calculate_scaling_factors(m.fs)
