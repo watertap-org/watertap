@@ -1,14 +1,13 @@
 How to setup simple chemistry
 -----------------------------
 
-Get the latest news at `CNN`_.
-
-.. _CNN: http://cnn.com/
+.. _GenericProperties: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/index.html#generic-property-package-framework
+.. _GenericReactions: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/index.html
 
 In ProteusLib, chemistry modules leverage the Generic Properties
-(https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/index.html#generic-property-package-framework)
+(`GenericProperties`_.)
 and Generic Reactions
-(https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/index.html)
+(`GenericReactions`_.)
 objects in IDAES. These objects can be used in conjunction with any unit process
 where chemical reactions need to be considered. In this guide, we will cover how
 to use these built-in objects within your own unit process.
