@@ -84,11 +84,14 @@ setup(
         # other requirements
         "pytest",  # technically developer, but everyone likes tests
         "pytest-cov", # technically developer, but everyone likes tests
+        # tutorial tests
+        "nbformat",
     ],
     extras_require={
         "dev": [
             "Sphinx",  # docs
             "sphinx_rtd_theme",  # docs
+            "nbsphinx", # docs - convert Jupyter notebooks
             "json-schema-for-humans",  # pretty JSON schema in HTML
             "black",  # code formatting
         ],
