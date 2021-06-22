@@ -23,3 +23,20 @@ What you will need
     in the **thermo-properties** dictionary and would therefore NOT be included in
     the **reaction-properties** dictionary. The differences will be covered in another
     how-to guide.
+
+The **thermo-properties** configuration dictionary
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You will always be required to provide a configuration dictionary for thermodynamic
+properties of the chemical species of interest in your process. At a minimum, the
+**thermo-properties** dictionary MUST contain the following keys...
+
++----------------------+-------------------------------------------------------------------------------------------+
+|     Key              |  Description                                                                              |
++======================+===========================================================================================+
+| components           | dictionary containing the chemical species of interest and their properties               |
++----------------------+-------------------------------------------------------------------------------------------+
+| phases               | dictionary containing the phases (gas, liquid, etc) for the system and its species        |
++----------------------+-------------------------------------------------------------------------------------------+
+| state_definition     | IDAES object which defines how inlet/outlet ports define the initial state of the system  |
++----------------------+-------------------------------------------------------------------------------------------+
