@@ -187,9 +187,12 @@ for a chemical system that contains only water.
 There is a significant amount to breakdown here, so let's discuss a couple of things
 step by step...
 
-1. All components need a ``"type"``. For this, you have a number of ``"type"`` options within IDAES.
+(1) All components need a ``"type"``. For this, you have a number of ``"type"`` options within IDAES.
 Generally, the ``"H2O"`` component should always be a ``Solvent`` within ProteusLib. Charged species
 will always be either a ``Cation`` or ``Anion`` depending on the sign of their actual ``"charge"``.
 More information on ``"components"`` can be found at `Components`_.
 
-2. 
+(2) All components need to have methods defined for calculating thermodynamic properties such as
+``"dens_mol_liq_comp"``, ``"cp_mol_liq_comp"``, ``"enth_mol_liq_comp"``, and ``"entr_mol_liq_comp"``.
+In this example, we used the ``Perrys`` method for ``"H2O"`` and the ``Constant`` method for
+both of our ions. 
