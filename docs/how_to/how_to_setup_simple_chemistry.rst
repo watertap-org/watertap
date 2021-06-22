@@ -188,12 +188,12 @@ for a chemical system that contains only water.
 There is a significant amount to breakdown here, so let's discuss a couple of things
 step by step...
 
-(1) All components need a ``"type"``. For this, you have a number of ``"type"`` options within IDAES.
+**(1)** All components need a ``"type"``. For this, you have a number of ``"type"`` options within IDAES.
 Generally, the ``"H2O"`` component should always be a ``Solvent`` within ProteusLib. Charged species
 will always be either a ``Cation`` or ``Anion`` depending on the sign of their actual ``"charge"``.
 More information on ``"components"`` can be found at `Components`_.
 
-(2) All components need to have methods defined for calculating thermodynamic properties such as
+**(2)** All components need to have methods defined for calculating thermodynamic properties such as
 ``"dens_mol_liq_comp"``, ``"cp_mol_liq_comp"``, ``"enth_mol_liq_comp"``, and ``"entr_mol_liq_comp"``.
 In this example, we used the ``Perrys`` method for ``"H2O"`` and the ``Constant`` method for
 both of our ions. When we declare a specific method to calculate these properties, we are then
@@ -201,7 +201,7 @@ REQUIRED to include specific parameter information in the ``"parameter_data"`` d
 defined within each component dictionary. For additional information regarding those parameter
 needs, have a look at `Perrys`_ and `Constant`_ methods in IDAES.
 
-(3) In this example, we are just setting up a configuration for water only. Thus, we are
+**(3)** In this example, we are just setting up a configuration for water only. Thus, we are
 not particularly interested in any other phases. In this case, we define the ``"phases"``
 dictionary to contain a single phase we named ``'Liq'`` and declared this to be an ``AqueousPhase``.
 In ProteusLib, most of our models will be using ``AqueousPhase``, but may add additional phases
@@ -210,5 +210,5 @@ must also define a method for the ``"equation_of_state"`` argument. In this case
 that the phase behaves under the ``Ideal`` assumption. For more information on phases and equations
 of state, see `Phases`_ and `EquationOfState`_.
 
-(4) We chose to define the ``"state_definition"`` as ``FTPx``, however, there are many more
+**(4)** We chose to define the ``"state_definition"`` as ``FTPx``, however, there are many more
 options available. More information can be found in `StateDefinition`_.
