@@ -1,5 +1,5 @@
 How to setup simple chemistry
------------------------------
+=============================
 
 .. _GenericProperties: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/index.html#generic-property-package-framework
 .. _GenericReactions: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/index.html
@@ -13,7 +13,7 @@ where chemical reactions need to be considered. In this guide, we will cover how
 to use these built-in objects within your own unit process.
 
 What you will need
-^^^^^^^^^^^^^^^^^^
+------------------
 
 1. [Required] A **thermo-properties** configuration dictionary
 2. [Optional] A **reaction-properties** configuration dictionary
@@ -28,7 +28,7 @@ What you will need
     how-to guide.
 
 The **thermo-properties** configuration dictionary
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------------------------------
 
 You will always be required to provide a configuration dictionary for thermodynamic
 properties of the chemical species of interest in your process. At a minimum, the
@@ -54,3 +54,8 @@ properties of the chemical species of interest in your process. At a minimum, th
     between the system's phases. An in depth discussion of all options and methods
     is beyond the scope of this guide. For additional information, refer to the IDAES
     documentation (`GenericProperties`_).
+
+Example thermo-properties configuration dictionary
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For this, 
