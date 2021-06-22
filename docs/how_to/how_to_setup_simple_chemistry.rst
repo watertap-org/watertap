@@ -40,3 +40,14 @@ properties of the chemical species of interest in your process. At a minimum, th
 +----------------------+-------------------------------------------------------------------------------------------+
 | state_definition     | IDAES object which defines how inlet/outlet ports define the initial state of the system  |
 +----------------------+-------------------------------------------------------------------------------------------+
+| base_units           | dictionary containing the base units the model will use for all equations in the system   |
++----------------------+-------------------------------------------------------------------------------------------+
+
+.. note::
+
+    Depending on your system, there may be additional keys in the **thermo-properties**
+    configuration dictionary that may be required. For instance, multi-phase problems
+    also require you to define how the model should represent the phase equilibria
+    between the system's phases. An in depth discussion of all options and methods
+    is beyond the scope of this guide. For additional information, refer to the IDAES
+    documentation (https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/index.html#generic-property-package-framework).  
