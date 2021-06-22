@@ -19,7 +19,6 @@ from pyomo.environ import (Block,
                            NonNegativeReals,
                            Reals,
                            value,
-                           SolverFactory,
                            units as pyunits)
 
 # Import IDAES cores
@@ -34,7 +33,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.initialization import revert_state_vars
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
 
 _log = idaeslog.getLogger(__name__)
@@ -261,18 +260,7 @@ class PressureExchangerData(UnitModelBlockData):
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="properties")
 
         # Set solver and options
-        # TODO: clean up once IDAES new API for initialize solvers is released
-        if optarg is None:
-            optarg = {}
-        if isinstance(solver, str):
-            opt = SolverFactory(solver)
-            opt.options = optarg
-        else:
-            if solver is None:
-                opt = get_default_solver()
-            else:
-                opt = solver
-                opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # initialize inlets
         flags_low_in = self.low_pressure_side.properties_in.initialize(
