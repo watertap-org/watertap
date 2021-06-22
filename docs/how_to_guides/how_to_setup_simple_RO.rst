@@ -3,7 +3,7 @@ How to setup a simple RO model
 
 The example below shows how to setup and initialize a simple RO unit model.
 
-.. code-block:: python
+.. testcode::
 
     # Import concrete model from Pyomo
     from pyomo.environ import ConcreteModel
@@ -45,4 +45,11 @@ The example below shows how to setup and initialize a simple RO unit model.
     # Initialize the model.
     m.fs.unit.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
 
+..
+   Accept any output from the above block to allow printing
+   of IDAES logs
 
+.. testoutput::
+   :hide:
+
+   ...
