@@ -55,3 +55,141 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
     CONFIG = UnitModelBlockData.CONFIG()
 
+    # Template for config arguments for feed and permeate side
+    _SideTemplate = ConfigBlock()
+
+    _SideTemplate.declare("dynamic", ConfigValue(
+        default=False,
+        domain=In([False]),
+        description="Dynamic model flag - must be False",
+        doc="""Indicates whether this model will be dynamic or not.
+    **default** = False. RO units do not yet support dynamic
+    behavior."""))
+
+    _SideTemplate.declare("has_holdup", ConfigValue(
+            default=False,
+            domain=In([False]),
+            description="Holdup construction flag",
+            doc="""Indicates whether holdup terms should be constructed or not.
+    **default** - False. RO units do not have defined volume, thus
+    this must be False."""))
+
+    _SideTemplate.declare("material_balance_type", ConfigValue(
+            default=MaterialBalanceType.useDefault,
+            domain=In(MaterialBalanceType),
+            description="Material balance construction flag",
+            doc="""Indicates what type of mass balance should be constructed,
+    **default** - MaterialBalanceType.useDefault.
+    **Valid values:** {
+    **MaterialBalanceType.useDefault - refer to property package for default
+    balance type
+    **MaterialBalanceType.none** - exclude material balances,
+    **MaterialBalanceType.componentPhase** - use phase component balances,
+    **MaterialBalanceType.componentTotal** - use total component balances,
+    **MaterialBalanceType.elementTotal** - use total element balances,
+    **MaterialBalanceType.total** - use total material balance.}"""))
+
+    _SideTemplate.declare("energy_balance_type", ConfigValue(
+            default=EnergyBalanceType.useDefault,
+            domain=In(EnergyBalanceType),
+            description="Energy balance construction flag",
+            doc="""Indicates what type of energy balance should be constructed,
+    **default** - EnergyBalanceType.useDefault.
+    **Valid values:** {
+    **EnergyBalanceType.useDefault - refer to property package for default
+    balance type
+    **EnergyBalanceType.none** - exclude energy balances,
+    **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
+    **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
+    **EnergyBalanceType.energyTotal** - single energy balance for material,
+    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
+
+    _SideTemplate.declare("momentum_balance_type", ConfigValue(
+            default=MomentumBalanceType.pressureTotal,
+            domain=In(MomentumBalanceType),
+            description="Momentum balance construction flag",
+            doc="""Indicates what type of momentum balance should be constructed,
+    **default** - MomentumBalanceType.pressureTotal.
+    **Valid values:** {
+    **MomentumBalanceType.none** - exclude momentum balances,
+    **MomentumBalanceType.pressureTotal** - single pressure balance for material,
+    **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
+    **MomentumBalanceType.momentumTotal** - single momentum balance for material,
+    **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
+
+    _SideTemplate.declare("has_pressure_change", ConfigValue(
+            default=False,
+            domain=In([True, False]),
+            description="Pressure change term construction flag",
+            doc="""Indicates whether terms for pressure change should be
+    constructed,
+    **default** - False.
+    **Valid values:** {
+    **True** - include pressure change terms,
+    **False** - exclude pressure change terms.}"""))
+
+    _SideTemplate.declare("property_package", ConfigValue(
+            default=None,
+            domain=is_physical_parameter_block,
+            description="Property package to use for control volume",
+            doc="""Property parameter object used to define property calculations
+    **default** - useDefault.
+    **Valid values:** {
+    **useDefault** - use default package from parent model or flowsheet,
+    **PhysicalParameterObject** - a PhysicalParameterBlock object.}"""))
+
+    _SideTemplate.declare("property_package_args", ConfigValue(
+            default={},
+            description="Arguments for constructing property packages",
+            doc="""A ConfigBlock with arguments to be passed to a property block(s)
+    and used when constructing these.
+    **default** - None.
+    **Valid values:** {
+    see property package for documentation.}"""))
+
+    _SideTemplate.declare(
+        "transformation_method",
+        ConfigValue(
+            default=useDefault,
+            description="Discretization method to use for DAE transformation",
+            doc="""Discretization method to use for DAE transformation. See Pyomo
+    documentation for supported transformations."""))
+
+    _SideTemplate.declare("transformation_scheme", ConfigValue(
+            default=useDefault,
+            description="Discretization scheme to use for DAE transformation",
+            doc="""Discretization scheme to use when transforming domain. See
+    Pyomo documentation for supported schemes."""))
+
+    # Create individual config blocks for feed and permeate side
+    CONFIG.declare("feed_side", _SideTemplate(doc="feed side config arguments"))
+    CONFIG.declare("permeate_side", _SideTemplate(doc="permeate side config arguments"))
+
+    # Common config args for both sides
+    CONFIG.declare("finite_elements", ConfigValue(
+            default=20,
+            domain=int,
+            description="Number of finite elements in length domain",
+            doc="""Number of finite elements to use when discretizing length 
+            domain (default=20)"""))
+
+    CONFIG.declare("collocation_points", ConfigValue(
+            default=5,
+            domain=int,
+            description="Number of collocation points per finite element",
+            doc="""Number of collocation points to use per finite element when
+            discretizing length domain (default=5)"""))
+
+    def build(self):
+        """
+        Build 1D RO model (pre-DAE transformation).
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        # Call UnitModel.build to setup dynamics
+        super().build()
+
