@@ -5,9 +5,9 @@ How to setup simple chemistry
 .. _GenericReactions: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/index.html
 
 In ProteusLib, chemistry modules leverage the Generic Properties
-(`GenericProperties`_.)
+(`GenericProperties`_)
 and Generic Reactions
-(`GenericReactions`_.)
+(`GenericReactions`_)
 objects in IDAES. These objects can be used in conjunction with any unit process
 where chemical reactions need to be considered. In this guide, we will cover how
 to use these built-in objects within your own unit process.
@@ -53,4 +53,4 @@ properties of the chemical species of interest in your process. At a minimum, th
     also require you to define how the model should represent the phase equilibria
     between the system's phases. An in depth discussion of all options and methods
     is beyond the scope of this guide. For additional information, refer to the IDAES
-    documentation (https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/index.html#generic-property-package-framework).
+    documentation (`GenericProperties`_).
