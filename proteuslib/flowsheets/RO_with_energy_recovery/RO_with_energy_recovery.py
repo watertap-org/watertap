@@ -22,6 +22,7 @@ from pyomo.environ import (ConcreteModel,
 from pyomo.network import Arc
 import pyomo.util.infeasible as infeas
 from idaes.core import FlowsheetBlock
+from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (solve_indexed_blocks,
                                             propagate_state,
@@ -44,25 +45,22 @@ import proteuslib.flowsheets.RO_with_energy_recovery.financials as financials
 
 def main():
     # set up solver
-    solver_dict = {'solver_str': 'ipopt',
-                   'solver_opt': {'nlp_scaling_method': 'user-scaling'}}
-    solver_dict['solver'] = SolverFactory(solver_dict['solver_str'])
-    solver_dict['solver'].options = solver_dict['solver_opt']
+    solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
 
     # build, set, and initialize
     m = build()
-    set_operating_conditions(m, solver_dict=solver_dict)
-    initialize_system(m, solver_dict=solver_dict)
+    set_operating_conditions(m, solver=solver)
+    initialize_system(m, solver=solver)
 
     # simulate and display
-    solve(m, solver=solver_dict['solver'])
+    solve(m, solver=solver)
     print('\n***---Simulation results---***')
     display_system(m)
     display_design(m)
     display_state(m)
 
     # optimize and display
-    optimize(m, solver=solver_dict['solver'])
+    optimize(m, solver=solver)
     print('\n***---Optimization results---***')
     display_system(m)
     display_design(m)
@@ -139,7 +137,7 @@ def build():
     return m
 
 
-def set_operating_conditions(m, solver_dict=None):
+def set_operating_conditions(m, solver):
     # ---specifications---
     # feed
     feed_flow_mass = 1  # feed mass flow rate [kg/s]
@@ -160,7 +158,7 @@ def set_operating_conditions(m, solver_dict=None):
         over_pressure=0.3,
         water_recovery=0.5,
         NaCl_passage=0.01,
-        solver=solver_dict['solver'])
+        solver=solver)
     m.fs.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
 
     # pressure exchanger
@@ -187,7 +185,7 @@ def set_operating_conditions(m, solver_dict=None):
         value(m.fs.feed.properties[0].temperature)
     m.fs.RO.feed_side.properties_in[0].pressure = \
         value(m.fs.P1.control_volume.properties_out[0].pressure)
-    RO_area = calculate_RO_area(unit=m.fs.RO, water_recovery=0.5, solver_dict=solver_dict)
+    RO_area = calculate_RO_area(unit=m.fs.RO, water_recovery=0.5, solver=solver)
     m.fs.RO.area.fix(RO_area)
 
     # check degrees of freedom
@@ -234,7 +232,7 @@ def calculate_operating_pressure(feed_state_block=None, over_pressure=0.15,
     return value(t.brine[0].pressure_osm) * (1 + over_pressure)
 
 
-def calculate_RO_area(unit=None, water_recovery=0.5, solver_dict=None):
+def calculate_RO_area(unit=None, water_recovery=0.5, solver=None):
     """
     determine RO membrane area required to achieve the specified water recovery:
         unit:  the RO unit model, e.g. m.fs.RO, it should have its inlet feed state block
@@ -244,7 +242,7 @@ def calculate_RO_area(unit=None, water_recovery=0.5, solver_dict=None):
         solver: solver object to be used (default=None)
     """
     # intialize unit
-    unit.initialize(solver=solver_dict['solver_str'], optarg=solver_dict['solver_opt'])
+    unit.initialize(optarg=solver.options if solver else None)
     # fix inlet conditions
     flags = fix_state_vars(unit.feed_side.properties_in)
     # fix unit water recovery
@@ -252,7 +250,7 @@ def calculate_RO_area(unit=None, water_recovery=0.5, solver_dict=None):
         unit.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'].value * (1 - water_recovery))
     # solve for unit area
     check_dof(unit)
-    solve(unit, solver=solver_dict['solver'])
+    solve(unit, solver=solver)
     # unfix variables
     revert_state_vars(unit.feed_side.properties_in, flags)
     unit.feed_side.properties_out[0].flow_mass_phase_comp['Liq', 'H2O'].unfix()
@@ -260,6 +258,8 @@ def calculate_RO_area(unit=None, water_recovery=0.5, solver_dict=None):
 
 
 def solve(blk, solver=None, tee=False):
+    if solver is None:
+        solver = get_solver(optarg={'nlp_scaling_method': 'user-scaling'})
     results = solver.solve(blk, tee=tee)
     check_solve(results)
 
@@ -278,24 +278,22 @@ def check_solve(results):
                            "or that the model is poorly scaled.")
 
 
-def initialize_system(m, solver_dict=None):
-    solver_str = solver_dict['solver_str']
-    solver_opt = solver_dict['solver_opt']
-    solver = solver_dict['solver']
+def initialize_system(m, solver=None):
+
+    optarg = solver.options if solver else None
 
     # ---initialize feed block---
-    m.fs.feed.initialize(solver=solver_str, optarg=solver_opt)
+    m.fs.feed.initialize(optarg=optarg)
 
     # ---initialize splitter and pressure exchanger---
     # pressure exchanger high pressure inlet
     propagate_state(m.fs.s06)  # propagate to PXR high pressure inlet from RO retentate
-    m.fs.PXR.high_pressure_side.properties_in.initialize(
-        solver=solver_str, optarg=solver_opt)
+    m.fs.PXR.high_pressure_side.properties_in.initialize(optarg=optarg)
 
     # splitter inlet
     propagate_state(m.fs.s01)  # propagate to splitter inlet from feed
     m.fs.S1.mixed_state[0].mass_frac_phase_comp  # touch property, so that it is built and can be solved for
-    m.fs.S1.mixed_state.initialize(solver=solver_str, optarg=solver_opt)
+    m.fs.S1.mixed_state.initialize(optarg=optarg)
 
     # splitter outlet to PXR, enforce same flow_vol as PXR high pressure inlet
     m.fs.S1.PXR_state[0].pressure.fix(value(m.fs.S1.mixed_state[0].pressure))
@@ -317,30 +315,30 @@ def initialize_system(m, solver_dict=None):
     m.fs.S1.PXR_state[0].flow_mass_phase_comp['Liq', 'NaCl'].fix()
 
     # splitter initialization
-    m.fs.S1.initialize(solver=solver_str, optarg=solver_opt)
+    m.fs.S1.initialize(optarg=optarg)
     m.fs.S1.PXR_state[0].flow_mass_phase_comp['Liq', 'NaCl'].unfix()
 
     # pressure exchanger low pressure inlet
     propagate_state(m.fs.s08)
 
     # pressure exchanger initialization
-    m.fs.PXR.initialize(solver=solver_str, optarg=solver_opt)
+    m.fs.PXR.initialize(optarg=optarg)
 
     # ---initialize pump 1---
     propagate_state(m.fs.s02)
-    m.fs.P1.initialize(solver=solver_str, optarg=solver_opt)
+    m.fs.P1.initialize(optarg=optarg)
 
     # ---initialize pump 2---
     propagate_state(m.fs.s09)
     m.fs.P2.control_volume.properties_out[0].pressure.fix(
         value(m.fs.P2.control_volume.properties_out[0].pressure))
-    m.fs.P2.initialize(solver=solver_str, optarg=solver_opt)
+    m.fs.P2.initialize(optarg=optarg)
     m.fs.P2.control_volume.properties_out[0].pressure.unfix()
 
     # ---initialize mixer---
     propagate_state(m.fs.s03)
     propagate_state(m.fs.s10)
-    m.fs.M1.initialize(solver=solver_str, optarg=solver_opt, outlvl=idaeslog.INFO)
+    m.fs.M1.initialize(optarg=optarg, outlvl=idaeslog.INFO)
 
 
 def optimize(m, solver=None):
