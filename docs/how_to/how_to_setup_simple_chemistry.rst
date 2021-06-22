@@ -63,6 +63,19 @@ for a chemical system that contains only water.
 
 .. code-block:: python
 
+    # Importing the object for units from pyomo
+    from pyomo.environ import units as pyunits
+
+    # Imports from idaes core
+    from idaes.core import AqueousPhase
+    from idaes.core.components import Solvent, Cation, Anion
+
+    # Imports from idaes generic models
+    import idaes.generic_models.properties.core.pure.Perrys as Perrys
+    from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
+    from idaes.generic_models.properties.core.state_definitions import FTPx
+    from idaes.generic_models.properties.core.eos.ideal import Ideal
+
     # Configuration dictionary
     thermo_config = {
         "components": {
