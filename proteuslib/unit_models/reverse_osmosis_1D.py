@@ -37,6 +37,9 @@ from idaes.core import (ControlVolume1DBlock,
                         useDefault,
                         FlowDirection)
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.misc import add_object_reference
+from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.core.util.constants import Constants as CONST
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_solver, scaling as iscale
 
@@ -128,7 +131,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
     **True** - include pressure change terms,
     **False** - exclude pressure change terms.}"""))
 
-    _SideTemplate.declare("property_package", ConfigValue(
+    CONFIG.declare("property_package", ConfigValue(
             default=None,
             domain=is_physical_parameter_block,
             description="Property package to use for control volume",
@@ -138,7 +141,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
     **useDefault** - use default package from parent model or flowsheet,
     **PhysicalParameterObject** - a PhysicalParameterBlock object.}"""))
 
-    _SideTemplate.declare("property_package_args", ConfigValue(
+    CONFIG.declare("property_package_args", ConfigValue(
             default={},
             description="Arguments for constructing property packages",
             doc="""A ConfigBlock with arguments to be passed to a property block(s)
@@ -181,7 +184,22 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             discretizing length domain (default=5)"""))
 
     def _process_config(self):
-        pass  #TODO: add config errors here
+        #TODO: add config errors here
+        for c in self.config.property_package.component_list:
+            comp = self.config.property_package.get_component(c)
+            try:
+                if comp.is_solvent():
+                    self.solvent_list.add(c)
+                if comp.is_solute():
+                    self.solute_list.add(c)
+            except TypeError:
+                raise ConfigurationError("RO model only supports one solvent and one or more solutes,"
+                                         "the provided property package has specified a component '{}' "
+                                         "that is not a solvent or solute".format(c))
+        if len(self.solvent_list) > 1:
+            raise ConfigurationError("RO model only supports one solvent component,"
+                                     "the provided property package has specified {} solvent components"
+                                     .format(len(self.solvent_list)))
 
     def build(self):
         """
@@ -198,31 +216,30 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
+        self.solvent_list = Set()
+        self.solute_list = Set()
         self._process_config()
-
-        units_meta = self.config.property_package.get_metadata().get_derived_units
 
         # ==========================================================================
         """ Build 1D Control volume for feed side"""
         self.feed_side = ControlVolume1DBlock(default={
             "dynamic": self.config.feed_side.dynamic,
             "has_holdup": self.config.feed_side.has_holdup,
-            "property_package": self.config.feed_side.property_package,
-            "property_package_args": self.config.feed_side.property_package_args,
+            "property_package": self.config.property_package,
+            "property_package_args": self.config.property_package_args,
             "transformation_method": self.config.transformation_method,
             "transformation_scheme": self.config.transformation_scheme,
             "finite_elements": self.config.finite_elements,
             "collocation_points" self.config.collocation_points
         })
 
-
         # ==========================================================================
         """ Build 1D Control volume for permeate side"""
         self.permeate_side = ControlVolume1DBlock(default={
             "dynamic": self.config.permeate_side.dynamic,
             "has_holdup": self.config.permeate_side.has_holdup,
-            "property_package": self.config.permeate_side.property_package,
-            "property_package_args": self.config.permeate_side.property_package_args,
+            "property_package": self.config.property_package,
+            "property_package_args": self.config.property_package_args,
             "transformation_method": self.config.transformation_method,
             "transformation_scheme": self.config.transformation_scheme,
             "finite_elements": self.config.finite_elements,
@@ -266,3 +283,127 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         feed_side.add_inlet_port(name="feed_inlet", block=feed_side)
         feed_side.add_outlet_port(name="feed_outlet", block=feed_side)
         permeate_side.add_outlet_port(name="permeate_outlet", block=permeate_side)
+
+        # ==========================================================================
+        """ Add references to control volume geometry."""
+        add_object_reference(self, 'feed_length', feed_side.length)
+        add_object_reference(self, 'feed_area_cross', feed_side.area)
+        add_object_reference(self, 'permeate_length', permeate_side.length)
+        add_object_reference(self, 'permeate_area_cross', permeate_side.area)
+
+        # Add reference to pressure drop for feed side only
+        if (self.config.feed_side.has_pressure_change is True and
+                self.config.feed_side.momentum_balance_type != 'none'):
+            add_object_reference(self, 'feed_deltaP', feed_side.deltaP)
+
+        self._make_performance()
+
+    def _make_performance(self):
+        """
+        Constraints for unit model.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+
+        # Units should be the same between feed and perm side
+        units_meta = \
+            self.config.property_package.get_metadata().get_derived_units
+
+
+        # ==========================================================================
+        """ Unit model variables"""
+        self.A_comp = Var(
+            self.flowsheet().config.time,
+            self.solvent_list,
+            initialize=1e-12,
+            bounds=(1e-18, 1e-6),
+            domain=NonNegativeReals,
+            units=units_meta('length') * units_meta('pressure') ** -1 * units_meta('time') ** -1,
+            doc="""Solvent permeability coeff.""")
+        self.B_comp = Var(
+            self.flowsheet().config.time,
+            self.solute_list,
+            initialize=1e-8,
+            bounds=(1e-11, 1e-5),
+            domain=NonNegativeReals,
+            units=units_meta('length')*units_meta('time')**-1,
+            doc='Solute permeability coeff.')
+
+        def flux_mass_io_phase_comp_initialize(b, t, io, p, j):
+            if j in self.solvent_list:
+                return 5e-4
+            elif j in self.solute_list:
+                return 1e-6
+
+        def flux_mass_io_phase_comp_bounds(b, t, io, p, j):
+            if j in self.solvent_list:
+                ub = 3e-2
+                lb = 1e-4
+            elif j in self.solute_list:
+                ub = 1e-3
+                lb = 1e-8
+            return lb, ub
+
+        self.flux_mass_io_phase_comp = Var(
+            self.flowsheet().config.time,
+            self.config.feed_side.length_domain,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            initialize=flux_mass_io_phase_comp_initialize,
+            bounds=flux_mass_io_phase_comp_bounds,
+            units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
+            doc='Mass flux across membrane')
+
+        self.area = Var(
+            initialize=10,
+            bounds=(1e-1, 1e3),
+            domain=NonNegativeReals,
+            units=units_meta('length')**2,
+            doc='Membrane area')
+
+        # mass transfer
+        # def mass_transfer_phase_comp_initialize(b, t, x, p, j):
+        #     return value(self.feed_side.properties[t].get_material_flow_terms('Liq', j)
+        #                  * self.recovery_mass_phase_comp[t, 'Liq', j])
+
+        self.mass_transfer_phase_comp = Var(
+            self.flowsheet().config.time,
+            self.config.feed_side.length_domain,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            initialize= 0.1, #mass_transfer_phase_comp_initialize,
+            bounds=(1e-8, 1e6),
+            domain=NonNegativeReals,
+            units=units_meta('mass') * units_meta('time')**-1 * units_meta('length')**-1,
+            doc='Mass transfer to permeate')
+
+        @self.Constraint(self.flowsheet().config.time,
+                         self.config.feed_side.length_domain,
+                         self.config.property_package.phase_list,
+                         self.config.property_package.component_list,
+                         doc="Mass transfer term")
+        def eq_mass_transfer_term(self, t, x, p, j):
+            return self.mass_transfer_phase_comp[t, x, p, j] == -self.feed_side.mass_transfer_term[t, x, p, j]
+
+        # RO performance equations
+        @self.Expression(self.flowsheet().config.time,
+                         self.config.property_package.phase_list,
+                         self.config.property_package.component_list,
+                         doc="Average flux expression")
+        def flux_mass_phase_comp_avg(b, t, p, j):
+            return sum(b.flux_mass_io_phase_comp[t, x, p, j]
+                       for x in self.config.feed_side.length_domain) \
+                   / len(self.config.feed_side.length_domain)
+
+        # @self.Constraint(self.flowsheet().config.time,
+        #                  self.config.feed_side.length_domain,
+        #                  self.config.property_package.phase_list,
+        #                  self.config.property_package.component_list,
+        #                  doc="Permeate production")
+        # def eq_permeate_production(b, t, x, p, j):
+        #     return (b.permeate_side.properties[t, x].get_material_flow_terms(p, j)
+        #             == b.area * b.flux_mass_phase_comp_avg[t, p, j])
