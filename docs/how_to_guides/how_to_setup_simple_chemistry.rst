@@ -12,6 +12,7 @@ How to setup simple chemistry
 .. _RateReactions: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/rate_rxns.html
 .. _EquilibriumReactions: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/equil_rxns.html
 .. _ReactionMethods: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/method_libraries.html#reaction-module-libraries
+.. _ConcentrationForm: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/rate_rxns.html#concentration-form
 
 In ProteusLib, chemistry modules leverage the Generic Properties
 (`GenericProperties`_)
@@ -316,3 +317,33 @@ reaction, we will model it as an equilibrium reaction.
              # End equilibrium_reactions
         }
         # End reaction_config definition
+
+There is a significant amount of information and options available, so we will
+just go through some things of note here.
+
+**(1)** Each reaction you add to the model will have its own dictionary with
+essentially the same format as the ``"H2O_Kw"`` dictionary shown above. Make sure
+that each reaction you add has a unique key within the ``"equilibrium_reactions"``
+parent dictionary.
+
+**(2)** The first thing you need to define about the reaction is the stoichiometry.
+In IDAES, we follow the convention that **products** of a reaction should have
+positive stoichiometric values and **reactants** of a reaction should have negative
+stoichiometric values. This is true for both ``equilibrium_reactions`` and
+``rate_reactions``.
+
+**(3)** The ``"stoichiometry"`` dictionary under the reaction has tuple keys. In
+this format, the first item in the tuple is the ``phase`` of the species involved in
+the reaction and the second item in the tuple is the ``name`` of the species. Recall
+that in the **thermo-properties** configuration dictionary, we named the ``AqueousPhase``
+as ``"Liq"``, thus we must reference that same name here in the **reaction-properties**
+configuration dictionary. The specific species must also be referenced by the names
+they were given in the **thermo-properties** configuration dictionary.
+
+**(4)** You must provide methods/options for each of the following: ``"heat_of_reaction"``,
+``"equilibrium_constant"``, ``"equilibrium_form"``, and ``"concentration_form"``. These
+methods will define how IDAES computes the heat of reaction in the energy balance, the
+equilibrium constant or K value for this reaction constraint, the mathematical representation
+of the equilibrium constraint, and what the concentration form is for the species involved
+in this reaction, respectively. Many options are available for all of these and more
+information on each can be found at `ReactionMethods`_ and `ConcentrationForm`_.
