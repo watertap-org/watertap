@@ -234,7 +234,8 @@ options available. More information can be found in `StateDefinition`_.
 
     Much of the difficulties and complications with setting up a proper **thermo-properties**
     configuration dictionary can be handled by the **Electrolyte Database** system in
-    ProteusLib (Not yet documented...)
+    ProteusLib (Documentation pending)
+
 
 
 The **reaction-properties** configuration dictionary
