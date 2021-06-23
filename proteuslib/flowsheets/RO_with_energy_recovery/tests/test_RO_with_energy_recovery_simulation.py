@@ -24,6 +24,7 @@ from pyomo.environ import (ConcreteModel,
                            units as pyunits)
 from pyomo.network import Arc, Port
 from idaes.core import FlowsheetBlock
+from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (solve_indexed_blocks,
                                             propagate_state)
@@ -40,13 +41,8 @@ from proteuslib.unit_models.pump_isothermal import Pump
 from proteuslib.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
 build, set_operating_conditions, initialize_system, solve, optimize, display_system, display_state, display_design)
 
-solver_str = 'ipopt'
-solver_opt = {'nlp_scaling_method': 'user-scaling'}
-solver = SolverFactory('ipopt')
-solver.options = solver_opt
-solver_dict = {'solver_str': solver_str,
-               'solver_opt': solver_opt,
-               'solver': solver}
+
+solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
 
 # -----------------------------------------------------------------------------
 class TestEnergyRecoverySystem:
@@ -131,7 +127,7 @@ class TestEnergyRecoverySystem:
     def test_set_operating_conditions(self, system_frame):
         m = system_frame
 
-        set_operating_conditions(m, solver_dict=solver_dict)
+        set_operating_conditions(m, solver=solver)
 
         # check fixed variables
         # feed
@@ -175,7 +171,7 @@ class TestEnergyRecoverySystem:
     def test_initialize_system(self, system_frame):
         m = system_frame
 
-        initialize_system(m, solver_dict=solver_dict)
+        initialize_system(m, solver=solver)
 
         # check results across pressure exchanger, proxy for both upstream and downstream of RO
         # high pressure inlet
