@@ -31,6 +31,8 @@ In general you would import your own flowsheet module.
 
 .. testcode::
 
+    # replace this with your own flowsheet module, e.g.
+    # import my_flowsheet_module as mfm
     import proteuslib.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO
 
 Once this is done, import the parameter sweep tool
@@ -45,6 +47,9 @@ Depending on how the functions you've defined work, this could be as straightfor
 
 .. testcode::
    
+    # replace these function calls with
+    # those in your own flowsheet module
+
     # set up system
     m = RO.build()
     RO.set_operating_conditions(m)
