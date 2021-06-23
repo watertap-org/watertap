@@ -360,7 +360,7 @@ def optimize(m, solver=None):
     # RO
     m.fs.RO.area.unfix()  # area in membrane stage [m2]
     m.fs.RO.area.setlb(1)
-    m.fs.RO.area.setub(100)
+    m.fs.RO.area.setub(150)
 
     # additional specifications
     product_recovery = 0.5  # product mass flow rate fraction of feed [-]
