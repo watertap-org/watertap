@@ -407,3 +407,13 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # def eq_permeate_production(b, t, x, p, j):
         #     return (b.permeate_side.properties[t, x].get_material_flow_terms(p, j)
         #             == b.area * b.flux_mass_phase_comp_avg[t, p, j])
+
+        # Feed and permeate-side connection
+        @self.Constraint(self.flowsheet().config.time,
+                         self.config.feed_side.length_domain,
+                         self.config.property_package.phase_list,
+                         self.config.property_package.component_list,
+                         doc="Mass transfer from feed to permeate")
+        def eq_connect_mass_transfer(b, t, x, p, j):
+            return (b.permeate_side.properties[t, x].get_material_flow_terms(p, j)
+                    == -b.feed_side.mass_transfer_term[t, x, p, j])
