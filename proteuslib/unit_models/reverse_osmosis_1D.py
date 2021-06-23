@@ -150,7 +150,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
     **Valid values:** {
     see property package for documentation.}"""))
 
-    _SideTemplate.declare(
+    CONFIG.declare(
         "transformation_method",
         ConfigValue(
             default=useDefault,
@@ -158,7 +158,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             doc="""Discretization method to use for DAE transformation. See Pyomo
     documentation for supported transformations."""))
 
-    _SideTemplate.declare("transformation_scheme", ConfigValue(
+    CONFIG.declare("transformation_scheme", ConfigValue(
             default=useDefault,
             description="Discretization scheme to use for DAE transformation",
             doc="""Discretization scheme to use when transforming domain. See
@@ -230,7 +230,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             "transformation_method": self.config.transformation_method,
             "transformation_scheme": self.config.transformation_scheme,
             "finite_elements": self.config.finite_elements,
-            "collocation_points" self.config.collocation_points
+            "collocation_points": self.config.collocation_points
         })
 
         # ==========================================================================
@@ -261,17 +261,21 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         # ==========================================================================
         """ Populate feed side"""
-        feed_side.add_material_balances(balance_type=self.config.material_balance_type,
+        feed_side.add_material_balances(balance_type=self.config.feed_side.material_balance_type,
                                         has_mass_transfer=True)
-        feed_side.add_energy_balances(balance_type=self.config.energy_balance_type,
+        feed_side.add_energy_balances(balance_type=self.config.feed_side.energy_balance_type,
                                            has_enthalpy_transfer=True)
-        feed_side.add_momentum_balances(balance_type=self.config.momentum_balance_type,
+        feed_side.add_momentum_balances(balance_type=self.config.feed_side.momentum_balance_type,
                                         has_pressure_change=self.config.has_pressure_change)
 
         # ==========================================================================
         """ Only enable mass transfer for permeate side"""
-        permeate_side.add_material_balances(balance_type=self.config.material_balance_type.none,
+        permeate_side.add_material_balances(balance_type=self.config.permeate_side.material_balance_type.none,
                                             has_mass_transfer=True)
+        feed_side.add_energy_balances(balance_type=self.config.permeate_side.energy_balance_type.none,
+                                           has_enthalpy_transfer=True)
+        feed_side.add_momentum_balances(balance_type=self.config.permeate_side.momentum_balance_type.none,
+                                        has_pressure_change=self.config.permeate_side.has_pressure_change)
 
         # ==========================================================================
         """ Apply transformation to feed and permeate sides"""
@@ -286,9 +290,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         # ==========================================================================
         """ Add references to control volume geometry."""
-        add_object_reference(self, 'feed_length', feed_side.length)
+        add_object_reference(self, 'length', feed_side.length)
         add_object_reference(self, 'feed_area_cross', feed_side.area)
-        add_object_reference(self, 'permeate_length', permeate_side.length)
+        add_object_reference(self, 'length', permeate_side.length)
         add_object_reference(self, 'permeate_area_cross', permeate_side.area)
 
         # Add reference to pressure drop for feed side only
@@ -365,6 +369,41 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             units=units_meta('length')**2,
             doc='Membrane area')
 
+        # TODO: Add initial value, bounds and real equation later. Just need for now since add_geometry() generates
+        #  cross-sectional area var that I am referencing
+        self.feed_area_cross = Var(
+            initialize=1,
+            bounds=(1e-3, 1),
+            domain=NonNegativeReals,
+            units=units_meta('length')**2,
+            doc='Cross-sectional area of feed channel')
+
+        self.permeate_area_cross = Var(
+            initialize=1,
+            bounds=(1e-3, 1),
+            domain=NonNegativeReals,
+            units=units_meta('length')**2,
+            doc='Cross-sectional area of feed channel')
+
+        self.width = Var(
+            initialize=1,
+            bounds=(1e-1, 1e3),
+            domain=NonNegativeReals,
+            units=units_meta('length')**2,
+            doc='Membrane area')
+
+        @self.Constraint(doc="Membrane area")
+        def eq_area(b):
+            return b.area == b.length * b.width
+
+        @self.Constraint(doc="Membrane area")
+        def eq_feed_area_cross(b):
+            return b.feed_area_cross == 1 * 1 * b.width  # TODO: add channel_height and spacer_porosity
+
+        @self.Constraint(doc="Membrane area")
+        def eq_permeate_area_cross(b):
+            return b.permeate_area_cross == 1 * 1 * b.width  # TODO: add channel_height and spacer_porosity
+
         # mass transfer
         # def mass_transfer_phase_comp_initialize(b, t, x, p, j):
         #     return value(self.feed_side.properties[t].get_material_flow_terms('Liq', j)
@@ -417,3 +456,18 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         def eq_connect_mass_transfer(b, t, x, p, j):
             return (b.permeate_side.properties[t, x].get_material_flow_terms(p, j)
                     == -b.feed_side.mass_transfer_term[t, x, p, j])
+
+        @self.Constraint(self.flowsheet().config.time,
+                         self.config.feed_side.length_domain,
+                         doc="Enthalpy transfer from feed to permeate")
+        def eq_connect_enthalpy_transfer(b, t, x):
+            return (b.permeate_side.properties[t, x].get_enthalpy_flow_terms('Liq')
+                    == -b.feed_side.enthalpy_transfer[t, x])
+
+        @self.Constraint(self.flowsheet().config.time,
+                         self.config.length_domain,
+                         doc="Isothermal assumption for permeate")
+        def eq_permeate_isothermal(b, t, x):
+            return b.feed_side.properties[t, x].temperature == \
+                   b.properties_permeate[t, x].temperature
+
