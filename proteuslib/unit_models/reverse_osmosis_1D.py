@@ -180,6 +180,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             doc="""Number of collocation points to use per finite element when
             discretizing length domain (default=5)"""))
 
+    def _process_config(self):
+        pass  #TODO: add config errors here
+
     def build(self):
         """
         Build 1D RO model (pre-DAE transformation).
@@ -193,3 +196,73 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # Call UnitModel.build to setup dynamics
         super().build()
 
+        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
+
+        self._process_config()
+
+        units_meta = self.config.property_package.get_metadata().get_derived_units
+
+        # ==========================================================================
+        """ Build 1D Control volume for feed side"""
+        self.feed_side = ControlVolume1DBlock(default={
+            "dynamic": self.config.feed_side.dynamic,
+            "has_holdup": self.config.feed_side.has_holdup,
+            "property_package": self.config.feed_side.property_package,
+            "property_package_args": self.config.feed_side.property_package_args,
+            "transformation_method": self.config.transformation_method,
+            "transformation_scheme": self.config.transformation_scheme,
+            "finite_elements": self.config.finite_elements,
+            "collocation_points" self.config.collocation_points
+        })
+
+
+        # ==========================================================================
+        """ Build 1D Control volume for permeate side"""
+        self.permeate_side = ControlVolume1DBlock(default={
+            "dynamic": self.config.permeate_side.dynamic,
+            "has_holdup": self.config.permeate_side.has_holdup,
+            "property_package": self.config.permeate_side.property_package,
+            "property_package_args": self.config.permeate_side.property_package_args,
+            "transformation_method": self.config.transformation_method,
+            "transformation_scheme": self.config.transformation_scheme,
+            "finite_elements": self.config.finite_elements,
+            "collocation_points": self.config.collocation_points
+        })
+
+        feed_side = self.feed_side
+        permeate_side = self.permeate_side
+
+        # ==========================================================================
+        """ Add geometry for each control volume"""
+        feed_side.add_geometry()
+        permeate_side.add_geometry()
+
+        # ==========================================================================
+        """ Add state blocks for each control volume"""
+        feed_side.add_state_blocks(has_phase_equilibrium=False)
+        permeate_side.add_state_blocks(has_phase_equilibrium=False)
+
+        # ==========================================================================
+        """ Populate feed side"""
+        feed_side.add_material_balances(balance_type=self.config.material_balance_type,
+                                        has_mass_transfer=True)
+        feed_side.add_energy_balances(balance_type=self.config.energy_balance_type,
+                                           has_enthalpy_transfer=True)
+        feed_side.add_momentum_balances(balance_type=self.config.momentum_balance_type,
+                                        has_pressure_change=self.config.has_pressure_change)
+
+        # ==========================================================================
+        """ Only enable mass transfer for permeate side"""
+        permeate_side.add_material_balances(balance_type=self.config.material_balance_type.none,
+                                            has_mass_transfer=True)
+
+        # ==========================================================================
+        """ Apply transformation to feed and permeate sides"""
+        feed_side.apply_transformation()
+        permeate_side.apply_transformation()
+
+        # ==========================================================================
+        """ Add inlet/outlet ports for feed side and only an outlet port for permeate side"""
+        feed_side.add_inlet_port(name="feed_inlet", block=feed_side)
+        feed_side.add_outlet_port(name="feed_outlet", block=feed_side)
+        permeate_side.add_outlet_port(name="permeate_outlet", block=permeate_side)
