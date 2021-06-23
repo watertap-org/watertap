@@ -1060,6 +1060,28 @@ class ReverseOsmosisData(UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
+        # permeate properties need to rescale solute values by 100
+        def rescale_variable(var, factor=100):
+            sf = iscale.get_scaling_factor(var)
+            iscale.set_scaling_factor(var, sf * factor)
+
+        blk = self.permeate_side
+        for sb_str in ['properties_in', 'properties_out', 'properties_permeate']:
+            sb = getattr(blk, sb_str)
+            for t in self.flowsheet().config.time:
+                for j in self.solute_list:
+                    rescale_variable(sb[t].flow_mass_phase_comp['Liq', j])
+                    if sb[t].is_property_constructed('mass_frac_phase_comp'):
+                        rescale_variable(sb[t].mass_frac_phase_comp['Liq', j])
+                    if sb[t].is_property_constructed('conc_mass_phase_comp'):
+                        rescale_variable(sb[t].conc_mass_phase_comp['Liq', j])
+                    if sb[t].is_property_constructed('mole_frac_phase_comp'):
+                        rescale_variable(sb[t].mole_frac_phase_comp[j])
+                    if sb[t].is_property_constructed('molality_comp'):
+                        rescale_variable(sb[t].molality_comp[j])
+                if sb[t].is_property_constructed('pressure_osm'):
+                    rescale_variable(sb[t].pressure_osm)
+
         # TODO: require users to set scaling factor for area or calculate it based on mass transfer and flux
         iscale.set_scaling_factor(self.area, 1e-1)
 
@@ -1084,9 +1106,13 @@ class ReverseOsmosisData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
             iscale.set_scaling_factor(self.recovery_vol_phase, 1)
 
-        for v in self.recovery_mass_phase_comp.values():
+        for (t, p, j), v in self.recovery_mass_phase_comp.items():
+            if j in self.solvent_list:
+                sf = 1
+            elif j in self.solute_list:
+                sf = 100
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(v, 1)
+                iscale.set_scaling_factor(v, sf)
 
         for v in self.rejection_phase_comp.values():
             if iscale.get_scaling_factor(v) is None:
@@ -1179,11 +1205,10 @@ class ReverseOsmosisData(UnitModelBlockData):
                     iscale.set_scaling_factor(v, sf)
 
         for (t, p, j), v in self.feed_side.mass_transfer_term.items():
-            if iscale.get_scaling_factor(v) is None:
-                sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].get_material_flow_terms(p, j))
-                comp = self.config.property_package.get_component(j)
-                if comp.is_solute:
-                    sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
+            # already scaled by control volume with the default based on properties_in flow
+            # solute typically has mass transfer 2 orders magnitude less than flow
+            if j in self.solute_list:
+                sf = iscale.get_scaling_factor(v) * 100
                 iscale.set_scaling_factor(v, sf)
 
         for (t, p, j), v in self.mass_transfer_phase_comp.items():
