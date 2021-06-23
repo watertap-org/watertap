@@ -162,7 +162,7 @@ class TestEnergyRecoverySystem:
         assert m.fs.RO.width.is_fixed()
         assert value(m.fs.RO.width) == 5
         assert m.fs.RO.area.is_fixed()
-        assert value(m.fs.RO.area) == pytest.approx(59.03, rel=1e-3)
+        assert value(m.fs.RO.area) == pytest.approx(63.25, rel=1e-3)
 
         # check degrees of freedom
         assert degrees_of_freedom(m) == 0
@@ -198,9 +198,9 @@ class TestEnergyRecoverySystem:
         solve(m, solver=solver)
 
         # check system metrics
-        assert value(m.fs.recovery) == pytest.approx(0.4953, rel=1e-3)
-        assert value(m.fs.specific_energy_consumption) == pytest.approx(2.727, rel=1e-3)
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.4396, rel=1e-3)
+        assert value(m.fs.recovery) == pytest.approx(0.5139, rel=1e-3)
+        assert value(m.fs.specific_energy_consumption) == pytest.approx(2.717, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.4388, rel=1e-3)
 
         # check mass balance
         assert (pytest.approx(value(m.fs.feed.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']), rel=1e-3)
@@ -220,8 +220,8 @@ class TestEnergyRecoverySystem:
         assert captured.out == \
 """---system metrics---
 Feed: 1.00 kg/s, 35000 ppm
-Product: 0.483 kg/s, 281 ppm
-Recovery: 49.5%
+Product: 0.501 kg/s, 293 ppm
+Recovery: 51.4%
 Energy Consumption: 2.7 kWh/m3
 Levelized cost of water: 0.44 $/m3
 """
@@ -236,16 +236,16 @@ Levelized cost of water: 0.44 $/m3
         assert captured.out == \
 """---decision variables---
 Operating pressure 74.9 bar
-Membrane area 59.0 m2
+Membrane area 63.3 m2
 ---design variables---
 Separator
-Split fraction 50.53
+Split fraction 48.68
 Pump 1
 outlet pressure: 74.9 bar
-power 4.48 kW
+power 4.64 kW
 Pump 2
 outlet pressure: 74.9 bar
-power 0.29 kW
+power 0.28 kW
 """
 
 
@@ -259,15 +259,15 @@ power 0.29 kW
         assert captured.out == \
 """---state---
 Feed      : 1.000 kg/s, 35000 ppm, 1.0 bar
-Split 1   : 0.495 kg/s, 35000 ppm, 1.0 bar
-P1 out    : 0.495 kg/s, 35000 ppm, 74.9 bar
-Split 2   : 0.505 kg/s, 35000 ppm, 1.0 bar
-PXR LP out: 0.505 kg/s, 35000 ppm, 70.3 bar
-P2 out    : 0.505 kg/s, 35000 ppm, 74.9 bar
+Split 1   : 0.513 kg/s, 35000 ppm, 1.0 bar
+P1 out    : 0.513 kg/s, 35000 ppm, 74.9 bar
+Split 2   : 0.487 kg/s, 35000 ppm, 1.0 bar
+PXR LP out: 0.487 kg/s, 35000 ppm, 70.2 bar
+P2 out    : 0.487 kg/s, 35000 ppm, 74.9 bar
 Mix out   : 1.000 kg/s, 35000 ppm, 74.9 bar
-RO perm   : 0.483 kg/s, 281 ppm, 1.0 bar
-RO reten  : 0.517 kg/s, 67389 ppm, 73.9 bar
-PXR HP out: 0.517 kg/s, 67389 ppm, 1.0 bar
+RO perm   : 0.501 kg/s, 293 ppm, 1.0 bar
+RO reten  : 0.499 kg/s, 69799 ppm, 73.9 bar
+PXR HP out: 0.499 kg/s, 69799 ppm, 1.0 bar
 """
 
     @pytest.mark.component
