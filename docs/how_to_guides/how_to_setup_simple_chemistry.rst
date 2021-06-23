@@ -77,7 +77,14 @@ Example thermo-properties configuration dictionary
 In this example, we will define a simple thermo-properties configuration dictionary
 for a chemical system that contains only water.
 
-.. code-block:: python
+.. testsetup::
+
+   # quiet idaes logs
+   import idaes.logger as idaeslogger
+   idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
+   idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
+
+.. testcode::
 
     # Importing the object for units from pyomo
     from pyomo.environ import units as pyunits
@@ -266,7 +273,7 @@ dictionary, here we will show how you setup a **reaction-properties** configurat
 dictionary for the dissociation of water. Since water dissociation is a fast acid
 reaction, we will model it as an equilibrium reaction.
 
-.. code-block:: python
+.. testcode::
 
     # Importing the object for units from pyomo
     from pyomo.environ import units as pyunits
@@ -392,7 +399,7 @@ Recall, we had named our configuration dictionaries as ``thermo_config`` and
 ``reaction_config``. We will reference those dictionary names in the example
 code below.
 
-.. code-block:: python
+.. testcode::
 
     # Import specific pyomo objects
     from pyomo.environ import ConcreteModel
