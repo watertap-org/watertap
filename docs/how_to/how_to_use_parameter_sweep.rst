@@ -18,7 +18,8 @@ Begin by importing or explicitly programming any functions relating to the follo
 3. Setting up the optimization (e.g., unfixing and setting bounds)
 4. Performing the optimization
 
-For example, the code below imports some critical functions from an existing flowsheet module, RO with energy recovery:
+For example, the code below imports from an existing flowsheet module, RO with energy recovery.
+In general you would import your own flowsheet module.
 
 .. testsetup::
 
@@ -52,10 +53,12 @@ Depending on how the functions you've defined work, this could be as straightfor
     # simulate
     RO.solve(m)
 
-    # set up and do initial optimization 
+    # set up and perform initial optimization
+    # (performing initial optimization is optional)
     RO.optimize(m)
 
 where ``m`` is the flowsheet model that results after the initial "build" step and subsequent operations are performed on that object.
+
 Once this sequence of setup steps is performed, the parameters to be varied should be identified with a dictionary:
 
 .. testcode::
