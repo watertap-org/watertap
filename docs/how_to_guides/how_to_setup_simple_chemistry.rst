@@ -13,6 +13,9 @@ How to setup simple chemistry
 .. _EquilibriumReactions: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/equil_rxns.html
 .. _ReactionMethods: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/method_libraries.html#reaction-module-libraries
 .. _ConcentrationForm: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/rate_rxns.html#concentration-form
+.. _UnitModels: https://idaes-pse.readthedocs.io/en/stable/technical_specs/model_libraries/generic/unit_models/index.html
+.. _EquilibriumReactor: https://idaes-pse.readthedocs.io/en/stable/technical_specs/model_libraries/generic/unit_models/equilibrium.html
+.. _IDAESWorkflow: https://idaes-pse.readthedocs.io/en/stable/user_guide/workflow/general.html
 
 In ProteusLib, chemistry modules leverage the Generic Properties
 (`GenericProperties`_)
@@ -364,4 +367,82 @@ standard practice for aqueous acid-base chemistry.
 
     The ``"reaction_order"`` dictionary follows the same sign convention for products
     and reactants as the ``"stoichiometry"`` dictionary. Positive signs for products
-    and negative signs for reactants. 
+    and negative signs for reactants.
+
+
+Defining a **unit model**
+-------------------------
+
+Once you have your **thermo-properties** and (optionally) your **reaction-properties**
+configuration dictionaries setup, you will want to put them into a **unit model** so
+that you can simulate that particular unit process with the chemistry you have
+specified. Within IDAES, their are numerous **unit models** to chose from that
+will support the inclusion of these chemistry configurations. A list of the
+**unit models** available, and how to use them, are provided here (`UnitModels`_).
+
+In this guide, we will not cover all the **unit models**, but will give one basic
+example of how to use the configuration dictionaries defined above with the
+`EquilibriumReactor`_ model.
+
+
+Example: Using our configuration dictionaries in an EquilibriumReactor
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Recall, we had named our configuration dictionaries as ``thermo_config`` and
+``reaction_config``. We will reference those dictionary names in the example
+code below.
+
+.. code-block:: python
+
+    # Import specific pyomo objects
+    from pyomo.environ import ConcreteModel
+
+    # Import the core idaes objects for Flowsheets and types of balances
+    from idaes.core import FlowsheetBlock
+
+    # Import the idaes objects for Generic Properties and Reactions
+    from idaes.generic_models.properties.core.generic.generic_property import GenericParameterBlock
+    from idaes.generic_models.properties.core.generic.generic_reaction import GenericReactionParameterBlock)
+
+    # Import the idaes object for the EquilibriumReactor unit model
+    from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
+
+    # Create an instance of a pyomo model
+    model = ConcreteModel()
+
+    # Add an IDAES flowsheet to that model
+    model.fs = FlowsheetBlock(default={"dynamic": False})
+
+    # Add a thermo parameter block to that flowsheet
+    #   Here, we are passing our 'thermo_config' dictionary we created earlier
+    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+
+    # Add a reaction parameter block to that flowsheet
+    #   Here, we are passing our thermo block created above as the property package
+    #   and then giving our 'reaction_config' as the instructions for how the
+    #   reactions will be constructed from the thermo package.
+    model.fs.rxn_params = GenericReactionParameterBlock(
+                default={"property_package": model.fs.thermo_params, **reaction_config})
+
+    # Add an EquilibriumReactor object as the unit model
+    #   Here, we pass both the thermo package and reaction package, as well
+    #   as a number of other arguments to help define how this unit process
+    #   will behave.
+    model.fs.unit = EquilibriumReactor(default={
+                "property_package": model.fs.thermo_params,
+                "reaction_package": model.fs.rxn_params,
+                "has_rate_reactions": False,
+                "has_equilibrium_reactions": True,
+                "has_heat_transfer": False,
+                "has_heat_of_reaction": False,
+                "has_pressure_change": False})
+
+    # At this point, you can 'fix' your inlet/outlet state conditions,
+    #     setup scaling factors, initialize the model, then solve the model
+    #     just as you would with any other IDAES flowsheet
+
+
+In the example code above, we show how to setup the thermo and reaction packages
+and place them into the `EquilibriumReactor` unit model, but do not go further.
+Additional instructions for setting up and solving unit models can be found at
+`IDAESWorkflow`_.
