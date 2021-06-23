@@ -750,11 +750,15 @@ if __name__ == "__main__":
 
     iscale.calculate_scaling_factors(model.fs.unit)
 
-    #solver.options['bound_push'] = 1e-20
+    solver.options['bound_push'] = 1e-20
     solver.options['mu_init'] = 1e-6
     #model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
-    results = solver.solve(model, tee=True)
+    #model.fs.unit.control_volume.properties_out[0.0].inherent_equilibrium_constraint["H2CO3_Ka1"].pprint()
+
+    results = solver.solve(model, tee=True, symbolic_solver_labels=True)
+
+    #Error evaluating constraint fs.unit.control_volume.properties_out[0.0].inherent_equilibrium_constraint[H2CO3_Ka1]: can't evaluate pow'(0,0.5).
 
     print("comp\tinlet.mole_frac\toutlet.mole_frac")
     for i in model.fs.unit.inlet.mole_frac_comp:
