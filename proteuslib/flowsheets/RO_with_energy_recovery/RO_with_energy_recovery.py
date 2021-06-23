@@ -17,6 +17,7 @@ from pyomo.environ import (ConcreteModel,
                            Constraint,
                            Expression,
                            Objective,
+                           Param,
                            TransformationFactory,
                            units as pyunits)
 from pyomo.network import Arc
@@ -137,7 +138,10 @@ def build():
     return m
 
 
-def set_operating_conditions(m, solver):
+def set_operating_conditions(m, solver=None):
+    if solver is None:
+        solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
+
     # ---specifications---
     # feed
     feed_flow_mass = 1  # feed mass flow rate [kg/s]
@@ -259,7 +263,7 @@ def calculate_RO_area(unit=None, water_recovery=0.5, solver=None):
 
 def solve(blk, solver=None, tee=False):
     if solver is None:
-        solver = get_solver(optarg={'nlp_scaling_method': 'user-scaling'})
+        solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
     results = solver.solve(blk, tee=tee)
     check_solve(results)
 
@@ -280,7 +284,9 @@ def check_solve(results):
 
 def initialize_system(m, solver=None):
 
-    optarg = solver.options if solver else None
+    if solver is None:
+        solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
+    optarg = solver.options 
 
     # ---initialize feed block---
     m.fs.feed.initialize(optarg=optarg)
@@ -361,17 +367,17 @@ def optimize(m, solver=None):
     m.fs.RO.area.setub(100)
 
     # additional specifications
-    product_recovery = 0.5  # product mass flow rate fraction of feed [-]
-    product_salinity = 500e-6  # product NaCl mass fraction [-]
-    minimum_water_flux = 1 / 3600  # minimum water flux [kg/m2-s]
+    m.fs.product_recovery = Param(initialize=0.5, mutable=True)        # product mass flow rate fraction of feed [-]
+    m.fs.product_salinity = Param(initialize=500e-6, mutable=True)     # product NaCl mass fraction [-]
+    m.fs.minimum_water_flux = Param(initialize=1./3600., mutable=True) # minimum water flux [kg/m2-s]
 
     # additional constraints
-    m.fs.eq_recovery = Constraint(expr=product_recovery == m.fs.recovery)
+    m.fs.eq_recovery = Constraint(expr=m.fs.product_recovery == m.fs.recovery)
     m.fs.eq_product_quality = Constraint(
-        expr=m.fs.product.properties[0].mass_frac_phase_comp['Liq', 'NaCl'] <= product_salinity)
+        expr=m.fs.product.properties[0].mass_frac_phase_comp['Liq', 'NaCl'] <= m.fs.product_salinity)
     iscale.constraint_scaling_transform(m.fs.eq_product_quality, 1e3)  # scaling constraint
     m.fs.eq_minimum_water_flux = Constraint(
-        expr=m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'] >= minimum_water_flux)
+        expr=m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'] >= m.fs.minimum_water_flux)
 
     # ---checking model---
     check_dof(m, dof_expected=1)

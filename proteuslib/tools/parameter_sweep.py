@@ -68,13 +68,13 @@ def _update_model_values(m, param_dict, values):
 
         param = item[0]
 
+        # Fix the single value to values[k]
         if param.is_variable_type():
-            # Fix the single value to values[k]
             param.fix(values[k])
 
         elif param.is_parameter_type():
-            # Otherwise, set the single value
-            param.value(values[k])
+            # Fix the single value to values[k]
+            param.set_value(values[k])
 
         else:
             raise RuntimeError(f"Unrecognized Pyomo object {param}")
