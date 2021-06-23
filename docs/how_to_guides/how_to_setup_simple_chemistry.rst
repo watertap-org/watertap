@@ -9,6 +9,9 @@ How to setup simple chemistry
 .. _EquationOfState: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/eos/ideal.html
 .. _Components: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/component_def.html
 .. _Phases: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/phase_def.html
+.. _RateReactions: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/rate_rxns.html
+.. _EquilibriumReactions: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/equil_rxns.html
+.. _ReactionMethods: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/method_libraries.html#reaction-module-libraries
 
 In ProteusLib, chemistry modules leverage the Generic Properties
 (`GenericProperties`_)
@@ -62,6 +65,7 @@ properties of the chemical species of interest in your process. At a minimum, th
     between the system's phases. An in depth discussion of all options and methods
     is beyond the scope of this guide. For additional information, refer to the IDAES
     documentation (`GenericProperties`_).
+
 
 Example thermo-properties configuration dictionary
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -240,3 +244,75 @@ are optional and depend on your system. The major keys to be aware of are as fol
 +-----------------------+-------------------------------------------------------------------------------------------+
 | rate_reactions        | dictionary containing the full set of rate reactions in the system                        |
 +-----------------------+-------------------------------------------------------------------------------------------+
+
+.. note::
+
+    Each type of reaction (``equilibrium_reactions`` and ``rate_reactions``) have
+    their own sets of parameters and methods to be declared. More information on
+    how to set up these arguments and the methods available can be found at
+    `GenericReactions`_. You can go directly to either methods by following
+    the following links (`EquilibriumReactions`_ and `RateReactions`_).
+
+
+Example reaction-properties configuration dictionary
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Following from our previous example for the **thermo-properties** configuration
+dictionary, here we will show how you setup a **reaction-properties** configuration
+dictionary for the dissociation of water. Since water dissociation is a fast acid
+reaction, we will model it as an equilibrium reaction.
+
+.. code-block:: python
+
+    # Importing the object for units from pyomo
+    from pyomo.environ import units as pyunits
+
+    # Import the object/function for heat of reaction
+    from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+
+    # Import built-in Gibb's Energy function
+    from idaes.generic_models.properties.core.reactions.equilibrium_constant import gibbs_energy
+
+    # Import safe log power law equation
+    from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
+
+    # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
+    from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
+
+    reaction_config = {
+        "base_units": {"time": pyunits.s,
+                       "length": pyunits.m,
+                       "mass": pyunits.kg,
+                       "amount": pyunits.mol,
+                       "temperature": pyunits.K},
+        "equilibrium_reactions": {
+            "H2O_Kw": {
+                    "stoichiometry": {("Liq", "H2O"): -1,
+                                     ("Liq", "H_+"): 1,
+                                     ("Liq", "OH_-"): 1},
+                   "heat_of_reaction": constant_dh_rxn,
+                   "equilibrium_constant": gibbs_energy,
+                   "equilibrium_form": log_power_law_equil,
+                   "concentration_form": ConcentrationForm.molarity,
+                   "parameter_data": {
+                       "dh_rxn_ref": (55.830, pyunits.kJ/pyunits.mol),
+                       "ds_rxn_ref": (-80.7, pyunits.J/pyunits.mol/pyunits.K),
+                       "T_eq_ref": (300, pyunits.K),
+
+                       # By default, reaction orders follow stoichiometry, so
+                       #    we manually set reaction order here to override.
+                       #    In our case, the water dissociation reaction is
+                       #    mathematically represented by Kw = [H_+]*[OH_-]
+                       #    thus, we this reaction is of order 0 with respect
+                       #    to the [H2O] concentration.
+                       "reaction_order": {("Liq", "H2O"): 0,
+                                        ("Liq", "H_+"): 1,
+                                        ("Liq", "OH_-"): 1}
+                        }
+                        # End parameter_data
+                   }
+                   # End reaction H2O_Kw
+             }
+             # End equilibrium_reactions
+        }
+        # End reaction_config definition
