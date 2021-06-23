@@ -347,3 +347,21 @@ equilibrium constant or K value for this reaction constraint, the mathematical r
 of the equilibrium constraint, and what the concentration form is for the species involved
 in this reaction, respectively. Many options are available for all of these and more
 information on each can be found at `ReactionMethods`_ and `ConcentrationForm`_.
+
+**(5)** The ``"parameter_data"`` dictionary must contain the parameter information
+required by the chosen methods from **(4)** above. See `ReactionMethods`_ for more
+details.
+
+**(6)** Within the ``"parameter_data"`` dictionary is an optional dictionary for
+``"reaction_order"``. If this dictionary is not provided, then it is assumed that
+the order of the reaction form with respect to each species just follows the
+``"stoichiometry"`` dictionary from above. However, in certain cases you may need
+to override that assumption. In this particular case, we override the reaction
+order to zero out the order with respect to the water concentration. This is
+standard practice for aqueous acid-base chemistry.
+
+.. note::
+
+    The ``"reaction_order"`` dictionary follows the same sign convention for products
+    and reactants as the ``"stoichiometry"`` dictionary. Positive signs for products
+    and negative signs for reactants. 
