@@ -336,6 +336,11 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             domain=NonNegativeReals,
             units=units_meta('length')*units_meta('time')**-1,
             doc='Solute permeability coeff.')
+        # TODO: add water density to NaCl prop model and remove here (or use IDAES version)
+        self.dens_solvent = Param(
+            initialize=1000,
+            units=units_meta('mass')*units_meta('length')**-3,
+            doc='Pure water density')
 
         def flux_mass_io_phase_comp_initialize(b, t, io, p, j):
             if j in self.solvent_list:
@@ -429,6 +434,29 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             return self.mass_transfer_phase_comp[t, x, p, j] == -self.feed_side.mass_transfer_term[t, x, p, j]
 
         # RO performance equations
+        @self.Constraint(self.flowsheet().config.time,
+                         self.io_list,
+                         self.config.property_package.phase_list,
+                         self.config.property_package.component_list,
+                         doc="Water and salt flux")
+        def eq_flux_io(b, t, x, p, j):
+            # if x == 'in':
+            #     prop_feed = b.feed_side.properties_in[t]
+            #     prop_feed_inter = b.feed_side.properties_interface_in[t]
+            # elif x == 'out':
+            #     prop_feed = b.feed_side.properties_out[t]
+            #     prop_feed_inter = b.feed_side.properties_interface_out[t]
+            prop_feed = b.feed_side.properties[t, x]
+            prop_perm = b.permeate_side.properties[t, x]
+            comp = self.config.property_package.get_component(j)
+            if comp.is_solvent():
+                return (b.flux_mass_io_phase_comp[t, x, p, j] == b.A_comp[t, j] * b.dens_solvent
+                        * ((prop_feed.pressure - prop_perm.pressure)
+                           - (prop_feed.pressure_osm - prop_perm.pressure_osm)))
+            elif comp.is_solute():
+                return (b.flux_mass_io_phase_comp[t, x, p, j] == b.B_comp[t, j]
+                        * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j]))
+
         @self.Expression(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
