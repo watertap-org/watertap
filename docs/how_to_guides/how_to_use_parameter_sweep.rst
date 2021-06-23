@@ -1,4 +1,4 @@
-How to Explore a Model with Parameter Sweep
+How to explore a model with parameter sweep
 ===========================================
 
 Overview
