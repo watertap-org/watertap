@@ -77,8 +77,8 @@ For example, "Feed Concentration", which is accessed in the model variable ``m.f
 In this case, the 2 parameters will each be varied across 4 values for a total of 16 combinations.
 Note that there is no limit on the number of sweep variables specified or their resolution besides the practical limit of how long it will take to optimize using each combination of parameters (e.g., if 5 different variables are provided and each one is individually represented with 20 discrete values, the total number of combinations is 20^5 = 3.2 million!).
 
-After specifying the input parameters, the user should then specify output values on the flowsheet which will be reported in the summary CSV file, which has a similar format to the sweep parameters.
-For this RO flowsheet we'll report the levelized cost of water, the optimized RO area, and the associated pump pressures:
+After specifying the input parameters, the user should then specify output values on the flowsheet that will be reported in the summary CSV file, which has a similar format to the sweep parameters.
+For this RO flowsheet we'll report the levelized cost of water, the optimized RO area, and the output pressure of pump 1:
 
 .. testcode::
 
@@ -87,7 +87,7 @@ For this RO flowsheet we'll report the levelized cost of water, the optimized RO
     outputs['Pump 1 pressure'] = m.fs.P1.control_volume.properties_out[0].pressure
     outputs['Levelized Cost of Water'] = m.fs.costing.LCOW 
 
-Once the problem is setup and the parameters are identified, the parameter_sweep function can finally be invoked which will perform the adjustment and optimization of the model invoking each combination of variables specified above, saving to `results.csv`; utilizing the solve method defined in our flowsheet module.
+Once the problem is setup and the parameters are identified, the parameter_sweep function can finally be invoked which will perform the adjustment and optimization of the model using each combination of variables specified above and saving to `results.csv` (utilizing the solve method defined in our flowsheet module).
 
 .. testcode::
 
