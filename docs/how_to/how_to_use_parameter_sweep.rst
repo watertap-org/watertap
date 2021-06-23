@@ -96,4 +96,5 @@ Function Documentation
 ----------------------
 
 .. automodule :: proteuslib.tools.parameter_sweep
+   :noindex:
    :members:

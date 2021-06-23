@@ -44,7 +44,7 @@ Sets
    "Phases", ":math:`p`", "['Liq']"
    "Components", ":math:`j`", "['H2O', 'NaCl']*"
 
-*Solute depends on the imported property model; example shown here is for the NaCl property model.
+*Solute depends on the imported property model; example shown here is for the NaCl property model.*
 
 Variables
 ----------
