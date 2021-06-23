@@ -137,7 +137,7 @@ for a chemical system that contains only water.
                             'H': (0, pyunits.kJ/pyunits.mol)},
                         "entr_mol_form_liq_comp_ref": (69.95, pyunits.J/pyunits.K/pyunits.mol)
                         # End parameter_data
-                        },
+                        }},
             'H_+': {"type": Cation, "charge": 1,
                   # Define the methods used to calculate the following properties
                   "dens_mol_liq_comp": Constant,
@@ -409,7 +409,7 @@ code below.
 
     # Import the idaes objects for Generic Properties and Reactions
     from idaes.generic_models.properties.core.generic.generic_property import GenericParameterBlock
-    from idaes.generic_models.properties.core.generic.generic_reaction import GenericReactionParameterBlock)
+    from idaes.generic_models.properties.core.generic.generic_reaction import GenericReactionParameterBlock
 
     # Import the idaes object for the EquilibriumReactor unit model
     from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
