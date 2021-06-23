@@ -314,7 +314,8 @@ reaction, we will model it as an equilibrium reaction.
                        #    we manually set reaction order here to override.
                        #    In our case, the water dissociation reaction is
                        #    mathematically represented by Kw = [H_+]*[OH_-]
-                       #    thus, we this reaction is of order 0 with respect
+                       #    thus, this reaction is of order 0 with respect
+
                        #    to the [H2O] concentration.
                        "reaction_order": {("Liq", "H2O"): 0,
                                         ("Liq", "H_+"): 1,
