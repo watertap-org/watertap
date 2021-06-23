@@ -83,11 +83,7 @@ Once the problem is setup and the parameters are identified, the parameter_sweep
 
 .. testcode::
 
-    parameter_sweep(m, sweep_params, outputs, 'results.csv', RO.solve)
-
-.. testoutput::
-
-    ...
+    parameter_sweep(m, sweep_params, outputs, 'results.csv')
 
 .. testcleanup::
 

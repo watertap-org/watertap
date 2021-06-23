@@ -16,6 +16,8 @@ import sys
 import os
 import itertools
 
+from idaes.core.util import get_solver
+
 # ================================================================
 
 def _init_mpi(mpi_comm=None):
@@ -102,7 +104,29 @@ def _aggregate_results(local_results, global_values, comm, num_procs):
 
 # ================================================================
 
-def parameter_sweep(model, sweep_params, outputs, results_file, optimize_function,
+def default_optimize(model, options=None, tee=False):
+    '''
+    Default optimization function used in parameter_sweep.
+    Raises a RuntimeError if the TerminationCondition is not optimal
+
+    Arguments:
+
+        options (optional) : Solver options to pass into idaes.core.util.get_solver.
+                             Default is None
+        tee (options) : To display the solver log. Default it False
+
+    '''
+    solver = get_solver(options=options)
+    results = solver.solve(m, tee=tee)
+
+    if results.solver.termination_condition != pyo.TerminationCondition.optimal:
+        raise RuntimeError("The solver failed to converge to an optimal solution. "
+                           "This suggests that the user provided infeasible inputs "
+                           "or that the model is poorly scaled.")
+
+# ================================================================
+
+def parameter_sweep(model, sweep_params, outputs, results_file, optimize_function=None,
         optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
         mpi_comm=None, debugging_data_dir=None):
 
@@ -131,9 +155,10 @@ def parameter_sweep(model, sweep_params, outputs, results_file, optimize_functio
         results_file : The path and file name where the results are to be saved; subdirectories
                        will be created as needed.
 
-        optimize_function : A user-defined function to perform the optimization of flowsheet `model`
-                            and loads the results back into `model`. The first argument of this
-                            function is `model`.
+        optimize_function (optional) : A user-defined function to perform the optimization of flowsheet `model`
+                                      and loads the results back into `model`. The first argument of this
+                                      function is `model`. The default uses the default IDAES solver,
+                                      raising an exception if the termination condition is not optimal.
 
         optimize_kwargs (optional) : Dictionary of kwargs to pass into every call to
                                      `optimize_function`. The first arg will always be `model`,
@@ -172,6 +197,9 @@ def parameter_sweep(model, sweep_params, outputs, results_file, optimize_functio
     # Initialize space to hold results
     local_num_cases = np.shape(local_values)[0]
     local_results = np.zeros((local_num_cases, len(outputs)))
+
+    if optimize_function is None:
+        optimize_function = default_optimize
 
     # Set up optimize_kwargs
     if optimize_kwargs is None:
