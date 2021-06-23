@@ -91,11 +91,16 @@ This seawater property package includes support for scaling, such as providing d
 
 The user can specify the scaling factors for component mass flowrates with the following:
 
-.. code-block:: python
+.. testsetup::
+
+   from pyomo.environ import ConcreteModel
+   from idaes.core import FlowsheetBlock
+
+.. testcode::
    
    # relevant imports
    import proteuslib.property_models.seawater_prop_pack as props
-   import idaes.core.util.scaling as calculate_scaling_factors
+   from idaes.core.util.scaling import calculate_scaling_factors
 
    # relevant assignments
    m = ConcreteModel()
