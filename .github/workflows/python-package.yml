@@ -34,6 +34,12 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
-    - name: Test documentation
+    - name: Test documentation code
       run: |
         make -C docs doctest -d
+    # just run the linkcheck on one of the Pythons
+    # so we don't slam external sites
+    - name: Test documenation links
+      if: matrix.python-version == 3.9 
+      run: |
+        make -C docs linkcheck -d
