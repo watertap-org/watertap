@@ -36,4 +36,4 @@ jobs:
         pytest
     - name: Test documentation
       run: |
-        make -C docs doctest -d
+        make -C docs doctest linkcheck -d
