@@ -139,7 +139,7 @@ def build():
     return m
 
 
-def set_operating_conditions(m, water_recovery=None, over_pressure=None, solver=None):
+def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=None):
     if solver is None:
         solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
 
