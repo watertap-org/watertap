@@ -50,7 +50,7 @@ def main():
 
     # build, set, and initialize
     m = build()
-    set_operating_conditions(m, solver=solver)
+    set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=solver)
     initialize_system(m, solver=solver)
     m.fs.RO.recovery_mass_phase_comp.display()
 
@@ -139,7 +139,7 @@ def build():
     return m
 
 
-def set_operating_conditions(m, solver=None):
+def set_operating_conditions(m, water_recovery=None, over_pressure=None, solver=None):
     if solver is None:
         solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
 
@@ -157,11 +157,10 @@ def set_operating_conditions(m, solver=None):
     # separator, no degrees of freedom (i.e. equal flow rates in PXR determines split fraction)
 
     # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
-    water_recovery = 0.5
     m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
     operating_pressure = calculate_operating_pressure(
         feed_state_block=m.fs.feed.properties[0],
-        over_pressure=0.15,
+        over_pressure=over_pressure,
         water_recovery=water_recovery,
         NaCl_passage=0.01,
         solver=solver)
