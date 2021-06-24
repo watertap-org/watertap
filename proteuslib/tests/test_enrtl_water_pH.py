@@ -15,6 +15,9 @@
     This test is to establish that the core chemistry packages in IDAES solve
     a simple water dissociation problem and return the correct pH value, as well
     as excerising the implementation of the ENRTL model within that same context.
+
+    This test also includes checking the pH value of a typical acid and checking
+    the calculated activity coefficients for a relatively dilute system of ions. 
 '''
 # Importing testing libraries
 import unittest
@@ -34,7 +37,7 @@ from idaes.generic_models.properties.core.pure.electrolyte import relative_permi
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.eos.enrtl import ENRTL
-from idaes.generic_models.properties.core.eos.enrtl_reference_states import Unsymmetric, Symmetric
+from idaes.generic_models.properties.core.eos.enrtl_reference_states import Unsymmetric
 
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
 from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
@@ -44,9 +47,6 @@ from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rx
 
 # Import safe log power law equation
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
-
-# Import built-in Gibb's Energy function
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import gibbs_energy
 
 # Import built-in van't Hoff function
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
@@ -58,9 +58,8 @@ from pyomo.environ import (ConcreteModel,
                            value,
                            Suffix)
 
+# Import the scaling methods
 from idaes.core.util import scaling as iscale
-
-import idaes.logger as idaeslog
 
 # Import pyomo methods to check the system units
 from pyomo.util.check_units import assert_units_consistent
@@ -193,7 +192,10 @@ water_thermo_config = {
               },
               # End Component list
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL},
+                            "equation_of_state": ENRTL,
+                            "equation_of_state_options": {
+                                    "reference_state": Unsymmetric}
+                            },
                     },
 
         "state_definition": FTPx,
@@ -225,7 +227,7 @@ water_thermo_config = {
                        #        based on a standard molar concentration of 1 mol/L
                        #        HOWEVER, the typical Kw dissociation constant of
                        #        1e-14 is defined on a molar basis. Thus, we must
-                       #        divide by the standard concentration raised to the
+                       #        divide by the total (~55.2 M) concentration raised to the
                        #        net reaction order (i.e., 2 in this case). Furthermore,
                        #        IDAES internally does molar basis as mol/m**3, thus,
                        #        we divide here by 1000**2 to perform both necessary
@@ -601,24 +603,19 @@ carbonic_thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "OH_-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   #"equilibrium_constant": gibbs_energy,
                    "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
                    "concentration_form": ConcentrationForm.activity,
                    "parameter_data": {
-                       #"dh_rxn_ref": (55.830, pyunits.kJ/pyunits.mol),
-                       #"ds_rxn_ref": (-80.7, pyunits.J/pyunits.mol/pyunits.K),
-                       #"T_eq_ref": (300, pyunits.K),
                        #NOTE: The k value on the activity basis is UNITLESS
                        #        based on a standard molar concentration of 1 mol/L
                        #        HOWEVER, the typical Kw dissociation constant of
                        #        1e-14 is defined on a molar basis. Thus, we must
-                       #        divide by the standard concentration raised to the
+                       #        divide by the total (~55.2 M) concentration raised to the
                        #        net reaction order (i.e., 2 in this case). Furthermore,
                        #        IDAES internally does molar basis as mol/m**3, thus,
                        #        we divide here by 1000**2 to perform both necessary
                        #        unit conversions in line.
-
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
                        "k_eq_ref": (10**-14/1000/1000/55.2/55.2,pyunits.mol**2/pyunits.L**2),
                        "T_eq_ref": (298, pyunits.K),
@@ -637,16 +634,19 @@ carbonic_thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "HCO3_-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   #"equilibrium_constant": gibbs_energy,
                    "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
                    "concentration_form": ConcentrationForm.activity,
                    "parameter_data": {
-                       #"dh_rxn_ref": (7.7, pyunits.kJ/pyunits.mol),
-                       #"ds_rxn_ref": (-95.8, pyunits.J/pyunits.mol/pyunits.K),
-                       #"T_eq_ref": (300, pyunits.K),
-
-
+                       #NOTE: The k value on the activity basis is UNITLESS
+                       #        based on a standard molar concentration of 1 mol/L
+                       #        HOWEVER, the typical Ka1 dissociation constant of
+                       #        10**-6.33 is defined on a molar basis. Thus, we must
+                       #        divide by the total (~55.2 M) concentration raised to the
+                       #        net reaction order (i.e., 1 in this case). Furthermore,
+                       #        IDAES internally does molar basis as mol/m**3, thus,
+                       #        we divide here by 1000 to perform both necessary
+                       #        unit conversions in line.
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
                        "k_eq_ref": (10**-6.33/1000/55.2,pyunits.mol/pyunits.L),
                        "T_eq_ref": (300, pyunits.K),
@@ -665,16 +665,19 @@ carbonic_thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "CO3_2-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   #"equilibrium_constant": gibbs_energy,
                    "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
                    "concentration_form": ConcentrationForm.activity,
                    "parameter_data": {
-                       #"dh_rxn_ref": (14.9, pyunits.kJ/pyunits.mol),
-                       #"ds_rxn_ref": (-148.1, pyunits.J/pyunits.mol/pyunits.K),
-                       #"T_eq_ref": (300, pyunits.K),
-
-
+                       #NOTE: The k value on the activity basis is UNITLESS
+                       #        based on a standard molar concentration of 1 mol/L
+                       #        HOWEVER, the typical Ka1 dissociation constant of
+                       #        10**-10.35 is defined on a molar basis. Thus, we must
+                       #        divide by the total (~55.2 M) concentration raised to the
+                       #        net reaction order (i.e., 1 in this case). Furthermore,
+                       #        IDAES internally does molar basis as mol/m**3, thus,
+                       #        we divide here by 1000 to perform both necessary
+                       #        unit conversions in line.
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
                        "k_eq_ref": (10**-10.35/1000/55.2,pyunits.mol/pyunits.L),
                        "T_eq_ref": (300, pyunits.K),
@@ -693,124 +696,144 @@ carbonic_thermo_config = {
     }
     # End thermo_config definition
 
-if __name__ == "__main__":
-    model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=carbonic_thermo_config)
-    model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params, **reaction_config})
-    model.fs.unit = EquilibriumReactor(default={
-            "property_package": model.fs.thermo_params,
-            "reaction_package": model.fs.rxn_params,
-            "has_rate_reactions": False,
-            "has_equilibrium_reactions": False,
-            "has_heat_transfer": False,
-            "has_heat_of_reaction": False,
-            "has_pressure_change": False})
+# Start test class
+class TestENRTLcarbonicAcid():
+    @pytest.fixture(scope="class")
+    def carbonic_acid_model(self):
+        model = ConcreteModel()
+        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs.thermo_params = GenericParameterBlock(default=carbonic_thermo_config)
+        model.fs.rxn_params = GenericReactionParameterBlock(
+                default={"property_package": model.fs.thermo_params, **reaction_config})
+        model.fs.unit = EquilibriumReactor(default={
+                "property_package": model.fs.thermo_params,
+                "reaction_package": model.fs.rxn_params,
+                "has_rate_reactions": False,
+                "has_equilibrium_reactions": False,
+                "has_heat_transfer": False,
+                "has_heat_of_reaction": False,
+                "has_pressure_change": False})
 
-    #NOTE: ENRTL model cannot initialize if the inlet values are 0
-    zero = 1e-20
-    acid = 0.00206/(55.2+0.00206)
-    #acid = 1e-10/(55.2+1e-10)
-    model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( zero )
-    model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( zero )
+        #NOTE: ENRTL model cannot initialize if the inlet values are 0
+        zero = 1e-20
+        acid = 0.00206/(55.2+0.00206)
+        model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( zero )
 
-    # Added as acid form (should be pH ~ 4.5 --> Got pH ~ 4.5 (4.5 seawater I) (4.5 ideal))
-    #model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( zero )
-    #model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( zero )
-    #model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( acid )
-    #odel.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( zero + 0.7/(55.8) )
+        # Added as conjugate base form
+        model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( acid )
+        model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( acid )
 
-    # Added as conjugate base form (should be pH ~ 8.3  --> Got pH ~ 8.275 (8.03 seawater I) (8.3 ideal))
-    #model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( zero )
-    #model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( acid )
-    #model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( zero )
-    #model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( acid  + 0.7/(55.8))
+        model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1.-4*zero-acid- \
+                        value(model.fs.unit.inlet.mole_frac_comp[0, "Na_+"]) )
+        model.fs.unit.inlet.pressure.fix(101325.0)
+        model.fs.unit.inlet.temperature.fix(298.)
+        model.fs.unit.inlet.flow_mol.fix(10)
 
-    # Added as most basic form (should be pH ~ 10.8  --> Got pH ~ 10.7 (10.5 seawater I) (10.8 ideal))
-    model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( acid )
-    model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( zero )
-    model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( zero )
-    model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( 2*acid + 0.7/(55.8))
+        return model
 
-    model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1.-4*zero-acid-value(model.fs.unit.inlet.mole_frac_comp[0, "Na_+"]) )
-    model.fs.unit.inlet.pressure.fix(101325.0)
-    model.fs.unit.inlet.temperature.fix(298.)
-    model.fs.unit.inlet.flow_mol.fix(10)
+    @pytest.mark.unit
+    def test_build_carbonic_acid(self, carbonic_acid_model):
+        model = carbonic_acid_model
 
-    eps = 1e-20
-    model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
-    model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
-    model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
+        assert hasattr(model.fs.thermo_params, 'component_list')
+        assert len(model.fs.thermo_params.component_list) == 7
+        assert 'H2O' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.H2O, Solvent)
+        assert 'H_+' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('H_+'), Cation)
+        assert 'OH_-' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('OH_-'), Anion)
 
-    #Add scaling factors for reaction extent
-    for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
-        scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
-        iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
+        assert 'Na_+' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('Na_+'), Cation)
+        assert 'HCO3_-' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('HCO3_-'), Anion)
+        assert 'CO3_2-' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('CO3_2-'), Anion)
+        assert 'H2CO3' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.H2CO3, Solute)
 
-    iscale.calculate_scaling_factors(model.fs.unit)
+    #NOTE: This test takes ~8s and I have no idea why...
+    @pytest.mark.unit
+    def test_units_carbonic_acid(self, carbonic_acid_model):
+        model = carbonic_acid_model
+        assert_units_consistent(model)
 
-    solver.options['bound_push'] = 1e-20
-    solver.options['mu_init'] = 1e-6
-    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+    @pytest.mark.unit
+    def test_dof_carbonic_acid(self, carbonic_acid_model):
+        model = carbonic_acid_model
+        assert (degrees_of_freedom(model) == 0)
 
-    #model.fs.unit.control_volume.properties_out[0.0].inherent_equilibrium_constraint["H2CO3_Ka1"].pprint()
+    @pytest.mark.component
+    def test_scaling_carbonic_acid(self, carbonic_acid_model):
+        model = carbonic_acid_model
 
-    #model.fs.thermo_params.solute_set.display()
-    #model.fs.thermo_params.solvent_set.display()
-    results = solver.solve(model, tee=True, symbolic_solver_labels=True)
+        eps = 1e-20
+        model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
+        model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
+        model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
 
-    #Error evaluating constraint fs.unit.control_volume.properties_out[0.0].inherent_equilibrium_constraint[H2CO3_Ka1]: can't evaluate pow'(0,0.5).
+        #Add scaling factors for reaction extent
+        for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
 
-    print("comp\tinlet.mole_frac\toutlet.mole_frac")
-    for i in model.fs.unit.inlet.mole_frac_comp:
-        print(str(i[1])+"\t"+str(value(model.fs.unit.inlet.mole_frac_comp[i[0], i[1]]))
-            +"\t"+str(value(model.fs.unit.outlet.mole_frac_comp[i[0], i[1]])))
-    print("\n")
+        iscale.calculate_scaling_factors(model.fs.unit)
 
-    pH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"])*55.2)
-    pOH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","OH_-"])*55.2)
+        assert hasattr(model.fs.unit.control_volume, 'scaling_factor')
+        assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
 
-    print("Outlet pH =\t"+ str(pH) )
-    print("Outlet pOH=\t"+ str(pOH) )
-    print()
+        assert hasattr(model.fs.unit.control_volume.properties_out[0.0], 'scaling_factor')
+        assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
 
-    pHo = -log10(value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","H_+"])/1000*value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"])/value(model.fs.unit.outlet.mole_frac_comp[0,"H_+"]))
-    pOHo = -log10(value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OH_-"])/1000*value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","OH_-"])/value(model.fs.unit.outlet.mole_frac_comp[0,"OH_-"]))
+        assert hasattr(model.fs.unit.control_volume.properties_in[0.0], 'scaling_factor')
+        assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
-    print("Outlet pHo =\t"+ str(pHo) )
-    print("Outlet pOHo=\t"+ str(pOHo) )
-    print()
+    @pytest.mark.component
+    def test_initialize_solver_carbonic_acid(self, carbonic_acid_model):
+        model = carbonic_acid_model
+        solver.options['bound_push'] = 1e-20
+        solver.options['mu_init'] = 1e-6
+        solver.options['max_iter'] = 100
+        model.fs.unit.initialize(optarg=solver.options)
+        assert degrees_of_freedom(model) == 0
 
-    for index in model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp:
-        print(index)
-        print("C (M) = " + str(value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[index])/1000))
-        print("a (-) = " + str(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp[index])))
-        gamma = value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp[index])*1/(value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[index])/1000)
-        print("gamma_C = "+ str(gamma))
-        gamma = value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp[index])/value(model.fs.unit.outlet.mole_frac_comp[0,index[1]])
-        print("gamma_x = "+ str(gamma))
-        print()
+    @pytest.mark.component
+    def test_solve_carbonic_acid(self, carbonic_acid_model):
+        model = carbonic_acid_model
+        solver.options['max_iter'] = 2
+        results = solver.solve(model)
+        print(results.solver.termination_condition)
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
-    Kw = value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"])*value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","OH_-"])
-    print("pKw_a = " + str(-log10(Kw)))
-    Ka1 = value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"])*value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","HCO3_-"])/value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H2CO3"])
-    print("pKa1_a = " + str(-log10(Ka1)))
-    Ka2 = value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"])*value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","CO3_2-"])/value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","HCO3_-"])
-    print("pKa2_a = " + str(-log10(Ka2)))
-    print()
+    @pytest.mark.component
+    def test_solution_carbonic_acid(self, carbonic_acid_model):
+        model = carbonic_acid_model
 
-    Kw = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","H_+"])/1000*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OH_-"])/1000
-    print("pKw_C = " + str(-log10(Kw)))
-    Ka1 = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","H_+"])*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HCO3_-"])/value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","H2CO3"])/1000
-    print("pKa1_C = " + str(-log10(Ka1)))
-    Ka2 = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","H_+"])*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","CO3_2-"])/value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HCO3_-"])/1000
-    print("pKa2_C = " + str(-log10(Ka2)))
+        pH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"])*55.2)
+        pOH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","OH_-"])*55.2)
 
-    total_acid = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","H2CO3"])/1000
-    total_acid += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HCO3_-"])/1000
-    total_acid += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","CO3_2-"])/1000
+        assert pytest.approx(8.27544, rel=1e-5) == pH
+        assert pytest.approx(5.72455, rel=1e-5) == pOH
 
-    print()
-    print("Acid Added = " +str(acid*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","H2O"])/1000))
-    print("Final Acid = " + str(total_acid))
+        gamma = {}
+        for index in model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp:
+            gamma[index] = value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp[index])/value(model.fs.unit.outlet.mole_frac_comp[0,index[1]])
+
+        assert pytest.approx(0.95075, rel=1e-5) == gamma[('Liq', 'OH_-')]
+        assert pytest.approx(0.95075, rel=1e-5) == gamma[('Liq', 'H_+')]
+        assert pytest.approx(0.95075, rel=1e-5) == gamma[('Liq', 'Na_+')]
+        assert pytest.approx(0.95075, rel=1e-5) == gamma[('Liq', 'HCO3_-')]
+        assert pytest.approx(0.81710, rel=1e-5) == gamma[('Liq', 'CO3_2-')]
+        assert pytest.approx(1.00000, rel=1e-5) == gamma[('Liq', 'H2O')]
+        assert pytest.approx(1.00000, rel=1e-5) == gamma[('Liq', 'H2CO3')]
+
+        total_acid = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","H2CO3"])/1000
+        total_acid += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HCO3_-"])/1000
+        total_acid += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","CO3_2-"])/1000
+
+        assert pytest.approx(0.0020611, rel=1e-5) == total_acid
