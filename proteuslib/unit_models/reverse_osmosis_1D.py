@@ -307,7 +307,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
     def _make_performance(self):
         """
-        Constraints for unit model.
+        Variables and constraints for unit model.
 
         Args:
             None
@@ -463,7 +463,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         @self.Expression(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
-                         doc="Average flux expression")
+                         doc="Total component mass flux expression")
         def flux_mass_phase_comp_sum(b, t, p, j):
             return sum(b.flux_mass_phase_comp[t, x, p, j] #* x
                        for x in self.config.feed_side.length_domain)
@@ -475,7 +475,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Permeate mass flow rates exiting unit")
         def eq_permeate_production(b, t, x, p, j):
-            return (b.permeate_side.permeate_outlet[t].get_material_flow_terms(p, j)
+            return (b.permeate_side.permeate_out[t].get_material_flow_terms(p, j)
                     == b.area * b.flux_mass_phase_comp_sum[t, p, j])
 
         # Feed and permeate-side connection
@@ -500,5 +500,68 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          doc="Isothermal assumption for permeate")
         def eq_permeate_isothermal(b, t, x):
             return b.feed_side.properties[t, x].temperature == \
-                   b.properties_permeate[t, x].temperature
+                   b.permeate_side.properties_permeate[t, x].temperature
 
+    def initialize(blk,
+                   feed_side_args=None,
+                   permeate_side_args=None,
+                   permeate_block_args=None,
+                   outlvl=idaeslog.NOTSET,
+                   solver=None,
+                   optarg=None):
+        """
+        Initialization routine for 1D-RO unit.
+
+        Keyword Arguments:
+            feed_side_args : a dict of arguments to be passed to the property
+             package(s) of the feed_side to provide an initial state for
+             initialization (see documentation of the specific
+             property package)
+            permeate_side_args : a dict of arguments to be passed to the property
+             package(s) of the permeate_side to provide an initial state for
+             initialization (see documentation of the specific
+             property package)
+            permeate_block_args : a dict of arguments to be passed to the property
+             package(s) of the final permeate StateBlock to provide an initial state for
+             initialization (see documentation of the specific
+             property package)
+            outlvl : sets output level of initialization routine
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
+            optarg : solver options dictionary object (default=None, use default solver options)
+
+        Returns:
+            None
+        """
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+
+        # Create solver
+        opt = get_solver(solver, optarg)
+
+        # ---------------------------------------------------------------------
+        # Initialize feed_side block
+        flags_shell = blk.feed_side.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=feed_side_args)
+
+        # Initialize permeate_side block
+        flags_shell = blk.permeate_side.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=permeate_side_args)
+
+        # Initialize permeate outlet block
+        flags_shell = blk.permeate_side.properties_out.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=permeate_side_args)
+
+        init_log.info_high("Initialization Step 1 Complete.")
+
+        # ---------------------------------------------------------------------
+        # Solve unit
