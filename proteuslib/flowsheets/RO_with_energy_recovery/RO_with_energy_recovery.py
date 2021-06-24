@@ -67,7 +67,6 @@ def main():
     display_design(m)
     display_state(m)
 
-
 def build():
     # flowsheet set up
     m = ConcreteModel()
@@ -133,6 +132,10 @@ def build():
     # scaling
     m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
     m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
+    iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
+    iscale.set_scaling_factor(m.fs.P2.control_volume.work, 1e-3)
+    iscale.set_scaling_factor(m.fs.PXR.low_pressure_side.work, 1e-3)
+    iscale.set_scaling_factor(m.fs.PXR.high_pressure_side.work, 1e-3)
     iscale.calculate_scaling_factors(m)
 
     return m
@@ -245,8 +248,9 @@ def calculate_RO_area(unit=None, water_recovery=0.5, solver=None):
                         (default=0.5)
         solver: solver object to be used (default=None)
     """
-    # intialize unit
+    # initialize unit
     unit.initialize(optarg=solver.options if solver else None)
+
     # fix inlet conditions
     flags = fix_state_vars(unit.feed_side.properties_in)
     # fix unit water recovery

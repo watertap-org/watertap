@@ -654,11 +654,10 @@ class ReverseOsmosisData(UnitModelBlockData):
                 prop_io = b.properties_in[t]
             elif x == 'out':
                 prop_io = b.properties_out[t]
-            return (prop_io.mass_frac_phase_comp['Liq', j] ==
-                    self.flux_mass_io_phase_comp[t, x, 'Liq', j]
-                    / sum(self.flux_mass_io_phase_comp[t, x, 'Liq', jj]
+            return (prop_io.mass_frac_phase_comp['Liq', j]
+                    * sum(self.flux_mass_io_phase_comp[t, x, 'Liq', jj]
                           for jj in self.config.property_package.component_list)
-                    )
+                    == self.flux_mass_io_phase_comp[t, x, 'Liq', j])
         @self.permeate_side.Constraint(self.flowsheet().config.time,
                                    self.io_list,
                                    doc="Permeate instantaneous temperature")
