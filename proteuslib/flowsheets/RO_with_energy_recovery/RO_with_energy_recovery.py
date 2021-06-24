@@ -52,6 +52,7 @@ def main():
     m = build()
     set_operating_conditions(m, solver=solver)
     initialize_system(m, solver=solver)
+    m.fs.RO.recovery_mass_phase_comp.display()
 
     # simulate and display
     solve(m, solver=solver)
@@ -97,10 +98,7 @@ def build():
     m.fs.disposal = Product(default={'property_package': m.fs.properties})
 
     # additional variables or expressions
-    feed_flow_vol_total = m.fs.feed.properties[0].flow_vol
     product_flow_vol_total = m.fs.product.properties[0].flow_vol
-    m.fs.recovery = Expression(
-        expr=product_flow_vol_total/feed_flow_vol_total)
     m.fs.annual_water_production = Expression(
         expr=pyunits.convert(product_flow_vol_total, to_units=pyunits.m ** 3 / pyunits.year)
              * m.fs.costing_param.load_factor)
@@ -159,11 +157,12 @@ def set_operating_conditions(m, solver=None):
     # separator, no degrees of freedom (i.e. equal flow rates in PXR determines split fraction)
 
     # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
+    water_recovery = 0.5
     m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
     operating_pressure = calculate_operating_pressure(
         feed_state_block=m.fs.feed.properties[0],
-        over_pressure=0.3,
-        water_recovery=0.5,
+        over_pressure=0.15,
+        water_recovery=water_recovery,
         NaCl_passage=0.01,
         solver=solver)
     m.fs.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
@@ -183,7 +182,7 @@ def set_operating_conditions(m, solver=None):
     m.fs.RO.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     m.fs.RO.width.fix(5)  # membrane stage width [m]
-    # initiate RO feed values to determine area
+    # initialize RO
     m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'] = \
         value(m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'H2O'])
     m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'NaCl'] = \
@@ -192,8 +191,12 @@ def set_operating_conditions(m, solver=None):
         value(m.fs.feed.properties[0].temperature)
     m.fs.RO.feed_side.properties_in[0].pressure = \
         value(m.fs.P1.control_volume.properties_out[0].pressure)
-    RO_area = calculate_RO_area(unit=m.fs.RO, water_recovery=0.5, solver=solver)
-    m.fs.RO.area.fix(RO_area)
+    m.fs.RO.area.fix(50)  # guess area for RO initialization
+    m.fs.RO.initialize(optarg=solver.options)
+
+    # unfix guessed area, and fix water recovery
+    m.fs.RO.area.unfix()
+    m.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'].fix(water_recovery)
 
     # check degrees of freedom
     if degrees_of_freedom(m) != 0:
@@ -239,32 +242,6 @@ def calculate_operating_pressure(feed_state_block=None, over_pressure=0.15,
     return value(t.brine[0].pressure_osm) * (1 + over_pressure)
 
 
-def calculate_RO_area(unit=None, water_recovery=0.5, solver=None):
-    """
-    determine RO membrane area required to achieve the specified water recovery:
-        unit:  the RO unit model, e.g. m.fs.RO, it should have its inlet feed state block
-               initiated to the correct values (default=None)
-        water_recovery: the mass-based fraction of inlet H2O that becomes permeate
-                        (default=0.5)
-        solver: solver object to be used (default=None)
-    """
-    # initialize unit
-    unit.initialize(optarg=solver.options if solver else None)
-
-    # fix inlet conditions
-    flags = fix_state_vars(unit.feed_side.properties_in)
-    # fix unit water recovery
-    unit.feed_side.properties_out[0].flow_mass_phase_comp['Liq', 'H2O'].fix(
-        unit.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'].value * (1 - water_recovery))
-    # solve for unit area
-    check_dof(unit)
-    solve(unit, solver=solver)
-    # unfix variables
-    revert_state_vars(unit.feed_side.properties_in, flags)
-    unit.feed_side.properties_out[0].flow_mass_phase_comp['Liq', 'H2O'].unfix()
-    return unit.area.value
-
-
 def solve(blk, solver=None, tee=False):
     if solver is None:
         solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
@@ -287,10 +264,12 @@ def check_solve(results):
 
 
 def initialize_system(m, solver=None):
-
     if solver is None:
         solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
-    optarg = solver.options 
+    optarg = solver.options
+
+    # ---initialize RO---
+    m.fs.RO.initialize(optarg=optarg)
 
     # ---initialize feed block---
     m.fs.feed.initialize(optarg=optarg)
@@ -366,17 +345,14 @@ def optimize(m, solver=None):
     m.fs.P2.deltaP.setlb(0)
 
     # RO
-    m.fs.RO.area.unfix()  # area in membrane stage [m2]
     m.fs.RO.area.setlb(1)
     m.fs.RO.area.setub(150)
 
     # additional specifications
-    m.fs.product_recovery = Param(initialize=0.5, mutable=True)        # product mass flow rate fraction of feed [-]
-    m.fs.product_salinity = Param(initialize=500e-6, mutable=True)     # product NaCl mass fraction [-]
-    m.fs.minimum_water_flux = Param(initialize=1./3600., mutable=True) # minimum water flux [kg/m2-s]
+    m.fs.product_salinity = Param(initialize=500e-6, mutable=True)  # product NaCl mass fraction [-]
+    m.fs.minimum_water_flux = Param(initialize=1./3600., mutable=True)  # minimum water flux [kg/m2-s]
 
     # additional constraints
-    m.fs.eq_recovery = Constraint(expr=m.fs.product_recovery == m.fs.recovery)
     m.fs.eq_product_quality = Constraint(
         expr=m.fs.product.properties[0].mass_frac_phase_comp['Liq', 'NaCl'] <= m.fs.product_salinity)
     iscale.constraint_scaling_transform(m.fs.eq_product_quality, 1e3)  # scaling constraint
@@ -400,7 +376,8 @@ def display_system(m):
     prod_mass_frac_NaCl = m.fs.product.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / prod_flow_mass
     print('Product: %.3f kg/s, %.0f ppm' % (prod_flow_mass, prod_mass_frac_NaCl * 1e6))
 
-    print('Recovery: %.1f%%' % (value(m.fs.recovery) * 100))
+    print('Volumetric recovery: %.1f%%' % (value(m.fs.RO.recovery_vol_phase[0, 'Liq']) * 100))
+    print('Water recovery: %.1f%%' % (value(m.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O']) * 100))
     print('Energy Consumption: %.1f kWh/m3' % value(m.fs.specific_energy_consumption))
     print('Levelized cost of water: %.2f $/m3' % value(m.fs.costing.LCOW))
 
