@@ -756,6 +756,8 @@ if __name__ == "__main__":
 
     #model.fs.unit.control_volume.properties_out[0.0].inherent_equilibrium_constraint["H2CO3_Ka1"].pprint()
 
+    model.fs.thermo_params.solute_set.display()
+    model.fs.thermo_params.solvent_set.display()
     results = solver.solve(model, tee=True, symbolic_solver_labels=True)
 
     #Error evaluating constraint fs.unit.control_volume.properties_out[0.0].inherent_equilibrium_constraint[H2CO3_Ka1]: can't evaluate pow'(0,0.5).
