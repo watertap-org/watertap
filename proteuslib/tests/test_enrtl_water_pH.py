@@ -715,23 +715,23 @@ if __name__ == "__main__":
     model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( zero )
     model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( zero )
 
-    # Added as acid form (should be pH ~ 4.5 --> Got pH ~ 4.5 (4.5 ideal))
+    # Added as acid form (should be pH ~ 4.5 --> Got pH ~ 4.5 (4.5 seawater I) (4.5 ideal))
     #model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( zero )
     #model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( zero )
     #model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( acid )
-    #model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( zero )
+    #odel.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( zero + 0.7/(55.8) )
 
-    # Added as conjugate base form (should be pH ~ 8.3  --> Got pH ~ 9.1 (8.3 ideal))
-    model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( zero )
-    model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( acid )
-    model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( zero )
-    model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( acid )
-
-    # Added as most basic form (should be pH ~ 10.8  --> Got pH ~ 11.5 (10.8 ideal))
-    #model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( acid )
-    #model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( zero )
+    # Added as conjugate base form (should be pH ~ 8.3  --> Got pH ~ 8.275 (8.03 seawater I) (8.3 ideal))
+    #model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( zero )
+    #model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( acid )
     #model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( zero )
-    #model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( 2*acid )
+    #model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( acid  + 0.7/(55.8))
+
+    # Added as most basic form (should be pH ~ 10.8  --> Got pH ~ 10.7 (10.5 seawater I) (10.8 ideal))
+    model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( acid )
+    model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix( zero )
+    model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix( zero )
+    model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( 2*acid + 0.7/(55.8))
 
     model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1.-4*zero-acid-value(model.fs.unit.inlet.mole_frac_comp[0, "Na_+"]) )
     model.fs.unit.inlet.pressure.fix(101325.0)
@@ -752,7 +752,7 @@ if __name__ == "__main__":
 
     solver.options['bound_push'] = 1e-20
     solver.options['mu_init'] = 1e-6
-    #model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     #model.fs.unit.control_volume.properties_out[0.0].inherent_equilibrium_constraint["H2CO3_Ka1"].pprint()
 
