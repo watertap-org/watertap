@@ -325,10 +325,6 @@ class TestReverseOsmosis():
     def test_var_scaling(self, RO_frame):
         m = RO_frame
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        for (var, v) in badly_scaled_var_lst:
-            print('var:', var)
-            print('value: ', v)
-
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
