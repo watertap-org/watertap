@@ -34,7 +34,7 @@ from idaes.generic_models.properties.core.pure.electrolyte import relative_permi
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.eos.enrtl import ENRTL
-from idaes.generic_models.properties.core.eos.enrtl_reference_states import Unsymmetric
+from idaes.generic_models.properties.core.eos.enrtl_reference_states import Unsymmetric, Symmetric
 
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
 from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
@@ -756,8 +756,8 @@ if __name__ == "__main__":
 
     #model.fs.unit.control_volume.properties_out[0.0].inherent_equilibrium_constraint["H2CO3_Ka1"].pprint()
 
-    model.fs.thermo_params.solute_set.display()
-    model.fs.thermo_params.solvent_set.display()
+    #model.fs.thermo_params.solute_set.display()
+    #model.fs.thermo_params.solvent_set.display()
     results = solver.solve(model, tee=True, symbolic_solver_labels=True)
 
     #Error evaluating constraint fs.unit.control_volume.properties_out[0.0].inherent_equilibrium_constraint[H2CO3_Ka1]: can't evaluate pow'(0,0.5).
