@@ -166,7 +166,7 @@ class TestEnergyRecoverySystem:
         assert m.fs.RO.width.is_fixed()
         assert value(m.fs.RO.width) == 5
         assert m.fs.RO.area.is_fixed()
-        assert value(m.fs.RO.area) == pytest.approx(59.24, rel=1e-3)
+        assert value(m.fs.RO.area) == pytest.approx(59.02, rel=1e-3)
 
         # check degrees of freedom
         assert degrees_of_freedom(m) == 0
@@ -224,7 +224,7 @@ class TestEnergyRecoverySystem:
         assert captured.out == \
 """---system metrics---
 Feed: 1.00 kg/s, 35000 ppm
-Product: 0.483 kg/s, 282 ppm
+Product: 0.483 kg/s, 281 ppm
 Recovery: 49.5%
 Energy Consumption: 2.7 kWh/m3
 Levelized cost of water: 0.44 $/m3
@@ -240,7 +240,7 @@ Levelized cost of water: 0.44 $/m3
         assert captured.out == \
 """---decision variables---
 Operating pressure 74.9 bar
-Membrane area 59.2 m2
+Membrane area 59.0 m2
 ---design variables---
 Separator
 Split fraction 50.53
@@ -269,7 +269,7 @@ Split 2   : 0.505 kg/s, 35000 ppm, 1.0 bar
 PXR LP out: 0.505 kg/s, 35000 ppm, 70.3 bar
 P2 out    : 0.505 kg/s, 35000 ppm, 74.9 bar
 Mix out   : 1.000 kg/s, 35000 ppm, 74.9 bar
-RO perm   : 0.483 kg/s, 282 ppm, 1.0 bar
+RO perm   : 0.483 kg/s, 281 ppm, 1.0 bar
 RO reten  : 0.517 kg/s, 67387 ppm, 73.9 bar
 PXR HP out: 0.517 kg/s, 67387 ppm, 1.0 bar
 """
@@ -281,7 +281,7 @@ PXR HP out: 0.517 kg/s, 67387 ppm, 1.0 bar
         optimize(m, solver=solver)
 
         # check decision variables
-        assert value(m.fs.RO.inlet.pressure[0]) == pytest.approx(6.275e6, rel=1e-3)
+        assert value(m.fs.RO.inlet.pressure[0]) == pytest.approx(6.047e6, rel=1e-3)
         assert value(m.fs.RO.area) == pytest.approx(94.55, rel=1e-3)
         # check system metrics
         assert value(m.fs.recovery) == 0.5
