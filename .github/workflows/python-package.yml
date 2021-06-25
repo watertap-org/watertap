@@ -11,7 +11,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -26,11 +25,11 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install pytest
-        python -m pip install git+https://github.com/nawi-hub/idaes-pse@main
+        python -m pip install --progress-bar off --upgrade pip
+        pip install --progress-bar off -r requirements-dev.txt
+        pip list
+        pip show idaes-pse
         idaes get-extensions --verbose
-        pip install -r requirements-dev.txt
     - name: Test with pytest
       run: |
         pytest
