@@ -7,6 +7,10 @@ REM Command file for Sphinx documentation
 if "%SPHINXBUILD%" == "" (
 	set SPHINXBUILD=sphinx-build
 )
+if "%SPHINXAPIDOC%" == "" (
+    set SPHINXAPIDOC=sphinx-apidoc
+)
+
 set SOURCEDIR=.
 set BUILDDIR=_build
 
@@ -25,11 +29,13 @@ if errorlevel 9009 (
 	exit /b 1
 )
 
+%SPHINXAPIDOC%  -f -M -H ProteusLib -d 3 -o apidoc ../proteuslib "../*tests*"
 %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 goto end
 
 :help
 %SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
+goto end
 
 :end
 popd

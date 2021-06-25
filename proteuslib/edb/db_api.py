@@ -23,11 +23,11 @@ Database operations API
 # stdlib
 import logging
 import re
-from typing import List, Optional
+from typing import Dict, List, Optional, Union
 # third-party
 from pymongo import MongoClient
 # package
-from .data_model import Result, Component, Reaction, Base
+from .data_model import Result, Component, Reaction, Base, DataWrapper
 
 __author__ = "Dan Gunter (LBNL)"
 
@@ -42,6 +42,7 @@ class ElectrolyteDB:
     DEFAULT_URL = "mongodb://localhost:27017"
     DEFAULT_DB = "electrolytedb"
 
+    # make sure these match lowercase names of the DataWrapper subclasses in the `data_model` module
     _known_collections = ("base", "component", "reaction")
 
     def __init__(self, url=DEFAULT_URL, db=DEFAULT_DB):
@@ -60,9 +61,10 @@ class ElectrolyteDB:
             All components matching the names (or all if not specified)
         """
         if component_names:
-            regex = "|".join(component_names)
-            query = {"name": {"$regex": regex}}
+            query = {"$or": [{"name": n} for n in component_names]}
+            _log.debug(f"get_components. components={component_names} query={query}")
         else:
+            _log.debug(f"get_components. get all components (empty query)")
             query = {}
         collection = self._db.component
         result = Result(iterator=collection.find(filter=query), item_class=Component)
@@ -77,34 +79,59 @@ class ElectrolyteDB:
             component_names: List of component names
 
         Returns:
-            All reactions containing all of the names (or all reactions,
+            All reactions containing any of the names (or all reactions,
             if not specified)
         """
+        # if it has a space and a charge, take the formula part only
         if component_names:
-            query = {"components": {"$all": component_names}}
+            cnames = [c.split(" ", 1)[0] for c in component_names]
+            query = {"components": {"$in": cnames}}
         else:
             query = {}
         collection = self._db.reaction
         result = Result(iterator=collection.find(filter=query), item_class=Reaction)
         return result
 
-    def get_base(self, name: str):
+    def get_base(self, name: str = None):
         """Get base information by name of its type.
         """
-        query = {"name": name}
+        if name:
+            query = {"name": name}
+        else:
+            query = {}
         collection = self._db.base
         result = Result(iterator=collection.find(filter=query), item_class=Base)
         return result
 
-    def load(self, data):
-        num = 0
-        for record in data:
-            rec_type = record["type"]
+    def load(self, data: Union[Dict, List[Dict], DataWrapper, List[DataWrapper]], rec_type: str = "base") -> int:
+        """Load a single record or list of records.
+
+        Args:
+            data: Data to load, as a single or list of dictionaries or :class:`DataWrapper` subclass
+            rec_type: If input is a dict, the type of record. This argument is ignored if the input is
+                      a subclass of DataWrapper.
+
+        Returns:
+            Number of records loaded
+        """
+        is_object = False
+        if isinstance(data, DataWrapper):
+            data = [data]
+            is_object = True
+        elif isinstance(data, dict):
+            data = [data]
+        else:
+            is_object = isinstance(data[0], DataWrapper)
+        if is_object:
+            rec_type = data[0].__class__.__name__.lower()
+        else:
             assert rec_type in self._known_collections
+        num = 0
+        for item in data:
             coll = getattr(self._db, rec_type)
+            record = item.json_data if is_object else item
             process_func = getattr(self, f"_process_{rec_type}")
             processed_record = process_func(record)
-            del record["type"]
             coll.insert_one(processed_record)
             num += 1
         return num
@@ -116,19 +143,13 @@ class ElectrolyteDB:
 
     @classmethod
     def _process_reaction(cls, rec):
-        # stoichiometry
-        rec_stoich = rec["stoichiometry"]
-        liq = {}
-        for key, value in rec_stoich.items():
-            if not key.startswith("Liq/"):
-                raise ValueError(f"Non-liquid in stoichiometry at: {rec}")
-            species = cls._process_species(key[4:])
-            liq[species] = value
-        rec["stoichiometry"] = {"Liq": liq}
-
         # elements (for search)
         rec["reactant_elements"] = get_elements(rec["components"])
 
+        return rec
+
+    @classmethod
+    def _process_base(cls, rec):
         return rec
 
     @staticmethod
