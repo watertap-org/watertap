@@ -34,6 +34,18 @@ for active use by water treatment researchers and engineers.""".replace(
     "\n", " "
 ).strip()
 
+
+SPECIAL_DEPENDENCIES_FOR_RELEASE = [
+    "idaes-pse>=1.10.1",  # from PyPI
+]
+
+SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
+    # update with a tag from the nawi-hub/idaes-pse
+    # when a version of IDAES newer than the latest stable release from PyPI
+    # will become needed for the proteuslib development
+    "idaes-pse @ https://github.com/nawi-hub/idaes-pse/archive/1.10.1.zip",
+]
+
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
 
@@ -76,7 +88,8 @@ setup(
     python_requires=">=3.6, <4",
     install_requires=[
         # primary requirements for unit and property models
-        "idaes-pse",
+        # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of proteuslib
+        *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
         "pyomo",  # (also needed for units in electrolyte database (edb))
         # the following requirements are for the edb
         "pymongo>3",  # database interface
