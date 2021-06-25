@@ -213,6 +213,46 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                                      "the provided property package has specified {} solvent components"
                                      .format(len(self.solvent_list)))
 
+        if self.config.feed_side.transformation_method is useDefault:
+            _log.warning(
+                "Discretization method was "
+                "not specified for the feed side of the "
+                "reverse osmosis module. "
+                "Defaulting to finite "
+                "difference method on the feed side."
+            )
+            self.config.feed_side.transformation_method = "dae.finite_difference"
+
+        if self.config.permeate_side.transformation_method is useDefault:
+            _log.warning(
+                "Discretization method was "
+                "not specified for the permeate side of the "
+                "reverse osmosis module. "
+                "Defaulting to finite "
+                "difference method on the permeate side."
+            )
+            self.config.permeate_side.transformation_method = "dae.finite_difference"
+
+        if self.config.feed_side.transformation_scheme is useDefault:
+            _log.warning(
+                "Discretization scheme was "
+                "not specified for the feed side of the "
+                "reverse osmosis module."
+                "Defaulting to backward finite "
+                "difference on the feed side."
+            )
+            self.config.feed_side.transformation_scheme = "BACKWARD"
+
+        if self.config.permeate_side.transformation_scheme is useDefault:
+            _log.warning(
+                "Discretization scheme was "
+                "not specified for the permeate side of the "
+                "reverse osmosis module. "
+                "Defaulting to backward finite "
+                "difference on the permeate side."
+            )
+            self.config.permeate_side.transformation_scheme = "BACKWARD"
+
     def build(self):
         """
         Build 1D RO model (pre-DAE transformation).
@@ -554,31 +594,29 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
-        # Initialize feed_side block
-        flags_shell = blk.feed_side.initialize(
+        # Step 1: Initialize feed_side, permeate_side, and permeate_out blocks
+        flags_feed_side = blk.feed_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=feed_side_args)
 
-        # Initialize permeate_side block
-        flags_shell = blk.permeate_side.initialize(
+        flags_permeate_side = blk.permeate_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=permeate_side_args)
 
-        # Initialize permeate outlet block
-        flags_shell = blk.permeate_side.properties_out.initialize(
+        flags_permeate_out = blk.permeate_side.permeate_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=permeate_side_args)
+            state_args=permeate_block_args)
 
         init_log.info_high("Initialization Step 1 Complete.")
 
         # ---------------------------------------------------------------------
-        # Solve unit
+        # Step 2: Solve unit
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
