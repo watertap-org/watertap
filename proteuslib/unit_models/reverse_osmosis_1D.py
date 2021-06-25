@@ -301,7 +301,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         feed_side.add_energy_balances(balance_type=self.config.feed_side.energy_balance_type,
                                            has_enthalpy_transfer=True)
         feed_side.add_momentum_balances(balance_type=self.config.feed_side.momentum_balance_type,
-                                        has_pressure_change=self.config.has_pressure_change)
+                                        has_pressure_change=self.config.feed_side.has_pressure_change)
 
         # ==========================================================================
         """ Only enable mass transfer for permeate side"""
@@ -321,10 +321,16 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         """ Add inlet/outlet ports for feed side and only an outlet port for permeate side"""
         self.add_inlet_port(name="feed_inlet", block=feed_side)
         self.add_outlet_port(name="feed_outlet", block=feed_side)
+
         #TODO: Make permeate_side.permeate_out a ProductBlock instead?
+        tmp_dict = dict(**self.config.property_package_args)
+        tmp_dict["has_phase_equilibrium"] = False
+        tmp_dict["parameters"] = self.config.property_package
+        tmp_dict["defined_state"] = False  # these blocks are not inlets
         permeate_side.permeate_out = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
-            doc="Material properties of mixed permeate exiting the module")
+            doc="Material properties of mixed permeate exiting the module",
+            default=tmp_dict)
         self.add_port(name="permeate_outlet", block=permeate_side.permeate_out)
 
         # ==========================================================================
@@ -398,7 +404,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         self.flux_mass_phase_comp = Var(
             self.flowsheet().config.time,
-            self.config.feed_side.length_domain,
+            self.feed_side.length_domain,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=flux_mass_phase_comp_initialize,
@@ -455,7 +461,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         self.mass_transfer_phase_comp = Var(
             self.flowsheet().config.time,
-            self.config.feed_side.length_domain,
+            self.feed_side.length_domain,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=0.1, #mass_transfer_phase_comp_initialize,
@@ -465,7 +471,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             doc='Mass transfer to permeate')
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.config.feed_side.length_domain,
+                         self.feed_side.length_domain,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Mass transfer term")
@@ -474,7 +480,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         # RO performance equations
         @self.Constraint(self.flowsheet().config.time,
-                         self.io_list,
+                         self.feed_side.length_domain,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Water and salt mass flux")
@@ -502,11 +508,11 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          doc="Total component mass flux expression")
         def flux_mass_phase_comp_sum(b, t, p, j):
             return sum(b.flux_mass_phase_comp[t, x, p, j] #* x
-                       for x in self.config.feed_side.length_domain)
+                       for x in self.feed_side.length_domain)
 
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.config.feed_side.length_domain,
+                         self.feed_side.length_domain,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Permeate mass flow rates exiting unit")
@@ -516,7 +522,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         # Feed and permeate-side connection
         @self.Constraint(self.flowsheet().config.time,
-                         self.config.feed_side.length_domain,
+                         self.feed_side.length_domain,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Mass transfer from feed to permeate")
@@ -525,18 +531,18 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                     == -b.feed_side.mass_transfer_term[t, x, p, j]) #* x)
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.config.feed_side.length_domain,
+                         self.feed_side.length_domain,
                          doc="Enthalpy transfer from feed to permeate")
         def eq_connect_enthalpy_transfer(b, t, x):
             return (b.permeate_side.properties[t, x].get_enthalpy_flow_terms('Liq')
                     == -b.feed_side.enthalpy_transfer[t, x])
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.config.length_domain,
+                         self.feed_side.length_domain,
                          doc="Isothermal assumption for permeate")
         def eq_permeate_isothermal(b, t, x):
             return b.feed_side.properties[t, x].temperature == \
-                   b.permeate_side.properties_permeate[t, x].temperature
+                   b.permeate_side.properties[t, x].temperature
 
     def initialize(blk,
                    feed_side_args=None,

@@ -60,25 +60,25 @@ def test_config():
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis1D(default={"property_package": m.fs.properties})
 
-#     assert len(m.fs.unit.config) == 11
+    assert len(m.fs.unit.config) == 10
 #
-#     assert not m.fs.unit.config.dynamic
-#     assert not m.fs.unit.config.has_holdup
-#     assert m.fs.unit.config.material_balance_type == \
-#            MaterialBalanceType.useDefault
-#     assert m.fs.unit.config.energy_balance_type == \
-#            EnergyBalanceType.useDefault
-#     assert m.fs.unit.config.momentum_balance_type == \
-#            MomentumBalanceType.pressureTotal
-#     assert not m.fs.unit.config.has_pressure_change
-#     assert m.fs.unit.config.property_package is \
-#            m.fs.properties
-#     assert m.fs.unit.config.concentration_polarization_type == \
-#            ConcentrationPolarizationType.none
-#     assert m.fs.unit.config.mass_transfer_coefficient == \
-#            MassTransferCoefficient.none
-#     assert m.fs.unit.config.pressure_change_type == \
-#            PressureChangeType.fixed_per_stage
+    assert not m.fs.unit.config.dynamic
+    assert not m.fs.unit.config.has_holdup
+    assert m.fs.unit.config.material_balance_type == \
+           MaterialBalanceType.useDefault
+    assert m.fs.unit.config.energy_balance_type == \
+           EnergyBalanceType.useDefault
+    assert m.fs.unit.config.momentum_balance_type == \
+           MomentumBalanceType.pressureTotal
+    assert not m.fs.unit.config.has_pressure_change
+    assert m.fs.unit.config.property_package is \
+           m.fs.properties
+    # assert m.fs.unit.config.concentration_polarization_type == \
+    #        ConcentrationPolarizationType.none
+    # assert m.fs.unit.config.mass_transfer_coefficient == \
+    #        MassTransferCoefficient.none
+    # assert m.fs.unit.config.pressure_change_type == \
+    #        PressureChangeType.fixed_per_stage
 #
 #
 # @pytest.mark.unit
