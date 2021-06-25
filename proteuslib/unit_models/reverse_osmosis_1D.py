@@ -27,6 +27,7 @@ from pyomo.environ import (Var,
                            exp,
                            value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 # Import IDAES cores
 from idaes.core import (ControlVolume1DBlock,
                         declare_process_block_class,
