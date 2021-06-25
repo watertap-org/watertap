@@ -1,5 +1,5 @@
-Reverse Osmosis Unit (0D)
-=========================
+Reverse Osmosis (0D)
+====================
 This reverse osmosis (RO) unit model
    * is 0-dimensional
    * supports a single liquid phase only
@@ -32,7 +32,10 @@ previously fixed variables, we typically fix the following variables to fully sp
 
 Model Structure
 ------------------
-This RO model consists of a ControlVolume0DBlock for the feed-channel of the membrane and a StateBlock for the permeate channel.
+This RO model consists of 2 ControlVolume0DBlocks: one for the feed-side and one for the permeate-side.
+ 
+* The feed-side includes 2 StateBlocks (properties_in and properties_out) which are used for mass, energy, and momentum balances, and 2 additional StateBlocks for the conditions at the membrane interface (properties_interface_in and properties_interface_out).
+* The permeate-side includes 3 StateBlocks (properties_in, properties_out, and properties_mixed). The inlet and outlet StateBlocks are used to only determine the permeate solute concentration for solvent and solute flux at the feed-side inlet and outlet, while the mixed StateBlock is used for mass balance based on the average flux.
 
 Sets
 ----
@@ -58,8 +61,8 @@ Variables
    "Mass flux across membrane", ":math:`J`", "flux_mass_io_phase_comp", "[t, x, p, j]", ":math:`\text{kg/s}\text{/m}^2`"
    "Membrane area", ":math:`A_m`", "area", "None", ":math:`\text{m}^2`"
    "Component recovery rate", ":math:`R_j`", "recovery_mass_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
-   "Volumetric recovery rate", ":math:`R`", "recovery_vol_phase", "[t, p]", ":math:`\text{dimensionless}`"
-   "Observed solute rejection", ":math:`r_s`", "rejection_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
+   "Volumetric recovery rate", ":math:`R_{vol}`", "recovery_vol_phase", "[t, p]", ":math:`\text{dimensionless}`"
+   "Observed solute rejection", ":math:`r_j`", "rejection_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
    "Over-pressure ratio", ":math:`P_{f,out}/Δ\pi_{out}`", "over_pressure_ratio", "[t]", ":math:`\text{dimensionless}`"
    "Mass transfer to permeate", ":math:`M_p`", "mass_transfer_phase_comp", "[t, p, j]", ":math:`\text{kg/s}`"
 
@@ -120,7 +123,7 @@ if ``pressure_change_type`` is set to ``PressureChangeType.fixed_per_unit_length
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Average pressure drop per unit length of feed channel", ":math:`(frac{ΔP}{Δx})_avg`", "dP_dx", "[t]", ":math:`\text{Pa/m}`"
+   "Average pressure drop per unit length of feed channel", ":math:`(\frac{ΔP}{Δx})_{avg}`", "dP_dx", "[t]", ":math:`\text{Pa/m}`"
 
 if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
 
@@ -138,31 +141,31 @@ Equations
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Water flux across membrane", ":math:`J_{w, x} = \rho_w A(P_{f,x} - P_p - (\pi_{f,m,x}-\pi_{p,x}))`"
-   "Solute flux across membrane", ":math:`J_{s, x} = B(C_{f,m,x} - C_p)`"
-   "Average water flux across membrane", ":math:`J_{w, avg} = \frac{1}{2}\sum_{x} J_{w, x}`"
-   "Average solute flux across membrane", ":math:`J_{s, avg} = \frac{1}{2}\sum_{x} J_{s, x}`"
-   "Permeate mass flow by component j", ":math:`M_{p, j} = A_m J_{j,avg}`"
-   "Membrane-interface concentration", ":math:`C_{f,m}=CP_{mod}*C_f=C_f\exp(\frac{J_w}{k_f})-\frac{J_s}{J_w}(\exp(\frac{J_w}{k_f})-1)`"
-   "Concentration polarization modulus",":math:`C_{f,m}/C_f`"
-   "Mass transfer coefficient",":math:`k_f=\frac{D Sh}{d_h}`"
-   "Sherwood number",":math:`Sh=0.46 (Re Sc)^{0.36}`"
-   "Schmidt number",":math:`Sc=\frac{\mu}{\rho D}`"
-   "Reynolds number",":math:`Re=\frac{\rho v_f d_h}{\mu}`"
-   "Hydraulic diameter",":math:`d_h=\frac{4\epsilon_{sp}}{2/h_{ch} + (1-\epsilon_{sp})8/h_{ch}}`"
-   "Cross-sectional area",":math:`A_c=h_{ch}W\epsilon_{sp}`"
-   "Membrane area",":math:`A_m=LW`"
-   "Pressure drop",":math:`ΔP=(\frac{ΔP}{Δx})_{avg}L`"
-   "Feed-channel velocity",":math:`v_f=Q_f/A_c`"
-   "Friction factor",":math:`f=0.42+\frac{189.3}{Re}`"
-   "Pressure drop per unit length",":math:`\frac{ΔP}{Δx}=\frac{1}{2d_h}f\rho v_f^{2}`"
-   "Component recovery rate",":math:`R_j=\frac{M_{p,j}}{M_{f,in,j}}`"
-   "Volumetric recovery rate",":math:`R=\frac{Q_{p}}{Q_{f,in}}`"
+   "Solvent flux across membrane", ":math:`J_{solvent} = \rho_{solvent} A(P_{f} - P_p - (\pi_{f}-\pi_{p}))`"
+   "Solute flux across membrane", ":math:`J_{solute} = B(C_{f} - C_{p})`"
+   "Average flux across membrane", ":math:`J_{avg, j} = \frac{1}{2}\sum_{x} J_{x, j}`"
+   "Permeate mass flow by component j", ":math:`M_{p, j} = A_m J_{avg,j}`"
+   "Permeate-side membrane-interface solute mass fraction", ":math:`X_{x, j} = \frac{J_{x, j}}{\sum_{x} J_{x, j}}`"
+   "Feed-side membrane-interface solute concentration", ":math:`C_{interface} = CP_{mod}C_{bulk}=C_{bulk}\exp(\frac{J_{solvent}}{k_f})-\frac{J_{solute}}{J_{solvent}}(\exp(\frac{J_{solvent}}{k_f})-1)`"
+   "Concentration polarization modulus",":math:`CP_{mod} = C_{interface}/C_{bulk}`"
+   "Mass transfer coefficient",":math:`k_f = \frac{D Sh}{d_h}`"
+   "Sherwood number",":math:`Sh = 0.46 (Re Sc)^{0.36}`"
+   "Schmidt number",":math:`Sc = \frac{\mu}{\rho D}`"
+   "Reynolds number",":math:`Re = \frac{\rho v_f d_h}{\mu}`"
+   "Hydraulic diameter",":math:`d_h = \frac{4\epsilon_{sp}}{2/h_{ch} + (1-\epsilon_{sp})8/h_{ch}}`"
+   "Cross-sectional area",":math:`A_c = h_{ch}W\epsilon_{sp}`"
+   "Membrane area",":math:`A_m = LW`"
+   "Pressure drop",":math:`ΔP = (\frac{ΔP}{Δx})_{avg}L`"
+   "Feed-channel velocity",":math:`v_f = Q_f/A_c`"
+   "Friction factor",":math:`f = 0.42+\frac{189.3}{Re}`"
+   "Pressure drop per unit length",":math:`\frac{ΔP}{Δx} = \frac{1}{2d_h}f\rho v_f^{2}`"
+   "Component recovery rate",":math:`R_j = \frac{M_{p,j}}{M_{f,in,j}}`"
+   "Volumetric recovery rate",":math:`R_{vol} = \frac{Q_{p}}{Q_{f,in}}`"
+   "Observed solute rejection", ":math:`r_j = 1 - \frac{C_{p,mix}}{C_{f,in}}`" 
 
 Class Documentation
 -------------------
 
 .. automodule:: proteuslib.unit_models.reverse_osmosis_0D
    :members:
-
 
