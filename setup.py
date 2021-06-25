@@ -34,6 +34,15 @@ for active use by water treatment researchers and engineers.""".replace(
     "\n", " "
 ).strip()
 
+
+SPECIAL_DEPENDENCIES_FOR_RELEASE = [
+    "idaes-pse>=1.10.0",
+]
+
+SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
+    "idaes-pse @ https://github.com/IDAES/idaes-pse/archive/main.zip",
+]
+
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
 
@@ -76,8 +85,8 @@ setup(
     python_requires=">=3.6, <4",
     install_requires=[
         # primary requirements for unit and property models
-        "idaes-pse",
-        "pyomo",  # (also needed for units in electrolyte database (edb))
+        *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
+        "pyomo"  # (also needed for units in electrolyte database (edb))
         # the following requirements are for the edb
         "pymongo>3",  # database interface
         "fastjsonschema",  # schema validation
