@@ -86,7 +86,7 @@ setup(
     install_requires=[
         # primary requirements for unit and property models
         *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
-        "pyomo"  # (also needed for units in electrolyte database (edb))
+        "pyomo",  # (also needed for units in electrolyte database (edb))
         # the following requirements are for the edb
         "pymongo>3",  # database interface
         "fastjsonschema",  # schema validation
