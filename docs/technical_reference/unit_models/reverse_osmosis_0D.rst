@@ -32,7 +32,7 @@ previously fixed variables, we typically fix the following variables to fully sp
 
 Model Structure
 ------------------
-This RO model consists of 2 ControlVolume0DBlocks one for the feed-side and one for the permeate-side:
+This RO model consists of 2 ControlVolume0DBlocks: one for the feed-side and one for the permeate-side.
  
 * The feed-side includes 2 StateBlocks (properties_in and properties_out) which are used for mass, energy, and momentum balances, and 2 additional StateBlocks for the conditions at the membrane interface (properties_interface_in and properties_interface_out).
 * The permeate-side includes 3 StateBlocks (properties_in, properties_out, and properties_mixed). The inlet and outlet StateBlocks are used to only determine the permeate solute concentration for solvent and solute flux at the feed-side inlet and outlet, while the mixed StateBlock is used for mass balance based on the average flux.
@@ -168,5 +168,4 @@ Class Documentation
 
 .. automodule:: proteuslib.unit_models.reverse_osmosis_0D
    :members:
-
 
