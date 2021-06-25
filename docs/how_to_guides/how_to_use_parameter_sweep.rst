@@ -33,7 +33,7 @@ In general you would import your own flowsheet module.
 
     # replace this with your own flowsheet module, e.g.
     # import my_flowsheet_module as mfm
-    import proteuslib.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO
+    import proteuslib.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO_flowsheet
 
 Once this is done, import the parameter sweep tool
 
@@ -51,16 +51,16 @@ Depending on how the functions you've defined work, this could be as straightfor
     # those in your own flowsheet module
 
     # set up system
-    m = RO.build()
-    RO.set_operating_conditions(m)
-    RO.initialize_system(m)
+    m = RO_flowsheet.build()
+    RO_flowsheet.set_operating_conditions(m)
+    RO_flowsheet.initialize_system(m)
 
     # simulate
-    RO.solve(m)
+    RO_flowsheet.solve(m)
 
     # set up and perform initial optimization
     # (performing initial optimization is optional)
-    RO.optimize(m)
+    RO_flowsheet.optimize(m)
 
 where ``m`` is the flowsheet model that results after the initial "build" step and subsequent operations are performed on that object.
 
@@ -70,7 +70,7 @@ Once this sequence of setup steps is performed, the parameters to be varied shou
 
     sweep_params = dict()
     sweep_params['Feed Concentration'] = (m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'], 0.005, 0.155, 4)
-    sweep_params['Water Recovery'] = (m.fs.product_recovery, 0.3, 0.7, 4)
+    sweep_params['Water Recovery'] = (m.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'], 0.3, 0.7, 4)
 
 where the basic pattern is ``dict_name['Short/Pretty-print Name'] = (m.path.to.model.variable, lower_limit, upper_limit, num_samples)``.
 For example, "Feed Concentration", which is accessed in the model variable ``m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl']``, is to be varied between 0.005 and 0.155 with 4 equally-spaced values, i.e., ``[0.005, 0.055, 0.105, 0.155]``.

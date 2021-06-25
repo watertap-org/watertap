@@ -31,13 +31,11 @@ jobs:
     - name: Install dependencies
       run: |
         conda install --quiet --yes mpi4py
-        python -m pip install --upgrade pip
-        python -m pip install pytest
-        python -m pip install git+https://github.com/nawi-hub/idaes-pse@main
+        python -m pip install --progress-bar off --upgrade pip
+        pip install --progress-bar off -r requirements-dev.txt
         idaes get-extensions --verbose
         # make ipopt (and other idaes extensions) accessable
         echo "$HOME/.idaes/bin" >> $GITHUB_PATH
-        pip install -r requirements-dev.txt
     - name: Conda info
       run: conda info
     - name: Test parallel pytest
