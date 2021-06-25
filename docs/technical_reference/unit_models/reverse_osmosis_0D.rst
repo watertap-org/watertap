@@ -141,7 +141,7 @@ Equations
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Solvent flux across membrane", ":math:`J_{solvent} = \rho_j A(P_{f} - P_p - (\pi_{f}-\pi_{p}))`"
+   "Solvent flux across membrane", ":math:`J_{solvent} = \rho_{solvent} A(P_{f} - P_p - (\pi_{f}-\pi_{p}))`"
    "Solute flux across membrane", ":math:`J_{solute} = B(C_{f} - C_{p})`"
    "Average flux across membrane", ":math:`J_{avg, j} = \frac{1}{2}\sum_{x} J_{x, j}`"
    "Permeate mass flow by component j", ":math:`M_{p, j} = A_m J_{avg,j}`"
