@@ -214,45 +214,25 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                                      "the provided property package has specified {} solvent components"
                                      .format(len(self.solvent_list)))
 
-        if self.config.feed_side.transformation_method is useDefault:
+        if self.config.transformation_method is useDefault:
             _log.warning(
                 "Discretization method was "
-                "not specified for the feed side of the "
+                "not specified for the "
                 "reverse osmosis module. "
                 "Defaulting to finite "
-                "difference method on the feed side."
+                "difference method."
             )
-            self.config.feed_side.transformation_method = "dae.finite_difference"
+            self.config.transformation_method = "dae.finite_difference"
 
-        if self.config.permeate_side.transformation_method is useDefault:
-            _log.warning(
-                "Discretization method was "
-                "not specified for the permeate side of the "
-                "reverse osmosis module. "
-                "Defaulting to finite "
-                "difference method on the permeate side."
-            )
-            self.config.permeate_side.transformation_method = "dae.finite_difference"
-
-        if self.config.feed_side.transformation_scheme is useDefault:
+        if self.config.transformation_scheme is useDefault:
             _log.warning(
                 "Discretization scheme was "
-                "not specified for the feed side of the "
+                "not specified for the "
                 "reverse osmosis module."
                 "Defaulting to backward finite "
-                "difference on the feed side."
+                "difference."
             )
-            self.config.feed_side.transformation_scheme = "BACKWARD"
-
-        if self.config.permeate_side.transformation_scheme is useDefault:
-            _log.warning(
-                "Discretization scheme was "
-                "not specified for the permeate side of the "
-                "reverse osmosis module. "
-                "Defaulting to backward finite "
-                "difference on the permeate side."
-            )
-            self.config.permeate_side.transformation_scheme = "BACKWARD"
+            self.config.transformation_scheme = "BACKWARD"
 
     def build(self):
         """
