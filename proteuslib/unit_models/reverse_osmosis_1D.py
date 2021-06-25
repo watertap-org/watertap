@@ -340,6 +340,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         """ Add inlet/outlet ports for feed side and only an outlet port for permeate side"""
         self.add_inlet_port(name="feed_inlet", block=feed_side)
         self.add_outlet_port(name="feed_outlet", block=feed_side)
+        #TODO: Make permeate_side.permeate_out a ProductBlock instead?
         permeate_side.permeate_out = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of mixed permeate exiting the module")
@@ -618,5 +619,39 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Step 2: Solve unit
 
+    def _get_performance_contents(self, time_point=0):
+        pass
+        # var_dict = {}
+        # var_dict["Shell Area"] = self.shell.area
+        # var_dict["Shell Diameter"] = self.d_shell
+        # var_dict["Shell Length"] = self.shell.length
+        # var_dict["Tube Area"] = self.tube.area
+        # var_dict["Tube Outer Diameter"] = self.d_tube_outer
+        # var_dict["Tube Inner Diameter"] = self.d_tube_inner
+        # var_dict["Tube Length"] = self.tube.length
+        # var_dict["Number of Tubes"] = self.N_tubes
+        #
+        # return {"vars": var_dict}
+
+    def _get_stream_table_contents(self, time_point=0):
+        pass
+        # return create_stream_table_dataframe(
+        #     {
+        #         "Shell Inlet": self.shell_inlet,
+        #         "Shell Outlet": self.shell_outlet,
+        #         "Tube Inlet": self.tube_inlet,
+        #         "Tube Outlet": self.tube_outlet,
+        #     },
+        #     time_point=time_point,
+        # )
+
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
+
+        # setting scaling factors for variables
+        # these variables should have user input, if not there will be a warning
+        #iscale.set_scaling_factor(self.area, 1e-1)
+        if iscale.get_scaling_factor(self.area) is None:
+            sf = iscale.get_scaling_factor(self.area, default=1, warning=True)
+            iscale.set_scaling_factor(self.area, sf)
+
