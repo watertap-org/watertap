@@ -36,11 +36,14 @@ for active use by water treatment researchers and engineers.""".replace(
 
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=1.10.0",
+    "idaes-pse>=1.10.1",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
-    "idaes-pse @ https://github.com/IDAES/idaes-pse/archive/main.zip",
+    # update with a tag from the nawi-hub/idaes-pse
+    # when a version of IDAES newer than the latest stable release from PyPI
+    # will become needed for the proteuslib development
+    "idaes-pse @ https://github.com/IDAES/idaes-pse/archive/1.10.1.zip",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
