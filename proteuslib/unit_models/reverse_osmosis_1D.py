@@ -36,6 +36,7 @@ from idaes.core import (ControlVolume1DBlock,
                         UnitModelBlockData,
                         useDefault,
                         FlowDirection)
+from idaes.core.control_volume1d import DistributedVars
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -131,6 +132,17 @@ class ReverseOsmosis1DData(UnitModelBlockData):
     **True** - include pressure change terms,
     **False** - exclude pressure change terms.}"""))
 
+    _SideTemplate.declare("area_definition", ConfigValue(
+            default=DistributedVars.uniform,
+            domain=In(DistributedVars),
+            description="Argument for defining form of area variable",
+            doc="""Argument defining whether area variable should be spatially
+    variant or not. **default** - DistributedVars.uniform.
+    **Valid values:** {
+    DistributedVars.uniform - area does not vary across spatial domain,
+    DistributedVars.variant - area can vary over the domain and is indexed
+    by time and space.}"""))
+
     CONFIG.declare("property_package", ConfigValue(
             default=None,
             domain=is_physical_parameter_block,
@@ -225,6 +237,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         self.feed_side = ControlVolume1DBlock(default={
             "dynamic": self.config.feed_side.dynamic,
             "has_holdup": self.config.feed_side.has_holdup,
+            "area_definition": self.config.feed_side.area_definition,
             "property_package": self.config.property_package,
             "property_package_args": self.config.property_package_args,
             "transformation_method": self.config.transformation_method,
@@ -238,6 +251,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         self.permeate_side = ControlVolume1DBlock(default={
             "dynamic": self.config.permeate_side.dynamic,
             "has_holdup": self.config.permeate_side.has_holdup,
+            "area_definition": self.config.permeate_side.area_definition,
             "property_package": self.config.property_package,
             "property_package_args": self.config.property_package_args,
             "transformation_method": self.config.transformation_method,
@@ -565,3 +579,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Solve unit
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
