@@ -523,6 +523,16 @@ class ReverseOsmosisData(UnitModelBlockData):
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change)
 
+        # Build control volume for permeate side
+        self.permeate_side = ControlVolume0DBlock(default={
+            "dynamic": False,
+            "has_holdup": False,
+            "property_package": self.config.property_package,
+            "property_package_args": self.config.property_package_args})
+
+        self.permeate_side.add_state_blocks(
+            has_phase_equilibrium=False)
+
         # Add additional state blocks
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
@@ -537,16 +547,15 @@ class ReverseOsmosisData(UnitModelBlockData):
             self.flowsheet().config.time,
             doc="Material properties of feed-side interface at outlet",
             default=tmp_dict)
-        # Permeate properties
-        self.properties_permeate = self.config.property_package.state_block_class(
+        self.permeate_side.properties_mixed = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
-            doc="Material properties of permeate",
+            doc="Material properties of mixed permeate",
             default=tmp_dict)
 
         # Add Ports
         self.add_inlet_port(name='inlet', block=self.feed_side)
         self.add_outlet_port(name='retentate', block=self.feed_side)
-        self.add_port(name='permeate', block=self.properties_permeate)
+        self.add_port(name='permeate', block=self.permeate_side.properties_mixed)
 
         # References for control volume
         # pressure change
@@ -588,7 +597,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Permeate production")
         def eq_permeate_production(b, t, p, j):
-            return (b.properties_permeate[t].get_material_flow_terms(p, j)
+            return (b.permeate_side.properties_mixed[t].get_material_flow_terms(p, j)
                     == b.area * b.flux_mass_phase_comp_avg[t, p, j])
 
         @self.Constraint(self.flowsheet().config.time,
@@ -600,10 +609,11 @@ class ReverseOsmosisData(UnitModelBlockData):
             if x == 'in':
                 prop_feed = b.feed_side.properties_in[t]
                 prop_feed_inter = b.feed_side.properties_interface_in[t]
+                prop_perm = b.permeate_side.properties_in[t]
             elif x == 'out':
                 prop_feed = b.feed_side.properties_out[t]
                 prop_feed_inter = b.feed_side.properties_interface_out[t]
-            prop_perm = b.properties_permeate[t]
+                prop_perm = b.permeate_side.properties_out[t]
             comp = self.config.property_package.get_component(j)
             if comp.is_solvent():
                 return (b.flux_mass_io_phase_comp[t, x, p, j] == b.A_comp[t, j] * b.dens_solvent
@@ -619,20 +629,64 @@ class ReverseOsmosisData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Mass transfer from feed to permeate")
         def eq_connect_mass_transfer(b, t, p, j):
-            return (b.properties_permeate[t].get_material_flow_terms(p, j)
+            return (b.permeate_side.properties_mixed[t].get_material_flow_terms(p, j)
                     == -b.feed_side.mass_transfer_term[t, p, j])
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="Enthalpy transfer from feed to permeate")
         def eq_connect_enthalpy_transfer(b, t):
-            return (b.properties_permeate[t].get_enthalpy_flow_terms('Liq')
+            return (b.permeate_side.properties_mixed[t].get_enthalpy_flow_terms('Liq')
                     == -b.feed_side.enthalpy_transfer[t])
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="Isothermal assumption for permeate")
         def eq_permeate_isothermal(b, t):
             return b.feed_side.properties_out[t].temperature == \
-                   b.properties_permeate[t].temperature
+                   b.permeate_side.properties_mixed[t].temperature
+
+        # # Permeate-side stateblocks
+        @self.permeate_side.Constraint(self.flowsheet().config.time,
+                                   self.io_list,
+                                   self.solute_list,
+                                   doc="Permeate mass fraction")
+        def eq_mass_frac_permeate_io(b, t, x, j):
+            if x == 'in':
+                prop_io = b.properties_in[t]
+            elif x == 'out':
+                prop_io = b.properties_out[t]
+            return (prop_io.mass_frac_phase_comp['Liq', j]
+                    * sum(self.flux_mass_io_phase_comp[t, x, 'Liq', jj]
+                          for jj in self.config.property_package.component_list)
+                    == self.flux_mass_io_phase_comp[t, x, 'Liq', j])
+        @self.permeate_side.Constraint(self.flowsheet().config.time,
+                                   self.io_list,
+                                   doc="Permeate temperature")
+        def eq_temperature_permeate_io(b, t, x):
+            if x == 'in':
+                prop_io = b.properties_in[t]
+            elif x == 'out':
+                prop_io = b.properties_out[t]
+            return prop_io.temperature == b.properties_mixed[t].temperature
+
+        @self.permeate_side.Constraint(self.flowsheet().config.time,
+                                   self.io_list,
+                                   doc="Permeate pressure")
+        def eq_pressure_permeate_io(b, t, x):
+            if x == 'in':
+                prop_io = b.properties_in[t]
+            elif x == 'out':
+                prop_io = b.properties_out[t]
+            return prop_io.pressure == b.properties_mixed[t].pressure
+
+        @self.permeate_side.Constraint(self.flowsheet().config.time,
+                                   self.io_list,
+                                   doc="Permeate flowrate")
+        def eq_flow_vol_permeate_io(b, t, x):
+            if x == 'in':
+                prop_io = b.properties_in[t]
+            elif x == 'out':
+                prop_io = b.properties_out[t]
+            return prop_io.flow_vol_phase['Liq'] == b.properties_mixed[t].flow_vol_phase['Liq']
 
         # Concentration polarization
         @self.feed_side.Constraint(self.flowsheet().config.time,
@@ -657,9 +711,6 @@ class ReverseOsmosisData(UnitModelBlockData):
                 jw = self.flux_mass_io_phase_comp[t, x, 'Liq', 'H2O'] / self.dens_solvent
                 js = self.flux_mass_io_phase_comp[t, x, 'Liq', j]
                 return (prop_interface_io.conc_mass_phase_comp['Liq', j] ==
-                        # (prop_io.conc_mass_phase_comp['Liq', j] - js / jw)  # TODO: ask why this was written like this
-                        # * exp(jw / self.Kf_io[t, x, j])
-                        # + js / jw)
                         prop_io.conc_mass_phase_comp['Liq', j] * exp(jw / self.Kf_io[t, x, j])
                         - js / jw * (exp(jw / self.Kf_io[t, x, j]) - 1))
 
@@ -823,21 +874,21 @@ class ReverseOsmosisData(UnitModelBlockData):
         @self.Constraint(self.flowsheet().config.time)
         def eq_recovery_vol_phase(b, t):
             return (b.recovery_vol_phase[t, 'Liq'] ==
-                    b.properties_permeate[t].flow_vol_phase['Liq'] /
+                    b.permeate_side.properties_mixed[t].flow_vol_phase['Liq'] /
                     b.feed_side.properties_in[t].flow_vol_phase['Liq'])
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.component_list)
         def eq_recovery_mass_phase_comp(b, t, j):
             return (b.recovery_mass_phase_comp[t, 'Liq', j] ==
-                    b.properties_permeate[t].flow_mass_phase_comp['Liq', j] /
+                    b.permeate_side.properties_mixed[t].flow_mass_phase_comp['Liq', j] /
                     b.feed_side.properties_in[t].flow_mass_phase_comp['Liq', j])
 
         @self.Constraint(self.flowsheet().config.time,
                          self.solute_list)
         def eq_rejection_phase_comp(b, t, j):
             return (b.rejection_phase_comp[t, 'Liq', j] ==
-                    1 - (b.properties_permeate[t].conc_mass_phase_comp['Liq', j] /
+                    1 - (b.permeate_side.properties_mixed[t].conc_mass_phase_comp['Liq', j] /
                          b.feed_side.properties_in[t].conc_mass_phase_comp['Liq', j]))
 
         @self.Constraint(self.flowsheet().config.time)
@@ -845,7 +896,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             return (b.feed_side.properties_out[t].pressure ==
                     b.over_pressure_ratio[t]
                     * (b.feed_side.properties_out[t].pressure_osm
-                    - b.properties_permeate[t].pressure_osm))
+                    - b.permeate_side.properties_out[t].pressure_osm))
 
     def initialize(blk, initialize_guess=None, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         """
@@ -932,7 +983,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         state_args_permeate = deepcopy(state_args)
 
         state_args_retentate['pressure'] += initialize_guess['deltaP']
-        state_args_permeate['pressure'] = blk.properties_permeate[0].pressure.value
+        state_args_permeate['pressure'] = blk.permeate_side.properties_mixed[0].pressure.value
         for j in blk.solvent_list:
             state_args_retentate['flow_mass_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solvent_recovery'])
             state_args_permeate['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['solvent_recovery']
@@ -952,11 +1003,6 @@ class ReverseOsmosisData(UnitModelBlockData):
             optarg=optarg,
             solver=solver,
             state_args=state_args_retentate,)
-        blk.properties_permeate.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args_permeate,)
         blk.feed_side.properties_interface_in.initialize(
                 outlvl=outlvl,
                 optarg=optarg,
@@ -967,6 +1013,21 @@ class ReverseOsmosisData(UnitModelBlockData):
                 optarg=optarg,
                 solver=solver,
                 state_args=state_args_interface_out,)
+        blk.permeate_side.properties_mixed.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args_permeate,)
+        blk.permeate_side.properties_in.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args_permeate,)
+        blk.permeate_side.properties_out.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args_permeate,)
         init_log.info_high("Initialization Step 2 Complete.")
 
         # ---------------------------------------------------------------------
@@ -998,6 +1059,28 @@ class ReverseOsmosisData(UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
+        # permeate properties need to rescale solute values by 100
+        def rescale_variable(var, factor=100):
+            sf = iscale.get_scaling_factor(var)
+            iscale.set_scaling_factor(var, sf * factor)
+
+        blk = self.permeate_side
+        for sb_str in ['properties_in', 'properties_out', 'properties_mixed']:
+            sb = getattr(blk, sb_str)
+            for t in self.flowsheet().config.time:
+                for j in self.solute_list:
+                    rescale_variable(sb[t].flow_mass_phase_comp['Liq', j])
+                    if sb[t].is_property_constructed('mass_frac_phase_comp'):
+                        rescale_variable(sb[t].mass_frac_phase_comp['Liq', j])
+                    if sb[t].is_property_constructed('conc_mass_phase_comp'):
+                        rescale_variable(sb[t].conc_mass_phase_comp['Liq', j])
+                    if sb[t].is_property_constructed('mole_frac_phase_comp'):
+                        rescale_variable(sb[t].mole_frac_phase_comp[j])
+                    if sb[t].is_property_constructed('molality_comp'):
+                        rescale_variable(sb[t].molality_comp[j])
+                if sb[t].is_property_constructed('pressure_osm'):
+                    rescale_variable(sb[t].pressure_osm)
+
         # TODO: require users to set scaling factor for area or calculate it based on mass transfer and flux
         iscale.set_scaling_factor(self.area, 1e-1)
 
@@ -1022,9 +1105,13 @@ class ReverseOsmosisData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
             iscale.set_scaling_factor(self.recovery_vol_phase, 1)
 
-        for v in self.recovery_mass_phase_comp.values():
+        for (t, p, j), v in self.recovery_mass_phase_comp.items():
+            if j in self.solvent_list:
+                sf = 1
+            elif j in self.solute_list:
+                sf = 100
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(v, 1)
+                iscale.set_scaling_factor(v, sf)
 
         for v in self.rejection_phase_comp.values():
             if iscale.get_scaling_factor(v) is None:
@@ -1117,11 +1204,10 @@ class ReverseOsmosisData(UnitModelBlockData):
                     iscale.set_scaling_factor(v, sf)
 
         for (t, p, j), v in self.feed_side.mass_transfer_term.items():
-            if iscale.get_scaling_factor(v) is None:
-                sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].get_material_flow_terms(p, j))
-                comp = self.config.property_package.get_component(j)
-                if comp.is_solute:
-                    sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
+            # already scaled by control volume with the default based on properties_in flow
+            # solute typically has mass transfer 2 orders magnitude less than flow
+            if j in self.solute_list:
+                sf = iscale.get_scaling_factor(v) * 100
                 iscale.set_scaling_factor(v, sf)
 
         for (t, p, j), v in self.mass_transfer_phase_comp.items():
@@ -1155,6 +1241,38 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         for t, c in self.eq_permeate_isothermal.items():
             sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].temperature)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for (t, x, j), c in self.permeate_side.eq_mass_frac_permeate_io.items():
+            if x == 'in':
+                prop_io = self.permeate_side.properties_in[t]
+            elif x == 'out':
+                prop_io = self.permeate_side.properties_out[t]
+            sf = iscale.get_scaling_factor(prop_io.mass_frac_phase_comp['Liq', j])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for (t, x), c in self.permeate_side.eq_temperature_permeate_io.items():
+            if x == 'in':
+                prop_io = self.permeate_side.properties_in[t]
+            elif x == 'out':
+                prop_io = self.permeate_side.properties_out[t]
+            sf = iscale.get_scaling_factor(prop_io.temperature)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for (t, x), c in self.permeate_side.eq_pressure_permeate_io.items():
+            if x == 'in':
+                prop_io = self.permeate_side.properties_in[t]
+            elif x == 'out':
+                prop_io = self.permeate_side.properties_out[t]
+            sf = iscale.get_scaling_factor(prop_io.pressure)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for (t, x), c in self.permeate_side.eq_flow_vol_permeate_io.items():
+            if x == 'in':
+                prop_io = self.permeate_side.properties_in[t]
+            elif x == 'out':
+                prop_io = self.permeate_side.properties_out[t]
+            sf = iscale.get_scaling_factor(prop_io.flow_vol_phase['Liq'])
             iscale.constraint_scaling_transform(c, sf)
 
         for (t, x, j), c in self.feed_side.eq_concentration_polarization_io.items():

@@ -1,5 +1,5 @@
-0D Nanofiltration Model
-=======================
+Nanofiltration (0D)
+===================
 
 Introduction
 ------------

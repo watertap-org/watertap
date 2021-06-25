@@ -15,6 +15,7 @@ Test of db_api module
 """
 import pytest
 from ..db_api import ElectrolyteDB
+from ..data_model import Component, Reaction, Base
 from pymongo import MongoClient
 
 
@@ -63,3 +64,11 @@ def test_edb_get_reactions():
 @requires_mongo
 def test_edb_load():
     pass
+
+
+@pytest.mark.unit
+def test_edb_load_convention():
+    # make sure the convention of collection names mapping to data_model objects is true, since
+    # we rely on it in the ElectrolyteDB.load() method
+    for wrapper_class in (Component, Reaction, Base):
+        assert wrapper_class.__name__.lower() in ElectrolyteDB._known_collections

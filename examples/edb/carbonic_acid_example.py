@@ -13,6 +13,9 @@
 """
 Carbonic acid dissociation in water
 """
+import logging
+from pprint import pformat
+
 from pyomo.environ import (Block,
                            SolverFactory,
                            ConcreteModel,
@@ -39,23 +42,50 @@ from pyomo.environ import units as pyunits
 from idaes.core import LiquidPhase, VaporPhase, Component
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
+from idaes.core import FlowsheetBlock
 
 from proteuslib.edb.db_api import ElectrolyteDB
+from proteuslib.edb.error import Error as EDBError
+
+# Produce similar output to IDAES logger
+_log = logging.getLogger("carbonic_acid_example")
+_hnd = logging.StreamHandler()
+_fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+_hnd.setFormatter(_fmt)
+_log.addHandler(_hnd)
 
 
 def get_configs(component_names):
+    _log.info("get_configs.start")
+    _log.info("Connecting to MongoDB database=edb")
     db = ElectrolyteDB(db="edb")
+
     thermo_base = next(db.get_base("thermo"))
     result = db.get_components(component_names)
     for comp in result:
+        _log.info(f"adding component '{comp.name}'")
         thermo_base.add(comp)
+
     water_reaction_base = next(db.get_base("water_reaction"))
     for react in db.get_reactions(component_names):
+        _log.info(f"adding reaction '{react.name}'")
         water_reaction_base.add(react)
 
-    return {"thermo_config": thermo_base.config, "reaction_config": water_reaction_base.config}
+    try:
+        _ = thermo_base.idaes_config
+    except EDBError as err:
+        _log.fatal(f"couldn't get IDAES config for thermo components: {err}")
+        return {}
 
-    # # Pass a list of the thermo config dictionaries to the stitcher
+    try:
+        _ = water_reaction_base.idaes_config
+    except EDBError as err:
+        _log.fatal(f"couldn't get IDAES config for water reaction: {err}")
+        return {}
+
+    return {"thermo_config": thermo_base.idaes_config, "reaction_config": water_reaction_base.idaes_config}
+
+    # # Pass a list of the thermo idaes_config dictionaries to the stitcher
     # # First argument is a starter dict, second arg is a list of component dicts
     # thermo_config = stitch_thermo_configs(starter_thermo_config,
     #                                         [H2O_thermo_config,
@@ -65,7 +95,7 @@ def get_configs(component_names):
     #                                         HCO3_thermo_config,
     #                                         CO3_thermo_config])
     #
-    # # Pass a list of the reaction config dictionaries to the stitcher
+    # # Pass a list of the reaction idaes_config dictionaries to the stitcher
     # reaction_config = stitch_reaction_configs([water_reaction_config,
     #                                             carbonic_acid_reaction_config,
     #                                             bicarbonate_reaction_config
@@ -74,6 +104,12 @@ def get_configs(component_names):
 
 
 def create_model(thermo_config=None, reaction_config=None):
+    # DEBUG
+    _log.info("create_model.start")
+    if _log.isEnabledFor(logging.DEBUG):
+        _log.debug(f"create_model: thermo_config:\n{pformat(thermo_config)}")
+        _log.debug(f"create_model: reaction_config:\n{pformat(reaction_config)}")
+
     # Create a pyomo model object
     model = ConcreteModel()
 
@@ -177,6 +213,8 @@ def create_model(thermo_config=None, reaction_config=None):
 
     print("Degrees of freedom = " + str(degrees_of_freedom(model) ) )
 
+    _log.info("create_model.end")
+
     return model
 
 
@@ -206,14 +244,32 @@ def solve_model(model):
     print(str(value(model.fs.unit.inlet.temperature[0]))+"\t"+str(value(model.fs.unit.outlet.temperature[0]))+"\n")
 
 
+def dump_configs(configs):
+    for ctype in configs:
+        print("=========================================================")
+        print(ctype)
+        print("")
+        print(f"{pformat(configs[ctype])}")
+
+
 def main():
-    component_names = ["H +", "H2CO3", "HCO3 -"]
+    import logging
+    # DEBUG
+    #_log.setLevel(logging.DEBUG)
+    #idaeslog.getLogger("idaes.proteuslib.edb").setLevel(logging.DEBUG)
+    _log.setLevel(logging.INFO)
+
+    component_names = ["H2O", "H +",  "OH -", "H2CO3", "HCO3 -", "CO3 2-", "CO2"]
     configs = get_configs(component_names)
-    for key, value in configs.items():
-        print(f"{key} => {value}")
-    #model = create_model(**configs)
+    if not configs:
+        _log.fatal("Failed to get IDAES configurations")
+        return -1
+    dump_configs(configs)
+    model = create_model(**configs)
     #solve_model(model)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main())
