@@ -20,6 +20,8 @@ from pyomo.environ import (ConcreteModel,
                            Var,
                            Expression,
                            Constraint)
+from pyomo.util.check_units import (assert_units_consistent,
+                                    assert_units_equivalent)
 from pyomo.network import Port
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
@@ -344,6 +346,27 @@ class TestReverseOsmosis():
         [print(i) for i in unused_list]
         assert number_unused_variables(m) == 13  # TODO: vars from property package parameters
         # unused areas,  (return later)
+
+    @pytest.mark.integration
+    def test_units(self, RO_frame):
+        m = RO_frame
+        # assert_units_equivalent(btx.fs.unit.shell_area, pyunits.m**2)
+        # assert_units_equivalent(btx.fs.unit.shell_length, pyunits.m)
+        # assert_units_equivalent(btx.fs.unit.tube_area, pyunits.m**2)
+        # assert_units_equivalent(btx.fs.unit.tube_length, pyunits.m)
+        # assert_units_equivalent(btx.fs.unit.d_shell, pyunits.m)
+        # assert_units_equivalent(btx.fs.unit.d_tube_outer, pyunits.m)
+        # assert_units_equivalent(btx.fs.unit.d_tube_inner, pyunits.m)
+        # assert_units_equivalent(btx.fs.unit.N_tubes, pyunits.dimensionless)
+        # assert_units_equivalent(
+        #     btx.fs.unit.shell_heat_transfer_coefficient,
+        #     pyunits.W/pyunits.m**2/pyunits.K)
+        # assert_units_equivalent(
+        #     btx.fs.unit.tube_heat_transfer_coefficient,
+        #     pyunits.W/pyunits.m**2/pyunits.degK)
+        # assert_units_equivalent(btx.fs.unit.temperature_wall, pyunits.K)
+
+        assert_units_consistent(m)
 
     @pytest.mark.unit
     def test_dof(self, RO_frame):
