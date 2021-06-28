@@ -79,49 +79,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
     **default** - False. RO units do not have defined volume, thus
     this must be False."""))
 
-    _SideTemplate.declare("material_balance_type", ConfigValue(
-            default=MaterialBalanceType.useDefault,
-            domain=In(MaterialBalanceType),
-            description="Material balance construction flag",
-            doc="""Indicates what type of mass balance should be constructed,
-    **default** - MaterialBalanceType.useDefault.
-    **Valid values:** {
-    **MaterialBalanceType.useDefault - refer to property package for default
-    balance type
-    **MaterialBalanceType.none** - exclude material balances,
-    **MaterialBalanceType.componentPhase** - use phase component balances,
-    **MaterialBalanceType.componentTotal** - use total component balances,
-    **MaterialBalanceType.elementTotal** - use total element balances,
-    **MaterialBalanceType.total** - use total material balance.}"""))
-
-    _SideTemplate.declare("energy_balance_type", ConfigValue(
-            default=EnergyBalanceType.useDefault,
-            domain=In(EnergyBalanceType),
-            description="Energy balance construction flag",
-            doc="""Indicates what type of energy balance should be constructed,
-    **default** - EnergyBalanceType.useDefault.
-    **Valid values:** {
-    **EnergyBalanceType.useDefault - refer to property package for default
-    balance type
-    **EnergyBalanceType.none** - exclude energy balances,
-    **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
-    **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
-    **EnergyBalanceType.energyTotal** - single energy balance for material,
-    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-
-    _SideTemplate.declare("momentum_balance_type", ConfigValue(
-            default=MomentumBalanceType.pressureTotal,
-            domain=In(MomentumBalanceType),
-            description="Momentum balance construction flag",
-            doc="""Indicates what type of momentum balance should be constructed,
-    **default** - MomentumBalanceType.pressureTotal.
-    **Valid values:** {
-    **MomentumBalanceType.none** - exclude momentum balances,
-    **MomentumBalanceType.pressureTotal** - single pressure balance for material,
-    **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
-    **MomentumBalanceType.momentumTotal** - single momentum balance for material,
-    **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-
     _SideTemplate.declare("has_pressure_change", ConfigValue(
             default=False,
             domain=In([True, False]),
@@ -181,6 +138,93 @@ class ReverseOsmosis1DData(UnitModelBlockData):
     CONFIG.declare("feed_side", _SideTemplate(doc="feed side config arguments"))
     CONFIG.declare("permeate_side", _SideTemplate(doc="permeate side config arguments"))
 
+
+    CONFIG.feed_side.declare("material_balance_type", ConfigValue(
+            default=MaterialBalanceType.useDefault,
+            domain=In(MaterialBalanceType),
+            description="Material balance construction flag",
+            doc="""Indicates what type of mass balance should be constructed,
+    **default** - MaterialBalanceType.useDefault.
+    **Valid values:** {
+    **MaterialBalanceType.useDefault - refer to property package for default
+    balance type
+    **MaterialBalanceType.none** - exclude material balances,
+    **MaterialBalanceType.componentPhase** - use phase component balances,
+    **MaterialBalanceType.componentTotal** - use total component balances,
+    **MaterialBalanceType.elementTotal** - use total element balances,
+    **MaterialBalanceType.total** - use total material balance.}"""))
+
+    CONFIG.feed_side.declare("energy_balance_type", ConfigValue(
+            default=EnergyBalanceType.useDefault,
+            domain=In(EnergyBalanceType),
+            description="Energy balance construction flag",
+            doc="""Indicates what type of energy balance should be constructed,
+    **default** - EnergyBalanceType.useDefault.
+    **Valid values:** {
+    **EnergyBalanceType.useDefault - refer to property package for default
+    balance type
+    **EnergyBalanceType.none** - exclude energy balances,
+    **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
+    **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
+    **EnergyBalanceType.energyTotal** - single energy balance for material,
+    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
+
+    CONFIG.feed_side.declare("momentum_balance_type", ConfigValue(
+            default=MomentumBalanceType.pressureTotal,
+            domain=In(MomentumBalanceType),
+            description="Momentum balance construction flag",
+            doc="""Indicates what type of momentum balance should be constructed,
+    **default** - MomentumBalanceType.pressureTotal.
+    **Valid values:** {
+    **MomentumBalanceType.none** - exclude momentum balances,
+    **MomentumBalanceType.pressureTotal** - single pressure balance for material,
+    **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
+    **MomentumBalanceType.momentumTotal** - single momentum balance for material,
+    **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
+
+    CONFIG.permeate_side.declare("material_balance_type", ConfigValue(
+            default=MaterialBalanceType.none,
+            domain=In(MaterialBalanceType),
+            description="Material balance construction flag",
+            doc="""Indicates what type of mass balance should be constructed,
+    **default** - MaterialBalanceType.useDefault.
+    **Valid values:** {
+    **MaterialBalanceType.useDefault - refer to property package for default
+    balance type
+    **MaterialBalanceType.none** - exclude material balances,
+    **MaterialBalanceType.componentPhase** - use phase component balances,
+    **MaterialBalanceType.componentTotal** - use total component balances,
+    **MaterialBalanceType.elementTotal** - use total element balances,
+    **MaterialBalanceType.total** - use total material balance.}"""))
+
+    CONFIG.permeate_side.declare("energy_balance_type", ConfigValue(
+            default=EnergyBalanceType.none,
+            domain=In(EnergyBalanceType),
+            description="Energy balance construction flag",
+            doc="""Indicates what type of energy balance should be constructed,
+    **default** - EnergyBalanceType.useDefault.
+    **Valid values:** {
+    **EnergyBalanceType.useDefault - refer to property package for default
+    balance type
+    **EnergyBalanceType.none** - exclude energy balances,
+    **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
+    **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
+    **EnergyBalanceType.energyTotal** - single energy balance for material,
+    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
+
+    CONFIG.permeate_side.declare("momentum_balance_type", ConfigValue(
+            default=MomentumBalanceType.none,
+            domain=In(MomentumBalanceType),
+            description="Momentum balance construction flag",
+            doc="""Indicates what type of momentum balance should be constructed,
+    **default** - MomentumBalanceType.pressureTotal.
+    **Valid values:** {
+    **MomentumBalanceType.none** - exclude momentum balances,
+    **MomentumBalanceType.pressureTotal** - single pressure balance for material,
+    **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
+    **MomentumBalanceType.momentumTotal** - single momentum balance for material,
+    **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
+
     # Common config args for both sides
     CONFIG.declare("finite_elements", ConfigValue(
             default=20,
@@ -197,7 +241,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             discretizing length domain (default=5)"""))
 
     def _process_config(self):
-        #TODO: add config errors here
+        #TODO: add config errors here:
+        # prevent permeate_side.deltaP
         for c in self.config.property_package.component_list:
             comp = self.config.property_package.get_component(c)
             try:
@@ -233,6 +278,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 "difference."
             )
             self.config.transformation_scheme = "BACKWARD"
+
+        if self.config.permeate_side.has_pressure_change == True:
+            raise ConfigurationError("RO model does not support pressure drop across permeate channel,"
+                                     "so 'has_pressure_change' cannot be True.")
 
     def build(self):
         """
@@ -305,11 +354,11 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         # ==========================================================================
         """ Only enable mass transfer for permeate side"""
-        permeate_side.add_material_balances(balance_type=self.config.permeate_side.material_balance_type.none,
+        permeate_side.add_material_balances(balance_type=self.config.permeate_side.material_balance_type,
                                             has_mass_transfer=True)
-        feed_side.add_energy_balances(balance_type=self.config.permeate_side.energy_balance_type.none,
+        feed_side.add_energy_balances(balance_type=self.config.permeate_side.energy_balance_type,
                                            has_enthalpy_transfer=True)
-        feed_side.add_momentum_balances(balance_type=self.config.permeate_side.momentum_balance_type.none,
+        feed_side.add_momentum_balances(balance_type=self.config.permeate_side.momentum_balance_type,
                                         has_pressure_change=self.config.permeate_side.has_pressure_change)
 
         # ==========================================================================

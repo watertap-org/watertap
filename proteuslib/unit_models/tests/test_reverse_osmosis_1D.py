@@ -34,6 +34,7 @@ import proteuslib.property_models.NaCl_prop_pack \
     as props
 
 from idaes.core.util import get_solver
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
@@ -64,13 +65,20 @@ def test_config():
 #
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
-    assert m.fs.unit.config.material_balance_type == \
+    assert m.fs.unit.config.feed_side.material_balance_type == \
            MaterialBalanceType.useDefault
-    assert m.fs.unit.config.energy_balance_type == \
+    assert m.fs.unit.config.permeate_side.material_balance_type == \
+           MaterialBalanceType.none
+    assert m.fs.unit.config.feed_side.energy_balance_type == \
            EnergyBalanceType.useDefault
-    assert m.fs.unit.config.momentum_balance_type == \
+    assert m.fs.unit.config.permeate_side.energy_balance_type == \
+           EnergyBalanceType.none
+    assert m.fs.unit.config.feed_side.momentum_balance_type == \
            MomentumBalanceType.pressureTotal
-    assert not m.fs.unit.config.has_pressure_change
+    assert m.fs.unit.config.permeate_side.momentum_balance_type == \
+           MomentumBalanceType.none
+    assert not m.fs.unit.config.feed_side.has_pressure_change
+    assert not m.fs.unit.config.permeate_side.has_pressure_change
     assert m.fs.unit.config.property_package is \
            m.fs.properties
     # assert m.fs.unit.config.concentration_polarization_type == \
@@ -80,18 +88,29 @@ def test_config():
     # assert m.fs.unit.config.pressure_change_type == \
     #        PressureChangeType.fixed_per_stage
 #
-#
-# @pytest.mark.unit
-# def test_option_has_pressure_change():
-#     m = ConcreteModel()
-#     m.fs = FlowsheetBlock(default={"dynamic": False})
-#     m.fs.properties = props.NaClParameterBlock()
-#     m.fs.unit = ReverseOsmosis0D(default={
-#         "property_package": m.fs.properties,
-#         "has_pressure_change": True})
-#
-#     assert isinstance(m.fs.unit.feed_side.deltaP, Var)
-#     assert isinstance(m.fs.unit.deltaP, Var)
+@pytest.mark.unit
+def test_config_validation():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = props.NaClParameterBlock()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.unit = ReverseOsmosis1D(default={
+            "property_package": m.fs.properties,
+            "permeate_side": {"has_pressure_change": True}})
+
+@pytest.mark.unit
+def test_option_has_pressure_change():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = props.NaClParameterBlock()
+    m.fs.unit = ReverseOsmosis1D(default={
+        "property_package": m.fs.properties,
+        "feed_side": {"has_pressure_change": True}})
+
+    assert isinstance(m.fs.unit.feed_side.deltaP, Var)
+    assert isinstance(m.fs.unit.feed_deltaP, Var)
+
 #
 #
 # @pytest.mark.unit
