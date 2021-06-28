@@ -556,7 +556,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Total component mass flux expression")
         def flux_mass_phase_comp_sum(b, t, p, j):
-            return sum(b.flux_mass_phase_comp[t, x, p, j] * x
+            return sum(b.flux_mass_phase_comp[t, x, p, j] #* x
                        for x in self.feed_side.length_domain)
 
 
@@ -586,7 +586,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          doc="Mass transfer from feed to permeate")
         def eq_connect_mass_transfer(b, t, x, p, j):
             return (b.permeate_side.properties[t, x].get_material_flow_terms(p, j)
-                    == -b.feed_side.mass_transfer_term[t, x, p, j] * x)
+                    == -b.feed_side.mass_transfer_term[t, x, p, j]) #* x)
 
         @self.Constraint(self.flowsheet().config.time,
                          self.feed_side.length_domain,
