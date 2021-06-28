@@ -384,8 +384,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         # ==========================================================================
         """ Add references to control volume geometry."""
-        add_object_reference(self, 'length', feed_side.length)
-        add_object_reference(self, 'feed_area_cross', feed_side.area)
+        self.length = Reference(feed_side.length) #add_object_reference(self, 'length', feed_side.length)
+        self.feed_area_cross = Reference(feed_side.area)#add_object_reference(self, 'feed_area_cross', feed_side.area)
         add_object_reference(self, 'length', permeate_side.length)
         add_object_reference(self, 'permeate_area_cross', permeate_side.area)
 
@@ -488,18 +488,18 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             initialize=1,
             bounds=(1e-1, 1e3),
             domain=NonNegativeReals,
-            units=units_meta('length')**2,
-            doc='Membrane area')
+            units=units_meta('length'),
+            doc='Membrane width')
 
         @self.Constraint(doc="Membrane area")
         def eq_area(b):
             return b.area == b.length * b.width
 
-        @self.Constraint(doc="Membrane area")
+        @self.Constraint(doc="Cross-sectional area of feed channel")
         def eq_feed_area_cross(b):
             return b.feed_area_cross == 1 * 1 * b.width  # TODO: add channel_height and spacer_porosity
 
-        @self.Constraint(doc="Membrane area")
+        @self.Constraint(doc="Cross-sectional area of permeate channel")
         def eq_permeate_area_cross(b):
             return b.permeate_area_cross == 1 * 1 * b.width  # TODO: add channel_height and spacer_porosity
 
@@ -593,6 +593,18 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             return b.feed_side.properties[t, x].temperature == \
                    b.permeate_side.properties[t, x].temperature
 
+        @self.Constraint(self.flowsheet().config.time,
+                         doc="Isothermal assumption for permeate out")
+        def eq_permeate_outlet_isothermal(b, t):
+            return b.feed_side.properties[t, 0].temperature == \
+                   b.permeate_side.permeate_out[t].temperature
+
+        @self.Constraint(self.flowsheet().config.time,
+                         doc="Isobaric assumption for permeate out")
+        def eq_permeate_outlet_isobaric(b, t):
+            return b.permeate_side.properties[t, 0].pressure == \
+                   b.permeate_side.permeate_out[t].pressure
+
     def initialize(blk,
                    feed_side_args=None,
                    permeate_side_args=None,
@@ -654,6 +666,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Step 2: Solve unit
+        pass
 
     def _get_performance_contents(self, time_point=0):
         pass

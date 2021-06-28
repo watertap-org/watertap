@@ -282,7 +282,9 @@ class TestReverseOsmosis():
                                # 'eq_over_pressure_ratio': Constraint,
                                'eq_area': Constraint,
                                'eq_feed_area_cross': Constraint,
-                               'eq_permeate_area_cross': Constraint
+                               'eq_permeate_area_cross': Constraint,
+                               'eq_permeate_outlet_isothermal': Constraint,
+                               'eq_permeate_outlet_isobaric': Constraint
                                }
         for (obj_str, obj_type) in unit_objs_type_dict.items():
             obj = getattr(m.fs.unit, obj_str)
@@ -328,7 +330,7 @@ class TestReverseOsmosis():
 
         # test statistics
         assert number_variables(m) == 893
-        assert number_total_constraints(m) == 814
+        assert number_total_constraints(m) == 816
         unused_list = unused_variables_set(m)
         [print(i) for i in unused_list]
         assert number_unused_variables(m) == 17  # TODO: vars from property package parameters
