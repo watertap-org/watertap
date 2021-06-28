@@ -470,19 +470,19 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         # TODO: Add initial value, bounds and real equation later. Just need for now since add_geometry() generates
         #  cross-sectional area var that I am referencing
-        self.feed_area_cross = Var(
-            initialize=1,
-            bounds=(1e-3, 1),
-            domain=NonNegativeReals,
-            units=units_meta('length')**2,
-            doc='Cross-sectional area of feed channel')
-
-        self.permeate_area_cross = Var(
-            initialize=1,
-            bounds=(1e-3, 1),
-            domain=NonNegativeReals,
-            units=units_meta('length')**2,
-            doc='Cross-sectional area of feed channel')
+        # self.feed_area_cross = Var(
+        #     initialize=1,
+        #     bounds=(1e-3, 1),
+        #     domain=NonNegativeReals,
+        #     units=units_meta('length')**2,
+        #     doc='Cross-sectional area of feed channel')
+        #
+        # self.permeate_area_cross = Var(
+        #     initialize=1,
+        #     bounds=(1e-3, 1),
+        #     domain=NonNegativeReals,
+        #     units=units_meta('length')**2,
+        #     doc='Cross-sectional area of feed channel')
 
         self.width = Var(
             initialize=1,
@@ -495,13 +495,13 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         def eq_area(b):
             return b.area == b.length * b.width
 
-        @self.Constraint(doc="Cross-sectional area of feed channel")
-        def eq_feed_area_cross(b):
-            return b.feed_area_cross == 1 * 1 * b.width  # TODO: add channel_height and spacer_porosity
-
-        @self.Constraint(doc="Cross-sectional area of permeate channel")
-        def eq_permeate_area_cross(b):
-            return b.permeate_area_cross == 1 * 1 * b.width  # TODO: add channel_height and spacer_porosity
+        # @self.Constraint(doc="Cross-sectional area of feed channel")
+        # def eq_feed_area_cross(b):
+        #     return b.feed_area_cross == 1 * 1 * b.width  # TODO: add channel_height and spacer_porosity
+        #
+        # @self.Constraint(doc="Cross-sectional area of permeate channel")
+        # def eq_permeate_area_cross(b):
+        #     return b.permeate_area_cross == 1 * 1 * b.width  # TODO: add channel_height and spacer_porosity
 
         # mass transfer
         # def mass_transfer_phase_comp_initialize(b, t, x, p, j):
@@ -561,11 +561,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.feed_side.length_domain,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Permeate mass flow rates exiting unit")
-        def eq_permeate_production(b, t, x, p, j):
+        def eq_permeate_production(b, t, p, j):
             return (b.permeate_side.permeate_out[t].get_material_flow_terms(p, j)
                     == b.area * b.flux_mass_phase_comp_sum[t, p, j])
 

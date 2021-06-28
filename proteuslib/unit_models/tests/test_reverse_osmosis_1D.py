@@ -40,6 +40,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_total_constraints,
                                               number_unused_variables,
                                               unused_variables_set,
+                                              unfixed_variables_in_activated_equalities_set,
                                               variables_set)
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (calculate_scaling_factors,
@@ -214,7 +215,7 @@ class TestReverseOsmosis():
 
         m.fs.unit = ReverseOsmosis1D(default={
             "property_package": m.fs.properties,
-            "feed_side": {"has_pressure_change": True}})
+            "feed_side": {"has_pressure_change": False}})
 
         # fully specify system
         feed_flow_mass = 1
@@ -226,19 +227,25 @@ class TestReverseOsmosis():
         A = 4.2e-12
         B = 3.5e-8
         pressure_atmospheric = 101325
-
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
+
+        m.fs.unit.feed_side.properties[0, 0].flow_mass_phase_comp['Liq', 'NaCl'].fix(
             feed_flow_mass * feed_mass_frac_NaCl)
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
+
+        m.fs.unit.feed_side.properties[0, 0].flow_mass_phase_comp['Liq', 'H2O'].fix(
             feed_flow_mass * feed_mass_frac_H2O)
+
         m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
         m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
-        m.fs.unit.deltaP.fix(-membrane_pressure_drop)
+        # m.fs.unit.deltaP.fix(-membrane_pressure_drop)
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.permeate_side.properties[0, :].pressure.fix(pressure_atmospheric)
+
+        # m.fs.unit.width.fix(1.5)
+
+
         return m
 
     @pytest.mark.unit
@@ -266,7 +273,7 @@ class TestReverseOsmosis():
                                # 'recovery_mass_phase_comp': Var,
                                # 'rejection_phase_comp': Var,
                                # 'over_pressure_ratio': Var,
-                               'deltaP': Var,
+                               # 'deltaP': Var,
                                # 'cp_modulus': Var,
                                'mass_transfer_phase_comp': Var,
                                'flux_mass_phase_comp_sum': Expression,
@@ -281,8 +288,8 @@ class TestReverseOsmosis():
                                # 'eq_rejection_phase_comp': Constraint,
                                # 'eq_over_pressure_ratio': Constraint,
                                'eq_area': Constraint,
-                               'eq_feed_area_cross': Constraint,
-                               'eq_permeate_area_cross': Constraint,
+                               # 'eq_feed_area_cross': Constraint,
+                               # 'eq_permeate_area_cross': Constraint,
                                'eq_permeate_outlet_isothermal': Constraint,
                                'eq_permeate_outlet_isobaric': Constraint
                                }
@@ -329,18 +336,19 @@ class TestReverseOsmosis():
         #     assert isinstance(obj, obj_type)
 
         # test statistics
-        assert number_variables(m) == 893
+        assert number_variables(m) == 872
         assert number_total_constraints(m) == 816
         unused_list = unused_variables_set(m)
         [print(i) for i in unused_list]
-        assert number_unused_variables(m) == 17  # TODO: vars from property package parameters
-        # plus permeate outlet and unused area (return later)
+        assert number_unused_variables(m) == 14  # TODO: vars from property package parameters
+        # unused areas,  (return later)
 
-#     @pytest.mark.unit
-#     def test_dof(self, RO_frame):
-#         m = RO_frame
-#         assert degrees_of_freedom(m) == 0
-#
+    @pytest.mark.unit
+    def test_dof(self, RO_frame):
+        m = RO_frame
+        [print(i) for i in unfixed_variables_in_activated_equalities_set(m)]
+        assert degrees_of_freedom(m) == 0
+
 #     @pytest.mark.unit
 #     def test_calculate_scaling(self, RO_frame):
 #         m = RO_frame
