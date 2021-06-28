@@ -229,10 +229,10 @@ class TestReverseOsmosis():
         pressure_atmospheric = 101325
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
 
-        m.fs.unit.feed_side.properties[0, 0].flow_mass_phase_comp['Liq', 'NaCl'].fix(
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
             feed_flow_mass * feed_mass_frac_NaCl)
 
-        m.fs.unit.feed_side.properties[0, 0].flow_mass_phase_comp['Liq', 'H2O'].fix(
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
             feed_flow_mass * feed_mass_frac_H2O)
 
         m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
@@ -241,10 +241,12 @@ class TestReverseOsmosis():
         m.fs.unit.area.fix(membrane_area)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate_side.properties[0, :].pressure.fix(pressure_atmospheric)
+        m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
+        # m.fs.unit.permeate_side.properties[0, :].temperature.fix(feed_temperature)
 
-        # m.fs.unit.width.fix(1.5)
-
+        m.fs.unit.width.fix(1.5)
+        m.fs.unit.permeate_side.properties[0, 0].flow_mass_phase_comp['Liq', 'NaCl'].fix(0)
+        m.fs.unit.permeate_side.properties[0, 0].flow_mass_phase_comp['Liq', 'H2O'].fix(0)
 
         return m
 
@@ -327,20 +329,20 @@ class TestReverseOsmosis():
             sb = getattr(m.fs.unit.permeate_side, sb_str)
             assert isinstance(sb, props.NaClStateBlock)
         # test objects added to control volume
-        # cv_objs_type_dict = {'eq_mass_frac_permeate_io': Constraint,
-        #                      'eq_temperature_permeate_io': Constraint,
-        #                      'eq_pressure_permeate_io': Constraint,
-        #                      'eq_flow_vol_permeate_io': Constraint}
-        # for (obj_str, obj_type) in cv_objs_type_dict.items():
-        #     obj = getattr(m.fs.unit.permeate_side, obj_str)
-        #     assert isinstance(obj, obj_type)
+        cv_objs_type_dict = {'eq_mass_frac_permeate': Constraint}
+                             # 'eq_temperature_permeate': Constraint,
+                             # 'eq_pressure_permeate': Constraint,
+                             # 'eq_flow_vol_permeate': Constraint}
+        for (obj_str, obj_type) in cv_objs_type_dict.items():
+            obj = getattr(m.fs.unit.permeate_side, obj_str)
+            assert isinstance(obj, obj_type)
 
         # test statistics
-        assert number_variables(m) == 872
-        assert number_total_constraints(m) == 816
+        assert number_variables(m) == 870
+        assert number_total_constraints(m) == 835
         unused_list = unused_variables_set(m)
         [print(i) for i in unused_list]
-        assert number_unused_variables(m) == 14  # TODO: vars from property package parameters
+        assert number_unused_variables(m) == 13  # TODO: vars from property package parameters
         # unused areas,  (return later)
 
     @pytest.mark.unit
@@ -349,20 +351,23 @@ class TestReverseOsmosis():
         [print(i) for i in unfixed_variables_in_activated_equalities_set(m)]
         assert degrees_of_freedom(m) == 0
 
-#     @pytest.mark.unit
-#     def test_calculate_scaling(self, RO_frame):
-#         m = RO_frame
-#
-#         m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-#         m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
-#         calculate_scaling_factors(m)
-#
-#         # check that all variables have scaling factors
-#         unscaled_var_list = list(unscaled_variables_generator(m))
-#         assert len(unscaled_var_list) == 0
-#         # check that all constraints have been scaled
-#         unscaled_constraint_list = list(unscaled_constraints_generator(m))
-#         assert len(unscaled_constraint_list) == 0
+    @pytest.mark.unit
+    def test_calculate_scaling(self, RO_frame):
+        m = RO_frame
+
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
+        calculate_scaling_factors(m)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(unscaled_variables_generator(m))
+        [print(i) for i in unscaled_var_list]
+
+        assert len(unscaled_var_list) == 0
+        # check that all constraints have been scaled
+        unscaled_constraint_list = list(unscaled_constraints_generator(m))
+        [print(k) for k in unscaled_constraint_list]
+        assert len(unscaled_constraint_list) == 0
 #
 #     @pytest.mark.component
 #     def test_initialize(self, RO_frame):

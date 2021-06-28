@@ -356,9 +356,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         """ Only enable mass transfer for permeate side"""
         permeate_side.add_material_balances(balance_type=self.config.permeate_side.material_balance_type,
                                             has_mass_transfer=True)
-        feed_side.add_energy_balances(balance_type=self.config.permeate_side.energy_balance_type,
+        permeate_side.add_energy_balances(balance_type=self.config.permeate_side.energy_balance_type,
                                            has_enthalpy_transfer=True)
-        feed_side.add_momentum_balances(balance_type=self.config.permeate_side.momentum_balance_type,
+        permeate_side.add_momentum_balances(balance_type=self.config.permeate_side.momentum_balance_type,
                                         has_pressure_change=self.config.permeate_side.has_pressure_change)
 
         # ==========================================================================
@@ -568,6 +568,16 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             return (b.permeate_side.permeate_out[t].get_material_flow_terms(p, j)
                     == b.area * b.flux_mass_phase_comp_sum[t, p, j])
 
+        @self.permeate_side.Constraint(self.flowsheet().config.time,
+                                   self.permeate_side.length_domain,
+                                   self.solute_list,
+                                   doc="Permeate mass fraction")
+        def eq_mass_frac_permeate(b, t, x, j):
+            return (b.properties[t, x].mass_frac_phase_comp['Liq', j]
+                    * sum(self.flux_mass_phase_comp[t, x, 'Liq', jj]
+                          for jj in self.config.property_package.component_list)
+                    == self.flux_mass_phase_comp[t, x, 'Liq', j])
+
         # Feed and permeate-side connection
         @self.Constraint(self.flowsheet().config.time,
                          self.feed_side.length_domain,
@@ -592,16 +602,19 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             return b.feed_side.properties[t, x].temperature == \
                    b.permeate_side.properties[t, x].temperature
 
+        # Permeate outlet constraints
         @self.Constraint(self.flowsheet().config.time,
+                         self.permeate_side.length_domain,
                          doc="Isothermal assumption for permeate out")
-        def eq_permeate_outlet_isothermal(b, t):
-            return b.feed_side.properties[t, 0].temperature == \
+        def eq_permeate_outlet_isothermal(b, t, x):
+            return b.feed_side.properties[t, x].temperature == \
                    b.permeate_side.permeate_out[t].temperature
 
         @self.Constraint(self.flowsheet().config.time,
+                         self.permeate_side.length_domain,
                          doc="Isobaric assumption for permeate out")
-        def eq_permeate_outlet_isobaric(b, t):
-            return b.permeate_side.properties[t, 0].pressure == \
+        def eq_permeate_outlet_isobaric(b, t, x):
+            return b.permeate_side.properties[t, x].pressure == \
                    b.permeate_side.permeate_out[t].pressure
 
     def initialize(blk,
@@ -702,4 +715,86 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.area) is None:
             sf = iscale.get_scaling_factor(self.area, default=1, warning=True)
             iscale.set_scaling_factor(self.area, sf)
+
+        if iscale.get_scaling_factor(self.width) is None:
+            sf = iscale.get_scaling_factor(self.width, default=1, warning=True)
+            iscale.set_scaling_factor(self.width, sf)
+
+        if iscale.get_scaling_factor(self.length) is None:
+            sf = iscale.get_scaling_factor(self.length, default=1, warning=True)
+            iscale.set_scaling_factor(self.length, sf)
+
+        # will not override if the user provides the scaling factor
+        if iscale.get_scaling_factor(self.A_comp) is None:
+            iscale.set_scaling_factor(self.A_comp, 1e12)
+
+        if iscale.get_scaling_factor(self.B_comp) is None:
+            iscale.set_scaling_factor(self.B_comp, 1e8)
+
+        if iscale.get_scaling_factor(self.dens_solvent) is None:
+            sf = iscale.get_scaling_factor(self.feed_side.properties[0, 0].dens_mass_phase['Liq'])
+            iscale.set_scaling_factor(self.dens_solvent, sf)
+
+        for (t, x, p, j), v in self.flux_mass_phase_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                comp = self.config.property_package.get_component(j)
+                if comp.is_solvent():  # scaling based on solvent flux equation
+                    sf = (iscale.get_scaling_factor(self.A_comp[t, j])
+                          * iscale.get_scaling_factor(self.dens_solvent)
+                          * iscale.get_scaling_factor(self.feed_side.properties[t, x].pressure))
+                    iscale.set_scaling_factor(v, sf)
+                elif comp.is_solute():  # scaling based on solute flux equation
+                    sf = (iscale.get_scaling_factor(self.B_comp[t, j])
+                          * iscale.get_scaling_factor(self.feed_side.properties[t, x].conc_mass_phase_comp[p, j]))
+                    iscale.set_scaling_factor(v, sf)
+
+        for (t, x, p, j), v in self.mass_transfer_phase_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                sf = iscale.get_scaling_factor(self.feed_side.properties[t, x].get_material_flow_terms(p, j))
+                comp = self.config.property_package.get_component(j)
+                if comp.is_solute:
+                    sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
+                iscale.set_scaling_factor(v, sf)
+
+        # Scale constraints
+        sf = iscale.get_scaling_factor(self.area)
+        iscale.constraint_scaling_transform(self.eq_area, sf)
+
+        for ind, c in self.eq_mass_transfer_term.items():
+            sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.eq_permeate_production.items():
+            # TODO: fix this scaling factor
+            # sf = iscale.get_scaling_factor()
+            iscale.constraint_scaling_transform(c, 1)
+
+        for ind, c in self.eq_flux_mass.items():
+            sf = iscale.get_scaling_factor(self.flux_mass_phase_comp[ind])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.eq_connect_mass_transfer.items():
+            sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.eq_connect_enthalpy_transfer.items():
+            sf = iscale.get_scaling_factor(self.feed_side.enthalpy_transfer[ind])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for t, c in self.eq_permeate_isothermal.items():
+            sf = iscale.get_scaling_factor(self.feed_side.properties[t].temperature)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for t, c in self.eq_permeate_outlet_isothermal.items():
+            sf = iscale.get_scaling_factor(self.feed_side.properties[t].temperature)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for t, c in self.eq_permeate_outlet_isobaric.items():
+            sf = iscale.get_scaling_factor(self.permeate_side.properties[t].pressure)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for (t, x, j), c in self.permeate_side.eq_mass_frac_permeate.items():
+            sf = iscale.get_scaling_factor(self.permeate_side.properties[t, x].mass_frac_phase_comp['Liq', j])
+            iscale.constraint_scaling_transform(c, sf)
+
 
