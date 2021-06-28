@@ -392,7 +392,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # Add reference to pressure drop for feed side only
         if (self.config.feed_side.has_pressure_change is True and
                 self.config.feed_side.momentum_balance_type != 'none'):
-            add_object_reference(self, 'feed_deltaP', feed_side.deltaP)
+            add_object_reference(self, 'deltaP', feed_side.deltaP)
 
         self._make_performance()
 
