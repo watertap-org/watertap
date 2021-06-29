@@ -31,9 +31,6 @@ are not sufficient.
     
     This content is not yet finished.
 
-
-.. _edb-api:
-
 Python API
 ----------
 
@@ -181,7 +178,7 @@ edb schema options
 EDB schemas
 -----------
 The EDB data is encoded in `JSON <https://json.org>`_.
-Naturally, the expected form of the records is specified as `JSON Schema <https://json-schema.org/>`_.
+Naturally, the expected form of the records is specified as JSON Schema.
 There are schemas for the `component` and `reaction` records. Currently, there is no schema for `base` data (this
 will change soon, though).
 
