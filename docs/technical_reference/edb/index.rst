@@ -19,7 +19,7 @@ and the expected structure and fields of the *component* and *reaction* data is 
 
 To interface with the `IDAES Core Modeling Framework <https://idaes-pse.readthedocs.io/en/stable/user_guide/concepts.html>`_
 (IDAES-CMF, which underlies ProteusLib), add components and reactions to a "base" object and fetch the result as a Python 
-`dict`. This result that can be used to configure and build IDAES objects (`ParameterBlocks`, `ReactionBlocks`, etc.). 
+`dict`. This result can be used to configure and build IDAES objects (`ParameterBlocks`, `ReactionBlocks`, etc.). 
 The API also has methods to construct component and reaction objects from IDAES configurations.
 
 Workflows
@@ -210,4 +210,3 @@ Reaction schema
 
     .. include:: schemas/reaction.json
         :literal:
-
