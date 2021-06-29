@@ -40,9 +40,10 @@ Content
    how_to_guides/index
    technical_reference/index
    background/index
+   Module Index <apidoc/modules>
    license
    copyright
-..    Modules <apidoc/modules>
+
 
 Indices and tables
 ------------------
