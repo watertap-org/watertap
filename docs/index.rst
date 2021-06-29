@@ -42,7 +42,7 @@ Content
    background/index
    license
    copyright
-   Proteuslib Module Index <apidoc/modules>
+..    Modules <apidoc/modules>
 
 Indices and tables
 ------------------
