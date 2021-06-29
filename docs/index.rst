@@ -42,7 +42,6 @@ Content
    background/index
    license
    copyright
-
 ..    Modules <apidoc/modules>
 
 Indices and tables
