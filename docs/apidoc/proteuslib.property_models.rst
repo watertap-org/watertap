@@ -17,14 +17,6 @@ proteuslib.property\_models.NaCl\_prop\_pack module
    :undoc-members:
    :show-inheritance:
 
-proteuslib.property\_models.multicomponent\_feed\_prop\_pack module
--------------------------------------------------------------------
-
-.. automodule:: proteuslib.property_models.multicomponent_feed_prop_pack
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 proteuslib.property\_models.seawater\_prop\_pack module
 -------------------------------------------------------
 

@@ -9,14 +9,6 @@ proteuslib.unit\_models package
 Submodules
 ----------
 
-proteuslib.unit\_models.bilateral\_module\_1D module
-----------------------------------------------------
-
-.. automodule:: proteuslib.unit_models.bilateral_module_1D
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 proteuslib.unit\_models.nanofiltration\_0D module
 -------------------------------------------------
 
