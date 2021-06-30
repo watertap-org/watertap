@@ -9,7 +9,7 @@ Introduction
 Using Conda environments
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Conda environments are a way to create and manage multiple sets of packages and/or Python versions on the same system without incurring into conflicts.
+Conda environments are a way to create and manage multiple sets of packages and/or Python versions on the same system without incurring conflicts.
 Each Conda environment is a dedicated directory, separate from other Conda environments and the operating system's own directories, containing its own collection of packages, executables, and Python installation, including the Python interpreter.
 Once a Conda environment is *activated*, using the ``conda activate`` command in a terminal/console, the environment's own version of Python will be used to run commands or interactive sessions for the remainder of the session.
 
@@ -91,7 +91,6 @@ If you plan to contribute to ProteusLib's codebase, choose this option.
 	.. code-block:: shell
 
 		pytest
-
 
 
 
