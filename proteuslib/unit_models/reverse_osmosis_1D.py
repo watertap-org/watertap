@@ -385,7 +385,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # ==========================================================================
         """ Add references to control volume geometry."""
         self.length = Reference(feed_side.length) #add_object_reference(self, 'length', feed_side.length)
-        self.feed_area_cross = Reference(feed_side.area)#add_object_reference(self, 'feed_area_cross', feed_side.area)
+        self.feed_area_cross = Reference(feed_side.area) #add_object_reference(self, 'feed_area_cross', feed_side.area)
         add_object_reference(self, 'length', permeate_side.length)
         add_object_reference(self, 'permeate_area_cross', permeate_side.area)
 

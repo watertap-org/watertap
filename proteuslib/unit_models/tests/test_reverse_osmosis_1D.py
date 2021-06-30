@@ -240,15 +240,15 @@ class TestReverseOsmosis():
         m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
         m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
         # m.fs.unit.deltaP.fix(-membrane_pressure_drop)
-        m.fs.unit.area.fix(membrane_area)
+        # m.fs.unit.area.fix(membrane_area)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
         # m.fs.unit.permeate_side.properties[0, :].temperature.fix(feed_temperature)
 
-        m.fs.unit.width.fix(1.5)
-        m.fs.unit.permeate_side.properties[0, 0].flow_mass_phase_comp['Liq', 'NaCl'].fix(0)
-        m.fs.unit.permeate_side.properties[0, 0].flow_mass_phase_comp['Liq', 'H2O'].fix(0)
+        # m.fs.unit.width.fix(1.5)
+        # m.fs.unit.permeate_side.properties[0, 0].flow_mass_phase_comp['Liq', 'NaCl'].fix(1e-8)
+        # m.fs.unit.permeate_side.properties[0, 0].flow_mass_phase_comp['Liq', 'H2O'].fix(1e-8)
 
         return m
 
@@ -347,9 +347,9 @@ class TestReverseOsmosis():
         assert number_unused_variables(m) == 13  # TODO: vars from property package parameters
         # unused areas,  (return later)
 
-    @pytest.mark.integration
-    def test_units(self, RO_frame):
-        m = RO_frame
+    # @pytest.mark.integration
+    # def test_units(self, RO_frame):
+    #     m = RO_frame
         # assert_units_equivalent(btx.fs.unit.shell_area, pyunits.m**2)
         # assert_units_equivalent(btx.fs.unit.shell_length, pyunits.m)
         # assert_units_equivalent(btx.fs.unit.tube_area, pyunits.m**2)
@@ -366,13 +366,7 @@ class TestReverseOsmosis():
         #     pyunits.W/pyunits.m**2/pyunits.degK)
         # assert_units_equivalent(btx.fs.unit.temperature_wall, pyunits.K)
 
-        assert_units_consistent(m)
-
-    @pytest.mark.unit
-    def test_dof(self, RO_frame):
-        m = RO_frame
-        [print(i) for i in unfixed_variables_in_activated_equalities_set(m)]
-        assert degrees_of_freedom(m) == 0
+        # assert_units_consistent(m)
 
     @pytest.mark.unit
     def test_calculate_scaling(self, RO_frame):
@@ -391,11 +385,18 @@ class TestReverseOsmosis():
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
         [print(k) for k in unscaled_constraint_list]
         assert len(unscaled_constraint_list) == 0
-#
-#     @pytest.mark.component
-#     def test_initialize(self, RO_frame):
-#         initialization_tester(RO_frame)
-#
+
+    @pytest.mark.component
+    def test_initialize(self, RO_frame):
+        initialization_tester(RO_frame)
+
+
+    @pytest.mark.unit
+    def test_dof(self, RO_frame):
+        m = RO_frame
+        [print(i) for i in unfixed_variables_in_activated_equalities_set(m)]
+        assert degrees_of_freedom(m) == 0
+
     # @pytest.mark.component
     # def test_var_scaling(self, RO_frame):
     #     m = RO_frame
@@ -406,8 +407,8 @@ class TestReverseOsmosis():
     @pytest.mark.component
     def test_solve(self, RO_frame):
         m = RO_frame
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
-        results = solver.solve(m)
+        # solver.options = {'nlp_scaling_method': 'user-scaling'}
+        results = solver.solve(m, tee=True)
 
         # Check for optimal solution
         assert results.solver.termination_condition == \
@@ -426,6 +427,10 @@ class TestReverseOsmosis():
             b.feed_side.properties[0, 1].flow_mass_phase_comp['Liq', j] for j in comp_lst)
         flow_mass_permeate = sum(
             b.permeate_side.permeate_out[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
+
+        assert value(flow_mass_inlet) == pytest.approx(1.0, rel=1e-3)
+        assert value(flow_mass_retentate) == pytest.approx(1.0, rel=1e-3)
+        assert value(flow_mass_permeate) == pytest.approx(1.0, rel=1e-3)
 
         assert (abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate
                           )) <= 1e-5)
