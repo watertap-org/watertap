@@ -10,3 +10,4 @@ How To Guides
    how_to_scale_a_model
    how_to_use_parameter_sweep
    how_to_use_EDB
+   how_to_contribute_development
