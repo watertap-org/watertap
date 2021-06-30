@@ -53,11 +53,12 @@ If you are going to use ProteusLib's functionality, but *do not* plan to contrib
 
 		pip install https://github.com/nawi-hub/proteuslib/archive/main.zip
 
-#. To verify that the installation was successful, try running the ProteusLib test suite using ``pytest``:
+#. To verify that the installation was successful, open a Python interpreter and try importing some of ProteusLib's modules, e.g.:
 
 	.. code-block:: shell
 
-		pytest
+		python
+		>>> from proteuslib.unit_models import *
 
 For ProteusLib developers
 -------------------------
