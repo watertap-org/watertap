@@ -2,7 +2,7 @@ Unit Models
 ===========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    
-   0D_nanofiltration
    reverse_osmosis_0D
+   nanofiltration_0D

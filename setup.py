@@ -91,26 +91,36 @@ setup(
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of proteuslib
         *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
         "pyomo",  # (also needed for units in electrolyte database (edb))
-        # the following requirements are for the edb
+        # the following requirements are for the electrolyte database (edb)
         "pymongo>3",  # database interface
         "fastjsonschema",  # schema validation
-        # other requirements
-        "pytest",  # technically developer, but everyone likes tests
-        "pytest-cov", # technically developer, but everyone likes tests
+        "click",  # command-line tools with Click
         # tutorial tests
-        "nbformat",
+        "nbformat"
     ],
     extras_require={
         "dev": [
+            "myst-parser",  # markdown support for Sphinx
+            # other requirements
+            "linkify-it-py",
             "Sphinx",  # docs
             "sphinx_rtd_theme",  # docs
             "json-schema-for-humans",  # pretty JSON schema in HTML
             "black",  # code formatting
+            # other requirements
+            "pytest",  # test framework
+            "pytest-cov",  # code coverage
         ],
     },
     package_data={  # Optional
         "": [
             "*.json",
         ],
+    },
+    entry_points={
+        # add edb CLI commands
+        "console_scripts": [
+            "edb = proteuslib.edb.commands:command_base",
+        ]
     },
 )

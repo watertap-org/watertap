@@ -14,7 +14,7 @@ import os
 import sys
 import sphinx_rtd_theme
 sys.path.insert(0, os.path.abspath('..'))
-sys.path.insert(0,os.path.dirname(sys.path[0]))
+# sys.path.insert(0,os.path.dirname(sys.path[0]))
 
 # -- Project information -----------------------------------------------------
 
@@ -26,15 +26,15 @@ author = 'NAWI'
 release = '0.0.1'
 # The short X.Y version
 version = '0.0.1'
-
 # -- General configuration ---------------------------------------------------
+
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
     'sphinx_rtd_theme',
-    'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',  # Google and NumPy-style docstrings
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.coverage',
@@ -42,13 +42,13 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
-    'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel',
-    'sphinx.ext.doctest'
+    'sphinx.ext.doctest',
+    'myst_parser'
 ]
 
 autosectionlabel_prefix_document = True
-
+autodoc_warningiserror = False  # suppress warnings during autodoc
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -56,8 +56,7 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'apidoc/*tests*']
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -84,3 +83,23 @@ html_logo = "_static/NAWI_logo.png"
 # pixels large.
 #
 html_favicon = "_static/favicon.ico"
+
+## for MyST (Markdown)
+
+myst_enable_extensions = [
+    "dollarmath",
+    "amsmath",
+    "deflist",
+    "html_admonition",
+    "html_image",
+    "colon_fence",
+    "smartquotes",
+    "replacements",
+    "linkify",
+    "substitution",
+    "tasklist",
+]
+myst_heading_anchors = 2
+myst_footnote_transition = True
+myst_dmath_double_inline = True
+panels_add_bootstrap_css = False
