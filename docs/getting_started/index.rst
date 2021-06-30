@@ -1,2 +1,5 @@
 Getting Started
 ===============
+
+.. toctree::
+	install
