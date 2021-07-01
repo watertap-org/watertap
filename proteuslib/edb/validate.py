@@ -24,12 +24,14 @@ import argparse
 import json
 import logging
 from pathlib import Path
-from typing import Union, Dict
+from typing import Union, Dict, TextIO
 # 3rd party
+import fastjsonschema
 from fastjsonschema import compile
 # package
 from .schemas import schemas
-
+from . import data_model
+from .error import ValidationError
 
 __author__ = "Dan Gunter (LBNL)"
 
@@ -37,19 +39,34 @@ __author__ = "Dan Gunter (LBNL)"
 _log = logging.getLogger(__name__)
 
 
-def validate_component(component) -> Dict:
-    """Validate a 'component' input.
+def validate(obj: Union[Dict, TextIO, Path, str, data_model.DataWrapper], obj_type=""):
+    """Validate an input.
 
-    Returns:
-        Validated data (validation may fill in constant values)
+    Args:
+        obj: Input data, file, path, or DataWrapper to validate.
+        obj_type: Either 'component' or 'reaction'. Ignored for DataWrapper inputs.
+
+    Raises:
+        TypeError: If 'obj' is not an acceptable type of object
+        ValueError: If the 'obj_type' is not valid
+        ValidationError: If validation fails
     """
-    return _Validator(schemas["component"]).validate(component)
+    if isinstance(obj, data_model.DataWrapper):
+        obj_type = _schema_map.get(obj.__class__, None)
+        if obj_type is None:
+            return  # no validation
+        obj = obj.json_data
+    else:
+        if not obj_type:
+            raise ValidationError("Cannot determine type: Missing value for 'obj_type' parameter")
+        assert obj_type in _schema_map.values()
+    _Validator(schemas[obj_type]).validate(obj)
 
 
-def validate_reaction(reaction) -> Dict:
-    """Validate a 'reaction' input.
-    """
-    return _Validator(schemas["reaction"]).validate(reaction)
+_schema_map = {
+    data_model.Component: "component",
+    data_model.Reaction: "reaction",
+}
 
 
 class _Validator:
@@ -66,23 +83,28 @@ class _Validator:
         # Create validation function from schema
         self._validate_func = compile(self._schema)
 
-    def validate(self, instance) -> Dict:
+    def validate(self, instance):
         """Validate a JSON instance against the schema.
 
         Args:
-            instance: file, dict, filename
+            instance: file, dict, filename, path
 
-        Returns:
-            Validated data
+        Raises:
+            TypeError: If 'instance' is not an acceptable type of object
+            ValidationError: If validation fails
         """
         f, d = None, None
         if hasattr(instance, "open"):  # file-like
             f = instance.open()
         elif hasattr(instance, "keys"):  # dict-like
             d = instance
-        else:  # assume filename
-            f = open(str(instance))
+        elif isinstance(instance, str):
+            f = open(instance)
+        else:
+            raise TypeError("validate: input object is not file-like, dict-like, or string")
         if f is not None:
             d = json.load(f)
-        result = self._validate_func(d)
-        return result
+        try:
+            result = self._validate_func(d)
+        except fastjsonschema.JsonSchemaException as err:
+            raise ValidationError(err)

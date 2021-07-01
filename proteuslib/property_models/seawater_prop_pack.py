@@ -19,7 +19,7 @@ import idaes.logger as idaeslog
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, \
-    Var, Param, Suffix, value, SolverFactory, log, log10, exp
+    Var, Param, Suffix, value, log, log10, exp
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores
@@ -36,7 +36,7 @@ from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import PropertyPackageError
 import idaes.core.util.scaling as iscale
@@ -401,9 +401,9 @@ class _SeawaterStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(self, state_args={}, state_vars_fixed=False,
+    def initialize(self, state_args=None, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         """
         Initialization routine for property package.
         Keyword Arguments:
@@ -450,16 +450,7 @@ class _SeawaterStateBlock(StateBlock):
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="properties")
 
         # Set solver and options
-        # TODO: clean up once IDAES new API for initialize solvers is released
-        if isinstance(solver, str):
-            opt = SolverFactory(solver)
-            opt.options = optarg
-        else:
-            if solver is None:
-                opt = get_default_solver()
-            else:
-                opt = solver
-                opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # Fix state variables
         flags = fix_state_vars(self, state_args)

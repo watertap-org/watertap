@@ -10,11 +10,11 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
+import os
+import sys
 import sphinx_rtd_theme
-# sys.path.insert(0, os.path.abspath('.'))
-
+sys.path.insert(0, os.path.abspath('..'))
+# sys.path.insert(0,os.path.dirname(sys.path[0]))
 
 # -- Project information -----------------------------------------------------
 
@@ -23,18 +23,32 @@ copyright = '2021, NAWI'
 author = 'NAWI'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.1'
+release = '0.2.0dev'
 # The short X.Y version
-version = '0.0.1'
-
+version = '0.2.0dev'
 # -- General configuration ---------------------------------------------------
+
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
     'sphinx_rtd_theme',
+    'sphinx.ext.napoleon',  # Google and NumPy-style docstrings
+    'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.coverage',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.ifconfig',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.githubpages',
+    'sphinx.ext.autosectionlabel',
+    'sphinx.ext.doctest',
+    'myst_parser'
 ]
+
+autosectionlabel_prefix_document = True
+autodoc_warningiserror = False  # suppress warnings during autodoc
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -42,8 +56,7 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'apidoc/*tests*']
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -70,3 +83,23 @@ html_logo = "_static/NAWI_logo.png"
 # pixels large.
 #
 html_favicon = "_static/favicon.ico"
+
+## for MyST (Markdown)
+
+myst_enable_extensions = [
+    "dollarmath",
+    "amsmath",
+    "deflist",
+    "html_admonition",
+    "html_image",
+    "colon_fence",
+    "smartquotes",
+    "replacements",
+    "linkify",
+    "substitution",
+    "tasklist",
+]
+myst_heading_anchors = 2
+myst_footnote_transition = True
+myst_dmath_double_inline = True
+panels_add_bootstrap_css = False

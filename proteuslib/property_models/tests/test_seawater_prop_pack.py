@@ -28,8 +28,24 @@ from idaes.core import (FlowsheetBlock,
                         EnergyBalanceType)
 from idaes.core.components import Solute, Solvent
 from idaes.core.phases import LiquidPhase
-from idaes.core.util.scaling import calculate_scaling_factors
+
+from idaes.core.util.model_statistics import (degrees_of_freedom,
+                                              number_variables,
+                                              number_total_constraints,
+                                              number_unused_variables,
+                                              unused_variables_set)
 from idaes.core.util import get_solver
+from idaes.core.util.scaling import (calculate_scaling_factors,
+                                     set_scaling_factor,
+                                     unscaled_variables_generator,
+                                     unscaled_constraints_generator,
+                                     badly_scaled_var_generator)
+from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+
+# -----------------------------------------------------------------------------
+# Get default solver for testing
+solver = get_solver()
+solver.options["nlp_scaling_method"] = "user-scaling"
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit

@@ -1,5 +1,5 @@
-0D Nanofiltration Model
-=======================
+Nanofiltration (0D)
+===================
 
 Introduction
 ------------
@@ -16,7 +16,7 @@ The main assumptions of the implemented model are as follows:
 
 1) Nanofiltration is modeled as cross-flow filtration as seen in Figure 1
 2) Model dimensionality is limited to 0D
-3) Model dynamics are restriced to steady-state only
+3) Model dynamics are restricted to steady-state only
 4) Single liquid phase only
 5) Single solute only (e.g. NaCl)
 6) Isothermal operation

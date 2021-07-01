@@ -1,0 +1,48 @@
+[
+  {
+    "phases": {
+      "Liq": {
+        "type": "LiquidPhase",
+        "equation_of_state": "Ideal"
+      }
+    },
+    "state_definition": "FTPx",
+    "state_bounds": {
+      "flow_mol": [
+        0,
+        50,
+        100
+      ],
+      "temperature": [
+        273.15,
+        300,
+        650
+      ],
+      "pressure": [
+        50000,
+        100000,
+        1000000
+      ]
+    },
+    "pressure_ref": 100000,
+    "temperature_ref": 300,
+    "base_units": {
+      "time": "s",
+      "length": "m",
+      "mass": "kg",
+      "amount": "mol",
+      "temperature": "K"
+    },
+    "name": "thermo"
+  },
+  {
+    "base_units": {
+      "time": "s",
+      "length": "m",
+      "mass": "kg",
+      "amount": "mol",
+      "temperature": "K"
+    },
+    "name": "water_reaction"
+  }
+]

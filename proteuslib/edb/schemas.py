@@ -22,91 +22,132 @@ JSON schema embedded as variables for:
   - reaction
 """
 
+_parameter_def = {
+    "type": "array",
+    "description": "List of parameter values",
+    "items": {
+        "type": "object",
+        "description": "Value, units, etc. for a parameter",
+        "properties": {
+            "v": {"description": "value", "type": "number"},
+            "u": {"description": "units", "type": "string"},
+            "i": {
+                "oneOf": [
+                    {"type": "string", "description": "string index"},
+                    {"type": "number", "description": "numeric index"},
+                ]
+            },
+        },
+        "required": ["v", "u"],
+    },
+}
+
 schemas = {
     "component": {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "$id": "https://nawi-hub.github.com/electrolytedb/component",
-        "title": "Electrolyte database component",
         "type": "object",
-        "description": "Electrolyte component schema",
+        "description": "A chemical species that is a component in a reaction",
         "properties": {
-            "type": {"type": "string", "const": "component"},
             "name": {
                 "description": "The chemical name of the component",
                 "examples": ["HPO4 2-", "H3PO4", "NH4 +"],
                 "type": "string",
             },
-            "valid_phase_types": {"type": "string"},
+            "elements": {
+                "description": "List of elements",
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "description": "Name of an individual element"
+                }
+            },
+            "type": {
+                "description": "Component type",
+                "examples": ["Solvent", "solvent"],
+                "type": "string",
+                "enum": ["solvent", "solute", "anion", "cation",
+                         "Solvent", "Solute", "Anion", "Cation"]
+            },
+            "valid_phase_types": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "description": "Valid phase types should start with 'PT.' and then match "
+                    "attributes in idaes.core.phases.PhaseType",
+                    "examples": [["PT.liquidPhase"]],
+                },
+            },
             "phase_equilibrium_form": {
                 "type": "object",
-                "properties": {"vap": {"type": "string"}, "liq": {"type": "string"}},
+                "properties": {"Vap": {"type": "string"}, "Liq": {"type": "string"}},
             },
             "parameter_data": {
                 "type": "object",
                 "properties": {
-                    "mw": {"$ref": "#/definitions/value_units"},
-                    "pressure_crit": {"$ref": "#/definitions/value_units"},
-                    "temperature_crit": {"$ref": "#/definitions/value_units"},
+                    "mw": {"$ref": "#/definitions/parameter"},
+                    "pressure_crit": {"$ref": "#/definitions/parameter"},
+                    "temperature_crit": {"$ref": "#/definitions/parameter"},
                 },
                 "patternProperties": {
-                    "_coeff": {
-                        "type": "object",
-                        "additionalProperties": {"$ref": "#/definitions/value_units"},
-                    },
-                    "_ref": {"$ref": "#/definitions/value_units"},
+                    "^.*_coeff$": {"$ref": "#/definitions/parameter"},
+                    "^.*_ref$": {"$ref": "#/definitions/parameter"},
                 },
                 "additionalProperties": False,
             },
         },
-        "required": ["name", "type"],
+        "required": ["name", "elements", "parameter_data", "type"],
         "patternProperties": {"_comp": {"type": "string"}},
-        "additionalProperties": False,
-        "definitions": {
-            "value_units": {
-                "type": "array",
-                "description": "Value and units as a pair in an array",
-                "items": [
-                    {"description": "value", "type": "number"},
-                    {"description": "units", "type": "string"},
-                ],
-                "additionalItems": False,
-            }
-        },
+        "additionalProperties": True,
+        "definitions": {"parameter": _parameter_def},
     },
     "reaction": {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "$id": "https://nawi-hub.github.com/electrolytedb/reaction",
-        "title": "Electrolyte database reaction",
-        "description": "Electrolyte reaction schema",
+        "description": "The stoichiometry and properties of a reaction",
         "type": "object",
         "properties": {
-            "type": {"type": "string", "const": "reaction"},
-            "reaction_type": {"type": "string", "enum": ["equilibrium"]},
-            "name": {"type": "string"},
-            "stoichiometry": {"type": "object"},
+            "type": {
+                "type": "string",
+                "enum": ["equilibrium"],
+                "description": "Type of reaction",
+            },
+            "name": {"type": "string", "description": "Name of reaction"},
+            "stoichiometry": {
+                "type": "object",
+                "description": "Moles for the given species in the reaction. Negative for LHS, positive for RHS. "
+                "Grouped by phase.",
+                "properties": {
+                    "Liq": {"$ref": "#/definitions/stoichiometry"},
+                    "Vap": {"$ref": "#/definitions/stoichiometry"},
+                },
+                "additionalProperties": False,
+            },
             "heat_of_reaction": {"type": "string"},
             "equilibrium_constant": {"type": "string"},
             "equilibrium_form": {"type": "string"},
             "concentration_form": {"type": "string"},
             "parameter_data": {
                 "type": "object",
-                "properties": {"reaction_order": {"type": "object"}},
-                "patternProperties": {"_ref": {"$ref": "#/definitions/value_units"}},
+                "patternProperties": {"_ref": {"$ref": "#/definitions/parameter"}},
                 "additionalProperties": False,
             },
         },
-        "required": ["name", "type"],
+        "required": ["name", "parameter_data", "type"],
         "definitions": {
-            "value_units": {
-                "type": "array",
-                "description": "Value and units as a pair in an array",
-                "items": [
-                    {"description": "value", "type": "number"},
-                    {"description": "units", "type": "string"},
-                ],
-                "additionalItems": False,
-            }
-        }
-    }
+            "parameter": _parameter_def,
+            "stoichiometry": {
+                "description": "One part of the stoichiometry",
+                "examples": ['{"NH4 +": -1}'],
+                "type": "object",
+                "patternProperties": {
+                    "^[A-Z].*$": {
+                        "type": "number",
+                        "description": "Moles for the given species in the reaction. Negative for LHS, positive for RHS",
+                    }
+                },
+                "additionalProperties": False,
+            },
+        },
+    },
 }
-
