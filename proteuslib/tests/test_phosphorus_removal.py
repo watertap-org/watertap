@@ -466,6 +466,23 @@ thermo_config = {
                                 },
                     # End parameter_data
                     },
+        'Fe(OH)2_+': {"type": Cation, "charge": 1,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (89.8, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (375000, pyunits.J/pyunits.kmol/pyunits.K),
+                    # NOTE: these parameters below are not well known
+                    "enth_mol_form_liq_comp_ref": (-446.7, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
               },
               # End Component list
         "phases":  {'Liq': {"type": AqueousPhase,
@@ -664,6 +681,28 @@ thermo_config = {
                             # End parameter_data
                     },
                     # End R8
+            "FeOH2_K": {
+                        "stoichiometry": {  ("Liq", "Fe(OH)2_+"): -1,
+                                            ("Liq", "FeOH_2+"): 1,
+                                            ("Liq", "OH_-"): 1},
+                        "heat_of_reaction": constant_dh_rxn,
+                        "equilibrium_constant": van_t_hoff,
+                        "equilibrium_form": log_power_law_equil,
+                        "concentration_form": ConcentrationForm.molarity,
+                        "parameter_data": {
+                            "dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
+                            "k_eq_ref": (3.757e-11, pyunits.mol/pyunits.L),
+                            "T_eq_ref": (300.0, pyunits.K),
+
+                            # By default, reaction orders follow stoichiometry
+                            #    manually set reaction order here to override
+                            "reaction_order": { ("Liq", "Fe(OH)2_+"): -1,
+                                                ("Liq", "FeOH_2+"): 1,
+                                                ("Liq", "OH_-"): 1}
+                            }
+                            # End parameter_data
+                    },
+                    # End R9
              }
              # End equilibrium_reactions
     }
@@ -715,13 +754,15 @@ if __name__ == "__main__":
     model.fs.unit.inlet.mole_frac_comp[0, "H3PO4"].fix( zero )
     model.fs.unit.inlet.mole_frac_comp[0, "FeCl_2+"].fix( zero )
     model.fs.unit.inlet.mole_frac_comp[0, "FeOH_2+"].fix( zero )
+    model.fs.unit.inlet.mole_frac_comp[0, "Fe(OH)2_+"].fix( zero )
 
     total_molar_density = 55.2  # mol/L (approximate density of seawater)
     total_nacl_inlet = 0.000055 # mol/L (already reduced salt by 4 orders of magnitude)
     total_carbonate_inlet = 0.00206 # mol/L (typical value for seawater = 2.06E-3 M)
     frac_CO3_to_NaHCO3 = 1
     total_phosphate_inlet = 3.22e-6 # mol/L (typical value for seawater = 3.22E-6 M)
-    total_iron_inlet = 5.38e-8 # mol/L (typical value for seawater = 5.38E-8 M) [Added as FeCl3]
+    total_iron_inlet = 5.38e-8 # mol/L (typical value for seawater = 5.38E-8 M)
+    total_iron_inlet += 1e-4 # mol/L (additional iron added for phosphorus removal) [Added as FeCl3]
 
     model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( total_nacl_inlet/total_molar_density )
     model.fs.unit.inlet.mole_frac_comp[0, "Cl_-"].fix( (total_nacl_inlet+3*total_iron_inlet)/total_molar_density)
@@ -762,6 +803,7 @@ if __name__ == "__main__":
     model.fs.thermo_params.reaction_H3PO4_Ka3.eps.value = eps
     model.fs.thermo_params.reaction_FeCl_K.eps.value = 1e-25
     model.fs.thermo_params.reaction_FeOH_K.eps.value = 1e-25
+    model.fs.thermo_params.reaction_FeOH2_K.eps.value = 1e-25
 
     #Add scaling factors for reaction extent
     for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
