@@ -503,6 +503,72 @@ thermo_config = {
                         # End parameter_data
                    },
                    # End R3
+            "H3PO4_Ka1": {
+                    "stoichiometry": {("Liq", "H3PO4"): -1,
+                                     ("Liq", "H_+"): 1,
+                                     ("Liq", "H2PO4_-"): 1},
+                    "heat_of_reaction": constant_dh_rxn,
+                    "equilibrium_constant": gibbs_energy,
+                    "equilibrium_form": log_power_law_equil,
+                    "concentration_form": ConcentrationForm.molarity,
+                    "parameter_data": {
+                        "dh_rxn_ref": (-8, pyunits.kJ/pyunits.mol),
+                        "ds_rxn_ref": (-67.6, pyunits.J/pyunits.mol/pyunits.K),
+                        "T_eq_ref": (300, pyunits.K),
+
+                       # By default, reaction orders follow stoichiometry
+                       #    manually set reaction order here to override
+                        "reaction_order": { ("Liq", "H3PO4"): -1,
+                                            ("Liq", "H_+"): 1,
+                                            ("Liq", "H2PO4_-"): 1}
+                        }
+                        # End parameter_data
+                   },
+                   # End R4
+            "H3PO4_Ka2": {
+                        "stoichiometry": {  ("Liq", "H2PO4_-"): -1,
+                                            ("Liq", "H_+"): 1,
+                                            ("Liq", "HPO4_2-"): 1},
+                        "heat_of_reaction": constant_dh_rxn,
+                        "equilibrium_constant": gibbs_energy,
+                        "equilibrium_form": log_power_law_equil,
+                        "concentration_form": ConcentrationForm.molarity,
+                        "parameter_data": {
+                            "dh_rxn_ref": (4.2, pyunits.kJ/pyunits.mol),
+                            "ds_rxn_ref": (-123.8, pyunits.J/pyunits.mol/pyunits.K),
+                            "T_eq_ref": (300, pyunits.K),
+
+                            # By default, reaction orders follow stoichiometry
+                            #    manually set reaction order here to override
+                            "reaction_order": { ("Liq", "H2PO4_-"): -1,
+                                                ("Liq", "H_+"): 1,
+                                                ("Liq", "HPO4_2-"): 1}
+                            }
+                            # End parameter_data
+                    },
+                    # End R5
+            "H3PO4_Ka3": {
+                        "stoichiometry": {  ("Liq", "HPO4_2-"): -1,
+                                            ("Liq", "H_+"): 1,
+                                            ("Liq", "PO4_3-"): 1},
+                        "heat_of_reaction": constant_dh_rxn,
+                        "equilibrium_constant": gibbs_energy,
+                        "equilibrium_form": log_power_law_equil,
+                        "concentration_form": ConcentrationForm.molarity,
+                        "parameter_data": {
+                            "dh_rxn_ref": (14.7, pyunits.kJ/pyunits.mol),
+                            "ds_rxn_ref": (-188.6, pyunits.J/pyunits.mol/pyunits.K),
+                            "T_eq_ref": (300, pyunits.K),
+
+                            # By default, reaction orders follow stoichiometry
+                            #    manually set reaction order here to override
+                            "reaction_order": { ("Liq", "HPO4_2-"): -1,
+                                                ("Liq", "H_+"): 1,
+                                                ("Liq", "PO4_3-"): 1}
+                            }
+                            # End parameter_data
+                    },
+                    # End R4
              }
              # End equilibrium_reactions
     }
@@ -590,6 +656,9 @@ if __name__ == "__main__":
     model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
     model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
     model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
+    model.fs.thermo_params.reaction_H3PO4_Ka1.eps.value = eps
+    model.fs.thermo_params.reaction_H3PO4_Ka2.eps.value = eps
+    model.fs.thermo_params.reaction_H3PO4_Ka3.eps.value = eps
 
     #Add scaling factors for reaction extent
     for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
@@ -601,6 +670,7 @@ if __name__ == "__main__":
 
     solver.options['bound_push'] = 1e-20
     solver.options['mu_init'] = 1e-6
+    solver.options['max_iter'] = 3000
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     results = solver.solve(model, tee=True)
