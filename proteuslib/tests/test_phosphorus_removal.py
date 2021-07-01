@@ -1018,7 +1018,7 @@ if __name__ == "__main__":
     model.fs.thermo_params.reaction_FeOH4_K.eps.value = 1e-16
     model.fs.thermo_params.reaction_FeHPO4_K.eps.value = 1e-20
     model.fs.thermo_params.reaction_FeH2PO4_K.eps.value = 1e-16
-    model.fs.thermo_params.reaction_FePO4_Ksp.eps.value = 1e-25
+    model.fs.thermo_params.reaction_FePO4_Ksp.eps.value = 1e-23
 
 
     #Add scaling factors for reaction extent
