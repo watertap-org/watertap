@@ -731,9 +731,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.feed_side.properties[t, 0].temperature)
             iscale.constraint_scaling_transform(c, sf)
 
-        # for (t, x), c in self.eq_permeate_outlet_isobaric.items():
-        #     sf = iscale.get_scaling_factor(self.permeate_side[t, x].pressure)
-        #     iscale.constraint_scaling_transform(c, sf)
+        for (t, x), c in self.eq_permeate_outlet_isobaric.items():
+            sf = iscale.get_scaling_factor(self.permeate_side[t, x].pressure)
+            iscale.constraint_scaling_transform(c, sf)
 
         for (t, x, j), c in self.eq_mass_frac_permeate.items():
             sf = iscale.get_scaling_factor(self.permeate_side[t, x].mass_frac_phase_comp['Liq', j])
