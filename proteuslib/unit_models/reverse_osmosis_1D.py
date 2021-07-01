@@ -422,9 +422,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         #     return b.permeate_area_cross == 1 * 1 * b.width  # TODO: add channel_height and spacer_porosity
 
         # mass transfer
-        # def mass_transfer_phase_comp_initialize(b, t, x, p, j):
-        #     return value(self.feed_side.properties[t].get_material_flow_terms('Liq', j)
-        #                  * self.recovery_mass_phase_comp[t, 'Liq', j])
+        def mass_transfer_phase_comp_initialize(b, t, x, p, j):
+            return value(self.feed_side.properties[t].get_material_flow_terms('Liq', j)
+                         * 0.5) # self.recovery_mass_phase_comp[t, 'Liq', j])
 
         self.mass_transfer_phase_comp = Var(
             self.flowsheet().config.time,
@@ -436,6 +436,18 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             domain=NonNegativeReals,
             units=units_meta('mass') * units_meta('time')**-1 * units_meta('length')**-1,
             doc='Mass transfer to permeate')
+        # ==========================================================================
+        # Mass flux summations
+
+        @self.Expression(self.flowsheet().config.time,
+                         self.config.property_package.phase_list,
+                         self.config.property_package.component_list,
+                         doc="Total component mass flux expression")
+        def flux_mass_phase_comp_sum(b, t, p, j):
+            return sum(b.flux_mass_phase_comp[t, x, p, j]
+                       for x in self.feed_side.length_domain)
+        # ==========================================================================
+        # Mass transfer term equation
 
         @self.Constraint(self.flowsheet().config.time,
                          self.feed_side.length_domain,
@@ -447,13 +459,15 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         # ==========================================================================
         # Membrane area equation
+
         @self.Constraint(doc="Membrane area")
         def eq_area(b):
             return b.area == b.feed_side.length * b.width
         # ==========================================================================
         # Mass flux = feed mass transfer equation
-        # --> Jw * Am = dM/dx = Mtransfer*length
-        # --> Jw = Mtransfer * length / Am = Mtransfer / width
+        # --> Jw * dAm = dM = Mtransfer*length*dx
+        # --> Jw = Mtransfer * length *dx / dAm = Mtransfer / width
+
         @self.Constraint(self.flowsheet().config.time,
                          self.feed_side.length_domain,
                          self.config.property_package.phase_list,
@@ -479,17 +493,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             elif comp.is_solute():
                 return (b.flux_mass_phase_comp[t, x, p, j] == b.B_comp[t, j]
                         * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j]))
-        # ==========================================================================
-        # Mass flux summations
-        @self.Expression(self.flowsheet().config.time,
-                         self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
-                         doc="Total component mass flux expression")
-        def flux_mass_phase_comp_sum(b, t, p, j):
-            return sum(b.flux_mass_phase_comp[t, x, p, j]
-                       for x in self.feed_side.length_domain)
+
         # ==========================================================================
         # Final permeate mass flow rate (of solvent and solute) --> Mp,j = Am * J,sum,j
+
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
@@ -498,7 +505,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             return (b.permeate_out[t].get_material_flow_terms(p, j)
                     == b.area * b.flux_mass_phase_comp_sum[t, p, j])
         # ==========================================================================
-        # Solute mass fraction in permeate across channel --> Xp = Js/(Js + Jw)
+        # Solute mass fraction in permeate across channel length --> Xp = Js/(Js + Jw)
+
         @self.Constraint(self.flowsheet().config.time,
                          self.feed_side.length_domain,
                          self.solute_list,
@@ -510,6 +518,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                     == b.flux_mass_phase_comp[t, x, 'Liq', j])
         # ==========================================================================
         # Feed and permeate-side mass transfer connection --> Mp,j = Mf,transfer = Jj * W * L/n
+
         @self.Constraint(self.flowsheet().config.time,
                          self.feed_side.length_domain,
                          self.config.property_package.phase_list,
@@ -526,7 +535,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         def eq_connect_enthalpy_transfer(b, t, x):
             return (b.permeate_side[t, x].get_enthalpy_flow_terms('Liq')
                     == -b.feed_side.enthalpy_transfer[t, x] * b.feed_side.length)
-        # ==========================================================================
+        # # ==========================================================================
         # Feed and permeate-side isothermal conditions
         @self.Constraint(self.flowsheet().config.time,
                          self.feed_side.length_domain,
@@ -543,12 +552,12 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                    b.permeate_out[t].temperature
         # ==========================================================================
         # isobaric conditions across permeate channel and at permeate outlet
-        # @self.Constraint(self.flowsheet().config.time,
-        #                  self.feed_side.length_domain,
-        #                  doc="Isobaric assumption for permeate out")
-        # def eq_permeate_outlet_isobaric(b, t, x):
-        #     return b.permeate_side[t, x].pressure == \
-        #            b.permeate_out[t].pressure
+        @self.Constraint(self.flowsheet().config.time,
+                         self.feed_side.length_domain,
+                         doc="Isobaric assumption for permeate out")
+        def eq_permeate_outlet_isobaric(b, t, x):
+            return b.permeate_side[t, x].pressure == \
+                   b.permeate_out[t].pressure
 
     def initialize(blk,
                    feed_side_args=None,
