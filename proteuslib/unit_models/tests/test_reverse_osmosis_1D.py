@@ -274,7 +274,7 @@ class TestReverseOsmosis():
                                'eq_permeate_production': Constraint,
                                'eq_flux_mass': Constraint,
                                'eq_connect_mass_transfer': Constraint,
-                               'eq_connect_enthalpy_transfer': Constraint,
+                               # 'eq_connect_enthalpy_transfer': Constraint,
                                'eq_permeate_isothermal': Constraint,
                                # 'eq_recovery_vol_phase': Constraint,
                                # 'eq_recovery_mass_phase_comp': Constraint,

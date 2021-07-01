@@ -526,16 +526,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         def eq_connect_mass_transfer(b, t, x, p, j):
             return (b.permeate_side[t, x].get_material_flow_terms(p, j)
                     == -b.feed_side.mass_transfer_term[t, x, p, j] * b.feed_side.length)
-        # ==========================================================================
-        # # Feed and permeate-side enthalpy connection
-        # @self.Constraint(self.flowsheet().config.time,
-        #                  self.feed_side.length_domain,
-        #                  doc="Enthalpy transfer from feed to permeate")
-        # def eq_connect_enthalpy_transfer(b, t, x):
-        #     return (b.permeate_side[t, x].get_enthalpy_flow_terms('Liq')
-        #             == -b.feed_side.enthalpy_transfer[t, x] * b.feed_side.length)
         # # ==========================================================================
         # Feed and permeate-side isothermal conditions
+
         @self.Constraint(self.flowsheet().config.time,
                          self.feed_side.length_domain,
                          doc="Isothermal assumption for permeate")
@@ -728,10 +721,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         for ind, c in self.eq_connect_mass_transfer.items():
             sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
-            iscale.constraint_scaling_transform(c, sf)
-
-        for ind, c in self.eq_connect_enthalpy_transfer.items():
-            sf = iscale.get_scaling_factor(self.feed_side.enthalpy_transfer[ind])
             iscale.constraint_scaling_transform(c, sf)
 
         for (t, x), c in self.eq_permeate_isothermal.items():
