@@ -551,6 +551,28 @@ thermo_config = {
                                 },
                     # End parameter_data
                     },
+        #NOTE: This test does NOT evaluate the precipitation function of IDAES
+        #       We are just trying to establish whether or not IDAES can handle
+        #       these basic problems. Under the condition of saturation, this
+        #       module would be mathematically equivalent to a precipitation
+        #       problem with the same species.
+        'FePO4(s)': {"type": Solute, "valid_phase_types": PT.aqueousPhase,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (150.8, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (635000, pyunits.J/pyunits.kmol/pyunits.K),
+                    # NOTE: these parameters below are unknown
+                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
               },
               # End Component list
         "phases":  {'Liq': {"type": AqueousPhase,
@@ -859,6 +881,31 @@ thermo_config = {
                             # End parameter_data
                     },
                     # End R13
+            "FePO4_Ksp": {
+                        "stoichiometry": {  ("Liq", "FePO4(s)"): -1,
+                                            ("Liq", "Fe_3+"): 1,
+                                            ("Liq", "PO4_3-"): 1},
+                        "heat_of_reaction": constant_dh_rxn,
+                        "equilibrium_constant": van_t_hoff,
+                        "equilibrium_form": log_power_law_equil,
+                        "concentration_form": ConcentrationForm.molarity,
+                        "parameter_data": {
+                            "dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
+                            "k_eq_ref": (10**-23, pyunits.mol**2/pyunits.L**2),
+                            "T_eq_ref": (300.0, pyunits.K),
+
+                            # By default, reaction orders follow stoichiometry
+                            #    manually set reaction order here to override
+                            #   NOTE: In a solubility product function, the
+                            #       precipitate does not show up in the
+                            #       mathematical function.
+                            "reaction_order": { ("Liq", "FePO4(s)"): 0,
+                                                ("Liq", "Fe_3+"): 1,
+                                                ("Liq", "PO4_3-"): 1}
+                            }
+                            # End parameter_data
+                    },
+                    # End R14
              }
              # End equilibrium_reactions
     }
@@ -903,7 +950,6 @@ if __name__ == "__main__":
 
     zero = 0
     model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( zero )
-    model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( zero )
     model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( zero )
     model.fs.unit.inlet.mole_frac_comp[0, "PO4_3-"].fix( zero )
     model.fs.unit.inlet.mole_frac_comp[0, "H2PO4_-"].fix( zero )
@@ -915,6 +961,7 @@ if __name__ == "__main__":
     model.fs.unit.inlet.mole_frac_comp[0, "Fe(OH)4_-"].fix( zero )
     model.fs.unit.inlet.mole_frac_comp[0, "FeHPO4_+"].fix( zero )
     model.fs.unit.inlet.mole_frac_comp[0, "FeH2PO4_2+"].fix( zero )
+    model.fs.unit.inlet.mole_frac_comp[0, "FePO4(s)"].fix( zero )
 
     total_molar_density = 55.2  # mol/L (approximate density of seawater)
     total_nacl_inlet = 0.000055 # mol/L (already reduced salt by 4 orders of magnitude)
@@ -923,9 +970,11 @@ if __name__ == "__main__":
     total_phosphate_inlet = 3.22e-6 # mol/L (typical value for seawater = 3.22E-6 M)
     total_phosphate_inlet += 1e-3 # mol/L (additional phosphorus [e.g., concentrated post-RO])
     total_iron_inlet = 5.38e-8 # mol/L (typical value for seawater = 5.38E-8 M)
-    total_iron_inlet += 1e-4 # mol/L (additional iron added for phosphorus removal) [Added as FeCl3]
+    total_iron_inlet += 1e-3 # mol/L (additional iron added for phosphorus removal) [Added as FeCl3]
+    NaOH_added = 1e-3 # mol/L (added to raise pH and induce precipitation)
 
-    model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( total_nacl_inlet/total_molar_density )
+    model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( NaOH_added/total_molar_density )
+    model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( (total_nacl_inlet+NaOH_added)/total_molar_density )
     model.fs.unit.inlet.mole_frac_comp[0, "Cl_-"].fix( (total_nacl_inlet+3*total_iron_inlet)/total_molar_density)
 
     model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix(
@@ -969,6 +1018,7 @@ if __name__ == "__main__":
     model.fs.thermo_params.reaction_FeOH4_K.eps.value = 1e-16
     model.fs.thermo_params.reaction_FeHPO4_K.eps.value = 1e-20
     model.fs.thermo_params.reaction_FeH2PO4_K.eps.value = 1e-16
+    model.fs.thermo_params.reaction_FePO4_Ksp.eps.value = 1e-25
 
 
     #Add scaling factors for reaction extent
@@ -1030,5 +1080,33 @@ if __name__ == "__main__":
     total_phosphorus = total_phosphorus*95000
     total_phosphorus_in = total_phosphate_inlet*95000
 
+    phos_precip = value(model.fs.unit.outlet.mole_frac_comp[0, "FePO4(s)"])*total_molar_density
+    phos_precip = phos_precip*95000
+
     print("Phosphorus in =\t" + str(total_phosphorus_in))
     print("Phosphorus out =\t" + str(total_phosphorus))
+    print("Phosphorus precipitated =\t" + str(phos_precip))
+
+    print()
+
+    total_iron = value(model.fs.unit.outlet.mole_frac_comp[0, "Fe_3+"])*total_molar_density
+    total_iron += value(model.fs.unit.outlet.mole_frac_comp[0, "FeCl_2+"])*total_molar_density
+    total_iron += value(model.fs.unit.outlet.mole_frac_comp[0, "FeOH_2+"])*total_molar_density
+    total_iron += value(model.fs.unit.outlet.mole_frac_comp[0, "Fe(OH)2_+"])*total_molar_density
+    total_iron += value(model.fs.unit.outlet.mole_frac_comp[0, "Fe(OH)3"])*total_molar_density
+    total_iron += value(model.fs.unit.outlet.mole_frac_comp[0, "Fe(OH)4_-"])*total_molar_density
+    total_iron += value(model.fs.unit.outlet.mole_frac_comp[0, "FeHPO4_+"])*total_molar_density
+    total_iron += value(model.fs.unit.outlet.mole_frac_comp[0, "FeH2PO4_2+"])*total_molar_density
+    total_iron = total_iron*55800
+    total_iron_in = total_iron_inlet*55800
+
+    iron_precip = value(model.fs.unit.outlet.mole_frac_comp[0, "FePO4(s)"])*total_molar_density
+    iron_precip = iron_precip*55800
+
+    print("Iron in =\t" + str(total_iron_in))
+    print("Iron out =\t" + str(total_iron))
+    print("Iron precipitated =\t" + str(iron_precip))
+
+    print()
+
+    print("Phosphorus Removal Efficiency (%) =\t" + str((total_phosphorus_in-total_phosphorus)/total_phosphorus_in*100))
