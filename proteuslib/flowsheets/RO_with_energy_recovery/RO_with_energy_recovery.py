@@ -209,6 +209,8 @@ def calculate_operating_pressure(feed_state_block=None, over_pressure=0.15,
                                  water_recovery=0.5, NaCl_passage=0.01, solver=None):
     """
     estimate operating pressure for RO unit model given the following arguments:
+
+    Arguments:
         feed_state_block:   the state block of the RO feed that has the non-pressure state
                             variables initialized to their values (default=None)
         over_pressure:  the amount of operating pressure above the brine osmotic pressure
