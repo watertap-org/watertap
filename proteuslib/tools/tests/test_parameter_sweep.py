@@ -167,19 +167,19 @@ class TestParallelManager():
 
         assert np.shape(local_combo_array)[1] == 3
 
-        assert test[-1, 0] == pytest.approx(local_combo_array[-1, 0])
-        assert test[-1, 1] == pytest.approx(local_combo_array[-1, 1])
-        assert test[-1, 2] == pytest.approx(local_combo_array[-1, 2])
+        assert np.allclose(test[:, 0], local_combo_array[:, 0])
+        assert np.allclose(test[:, 1], local_combo_array[:, 1])
+        assert np.allclose(test[:, 2], local_combo_array[:, 2])
 
         if rank == 0:
-            assert test[0, 0] == pytest.approx(range_A[0])
-            assert test[0, 1] == pytest.approx(range_B[0])
-            assert test[0, 2] == pytest.approx(range_C[0])
+            assert local_combo_array[0, 0] == pytest.approx(range_A[0])
+            assert local_combo_array[0, 1] == pytest.approx(range_B[0])
+            assert local_combo_array[0, 2] == pytest.approx(range_C[0])
 
         if rank == num_procs - 1:
-            assert test[-1, 0] == pytest.approx(range_A[1])
-            assert test[-1, 1] == pytest.approx(range_B[1])
-            assert test[-1, 2] == pytest.approx(range_C[1])
+            assert local_combo_array[-1, 0] == pytest.approx(range_A[1])
+            assert local_combo_array[-1, 1] == pytest.approx(range_B[1])
+            assert local_combo_array[-1, 2] == pytest.approx(range_C[1])
 
     @pytest.mark.component
     def test_update_model_values(self, model):

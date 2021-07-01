@@ -95,6 +95,8 @@ def _init_mpi(mpi_comm=None):
 # ================================================================
 
 def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
+    num_var_params = len(d)
+
     if rank == 0:
         param_values = []
 
@@ -106,16 +108,18 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
             p = v.sample(num_samples)
             param_values.append(p)
 
-        num_var_params = len(param_values)
 
         if sampling_type == "linear":
             # Form an array with every possible combination of parameter values
             global_combo_array = np.array(np.meshgrid(*param_values, indexing="ij"))
-            global_combo_array = global_combo_array.T.reshape(-1, num_var_params, order="F")
+            global_combo_array = global_combo_array.reshape(num_var_params, -1).T
+
+            # Return a copy of this array with row-major memory order
+            global_combo_array = np.ascontiguousarray(global_combo_array)
         else:
             sorting = np.argsort(param_values[0])
-            global_combo_array = np.column_stack(param_values)
-            global_combo_array = global_combo_array[sorting]
+            global_combo_array = np.vstack(param_values).T
+            global_combo_array = global_combo_array[sorting, :]
 
     else:
         if sampling_type == "linear":
@@ -123,17 +127,16 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
             for k, v in d.items():
                 nx *= v.num_samples
 
-            global_combo_array = np.zeros(nx*len(d), dtype=np.float64)
-
+            assert type(nx) == int
         else:
-            global_combo_array = np.zeros(num_samples*len(d), dtype=np.float64)
+            nx = num_samples
+
+        # Allocate memory to hold the Bcast array
+        global_combo_array = np.zeros((nx, num_var_params), dtype=np.float64)
 
     ### Broadcast the array to all processes
     if num_procs > 1:
         comm.Bcast(global_combo_array, root=0)
-
-    if rank > 0:
-        global_combo_array = global_combo_array.reshape(-1, len(d), order='F')
 
     return global_combo_array
 
@@ -195,6 +198,9 @@ def _aggregate_results(local_results, global_values, comm, num_procs):
 
         # Collect the global results results onto rank 0
         comm.Gatherv(local_results, (global_results, send_counts), root=0)
+
+        # Broadcast the results to all ranks
+        comm.Bcast(global_results, root=0)
 
     else:
         global_results = np.copy(local_results)
@@ -403,25 +409,18 @@ def parameter_sweep(model, sweep_params, outputs, results_file, optimize_functio
     if debugging_data_dir is not None:
         # Create the local filename and data
         fname = os.path.join(debugging_data_dir, f'local_results_{rank:03}.csv')
-        save_data = np.hstack((local_values, local_results))
+        local_save_data = np.hstack((local_values, local_results))
 
         # Save the local data
-        np.savetxt(fname, save_data, header=data_header, delimiter=', ', fmt='%.6e')
+        np.savetxt(fname, local_save_data, header=data_header, delimiter=', ', fmt='%.6e')
+
+    # Create the global filename and data
+    global_save_data = np.hstack((global_values, global_results))
 
     if rank == 0:
-        # Create the global filename and data
-        save_data = np.hstack((global_values, global_results))
-
         # Save the global data
-        np.savetxt(results_file, save_data, header=data_header, delimiter=', ', fmt='%.6e')
-    else:
-        save_data = np.zeros((np.shape(global_values)[0],
-            np.shape(global_values)[1]+np.shape(global_results)[1]))
-
-    # Broadcast the results to all processors
-    if num_procs > 1:
-        comm.Bcast(save_data, root=0)
+        np.savetxt(results_file, global_save_data, header=data_header, delimiter=', ', fmt='%.6e')
     
-    return save_data
+    return global_save_data
 
 # ================================================================
