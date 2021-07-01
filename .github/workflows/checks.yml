@@ -45,11 +45,17 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --progress-bar off --upgrade pip
+        echo '::group::Output of "pip install" commands'
+        python -m pip install --progress-bar off --upgrade pip wheel setuptools
         pip install --progress-bar off -r requirements-dev.txt
+        echo '::endgroup::'
+        echo '::group::Output of "pip list/show" commands'
         pip list
         pip show idaes-pse
+        echo '::endgroup::'
+        echo '::group::Output of "idaes get-extensions" command'
         idaes get-extensions --verbose
+        echo '::endgroup::'
     - name: Test with pytest
       run: |
         pytest
