@@ -13,7 +13,7 @@ This reverse osmosis (RO) unit model
 
 Degrees of Freedom
 ------------------
-Aside from the feed temperature, feed pressure, and component mass flow rates at the inlet, the RO model typically has
+Aside from the inlet feed state variables (i.e. temperature, pressure, component flowrates), the RO model has
 at least 4 degrees of freedom that should be fixed for the unit to be fully specified.
 
 Typically, the following variables are fixed, in addition to state variables at the inlet:
@@ -23,12 +23,12 @@ Typically, the following variables are fixed, in addition to state variables at 
     * membrane area
 
 On the other hand, configuring the RO unit to calculate concentration polarization effects, mass transfer
-coefficient, and pressure drop would result in 7 degrees of freedom. In this case, in addition to the
+coefficient, and pressure drop would result in 3 additional degrees of freedom. In this case, in addition to the
 previously fixed variables, we typically fix the following variables to fully specify the unit:
 
     * feed-spacer porosity
     * feed-channel height
-    * membrane length *or* membrane width
+    * membrane length *or* membrane width *or* inlet Reynolds number
 
 Model Structure
 ------------------
