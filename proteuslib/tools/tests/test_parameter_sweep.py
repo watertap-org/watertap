@@ -135,8 +135,8 @@ class TestParallelManager():
         assert np.mean(global_combo_array[:, 0]) < (range_A[0] + range_A[1])
         assert np.mean(global_combo_array[:, 1]) < (range_B[0] + range_B[1])
 
-        assert np.mean((range_A[0] - range_A[1] < global_combo_array[:, 0]))
-        assert np.mean((range_B[0] - range_B[1] < global_combo_array[:, 1]))
+        assert (range_A[0] - range_A[1]) < np.mean(global_combo_array[:, 0])
+        assert (range_B[0] - range_B[1]) < np.mean(global_combo_array[:, 1])
 
         assert np.all(global_combo_array[:, 2] == range_C[0])
 
