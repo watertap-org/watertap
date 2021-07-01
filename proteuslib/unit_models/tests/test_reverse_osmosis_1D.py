@@ -286,7 +286,7 @@ class TestReverseOsmosis():
                                # 'eq_feed_area_cross': Constraint,
                                # 'eq_permeate_area_cross': Constraint,
                                'eq_permeate_outlet_isothermal': Constraint,
-                               # 'eq_permeate_outlet_isobaric': Constraint
+                               'eq_permeate_outlet_isobaric': Constraint
                                }
         for (obj_str, obj_type) in unit_objs_type_dict.items():
             obj = getattr(m.fs.unit, obj_str)
@@ -331,11 +331,11 @@ class TestReverseOsmosis():
         #     assert isinstance(obj, obj_type)
 
         # test statistics
-        assert number_variables(m) == 868
-        assert number_total_constraints(m) == 836
+        assert number_variables(m) == 763
+        assert number_total_constraints(m) == 733
         unused_list = unused_variables_set(m)
         [print(i) for i in unused_list]
-        assert number_unused_variables(m) == 13  # TODO: vars from property package parameters
+        assert number_unused_variables(m) == 17  # TODO: vars from property package parameters
         # unused areas,  (return later)
 
     # @pytest.mark.integration
@@ -360,6 +360,15 @@ class TestReverseOsmosis():
         # assert_units_consistent(m.fs.unit)
 
     @pytest.mark.unit
+    def test_dof(self, RO_frame):
+        m = RO_frame
+        # [print(i) for i in ]
+        print(number_fixed_variables_in_activated_equalities(m))
+        # print(number_activated_constraints(m))
+        [print(i) for i in unused_variables_set(m)]
+        assert degrees_of_freedom(m) == 0
+
+    @pytest.mark.unit
     def test_calculate_scaling(self, RO_frame):
         m = RO_frame
 
@@ -381,16 +390,6 @@ class TestReverseOsmosis():
     # def test_initialize(self, RO_frame):
     #     initialization_tester(RO_frame, dof=-2)
 
-#
-    @pytest.mark.unit
-    def test_dof(self, RO_frame):
-        m = RO_frame
-        # [print(i) for i in ]
-        print(number_fixed_variables_in_activated_equalities(m))
-        # print(number_activated_constraints(m))
-        [print(i) for i in unused_variables_set(m)]
-        assert degrees_of_freedom(m) == 0
-#
 #     # @pytest.mark.component
 #     # def test_var_scaling(self, RO_frame):
 #     #     m = RO_frame
@@ -398,17 +397,15 @@ class TestReverseOsmosis():
 #     #     [print(i,j) for i,j in badly_scaled_var_lst]
 #     #     assert badly_scaled_var_lst == []
 #
-#     @pytest.mark.component
-    def test_solve(self, RO_frame):
-        m = RO_frame
-        # solver.options = {'nlp_scaling_method': 'user-scaling'}
-        # solver.options = {'halt_on_ampl_error': 'yes'}
-        results = solver.solve(m, tee=True)
-
-        # Check for optimal solution
-        assert results.solver.termination_condition == \
-               TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+    # @pytest.mark.component
+    # def test_solve(self, RO_frame):
+    #     m = RO_frame
+    #     results = solver.solve(m)
+    #
+    #     # Check for optimal solution
+    #     assert results.solver.termination_condition == \
+    #            TerminationCondition.optimal
+    #     assert results.solver.status == SolverStatus.ok
 
 #     @pytest.mark.component
 #     def test_conservation(self, RO_frame):
