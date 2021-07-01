@@ -239,6 +239,7 @@ class PressureExchangerData(UnitModelBlockData):
             optarg=None):
         """
         General wrapper for pressure exchanger initialization routine
+
         Keyword Arguments:
             routine : str stating which initialization routine to execute
                         * None - currently no specialized routine for Pressure exchanger unit
@@ -252,8 +253,7 @@ class PressureExchangerData(UnitModelBlockData):
             solver : solver object or string indicating which solver to use during
                      initialization, if None provided the default solver will be used
                      (default = None)
-        Returns:
-            None
+        Returns: None
         """
         # Get loggers
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
