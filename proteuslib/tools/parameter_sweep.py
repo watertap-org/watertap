@@ -23,10 +23,12 @@ from idaes.core.util import get_solver
 
 class Sample(ABC): 
 
-    def __init__(self, pyomo_object, *args, **kwargs): 
-        assert pyomo_object.is_parameter_type() or pyomo_object.is_variable_type() or pyomo_object.is_indexed()
+    def __init__(self, pyomo_object, *args, **kwargs):
+        if pyomo_object is not None:
+            assert pyomo_object.is_parameter_type() or pyomo_object.is_variable_type() or pyomo_object.is_indexed()
+        
         self.pyomo_object = pyomo_object 
-        self.setup(*args, **kwargs) 
+        self.setup(*args, **kwargs)
 
     @abstractmethod 
     def sample(self, num_samples): 
@@ -57,7 +59,7 @@ class UniformSample(Sample):
         return np.random.uniform(self.lower_limit, self.upper_limit, num_samples)
 
     def setup(self, lower_limit, upper_limit):
-        self.type = "random" 
+        self.type = "uniform_random" 
         self.lower_limit = lower_limit
         self.upper_limit = upper_limit
 
@@ -69,7 +71,7 @@ class NormalSample(Sample):
         return np.random.normal(self.mean, self.sd, num_samples)
 
     def setup(self, mean, sd):
-        self.type = "random" 
+        self.type = "normal_random" 
         self.mean = mean
         self.sd = sd
 
@@ -106,8 +108,8 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
 
         if sampling_type == "linear":
             # Form an array with every possible combination of parameter values
-            global_combo_array = np.array(np.meshgrid(*param_values,indexing="ij"))
-            global_combo_array = global_combo_array.T.reshape(-1, num_var_params,order="F")
+            global_combo_array = np.array(np.meshgrid(*param_values, indexing="ij"))
+            global_combo_array = global_combo_array.T.reshape(-1, num_var_params, order="F")
         else:
             sorting = np.argsort(param_values[0])
             global_combo_array = np.column_stack(param_values)
@@ -119,6 +121,7 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
     ### Broadcast the array to all processes
     if num_procs > 1:
         global_combo_array = comm.bcast(global_combo_array, root=0)
+
     return global_combo_array
 
 # ================================================================
@@ -217,14 +220,14 @@ def _process_sweep_params(sweep_params):
     for i, key in enumerate(sweep_params.keys()):
 
         # Convert to using Sample class
-        if isinstance(sweep_params[key],(list,tuple)):
+        if isinstance(sweep_params[key], (list, tuple)):
             sweep_params[key] = LinearSample(*sweep_params[key])
 
         # Get the type of sampling
         if i == 0:
-            sampling_type = getattr(sweep_params[key],"type",None)
+            sampling_type = getattr(sweep_params[key], "type", None)
         else:
-            if sampling_type != getattr(sweep_params[key],"type",None):
+            if sampling_type != getattr(sweep_params[key], "type", None):
                 raise ValueError("Cannot mix sampling types")
 
     return sweep_params, sampling_type

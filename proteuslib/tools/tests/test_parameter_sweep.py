@@ -19,10 +19,14 @@ import pyomo.environ as pyo
 from pyomo.environ import value
 
 from proteuslib.tools.parameter_sweep import (_init_mpi,
-                                               _build_and_divide_combinations,
+                                               _build_combinations,
+                                               _divide_combinations,
                                                _update_model_values,
                                                _aggregate_results,
-                                               parameter_sweep)
+                                               parameter_sweep,
+                                               LinearSample,
+                                               UniformSample,
+                                               NormalSample)
 
 # -----------------------------------------------------------------------------
 
@@ -56,7 +60,7 @@ class TestParallelManager():
         assert 0 <= rank < num_procs
 
     @pytest.mark.component
-    def test_build_and_divide_combinations(self):
+    def test_linear_build_combinations(self):
         comm, rank, num_procs = _init_mpi()
 
         range_A = [0.0, 10.0]
@@ -68,16 +72,99 @@ class TestParallelManager():
         nn_C = 6
 
         param_dict = dict()
-        param_dict['var_A'] = (None, range_A[0], range_A[1], nn_A)
-        param_dict['var_B']  = (None, range_B[0], range_B[1], nn_B)
-        param_dict['var_C']  = (None, range_C[0], range_C[1], nn_C)
+        param_dict['var_A'] = LinearSample(None, range_A[0], range_A[1], nn_A)
+        param_dict['var_B']  = LinearSample(None, range_B[0], range_B[1], nn_B)
+        param_dict['var_C']  = LinearSample(None, range_C[0], range_C[1], nn_C)
 
-        local_combo_array, full_combo_array = _build_and_divide_combinations(param_dict, rank, num_procs)
+        global_combo_array = _build_combinations(param_dict, 'linear', None, comm, rank, num_procs)
 
-        test = np.array_split(full_combo_array, num_procs, axis=0)[rank]
+        assert np.shape(global_combo_array)[0] == nn_A*nn_B*nn_C
+        assert np.shape(global_combo_array)[1] == len(param_dict)
 
-        assert np.shape(full_combo_array)[0] == nn_A*nn_B*nn_C
-        assert np.shape(full_combo_array)[1] == 3
+        assert global_combo_array[0, 0] == pytest.approx(range_A[0])
+        assert global_combo_array[0, 1] == pytest.approx(range_B[0])
+        assert global_combo_array[0, 2] == pytest.approx(range_C[0])
+
+        assert global_combo_array[-1, 0] == pytest.approx(range_A[1])
+        assert global_combo_array[-1, 1] == pytest.approx(range_B[1])
+        assert global_combo_array[-1, 2] == pytest.approx(range_C[1])
+
+    def test_random_build_combinations(self):
+        comm, rank, num_procs = _init_mpi()
+
+        nn = int(1e5)
+
+        # Uniform random sampling [lower_limit, upper_limit]
+        range_A = [-10.0, 0.0]
+        range_B = [0.0, 10.0]
+        range_C = [10.0, 20.0]
+
+        param_dict = dict()
+        param_dict['var_A'] = UniformSample(None, range_A[0], range_A[1])
+        param_dict['var_B']  = UniformSample(None, range_B[0], range_B[1])
+        param_dict['var_C']  = UniformSample(None, range_C[0], range_C[1])
+
+        global_combo_array = _build_combinations(param_dict, 'uniform_random', nn, comm, rank, num_procs)
+
+        assert np.shape(global_combo_array)[0] == nn
+        assert np.shape(global_combo_array)[1] == len(param_dict)
+
+        assert np.all(range_A[0] < global_combo_array[:, 0])
+        assert np.all(range_B[0] < global_combo_array[:, 1])
+        assert np.all(range_C[0] < global_combo_array[:, 2])
+
+        assert np.all(global_combo_array[:, 0] < range_A[1])
+        assert np.all(global_combo_array[:, 1] < range_B[1])
+        assert np.all(global_combo_array[:, 2] < range_C[1])
+
+        # Normal random sampling [mean, stdev]
+        range_A = [10.0, 5.0]
+        range_B = [100.0, 50.0]
+        range_C = [1000.0, 0.0]
+
+        param_dict = dict()
+        param_dict['var_A'] = NormalSample(None, range_A[0], range_A[1])
+        param_dict['var_B']  = NormalSample(None, range_B[0], range_B[1])
+        param_dict['var_C']  = NormalSample(None, range_C[0], range_C[1])
+
+        global_combo_array = _build_combinations(param_dict, 'normal_random', nn, comm, rank, num_procs)
+
+        assert np.shape(global_combo_array)[0] == nn
+        assert np.shape(global_combo_array)[1] == len(param_dict)
+
+        assert np.mean(global_combo_array[:, 0]) < (range_A[0] + range_A[1])
+        assert np.mean(global_combo_array[:, 1]) < (range_B[0] + range_B[1])
+
+        assert np.mean((range_A[0] - range_A[1] < global_combo_array[:, 0]))
+        assert np.mean((range_B[0] - range_B[1] < global_combo_array[:, 1]))
+
+        assert np.all(global_combo_array[:, 2] == range_C[0])
+
+    @pytest.mark.component
+    def test_divide_combinations(self):
+        # _divide_combinations(global_combo_array, rank, num_procs)
+
+        comm, rank, num_procs = _init_mpi()
+
+        range_A = [0.0, 10.0]
+        range_B = [1.0, 20.0]
+        range_C = [2.0, 30.0]
+
+        nn_A = 4
+        nn_B = 5
+        nn_C = 6
+
+        param_dict = dict()
+        param_dict['var_A'] = LinearSample(None, range_A[0], range_A[1], nn_A)
+        param_dict['var_B']  = LinearSample(None, range_B[0], range_B[1], nn_B)
+        param_dict['var_C']  = LinearSample(None, range_C[0], range_C[1], nn_C)
+
+        global_combo_array = _build_combinations(param_dict, 'linear', None, comm, rank, num_procs)
+
+        test = np.array_split(global_combo_array, num_procs, axis=0)[rank]
+
+        local_combo_array = _divide_combinations(global_combo_array, rank, num_procs)
+
         assert np.shape(local_combo_array)[1] == 3
 
         assert test[-1, 0] == pytest.approx(local_combo_array[-1, 0])
