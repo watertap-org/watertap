@@ -5,6 +5,8 @@ This pressure exchanger unit model:
     * is isothermal
     * supports a single liquid phase only
     * supports steady-state only
+    * assumes no mixing or leakage between the low and high pressure side
+    * assumes equal flowrates on both sides
 
 .. index::
    pair: proteuslib.unit_models.pressure_exchanger;pressure_exchanger
