@@ -422,7 +422,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         # mass transfer
         def mass_transfer_phase_comp_initialize(b, t, x, p, j):
-            return value(self.feed_side.properties[t].get_material_flow_terms('Liq', j)
+            return value(self.feed_side.properties[t, x].get_material_flow_terms('Liq', j)
                          * 0.5) # self.recovery_mass_phase_comp[t, 'Liq', j])
 
         self.mass_transfer_phase_comp = Var(
@@ -684,14 +684,14 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                           * iscale.get_scaling_factor(self.feed_side.properties[t, x].conc_mass_phase_comp[p, j]))
                     iscale.set_scaling_factor(v, sf)
 
-        for (t, x, p, j), v in self.mass_transfer_phase_comp.items():
-            if iscale.get_scaling_factor(v) is None:
-                sf = iscale.get_scaling_factor(self.feed_side.properties[t, x].get_material_flow_terms(p, j)) \
-                     / iscale.get_scaling_factor(self.feed_side.length)
-                comp = self.config.property_package.get_component(j)
-                if comp.is_solute:
-                    sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
-                iscale.set_scaling_factor(v, sf)
+        # for (t, x, p, j), v in self.mass_transfer_phase_comp.items():
+        #     if iscale.get_scaling_factor(v) is None:
+        #         sf = iscale.get_scaling_factor(self.feed_side.properties[t, x].get_material_flow_terms(p, j)) \
+        #              / iscale.get_scaling_factor(self.feed_side.length)
+        #         comp = self.config.property_package.get_component(j)
+        #         if comp.is_solute:
+        #             sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
+        #         iscale.set_scaling_factor(v, sf)
 
         for (t, x, p, j), v in self.eq_mass_flux_equal_mass_transfer.items():
             if iscale.get_scaling_factor(v) is None:
@@ -706,9 +706,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         sf = iscale.get_scaling_factor(self.area)
         iscale.constraint_scaling_transform(self.eq_area, sf)
 
-        for ind, c in self.eq_mass_transfer_term.items():
-            sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
-            iscale.constraint_scaling_transform(c, sf)
+        # for ind, c in self.eq_mass_transfer_term.items():
+        #     sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
+        #     iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_permeate_production.items():
             # TODO: fix this scaling factor
@@ -719,9 +719,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.flux_mass_phase_comp[ind])
             iscale.constraint_scaling_transform(c, sf)
 
-        for ind, c in self.eq_connect_mass_transfer.items():
-            sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
-            iscale.constraint_scaling_transform(c, sf)
+        # for ind, c in self.eq_connect_mass_transfer.items():
+        #     sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
+        #     iscale.constraint_scaling_transform(c, sf)
 
         for (t, x), c in self.eq_permeate_isothermal.items():
             sf = iscale.get_scaling_factor(self.feed_side.properties[t, x].temperature)
