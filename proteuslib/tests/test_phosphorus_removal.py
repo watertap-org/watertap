@@ -483,6 +483,23 @@ thermo_config = {
                                 },
                     # End parameter_data
                     },
+        'Fe(OH)3': {"type": Solute, "valid_phase_types": PT.aqueousPhase,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (106.8, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (446000, pyunits.J/pyunits.kmol/pyunits.K),
+                    # NOTE: these parameters below are not well known
+                    "enth_mol_form_liq_comp_ref": (-638.5, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
               },
               # End Component list
         "phases":  {'Liq': {"type": AqueousPhase,
@@ -703,6 +720,28 @@ thermo_config = {
                             # End parameter_data
                     },
                     # End R9
+            "FeOH3_K": {
+                        "stoichiometry": {  ("Liq", "Fe(OH)3"): -1,
+                                            ("Liq", "Fe(OH)2_+"): 1,
+                                            ("Liq", "OH_-"): 1},
+                        "heat_of_reaction": constant_dh_rxn,
+                        "equilibrium_constant": van_t_hoff,
+                        "equilibrium_form": log_power_law_equil,
+                        "concentration_form": ConcentrationForm.molarity,
+                        "parameter_data": {
+                            "dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
+                            "k_eq_ref": (9.765e-7, pyunits.mol/pyunits.L),
+                            "T_eq_ref": (300.0, pyunits.K),
+
+                            # By default, reaction orders follow stoichiometry
+                            #    manually set reaction order here to override
+                            "reaction_order": { ("Liq", "Fe(OH)3"): -1,
+                                                ("Liq", "Fe(OH)2_+"): 1,
+                                                ("Liq", "OH_-"): 1}
+                            }
+                            # End parameter_data
+                    },
+                    # End R10
              }
              # End equilibrium_reactions
     }
@@ -755,6 +794,7 @@ if __name__ == "__main__":
     model.fs.unit.inlet.mole_frac_comp[0, "FeCl_2+"].fix( zero )
     model.fs.unit.inlet.mole_frac_comp[0, "FeOH_2+"].fix( zero )
     model.fs.unit.inlet.mole_frac_comp[0, "Fe(OH)2_+"].fix( zero )
+    model.fs.unit.inlet.mole_frac_comp[0, "Fe(OH)3"].fix( zero )
 
     total_molar_density = 55.2  # mol/L (approximate density of seawater)
     total_nacl_inlet = 0.000055 # mol/L (already reduced salt by 4 orders of magnitude)
@@ -804,6 +844,7 @@ if __name__ == "__main__":
     model.fs.thermo_params.reaction_FeCl_K.eps.value = 1e-25
     model.fs.thermo_params.reaction_FeOH_K.eps.value = 1e-25
     model.fs.thermo_params.reaction_FeOH2_K.eps.value = 1e-25
+    model.fs.thermo_params.reaction_FeOH3_K.eps.value = 1e-20
 
     #Add scaling factors for reaction extent
     for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
