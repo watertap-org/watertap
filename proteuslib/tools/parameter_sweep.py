@@ -15,6 +15,7 @@ import pyomo.environ as pyo
 import sys
 import os
 import itertools
+import warnings
 
 from abc import abstractmethod, ABC 
 from idaes.core.util import get_solver
@@ -83,6 +84,7 @@ def _init_mpi(mpi_comm=None):
         try:
             from mpi4py import MPI
         except:
+            warnings.warn("Could not import mpi4py from current environment (defaulting to serial).")
             return None, 0, 1
 
         else:
