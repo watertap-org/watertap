@@ -52,7 +52,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="proteuslib",
     url="https://github.com/nawi-hub/proteuslib",
-    version="0.0.1",
+    version="0.1.0rc0",
     description="ProteusLib modeling library",
     long_description=long_description,
     long_description_content_type="text/plain",
@@ -89,7 +89,7 @@ setup(
     install_requires=[
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of proteuslib
-        *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
+        *SPECIAL_DEPENDENCIES_FOR_RELEASE,
         "pyomo",  # (also needed for units in electrolyte database (edb))
         # the following requirements are for the electrolyte database (edb)
         "pymongo>3",  # database interface
