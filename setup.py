@@ -52,7 +52,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="proteuslib",
     url="https://github.com/nawi-hub/proteuslib",
-    version="0.0.1",
+    version="0.2.0dev",
     description="ProteusLib modeling library",
     long_description=long_description,
     long_description_content_type="text/plain",
