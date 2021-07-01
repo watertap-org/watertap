@@ -385,27 +385,27 @@ class TestReverseOsmosis():
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
         [print(k) for k in unscaled_constraint_list]
         assert len(unscaled_constraint_list) == 0
-#
-    # @pytest.mark.component
-    # def test_initialize(self, RO_frame):
-    #     initialization_tester(RO_frame, dof=-2)
 
-#     # @pytest.mark.component
-#     # def test_var_scaling(self, RO_frame):
-#     #     m = RO_frame
-#     #     badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-#     #     [print(i,j) for i,j in badly_scaled_var_lst]
-#     #     assert badly_scaled_var_lst == []
+    @pytest.mark.component
+    def test_initialize(self, RO_frame):
+        initialization_tester(RO_frame)
+
+    @pytest.mark.component
+    def test_var_scaling(self, RO_frame):
+        m = RO_frame
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        [print(i,j) for i,j in badly_scaled_var_lst]
+        assert badly_scaled_var_lst == []
 #
-    # @pytest.mark.component
-    # def test_solve(self, RO_frame):
-    #     m = RO_frame
-    #     results = solver.solve(m)
-    #
-    #     # Check for optimal solution
-    #     assert results.solver.termination_condition == \
-    #            TerminationCondition.optimal
-    #     assert results.solver.status == SolverStatus.ok
+    @pytest.mark.component
+    def test_solve(self, RO_frame):
+        m = RO_frame
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+               TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
 #     @pytest.mark.component
 #     def test_conservation(self, RO_frame):
