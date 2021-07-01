@@ -38,6 +38,7 @@ from idaes.core.phases import PhaseType as PT
 
 # Imports from idaes generic models
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
+from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 
@@ -415,6 +416,39 @@ thermo_config = {
                                 },
                     # End parameter_data
                     },
+        'Fe_3+': {"type": Cation, "charge": 3,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (55.845, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (233467, pyunits.J/pyunits.kmol/pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (-48.5, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (-315.9, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'FeCl_2+': {"type": Cation, "charge": 2,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (91.3, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (382000, pyunits.J/pyunits.kmol/pyunits.K),
+                    # NOTE: these parameters below are unknown
+                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
               },
               # End Component list
         "phases":  {'Liq': {"type": AqueousPhase,
@@ -568,7 +602,29 @@ thermo_config = {
                             }
                             # End parameter_data
                     },
-                    # End R4
+                    # End R6
+            "FeCl_K": {
+                        "stoichiometry": {  ("Liq", "FeCl_2+"): -1,
+                                            ("Liq", "Fe_3+"): 1,
+                                            ("Liq", "Cl_-"): 1},
+                        "heat_of_reaction": constant_dh_rxn,
+                        "equilibrium_constant": van_t_hoff,
+                        "equilibrium_form": log_power_law_equil,
+                        "concentration_form": ConcentrationForm.molarity,
+                        "parameter_data": {
+                            "dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
+                            "k_eq_ref": (10**-0.5, pyunits.mol/pyunits.L),
+                            "T_eq_ref": (300.0, pyunits.K),
+
+                            # By default, reaction orders follow stoichiometry
+                            #    manually set reaction order here to override
+                            "reaction_order": { ("Liq", "FeCl_2+"): -1,
+                                                ("Liq", "Fe_3+"): 1,
+                                                ("Liq", "Cl_-"): 1}
+                            }
+                            # End parameter_data
+                    },
+                    # End R6
              }
              # End equilibrium_reactions
     }
@@ -617,15 +673,17 @@ if __name__ == "__main__":
     model.fs.unit.inlet.mole_frac_comp[0, "PO4_3-"].fix( 0. )
     model.fs.unit.inlet.mole_frac_comp[0, "H2PO4_-"].fix( 0. )
     model.fs.unit.inlet.mole_frac_comp[0, "H3PO4"].fix( 0. )
+    model.fs.unit.inlet.mole_frac_comp[0, "FeCl_2+"].fix( 0. )
 
-    total_molar_density = 55.2
+    total_molar_density = 55.2  # mol/L (approximate density of seawater)
     total_nacl_inlet = 0.000055 # mol/L (already reduced salt by 4 orders of magnitude)
-    total_carbonate_inlet = 0.00206 # mol/L
+    total_carbonate_inlet = 0.00206 # mol/L (typical value for seawater = 2.06E-3 M)
     frac_CO3_to_NaHCO3 = 1
-    total_phosphate_inlet = 3.22e-6 # mol/L
+    total_phosphate_inlet = 3.22e-6 # mol/L (typical value for seawater = 3.22E-6 M)
+    total_iron_inlet = 5.38e-8 # mol/L (typical value for seawater = 5.38E-8 M) [Added as FeCl3]
 
     model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix( total_nacl_inlet/total_molar_density )
-    model.fs.unit.inlet.mole_frac_comp[0, "Cl_-"].fix( total_nacl_inlet/total_molar_density)
+    model.fs.unit.inlet.mole_frac_comp[0, "Cl_-"].fix( (total_nacl_inlet+3*total_iron_inlet)/total_molar_density)
 
     model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix(
                                 (total_carbonate_inlet*frac_CO3_to_NaHCO3)/total_molar_density )
@@ -633,6 +691,8 @@ if __name__ == "__main__":
                                 (total_carbonate_inlet*(1-frac_CO3_to_NaHCO3))/total_molar_density )
 
     model.fs.unit.inlet.mole_frac_comp[0, "HPO4_2-"].fix( total_phosphate_inlet/total_molar_density )
+
+    model.fs.unit.inlet.mole_frac_comp[0, "Fe_3+"].fix( total_iron_inlet/total_molar_density )
 
     # Perform a summation of all non-H2O molefractions to find the H2O molefraction
     sum = 0
