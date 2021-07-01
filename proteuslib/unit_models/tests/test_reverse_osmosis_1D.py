@@ -236,7 +236,7 @@ class TestReverseOsmosis():
         m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
         # m.fs.unit.permeate_side.properties[0, :].temperature.fix(feed_temperature)
 
-        m.fs.unit.width.fix(1.5)
+        # m.fs.unit.width.fix(1.5)
         # m.fs.unit.permeate_side.properties[0, 0].flow_mass_phase_comp['Liq', 'NaCl'].fix(1e-8)
         # m.fs.unit.permeate_side.properties[0, 0].flow_mass_phase_comp['Liq', 'H2O'].fix(1e-8)
 
