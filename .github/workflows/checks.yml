@@ -12,7 +12,8 @@ on:
 defaults:
   run:
     # important to make sure that all commands on Windows are run using Bash
-    shell: bash
+    # -l: login shell, needed when using Conda
+    shell: bash -l {0}
 
 jobs:
   tests:
@@ -40,8 +41,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: conda-incubator/setup-miniconda@v2
       with:
+        activate-environment: proteuslib-dev
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
@@ -49,7 +51,8 @@ jobs:
         python -m pip install --progress-bar off --upgrade pip wheel setuptools
         pip install --progress-bar off -r requirements-dev.txt
         echo '::endgroup::'
-        echo '::group::Output of "pip list/show" commands'
+        echo '::group::Display installed packages'
+        conda list
         pip list
         pip show idaes-pse
         echo '::endgroup::'
