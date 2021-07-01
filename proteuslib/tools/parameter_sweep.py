@@ -118,11 +118,22 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
             global_combo_array = global_combo_array[sorting]
 
     else:
-        global_combo_array = None
+        if sampling_type == "linear":
+            nx = 1
+            for k, v in d.items():
+                nx *= v.num_samples
+
+            global_combo_array = np.zeros(nx*len(d), dtype=np.float64)
+
+        else:
+            global_combo_array = np.zeros(num_samples*len(d), dtype=np.float64)
 
     ### Broadcast the array to all processes
     if num_procs > 1:
-        global_combo_array = comm.bcast(global_combo_array, root=0)
+        comm.Bcast(global_combo_array, root=0)
+
+    if rank > 0:
+        global_combo_array = global_combo_array.reshape(-1, len(d), order='F')
 
     return global_combo_array
 
@@ -132,7 +143,8 @@ def _divide_combinations(global_combo_array, rank, num_procs):
 
     # Split the total list of combinations into NUM_PROCS chunks,
     # one per each of the MPI ranks
-    divided_combo_array = np.array_split(global_combo_array, num_procs, axis=0)
+    # divided_combo_array = np.array_split(global_combo_array, num_procs, axis=0)
+    divided_combo_array = np.array_split(global_combo_array, num_procs)
 
     # Return only this rank's portion of the total workload
     local_combo_array = divided_combo_array[rank]
@@ -403,10 +415,12 @@ def parameter_sweep(model, sweep_params, outputs, results_file, optimize_functio
         # Save the global data
         np.savetxt(results_file, save_data, header=data_header, delimiter=', ', fmt='%.6e')
     else:
-        save_data = None
+        save_data = np.zeros((np.shape(global_values)[0],
+            np.shape(global_values)[1]+np.shape(global_results)[1]))
 
     # Broadcast the results to all processors
-    save_data = comm.bcast(save_data, root=0)
+    if num_procs > 1:
+        comm.Bcast(save_data, root=0)
     
     return save_data
 
