@@ -277,8 +277,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         """ Populate feed side"""
         feed_side.add_material_balances(balance_type=self.config.material_balance_type,
                                         has_mass_transfer=True)
-        feed_side.add_energy_balances(balance_type=self.config.energy_balance_type,
-                                      has_enthalpy_transfer=True)
+        feed_side.add_energy_balances(balance_type=EnergyBalanceType.none)
         feed_side.add_momentum_balances(balance_type=self.config.momentum_balance_type,
                                         has_pressure_change=self.config.has_pressure_change)
 
@@ -528,13 +527,13 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             return (b.permeate_side[t, x].get_material_flow_terms(p, j)
                     == -b.feed_side.mass_transfer_term[t, x, p, j] * b.feed_side.length)
         # ==========================================================================
-        # Feed and permeate-side enthalpy connection
-        @self.Constraint(self.flowsheet().config.time,
-                         self.feed_side.length_domain,
-                         doc="Enthalpy transfer from feed to permeate")
-        def eq_connect_enthalpy_transfer(b, t, x):
-            return (b.permeate_side[t, x].get_enthalpy_flow_terms('Liq')
-                    == -b.feed_side.enthalpy_transfer[t, x] * b.feed_side.length)
+        # # Feed and permeate-side enthalpy connection
+        # @self.Constraint(self.flowsheet().config.time,
+        #                  self.feed_side.length_domain,
+        #                  doc="Enthalpy transfer from feed to permeate")
+        # def eq_connect_enthalpy_transfer(b, t, x):
+        #     return (b.permeate_side[t, x].get_enthalpy_flow_terms('Liq')
+        #             == -b.feed_side.enthalpy_transfer[t, x] * b.feed_side.length)
         # # ==========================================================================
         # Feed and permeate-side isothermal conditions
         @self.Constraint(self.flowsheet().config.time,
@@ -545,6 +544,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                    b.permeate_side[t, x].temperature
         # ==========================================================================
         # isothermal conditions at permeate outlet
+
         @self.Constraint(self.flowsheet().config.time,
                          doc="Isothermal assumption for permeate out")
         def eq_permeate_outlet_isothermal(b, t):
@@ -552,6 +552,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                    b.permeate_out[t].temperature
         # ==========================================================================
         # isobaric conditions across permeate channel and at permeate outlet
+
         @self.Constraint(self.flowsheet().config.time,
                          self.feed_side.length_domain,
                          doc="Isobaric assumption for permeate out")
