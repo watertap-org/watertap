@@ -91,7 +91,7 @@ from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReac
 # Import log10 function from pyomo
 from pyomo.environ import log10
 
-__author__ = "Austin Ladshaw"
+__author__ = "Andres Calderon, Austin Ladshaw"
 
 # Configuration dictionary
 thermo_config = {
