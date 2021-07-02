@@ -11,21 +11,37 @@
 #
 ###############################################################################
 
-'''
+"""
     This test is to establish that the core chemistry packages in IDAES
     can solve a pseudo phosphorus removal problem where we assume up front
     that the amount of FeCl3 added is sufficient to reach saturation and
     pseudo-precipitate out phosphorus as FePO4.
 
+    NOTE: We are referring to this as pseudo-precipitation because we are
+    not testing the solids phase and solubility product functionality of
+    IDAES in this test. Instead, the precipitation is emulated as an
+    aqueous equation that is mathematically equivalent to a solubility
+    product constraint on the formation of FePO4.
+
     Reactions:
         H2O <---> H + OH
         H2CO3 <---> H + HCO3
         HCO3 <---> H + CO3
+        H3PO4 <---> H + H2PO4
+        H2PO4 <---> H + HPO4
+        HPO4 <---> H + PO4
+        FeCl <---> Fe + Cl
+        FeOH <---> Fe + OH
+        Fe(OH)2 <---> FeOH + OH
+        Fe(OH)3 <---> Fe(OH)2 + OH
+        Fe(OH)4 <---> Fe(OH)3 + OH
+        FeHPO4 <---> Fe + HPO4
+        FeH2PO4 <---> Fe + H2PO4
+        FePO4 <---> Fe + PO4
     Other species:
-        Cl
-'''
+        Na
+"""
 # Importing testing libraries
-import unittest
 import pytest
 
 # Importing the object for units from pyomo
@@ -49,7 +65,7 @@ from idaes.generic_models.properties.core.generic.generic_reaction import Concen
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
 
 # Import safe log power law equation
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil, power_law_equil
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
 
 # Import built-in Gibb's Energy function
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import gibbs_energy
@@ -66,6 +82,7 @@ from pyomo.environ import (ConcreteModel,
 
 from idaes.core.util import scaling as iscale
 
+# # TODO: Remove this
 import idaes.logger as idaeslog
 
 # Import pyomo methods to check the system units
@@ -931,6 +948,265 @@ reaction_config = {
 # Get default solver for testing
 solver = get_solver()
 
+class TestSimplePhosphorusRemoval:
+    @pytest.fixture(scope="class")
+    def simple_phosphorus_removal(self):
+        model = ConcreteModel()
+        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+        model.fs.rxn_params = GenericReactionParameterBlock(
+                default={"property_package": model.fs.thermo_params, **reaction_config})
+        model.fs.unit = EquilibriumReactor(default={
+                "property_package": model.fs.thermo_params,
+                "reaction_package": model.fs.rxn_params,
+                "has_rate_reactions": False,
+                "has_equilibrium_reactions": False,
+                "has_heat_transfer": False,
+                "has_heat_of_reaction": False,
+                "has_pressure_change": False,
+                "energy_balance_type": EnergyBalanceType.none
+                })
+
+        zero = 0
+        model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "PO4_3-"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "H2PO4_-"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "H3PO4"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "FeCl_2+"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "FeOH_2+"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "Fe(OH)2_+"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "Fe(OH)3"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "Fe(OH)4_-"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "FeHPO4_+"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "FeH2PO4_2+"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "FePO4(s)"].fix( zero )
+
+        total_molar_density = 55.2  # mol/L (approximate density of seawater)
+        total_nacl_inlet = 0.000055 # mol/L (assume reduced salt by 4 orders of magnitude)
+        total_carbonate_inlet = 0.00206 # mol/L (typical value for seawater = 2.06E-3 M)
+        frac_CO3_to_NaHCO3 = 1
+        total_phosphate_inlet = 3.22e-6 # mol/L (typical value for seawater = 3.22E-6 M)
+        total_phosphate_inlet += 1e-3 # mol/L (additional phosphorus [e.g., concentrated post-RO])
+        total_iron_inlet = 5.38e-8 # mol/L (typical value for seawater = 5.38E-8 M)
+        total_iron_inlet += 1e-3 # mol/L (additional iron added for phosphorus removal) [Added as FeCl3]
+        NaOH_added = 1e-3 # mol/L (added to raise pH and induce precipitation)
+
+        model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix(
+                    NaOH_added/total_molar_density )
+        model.fs.unit.inlet.mole_frac_comp[0, "Na_+"].fix(
+                    (total_nacl_inlet+NaOH_added)/total_molar_density )
+        model.fs.unit.inlet.mole_frac_comp[0, "Cl_-"].fix(
+                    (total_nacl_inlet+3*total_iron_inlet)/total_molar_density)
+
+        model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix(
+                    (total_carbonate_inlet*frac_CO3_to_NaHCO3)/total_molar_density )
+        model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix(
+                    (total_carbonate_inlet*(1-frac_CO3_to_NaHCO3))/total_molar_density )
+
+        model.fs.unit.inlet.mole_frac_comp[0, "HPO4_2-"].fix(
+                    total_phosphate_inlet/total_molar_density )
+
+        model.fs.unit.inlet.mole_frac_comp[0, "Fe_3+"].fix(
+                    total_iron_inlet/total_molar_density )
+
+        # Perform a summation of all non-H2O molefractions to find the H2O molefraction
+        sum = 0
+        for i in model.fs.unit.inlet.mole_frac_comp:
+            # NOTE: i will be a tuple with format (time, component)
+            if i[1] != "H2O":
+                sum += value(model.fs.unit.inlet.mole_frac_comp[i[0], i[1]])
+
+        model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1-sum )
+
+        model.fs.unit.inlet.pressure.fix(101325.0)
+        model.fs.unit.inlet.temperature.fix(298.)
+        model.fs.unit.outlet.temperature.fix(298.)
+        model.fs.unit.inlet.flow_mol.fix(10)
+
+        return model
+
+    @pytest.mark.unit
+    def test_build_simple_phosphorus_removal(self, simple_phosphorus_removal):
+        model = simple_phosphorus_removal
+
+        assert hasattr(model.fs.thermo_params, "component_list")
+        assert len(model.fs.thermo_params.component_list) == 21
+        assert "H2O" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.H2O, Solvent)
+        assert "H_+" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("H_+"), Cation)
+        assert "OH_-" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("OH_-"), Anion)
+
+        assert "CO3_2-" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("CO3_2-"), Anion)
+
+        assert "HCO3_-" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("HCO3_-"), Anion)
+
+        assert "H2CO3" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("H2CO3"), Solute)
+
+        assert "PO4_3-" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("PO4_3-"), Anion)
+
+        assert "HPO4_2-" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("HPO4_2-"), Anion)
+
+        assert "H2PO4_-" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("H2PO4_-"), Anion)
+
+        assert "H3PO4" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("H3PO4"), Solute)
+
+        assert "FeCl_2+" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("FeCl_2+"), Cation)
+
+        assert "FeOH_2+" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("FeOH_2+"), Cation)
+
+        assert "Fe(OH)2_+" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("Fe(OH)2_+"), Cation)
+
+        assert "Fe(OH)3" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("Fe(OH)3"), Solute)
+
+        assert "Fe(OH)4_-" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("Fe(OH)4_-"), Anion)
+
+        assert "FeHPO4_+" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("FeHPO4_+"), Cation)
+
+        assert "FeH2PO4_2+" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("FeH2PO4_2+"), Cation)
+
+        assert "FePO4(s)" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("FePO4(s)"), Solute)
+
+        assert "Na_+" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("Na_+"), Cation)
+
+        assert "Cl_-" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("Cl_-"), Anion)
+
+        assert "Fe_3+" in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component("Fe_3+"), Cation)
+
+    @pytest.mark.unit
+    def test_units_simple_phosphorus_removal(self, simple_phosphorus_removal):
+        model = simple_phosphorus_removal
+        assert_units_consistent(model)
+
+    @pytest.mark.unit
+    def test_dof_simple_phosphorus_removal(self, simple_phosphorus_removal):
+        model = simple_phosphorus_removal
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.component
+    def test_scaling_simple_phosphorus_removal(self, simple_phosphorus_removal):
+        model = simple_phosphorus_removal
+
+        #Custom eps factors for reaction constraints
+        #   (NOTE: The model is EXTREMELY sensitive to these numbers)
+        eps = 1e-20
+        model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
+        model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
+        model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
+        model.fs.thermo_params.reaction_H3PO4_Ka1.eps.value = eps
+        model.fs.thermo_params.reaction_H3PO4_Ka2.eps.value = eps
+        model.fs.thermo_params.reaction_H3PO4_Ka3.eps.value = eps
+        model.fs.thermo_params.reaction_FeCl_K.eps.value = 1e-25
+        model.fs.thermo_params.reaction_FeOH_K.eps.value = 1e-25
+        model.fs.thermo_params.reaction_FeOH2_K.eps.value = 1e-25
+        model.fs.thermo_params.reaction_FeOH3_K.eps.value = 1e-20
+        model.fs.thermo_params.reaction_FeOH4_K.eps.value = 1e-16
+        model.fs.thermo_params.reaction_FeHPO4_K.eps.value = 1e-20
+        model.fs.thermo_params.reaction_FeH2PO4_K.eps.value = 1e-16
+        model.fs.thermo_params.reaction_FePO4_Ksp.eps.value = 1e-23
+
+        #Add scaling factors for reaction extent
+        for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
+
+        iscale.calculate_scaling_factors(model.fs.unit)
+
+        assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+        assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
+        assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
+
+    @pytest.mark.component
+    def test_initialize_solver(self, simple_phosphorus_removal):
+        model = simple_phosphorus_removal
+        solver.options["bound_push"] = 1e-20
+        solver.options["mu_init"] = 1e-6
+        model.fs.unit.initialize(optarg=solver.options)
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.component
+    def test_solve_equilibrium(self, simple_phosphorus_removal):
+        model = simple_phosphorus_removal
+        solver.options["max_iter"] = 5
+        results = solver.solve(model)
+        print(results.solver.termination_condition)
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_solution_simple_phosphorus_removal(self, simple_phosphorus_removal):
+        model = simple_phosphorus_removal
+
+        assert pytest.approx(298, rel=1e-5) == value(model.fs.unit.outlet.temperature[0])
+        assert pytest.approx(9.99979, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(101325, rel=1e-5) == value(model.fs.unit.outlet.pressure[0])
+
+        total_molar_density = 55.2
+
+        carbonate_alk = value(model.fs.unit.outlet.mole_frac_comp[0, "HCO3_-"])*total_molar_density
+        carbonate_alk += 2*value(model.fs.unit.outlet.mole_frac_comp[0, "CO3_2-"])*total_molar_density
+        carbonate_alk += value(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"])*total_molar_density
+        carbonate_alk -= value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])*total_molar_density
+        carbonate_alk = carbonate_alk*50000
+
+        assert pytest.approx(98.9290, rel=1e-5) == carbonate_alk
+
+        pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
+        pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
+
+        assert pytest.approx(7.71111, rel=1e-5) == pH
+        assert pytest.approx(6.29053, rel=1e-5) == pOH
+
+        total_phosphorus = value(model.fs.unit.outlet.mole_frac_comp[0, "H3PO4"])*total_molar_density
+        total_phosphorus += value(model.fs.unit.outlet.mole_frac_comp[0, "H2PO4_-"])*total_molar_density
+        total_phosphorus += value(model.fs.unit.outlet.mole_frac_comp[0, "HPO4_2-"])*total_molar_density
+        total_phosphorus += value(model.fs.unit.outlet.mole_frac_comp[0, "PO4_3-"])*total_molar_density
+        total_phosphorus += value(model.fs.unit.outlet.mole_frac_comp[0, "FeHPO4_+"])*total_molar_density
+        total_phosphorus += value(model.fs.unit.outlet.mole_frac_comp[0, "FeH2PO4_2+"])*total_molar_density
+        total_phosphorus = total_phosphorus*95000
+
+        phos_precip = value(model.fs.unit.outlet.mole_frac_comp[0, "FePO4(s)"])*total_molar_density
+        phos_precip = phos_precip*95000
+
+        assert pytest.approx(7.10279, rel=1e-5) == total_phosphorus
+        assert pytest.approx(88.2050, rel=1e-5) == phos_precip
+
+        total_iron = value(model.fs.unit.outlet.mole_frac_comp[0, "Fe_3+"])*total_molar_density
+        total_iron += value(model.fs.unit.outlet.mole_frac_comp[0, "FeCl_2+"])*total_molar_density
+        total_iron += value(model.fs.unit.outlet.mole_frac_comp[0, "FeOH_2+"])*total_molar_density
+        total_iron += value(model.fs.unit.outlet.mole_frac_comp[0, "Fe(OH)2_+"])*total_molar_density
+        total_iron += value(model.fs.unit.outlet.mole_frac_comp[0, "Fe(OH)3"])*total_molar_density
+        total_iron += value(model.fs.unit.outlet.mole_frac_comp[0, "Fe(OH)4_-"])*total_molar_density
+        total_iron += value(model.fs.unit.outlet.mole_frac_comp[0, "FeHPO4_+"])*total_molar_density
+        total_iron += value(model.fs.unit.outlet.mole_frac_comp[0, "FeH2PO4_2+"])*total_molar_density
+        total_iron = total_iron*55800
+
+        iron_precip = value(model.fs.unit.outlet.mole_frac_comp[0, "FePO4(s)"])*total_molar_density
+        iron_precip = iron_precip*55800
+
+        assert pytest.approx(3.99527, rel=1e-5) == total_iron
+        assert pytest.approx(51.8088, rel=1e-5) == iron_precip
+
 if __name__ == "__main__":
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1034,6 +1310,8 @@ if __name__ == "__main__":
     solver.options['max_iter'] = 3000
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
+    solver.options['bound_push'] = 1e-20
+    solver.options['mu_init'] = 1e-6
     results = solver.solve(model, tee=True)
 
     print("comp\toutlet.conc")
