@@ -357,6 +357,13 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             initialize=1000,
             units=units_meta('mass')*units_meta('length')**-3,
             doc='Pure water density')
+        self.recovery_vol_phase = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            initialize=0.4,
+            bounds=(1e-2, 1 - 1e-6),
+            units=pyunits.dimensionless,
+            doc='Volumetric recovery rate')
 
         def flux_mass_phase_comp_initialize(b, t, x, p, j):
             if j in self.solvent_list:
@@ -459,6 +466,13 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         #             + b.permeate_out[t].flow_vol_phase['Liq'])
 
         # ==========================================================================
+        # Volumetric Recovery rate
+
+        @self.Constraint(self.flowsheet().config.time)
+        def eq_recovery_vol_phase(b, t):
+            return (b.recovery_vol_phase[t, 'Liq'] ==
+                    b.permeate_out[t].flow_vol_phase['Liq'] /
+                    b.feed_side.properties[t, self.feed_side.length_domain.first()].flow_vol_phase['Liq'])
         # ==========================================================================
         # Mass transfer term equation
 
@@ -491,7 +505,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Mass transfer term")
         def eq_mass_flux_equal_mass_transfer(b, t, x, p, j):
-            return b.flux_mass_phase_comp[t, x, p, j] * b.width * x == -b.feed_side.mass_transfer_term[t, x, p, j]
+            return b.flux_mass_phase_comp[t, x, p, j] * b.width == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length
         # ==========================================================================
         # Mass flux equations (Jw and Js)
         @self.Constraint(self.flowsheet().config.time,
