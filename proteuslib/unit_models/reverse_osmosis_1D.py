@@ -446,13 +446,13 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # ==========================================================================
         # Mass flux summations
 
-        @self.Expression(self.flowsheet().config.time,
-                         self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
-                         doc="Total component mass flux expression")
-        def flux_mass_phase_comp_sum(b, t, p, j):
-            return sum(b.flux_mass_phase_comp[t, x, p, j]
-                       for x in self.feed_side.length_domain)
+        # @self.Expression(self.flowsheet().config.time,
+        #                  self.config.property_package.phase_list,
+        #                  self.config.property_package.component_list,
+        #                  doc="Total component mass flux expression")
+        # def flux_mass_phase_comp_sum(b, t, p, j):
+        #     return sum(b.flux_mass_phase_comp[t, x, p, j]
+        #                for x in self.feed_side.length_domain)
         # ==========================================================================
         # # # Flow balance
         #
