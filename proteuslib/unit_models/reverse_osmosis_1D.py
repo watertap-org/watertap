@@ -44,6 +44,7 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants as CONST
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_solver, scaling as iscale
+from idaes.core.util.initialization import fix_state_vars, revert_state_vars, solve_indexed_blocks
 
 import idaes.logger as idaeslog
 
@@ -433,7 +434,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             initialize=0.1,  # mass_transfer_phase_comp_initialize,
             bounds=(1e-8, 1e6),
             domain=NonNegativeReals,
-            units=units_meta('mass') * units_meta('time')**-1 * units_meta('length')**-1,
+            units=units_meta('mass') * units_meta('time')**-1,
             doc='Mass transfer to permeate')
         # ==========================================================================
         # Mass flux summations
@@ -446,6 +447,19 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             return sum(b.flux_mass_phase_comp[t, x, p, j]
                        for x in self.feed_side.length_domain)
         # ==========================================================================
+        # # # Flow balance
+        #
+        # @self.Constraint(self.flowsheet().config.time,
+        #                  doc="Unit flow balance")
+        # def eq_flow_balance(b, t):
+        #     xin = b.feed_side.length_domain.first()
+        #     xout = b.feed_side.length_domain.last()
+        #     return (b.feed_side.properties[t, xin].flow_vol_phase['Liq'] ==
+        #             b.feed_side.properties[t, xout].flow_vol_phase['Liq']
+        #             + b.permeate_out[t].flow_vol_phase['Liq'])
+
+        # ==========================================================================
+        # ==========================================================================
         # Mass transfer term equation
 
         @self.Constraint(self.flowsheet().config.time,
@@ -454,7 +468,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Mass transfer term")
         def eq_mass_transfer_term(b, t, x, p, j):
-            return b.mass_transfer_phase_comp[t, x, p, j] == -b.feed_side.mass_transfer_term[t, x, p, j]
+            return b.mass_transfer_phase_comp[t, x, p, j] == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length
 
         # ==========================================================================
         # Membrane area equation
@@ -466,6 +480,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # Mass flux = feed mass transfer equation
         # --> Jw * dAm = dM = Mtransfer*length*dx
         # --> Jw = Mtransfer * length *dx / dAm = Mtransfer / width
+        # assuming mass_transfer_term in 1dCV represents Mtransfer * x / L
+        # thus mass_transfer_term * L = Mtransfer *x , and x* = x/L   (x*= normalized length position)
+        # then Jw * Width * x* * Length = mass_transfer_term * Length
+        # and Jw * Width * x* = mass_transfer_term
 
         @self.Constraint(self.flowsheet().config.time,
                          self.feed_side.length_domain,
@@ -473,7 +491,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Mass transfer term")
         def eq_mass_flux_equal_mass_transfer(b, t, x, p, j):
-            return b.flux_mass_phase_comp[t, x, p, j] * b.width == -b.feed_side.mass_transfer_term[t, x, p, j]
+            return b.flux_mass_phase_comp[t, x, p, j] * b.width * x == -b.feed_side.mass_transfer_term[t, x, p, j]
         # ==========================================================================
         # Mass flux equations (Jw and Js)
         @self.Constraint(self.flowsheet().config.time,
@@ -590,6 +608,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # Create solver
         opt = get_solver(solver, optarg)
 
+        init_log.info('Starting initialization')
         # ---------------------------------------------------------------------
         # Step 1: Initialize feed_side, permeate_side, and permeate_out blocks
         flags_feed_side = blk.feed_side.initialize(
@@ -612,9 +631,25 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         init_log.info_high("Initialization Step 1 Complete.")
 
+
+        blk.eq_permeate_production.deactivate()
+        #         except AttributeError:
+        #             pass
+
+
+
+
+
         # ---------------------------------------------------------------------
         # Step 2: Solve unit
-        pass
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+
+
+
 
     def _get_performance_contents(self, time_point=0):
         pass
