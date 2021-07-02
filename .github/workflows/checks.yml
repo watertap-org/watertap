@@ -1,0 +1,73 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+defaults:
+  run:
+    # important to make sure that all commands on Windows are run using Bash
+    # -l: login shell, needed when using Conda
+    shell: bash -l {0}
+
+jobs:
+  tests:
+    name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
+    runs-on: ${{ matrix.os-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.6'
+          - '3.7'
+          - '3.8'
+          - '3.9'
+        os:
+          - linux
+          - win64
+          # - macos
+        include:
+          - os: linux
+            os-version: ubuntu-20.04
+          - os: win64
+            os-version: windows-2019
+          # - os: macos
+          #   os-version: macos-10.15
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: proteuslib-dev
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        echo '::group::Output of "pip install" commands'
+        python -m pip install --progress-bar off --upgrade pip wheel setuptools
+        pip install --progress-bar off -r requirements-dev.txt
+        echo '::endgroup::'
+        echo '::group::Display installed packages'
+        conda list
+        pip list
+        pip show idaes-pse
+        echo '::endgroup::'
+        echo '::group::Output of "idaes get-extensions" command'
+        idaes get-extensions --verbose
+        echo '::endgroup::'
+    - name: Test with pytest
+      run: |
+        pytest
+    - name: Test documentation code
+      run: |
+        make -C docs doctest -d
+    # just run the linkcheck on one of the jobs
+    # so we don't slam external sites
+    - name: Test documentation links
+      if: matrix.python-version == 3.9 && matrix.os == 'linux'
+      run: |
+        make -C docs linkcheck -d
