@@ -21,7 +21,7 @@ The main assumptions of the implemented model are as follows:
 5) Single solute only (e.g. NaCl)
 6) Isothermal operation
 
-.. figure:: nanofiltration_1.png
+.. figure:: ../../_static/unit_models/nanofiltration.png
     :width: 400
     :align: center
     
