@@ -494,7 +494,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                         * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j]))
 
         # ==========================================================================
-        # Final permeate mass flow rate (of solvent and solute) --> Mp,j = Am * J,sum,j
+        # Final permeate mass flow rate (of solvent and solute) --> Mp,j, final = sum(Mp,j)
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
@@ -502,7 +502,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          doc="Permeate mass flow rates exiting unit")
         def eq_permeate_production(b, t, p, j):
             return (b.permeate_out[t].get_material_flow_terms(p, j)
-                    == b.area * b.flux_mass_phase_comp_sum[t, p, j])
+                    == sum(b.permeate_side[t, x].get_material_flow_terms(p, j) for x in b.feed_side.length_domain))
         # ==========================================================================
         # Solute mass fraction in permeate across channel length --> Xp = Js/(Js + Jw)
 
