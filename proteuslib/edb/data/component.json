@@ -245,7 +245,7 @@
       ]
     },
     "name": "Ca 2+",
-    "type": "cation",
+    "type": "cation"
   },
   {
     "valid_phase_types": [
@@ -493,7 +493,7 @@
       ]
     },
     "name": "H2CO3",
-    "type": "solute",
+    "type": "solute"
   },
   {
     "valid_phase_types": [
@@ -822,7 +822,7 @@
       ]
     },
     "name": "HCO3 -",
-    "type": "anion",
+    "type": "anion"
   },
   {
     "valid_phase_types": [
@@ -1151,7 +1151,7 @@
       ]
     },
     "name": "H +",
-    "type": "cation",
+    "type": "cation"
   },
   {
     "valid_phase_types": [
@@ -1808,7 +1808,7 @@
       ]
     },
     "name": "OH -",
-    "type": "anion",
+    "type": "anion"
   },
   {
     "valid_phase_types": [
@@ -2145,7 +2145,7 @@
       ]
     },
     "name": "CO2",
-    "type: "solute",
+    "type": "solute"
   },
   {
     "dens_mol_liq_comp": "Perrys",
@@ -2311,7 +2311,7 @@
       ]
     },
     "name": "H2O",
-    "type": "solvent",
+    "type": "solvent"
   },
   {
     "dens_mol_liq_comp": "Perrys",
