@@ -66,7 +66,7 @@ class PropertyTestHarness(object):
 
         param_args: dictionary for property parameter arguments
 
-        standard_scaling: dictionary for standard scaling
+        scaling_args: dictionary for standard scaling arguments
             keys = (string name of variable, tuple index), values = scaling factor
 
         stateblock_statistics: dictionary of model statistics
@@ -74,6 +74,9 @@ class PropertyTestHarness(object):
              'number_total_constraints': VALUE,
              'number_unused_variables': VALUE,
              'default_degrees_of_freedom': VALUE}
+
+        default_solution: dictionary of property values at default initialized state variables
+            keys = (string name of variable, tuple index), values = value
         """
         pass
 
@@ -86,22 +89,7 @@ class PropertyTestHarness(object):
         m.fs.properties = self.prop_pack()
         m.fs.stream = m.fs.properties.build_state_block([0], default=self.param_args)
 
-        # m.fs.cv = ControlVolume0DBlock(default={
-        #     "dynamic": False,
-        #     "has_holdup": False,
-        #     "property_package": m.fs.properties,
-        #     "property_package_args": self.param_args})
-        # m.fs.cv.add_state_blocks(
-        #     has_phase_equilibrium=False)
-        # m.fs.cv.add_material_balances(
-        #     balance_type=m.fs.properties.material_balance_type,
-        #     has_mass_transfer=True)
-        # m.fs.cv.add_energy_balances(
-        #     has_enthalpy_transfer=True)
-        # m.fs.cv.add_momentum_balances(
-        #     has_pressure_change=True)
-
-        for (v_str, ind), sf in self.standard_scaling.items():
+        for (v_str, ind), sf in self.scaling_args.items():
             m.fs.properties.set_default_scaling(v_str, sf, index=ind)
 
         return m
@@ -197,9 +185,9 @@ class PropertyTestHarness(object):
             var = getattr(m.fs.stream[0], v_name)
             if not pytest.approx(val, rel=1e-3) == value(var[ind]):
                 raise Exception(
-                    "Variable {v_name} with index {ind} is expected to have a value of {val}, but it "
-                    "has a value of {val_t}. \nPlease update default_initialize_results_dict in the configure "
-                    "function that sets up the PropertyComponentTestHarness".format(
+                    "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, "
+                    "but it has a value of {val_t}. \nPlease update default_solution dict in the "
+                    "configure function that sets up the PropertyTestHarness".format(
                         v_name=v_name, ind=ind, val=val, val_t=value(var[ind])))
 
     @pytest.mark.component
@@ -223,14 +211,11 @@ class PropertyTestHarness(object):
             "property_package_args": self.param_args})
         m.fs.cv.add_state_blocks(
             has_phase_equilibrium=False)
-        m.fs.cv.add_material_balances(
-            has_mass_transfer=False)
-        m.fs.cv.add_energy_balances(
-            has_enthalpy_transfer=False)
-        m.fs.cv.add_momentum_balances(
-            has_pressure_change=False)
+        m.fs.cv.add_material_balances()
+        m.fs.cv.add_energy_balances()
+        m.fs.cv.add_momentum_balances()
 
-        for (v_str, ind), sf in self.standard_scaling.items():
+        for (v_str, ind), sf in self.scaling_args.items():
             m.fs.properties.set_default_scaling(v_str, sf, index=ind)
 
         return m
@@ -254,93 +239,81 @@ class PropertyTestHarness(object):
                     continue  # skip property if it was not created
                 if not pytest.approx(val, rel=1e-3) == value(var[ind]):
                     raise Exception(
-                        "Variable {v_name} with index {ind} is expected to have a value of {val}, but it "
-                        "has a value of {val_t}. \nPlease update default_initialize_results_dict in the "
-                        "configure function that sets up the PropertyComponentTestHarness".format(
+                        "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, "
+                        "but it has a value of {val_t}. \nPlease update default_solution dict in the "
+                        "configure function that sets up the PropertyTestHarness".format(
                             v_name=v_name, ind=ind, val=val, val_t=value(var[ind])))
 
 
-#
-# class PropertyRegressionTest(object):
-#     def configure_class(self):
-#         self.solver = None  # string for solver, if None use IDAES default
-#         self.optarg = None  # dictionary for solver options, if None use IDAES default
-#
-#         self.configure()
-#
-#         # check required objects have been added to instance
-#         obj_list = ['prop_pack', 'param_args', 'set_default_scaling_dict', 'solver', 'optarg',
-#                     'set_state_dict', 'results_dict']
-#         for obj_str in obj_list:
-#             if not hasattr(self, obj_str):
-#                 raise ConfigurationError(
-#                     "{obj_str} is a required attribute for the PropertyRegressionTest. "
-#                     "Add {obj_str} to the configure function that sets up the test harness.".
-#                     format(obj_str=obj_str))
-#
-#     def configure(self):
-#         """
-#         Placeholder method to allow user to setup test harness.
-#
-#         The configure function must set the attributes:
-#
-#         prop_pack: property package parameter block
-#
-#         param_args: dictionary for property parameter arguments
-#
-#         set_default_scaling_dict: dictionary for default scaling
-#             keys = (string name of variable, tuple index), values = scaling factor
-#
-#         solver: string name for solver, if None will use IDAES default
-#
-#         optarg: dictionary of solver options, if None will use IDAES default
-#
-#         set_state_dict: dictionary of state variables and their values for the regression test
-#             keys = (string name of variable, tuple index), values = value of variable
-#
-#         results_dict: dictionary of property values for the regression test
-#             keys = (string name of variable, tuple index), values = value of variable
-#         """
-#         pass
-#
-#     def test_property_solution(self):
-#         self.configure_class()
-#
-#         # create model
-#         m = ConcreteModel()
-#         m.fs = FlowsheetBlock(default={"dynamic": False})
-#         m.fs.properties = self.prop_pack()
-#         m.fs.stream = m.fs.properties.build_state_block(
-#             [0], default=self.param_args)
-#
-#         # set default scaling
-#         for (v_str, ind), sf in self.set_default_scaling_dict.items():
-#             m.fs.properties.set_default_scaling(v_str, sf, index=ind)
-#
-#         # set state variables
-#         for (v_str, ind), val in self.set_state_dict.items():
-#             var = getattr(m.fs.stream[0], v_str)
-#             var[ind].fix(val)
-#
-#         # touch all properties
-#         metadata = m.fs.properties.get_metadata().properties
-#         for v_str in metadata.keys():
-#             getattr(m.fs.stream[0], v_str)
-#
-#         # scale model
-#         calculate_scaling_factors(m.fs)
-#
-#         # solve model
-#         opt = get_solver(self.solver, self.optarg)
-#         results = opt.solve(m)
-#         assert results.solver.status == SolverStatus.ok
-#
-#         # check results
-#         for (v_str, ind), val in self.results_dict.items():
-#             var = getattr(m.fs.stream[0], v_str)
-#             if not pytest.approx(val, rel=1e-3) == value(var[ind]):
-#                 raise Exception(
-#                     "Variable {v_str} with index {ind} is expected to have a value of {val}, but it "
-#                     "has a value of {val_t}. \nPlease update results_dict in the configure function "
-#                     "that sets up the PropertyRegressionTest".format(
-#                         v_str=v_str, ind=ind, val=val, val_t=value(var[ind])))
+
+class PropertyRegressionTest(object):
+    def configure_class(self):
+        self.solver = None  # string for solver, if None use IDAES default
+        self.optarg = None  # dictionary for solver options, if None use IDAES default
+        self.configure()
+
+    def configure(self):
+        """
+        Placeholder method to allow user to setup the property regression test.
+
+        The configure function must set the attributes:
+
+        prop_pack: property package parameter block
+
+        param_args: dictionary for property parameter arguments
+
+        solver: string name for solver, if not provided or None will use IDAES default
+
+        optarg: dictionary of solver options, if not provided or None will use IDAES default
+
+        scaling_args: dictionary of scaling arguments
+            keys = (string name of variable, tuple index), values = scaling factor
+
+        state_args: dictionary of specified state variables
+            keys = (string name of variable, tuple index), values = value
+
+        regression_solution: dictionary of property values for the specified state variables
+            keys = (string name of variable, tuple index), values = value
+        """
+        pass
+
+    def test_property_regression(self):
+        self.configure_class()
+
+        # create model
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.properties = self.prop_pack()
+        m.fs.stream = m.fs.properties.build_state_block([0], default=self.param_args)
+
+        # set default scaling
+        for (v_str, ind), sf in self.scaling_args.items():
+            m.fs.properties.set_default_scaling(v_str, sf, index=ind)
+
+        # set state variables
+        for (v_str, ind), val in self.state_args.items():
+            var = getattr(m.fs.stream[0], v_str)
+            var[ind].fix(val)
+
+        # touch all properties
+        metadata = m.fs.properties.get_metadata().properties
+        for v_str in metadata.keys():
+            getattr(m.fs.stream[0], v_str)
+
+        # scale model
+        calculate_scaling_factors(m)
+
+        # solve model
+        opt = get_solver(self.solver, self.optarg)
+        results = opt.solve(m)
+        assert results.solver.status == SolverStatus.ok
+
+        # check results
+        for (v_str, ind), val in self.regression_solution.items():
+            var = getattr(m.fs.stream[0], v_str)
+            if not pytest.approx(val, rel=1e-3) == value(var[ind]):
+                raise Exception(
+                    "Variable {v_str} with index {ind} is expected to have a value of {val} +/- 0.1%, but it "
+                    "has a value of {val_t}. \nPlease update regression_solution in the configure function "
+                    "that sets up the PropertyRegressionTest".format(
+                        v_str=v_str, ind=ind, val=val, val_t=value(var[ind])))
