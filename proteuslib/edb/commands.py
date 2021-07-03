@@ -136,7 +136,7 @@ def load_data(input_file, data_type, url, database, validate, bootstrap):
         _load(input_file, data_type, url, database, validate)
 
 
-def _load(input_file, data_type, url, database, validate):
+def _load(input_file, data_type, url, database, do_validate):
     print_messages = _log.isEnabledFor(logging.ERROR)
     filename = input_file.name
     _log.debug(f"Reading records from input file '{filename}'")
@@ -144,28 +144,28 @@ def _load(input_file, data_type, url, database, validate):
     if isinstance(input_data, dict):  # make single record into a list of length one
         input_data = [input_data]
     _log.info(f"Read {len(input_data)} records from input file '{filename}'")
-    if validate:
+    if do_validate:
         _log.info("Validating records")
-        if data_type == "component":
-            vld = validate_component
-        elif data_type == "reaction":
-            vld = validate_reaction
+        if data_type in ("component", "reaction"):
+            obj_type = data_type
         elif data_type == "base":
-            def vld(x):
-                _log.warning("No validation for records of type 'base' (yet)")
-                return x
+            obj_type = None
         else:
             raise RuntimeError(f"Unexpected data type: {data_type}")
         data = []
         for record in input_data:
-            try:
-                d = vld(record)
-            except ValidationError as err:
-                click.echo(f"Validation failed: {err}")
-                if print_messages:
-                    click.echo("Record:")
-                    click.echo(json.dumps(record, indent=2))
-                return -1
+            if obj_type is None:
+                _log.warning("No validation for records of type 'base' (yet)")
+                d = record
+            else:
+                try:
+                    d = do_validate(record, obj_type=obj_type)
+                except ValidationError as err:
+                    click.echo(f"Validation failed: {err}")
+                    if print_messages:
+                        click.echo("Record:")
+                        click.echo(json.dumps(record, indent=2))
+                    return -1
             data.append(d)
     else:
         data = input_data
@@ -186,9 +186,11 @@ def _db_is_empty(url, database):
     if not collections:
         return True
     if not {"base", "component", "reaction"}.intersection(collections):
-        _log.warning("Bootstrapping into non-empty database, but without any EDB collections")
+        _log.warning("Bootstrapping into non-empty database,"
+                     "but without any EDB collections")
         return True
     return False
+
 
 def _load_bootstrap(url, database):
     _log.info(f"Start: Bootstrapping database {database} at {url}")
@@ -202,6 +204,8 @@ def _load_bootstrap(url, database):
 #################################################################################
 # DUMP command
 #################################################################################
+
+
 @command_base.command(
     name="dump", help="Dump JSON records from the Electrolyte Database"
 )
