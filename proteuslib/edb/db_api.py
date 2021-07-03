@@ -42,7 +42,8 @@ class ElectrolyteDB:
     DEFAULT_URL = "mongodb://localhost:27017"
     DEFAULT_DB = "electrolytedb"
 
-    # make sure these match lowercase names of the DataWrapper subclasses in the `data_model` module
+    # make sure these match lowercase names of the DataWrapper subclasses in
+    # the `data_model` module
     _known_collections = ("base", "component", "reaction")
 
     def __init__(self, url=DEFAULT_URL, db=DEFAULT_DB):
