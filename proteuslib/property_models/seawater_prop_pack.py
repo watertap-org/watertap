@@ -963,7 +963,6 @@ class SeawaterStateBlockData(StateBlockData):
                 sf_dens = iscale.get_scaling_factor(self.dens_mass_phase['Liq'])
                 if iscale.get_scaling_factor(self.conc_mass_phase_comp['Liq', j]) is None:
                     if j == 'H2O':
-                        # solvents typically have a mass fraction between 0.5-1
                         iscale.set_scaling_factor(self.conc_mass_phase_comp['Liq', j], sf_dens)
                     elif j == 'TDS':
                         iscale.set_scaling_factor(

@@ -106,19 +106,31 @@ class PropertyTestHarness(object):
         m = frame_stateblock
         # test that the parameter variables are fixed
         for v in m.fs.properties.component_objects(Var):
-            assert v.is_fixed()
+            if not v.is_fixed():
+                raise Exception(
+                    "Variable {v_name} is unfixed, but all variables on the "
+                    "property parameter block must be fixed by default".format(
+                        v_name=v.name))
 
     @pytest.mark.unit
     def test_state_variables(self, frame_stateblock):
         m = frame_stateblock
         # state variables
         state_vars_dict = m.fs.stream[0].define_state_vars()
-        assert len(state_vars_dict) >= 3  # minimum number of state variables: flow, temperature, pressure
+        # check minimum number of state variables (i.e. flow, temperature, pressure)
+        if len(state_vars_dict) < 3:
+            raise Exception(
+                "Property package has {num_state_vars} state variables, which is less "
+                "than the minimum of 3 (i.e. flow, temperature, and pressure)".format(
+                    num_state_vars=len(state_vars_dict)))
 
         # check that state variables are in metadata
         metadata = m.fs.properties.get_metadata().properties
         for sv_name in state_vars_dict:
-            assert sv_name in metadata
+            if sv_name not in metadata:
+                raise Exception(
+                    "State variable {sv_name} is not included in the "
+                    "metadata".format(sv_name=sv_name))
 
     @pytest.mark.unit
     def test_permanent_properties(self, frame_stateblock):
@@ -126,7 +138,10 @@ class PropertyTestHarness(object):
         metadata = m.fs.properties.get_metadata().properties
         for v_name in metadata:
             if metadata[v_name]['method'] is None:
-                assert hasattr(m.fs.stream[0], v_name)
+                if not hasattr(m.fs.stream[0], v_name):
+                    raise Exception(
+                        "Property {v_name} is included in the metadata but is not found "
+                        "on the stateblock".format(v_name=v_name))
 
     @pytest.mark.unit
     def test_on_demand_properties(self, frame_stateblock):
@@ -136,25 +151,48 @@ class PropertyTestHarness(object):
         # check that properties are not built if not demanded
         for v_name in metadata:
             if metadata[v_name]['method'] is not None:
-                assert not m.fs.stream[0].is_property_constructed(v_name)
+                if m.fs.stream[0].is_property_constructed(v_name):
+                    raise Exception(
+                        "Property {v_name} is an on-demand property, but was found "
+                        "on the stateblock without being demanded".format(v_name=v_name))
 
         # check that properties are built if demanded
         for v_name in metadata:
             if metadata[v_name]['method'] is not None:
-                assert hasattr(m.fs.stream[0], v_name)
+                if not hasattr(m.fs.stream[0], v_name):
+                    raise Exception(
+                        "Property {v_name} is included in the metadata but is not found "
+                        "on the stateblock".format(v_name=v_name))
 
     @pytest.mark.unit
     def test_stateblock_statistics(self, frame_stateblock):
         m = frame_stateblock
         blk = m.fs.stream[0]
-        assert number_variables(blk) == \
-               m._test_objs.stateblock_statistics['number_variables']
-        assert number_total_constraints(blk) == \
-               m._test_objs.stateblock_statistics['number_total_constraints']
-        assert number_unused_variables(blk) == \
-               m._test_objs.stateblock_statistics['number_unused_variables']
-        assert degrees_of_freedom(blk) == \
-               m._test_objs.stateblock_statistics['default_degrees_of_freedom']
+        stats = m._test_objs.stateblock_statistics
+        if number_variables(blk) != stats['number_variables']:
+            raise Exception(
+                "The number of variables were {num}, but {num_test} was "
+                "expected ".format(
+                    num=number_variables(blk),
+                    num_test=stats['number_variables']))
+        if number_total_constraints(blk) != stats['number_total_constraints']:
+            raise Exception(
+                "The number of constraints were {num}, but {num_test} was "
+                "expected ".format(
+                    num=number_total_constraints(blk),
+                    num_test=stats['number_total_constraints']))
+        if number_unused_variables(blk) != stats['number_unused_variables']:
+            raise Exception(
+                "The number of unused variables were {num}, but {num_test} was "
+                "expected ".format(
+                    num=number_unused_variables(blk),
+                    num_test=stats['number_unused_variables']))
+        if degrees_of_freedom(blk) != stats['default_degrees_of_freedom']:
+            raise Exception(
+                "The number of degrees of freedom were {num}, but {num_test} was "
+                "expected ".format(
+                    num=degrees_of_freedom(blk),
+                    num_test=stats['default_degrees_of_freedom']))
 
     @pytest.mark.unit
     def test_units_consistent(self, frame_stateblock):
@@ -168,10 +206,19 @@ class PropertyTestHarness(object):
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m.fs.stream[0]))
-        assert len(unscaled_var_list) == 0
+        if len(unscaled_var_list) != 0:
+            unscaled_var_name_list = [v.name for v in unscaled_var_list]
+            raise Exception(
+                "The following variable(s) are unscaled: {lst}".format(
+                    lst=unscaled_var_name_list))
+
         # check that all constraints have been scaled
         unscaled_constraint_list = list(unscaled_constraints_generator(m.fs.stream[0]))
-        assert len(unscaled_constraint_list) == 0
+        if len(unscaled_constraint_list) != 0:
+            unscaled_constraint_name_list = [c.name for c in unscaled_constraint_list]
+            raise Exception(
+                "The following constraint(s) are unscaled: {lst}".format(
+                    lst=unscaled_constraint_name_list))
 
     @pytest.mark.component
     def test_default_initialization(self, frame_stateblock):
@@ -186,15 +233,20 @@ class PropertyTestHarness(object):
             if not pytest.approx(val, rel=1e-3) == value(var[ind]):
                 raise Exception(
                     "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, "
-                    "but it has a value of {val_t}. \nPlease update default_solution dict in the "
+                    "but it has a value of {val_t}. \nUpdate default_solution dict in the "
                     "configure function that sets up the PropertyTestHarness".format(
                         v_name=v_name, ind=ind, val=val, val_t=value(var[ind])))
 
     @pytest.mark.component
     def test_badly_scaled(self, frame_stateblock):
         m = frame_stateblock
-        badly_scaled_var_list = list(badly_scaled_var_generator(m))
-        assert len(badly_scaled_var_list) == 0
+        badly_scaled_var_list = list(badly_scaled_var_generator(m, large=1e2, small=1e-2))
+        if len(badly_scaled_var_list) != 0:
+            lst = []
+            for (var, val) in badly_scaled_var_list:
+                lst.append((var.name, val))
+            raise Exception(
+                "The following variable(s) are badly scaled: {lst}".format(lst=lst))
 
     @pytest.fixture(scope='class')
     def frame_control_volume(self):
@@ -240,10 +292,9 @@ class PropertyTestHarness(object):
                 if not pytest.approx(val, rel=1e-3) == value(var[ind]):
                     raise Exception(
                         "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, "
-                        "but it has a value of {val_t}. \nPlease update default_solution dict in the "
+                        "but it has a value of {val_t}. \nUpdate default_solution dict in the "
                         "configure function that sets up the PropertyTestHarness".format(
                             v_name=v_name, ind=ind, val=val, val_t=value(var[ind])))
-
 
 
 class PropertyRegressionTest(object):
@@ -277,6 +328,7 @@ class PropertyRegressionTest(object):
         """
         pass
 
+    @pytest.mark.component
     def test_property_regression(self):
         self.configure_class()
 
@@ -314,6 +366,15 @@ class PropertyRegressionTest(object):
             if not pytest.approx(val, rel=1e-3) == value(var[ind]):
                 raise Exception(
                     "Variable {v_str} with index {ind} is expected to have a value of {val} +/- 0.1%, but it "
-                    "has a value of {val_t}. \nPlease update regression_solution in the configure function "
+                    "has a value of {val_t}. \nUpdate regression_solution in the configure function "
                     "that sets up the PropertyRegressionTest".format(
                         v_str=v_str, ind=ind, val=val, val_t=value(var[ind])))
+
+        # check if any variables are badly scaled
+        badly_scaled_var_list = list(badly_scaled_var_generator(m, large=1e2, small=1e-2))
+        if len(badly_scaled_var_list) != 0:
+            lst = []
+            for (var, val) in badly_scaled_var_list:
+                lst.append((var.name, val))
+            raise Exception(
+                "The following variable(s) are badly scaled: {lst}".format(lst=lst))
