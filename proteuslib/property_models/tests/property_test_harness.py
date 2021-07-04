@@ -16,14 +16,10 @@ import pytest
 from pyomo.environ import (ConcreteModel,
                            Block,
                            Set,
-                           Param,
                            Var,
-                           Expression,
-                           Constraint,
                            value,
-                           units as pyunits,
                            SolverStatus)
-from pyomo.util.check_units import assert_units_consistent, check_units_equivalent
+from pyomo.util.check_units import assert_units_consistent
 from idaes.core import (FlowsheetBlock,
                         ControlVolume0DBlock)
 from idaes.core.util.model_statistics import (degrees_of_freedom,
@@ -34,15 +30,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_variables_generator,
                                      unscaled_constraints_generator,
                                      badly_scaled_var_generator)
-from idaes.core.util.exceptions import (PropertyPackageError,
-                                        PropertyNotSupportedError,
-                                        ConfigurationError)
 from idaes.core.util import get_solver
-
-# -----------------------------------------------------------------------------
-# Get default solver for testing
-solver = get_solver()
-solver.options["nlp_scaling_method"] = "user-scaling"
 
 
 # -----------------------------------------------------------------------------
