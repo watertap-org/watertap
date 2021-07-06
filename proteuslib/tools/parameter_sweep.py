@@ -114,12 +114,15 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
             global_combo_array = np.array(np.meshgrid(*param_values, indexing="ij"))
             global_combo_array = global_combo_array.reshape(num_var_params, -1).T
 
-            # Return a copy of this array with row-major memory order
-            global_combo_array = np.ascontiguousarray(global_combo_array)
         else:
             sorting = np.argsort(param_values[0])
             global_combo_array = np.vstack(param_values).T
             global_combo_array = global_combo_array[sorting, :]
+
+        # Test if the global_combo_array is in row-major order
+        if not global_combo_array.flags.c_contiguous:
+            # If not, return a copy of this array with row-major memory order
+            global_combo_array = np.ascontiguousarray(global_combo_array)
 
     else:
         if sampling_type == "linear":
