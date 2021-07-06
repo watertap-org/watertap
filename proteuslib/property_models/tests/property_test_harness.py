@@ -12,13 +12,16 @@
 ###############################################################################
 
 import pytest
+from math import fabs
 
 from pyomo.environ import (ConcreteModel,
                            Block,
                            Set,
                            Var,
+                           Constraint,
                            value,
-                           SolverStatus)
+                           SolverStatus,
+                           TerminationCondition)
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import (FlowsheetBlock,
                         ControlVolume0DBlock)
@@ -30,6 +33,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_variables_generator,
                                      unscaled_constraints_generator,
                                      badly_scaled_var_generator)
+from idaes.core.util.initialization import fix_state_vars
 from idaes.core.util import get_solver
 
 
@@ -149,8 +153,8 @@ class PropertyTestHarness(object):
             if metadata[v_name]['method'] is not None:
                 if not hasattr(m.fs.stream[0], v_name):
                     raise Exception(
-                        "Property {v_name} is included in the metadata but is not found "
-                        "on the stateblock".format(v_name=v_name))
+                        "Property {v_name} is an on-demand property, but was not built "
+                        "when demanded".format(v_name=v_name))
 
     @pytest.mark.unit
     def test_stateblock_statistics(self, frame_stateblock):
@@ -208,12 +212,55 @@ class PropertyTestHarness(object):
                 "The following constraint(s) are unscaled: {lst}".format(
                     lst=unscaled_constraint_name_list))
 
+    @staticmethod
+    def check_constraint_status(blk, tol=1e-8):
+        c_violated_lst = []
+
+        # implementation modified from Pyomo 5.7.3, pyomo.util.infeasible.log_infeasible_constraints
+        for c in blk.component_data_objects(
+                ctype=Constraint, active=True, descend_into=True):
+            c_body_value = value(c.body, exception=False)
+            c_lb_value = value(c.lower, exception=False)
+            c_ub_value = value(c.upper, exception=False)
+
+            c_undefined = False
+            equality_violated = False
+            lb_violated = False
+            ub_violated = False
+
+            if c_body_value is None:
+                c_undefined = True
+            else:
+                if c.equality:
+                    if fabs(c_lb_value - c_body_value) >= tol:
+                        equality_violated = True
+                else:
+                    if c.has_lb() and c_lb_value - c_body_value >= tol:
+                        lb_violated = True
+                    if c.has_ub() and c_body_value - c_ub_value >= tol:
+                        ub_violated = True
+
+            if not any((c_undefined, equality_violated, lb_violated, ub_violated)):
+                continue
+            else:
+                c_violated_lst.append(c.name)
+
+        if len(c_violated_lst) > 0:
+            raise Exception(
+                "Default initialization did not converge, the following constraint(s) "
+                "are undefined or violate the equality or inequality: {violated_lst}".format(
+                    violated_lst=c_violated_lst))
+
     @pytest.mark.component
     def test_default_initialization(self, frame_stateblock):
         m = frame_stateblock
 
         # initialize
         m.fs.stream.initialize()
+
+        # check convergence
+        # TODO: update this when IDAES API is updated to return solver status for initialize()
+        self.check_constraint_status(m.fs.stream[0])
 
         # check results
         for (v_name, ind), val in m._test_objs.default_solution.items():
@@ -234,7 +281,34 @@ class PropertyTestHarness(object):
             for (var, val) in badly_scaled_var_list:
                 lst.append((var.name, val))
             raise Exception(
-                "The following variable(s) are badly scaled: {lst}".format(lst=lst))
+                "The following variable(s) are poorly scaled: {lst}".format(lst=lst))
+
+    @pytest.mark.component
+    def test_default_solve(self, frame_stateblock):
+        m = frame_stateblock
+
+        # fix state variables
+        fix_state_vars(m.fs.stream)
+
+        # solve model
+        opt = get_solver()
+        results = opt.solve(m.fs.stream[0])
+        assert results.solver.status == SolverStatus.ok
+        assert results.solver.termination_condition == TerminationCondition.optimal
+
+        # check convergence
+        # TODO: update this when IDAES API is updated to return solver status for initialize()
+        self.check_constraint_status(m.fs.stream[0])
+
+        # check results
+        for (v_name, ind), val in m._test_objs.default_solution.items():
+            var = getattr(m.fs.stream[0], v_name)
+            if not pytest.approx(val, rel=1e-3) == value(var[ind]):
+                raise Exception(
+                    "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, "
+                    "but it has a value of {val_t}. \nUpdate default_solution dict in the "
+                    "configure function that sets up the PropertyTestHarness".format(
+                        v_name=v_name, ind=ind, val=val, val_t=value(var[ind])))
 
     @pytest.fixture(scope='class')
     def frame_control_volume(self):
@@ -269,6 +343,10 @@ class PropertyTestHarness(object):
 
         # initialize control volume
         m.fs.cv.initialize()
+
+        # check convergence
+        # TODO: update this when IDAES API is updated to return solver status for initialize()
+        self.check_constraint_status(m.fs.cv)
 
         # check results, properties_in and properties_out should be the same as default initialize
         for (v_name, ind), val in m._test_objs.default_solution.items():
@@ -347,6 +425,7 @@ class PropertyRegressionTest(object):
         opt = get_solver(self.solver, self.optarg)
         results = opt.solve(m)
         assert results.solver.status == SolverStatus.ok
+        assert results.solver.termination_condition == TerminationCondition.optimal
 
         # check results
         for (v_str, ind), val in self.regression_solution.items():
