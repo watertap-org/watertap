@@ -485,7 +485,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Mass transfer term")
         def eq_mass_transfer_term(b, t, x, p, j):
-            return b.mass_transfer_phase_comp[t, x, p, j] == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length / nfe
+            return b.mass_transfer_phase_comp[t, x, p, j] == -b.feed_side.mass_transfer_term[t, x, p, j]
 
         # ==========================================================================
         # Membrane area equation
@@ -511,7 +511,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             # if x == b.feed_side.length_domain.first() or x == b.feed_side.length_domain.last():
             #     return b.flux_mass_phase_comp[t, x, p, j] == 0  # Constraint.Skip
             # else:
-            return b.flux_mass_phase_comp[t, x, p, j] * b.width == -b.feed_side.mass_transfer_term[t, x, p, j] / nfe
+            return b.flux_mass_phase_comp[t, x, p, j] * b.width == -b.feed_side.mass_transfer_term[t, x, p, j]
         # ==========================================================================
         # Mass flux equations (Jw and Js)
         @self.Constraint(self.flowsheet().config.time,
