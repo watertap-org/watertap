@@ -214,8 +214,6 @@ class TestReverseOsmosis():
         feed_mass_frac_NaCl = 0.035
         feed_pressure = 50e5
         feed_temperature = 273.15 + 25
-        membrane_pressure_drop = 3e5
-        membrane_area = 50
         A = 4.2e-12
         B = 3.5e-8
         pressure_atmospheric = 101325
@@ -230,15 +228,20 @@ class TestReverseOsmosis():
         m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
         m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
         # m.fs.unit.deltaP.fix(-membrane_pressure_drop)
-        m.fs.unit.area.fix(membrane_area)
+        # m.fs.unit.area.fix(membrane_area)
+
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
-        # m.fs.unit.permeate_side.properties[0, :].temperature.fix(feed_temperature)
 
-        # m.fs.unit.width.fix(1.5)
-        # m.fs.unit.permeate_side.properties[0, 0].flow_mass_phase_comp['Liq', 'NaCl'].fix(1e-8)
-        # m.fs.unit.permeate_side.properties[0, 0].flow_mass_phase_comp['Liq', 'H2O'].fix(1e-8)
+        # m.fs.unit.eq_flux_mass.deactivate()
+        # m.fs.unit.flux_mass_phase_comp.fix(1e-3)
+        m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'H2O'].setub(0.5)
+        m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'H2O'].setlb(0.25)
+        m.fs.unit.length.setub(10)
+        m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.4)
+
+        assert degrees_of_freedom(m) == 0
 
         return m
 
@@ -262,21 +265,21 @@ class TestReverseOsmosis():
                                'feed_area_cross': Var,
                                'width': Var,
                                'length': Var,
-                               # 'recovery_vol_phase': Var,
+                               'recovery_vol_phase': Var,
                                # 'recovery_mass_phase_comp': Var,
                                # 'rejection_phase_comp': Var,
                                # 'over_pressure_ratio': Var,
                                # 'deltaP': Var,
                                # 'cp_modulus': Var,
                                'mass_transfer_phase_comp': Var,
-                               'flux_mass_phase_comp_sum': Expression,
+                               # 'flux_mass_phase_comp_sum': Expression,
                                'eq_mass_transfer_term': Constraint,
                                'eq_permeate_production': Constraint,
                                'eq_flux_mass': Constraint,
                                'eq_connect_mass_transfer': Constraint,
                                # 'eq_connect_enthalpy_transfer': Constraint,
                                'eq_permeate_isothermal': Constraint,
-                               # 'eq_recovery_vol_phase': Constraint,
+                               'eq_recovery_vol_phase': Constraint,
                                # 'eq_recovery_mass_phase_comp': Constraint,
                                # 'eq_rejection_phase_comp': Constraint,
                                # 'eq_over_pressure_ratio': Constraint,
@@ -331,8 +334,8 @@ class TestReverseOsmosis():
         #     assert isinstance(obj, obj_type)
 
         # test statistics
-        assert number_variables(m) == 763
-        assert number_total_constraints(m) == 733
+        assert number_variables(m) == 769
+        assert number_total_constraints(m) == 739
         unused_list = unused_variables_set(m)
         [print(i) for i in unused_list]
         assert number_unused_variables(m) == 17  # TODO: vars from property package parameters
@@ -400,6 +403,7 @@ class TestReverseOsmosis():
     @pytest.mark.component
     def test_solve(self, RO_frame):
         m = RO_frame
+        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
 
         # Check for optimal solution
