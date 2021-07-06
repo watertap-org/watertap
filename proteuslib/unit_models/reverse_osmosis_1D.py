@@ -25,7 +25,8 @@ from pyomo.environ import (Var,
                            Block,
                            units as pyunits,
                            exp,
-                           value)
+                           value,
+                           Constraint)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 # Import IDAES cores
@@ -507,6 +508,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Mass transfer term")
         def eq_mass_flux_equal_mass_transfer(b, t, x, p, j):
+            # if x == b.feed_side.length_domain.first() or x == b.feed_side.length_domain.last():
+            #     return b.flux_mass_phase_comp[t, x, p, j] == 0  # Constraint.Skip
+            # else:
             return b.flux_mass_phase_comp[t, x, p, j] * b.width == -b.feed_side.mass_transfer_term[t, x, p, j] / nfe
         # ==========================================================================
         # Mass flux equations (Jw and Js)

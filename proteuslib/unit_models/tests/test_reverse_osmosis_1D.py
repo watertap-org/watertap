@@ -207,7 +207,7 @@ class TestReverseOsmosis():
 
         m.fs.unit = ReverseOsmosis1D(default={
             "property_package": m.fs.properties,
-            "has_pressure_change": False})
+            "has_pressure_change": True})
 
         # fully specify system
         feed_flow_mass = 1
@@ -227,7 +227,7 @@ class TestReverseOsmosis():
 
         m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
         m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
-        # m.fs.unit.deltaP.fix(-membrane_pressure_drop)
+        m.fs.unit.deltaP.fix(0)
         # m.fs.unit.area.fix(membrane_area)
 
         m.fs.unit.A_comp.fix(A)
@@ -411,31 +411,36 @@ class TestReverseOsmosis():
                TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-#     @pytest.mark.component
-#     def test_conservation(self, RO_frame):
-#         m = RO_frame
-#         b = m.fs.unit
-#         comp_lst = ['NaCl', 'H2O']
-#
-#         flow_mass_inlet = sum(
-#             b.feed_side.properties[0, 0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
-#         flow_mass_retentate = sum(
-#             b.feed_side.properties[0, 1].flow_mass_phase_comp['Liq', j] for j in comp_lst)
-#         flow_mass_permeate = sum(
-#             b.permeate_side.permeate_out[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
-#
-#         assert value(flow_mass_inlet) == pytest.approx(1.0, rel=1e-3)
-#         assert value(flow_mass_retentate) == pytest.approx(1.0, rel=1e-3)
-#         assert value(flow_mass_permeate) == pytest.approx(1.0, rel=1e-3)
-#
-#         assert (abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate
-#                           )) <= 1e-5)
-#
-#         assert (abs(value(
-#             flow_mass_inlet * b.feed_side.properties[0, 0].enth_mass_phase['Liq']
-#             - flow_mass_retentate * b.feed_side.properties[0, 1].enth_mass_phase['Liq']
-#             - flow_mass_permeate * b.permeate_side.permeate_out[0].enth_mass_phase['Liq']
-#         )) <= 1e-5)
+    @pytest.mark.component
+    def test_conservation(self, RO_frame):
+        m = RO_frame
+        b = m.fs.unit
+        comp_lst = ['NaCl', 'H2O']
+
+        flow_mass_inlet = sum(
+            b.feed_side.properties[0, 0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
+        flow_mass_retentate = sum(
+            b.feed_side.properties[0, 1].flow_mass_phase_comp['Liq', j] for j in comp_lst)
+        flow_mass_permeate = sum(
+            b.permeate_out[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
+
+        assert value(flow_mass_inlet) == pytest.approx(1.0, rel=1e-3)
+        assert value(flow_mass_retentate) == pytest.approx(0.6501, rel=1e-3)
+        assert value(flow_mass_permeate) == pytest.approx(0.3898, rel=1e-3)
+
+        # Qf = b.feed_side.properties[0, b.feed_side.length_domain.first()].flow_vol_phase['Liq']
+        # Qb = b.feed_side.properties[0 , b.feed_side.length_domain.last()].flow_vol_phase['Liq']
+        # Qp = b.permeate_out[0].flow_vol_phase['Liq']
+        # assert abs(value(Qf - Qb - Qp)) <= 1e-5
+
+        assert (abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate
+                          )) <= 1e-2)
+
+        assert (abs(value(
+            flow_mass_inlet * b.feed_side.properties[0, 0].enth_mass_phase['Liq']
+            - flow_mass_retentate * b.feed_side.properties[0, 1].enth_mass_phase['Liq']
+            - flow_mass_permeate * b.permeate_side.permeate_out[0].enth_mass_phase['Liq']
+        )) <= 1e-5)
 # # #
 #     @pytest.mark.component
 #     def test_solution(self, RO_frame):
