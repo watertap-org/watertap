@@ -97,7 +97,7 @@ class PropertyTestHarness(object):
     def test_parameters(self, frame_stateblock):
         m = frame_stateblock
         # test that the parameter variables are fixed
-        for v in m.fs.properties.component_objects(Var):
+        for v in m.fs.properties.component_data_objects(Var):
             if not v.is_fixed():
                 raise Exception(
                     "Variable {v_name} is unfixed, but all variables on the "
