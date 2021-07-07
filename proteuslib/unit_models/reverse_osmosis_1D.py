@@ -250,8 +250,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         self.solute_list = Set()
         self._process_config()
 
-        # ==========================================================================
-        """ Build 1D Control volume for feed side"""
+        # Build 1D Control volume for feed side
         self.feed_side = ControlVolume1DBlock(default={
             "dynamic": self.config.dynamic,
             "has_holdup": self.config.has_holdup,
@@ -264,35 +263,25 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             "collocation_points": self.config.collocation_points
         })
 
-        # ==========================================================================
         feed_side = self.feed_side
-
-        # ==========================================================================
-        """ Add geometry for each control volume"""
+        # Add geometry to feed side
         feed_side.add_geometry()
-
-        # ==========================================================================
-        """ Add state blocks for each control volume"""
+        # Add state blocks to feed side
         feed_side.add_state_blocks(has_phase_equilibrium=False)
-
-        # ==========================================================================
-        """ Populate feed side"""
+        # Populate feed side
         feed_side.add_material_balances(balance_type=self.config.material_balance_type,
                                         has_mass_transfer=True)
         feed_side.add_energy_balances(balance_type=EnergyBalanceType.none)
         feed_side.add_momentum_balances(balance_type=self.config.momentum_balance_type,
                                         has_pressure_change=self.config.has_pressure_change)
-
-        # ==========================================================================
-        """ Apply transformation to feed side"""
+        # Apply transformation to feed side
         feed_side.apply_transformation()
-
-        # ==========================================================================
-        """ Add inlet/outlet ports for feed side and only an outlet port for permeate side"""
+        # Add inlet/outlet ports for feed side
         self.add_inlet_port(name="feed_inlet", block=feed_side)
         self.add_outlet_port(name="feed_outlet", block=feed_side)
-
         #TODO: Make permeate_side.permeate_out a ProductBlock instead?
+
+        # Make indexed stateblock and separate stateblock for permeate-side and permeate outlet, respectively.
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package
@@ -306,6 +295,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             self.flowsheet().config.time,
             doc="Material properties of mixed permeate exiting the module",
             default=tmp_dict)
+        # Add port to permeate_out
         self.add_port(name="permeate_outlet", block=self.permeate_out)
 
         # ==========================================================================
@@ -664,15 +654,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         init_log.info_high("Initialization Step 1 Complete.")
 
-
-        # blk.eq_permeate_production.deactivate()
-        #         except AttributeError:
-        #             pass
-
-
-
-
-
         # ---------------------------------------------------------------------
         # Step 2: Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -680,9 +661,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-
-
-
 
     def _get_performance_contents(self, time_point=0):
         pass
@@ -821,4 +799,3 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         for t, c in self.eq_recovery_vol_phase.items():
             iscale.constraint_scaling_transform(self.eq_recovery_vol_phase[t], 1)
-
