@@ -444,7 +444,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             initialize=0.1,  # mass_transfer_phase_comp_initialize,
             bounds=(1e-8, 1e6),
             domain=NonNegativeReals,
-            units=units_meta('mass') * units_meta('time')**-1,
+            units=units_meta('mass') * units_meta('time')**-1 * units_meta('length')**-1,
             doc='Mass transfer to permeate')
         # ==========================================================================
         # Mass flux summations
@@ -740,10 +740,13 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         for (t, x, p, j), v in self.flux_mass_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
+                comp = self.config.property_package.get_component(j)
                 if x == self.feed_side.length_domain.first():
-                    pass
+                    if comp.is_solvent():
+                        iscale.set_scaling_factor(v, 5e4)  # inverse of initial value from flux_mass_phase_comp_initialize
+                    elif comp.is_solute():
+                        iscale.set_scaling_factor(v, 1e6)  # inverse of initial value from flux_mass_phase_comp_initialize
                 else:
-                    comp = self.config.property_package.get_component(j)
                     if comp.is_solvent():  # scaling based on solvent flux equation
                         sf = (iscale.get_scaling_factor(self.A_comp[t, j])
                               * iscale.get_scaling_factor(self.dens_solvent)
