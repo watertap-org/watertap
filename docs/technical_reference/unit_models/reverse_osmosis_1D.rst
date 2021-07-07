@@ -37,7 +37,7 @@ Sets
    :header: "Description", "Symbol", "Indices"
 
    "Time", ":math:`t`", "[0]"
-   "Space", ":math:`x`", "Normalized ContinuousSet [0,1] discretized by number of finite elements"
+   "Space", ":math:`x`", "Normalized ContinuousSet [0 ... 1] discretized by number of finite elements"
    "Phases", ":math:`p`", "['Liq']"
    "Components", ":math:`j`", "['H2O', 'NaCl']*"
 
