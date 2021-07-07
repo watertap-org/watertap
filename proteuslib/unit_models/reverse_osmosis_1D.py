@@ -485,7 +485,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Mass transfer term")
         def eq_mass_transfer_term(b, t, x, p, j):
-            return b.mass_transfer_phase_comp[t, x, p, j] == -b.feed_side.mass_transfer_term[t, x, p, j]
+            if x == b.feed_side.length_domain.first():
+                return Constraint.Skip
+            else:
+                return b.mass_transfer_phase_comp[t, x, p, j] == -b.feed_side.mass_transfer_term[t, x, p, j]
 
         # ==========================================================================
         # Membrane area equation
@@ -508,10 +511,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Mass transfer term")
         def eq_mass_flux_equal_mass_transfer(b, t, x, p, j):
-            # if x == b.feed_side.length_domain.first() or x == b.feed_side.length_domain.last():
-            #     return b.flux_mass_phase_comp[t, x, p, j] == 0  # Constraint.Skip
-            # else:
-            return b.flux_mass_phase_comp[t, x, p, j] * b.width == -b.feed_side.mass_transfer_term[t, x, p, j]
+            if x == b.feed_side.length_domain.first():
+                return Constraint.Skip
+            else:
+                return b.flux_mass_phase_comp[t, x, p, j] * b.width == -b.feed_side.mass_transfer_term[t, x, p, j]
         # ==========================================================================
         # Mass flux equations (Jw and Js)
         @self.Constraint(self.flowsheet().config.time,
@@ -520,19 +523,19 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Solvent and solute mass flux")
         def eq_flux_mass(b, t, x, p, j):
-            # if x == b.feed_side.length_domain.first():
-            #     return Constraint.Skip
-            # else:
-            prop_feed = b.feed_side.properties[t, x]
-            prop_perm = b.permeate_side[t, x]
-            comp = self.config.property_package.get_component(j)
-            if comp.is_solvent():
-                return (b.flux_mass_phase_comp[t, x, p, j] == b.A_comp[t, j] * b.dens_solvent
-                        * ((prop_feed.pressure - prop_perm.pressure)
-                           - (prop_feed.pressure_osm - prop_perm.pressure_osm)))
-            elif comp.is_solute():
-                return (b.flux_mass_phase_comp[t, x, p, j] == b.B_comp[t, j]
-                        * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j]))
+            if x == b.feed_side.length_domain.first():
+                return Constraint.Skip
+            else:
+                prop_feed = b.feed_side.properties[t, x]
+                prop_perm = b.permeate_side[t, x]
+                comp = self.config.property_package.get_component(j)
+                if comp.is_solvent():
+                    return (b.flux_mass_phase_comp[t, x, p, j] == b.A_comp[t, j] * b.dens_solvent
+                            * ((prop_feed.pressure - prop_perm.pressure)
+                               - (prop_feed.pressure_osm - prop_perm.pressure_osm)))
+                elif comp.is_solute():
+                    return (b.flux_mass_phase_comp[t, x, p, j] == b.B_comp[t, j]
+                            * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j]))
 
         # ==========================================================================
         # Final permeate mass flow rate (of solvent and solute) --> Mp,j, final = sum(Mp,j)
@@ -543,7 +546,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          doc="Permeate mass flow rates exiting unit")
         def eq_permeate_production(b, t, p, j):
             return (b.permeate_out[t].get_material_flow_terms(p, j)
-                    == sum(b.permeate_side[t, x].get_material_flow_terms(p, j) for x in b.feed_side.length_domain))
+                    == sum(b.permeate_side[t, x].get_material_flow_terms(p, j)
+                           for x in b.feed_side.length_domain if x != 0))
         # ==========================================================================
         # Solute mass fraction in permeate across channel length --> Xp = Js/(Js + Jw)
 
@@ -552,10 +556,13 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          self.solute_list,
                          doc="Permeate mass fraction")
         def eq_mass_frac_permeate(b, t, x, j):
-            return (b.permeate_side[t, x].mass_frac_phase_comp['Liq', j]
-                    * sum(b.flux_mass_phase_comp[t, x, 'Liq', jj]
-                          for jj in b.config.property_package.component_list)
-                    == b.flux_mass_phase_comp[t, x, 'Liq', j])
+            if x == b.feed_side.length_domain.first():
+                return Constraint.Skip
+            else:
+                return (b.permeate_side[t, x].mass_frac_phase_comp['Liq', j]
+                        * sum(b.flux_mass_phase_comp[t, x, 'Liq', jj]
+                              for jj in b.config.property_package.component_list)
+                        == b.flux_mass_phase_comp[t, x, 'Liq', j])
         # ==========================================================================
         # Feed and permeate-side mass transfer connection --> Mp,j = Mf,transfer = Jj * W * L/n
 
@@ -565,8 +572,11 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Mass transfer from feed to permeate")
         def eq_connect_mass_transfer(b, t, x, p, j):
-            return (b.permeate_side[t, x].get_material_flow_terms(p, j)
-                    == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length / nfe)
+            if x == b.feed_side.length_domain.first():
+                return Constraint.Skip
+            else:
+                return (b.permeate_side[t, x].get_material_flow_terms(p, j)
+                        == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length / nfe)
         # # ==========================================================================
         # Feed and permeate-side isothermal conditions
 
@@ -730,25 +740,31 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         for (t, x, p, j), v in self.flux_mass_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
-                comp = self.config.property_package.get_component(j)
-                if comp.is_solvent():  # scaling based on solvent flux equation
-                    sf = (iscale.get_scaling_factor(self.A_comp[t, j])
-                          * iscale.get_scaling_factor(self.dens_solvent)
-                          * iscale.get_scaling_factor(self.feed_side.properties[t, x].pressure))
-                    iscale.set_scaling_factor(v, sf)
-                elif comp.is_solute():  # scaling based on solute flux equation
-                    sf = (iscale.get_scaling_factor(self.B_comp[t, j])
-                          * iscale.get_scaling_factor(self.feed_side.properties[t, x].conc_mass_phase_comp[p, j]))
-                    iscale.set_scaling_factor(v, sf)
+                if x == self.feed_side.length_domain.first():
+                    pass
+                else:
+                    comp = self.config.property_package.get_component(j)
+                    if comp.is_solvent():  # scaling based on solvent flux equation
+                        sf = (iscale.get_scaling_factor(self.A_comp[t, j])
+                              * iscale.get_scaling_factor(self.dens_solvent)
+                              * iscale.get_scaling_factor(self.feed_side.properties[t, x].pressure))
+                        iscale.set_scaling_factor(v, sf)
+                    elif comp.is_solute():  # scaling based on solute flux equation
+                        sf = (iscale.get_scaling_factor(self.B_comp[t, j])
+                              * iscale.get_scaling_factor(self.feed_side.properties[t, x].conc_mass_phase_comp[p, j]))
+                        iscale.set_scaling_factor(v, sf)
 
         for (t, x, p, j), v in self.eq_mass_flux_equal_mass_transfer.items():
             if iscale.get_scaling_factor(v) is None:
-                sf = iscale.get_scaling_factor(self.flux_mass_phase_comp[t, x, p, j])\
-                     * iscale.get_scaling_factor(self.width)
-                comp = self.config.property_package.get_component(j)
-                if comp.is_solute:
-                    sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
-                iscale.set_scaling_factor(v, sf)
+                if x == self.feed_side.length_domain.first():
+                    pass
+                else:
+                    sf = iscale.get_scaling_factor(self.flux_mass_phase_comp[t, x, p, j])\
+                         * iscale.get_scaling_factor(self.width)
+                    comp = self.config.property_package.get_component(j)
+                    if comp.is_solute:
+                        sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
+                    iscale.set_scaling_factor(v, sf)
 
         for (t, x, p, j), v in self.mass_transfer_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
