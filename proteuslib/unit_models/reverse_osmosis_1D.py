@@ -133,7 +133,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             doc="""Discretization scheme to use when transforming domain. See
     Pyomo documentation for supported schemes."""))
 
-
     CONFIG.declare("material_balance_type", ConfigValue(
             default=MaterialBalanceType.useDefault,
             domain=In(MaterialBalanceType),
@@ -821,4 +820,3 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         for t, c in self.eq_recovery_vol_phase.items():
             iscale.constraint_scaling_transform(self.eq_recovery_vol_phase[t], 1)
-
