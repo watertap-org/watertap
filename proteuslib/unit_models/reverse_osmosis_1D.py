@@ -520,6 +520,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Solvent and solute mass flux")
         def eq_flux_mass(b, t, x, p, j):
+            # if x == b.feed_side.length_domain.first():
+            #     return Constraint.Skip
+            # else:
             prop_feed = b.feed_side.properties[t, x]
             prop_perm = b.permeate_side[t, x]
             comp = self.config.property_package.get_component(j)
