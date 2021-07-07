@@ -280,7 +280,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         self.solute_list = Set()
 
         # Check configuration errors
-        # self._process_config()
+        self._process_config()
 
 
         # Add unit parameters
