@@ -16,7 +16,6 @@
 
     Reactions:
         H2O <---> H + OH
-        CaOH <---> Ca + OH
     Precipitation:
         Ca + 2 OH --> Ca(OH)2
 """
@@ -51,6 +50,11 @@ from idaes.generic_models.properties.core.reactions.equilibrium_constant import 
 
 # Import built-in van't Hoff function
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
+
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import \
+    solubility_product
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import \
+    ConstantKeq
 
 # Import specific pyomo objects
 from pyomo.environ import (ConcreteModel,
@@ -90,13 +94,22 @@ from pyomo.environ import log10
 
 __author__ = "Austin Ladshaw"
 
-def dummy_fun(b, *args, **kwargs):
+def dummy_h(b, *args, **kwargs):
     return 0
+
+def dummy_s(b, *args, **kwargs):
+    return 0
+
+def dummy_dens(b, *args, **kwargs):
+    return 55000 #mol/m**3
+
+def dummy_cp(b, *args, **kwargs):
+    return 635 #J/mol/K
 
 # Configuration dictionary
 thermo_config = {
     "components": {
-        'H2O': {"type": Solvent,
+        'H2O': {"type": Solvent, "valid_phase_types": PT.aqueousPhase,
               # Define the methods used to calculate the following properties
               "dens_mol_liq_comp": Perrys,
               "enth_mol_liq_comp": Perrys,
@@ -164,8 +177,7 @@ thermo_config = {
                                 },
                     # End parameter_data
                     },
-        'OH_-': {"type": Anion,
-                "charge": -1,
+        'OH_-': {"type": Anion, "charge": -1,
               # Define the methods used to calculate the following properties
               "dens_mol_liq_comp": Perrys,
               "enth_mol_liq_comp": Perrys,
@@ -215,39 +227,14 @@ thermo_config = {
                                 },
                     # End parameter_data
                     },
-        'CaOH_+': {"type": Cation, "charge": 1,
-              # Define the methods used to calculate the following properties
-              "dens_mol_liq_comp": Perrys,
-              "enth_mol_liq_comp": Perrys,
-              "cp_mol_liq_comp": Perrys,
-              "entr_mol_liq_comp": Perrys,
-              # Parameter data is always associated with the methods defined above
-              "parameter_data": {
-                    "mw": (57.082, pyunits.g/pyunits.mol),
-                    "dens_mol_liq_comp_coeff": {
-                        '1': (13.5, pyunits.kmol*pyunits.m**-3),
-                        '2': (1, pyunits.dimensionless),
-                        '3': (1, pyunits.K),
-                        '4': (1, pyunits.dimensionless)},
-                    "enth_mol_form_liq_comp_ref": (-756.18, pyunits.kJ/pyunits.mol),
-                    "cp_mol_liq_comp_coeff": {
-                        '1': (2.7637E5, pyunits.J/pyunits.kmol/pyunits.K),
-                        '2': (-2.0901E3, pyunits.J/pyunits.kmol/pyunits.K**2),
-                        '3': (8.125, pyunits.J/pyunits.kmol/pyunits.K**3),
-                        '4': (-1.4116E-2, pyunits.J/pyunits.kmol/pyunits.K**4),
-                        '5': (9.3701E-6, pyunits.J/pyunits.kmol/pyunits.K**5)},
-                    "entr_mol_form_liq_comp_ref": (16.95, pyunits.J/pyunits.K/pyunits.mol)
-                                },
-                    # End parameter_data
-                    },
         'Ca(OH)2': {"type": Component, "valid_phase_types": PT.solidPhase,
               # Define the methods used to calculate the following properties
               #     Nothing currently exists for solids in IDAES, so we
               #     are passing a dummy function that does nothing
-              "dens_mol_sol_comp": dummy_fun,
-              "enth_mol_sol_comp": dummy_fun,
-              "cp_mol_sol_comp": dummy_fun,
-              "entr_mol_sol_comp": dummy_fun,
+              "dens_mol_sol_comp": dummy_dens,
+              "enth_mol_sol_comp": dummy_h,
+              "cp_mol_sol_comp": dummy_cp,
+              "entr_mol_sol_comp": dummy_s,
                     },
               },
               # End Component list
@@ -326,6 +313,7 @@ if __name__ == "__main__":
     model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
     model.fs.rxn_params = GenericReactionParameterBlock(
             default={"property_package": model.fs.thermo_params, **reaction_config})
+
     # Cannot build unit model without methods for solids
     model.fs.unit = EquilibriumReactor(default={
             "property_package": model.fs.thermo_params,
@@ -337,3 +325,103 @@ if __name__ == "__main__":
             "has_pressure_change": False,
             "energy_balance_type": EnergyBalanceType.none
             })
+
+    zero = 1e-25
+    model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( zero )
+    model.fs.unit.inlet.mole_frac_comp[0, "Ca(OH)2"].fix( zero )
+
+    total_molar_density = 55.2  # mol/L (approximate density of seawater)
+    total_base = 1e-10
+    total_ca = 1e-4
+
+    model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( total_base/total_molar_density )
+    model.fs.unit.inlet.mole_frac_comp[0, "Ca_2+"].fix( total_ca/total_molar_density )
+
+    # Perform a summation of all non-H2O molefractions to find the H2O molefraction
+    sum = 0
+    for i in model.fs.unit.inlet.mole_frac_comp:
+        # NOTE: i will be a tuple with format (time, component)
+        if i[1] != "H2O":
+            sum += value(model.fs.unit.inlet.mole_frac_comp[i[0], i[1]])
+
+    model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1-sum )
+
+    model.fs.unit.inlet.pressure.fix(101325.0)
+    model.fs.unit.inlet.temperature.fix(298.)
+    model.fs.unit.outlet.temperature.fix(298.)
+    model.fs.unit.inlet.flow_mol.fix(10)
+
+
+    print("Degrees of freedom = " + str(degrees_of_freedom(model) ) )
+
+    # This is in a try block because a unit model may not have inherent reactions
+    '''try:
+        for rid in model.fs.thermo_params.inherent_reaction_idx:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
+            # Want to set eps in some fashion similar to this
+            if scale < 1e-16:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*1e-2
+            else:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
+
+        #Add scaling factors for reactions
+        for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
+            # i[0] = time, i[1] = reaction
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.properties_out[0.0].
+                    inherent_equilibrium_constraint[i[1]], 0.1)
+    except:
+        pass
+
+    #exit()
+
+    # Next, try adding scaling for species
+    min = 1e-10
+    for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+        # i[0] = phase, i[1] = species
+        if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
+            scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
+        else:
+            scale = min
+        iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]],
+            10/scale)
+        iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i],
+            10/scale)
+        iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i],
+            10/scale)
+        iscale.constraint_scaling_transform(
+            model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+        iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)'''
+
+    #iscale.calculate_scaling_factors(model.fs.unit)
+
+    # NOTE: Right now this works better without scaling???
+
+    solver.options['bound_push'] = 1e-20
+    solver.options['mu_init'] = 1e-6
+    solver.options['max_iter'] = 2000
+    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+
+    solver.options['bound_push'] = 1e-20
+    solver.options['mu_init'] = 1e-6
+    results = solver.solve(model, tee=True)
+
+    print("comp\toutlet.conc")
+    for i in model.fs.unit.inlet.mole_frac_comp:
+        print(str(i[1])+"\t"+str(value(model.fs.unit.outlet.mole_frac_comp[i[0], i[1]])*total_molar_density))
+    print()
+
+    print("Temperature =\t"+str(value(model.fs.unit.outlet.temperature[0])) )
+
+    print("Flow Mole =\t"+str(value(model.fs.unit.outlet.flow_mol[0])) )
+
+    print("Pressure =\t"+str(value(model.fs.unit.outlet.pressure[0])) )
+
+    print()
+
+    pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
+    pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
+
+    print("pH =\t" + str(pH))
+    print("pOH =\t" + str(pOH))
