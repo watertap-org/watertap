@@ -119,20 +119,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
     **Valid values:** {
     see property package for documentation.}"""))
 
-    CONFIG.declare(
-        "transformation_method",
-        ConfigValue(
-            default=useDefault,
-            description="Discretization method to use for DAE transformation",
-            doc="""Discretization method to use for DAE transformation. See Pyomo
-    documentation for supported transformations."""))
-
-    CONFIG.declare("transformation_scheme", ConfigValue(
-            default=useDefault,
-            description="Discretization scheme to use for DAE transformation",
-            doc="""Discretization scheme to use when transforming domain. See
-    Pyomo documentation for supported schemes."""))
-
     CONFIG.declare("material_balance_type", ConfigValue(
             default=MaterialBalanceType.useDefault,
             domain=In(MaterialBalanceType),
@@ -148,21 +134,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
     **MaterialBalanceType.elementTotal** - use total element balances,
     **MaterialBalanceType.total** - use total material balance.}"""))
 
-    CONFIG.declare("energy_balance_type", ConfigValue(
-            default=EnergyBalanceType.useDefault,
-            domain=In(EnergyBalanceType),
-            description="Energy balance construction flag",
-            doc="""Indicates what type of energy balance should be constructed,
-    **default** - EnergyBalanceType.useDefault.
-    **Valid values:** {
-    **EnergyBalanceType.useDefault - refer to property package for default
-    balance type
-    **EnergyBalanceType.none** - exclude energy balances,
-    **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
-    **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
-    **EnergyBalanceType.energyTotal** - single energy balance for material,
-    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-
     CONFIG.declare("momentum_balance_type", ConfigValue(
             default=MomentumBalanceType.pressureTotal,
             domain=In(MomentumBalanceType),
@@ -175,6 +146,20 @@ class ReverseOsmosis1DData(UnitModelBlockData):
     **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
     **MomentumBalanceType.momentumTotal** - single momentum balance for material,
     **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
+
+    CONFIG.declare(
+        "transformation_method",
+        ConfigValue(
+            default=useDefault,
+            description="Discretization method to use for DAE transformation",
+            doc="""Discretization method to use for DAE transformation. See Pyomo
+    documentation for supported transformations."""))
+
+    CONFIG.declare("transformation_scheme", ConfigValue(
+            default=useDefault,
+            description="Discretization scheme to use for DAE transformation",
+            doc="""Discretization scheme to use when transforming domain. See
+    Pyomo documentation for supported schemes."""))
 
     CONFIG.declare("finite_elements", ConfigValue(
             default=20,
@@ -270,7 +255,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # Populate feed side
         feed_side.add_material_balances(balance_type=self.config.material_balance_type,
                                         has_mass_transfer=True)
-        feed_side.add_energy_balances(balance_type=EnergyBalanceType.none)
         feed_side.add_momentum_balances(balance_type=self.config.momentum_balance_type,
                                         has_pressure_change=self.config.has_pressure_change)
         # Apply transformation to feed side
@@ -304,7 +288,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         # Add reference to pressure drop for feed side only
         if (self.config.has_pressure_change is True and
-                self.config.momentum_balance_type != 'none'):
+                self.config.momentum_balance_type != MomentumBalanceType.none):
             add_object_reference(self, 'deltaP', feed_side.deltaP)
 
         self._make_performance()
