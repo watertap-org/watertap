@@ -12,7 +12,6 @@
 ###############################################################################
 
 
-from enum import Enum
 # Import Pyomo libraries
 from pyomo.environ import (Var,
                            Set,
