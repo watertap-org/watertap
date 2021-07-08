@@ -1106,7 +1106,7 @@ class TestSimplePhosphorusRemoval:
 
         #Custom eps factors for reaction constraints
         #   (NOTE: The model is EXTREMELY sensitive to these numbers)
-        eps = 1e-20
+        '''eps = 1e-20
         model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
         model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
         model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
@@ -1120,12 +1120,44 @@ class TestSimplePhosphorusRemoval:
         model.fs.thermo_params.reaction_FeOH4_K.eps.value = 1e-16
         model.fs.thermo_params.reaction_FeHPO4_K.eps.value = 1e-20
         model.fs.thermo_params.reaction_FeH2PO4_K.eps.value = 1e-16
-        model.fs.thermo_params.reaction_FePO4_Ksp.eps.value = 1e-23
+        model.fs.thermo_params.reaction_FePO4_Ksp.eps.value = 1e-23'''
 
-        #Add scaling factors for reaction extent
+        # Iterate through the reactions to set appropriate eps values
+        for rid in model.fs.thermo_params.inherent_reaction_idx:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
+            # Want to set eps in some fashion similar to this
+            if scale < 1e-16:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*1e-2
+            else:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
+
+        '''#Add scaling factors for reaction extent
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)'''
+
+        #Add scaling factors for reactions
+        for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
+            # i[0] = time, i[1] = reaction
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
             iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.properties_out[0.0].
+                    inherent_equilibrium_constraint[i[1]], 0.1)
+
+        # Next, try adding scaling for species
+        min = 1e-10
+        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+            # i[0] = phase, i[1] = species
+            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
+                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
+            else:
+                scale = min
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+            iscale.constraint_scaling_transform(
+                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
         iscale.calculate_scaling_factors(model.fs.unit)
 
@@ -1185,7 +1217,7 @@ class TestSimplePhosphorusRemoval:
         phos_precip = value(model.fs.unit.outlet.mole_frac_comp[0, "FePO4(s)"])*total_molar_density
         phos_precip = phos_precip*95000
 
-        assert pytest.approx(7.10279, rel=1e-5) == total_phosphorus
+        assert pytest.approx(7.10286, rel=1e-5) == total_phosphorus
         assert pytest.approx(88.2050, rel=1e-5) == phos_precip
 
         total_iron = value(model.fs.unit.outlet.mole_frac_comp[0, "Fe_3+"])*total_molar_density
@@ -1201,5 +1233,5 @@ class TestSimplePhosphorusRemoval:
         iron_precip = value(model.fs.unit.outlet.mole_frac_comp[0, "FePO4(s)"])*total_molar_density
         iron_precip = iron_precip*55800
 
-        assert pytest.approx(3.99527, rel=1e-5) == total_iron
+        assert pytest.approx(3.99532, rel=1e-5) == total_iron
         assert pytest.approx(51.8088, rel=1e-5) == iron_precip
