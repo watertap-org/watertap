@@ -265,17 +265,16 @@ thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "OH_-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": gibbs_energy,
+                   "equilibrium_constant": ConstantKeq,
                    "equilibrium_form": log_power_law_equil,
                    "concentration_form": ConcentrationForm.molarity,
                    "parameter_data": {
                        "dh_rxn_ref": (55.830, pyunits.kJ/pyunits.mol),
-                       "ds_rxn_ref": (-80.7, pyunits.J/pyunits.mol/pyunits.K),
-                       "T_eq_ref": (300, pyunits.K),
+                       "k_eq_ref": (10**-14/55.2, pyunits.mol/pyunits.L),
 
                        # By default, reaction orders follow stoichiometry
                        #    manually set reaction order here to override
-                       "reaction_order": {("Liq", "H2O"): 0,
+                       "reaction_order": {("Liq", "H2O"): -1,
                                         ("Liq", "H_+"): 1,
                                         ("Liq", "OH_-"): 1}
                         }
@@ -307,6 +306,9 @@ reaction_config = {
 # Get default solver for testing
 solver = get_solver()
 
+## TODO: Replace this with more realistic test
+#       I am already having issues with this, so might as
+#       well work towards something more real 
 if __name__ == "__main__":
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
@@ -331,8 +333,8 @@ if __name__ == "__main__":
     model.fs.unit.inlet.mole_frac_comp[0, "Ca(OH)2"].fix( zero )
 
     total_molar_density = 55.2  # mol/L (approximate density of seawater)
-    total_base = 1e-10
-    total_ca = 1e-4
+    total_base = 1e-25
+    total_ca = 1e-25
 
     model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( total_base/total_molar_density )
     model.fs.unit.inlet.mole_frac_comp[0, "Ca_2+"].fix( total_ca/total_molar_density )
@@ -355,7 +357,7 @@ if __name__ == "__main__":
     print("Degrees of freedom = " + str(degrees_of_freedom(model) ) )
 
     # This is in a try block because a unit model may not have inherent reactions
-    '''try:
+    try:
         for rid in model.fs.thermo_params.inherent_reaction_idx:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
             # Want to set eps in some fashion similar to this
@@ -392,9 +394,9 @@ if __name__ == "__main__":
             10/scale)
         iscale.constraint_scaling_transform(
             model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-        iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)'''
+        iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
-    #iscale.calculate_scaling_factors(model.fs.unit)
+    iscale.calculate_scaling_factors(model.fs.unit)
 
     # NOTE: Right now this works better without scaling???
 
@@ -402,9 +404,11 @@ if __name__ == "__main__":
     solver.options['mu_init'] = 1e-6
     solver.options['max_iter'] = 2000
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+    #model.fs.unit.initialize(optarg=solver.options)
 
     solver.options['bound_push'] = 1e-20
     solver.options['mu_init'] = 1e-6
+    solver.options['max_iter'] = 2000
     results = solver.solve(model, tee=True)
 
     print("comp\toutlet.conc")
