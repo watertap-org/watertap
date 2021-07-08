@@ -646,30 +646,23 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             res = opt.solve(blk, tee=slc.tee)
 
     def _get_performance_contents(self, time_point=0):
-        pass
-        # var_dict = {}
-        # var_dict["Shell Area"] = self.shell.area
-        # var_dict["Shell Diameter"] = self.d_shell
-        # var_dict["Shell Length"] = self.shell.length
-        # var_dict["Tube Area"] = self.tube.area
-        # var_dict["Tube Outer Diameter"] = self.d_tube_outer
-        # var_dict["Tube Inner Diameter"] = self.d_tube_inner
-        # var_dict["Tube Length"] = self.tube.length
-        # var_dict["Number of Tubes"] = self.N_tubes
-        #
-        # return {"vars": var_dict}
+        var_dict = {}
+        var_dict["Membrane Area"] = self.area
+        var_dict["Membrane Length"] = self.length
+        var_dict["Membrane Width"] = self.width
+        #TODO: add more vars
+        return {"vars": var_dict}
 
     def _get_stream_table_contents(self, time_point=0):
         pass
-        # return create_stream_table_dataframe(
-        #     {
-        #         "Shell Inlet": self.shell_inlet,
-        #         "Shell Outlet": self.shell_outlet,
-        #         "Tube Inlet": self.tube_inlet,
-        #         "Tube Outlet": self.tube_outlet,
-        #     },
-        #     time_point=time_point,
-        # )
+        return create_stream_table_dataframe(
+            {
+                "Feed Inlet": self.feed_inlet,
+                "Feed Outlet": self.feed_outlet,
+                "Permeate Outlet": self.permeate_outlet,
+            },
+            time_point=time_point,
+        )
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
