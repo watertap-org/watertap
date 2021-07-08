@@ -17,18 +17,14 @@ from enum import Enum
 from pyomo.environ import (Var,
                            Set,
                            Param,
-                           SolverFactory,
                            Suffix,
                            NonNegativeReals,
                            NegativeReals,
-                           Reference,
-                           Block,
                            units as pyunits,
                            exp,
                            value,
                            Constraint)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
 # Import IDAES cores
 from idaes.core import (ControlVolume1DBlock,
                         declare_process_block_class,
@@ -36,16 +32,14 @@ from idaes.core import (ControlVolume1DBlock,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         UnitModelBlockData,
-                        useDefault,
-                        FlowDirection)
+                        useDefault)
 from idaes.core.control_volume1d import DistributedVars
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.util.constants import Constants as CONST
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_solver, scaling as iscale
-from idaes.core.util.initialization import fix_state_vars, revert_state_vars, solve_indexed_blocks
+from idaes.core.util.initialization import solve_indexed_blocks
 
 import idaes.logger as idaeslog
 
@@ -177,7 +171,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
     def _process_config(self):
         #TODO: add config errors here:
-        # prevent permeate_side.deltaP
         for c in self.config.property_package.component_list:
             comp = self.config.property_package.get_component(c)
             try:
@@ -262,8 +255,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # Add inlet/outlet ports for feed side
         self.add_inlet_port(name="feed_inlet", block=feed_side)
         self.add_outlet_port(name="feed_outlet", block=feed_side)
-        #TODO: Make permeate_side.permeate_out a ProductBlock instead?
-
         # Make indexed stateblock and separate stateblock for permeate-side and permeate outlet, respectively.
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
