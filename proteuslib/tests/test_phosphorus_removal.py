@@ -23,6 +23,12 @@
     aqueous equation that is mathematically equivalent to a solubility
     product constraint on the formation of FePO4.
 
+    NOTE: This test does NOT evaluate the precipitation function of IDAES
+    We are just trying to establish whether or not IDAES can handle
+    these basic problems. Under the condition of saturation, this
+    module would be mathematically equivalent to a precipitation
+    problem with the same species.
+
     Reactions:
         H2O <---> H + OH
         H2CO3 <---> H + HCO3
@@ -565,11 +571,6 @@ thermo_config = {
                                 },
                     # End parameter_data
                     },
-        #NOTE: This test does NOT evaluate the precipitation function of IDAES
-        #       We are just trying to establish whether or not IDAES can handle
-        #       these basic problems. Under the condition of saturation, this
-        #       module would be mathematically equivalent to a precipitation
-        #       problem with the same species.
         'FePO4(s)': {"type": Solute, "valid_phase_types": PT.aqueousPhase,
               # Define the methods used to calculate the following properties
               "dens_mol_liq_comp": Constant,
@@ -1104,24 +1105,6 @@ class TestSimplePhosphorusRemoval:
     def test_scaling_simple_phosphorus_removal(self, simple_phosphorus_removal):
         model = simple_phosphorus_removal
 
-        #Custom eps factors for reaction constraints
-        #   (NOTE: The model is EXTREMELY sensitive to these numbers)
-        '''eps = 1e-20
-        model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
-        model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
-        model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
-        model.fs.thermo_params.reaction_H3PO4_Ka1.eps.value = eps
-        model.fs.thermo_params.reaction_H3PO4_Ka2.eps.value = eps
-        model.fs.thermo_params.reaction_H3PO4_Ka3.eps.value = eps
-        model.fs.thermo_params.reaction_FeCl_K.eps.value = 1e-25
-        model.fs.thermo_params.reaction_FeOH_K.eps.value = 1e-25
-        model.fs.thermo_params.reaction_FeOH2_K.eps.value = 1e-25
-        model.fs.thermo_params.reaction_FeOH3_K.eps.value = 1e-20
-        model.fs.thermo_params.reaction_FeOH4_K.eps.value = 1e-16
-        model.fs.thermo_params.reaction_FeHPO4_K.eps.value = 1e-20
-        model.fs.thermo_params.reaction_FeH2PO4_K.eps.value = 1e-16
-        model.fs.thermo_params.reaction_FePO4_Ksp.eps.value = 1e-23'''
-
         # Iterate through the reactions to set appropriate eps values
         for rid in model.fs.thermo_params.inherent_reaction_idx:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
@@ -1130,11 +1113,6 @@ class TestSimplePhosphorusRemoval:
                 model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*1e-2
             else:
                 model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
-
-        '''#Add scaling factors for reaction extent
-        for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
-            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)'''
 
         #Add scaling factors for reactions
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
