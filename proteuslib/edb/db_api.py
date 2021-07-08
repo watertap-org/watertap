@@ -10,12 +10,6 @@
 # "https://github.com/nawi-hub/proteuslib/"
 #
 ###############################################################################
-# WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
-#
-# This module is a work in progress. Do not use it for real work right now.
-#
-# WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
-
 """
 Database operations API
 """
@@ -42,12 +36,23 @@ class ElectrolyteDB:
     DEFAULT_URL = "mongodb://localhost:27017"
     DEFAULT_DB = "electrolytedb"
 
-    # make sure these match lowercase names of the DataWrapper subclasses in the `data_model` module
+    # make sure these match lowercase names of the DataWrapper subclasses in
+    # the `data_model` module
     _known_collections = ("base", "component", "reaction")
 
     def __init__(self, url=DEFAULT_URL, db=DEFAULT_DB):
         self._client = MongoClient(host=url)
         self._db = getattr(self._client, db)
+        self._database_name = db
+        self._server_url = url
+
+    @property
+    def database(self):
+        return self._database_name
+
+    @property
+    def url(self):
+        return self._server_url
 
     def get_components(
         self, component_names: Optional[List[str]] = None
@@ -130,26 +135,30 @@ class ElectrolyteDB:
         for item in data:
             coll = getattr(self._db, rec_type)
             record = item.json_data if is_object else item
-            process_func = getattr(self, f"_process_{rec_type}")
-            processed_record = process_func(record)
-            coll.insert_one(processed_record)
+            coll.insert_one(self.preprocess_record(record, rec_type))
             num += 1
         return num
+
+    # XXX: This preprocessing overlaps with data_model.DataWrapper subclasses.
+    # XXX: It should all be moved to one place
+
+    @classmethod
+    def preprocess_record(cls, record, rec_type):
+        process_func = getattr(cls, f"_process_{rec_type}")
+        return process_func(record)
 
     @staticmethod
     def _process_component(rec):
         rec["elements"] = get_elements([rec["name"]])
         return rec
 
-    @classmethod
-    def _process_reaction(cls, rec):
-        # elements (for search)
+    @staticmethod
+    def _process_reaction(rec):
         rec["reactant_elements"] = get_elements(rec["components"])
-
         return rec
 
-    @classmethod
-    def _process_base(cls, rec):
+    @staticmethod
+    def _process_base(rec):
         return rec
 
     @staticmethod
