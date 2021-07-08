@@ -1,4 +1,4 @@
-{shut_up: [
+[
   {
     "valid_phase_types": [
       "PT.liquidPhase"
@@ -79,6 +79,7 @@
         }
       ]
     },
+    "type": "solute",
     "name": "Ca[OH]2"
   },
   {
@@ -245,7 +246,7 @@
       ]
     },
     "name": "Ca 2+",
-    "type": "cation",
+    "type": "cation"
   },
   {
     "valid_phase_types": [
@@ -327,7 +328,8 @@
         }
       ]
     },
-    "name": "Cl -"
+    "name": "Cl -",
+    "type": "anion"
   },
   {
     "valid_phase_types": [
@@ -493,7 +495,7 @@
       ]
     },
     "name": "H2CO3",
-    "type": "solute",
+    "type": "solute"
   },
   {
     "valid_phase_types": [
@@ -575,7 +577,8 @@
         }
       ]
     },
-    "name": "H2PO4 -"
+    "name": "H2PO4 -",
+    "type": "anion"
   },
   {
     "valid_phase_types": [
@@ -657,7 +660,8 @@
         }
       ]
     },
-    "name": "H2SO4"
+    "name": "H2SO4",
+    "type": "solute"
   },
   {
     "valid_phase_types": [
@@ -739,7 +743,8 @@
         }
       ]
     },
-    "name": "H3PO4"
+    "name": "H3PO4",
+    "type": "solute"
   },
   {
     "valid_phase_types": [
@@ -822,7 +827,7 @@
       ]
     },
     "name": "HCO3 -",
-    "type": "anion",
+    "type": "anion"
   },
   {
     "valid_phase_types": [
@@ -904,7 +909,8 @@
         }
       ]
     },
-    "name": "HOCl"
+    "name": "HOCl",
+    "type": "solute"
   },
   {
     "valid_phase_types": [
@@ -986,7 +992,8 @@
         }
       ]
     },
-    "name": "HPO4 2-"
+    "name": "HPO4 2-",
+    "type": "anion"
   },
   {
     "valid_phase_types": [
@@ -1068,7 +1075,8 @@
         }
       ]
     },
-    "name": "HSO4 -"
+    "name": "HSO4 -",
+    "type": "anion"
   },
   {
     "valid_phase_types": [
@@ -1151,7 +1159,7 @@
       ]
     },
     "name": "H +",
-    "type": "cation",
+    "type": "cation"
   },
   {
     "valid_phase_types": [
@@ -1233,7 +1241,8 @@
         }
       ]
     },
-    "name": "NaHCO3"
+    "name": "NaHCO3",
+    "type": "solute"
   },
   {
     "valid_phase_types": [
@@ -1315,7 +1324,8 @@
         }
       ]
     },
-    "name": "Na +"
+    "name": "Na +",
+    "type": "cation"
   },
   {
     "valid_phase_types": [
@@ -1397,7 +1407,8 @@
         }
       ]
     },
-    "name": "NCl3"
+    "name": "NCl3",
+    "type": "solute"
   },
   {
     "valid_phase_types": [
@@ -1479,7 +1490,8 @@
         }
       ]
     },
-    "name": "NH2Cl"
+    "name": "NH2Cl",
+    "type": "solute"
   },
   {
     "valid_phase_types": [
@@ -1561,7 +1573,8 @@
         }
       ]
     },
-    "name": "NH4 +"
+    "name": "NH4 +",
+    "type": "cation"
   },
   {
     "valid_phase_types": [
@@ -1643,7 +1656,8 @@
         }
       ]
     },
-    "name": "NHCl2"
+    "name": "NHCl2",
+    "type": "solute"
   },
   {
     "valid_phase_types": [
@@ -1725,7 +1739,8 @@
         }
       ]
     },
-    "name": "OCl -"
+    "name": "OCl -",
+    "type": "anion"
   },
   {
     "valid_phase_types": [
@@ -1808,7 +1823,7 @@
       ]
     },
     "name": "OH -",
-    "type": "anion",
+    "type": "anion"
   },
   {
     "valid_phase_types": [
@@ -1890,7 +1905,8 @@
         }
       ]
     },
-    "name": "PO4 3-"
+    "name": "PO4 3-",
+    "type": "anion"
   },
   {
     "valid_phase_types": [
@@ -1972,7 +1988,8 @@
         }
       ]
     },
-    "name": "SO4 2-"
+    "name": "SO4 2-",
+    "type": "anion"
   },
   {
     "dens_mol_liq_comp": "Perrys",
@@ -2145,7 +2162,7 @@
       ]
     },
     "name": "CO2",
-    "type: "solute",
+    "type": "solute"
   },
   {
     "dens_mol_liq_comp": "Perrys",
@@ -2311,7 +2328,7 @@
       ]
     },
     "name": "H2O",
-    "type": "solvent",
+    "type": "solvent"
   },
   {
     "dens_mol_liq_comp": "Perrys",
@@ -2483,6 +2500,7 @@
         }
       ]
     },
-    "name": "NH3"
+    "name": "NH3",
+    "type": "solute"
   }
 ]
