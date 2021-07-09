@@ -7,7 +7,6 @@ Technical Reference
    unit_models/index
    property_models/index
    tools/index
-   API Reference <../apidoc/modules>
 
 .. toctree::
    :maxdepth: 1

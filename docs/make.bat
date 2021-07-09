@@ -29,7 +29,7 @@ if errorlevel 9009 (
 	exit /b 1
 )
 
-%SPHINXAPIDOC%  -f -M -H ProteusLib -d 3 -o apidoc ../proteuslib "../*tests*"
+%SPHINXAPIDOC%  -f -M -H --no-toc ProteusLib -d 3 -o apidoc ../proteuslib "../*tests*"
 %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 goto end
 
