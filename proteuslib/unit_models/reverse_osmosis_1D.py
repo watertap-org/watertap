@@ -315,7 +315,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         units_meta = \
             self.config.property_package.get_metadata().get_derived_units
 
-        nfe = self.config.finite_elements
+        nfe = len(self.feed_side.length_domain)-1
 
         # ==========================================================================
         """ Unit model variables"""
@@ -566,13 +566,14 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         def eq_permeate_isothermal(b, t, x):
             return b.feed_side.properties[t, x].temperature == \
                    b.permeate_side[t, x].temperature
+
         # ==========================================================================
         # isothermal conditions at permeate outlet
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="Isothermal assumption for permeate out")
         def eq_permeate_outlet_isothermal(b, t):
-            return b.feed_side.properties[t, 0].temperature == \
+            return b.feed_side.properties[t, b.feed_side.length_domain.first()].temperature == \
                    b.permeate_out[t].temperature
         # ==========================================================================
         # isobaric conditions across permeate channel and at permeate outlet
