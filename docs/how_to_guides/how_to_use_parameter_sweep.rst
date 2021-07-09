@@ -39,7 +39,7 @@ Once this is done, import the parameter sweep tool
 
 .. testcode::
 
-    from proteuslib.tools.parameter_sweep import parameter_sweep
+    from proteuslib.tools.parameter_sweep import parameter_sweep, LinearSample
 
 Conceptually, regardless of the number of iterations necessary to test each possible combination of variables, it is only necessary to build, simulate, and set up the model once.
 Thus, these steps are left to the user and handled outside the parameter sweep function.
@@ -68,11 +68,12 @@ Once this sequence of setup steps is performed, the parameters to be varied shou
 .. testcode::
 
     sweep_params = dict()
-    sweep_params['Feed Concentration'] = (m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'], 0.005, 0.155, 4)
-    sweep_params['Water Recovery'] = (m.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'], 0.3, 0.7, 4)
+    sweep_params['Feed Concentration'] = LinearSample(m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'], 0.005, 0.155, 4)
+    sweep_params['Water Recovery'] = LinearSample(m.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'], 0.3, 0.7, 4)
 
-where the basic pattern is ``dict_name['Short/Pretty-print Name'] = (m.path.to.model.variable, lower_limit, upper_limit, num_samples)``.
+where the basic pattern is ``dict_name['Short/Pretty-print Name'] = LinearSample(m.path.to.model.variable, lower_limit, upper_limit, num_samples)``.
 For example, "Feed Concentration", which is accessed in the model variable ``m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl']``, is to be varied between 0.005 and 0.155 with 4 equally-spaced values, i.e., ``[0.005, 0.055, 0.105, 0.155]``.
+It is also possible to the parameter sweep tool to doing random sampling (uniform or normal), or for the user to specify their own sampling method.
 In this case, the 2 parameters will each be varied across 4 values for a total of 16 combinations.
 Note that there is no limit on the number of sweep variables specified or their resolution besides the practical limit of how long it will take to optimize using each combination of parameters (e.g., if 5 different variables are provided and each one is individually represented with 20 discrete values, the total number of combinations is 20^5 = 3.2 million!).
 
