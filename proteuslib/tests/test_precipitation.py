@@ -270,11 +270,11 @@ thermo_config = {
                    "concentration_form": ConcentrationForm.molarity,
                    "parameter_data": {
                        "dh_rxn_ref": (55.830, pyunits.kJ/pyunits.mol),
-                       "k_eq_ref": (10**-14/55.2, pyunits.mol/pyunits.L),
+                       "k_eq_ref": (10**-14, pyunits.mol**2/pyunits.L**2),
 
                        # By default, reaction orders follow stoichiometry
                        #    manually set reaction order here to override
-                       "reaction_order": {("Liq", "H2O"): -1,
+                       "reaction_order": {("Liq", "H2O"): 0,
                                         ("Liq", "H_+"): 1,
                                         ("Liq", "OH_-"): 1}
                         }
@@ -294,10 +294,29 @@ reaction_config = {
                    "amount": pyunits.mol,
                    "temperature": pyunits.K},
     "equilibrium_reactions": {
-        "dummy": {
-                "stoichiometry": {},
-                "equilibrium_form": log_power_law_equil,
-               }
+        "CaOH_Ksp": {
+                    "stoichiometry": {  ("Sol", "Ca(OH)2"): -1,
+                                        ("Liq", "Ca_2+"): 1,
+                                        ("Liq", "OH_-"): 2},
+                    "heat_of_reaction": constant_dh_rxn,
+                    "equilibrium_constant": ConstantKeq,
+                    "equilibrium_form": solubility_product,
+                    "concentration_form": ConcentrationForm.molarity,
+                    "parameter_data": {
+                        "dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
+                        "k_eq_ref": (10**-5.26, pyunits.mol**3/pyunits.L**3),
+
+                        # By default, reaction orders follow stoichiometry
+                        #    manually set reaction order here to override
+                        #   NOTE: In a solubility product function, the
+                        #       precipitate does not show up in the
+                        #       mathematical function.
+                        "reaction_order": { ("Sol", "Ca(OH)2"): 0,
+                                            ("Liq", "Ca_2+"): 1,
+                                            ("Liq", "OH_-"): 2}
+                        }
+                        # End parameter_data
+                }
          }
          # End equilibrium_reactions
     }
@@ -308,7 +327,7 @@ solver = get_solver()
 
 ## TODO: Replace this with more realistic test
 #       I am already having issues with this, so might as
-#       well work towards something more real 
+#       well work towards something more real
 if __name__ == "__main__":
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
@@ -321,7 +340,7 @@ if __name__ == "__main__":
             "property_package": model.fs.thermo_params,
             "reaction_package": model.fs.rxn_params,
             "has_rate_reactions": False,
-            "has_equilibrium_reactions": False,
+            "has_equilibrium_reactions": True,
             "has_heat_transfer": False,
             "has_heat_of_reaction": False,
             "has_pressure_change": False,
@@ -329,8 +348,8 @@ if __name__ == "__main__":
             })
 
     zero = 1e-25
-    model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( zero )
     model.fs.unit.inlet.mole_frac_comp[0, "Ca(OH)2"].fix( zero )
+    model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( zero )
 
     total_molar_density = 55.2  # mol/L (approximate density of seawater)
     total_base = 1e-25
@@ -376,16 +395,42 @@ if __name__ == "__main__":
     except:
         pass
 
-    #exit()
+    # This is in a try block because a unit model may not have equilibrium reactions
+    try:
+        for rid in model.fs.rxn_params.equilibrium_reaction_idx:
+            scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
+
+            # Not all equilibrium reactions will have an eps factor
+            try:
+                # Want to set eps in some fashion similar to this
+                if scale < 1e-16:
+                    model.fs.rxn_params.component("reaction_"+rid).eps.value = scale*1e-2
+                else:
+                    model.fs.rxn_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
+            except:
+                pass
+
+        #Add scaling factors for reactions
+        for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
+            # i[0] = time, i[1] = reaction
+            scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.reactions[0.0].
+                    equilibrium_constraint[i[1]], 0.1)
+    except:
+        pass
 
     # Next, try adding scaling for species
-    min = 1e-10
+    min = 1e-5
     for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
         # i[0] = phase, i[1] = species
         if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
             scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
         else:
             scale = min
+        print(i[1])
+        print(model.fs.unit.inlet.mole_frac_comp[0, i[1]].value)
+        print(10/scale)
         iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]],
             10/scale)
         iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i],
@@ -397,6 +442,9 @@ if __name__ == "__main__":
         iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
     iscale.calculate_scaling_factors(model.fs.unit)
+
+    #model.fs.unit.control_volume.pprint()
+    #exit()
 
     # NOTE: Right now this works better without scaling???
 
@@ -410,6 +458,11 @@ if __name__ == "__main__":
     solver.options['mu_init'] = 1e-6
     solver.options['max_iter'] = 2000
     results = solver.solve(model, tee=True)
+
+    print("comp\tinlet.conc")
+    for i in model.fs.unit.inlet.mole_frac_comp:
+        print(str(i[1])+"\t"+str(value(model.fs.unit.inlet.mole_frac_comp[i[0], i[1]])*total_molar_density))
+    print()
 
     print("comp\toutlet.conc")
     for i in model.fs.unit.inlet.mole_frac_comp:
