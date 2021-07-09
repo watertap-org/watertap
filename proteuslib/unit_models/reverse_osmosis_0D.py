@@ -38,6 +38,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_solver
+from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -1045,12 +1046,26 @@ class ReverseOsmosisData(UnitModelBlockData):
         )
 
     def _get_performance_contents(self, time_point=0):
-        # TODO: make a unit specific stream table
         var_dict = {}
+        var_dict["Membrane Area"] = self.area
+        if hasattr(self, "length"):
+            var_dict["Membrane Length"] = self.length
+        if hasattr(self, "width"):
+            var_dict["Membrane Width"] = self.width
         if hasattr(self, "deltaP"):
             var_dict["Pressure Change"] = self.deltaP[time_point]
-
+        # TODO: add more vars
         return {"vars": var_dict}
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {
+                "Feed Inlet": self.inlet,
+                "Feed Outlet": self.retentate,
+                "Permeate Outlet": self.permeate,
+            },
+            time_point=time_point,
+        )
 
     def get_costing(self, module=None, **kwargs):
         self.costing = Block()
