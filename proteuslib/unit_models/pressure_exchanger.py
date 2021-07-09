@@ -38,7 +38,6 @@ import idaes.core.util.scaling as iscale
 
 _log = idaeslog.getLogger(__name__)
 
-
 @declare_process_block_class("PressureExchanger")
 class PressureExchangerData(UnitModelBlockData):
     """
