@@ -40,7 +40,6 @@ Content
    how_to_guides/index
    technical_reference/index
    background/index
-   API Documentation<apidoc/modules>
    license
    copyright
 
