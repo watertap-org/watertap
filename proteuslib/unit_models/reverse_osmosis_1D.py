@@ -262,8 +262,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # Populate feed side
         feed_side.add_material_balances(balance_type=self.config.material_balance_type,
                                         has_mass_transfer=True)
-        feed_side.add_energy_balances(balance_type=self.config.energy_balance_type,
-                                      has_enthalpy_transfer=True)
+        # feed_side.add_energy_balances(balance_type=self.config.energy_balance_type,
+        #                               has_enthalpy_transfer=True)
         feed_side.add_momentum_balances(balance_type=self.config.momentum_balance_type,
                                         has_pressure_change=self.config.has_pressure_change)
         # Apply transformation to feed side
