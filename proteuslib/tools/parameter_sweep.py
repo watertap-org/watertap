@@ -22,11 +22,11 @@ from idaes.core.util import get_solver
 
 # ================================================================
 
-class Sample(ABC): 
+class _Sample(ABC): 
 
     def __init__(self, pyomo_object, *args, **kwargs):
-        if pyomo_object is not None:
-            assert pyomo_object.is_parameter_type() or pyomo_object.is_variable_type() or pyomo_object.is_indexed()
+        if not (pyomo_object.is_parameter_type() or pyomo_object.is_variable_type() or pyomo_object.is_indexed()):
+            raise ValueError(f"The sweep parameter needs to be a pyomo Param, Var, or Indexed but {type(pyomo_object)} was provided instead.")
         
         self.pyomo_object = pyomo_object 
         self.setup(*args, **kwargs)
@@ -41,38 +41,43 @@ class Sample(ABC):
 
 # ================================================================
 
-class LinearSample(Sample):
+class RandomSample(_Sample):
+    pass
+
+class FixedSample(_Sample):
+    pass
+
+# ================================================================
+
+class LinearSample(FixedSample):
 
     def sample(self, num_samples): 
         return np.linspace(self.lower_limit, self.upper_limit, self.num_samples)
 
     def setup(self, lower_limit, upper_limit, num_samples):
-        self.type = "linear" 
         self.lower_limit = lower_limit
         self.upper_limit = upper_limit
         self.num_samples = num_samples
 
 # ================================================================
 
-class UniformSample(Sample):
+class UniformSample(RandomSample):
 
     def sample(self, num_samples): 
         return np.random.uniform(self.lower_limit, self.upper_limit, num_samples)
 
     def setup(self, lower_limit, upper_limit):
-        self.type = "uniform_random" 
         self.lower_limit = lower_limit
         self.upper_limit = upper_limit
 
 # ================================================================
 
-class NormalSample(Sample):
+class NormalSample(RandomSample):
 
     def sample(self, num_samples): 
         return np.random.normal(self.mean, self.sd, num_samples)
 
     def setup(self, mean, sd):
-        self.type = "normal_random" 
         self.mean = mean
         self.sd = sd
 
@@ -109,15 +114,17 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
             param_values.append(p)
 
 
-        if sampling_type == "linear":
+        if sampling_type == "fixed":
             # Form an array with every possible combination of parameter values
             global_combo_array = np.array(np.meshgrid(*param_values, indexing="ij"))
             global_combo_array = global_combo_array.reshape(num_var_params, -1).T
 
-        else:
+        elif sampling_type == "random":
             sorting = np.argsort(param_values[0])
             global_combo_array = np.vstack(param_values).T
             global_combo_array = global_combo_array[sorting, :]
+        else:
+            raise ValueError(f"Unknown sampling type: {sampling_type}")
 
         # Test if the global_combo_array is in row-major order
         if not global_combo_array.flags.c_contiguous:
@@ -125,14 +132,16 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
             global_combo_array = np.ascontiguousarray(global_combo_array)
 
     else:
-        if sampling_type == "linear":
+        if sampling_type == "fixed":
             nx = 1
             for k, v in d.items():
                 nx *= v.num_samples
 
             assert type(nx) == int
-        else:
+        elif sampling_type == "random":
             nx = num_samples
+        else:
+            raise ValueError(f"Unknown sampling type: {sampling_type}")
 
         # Allocate memory to hold the Bcast array
         global_combo_array = np.zeros((nx, num_var_params), dtype=np.float64)
@@ -165,7 +174,7 @@ def _update_model_values(m, param_dict, values):
 
         if isinstance(item,(tuple,list)):
             param = item[0]
-        elif isinstance(item, Sample):
+        elif isinstance(item, _Sample):
             param = item.pyomo_object
         else:
             param = item
@@ -239,6 +248,8 @@ def _default_optimize(model, options=None, tee=False):
 
 def _process_sweep_params(sweep_params):
 
+    sampling_type = None
+
     # Check the list of parameters to make sure they are valid
     for i, key in enumerate(sweep_params.keys()):
 
@@ -247,11 +258,18 @@ def _process_sweep_params(sweep_params):
             sweep_params[key] = LinearSample(*sweep_params[key])
 
         # Get the type of sampling
-        if i == 0:
-            sampling_type = getattr(sweep_params[key], "type", None)
+        if isinstance(sweep_params[key],FixedSample):
+            current_sampling_type = "fixed"
+        elif isinstance(sweep_params[key],RandomSample):
+            current_sampling_type = "random"
         else:
-            if sampling_type != getattr(sweep_params[key], "type", None):
-                raise ValueError("Cannot mix sampling types")
+            raise ValueError(f"Unknown sampling type: {type(sweep_params[key])}")
+
+        # Check to make sure only one sampling type is provided
+        if sampling_type is None:
+            sampling_type = current_sampling_type
+        elif current_sampling_type != sampling_type:
+            raise ValueError("Cannot mix sampling types")
 
     return sweep_params, sampling_type
 
