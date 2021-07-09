@@ -57,10 +57,10 @@ class _Sample(ABC):
 # ================================================================
 
 class RandomSample(_Sample):
-    pass
+    sampling_type = SamplingType.RANDOM
 
 class FixedSample(_Sample):
-    pass
+    sampling_type = SamplingType.FIXED
 
 # ================================================================
 
@@ -256,19 +256,14 @@ def _process_sweep_params(sweep_params):
     sampling_type = None
 
     # Check the list of parameters to make sure they are valid
-    for i, key in enumerate(sweep_params.keys()):
+    for k in sweep_params:
 
         # Convert to using Sample class
-        if isinstance(sweep_params[key], (list, tuple)):
-            sweep_params[key] = LinearSample(*sweep_params[key])
+        if isinstance(sweep_params[k], (list, tuple)):
+            sweep_params[k] = LinearSample(*sweep_params[k])
 
         # Get the type of sampling
-        if isinstance(sweep_params[key],FixedSample):
-            current_sampling_type = SamplingType.FIXED
-        elif isinstance(sweep_params[key],RandomSample):
-            current_sampling_type = SamplingType.RANDOM
-        else:
-            raise ValueError(f"Unknown sampling type: {type(sweep_params[key])}")
+        current_sampling_type = sweep_params[k].sampling_type
 
         # Check to make sure only one sampling type is provided
         if sampling_type is None:
