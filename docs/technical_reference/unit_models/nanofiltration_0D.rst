@@ -103,3 +103,10 @@ Permeate mass flow:
 .. math::
   M_{P,t,j}=x_A \cdot J_{Avg,t,j}
 
+
+Class Documentation
+-------------------
+
+.. automodule:: proteuslib.unit_models.nanofiltration_0D
+   :members:
+   :noindex:

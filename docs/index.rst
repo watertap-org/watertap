@@ -1,4 +1,4 @@
-.. index::
+﻿.. index::
    pair: proteuslib;Home
 
 Welcome to ProteusLib's documentation!
@@ -40,6 +40,7 @@ Content
    how_to_guides/index
    technical_reference/index
    background/index
+   API Documentation<apidoc/modules>
    license
    copyright
 
@@ -49,4 +50,3 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
