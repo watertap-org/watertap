@@ -26,7 +26,8 @@ from proteuslib.tools.parameter_sweep import (_init_mpi,
                                                parameter_sweep,
                                                LinearSample,
                                                UniformSample,
-                                               NormalSample)
+                                               NormalSample,
+                                               SamplingType)
 
 # -----------------------------------------------------------------------------
 
@@ -76,7 +77,7 @@ class TestParallelManager():
         param_dict['var_B']  = LinearSample(None, range_B[0], range_B[1], nn_B)
         param_dict['var_C']  = LinearSample(None, range_C[0], range_C[1], nn_C)
 
-        global_combo_array = _build_combinations(param_dict, 'fixed', None, comm, rank, num_procs)
+        global_combo_array = _build_combinations(param_dict, SamplingType.FIXED, None, comm, rank, num_procs)
 
         assert np.shape(global_combo_array)[0] == nn_A*nn_B*nn_C
         assert np.shape(global_combo_array)[1] == len(param_dict)
@@ -104,7 +105,7 @@ class TestParallelManager():
         param_dict['var_B']  = UniformSample(None, range_B[0], range_B[1])
         param_dict['var_C']  = UniformSample(None, range_C[0], range_C[1])
 
-        global_combo_array = _build_combinations(param_dict, 'random', nn, comm, rank, num_procs)
+        global_combo_array = _build_combinations(param_dict, SamplingType.RANDOM, nn, comm, rank, num_procs)
 
         assert np.shape(global_combo_array)[0] == nn
         assert np.shape(global_combo_array)[1] == len(param_dict)
@@ -127,7 +128,7 @@ class TestParallelManager():
         param_dict['var_B']  = NormalSample(None, range_B[0], range_B[1])
         param_dict['var_C']  = NormalSample(None, range_C[0], range_C[1])
 
-        global_combo_array = _build_combinations(param_dict, 'random', nn, comm, rank, num_procs)
+        global_combo_array = _build_combinations(param_dict, SamplingType.RANDOM, nn, comm, rank, num_procs)
 
         assert np.shape(global_combo_array)[0] == nn
         assert np.shape(global_combo_array)[1] == len(param_dict)
@@ -159,7 +160,7 @@ class TestParallelManager():
         param_dict['var_B']  = LinearSample(None, range_B[0], range_B[1], nn_B)
         param_dict['var_C']  = LinearSample(None, range_C[0], range_C[1], nn_C)
 
-        global_combo_array = _build_combinations(param_dict, 'fixed', None, comm, rank, num_procs)
+        global_combo_array = _build_combinations(param_dict, SamplingType.FIXED, None, comm, rank, num_procs)
 
         test = np.array_split(global_combo_array, num_procs, axis=0)[rank]
 
@@ -186,8 +187,8 @@ class TestParallelManager():
         m = model
 
         param_dict = dict()
-        param_dict['input_a'] = (m.fs.input['a'], None, None, None)
-        param_dict['input_b'] = (m.fs.input['b'], None, None, None)
+        param_dict['input_a'] = LinearSample(m.fs.input['a'], None, None, None)
+        param_dict['input_b'] = LinearSample(m.fs.input['b'], None, None, None)
 
         original_a = value(m.fs.input['a'])
         original_b = value(m.fs.input['b'])

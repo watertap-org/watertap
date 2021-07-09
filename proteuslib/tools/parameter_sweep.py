@@ -17,8 +17,15 @@ import os
 import itertools
 import warnings
 
+from enum import IntEnum, auto
 from abc import abstractmethod, ABC 
 from idaes.core.util import get_solver
+
+# ================================================================
+
+class SamplingType(IntEnum):
+    FIXED = auto()
+    RANDOM = auto()
 
 # ================================================================
 
@@ -26,9 +33,16 @@ class _Sample(ABC):
 
     def __init__(self, pyomo_object, *args, **kwargs):
         if pyomo_object is not None:
-            if not (pyomo_object.is_parameter_type() or pyomo_object.is_variable_type() or pyomo_object.is_indexed()):
-                raise ValueError(f"The sweep parameter needs to be a pyomo Param, Var, or Indexed but {type(pyomo_object)} was provided instead.")
-        
+            # Check for indexed with single value
+            if pyomo_object.is_indexed() and len(pyomo_object.values()) == 1:
+                print(pyomo_object.values())
+                exit()
+                pyomo_object = pyomo_object.values()[0]
+
+            # Make sure we are a Var() or Param()
+            if not (pyomo_object.is_parameter_type() or pyomo_object.is_variable_type()):
+                raise ValueError(f"The sweep parameter needs to be a pyomo Param or Var but {type(pyomo_object)} was provided instead.")
+
         self.pyomo_object = pyomo_object 
         self.setup(*args, **kwargs)
 
@@ -115,12 +129,12 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
             param_values.append(p)
 
 
-        if sampling_type == "fixed":
+        if sampling_type == SamplingType.FIXED:
             # Form an array with every possible combination of parameter values
             global_combo_array = np.array(np.meshgrid(*param_values, indexing="ij"))
             global_combo_array = global_combo_array.reshape(num_var_params, -1).T
 
-        elif sampling_type == "random":
+        elif sampling_type == SamplingType.RANDOM:
             sorting = np.argsort(param_values[0])
             global_combo_array = np.vstack(param_values).T
             global_combo_array = global_combo_array[sorting, :]
@@ -133,13 +147,13 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
             global_combo_array = np.ascontiguousarray(global_combo_array)
 
     else:
-        if sampling_type == "fixed":
+        if sampling_type == SamplingType.FIXED:
             nx = 1
             for k, v in d.items():
                 nx *= v.num_samples
 
             assert type(nx) == int
-        elif sampling_type == "random":
+        elif sampling_type == SamplingType.RANDOM:
             nx = num_samples
         else:
             raise ValueError(f"Unknown sampling type: {sampling_type}")
@@ -173,12 +187,7 @@ def _update_model_values(m, param_dict, values):
 
     for k, item in enumerate(param_dict.values()):
 
-        if isinstance(item,(tuple,list)):
-            param = item[0]
-        elif isinstance(item, _Sample):
-            param = item.pyomo_object
-        else:
-            param = item
+        param = item.pyomo_object
 
         if param.is_variable_type():
             # Fix the single value to values[k]
@@ -187,11 +196,6 @@ def _update_model_values(m, param_dict, values):
         elif param.is_parameter_type():
             # Fix the single value to values[k]
             param.set_value(values[k])
-
-        elif param.is_indexed():
-            # Handle indexed sets recursively
-            new_values = np.full(len(param.values()),values[k])
-            _update_model_values(m,param,new_values)
 
         else:
             raise RuntimeError(f"Unrecognized Pyomo object {param}")
@@ -260,9 +264,9 @@ def _process_sweep_params(sweep_params):
 
         # Get the type of sampling
         if isinstance(sweep_params[key],FixedSample):
-            current_sampling_type = "fixed"
+            current_sampling_type = SamplingType.FIXED
         elif isinstance(sweep_params[key],RandomSample):
-            current_sampling_type = "random"
+            current_sampling_type = SamplingType.RANDOM
         else:
             raise ValueError(f"Unknown sampling type: {type(sweep_params[key])}")
 
