@@ -58,9 +58,8 @@ Depending on how the functions you've defined work, this could be as straightfor
     # simulate
     RO_flowsheet.solve(m)
 
-    # set up and perform initial optimization
-    # (performing initial optimization is optional)
-    RO_flowsheet.optimize(m)
+    # set up the model for optimization
+    RO_flowsheet.optimize_set_up(m)
 
 where ``m`` is the flowsheet model that results after the initial "build" step and subsequent operations are performed on that object.
 
