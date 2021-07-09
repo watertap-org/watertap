@@ -25,8 +25,9 @@ from idaes.core.util import get_solver
 class _Sample(ABC): 
 
     def __init__(self, pyomo_object, *args, **kwargs):
-        if not (pyomo_object.is_parameter_type() or pyomo_object.is_variable_type() or pyomo_object.is_indexed()):
-            raise ValueError(f"The sweep parameter needs to be a pyomo Param, Var, or Indexed but {type(pyomo_object)} was provided instead.")
+        if pyomo_object is not None:
+            if not (pyomo_object.is_parameter_type() or pyomo_object.is_variable_type() or pyomo_object.is_indexed()):
+                raise ValueError(f"The sweep parameter needs to be a pyomo Param, Var, or Indexed but {type(pyomo_object)} was provided instead.")
         
         self.pyomo_object = pyomo_object 
         self.setup(*args, **kwargs)
