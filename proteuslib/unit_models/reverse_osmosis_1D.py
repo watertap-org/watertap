@@ -380,22 +380,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             units=units_meta('length')**2,
             doc='Membrane area')
 
-        # TODO: Add initial value, bounds and real equation later. Just need for now since add_geometry() generates
-        #  cross-sectional area var that I am referencing
-        # self.feed_area_cross = Var(
-        #     initialize=1,
-        #     bounds=(1e-3, 1),
-        #     domain=NonNegativeReals,
-        #     units=units_meta('length')**2,
-        #     doc='Cross-sectional area of feed channel')
-        #
-        # self.permeate_area_cross = Var(
-        #     initialize=1,
-        #     bounds=(1e-3, 1),
-        #     domain=NonNegativeReals,
-        #     units=units_meta('length')**2,
-        #     doc='Cross-sectional area of feed channel')
-
         self.width = Var(
             initialize=1,
             bounds=(1e-1, 1e3),
@@ -403,51 +387,22 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             units=units_meta('length'),
             doc='Membrane width')
 
-        # @self.Constraint(doc="Cross-sectional area of feed channel")
-        # def eq_feed_area_cross(b):
-        #     return b.feed_area_cross == 1 * 1 * b.width  # TODO: add channel_height and spacer_porosity
-        #
-        # @self.Constraint(doc="Cross-sectional area of permeate channel")
-        # def eq_permeate_area_cross(b):
-        #     return b.permeate_area_cross == 1 * 1 * b.width  # TODO: add channel_height and spacer_porosity
-
         # mass transfer
+        # TODO: replace self.recovery_vol_phase[t, 'Liq'] w/self.recovery_mass_phase_comp[t, 'Liq', j])
         def mass_transfer_phase_comp_initialize(b, t, x, p, j):
             return value(self.feed_side.properties[t, x].get_material_flow_terms('Liq', j)
-                         * 0.5) # self.recovery_mass_phase_comp[t, 'Liq', j])
+                         * self.recovery_vol_phase[t, 'Liq'])
 
         self.mass_transfer_phase_comp = Var(
             self.flowsheet().config.time,
             self.feed_side.length_domain,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
-            initialize=0.1,  # mass_transfer_phase_comp_initialize,
+            initialize=mass_transfer_phase_comp_initialize,
             bounds=(1e-8, 1e6),
             domain=NonNegativeReals,
             units=units_meta('mass') * units_meta('time')**-1 * units_meta('length')**-1,
             doc='Mass transfer to permeate')
-        # ==========================================================================
-        # Mass flux summations
-
-        # @self.Expression(self.flowsheet().config.time,
-        #                  self.config.property_package.phase_list,
-        #                  self.config.property_package.component_list,
-        #                  doc="Total component mass flux expression")
-        # def flux_mass_phase_comp_sum(b, t, p, j):
-        #     return sum(b.flux_mass_phase_comp[t, x, p, j]
-        #                for x in self.feed_side.length_domain)
-        # ==========================================================================
-        # # # Flow balance
-        #
-        # @self.Constraint(self.flowsheet().config.time,
-        #                  doc="Unit flow balance")
-        # def eq_flow_balance(b, t):
-        #     xin = b.feed_side.length_domain.first()
-        #     xout = b.feed_side.length_domain.last()
-        #     return (b.feed_side.properties[t, xin].flow_vol_phase['Liq'] ==
-        #             b.feed_side.properties[t, xout].flow_vol_phase['Liq']
-        #             + b.permeate_out[t].flow_vol_phase['Liq'])
-
         # ==========================================================================
         # Volumetric Recovery rate
 
@@ -478,12 +433,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             return b.area == b.length * b.width
         # ==========================================================================
         # Mass flux = feed mass transfer equation
-        # --> Jw * dAm = dM = Mtransfer*length*dx
-        # --> Jw = Mtransfer * length *dx / dAm = Mtransfer / width
-        # assuming mass_transfer_term in 1dCV represents Mtransfer * x / L
-        # thus mass_transfer_term * L = Mtransfer *x , and x* = x/L   (x*= normalized length position)
-        # then Jw * Width * x* * Length = mass_transfer_term * Length
-        # and Jw * Width * x* = mass_transfer_term
 
         @self.Constraint(self.flowsheet().config.time,
                          self.feed_side.length_domain,
@@ -528,21 +477,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             return (b.permeate_out[t].get_material_flow_terms(p, j)
                     == sum(b.permeate_side[t, x].get_material_flow_terms(p, j)
                            for x in b.feed_side.length_domain if x != 0))
-        # ==========================================================================
-        # Solute mass fraction in permeate across channel length --> Xp = Js/(Js + Jw)
-
-        # @self.Constraint(self.flowsheet().config.time,
-        #                  self.feed_side.length_domain,
-        #                  self.solute_list,
-        #                  doc="Permeate mass fraction")
-        # def eq_mass_frac_permeate(b, t, x, j):
-        #     if x == b.feed_side.length_domain.first():
-        #         return Constraint.Skip
-        #     else:
-        #         return (b.permeate_side[t, x].mass_frac_phase_comp['Liq', j]
-        #                 * sum(b.flux_mass_phase_comp[t, x, 'Liq', jj]
-        #                       for jj in b.config.property_package.component_list)
-        #                 == b.flux_mass_phase_comp[t, x, 'Liq', j])
         # ==========================================================================
         # Feed and permeate-side mass transfer connection --> Mp,j = Mf,transfer = Jj * W * L/n
 
@@ -754,7 +688,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 iscale.set_scaling_factor(v, sf)
 
         for v in self.feed_side.pressure_dx.values():
-            # if iscale.get_scaling_factor(v, warning=True) is None:
             iscale.set_scaling_factor(v, 1e6)
 
         # Scale constraints
@@ -770,8 +703,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         iscale.constraint_scaling_transform(self.eq_area, sf)
 
         for ind, c in self.eq_permeate_production.items():
-            # TODO: fix this scaling factor
-            # sf = iscale.get_scaling_factor()
+            # TODO: revise this scaling factor
             iscale.constraint_scaling_transform(c, 1)
 
         for ind, c in self.eq_flux_mass.items():
@@ -793,10 +725,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         for (t, x), c in self.eq_permeate_outlet_isobaric.items():
             sf = iscale.get_scaling_factor(self.permeate_side[t, x].pressure)
             iscale.constraint_scaling_transform(c, sf)
-
-        # for (t, x, j), c in self.eq_mass_frac_permeate.items():
-        #     sf = iscale.get_scaling_factor(self.permeate_side[t, x].mass_frac_phase_comp['Liq', j])
-        #     iscale.constraint_scaling_transform(c, sf)
 
         for t, c in self.eq_recovery_vol_phase.items():
             iscale.constraint_scaling_transform(self.eq_recovery_vol_phase[t], 1)
