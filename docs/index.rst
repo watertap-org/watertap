@@ -48,5 +48,7 @@ Indices and tables
 ------------------
 
 * :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+
+..
+    TODO: Add back in if we build the whole API doc
+    * :ref:`modindex`

@@ -28,8 +28,8 @@ if errorlevel 9009 (
 	echo.http://sphinx-doc.org/
 	exit /b 1
 )
-
-%SPHINXAPIDOC%  -f -M -H ProteusLib -d 3 -o apidoc ../proteuslib "../*tests*"
+REM TODO: Revisit %SPHINXAPIDOC% and get it working adequately with readthedocs
+REM %SPHINXAPIDOC%  -f -M -H ProteusLib -d 3 -o apidoc ../proteuslib "../*tests*"
 %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 goto end
 

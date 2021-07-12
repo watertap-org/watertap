@@ -32,6 +32,7 @@ from fastjsonschema import compile
 from .schemas import schemas
 from . import data_model
 from .error import ValidationError
+from .db_api import ElectrolyteDB
 
 __author__ = "Dan Gunter (LBNL)"
 
@@ -60,7 +61,7 @@ def validate(obj: Union[Dict, TextIO, Path, str, data_model.DataWrapper], obj_ty
         if not obj_type:
             raise ValidationError("Cannot determine type: Missing value for 'obj_type' parameter")
         assert obj_type in _schema_map.values()
-    _Validator(schemas[obj_type]).validate(obj)
+    _Validator(schemas[obj_type], obj_type=obj_type).validate(obj)
 
 
 _schema_map = {
@@ -72,7 +73,8 @@ _schema_map = {
 class _Validator:
     """Module internal class to do validation.
     """
-    def __init__(self, schema: Dict = None, schema_file: Union[Path, str] = None):
+    def __init__(self, schema: Dict = None, schema_file: Union[Path, str] = None,
+                 obj_type: str = None):
         if schema is not None:
             self._schema = schema  # use provided dictionary
         else:
@@ -80,6 +82,7 @@ class _Validator:
             if not hasattr(schema_file, "open"):
                 schema_file = Path(schema_file)
             self._schema = json.load(schema_file.open())
+        self._rec_type = obj_type
         # Create validation function from schema
         self._validate_func = compile(self._schema)
 
@@ -93,6 +96,7 @@ class _Validator:
             TypeError: If 'instance' is not an acceptable type of object
             ValidationError: If validation fails
         """
+        # load/parse record
         f, d = None, None
         if hasattr(instance, "open"):  # file-like
             f = instance.open()
@@ -101,9 +105,18 @@ class _Validator:
         elif isinstance(instance, str):
             f = open(instance)
         else:
-            raise TypeError("validate: input object is not file-like, dict-like, or string")
+            raise TypeError("validate: input object is not file-like, dict-like, "
+                            "or string")
         if f is not None:
             d = json.load(f)
+
+        # preprocess to add derived fields
+        try:
+            d = ElectrolyteDB.preprocess_record(d, self._rec_type)
+        except KeyError as err:
+            raise ValidationError(f"During pre-processing, missing field: {err}")
+
+        # validate
         try:
             result = self._validate_func(d)
         except fastjsonschema.JsonSchemaException as err:
