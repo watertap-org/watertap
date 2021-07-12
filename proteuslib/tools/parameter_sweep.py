@@ -33,9 +33,7 @@ class _Sample(ABC):
 
     def __init__(self, pyomo_object, *args, **kwargs):
         # Check for indexed with single value
-        if pyomo_object.is_indexed() and len(pyomo_object.values()) == 1:
-            print(pyomo_object.values())
-            exit()
+        if pyomo_object.is_indexed() and len(pyomo_object) == 1:
             pyomo_object = pyomo_object.values()[0]
 
         # Make sure we are a Var() or Param()
