@@ -64,6 +64,10 @@ class TestParallelManager():
     def test_linear_build_combinations(self):
         comm, rank, num_procs = _init_mpi()
 
+        A_param = pyo.Param(initialize=0.0, mutable=True)
+        B_param = pyo.Param(initialize=1.0, mutable=True)
+        C_param = pyo.Param(initialize=2.0, mutable=True)
+
         range_A = [0.0, 10.0]
         range_B = [1.0, 20.0]
         range_C = [2.0, 30.0]
@@ -73,9 +77,9 @@ class TestParallelManager():
         nn_C = 6
 
         param_dict = dict()
-        param_dict['var_A'] = LinearSample(None, range_A[0], range_A[1], nn_A)
-        param_dict['var_B']  = LinearSample(None, range_B[0], range_B[1], nn_B)
-        param_dict['var_C']  = LinearSample(None, range_C[0], range_C[1], nn_C)
+        param_dict['var_A'] = LinearSample(A_param, range_A[0], range_A[1], nn_A)
+        param_dict['var_B']  = LinearSample(B_param, range_B[0], range_B[1], nn_B)
+        param_dict['var_C']  = LinearSample(C_param, range_C[0], range_C[1], nn_C)
 
         global_combo_array = _build_combinations(param_dict, SamplingType.FIXED, None, comm, rank, num_procs)
 
@@ -96,14 +100,18 @@ class TestParallelManager():
         nn = int(1e5)
 
         # Uniform random sampling [lower_limit, upper_limit]
+        A_param = pyo.Param(initialize=-10.0, mutable=True)
+        B_param = pyo.Param(initialize=0.0, mutable=True)
+        C_param = pyo.Param(initialize=10.0, mutable=True)
+
         range_A = [-10.0, 0.0]
         range_B = [0.0, 10.0]
         range_C = [10.0, 20.0]
 
         param_dict = dict()
-        param_dict['var_A'] = UniformSample(None, range_A[0], range_A[1])
-        param_dict['var_B']  = UniformSample(None, range_B[0], range_B[1])
-        param_dict['var_C']  = UniformSample(None, range_C[0], range_C[1])
+        param_dict['var_A'] = UniformSample(A_param, range_A[0], range_A[1])
+        param_dict['var_B']  = UniformSample(B_param, range_B[0], range_B[1])
+        param_dict['var_C']  = UniformSample(C_param, range_C[0], range_C[1])
 
         global_combo_array = _build_combinations(param_dict, SamplingType.RANDOM, nn, comm, rank, num_procs)
 
@@ -119,14 +127,18 @@ class TestParallelManager():
         assert np.all(global_combo_array[:, 2] < range_C[1])
 
         # Normal random sampling [mean, stdev]
+        A_param = pyo.Param(initialize=10.0, mutable=True)
+        B_param = pyo.Param(initialize=100.0, mutable=True)
+        C_param = pyo.Param(initialize=1000.0, mutable=True)
+
         range_A = [10.0, 5.0]
         range_B = [100.0, 50.0]
         range_C = [1000.0, 0.0]
 
         param_dict = dict()
-        param_dict['var_A'] = NormalSample(None, range_A[0], range_A[1])
-        param_dict['var_B']  = NormalSample(None, range_B[0], range_B[1])
-        param_dict['var_C']  = NormalSample(None, range_C[0], range_C[1])
+        param_dict['var_A'] = NormalSample(A_param, range_A[0], range_A[1])
+        param_dict['var_B']  = NormalSample(B_param, range_B[0], range_B[1])
+        param_dict['var_C']  = NormalSample(C_param, range_C[0], range_C[1])
 
         global_combo_array = _build_combinations(param_dict, SamplingType.RANDOM, nn, comm, rank, num_procs)
 
@@ -147,6 +159,10 @@ class TestParallelManager():
 
         comm, rank, num_procs = _init_mpi()
 
+        A_param = pyo.Param(initialize=0.0, mutable=True)
+        B_param = pyo.Param(initialize=1.0, mutable=True)
+        C_param = pyo.Param(initialize=2.0, mutable=True)
+
         range_A = [0.0, 10.0]
         range_B = [1.0, 20.0]
         range_C = [2.0, 30.0]
@@ -156,9 +172,9 @@ class TestParallelManager():
         nn_C = 6
 
         param_dict = dict()
-        param_dict['var_A'] = LinearSample(None, range_A[0], range_A[1], nn_A)
-        param_dict['var_B']  = LinearSample(None, range_B[0], range_B[1], nn_B)
-        param_dict['var_C']  = LinearSample(None, range_C[0], range_C[1], nn_C)
+        param_dict['var_A'] = LinearSample(A_param, range_A[0], range_A[1], nn_A)
+        param_dict['var_B']  = LinearSample(B_param, range_B[0], range_B[1], nn_B)
+        param_dict['var_C']  = LinearSample(C_param, range_C[0], range_C[1], nn_C)
 
         global_combo_array = _build_combinations(param_dict, SamplingType.FIXED, None, comm, rank, num_procs)
 

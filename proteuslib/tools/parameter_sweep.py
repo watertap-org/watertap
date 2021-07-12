@@ -32,17 +32,15 @@ class SamplingType(IntEnum):
 class _Sample(ABC): 
 
     def __init__(self, pyomo_object, *args, **kwargs):
-        if pyomo_object is not None:
-            # Check for indexed with single value
-            if pyomo_object.is_indexed() and len(pyomo_object.values()) == 1:
-                print(pyomo_object.values())
-                exit()
-                pyomo_object = pyomo_object.values()[0]
+        # Check for indexed with single value
+        if pyomo_object.is_indexed() and len(pyomo_object.values()) == 1:
+            print(pyomo_object.values())
+            exit()
+            pyomo_object = pyomo_object.values()[0]
 
-            # Make sure we are a Var() or Param()
-            if not (pyomo_object.is_parameter_type() or pyomo_object.is_variable_type()):
-                raise ValueError(f"The sweep parameter needs to be a pyomo Param or Var but {type(pyomo_object)} was provided instead.")
-
+        # Make sure we are a Var() or Param()
+        if not (pyomo_object.is_parameter_type() or pyomo_object.is_variable_type()):
+            raise ValueError(f"The sweep parameter needs to be a pyomo Param or Var but {type(pyomo_object)} was provided instead.")
         self.pyomo_object = pyomo_object 
         self.setup(*args, **kwargs)
 
