@@ -60,6 +60,23 @@ class TestParallelManager():
         assert type(num_procs) == int
         assert 0 <= rank < num_procs
 
+    @pytest.mark.unit
+    def test_single_index_unrolled(self):
+        indexed_var = pyo.Var(['a'])
+        indexed_var.construct()
+
+        ls = LinearSample(indexed_var, None, None, None)
+
+        assert ls.pyomo_object is indexed_var['a']
+
+    @pytest.mark.unit
+    def test_multiple_indices_error(self):
+        indexed_var = pyo.Var(['a', 'b'])
+        indexed_var.construct()
+
+        with pytest.raises(Exception):
+            ls = LinearSample(indexed_var, None, None, None)
+
     @pytest.mark.component
     def test_linear_build_combinations(self):
         comm, rank, num_procs = _init_mpi()
