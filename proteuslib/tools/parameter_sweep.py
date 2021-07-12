@@ -147,12 +147,14 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
             nx = 1
             for k, v in d.items():
                 nx *= v.num_samples
-
-            assert type(nx) == int
         elif sampling_type == SamplingType.RANDOM:
             nx = num_samples
         else:
             raise ValueError(f"Unknown sampling type: {sampling_type}")
+
+        if not float(nx).is_integer():
+            raise RuntimeError(f"Total number of samples must be integer valued")
+        nx = int(nx)
 
         # Allocate memory to hold the Bcast array
         global_combo_array = np.zeros((nx, num_var_params), dtype=np.float64)
