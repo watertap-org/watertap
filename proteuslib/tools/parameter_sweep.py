@@ -17,13 +17,13 @@ import os
 import itertools
 import warnings
 
-from enum import IntEnum, auto
+from enum import Enum, auto
 from abc import abstractmethod, ABC 
 from idaes.core.util import get_solver
 
 # ================================================================
 
-class SamplingType(IntEnum):
+class SamplingType(Enum):
     FIXED = auto()
     RANDOM = auto()
 
