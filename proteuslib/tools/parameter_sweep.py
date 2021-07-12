@@ -118,12 +118,8 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
 
         for k, v in d.items():
             # Build a vector of discrete values for this parameter
-            # and record the parameter's name
-            # v[1] = start, v[2] = stop, v[3] = resolution (number of elements)
-            # p = np.linspace(v[1], v[2], v[3])
             p = v.sample(num_samples)
             param_values.append(p)
-
 
         if sampling_type == SamplingType.FIXED:
             # Form an array with every possible combination of parameter values
