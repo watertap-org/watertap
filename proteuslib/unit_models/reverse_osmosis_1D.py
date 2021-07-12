@@ -39,6 +39,7 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.initialization import solve_indexed_blocks
+from enum import Enum, auto
 
 import idaes.logger as idaeslog
 
@@ -48,7 +49,23 @@ __author__ = "Adam Atia"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+class ConcentrationPolarizationType(Enum):
+    none = auto()                    # no concentration polarization
+    fixed = auto()                   # concentration polarization modulus is a user specified value
+    calculated = auto()              # calculate concentration polarization (concentration at membrane interface)
 
+
+class MassTransferCoefficient(Enum):
+    none = auto()                    # mass transfer coefficient not utilized for concentration polarization effect
+    fixed = auto()                   # mass transfer coefficient is a user specified value
+    calculated = auto()              # mass transfer coefficient is calculated
+
+
+class PressureChangeType(Enum):
+    fixed_per_stage = auto()         # pressure drop across membrane channel is a user-specified value
+    fixed_per_unit_length = auto()   # pressure drop per unit length across membrane channel is a user-specified value
+    calculated = auto()              # pressure drop across membrane channel is calculated
+    
 @declare_process_block_class("ReverseOsmosis1D")
 class ReverseOsmosis1DData(UnitModelBlockData):
     """Standard 1D Reverse Osmosis Unit Model Class."""
@@ -154,6 +171,61 @@ class ReverseOsmosis1DData(UnitModelBlockData):
     **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
     **MomentumBalanceType.momentumTotal** - single momentum balance for material,
     **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
+
+    CONFIG.declare("pressure_change_type", ConfigValue(
+        default=PressureChangeType.calculated,
+        domain=In(PressureChangeType),
+        description="Pressure change term construction flag",
+        doc="""
+            Indicates what type of pressure change calculation will be made. To use any of the 
+            ``pressure_change_type`` options to account for pressure drop, the configuration keyword 
+            ``has_pressure_change`` must also be set to ``True``. Also, if a value is specified for pressure 
+            change, it should be negative to represent pressure drop. 
+
+            **default** - ``PressureChangeType.calculated`` 
+
+
+        .. csv-table::
+            :header: "Configuration Options", "Description"
+
+            "``PressureChangeType.fixed_per_stage``", "Specify an estimated value for pressure drop across the membrane feed channel"
+            "``PressureChangeType.fixed_per_unit_length``", "Specify an estimated value for pressure drop per unit length across the membrane feed channel"
+            "``PressureChangeType.calculated``", "Allow model to perform calculation of pressure drop across the membrane feed channel"
+        """))
+
+    CONFIG.declare("concentration_polarization_type", ConfigValue(
+        default=ConcentrationPolarizationType.calculated,
+        domain=In(ConcentrationPolarizationType),
+        description="External concentration polarization effect in RO",
+        doc="""
+            Options to account for concentration polarization.
+
+            **default** - ``ConcentrationPolarizationType.calculated`` 
+
+        .. csv-table::
+            :header: "Configuration Options", "Description"
+
+            "``ConcentrationPolarizationType.none``", "Simplifying assumption to ignore concentration polarization"
+            "``ConcentrationPolarizationType.fixed``", "Specify an estimated value for the concentration polarization modulus"
+            "``ConcentrationPolarizationType.calculated``", "Allow model to perform calculation of membrane-interface concentration"
+        """))
+
+    CONFIG.declare("mass_transfer_coefficient", ConfigValue(
+        default=MassTransferCoefficient.calculated,
+        domain=In(MassTransferCoefficient),
+        description="Mass transfer coefficient in RO feed channel",
+        doc="""
+            Options to account for mass transfer coefficient.
+
+            **default** - ``MassTransferCoefficient.calculated`` 
+
+        .. csv-table::
+            :header: "Configuration Options", "Description"
+
+            "``MassTransferCoefficient.none``", "Mass transfer coefficient not used in calculations"
+            "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
+            "``MassTransferCoefficient.calculated``", "Allow model to perform calculation of mass transfer coefficient"
+        """))
 
     CONFIG.declare(
         "transformation_method",
@@ -592,7 +664,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # Step 2: Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-
+        #
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
 
