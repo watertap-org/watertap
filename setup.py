@@ -112,6 +112,7 @@ setup(
             # other requirements
             "pytest",  # test framework
             "pytest-cov",  # code coverage
+            "mongomock", # mongodb mocking for testing
         ],
     },
     package_data={  # Optional

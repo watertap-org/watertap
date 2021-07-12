@@ -143,7 +143,8 @@ def test_result():
             Component,
             {"name": "foo", "elements": ["H"], "type": "solvent", "parameter_data": {}},
         ),
-        (Reaction, {"name": "foo", "type": "equilibrium", "parameter_data": {}}),
+        (Reaction, {"name": "foo", "type": "equilibrium", "parameter_data": {},
+                    "components": ["H2O"]}),
     ],
 )
 def test_config_generator_required(data_wrapper_class, required):
@@ -153,8 +154,8 @@ def test_config_generator_required(data_wrapper_class, required):
         except_i = all_fields[:i] + all_fields[i+1:]
         missing_a_field = {f: required[f] for f in except_i}
         print(f"Data missing field '{all_fields[i]}': {missing_a_field}")
-        if data_wrapper_class is Component and all_fields[i] == "type":
-            # type field will be filled by pre-processor for components
+        if data_wrapper_class is Component and all_fields[i] in ("elements", "type"):
+            # 'elements' field will be filled by pre-processor for components
             _ = data_wrapper_class(missing_a_field).idaes_config
         else:
             with pytest.raises(ValidationError):
@@ -380,8 +381,9 @@ def test_reaction_from_idaes_config(debug_logging):
     # make sure it is a valid Reaction
     validate(reaction)
 
-    # in the generated config 'reaction_order' will be dropped since it is a runtime addition, not something
-    # we store in the DB. So for comparison purposes drop it from the original config as well
+    # in the generated config 'reaction_order' will be dropped since it is a
+    # runtime addition, not something we store in the DB. So for comparison
+    # purposes drop it from the original config as well
     del carbonation_reaction_config["equilibrium_reactions"]["CO2_to_H2CO3"][
         "parameter_data"
     ]["reaction_order"]
