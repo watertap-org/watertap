@@ -424,7 +424,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 return Constraint.Skip
             else:
                 return b.mass_transfer_phase_comp[t, x, p, j] == -b.feed_side.mass_transfer_term[t, x, p, j]
-
         # ==========================================================================
         # Membrane area equation
 
@@ -465,7 +464,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 elif comp.is_solute():
                     return (b.flux_mass_phase_comp[t, x, p, j] == b.B_comp[t, j]
                             * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j]))
-
         # ==========================================================================
         # Final permeate mass flow rate (of solvent and solute) --> Mp,j, final = sum(Mp,j)
 
@@ -503,7 +501,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             else:
                 return b.feed_side.properties[t, b.feed_side.length_domain.first()].temperature == \
                        b.feed_side.properties[t, x].temperature
-
         # # ==========================================================================
         # Feed and permeate-side isothermal conditions
 
@@ -513,7 +510,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         def eq_permeate_isothermal(b, t, x):
             return b.feed_side.properties[t, x].temperature == \
                    b.permeate_side[t, x].temperature
-
         # ==========================================================================
         # isothermal conditions at permeate outlet
 
