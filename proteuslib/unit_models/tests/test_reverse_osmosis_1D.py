@@ -66,7 +66,7 @@ def test_config():
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis1D(default={"property_package": m.fs.properties})
 
-    assert len(m.fs.unit.config) == 12
+    assert len(m.fs.unit.config) == 13
 
     #
     assert not m.fs.unit.config.dynamic
@@ -166,6 +166,7 @@ class TestReverseOsmosis():
                                'eq_flux_mass': Constraint,
                                'eq_connect_mass_transfer': Constraint,
                                # 'eq_connect_enthalpy_transfer': Constraint,
+                               'eq_feed_isothermal': Constraint,
                                'eq_permeate_isothermal': Constraint,
                                'eq_recovery_vol_phase': Constraint,
                                # 'eq_recovery_mass_phase_comp': Constraint,
@@ -173,7 +174,7 @@ class TestReverseOsmosis():
                                # 'eq_over_pressure_ratio': Constraint,
                                'eq_area': Constraint,
                                'eq_mass_flux_equal_mass_transfer': Constraint,
-                               'eq_mass_frac_permeate': Constraint,
+                               # 'eq_mass_frac_permeate': Constraint,
                                # 'eq_feed_area_cross': Constraint,
                                # 'eq_permeate_area_cross': Constraint,
                                'eq_permeate_outlet_isothermal': Constraint,
@@ -282,14 +283,14 @@ class TestReverseOsmosis():
     @pytest.mark.component
     def test_solution(self, RO_frame):
         m = RO_frame
-        assert (pytest.approx(71.54, rel=1e-3) ==
+        assert (pytest.approx(104.70, rel=1e-3) ==
                 value(m.fs.unit.area))
-        assert (pytest.approx(2.262e-3, rel=1e-3) ==
+        assert (pytest.approx(9.891e-4, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp[0, 1, 'Liq', 'H2O']))
-        assert (pytest.approx(2.045e-6, rel=1e-3) ==
+        assert (pytest.approx(2.003e-6, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp[0, 1, 'Liq', 'NaCl']))
         assert (pytest.approx(0.3896, rel=1e-3) ==
                 value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'H2O']))
-        assert (pytest.approx(1.2159e-4, rel=1e-3) ==
+        assert (pytest.approx(1.8186e-4, rel=1e-3) ==
                 value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'NaCl']))
         assert (pytest.approx(0, rel=1e-3) == value(m.fs.unit.deltaP[0, .5]))

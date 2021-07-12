@@ -531,18 +531,18 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # ==========================================================================
         # Solute mass fraction in permeate across channel length --> Xp = Js/(Js + Jw)
 
-        @self.Constraint(self.flowsheet().config.time,
-                         self.feed_side.length_domain,
-                         self.solute_list,
-                         doc="Permeate mass fraction")
-        def eq_mass_frac_permeate(b, t, x, j):
-            if x == b.feed_side.length_domain.first():
-                return Constraint.Skip
-            else:
-                return (b.permeate_side[t, x].mass_frac_phase_comp['Liq', j]
-                        * sum(b.flux_mass_phase_comp[t, x, 'Liq', jj]
-                              for jj in b.config.property_package.component_list)
-                        == b.flux_mass_phase_comp[t, x, 'Liq', j])
+        # @self.Constraint(self.flowsheet().config.time,
+        #                  self.feed_side.length_domain,
+        #                  self.solute_list,
+        #                  doc="Permeate mass fraction")
+        # def eq_mass_frac_permeate(b, t, x, j):
+        #     if x == b.feed_side.length_domain.first():
+        #         return Constraint.Skip
+        #     else:
+        #         return (b.permeate_side[t, x].mass_frac_phase_comp['Liq', j]
+        #                 * sum(b.flux_mass_phase_comp[t, x, 'Liq', jj]
+        #                       for jj in b.config.property_package.component_list)
+        #                 == b.flux_mass_phase_comp[t, x, 'Liq', j])
         # ==========================================================================
         # Feed and permeate-side mass transfer connection --> Mp,j = Mf,transfer = Jj * W * L/n
 
@@ -557,6 +557,19 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             else:
                 return (b.permeate_side[t, x].get_material_flow_terms(p, j)
                         == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length / nfe)
+        # # ==========================================================================
+        # Feed-side isothermal conditions
+
+        @self.Constraint(self.flowsheet().config.time,
+                         self.feed_side.length_domain,
+                         doc="Isothermal assumption for permeate")
+        def eq_feed_isothermal(b, t, x):
+            if x == b.feed_side.length_domain.first():
+                return Constraint.Skip
+            else:
+                return b.feed_side.properties[t, b.feed_side.length_domain.first()].temperature == \
+                       b.feed_side.properties[t, x].temperature
+
         # # ==========================================================================
         # Feed and permeate-side isothermal conditions
 
@@ -765,6 +778,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.flux_mass_phase_comp[ind])
             iscale.constraint_scaling_transform(c, sf)
 
+        for (t, x), c in self.eq_feed_isothermal.items():
+            sf = iscale.get_scaling_factor(self.feed_side.properties[t, x].temperature)
+            iscale.constraint_scaling_transform(c, sf)
+
         for (t, x), c in self.eq_permeate_isothermal.items():
             sf = iscale.get_scaling_factor(self.feed_side.properties[t, x].temperature)
             iscale.constraint_scaling_transform(c, sf)
@@ -777,9 +794,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.permeate_side[t, x].pressure)
             iscale.constraint_scaling_transform(c, sf)
 
-        for (t, x, j), c in self.eq_mass_frac_permeate.items():
-            sf = iscale.get_scaling_factor(self.permeate_side[t, x].mass_frac_phase_comp['Liq', j])
-            iscale.constraint_scaling_transform(c, sf)
+        # for (t, x, j), c in self.eq_mass_frac_permeate.items():
+        #     sf = iscale.get_scaling_factor(self.permeate_side[t, x].mass_frac_phase_comp['Liq', j])
+        #     iscale.constraint_scaling_transform(c, sf)
 
         for t, c in self.eq_recovery_vol_phase.items():
             iscale.constraint_scaling_transform(self.eq_recovery_vol_phase[t], 1)
