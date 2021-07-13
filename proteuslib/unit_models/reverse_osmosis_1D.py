@@ -22,7 +22,8 @@ from pyomo.environ import (Var,
                            units as pyunits,
                            exp,
                            value,
-                           Constraint)
+                           Constraint,
+                           Block)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import (ControlVolume1DBlock,
@@ -686,6 +687,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             },
             time_point=time_point,
         )
+
+    def get_costing(self, module=None, **kwargs):
+        self.costing = Block()
+        module.ReverseOsmosis_costing(self.costing, **kwargs)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
