@@ -370,7 +370,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # ==========================================================================
         """ Add references to control volume geometry."""
         add_object_reference(self, 'length', feed_side.length)
-        add_object_reference(self, 'feed_area_cross', feed_side.area)
+        add_object_reference(self, 'area_cross', feed_side.area)
 
         # Add reference to pressure drop for feed side only
         if (self.config.has_pressure_change is True and
@@ -504,6 +504,53 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 domain=NonNegativeReals,
                 units=units_meta('length') * units_meta('time')**-1,
                 doc='Mass transfer coefficient in feed channel')
+
+        if ((self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)
+                or (self.config.pressure_change_type == PressureChangeType.calculated
+                    and self.config.has_pressure_change)):
+            self.channel_height = Var(
+                initialize=1e-3,
+                bounds=(1e-4, 5e-3),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Feed-channel height')
+            self.dh = Var(
+                initialize=1e-3,
+                bounds=(1e-4, 5e-3),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Hydraulic diameter of feed channel')
+            self.spacer_porosity = Var(
+                initialize=0.95,
+                bounds=(0.1, 0.99),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc='Feed-channel spacer porosity')
+            self.N_Re = Var(
+                self.flowsheet().config.time,
+                self.feed_side.length_domain,
+                initialize=5e2,
+                bounds=(10, 5e3),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Reynolds number in feed channel")
+        if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
+            self.N_Sc = Var(
+                self.flowsheet().config.time,
+                self.feed_side.length_domain,
+                initialize=5e2,
+                bounds=(1e2, 2e3),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Schmidt number in feed channel")
+            self.N_Sh = Var(
+                self.flowsheet().config.time,
+                self.feed_side.length_domain,
+                initialize=1e2,
+                bounds=(1, 3e2),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Sherwood number in feed channel")
         # ==========================================================================
         # Volumetric Recovery rate
 
@@ -619,6 +666,70 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                     return (interface.conc_mass_phase_comp['Liq', j] ==
                             bulk.conc_mass_phase_comp['Liq', j] * exp(jw / self.Kf[t, x, j])
                             - js / jw * (exp(jw / self.Kf[t, x, j]) - 1))
+        # # ==========================================================================
+        # Constraints active when MassTransferCoefficient.calculated
+        # Mass transfer coefficient calculation
+        if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
+            @self.Constraint(self.flowsheet().config.time,
+                                       self.feed_side.length_domain,
+                                       self.solute_list,
+                                       doc="Mass transfer coefficient in feed channel")
+            def eq_Kf(b, t, x, j):
+                if x == self.feed_side.length_domain.first():
+                    return Constraint.Skip
+                else:
+                    bulk = b.feed_side.properties[t, x]
+                    return (b.Kf[t, x, j] * b.dh ==
+                            bulk.diffus_phase['Liq']  # TODO: add diff coefficient to SW prop and consider multi-components
+                            * b.N_Sh[t, x])
+
+            @self.Constraint(self.flowsheet().config.time,
+                                       self.feed_side.length_domain,
+                                       doc="Sherwood number")
+            def eq_N_Sh(b, t, x):
+                if x == self.feed_side.length_domain.first():
+                    return Constraint.Skip
+                else:
+                    return (b.N_Sh[t, x] ==
+                            0.46 * (b.N_Re[t, x] * b.N_Sc[t, x])**0.36)
+
+            @self.Constraint(self.flowsheet().config.time,
+                                       self.feed_side.length_domain,
+                                       doc="Schmidt number")
+            def eq_N_Sc(b, t, x):
+                if x == self.feed_side.length_domain.first():
+                    return Constraint.Skip
+                else:
+                    bulk = b.feed_side.properties[t, x]
+                    return (b.N_Sc[t, x] * bulk.dens_mass_phase['Liq'] * bulk.diffus_phase['Liq'] ==
+                            bulk.visc_d_phase['Liq'])
+
+        if (self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
+            or (self.config.pressure_change_type == PressureChangeType.calculated
+                and self.config.has_pressure_change)):
+            @self.Constraint(doc="Cross-sectional area")
+            def eq_area_cross(b):
+                return b.area_cross == b.channel_height * b.width * b.spacer_porosity
+
+            @self.Constraint(self.flowsheet().config.time,
+                                       self.feed_side.length_domain,
+                                       doc="Reynolds number")
+            def eq_N_Re(b, t, x):
+                if x == self.feed_side.length_domain.first():
+                    return Constraint.Skip
+                else:
+                    bulk = b.feed_side.properties[t, x]
+                    return (b.N_Re[t, x] * b.area_cross * bulk.visc_d_phase['Liq'] ==
+                            sum(bulk.flow_mass_phase_comp['Liq', j] for j in b.config.property_package.component_list)
+                            * b.dh)
+
+            @self.Constraint(doc="Hydraulic diameter")  # eqn. 17 in Schock & Miquel, 1987
+            def eq_dh(b):
+                return (b.dh ==
+                        4 * b.spacer_porosity
+                        / (2 / b.channel_height
+                           + (1 - b.spacer_porosity) * 8 / b.channel_height))
+
         # # ==========================================================================
         # Feed-side isothermal conditions
 
@@ -851,6 +962,33 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1e5)
 
+        if hasattr(self, 'channel_height'):
+            if iscale.get_scaling_factor(self.channel_height) is None:
+                iscale.set_scaling_factor(self.channel_height, 1e3)
+
+        if hasattr(self, 'spacer_porosity'):
+            if iscale.get_scaling_factor(self.spacer_porosity) is None:
+                iscale.set_scaling_factor(self.spacer_porosity, 1)
+
+        if hasattr(self, 'dh'):
+            if iscale.get_scaling_factor(self.dh) is None:
+                iscale.set_scaling_factor(self.dh, 1e3)
+
+        if hasattr(self, 'N_Re'):
+            for t, x in self.N_Re.keys():
+                if iscale.get_scaling_factor(self.N_Re[t, x]) is None:
+                    iscale.set_scaling_factor(self.N_Re[t, x], 1e-3)
+
+        if hasattr(self, 'N_Sc'):
+            for t, x in self.N_Sc.keys():
+                if iscale.get_scaling_factor(self.N_Sc[t, x]) is None:
+                    iscale.set_scaling_factor(self.N_Sc[t, x], 1e-3)
+
+        if hasattr(self, 'N_Sh'):
+            for t, x in self.N_Sh.keys():
+                if iscale.get_scaling_factor(self.N_Sh[t, x]) is None:
+                     iscale.set_scaling_factor(self.N_Sh[t, x], 1e-2)
+
         for (t, x, p, j), v in self.eq_mass_flux_equal_mass_transfer.items():
             if iscale.get_scaling_factor(v) is None:
                 if x == self.feed_side.length_domain.first():
@@ -933,3 +1071,26 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             prop_interface = self.feed_side.properties_interface[t, x]
             sf = iscale.get_scaling_factor(prop_interface.flow_vol_phase['Liq'])
             iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, 'eq_N_Re'):
+            for ind, c in self.eq_N_Re.items():
+                sf = iscale.get_scaling_factor(self.N_Re[ind])
+                iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, 'eq_N_Sc'):
+            for ind, c in self.eq_N_Sc.items():
+                sf = iscale.get_scaling_factor(self.N_Sc[ind])
+                iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, 'eq_N_Sh'):
+            for ind, c in self.eq_N_Sh.items():
+                sf = iscale.get_scaling_factor(self.N_Sh[ind])
+                iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, 'eq_area_cross'):
+            sf = iscale.get_scaling_factor(self.area_cross)
+            iscale.constraint_scaling_transform(self.eq_area_cross, sf)
+
+        if hasattr(self, 'eq_dh'):
+            sf = iscale.get_scaling_factor(self.dh)
+            iscale.constraint_scaling_transform(self.eq_dh, sf)
