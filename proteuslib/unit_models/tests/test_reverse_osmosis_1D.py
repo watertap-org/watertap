@@ -483,3 +483,199 @@ class TestReverseOsmosis_cp_mod_fixed():
                 value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'H2O']))
         assert (pytest.approx(4.271e-4, rel=1e-3) ==
                 value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'NaCl']))
+
+class TestReverseOsmosis_cp_calculated_kf_fixed():
+    @pytest.fixture(scope="class")
+    def RO_frame(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = props.NaClParameterBlock()
+
+        m.fs.unit = ReverseOsmosis1D(default={
+            "property_package": m.fs.properties,
+            "has_pressure_change": False,
+            "concentration_polarization_type": ConcentrationPolarizationType.calculated,
+            "mass_transfer_coefficient": MassTransferCoefficient.fixed,
+            })
+
+        # fully specify system
+        feed_flow_mass = 1
+        feed_mass_frac_NaCl = 0.035
+        feed_pressure = 50e5
+        feed_temperature = 273.15 + 25
+        A = 4.2e-12
+        B = 3.5e-8
+        pressure_atmospheric = 101325
+        feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
+            feed_flow_mass * feed_mass_frac_NaCl)
+
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
+            feed_flow_mass * feed_mass_frac_H2O)
+
+        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+        # m.fs.unit.deltaP.fix(0)
+        m.fs.unit.A_comp.fix(A)
+        m.fs.unit.B_comp.fix(B)
+        m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.length.fix(8)
+        m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.4)
+        m.fs.unit.Kf.fix(2e-5)
+
+        return m
+
+    @pytest.mark.unit
+    def test_build(self, RO_frame):
+        m = RO_frame
+
+        # test ports
+        port_lst = ['feed_inlet', 'feed_outlet', 'permeate_outlet']
+        for port_str in port_lst:
+            port = getattr(m.fs.unit, port_str)
+            assert len(port.vars) == 3  # number of state variables for NaCl property package
+            assert isinstance(port, Port)
+
+        # test pyomo objects on unit
+        #TODO: uncomment relevant vars/constraints once added into model and delete remaining
+        unit_objs_type_dict = {'dens_solvent': Param,
+                               'A_comp': Var,
+                               'B_comp': Var,
+                               'flux_mass_phase_comp': Var,
+                               'area': Var,
+                               'feed_area_cross': Var,
+                               'width': Var,
+                               'length': Var,
+                               'recovery_vol_phase': Var,
+                               'Kf': Var,
+                               'mass_transfer_phase_comp': Var,
+                               'eq_mass_transfer_term': Constraint,
+                               'eq_permeate_production': Constraint,
+                               'eq_flux_mass': Constraint,
+                               'eq_connect_mass_transfer': Constraint,
+                               'eq_feed_isothermal': Constraint,
+                               'eq_permeate_isothermal': Constraint,
+                               'eq_recovery_vol_phase': Constraint,
+                               'eq_area': Constraint,
+                               'eq_mass_flux_equal_mass_transfer': Constraint,
+                               'eq_permeate_outlet_isothermal': Constraint,
+                               'eq_permeate_outlet_isobaric': Constraint
+                               }
+        for (obj_str, obj_type) in unit_objs_type_dict.items():
+            obj = getattr(m.fs.unit, obj_str)
+            assert isinstance(obj, obj_type)
+        # check that all added unit objects are tested
+        for obj in m.fs.unit.component_objects(
+                [Param, Var, Expression, Constraint], descend_into=False):
+            obj_str = obj.local_name
+            if obj_str[0] == '_':
+                continue  # do not test hidden references
+            assert obj_str in unit_objs_type_dict
+
+        # test feed-side control volume and associated stateblocks
+        assert isinstance(m.fs.unit.feed_side, ControlVolume1DBlock)
+        cv_stateblock_lst = ['properties']
+        for sb_str in cv_stateblock_lst:
+            sb = getattr(m.fs.unit.feed_side, sb_str)
+            assert isinstance(sb, props.NaClStateBlock)
+
+        stateblock_lst = ['permeate_side', 'permeate_out']
+        for sb_str in stateblock_lst:
+            sb = getattr(m.fs.unit, sb_str)
+            assert isinstance(sb, StateBlock)
+            assert isinstance(sb, props.NaClStateBlock)
+
+        # test statistics
+        assert number_variables(m) == 1001
+        assert number_total_constraints(m) == 937
+        unused_list = unused_variables_set(m)
+        [print(i) for i in unused_list]
+        assert number_unused_variables(m) == 30  # TODO: vars from property package parameters (old message from 0dRO)
+        # unused areas,  (return later)
+
+    @pytest.mark.integration
+    def test_units(self, RO_frame):
+        m = RO_frame
+        #TODO: add assert_units_equivalent for several variables
+        assert_units_consistent(m.fs.unit)
+
+    @pytest.mark.unit
+    def test_dof(self, RO_frame):
+        m = RO_frame
+        assert degrees_of_freedom(m) == 0
+
+    @pytest.mark.unit
+    def test_calculate_scaling(self, RO_frame):
+        m = RO_frame
+
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
+        calculate_scaling_factors(m)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(unscaled_variables_generator(m))
+
+        assert len(unscaled_var_list) == 0
+        # check that all constraints have been scaled
+        unscaled_constraint_list = list(unscaled_constraints_generator(m))
+        [print(i) for i in unscaled_constraint_list]
+        assert len(unscaled_constraint_list) == 0
+
+    @pytest.mark.component
+    def test_initialize(self, RO_frame):
+        initialization_tester(RO_frame)
+
+    @pytest.mark.component
+    def test_var_scaling(self, RO_frame):
+        m = RO_frame
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        [print(i,j) for i,j in badly_scaled_var_lst]
+        assert badly_scaled_var_lst == []
+#
+    @pytest.mark.component
+    def test_solve(self, RO_frame):
+        m = RO_frame
+        m.fs.unit.initialize()
+        solver.options = {'nlp_scaling_method': 'user-scaling'}
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+               TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_conservation(self, RO_frame):
+        m = RO_frame
+        b = m.fs.unit
+        comp_lst = ['NaCl', 'H2O']
+
+        flow_mass_inlet = sum(
+            b.feed_side.properties[0, 0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
+        flow_mass_retentate = sum(
+            b.feed_side.properties[0, 1].flow_mass_phase_comp['Liq', j] for j in comp_lst)
+        flow_mass_permeate = sum(
+            b.permeate_out[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
+
+        assert value(flow_mass_inlet) == pytest.approx(1.0, rel=1e-3)
+        assert value(flow_mass_retentate) == pytest.approx(0.6103, rel=1e-3)
+        assert value(flow_mass_permeate) == pytest.approx(0.3898, rel=1e-3)
+
+        assert (abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate
+                          )) <= 1e-2)
+
+    @pytest.mark.component
+    def test_solution(self, RO_frame):
+        m = RO_frame
+        assert (pytest.approx(179.596, rel=1e-3) ==
+                value(m.fs.unit.area))
+        assert (pytest.approx(6.855e-4, rel=1e-3) ==
+                value(m.fs.unit.flux_mass_phase_comp[0, 1, 'Liq', 'H2O']))
+        assert (pytest.approx(2.029e-6, rel=1e-3) ==
+                value(m.fs.unit.flux_mass_phase_comp[0, 1, 'Liq', 'NaCl']))
+        assert (pytest.approx(0.3896, rel=1e-3) ==
+                value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'H2O']))
+        assert (pytest.approx(3.393e-4, rel=1e-3) ==
+                value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'NaCl']))
