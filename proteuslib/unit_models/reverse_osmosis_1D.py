@@ -358,6 +358,12 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             self.flowsheet().config.time,
             doc="Material properties of mixed permeate exiting the module",
             default=tmp_dict)
+        # Membrane interface: indexed state block
+        self.feed_side.properties_interface = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            self.feed_side.length_domain,
+            doc="Material properties of feed-side membrane interface",
+            default=tmp_dict)
         # Add port to permeate_out
         self.add_port(name="permeate_outlet", block=self.permeate_out)
 
@@ -476,6 +482,28 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             domain=NonNegativeReals,
             units=units_meta('mass') * units_meta('time')**-1 * units_meta('length')**-1,
             doc='Mass transfer to permeate')
+
+        if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
+            self.cp_modulus = Var(
+                self.flowsheet().config.time,
+                self.feed_side.length_domain,
+                self.solute_list,
+                initialize=1.1,
+                bounds=(0.9, 3),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc='Concentration polarization modulus')
+
+        if self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
+            self.Kf = Var(
+                self.flowsheet().config.time,
+                self.feed_side.length_domain,
+                self.solute_list,
+                initialize=5e-5,
+                bounds=(1e-6, 1e-3),
+                domain=NonNegativeReals,
+                units=units_meta('length') * units_meta('time')**-1,
+                doc='Mass transfer coefficient in feed channel')
         # ==========================================================================
         # Volumetric Recovery rate
 
@@ -518,6 +546,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 return b.flux_mass_phase_comp[t, x, p, j] * b.width == -b.feed_side.mass_transfer_term[t, x, p, j]
         # ==========================================================================
         # Mass flux equations (Jw and Js)
+
         @self.Constraint(self.flowsheet().config.time,
                          self.feed_side.length_domain,
                          self.config.property_package.phase_list,
@@ -529,14 +558,15 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             else:
                 prop_feed = b.feed_side.properties[t, x]
                 prop_perm = b.permeate_side[t, x]
+                interface = b.feed_side.properties_interface[t, x]
                 comp = self.config.property_package.get_component(j)
                 if comp.is_solvent():
                     return (b.flux_mass_phase_comp[t, x, p, j] == b.A_comp[t, j] * b.dens_solvent
                             * ((prop_feed.pressure - prop_perm.pressure)
-                               - (prop_feed.pressure_osm - prop_perm.pressure_osm)))
+                               - (interface.pressure_osm - prop_perm.pressure_osm)))
                 elif comp.is_solute():
                     return (b.flux_mass_phase_comp[t, x, p, j] == b.B_comp[t, j]
-                            * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j]))
+                            * (interface.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j]))
         # ==========================================================================
         # Final permeate mass flow rate (of solvent and solute) --> Mp,j, final = sum(Mp,j)
 
@@ -562,6 +592,33 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             else:
                 return (b.permeate_side[t, x].get_material_flow_terms(p, j)
                         == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length / nfe)
+
+        # # ==========================================================================
+        # Concentration polarization
+
+        @self.feed_side.Constraint(self.flowsheet().config.time,
+                                   self.feed_side.length_domain,
+                                   self.solute_list,
+                                   doc="Concentration polarization")
+        def eq_concentration_polarization(b, t, x, j):
+            if x == self.feed_side.length_domain.first():
+                return Constraint.Skip
+            else:
+                bulk = b.properties[t, x]
+                interface = b.properties_interface[t, x]
+                if self.config.concentration_polarization_type == ConcentrationPolarizationType.none:
+                    return interface.conc_mass_phase_comp['Liq', j] == \
+                           bulk.conc_mass_phase_comp['Liq', j]
+                elif self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
+                    return (interface.conc_mass_phase_comp['Liq', j] ==
+                            bulk.conc_mass_phase_comp['Liq', j]
+                            * self.cp_modulus[t, x, j])
+                elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
+                    jw = self.flux_mass_phase_comp[t, x, 'Liq', 'H2O'] / self.dens_solvent
+                    js = self.flux_mass_phase_comp[t, x, 'Liq', j]
+                    return (interface.conc_mass_phase_comp['Liq', j] ==
+                            bulk.conc_mass_phase_comp['Liq', j] * exp(jw / self.Kf[t, x, j])
+                            - js / jw * (exp(jw / self.Kf[t, x, j]) - 1))
         # # ==========================================================================
         # Feed-side isothermal conditions
 
@@ -600,6 +657,45 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         def eq_permeate_outlet_isobaric(b, t, x):
             return b.permeate_side[t, x].pressure == \
                    b.permeate_out[t].pressure
+        # ==========================================================================
+        # Bulk and interface connections on the feed-side
+        # TEMPERATURE
+        @self.feed_side.Constraint(self.flowsheet().config.time,
+                                   self.feed_side.length_domain,
+                                   doc="Temperature at interface")
+        def eq_equal_temp_interface(b, t, x):
+            if x == self.feed_side.length_domain.first():
+                return Constraint.Skip
+            else:
+                bulk = b.properties[t, x]
+                interface = b.properties_interface[t, x]
+            return interface.temperature == \
+                   bulk.temperature
+        # PRESSURE
+        @self.feed_side.Constraint(self.flowsheet().config.time,
+                                   self.feed_side.length_domain,
+                                   doc="Pressure at interface")
+        def eq_equal_pressure_interface(b, t, x):
+            if x == self.feed_side.length_domain.first():
+                return Constraint.Skip
+            else:
+                bulk = b.properties[t, x]
+                interface = b.properties_interface[t, x]
+            return interface.pressure == \
+                   bulk.pressure
+        # VOLUMETRIC FLOWRATE
+        @self.feed_side.Constraint(self.flowsheet().config.time,
+                                   self.feed_side.length_domain,
+                                   doc="Volumetric flow at interface of inlet")
+        def eq_equal_flow_vol_interface(b, t, x):
+            if x == self.feed_side.length_domain.first():
+                return Constraint.Skip
+            else:
+                bulk = b.properties[t, x]
+                interface = b.properties_interface[t, x]
+            return interface.flow_vol_phase['Liq'] ==\
+                   bulk.flow_vol_phase['Liq']
+
 
     def initialize(blk,
                    feed_side_args=None,
@@ -665,20 +761,25 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # Step 2: Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        #
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+
+        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        #     res = opt.solve(blk, tee=slc.tee)
 
     def _get_performance_contents(self, time_point=0):
+        feed_inlet = self.feed_side.properties[time_point, self.feed_side.length_domain.first()]
+        feed_outlet = self.feed_side.properties[time_point, self.feed_side.length_domain.last()]
+        interface_inlet = self.feed_side.properties_interface[time_point, self.feed_side.length_domain.first()]
+        interface_outlet = self.feed_side.properties_interface[time_point, self.feed_side.length_domain.last()]
+        permeate = self.permeate_out[time_point]
         var_dict = {}
         var_dict["Membrane Area"] = self.area
         var_dict["Membrane Length"] = self.length
         var_dict["Membrane Width"] = self.width
+
         #TODO: add more vars
         return {"vars": var_dict}
 
     def _get_stream_table_contents(self, time_point=0):
-        pass
         return create_stream_table_dataframe(
             {
                 "Feed Inlet": self.feed_inlet,
@@ -739,6 +840,17 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                               * iscale.get_scaling_factor(self.feed_side.properties[t, x].conc_mass_phase_comp[p, j]))
                         iscale.set_scaling_factor(v, sf)
 
+        if hasattr(self, 'cp_modulus'):
+            for v in self.cp_modulus.values():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.get_scaling_factor(v)
+                    iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, 'Kf'):
+            for v in self.Kf.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1e5)
+
         for (t, x, p, j), v in self.eq_mass_flux_equal_mass_transfer.items():
             if iscale.get_scaling_factor(v) is None:
                 if x == self.feed_side.length_domain.first():
@@ -761,7 +873,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 iscale.set_scaling_factor(v, sf)
 
         for v in self.feed_side.pressure_dx.values():
-            iscale.set_scaling_factor(v, 1e6)
+            iscale.set_scaling_factor(v, 1e5)
 
         # Scale constraints
         for ind, c in self.eq_mass_transfer_term.items():
@@ -801,3 +913,23 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         for t, c in self.eq_recovery_vol_phase.items():
             iscale.constraint_scaling_transform(self.eq_recovery_vol_phase[t], 1)
+
+        for (t, x, j), c in self.feed_side.eq_concentration_polarization.items():
+            prop_interface = self.feed_side.properties_interface[t, x]
+            sf = iscale.get_scaling_factor(prop_interface.conc_mass_phase_comp['Liq', j])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for (t, x), c in self.feed_side.eq_equal_temp_interface.items():
+            prop_interface = self.feed_side.properties_interface[t, x]
+            sf = iscale.get_scaling_factor(prop_interface.temperature)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for (t, x), c in self.feed_side.eq_equal_pressure_interface.items():
+            prop_interface = self.feed_side.properties_interface[t, x]
+            sf = iscale.get_scaling_factor(prop_interface.pressure)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for (t, x), c in self.feed_side.eq_equal_flow_vol_interface.items():
+            prop_interface = self.feed_side.properties_interface[t, x]
+            sf = iscale.get_scaling_factor(prop_interface.flow_vol_phase['Liq'])
+            iscale.constraint_scaling_transform(c, sf)
