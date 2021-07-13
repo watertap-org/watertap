@@ -63,8 +63,7 @@ class MassTransferCoefficient(Enum):
 
 
 class PressureChangeType(Enum):
-    fixed_per_stage = auto()         # pressure drop across membrane channel is a user-specified value
-    fixed_per_unit_length = auto()   # pressure drop per unit length across membrane channel is a user-specified value
+    fixed = auto()                   # pressure drop fixed by user-specified value
     calculated = auto()              # pressure drop across membrane channel is calculated
     
 @declare_process_block_class("ReverseOsmosis1D")
@@ -189,8 +188,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         .. csv-table::
             :header: "Configuration Options", "Description"
 
-            "``PressureChangeType.fixed_per_stage``", "Specify an estimated value for pressure drop across the membrane feed channel"
-            "``PressureChangeType.fixed_per_unit_length``", "Specify an estimated value for pressure drop per unit length across the membrane feed channel"
+            "``PressureChangeType.fixed``", "Specify an estimated value for pressure drop across the membrane feed channel or per unit_length"
             "``PressureChangeType.calculated``", "Allow model to perform calculation of pressure drop across the membrane feed channel"
         """))
 
@@ -483,6 +481,15 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             units=units_meta('mass') * units_meta('time')**-1 * units_meta('length')**-1,
             doc='Mass transfer to permeate')
 
+        if self.config.has_pressure_change:
+            self.deltaP_stage=Var(
+                self.flowsheet().config.time,
+                initialize=1e5,
+                bounds=(0, 1e6),
+                domain=NonNegativeReals,
+                units=units_meta('pressure'),
+                doc='''Pressure drop across unit''')
+
         if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
             self.cp_modulus = Var(
                 self.flowsheet().config.time,
@@ -671,9 +678,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # Mass transfer coefficient calculation
         if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
             @self.Constraint(self.flowsheet().config.time,
-                                       self.feed_side.length_domain,
-                                       self.solute_list,
-                                       doc="Mass transfer coefficient in feed channel")
+                             self.feed_side.length_domain,
+                             self.solute_list,
+                             doc="Mass transfer coefficient in feed channel")
             def eq_Kf(b, t, x, j):
                 if x == self.feed_side.length_domain.first():
                     return Constraint.Skip
@@ -684,8 +691,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                             * b.N_Sh[t, x])
 
             @self.Constraint(self.flowsheet().config.time,
-                                       self.feed_side.length_domain,
-                                       doc="Sherwood number")
+                             self.feed_side.length_domain,
+                             doc="Sherwood number")
             def eq_N_Sh(b, t, x):
                 if x == self.feed_side.length_domain.first():
                     return Constraint.Skip
@@ -694,8 +701,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                             0.46 * (b.N_Re[t, x] * b.N_Sc[t, x])**0.36)
 
             @self.Constraint(self.flowsheet().config.time,
-                                       self.feed_side.length_domain,
-                                       doc="Schmidt number")
+                             self.feed_side.length_domain,
+                             doc="Schmidt number")
             def eq_N_Sc(b, t, x):
                 if x == self.feed_side.length_domain.first():
                     return Constraint.Skip
@@ -712,8 +719,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 return b.area_cross == b.channel_height * b.width * b.spacer_porosity
 
             @self.Constraint(self.flowsheet().config.time,
-                                       self.feed_side.length_domain,
-                                       doc="Reynolds number")
+                             self.feed_side.length_domain,
+                             doc="Reynolds number")
             def eq_N_Re(b, t, x):
                 if x == self.feed_side.length_domain.first():
                     return Constraint.Skip
@@ -729,8 +736,17 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                         4 * b.spacer_porosity
                         / (2 / b.channel_height
                            + (1 - b.spacer_porosity) * 8 / b.channel_height))
-
-        # # ==========================================================================
+        ## ==========================================================================
+        # Pressure drop fixed
+        if (self.config.pressure_change_type == PressureChangeType.fixed
+                and self.config.has_pressure_change):
+            @self.Constraint(self.flowsheet().config.time,
+                             doc='Fixed pressure drop across unit')
+            def eq_pressure_drop_fixed(b, t):
+                return (b.deltaP_stage[t] ==
+                        sum(b.deltaP[t, x] * b.length / nfe
+                            for x in b.feed_side.length_domain if x != 0))
+        ## ==========================================================================
         # Feed-side isothermal conditions
 
         @self.Constraint(self.flowsheet().config.time,
@@ -989,6 +1005,11 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 if iscale.get_scaling_factor(self.N_Sh[t, x]) is None:
                      iscale.set_scaling_factor(self.N_Sh[t, x], 1e-2)
 
+        if hasattr(self, 'deltaP_stage'):
+            for v in self.deltaP_stage.values():
+                if iscale.get_scaling_factor(v) is None:
+                     iscale.set_scaling_factor(v, 1e-4)
+
         for (t, x, p, j), v in self.eq_mass_flux_equal_mass_transfer.items():
             if iscale.get_scaling_factor(v) is None:
                 if x == self.feed_side.length_domain.first():
@@ -1009,9 +1030,12 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 if comp.is_solute:
                     sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
                 iscale.set_scaling_factor(v, sf)
-
-        for v in self.feed_side.pressure_dx.values():
-            iscale.set_scaling_factor(v, 1e5)
+        if hasattr(self, 'deltaP'):
+            for v in self.feed_side.pressure_dx.values():
+                iscale.set_scaling_factor(v, 1)
+        else:
+            for v in self.feed_side.pressure_dx.values():
+                iscale.set_scaling_factor(v, 1e5)
 
         # Scale constraints
         for ind, c in self.eq_mass_transfer_term.items():
@@ -1072,6 +1096,11 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(prop_interface.flow_vol_phase['Liq'])
             iscale.constraint_scaling_transform(c, sf)
 
+        if hasattr(self, 'eq_Kf'):
+            for ind, c in self.eq_Kf.items():
+                sf = iscale.get_scaling_factor(self.Kf[ind])
+                iscale.constraint_scaling_transform(c, sf)
+
         if hasattr(self, 'eq_N_Re'):
             for ind, c in self.eq_N_Re.items():
                 sf = iscale.get_scaling_factor(self.N_Re[ind])
@@ -1094,3 +1123,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         if hasattr(self, 'eq_dh'):
             sf = iscale.get_scaling_factor(self.dh)
             iscale.constraint_scaling_transform(self.eq_dh, sf)
+
+        if hasattr(self, 'eq_pressure_drop_fixed'):
+            for ind, c in self.eq_pressure_drop_fixed.items():
+                sf = iscale.get_scaling_factor(self.deltaP_stage[ind])
+                iscale.constraint_scaling_transform(c, sf)
