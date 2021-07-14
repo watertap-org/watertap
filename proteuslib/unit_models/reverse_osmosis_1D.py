@@ -481,7 +481,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             doc='Mass transfer to permeate')
 
         if self.config.has_pressure_change:
-            self.deltaP_stage=Var(
+            self.deltaP_stage = Var(
                 self.flowsheet().config.time,
                 initialize=-1e5,
                 bounds=(-1e6, 0),
@@ -557,6 +557,23 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="Sherwood number in feed channel")
+        if self.config.pressure_change_type == PressureChangeType.calculated:
+            self.velocity = Var(
+                self.flowsheet().config.time,
+                self.feed_side.length_domain,
+                initialize=0.5,
+                bounds=(1e-2, 5),
+                domain=NonNegativeReals,
+                units=units_meta('length')/units_meta('time'),
+                doc="Crossflow velocity in feed channel")
+            self.friction_factor_darcy = Var(
+                self.flowsheet().config.time,
+                self.feed_side.length_domain,
+                initialize=0.5,
+                bounds=(1e-2, 5),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Darcy friction factor in feed channel")
         # ==========================================================================
         # Volumetric Recovery rate
 
@@ -737,11 +754,12 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                            + (1 - b.spacer_porosity) * 8 / b.channel_height))
         ## ==========================================================================
         # Pressure drop
-        if (self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length
+        if ((self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length
+             or self.config.pressure_change_type == PressureChangeType.calculated)
                 and self.config.has_pressure_change):
             @self.Constraint(self.flowsheet().config.time,
-                             doc='Fixed pressure drop across unit')
-            def eq_pressure_drop_fixed_per_unit_length(b, t):
+                             doc='Pressure drop across unit')
+            def eq_pressure_drop(b, t):
                 return (b.deltaP_stage[t] ==
                         sum(b.deltaP[t, x] * b.length / nfe
                             for x in b.feed_side.length_domain if x != 0))
@@ -750,15 +768,54 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             @self.Constraint(self.flowsheet().config.time,
                              self.feed_side.length_domain,
                              doc='Fixed pressure drop across unit')
-            def eq_pressure_drop_fixed_per_stage(b, t, x):
+            def eq_pressure_drop(b, t, x):
                 return b.deltaP_stage[t] == b.length * b.deltaP[t, x]
         elif (self.config.pressure_change_type == PressureChangeType.calculated
                 and self.config.has_pressure_change):
+            ## ==========================================================================
+            # Crossflow velocity
+
             @self.Constraint(self.flowsheet().config.time,
                              self.feed_side.length_domain,
-                             doc='Fixed pressure drop across unit')
-            def eq_pressure_drop_fixed_per_stage(b, t, x):
-                return b.deltaP_stage[t] == b.length * b.deltaP[t, x]
+                             doc="Crossflow velocity constraint")
+            def eq_velocity(b, t, x):
+                if x == self.feed_side.length_domain.first():
+                    return Constraint.Skip
+                else:
+                    bulk = b.feed_side.properties[t, x]
+                    return b.velocity[t, x] * b.area_cross == bulk.flow_vol_phase['Liq']
+            ## ==========================================================================
+            # Darcy friction factor based on eq. S27 in SI for Cost Optimization of Osmotically Assisted Reverse Osmosis
+            # TODO: this relationship for friction factor is specific to a particular spacer geometry. Add alternatives.
+
+            @self.Constraint(self.flowsheet().config.time,
+                             self.feed_side.length_domain,
+                             doc="Darcy friction factor constraint")
+            def eq_friction_factor_darcy(b, t, x):
+                return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
+            ## ==========================================================================
+            # Pressure change per unit length due to friction
+            # -1/2*f/dh*density*velocity^2
+
+            @self.Constraint(self.flowsheet().config.time,
+                             self.feed_side.length_domain,
+                             doc="pressure change per unit length due to friction")
+            def eq_dP_dx(b, t, x):
+                if x == self.feed_side.length_domain.first():
+                    return Constraint.Skip
+                else:
+                    bulk = b.feed_side.properties[t, x]
+                    return (b.deltaP[t, x] * b.dh ==
+                            0.5 * b.friction_factor_darcy[t, x]
+                            * bulk.dens_mass_phase['Liq'] * b.velocity[t, x]**2)
+            @self.Constraint(self.flowsheet().config.time,
+                             self.feed_side.length_domain,
+                             doc="pressure drop only")
+            def eq_deltaP_negative(b, t, x):
+                if x == self.feed_side.length_domain.first():
+                    return Constraint.Skip
+                else:
+                    return b.deltaP[t, x] <= 0
         ## ==========================================================================
         # Feed-side isothermal conditions
 
@@ -1023,6 +1080,16 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 if iscale.get_scaling_factor(v) is None:
                      iscale.set_scaling_factor(v, 1e-4)
 
+        if hasattr(self, 'velocity'):
+            for v in self.velocity.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1)
+
+        if hasattr(self, 'friction_factor_darcy'):
+            for v in self.friction_factor_darcy.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1)
+
         for (t, x, p, j), v in self.eq_mass_flux_equal_mass_transfer.items():
             if iscale.get_scaling_factor(v) is None:
                 if x == self.feed_side.length_domain.first():
@@ -1137,12 +1204,25 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.dh)
             iscale.constraint_scaling_transform(self.eq_dh, sf)
 
-        if hasattr(self, 'eq_pressure_drop_fixed_per_unit_length'):
-            for ind, c in self.eq_pressure_drop_fixed_per_unit_length.items():
-                sf = iscale.get_scaling_factor(self.deltaP_stage[ind])
+        if hasattr(self, 'eq_pressure_drop'):
+            if (self.config.pressure_change_type == PressureChangeType.calculated
+                or self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length):
+                for t, c in self.eq_pressure_drop.items():
+                    sf = iscale.get_scaling_factor(self.deltaP_stage[t])
+                    iscale.constraint_scaling_transform(c, sf)
+            elif self.config.pressure_change_type == PressureChangeType.fixed_per_stage:
+                for (t, x), c in self.eq_pressure_drop.items():
+                    sf = iscale.get_scaling_factor(self.deltaP_stage[t])
+                    iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, 'eq_velocity'):
+            for ind, c in self.eq_velocity.items():
+                sf = iscale.get_scaling_factor(self.velocity[ind])
                 iscale.constraint_scaling_transform(c, sf)
 
-        if hasattr(self, 'eq_pressure_drop_fixed_per_stage'):
-            for (t, x), c in self.eq_pressure_drop_fixed_per_stage.items():
-                sf = iscale.get_scaling_factor(self.deltaP_stage[t])
+        if hasattr(self, 'eq_friction_factor_darcy'):
+            for ind, c in self.eq_friction_factor_darcy.items():
+                sf = iscale.get_scaling_factor(self.friction_factor_darcy[ind])
                 iscale.constraint_scaling_transform(c, sf)
+
+
