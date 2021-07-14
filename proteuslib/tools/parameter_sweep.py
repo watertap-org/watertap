@@ -15,8 +15,82 @@ import pyomo.environ as pyo
 import sys
 import os
 import itertools
+import warnings
 
+from enum import Enum, auto
+from abc import abstractmethod, ABC 
 from idaes.core.util import get_solver
+
+# ================================================================
+
+class SamplingType(Enum):
+    FIXED = auto()
+    RANDOM = auto()
+
+# ================================================================
+
+class _Sample(ABC): 
+
+    def __init__(self, pyomo_object, *args, **kwargs):
+        # Check for indexed with single value
+        if pyomo_object.is_indexed() and len(pyomo_object) == 1:
+            pyomo_object = pyomo_object.values()[0]
+
+        # Make sure we are a Var() or Param()
+        if not (pyomo_object.is_parameter_type() or pyomo_object.is_variable_type()):
+            raise ValueError(f"The sweep parameter needs to be a pyomo Param or Var but {type(pyomo_object)} was provided instead.")
+        self.pyomo_object = pyomo_object 
+        self.setup(*args, **kwargs)
+
+    @abstractmethod 
+    def sample(self, num_samples): 
+        pass 
+
+    @abstractmethod 
+    def setup(self, *args, **kwargs): 
+        pass 
+
+# ================================================================
+
+class RandomSample(_Sample):
+    sampling_type = SamplingType.RANDOM
+
+class FixedSample(_Sample):
+    sampling_type = SamplingType.FIXED
+
+# ================================================================
+
+class LinearSample(FixedSample):
+
+    def sample(self, num_samples): 
+        return np.linspace(self.lower_limit, self.upper_limit, self.num_samples)
+
+    def setup(self, lower_limit, upper_limit, num_samples):
+        self.lower_limit = lower_limit
+        self.upper_limit = upper_limit
+        self.num_samples = num_samples
+
+# ================================================================
+
+class UniformSample(RandomSample):
+
+    def sample(self, num_samples): 
+        return np.random.uniform(self.lower_limit, self.upper_limit, num_samples)
+
+    def setup(self, lower_limit, upper_limit):
+        self.lower_limit = lower_limit
+        self.upper_limit = upper_limit
+
+# ================================================================
+
+class NormalSample(RandomSample):
+
+    def sample(self, num_samples): 
+        return np.random.normal(self.mean, self.sd, num_samples)
+
+    def setup(self, mean, sd):
+        self.mean = mean
+        self.sd = sd
 
 # ================================================================
 
@@ -25,8 +99,8 @@ def _init_mpi(mpi_comm=None):
     if mpi_comm is None:
         try:
             from mpi4py import MPI
-
         except:
+            warnings.warn("Could not import mpi4py from current environment (defaulting to serial).")
             return None, 0, 1
 
         else:
@@ -36,31 +110,70 @@ def _init_mpi(mpi_comm=None):
 
 # ================================================================
 
-def _build_and_divide_combinations(d, rank, num_procs):
+def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
+    num_var_params = len(d)
 
-    param_values = []
+    if rank == 0:
+        param_values = []
 
-    for k, v in d.items():
-        # Build a vector of discrete values for this parameter
-        # and record the parameter's name
-        # v[1] = start, v[2] = stop, v[3] = resolution (number of elements)
-        p = np.linspace(v[1], v[2], v[3])
-        param_values.append(p)
+        for k, v in d.items():
+            # Build a vector of discrete values for this parameter
+            p = v.sample(num_samples)
+            param_values.append(p)
 
-    num_var_params = len(param_values)
+        if sampling_type == SamplingType.FIXED:
+            # Form an array with every possible combination of parameter values
+            global_combo_array = np.array(np.meshgrid(*param_values, indexing="ij"))
+            global_combo_array = global_combo_array.reshape(num_var_params, -1).T
 
-    # Form an array with every possible combination of parameter values
-    full_combo_array = np.array(np.meshgrid(*param_values))
-    full_combo_array = full_combo_array.T.reshape(-1, num_var_params)
+        elif sampling_type == SamplingType.RANDOM:
+            sorting = np.argsort(param_values[0])
+            global_combo_array = np.vstack(param_values).T
+            global_combo_array = global_combo_array[sorting, :]
+        else:
+            raise ValueError(f"Unknown sampling type: {sampling_type}")
+
+        # Test if the global_combo_array is in row-major order
+        if not global_combo_array.flags.c_contiguous:
+            # If not, return a copy of this array with row-major memory order
+            global_combo_array = np.ascontiguousarray(global_combo_array)
+
+    else:
+        if sampling_type == SamplingType.FIXED:
+            nx = 1
+            for k, v in d.items():
+                nx *= v.num_samples
+        elif sampling_type == SamplingType.RANDOM:
+            nx = num_samples
+        else:
+            raise ValueError(f"Unknown sampling type: {sampling_type}")
+
+        if not float(nx).is_integer():
+            raise RuntimeError(f"Total number of samples must be integer valued")
+        nx = int(nx)
+
+        # Allocate memory to hold the Bcast array
+        global_combo_array = np.zeros((nx, num_var_params), dtype=np.float64)
+
+    ### Broadcast the array to all processes
+    if num_procs > 1:
+        comm.Bcast(global_combo_array, root=0)
+
+    return global_combo_array
+
+# ================================================================
+
+def _divide_combinations(global_combo_array, rank, num_procs):
 
     # Split the total list of combinations into NUM_PROCS chunks,
     # one per each of the MPI ranks
-    divided_combo_array = np.array_split(full_combo_array, num_procs, axis=0)
+    # divided_combo_array = np.array_split(global_combo_array, num_procs, axis=0)
+    divided_combo_array = np.array_split(global_combo_array, num_procs)
 
     # Return only this rank's portion of the total workload
     local_combo_array = divided_combo_array[rank]
 
-    return local_combo_array, full_combo_array
+    return local_combo_array
 
 # ================================================================
 
@@ -68,10 +181,10 @@ def _update_model_values(m, param_dict, values):
 
     for k, item in enumerate(param_dict.values()):
 
-        param = item[0]
+        param = item.pyomo_object
 
-        # Fix the single value to values[k]
         if param.is_variable_type():
+            # Fix the single value to values[k]
             param.fix(values[k])
 
         elif param.is_parameter_type():
@@ -96,6 +209,9 @@ def _aggregate_results(local_results, global_values, comm, num_procs):
 
         # Collect the global results results onto rank 0
         comm.Gatherv(local_results, (global_results, send_counts), root=0)
+
+        # Broadcast the results to all ranks
+        comm.Bcast(global_results, root=0)
 
     else:
         global_results = np.copy(local_results)
@@ -129,9 +245,33 @@ def _default_optimize(model, options=None, tee=False):
 
 # ================================================================
 
+def _process_sweep_params(sweep_params):
+
+    sampling_type = None
+
+    # Check the list of parameters to make sure they are valid
+    for k in sweep_params:
+
+        # Convert to using Sample class
+        if isinstance(sweep_params[k], (list, tuple)):
+            sweep_params[k] = LinearSample(*sweep_params[k])
+
+        # Get the type of sampling
+        current_sampling_type = sweep_params[k].sampling_type
+
+        # Check to make sure only one sampling type is provided
+        if sampling_type is None:
+            sampling_type = current_sampling_type
+        elif current_sampling_type != sampling_type:
+            raise ValueError("Cannot mix sampling types")
+
+    return sweep_params, sampling_type
+
+# ================================================================
+
 def parameter_sweep(model, sweep_params, outputs, results_file, optimize_function=_default_optimize,
         optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
-        mpi_comm=None, debugging_data_dir=None):
+        mpi_comm=None, debugging_data_dir=None, num_samples=None, seed=None):
 
     '''
     This function offers a general way to perform repeated optimizations
@@ -188,15 +328,32 @@ def parameter_sweep(model, sweep_params, outputs, results_file, optimize_functio
         debugging_data_dir (optional) : Save results on a per-process basis for parallel debugging
                                         purposes. If None no `debugging` data will be saved.
 
+        num_samples (optional) : If the user is using sampling techniques rather than a linear grid
+                                 of values, they need to set the number of samples
+
+        seed (optional) : If the user is using a random sampling technique, this sets the seed
+
     Returns:
-        None
+
+        save_data : A list were the first N columns are the values of the parameters passed
+                    by ``sweep_params`` and the remaining columns are the values of the 
+                    simulation identified by the ``outputs`` argument.
     '''
 
     # Get an MPI communicator
     comm, rank, num_procs = _init_mpi(mpi_comm)
 
-    # Enumerate all possibilities and divide the workload between processors
-    local_values, global_values = _build_and_divide_combinations(sweep_params, rank, num_procs)
+    # Convert sweep_params to LinearSamples
+    sweep_params, sampling_type = _process_sweep_params(sweep_params)
+
+    # Set the seed before sampling 
+    np.random.seed(seed)
+
+    # Enumerate/Sample the parameter space
+    global_values = _build_combinations(sweep_params, sampling_type, num_samples, comm, rank, num_procs)
+
+    # divide the workload between processors
+    local_values = _divide_combinations(global_values, rank, num_procs)
 
     # Initialize space to hold results
     local_num_cases = np.shape(local_values)[0]
@@ -267,16 +424,18 @@ def parameter_sweep(model, sweep_params, outputs, results_file, optimize_functio
     if debugging_data_dir is not None:
         # Create the local filename and data
         fname = os.path.join(debugging_data_dir, f'local_results_{rank:03}.csv')
-        save_data = np.hstack((local_values, local_results))
+        local_save_data = np.hstack((local_values, local_results))
 
         # Save the local data
-        np.savetxt(fname, save_data, header=data_header, delimiter=', ', fmt='%.6e')
+        np.savetxt(fname, local_save_data, header=data_header, delimiter=', ', fmt='%.6e')
+
+    # Create the global filename and data
+    global_save_data = np.hstack((global_values, global_results))
 
     if rank == 0:
-        # Create the global filename and data
-        save_data = np.hstack((global_values, global_results))
-
         # Save the global data
-        np.savetxt(results_file, save_data, header=data_header, delimiter=', ', fmt='%.6e')
+        np.savetxt(results_file, global_save_data, header=data_header, delimiter=', ', fmt='%.6e')
+    
+    return global_save_data
 
 # ================================================================
