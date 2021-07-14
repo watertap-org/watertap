@@ -603,7 +603,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         return {"vars": var_dict}
 
     def _get_stream_table_contents(self, time_point=0):
-        pass
         return create_stream_table_dataframe(
             {
                 "Feed Inlet": self.feed_inlet,
