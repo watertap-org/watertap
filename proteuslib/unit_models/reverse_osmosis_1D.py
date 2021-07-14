@@ -736,7 +736,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                         / (2 / b.channel_height
                            + (1 - b.spacer_porosity) * 8 / b.channel_height))
         ## ==========================================================================
-        # Pressure drop fixed
+        # Pressure drop
         if (self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length
                 and self.config.has_pressure_change):
             @self.Constraint(self.flowsheet().config.time,
@@ -752,7 +752,13 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                              doc='Fixed pressure drop across unit')
             def eq_pressure_drop_fixed_per_stage(b, t, x):
                 return b.deltaP_stage[t] == b.length * b.deltaP[t, x]
-
+        elif (self.config.pressure_change_type == PressureChangeType.calculated
+                and self.config.has_pressure_change):
+            @self.Constraint(self.flowsheet().config.time,
+                             self.feed_side.length_domain,
+                             doc='Fixed pressure drop across unit')
+            def eq_pressure_drop_fixed_per_stage(b, t, x):
+                return b.deltaP_stage[t] == b.length * b.deltaP[t, x]
         ## ==========================================================================
         # Feed-side isothermal conditions
 
@@ -1131,7 +1137,12 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.dh)
             iscale.constraint_scaling_transform(self.eq_dh, sf)
 
-        if hasattr(self, 'eq_pressure_drop_fixed'):
-            for ind, c in self.eq_pressure_drop_fixed.items():
+        if hasattr(self, 'eq_pressure_drop_fixed_per_unit_length'):
+            for ind, c in self.eq_pressure_drop_fixed_per_unit_length.items():
                 sf = iscale.get_scaling_factor(self.deltaP_stage[ind])
+                iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, 'eq_pressure_drop_fixed_per_stage'):
+            for (t, x), c in self.eq_pressure_drop_fixed_per_stage.items():
+                sf = iscale.get_scaling_factor(self.deltaP_stage[t])
                 iscale.constraint_scaling_transform(c, sf)
