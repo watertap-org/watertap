@@ -63,7 +63,8 @@ class MassTransferCoefficient(Enum):
 
 
 class PressureChangeType(Enum):
-    fixed = auto()                   # pressure drop fixed by user-specified value
+    fixed_per_stage = auto()         # pressure drop across channel is user-specified value
+    fixed_per_unit_length = auto()   # pressure drop per unit length is user-specified value
     calculated = auto()              # pressure drop across membrane channel is calculated
     
 @declare_process_block_class("ReverseOsmosis1D")
@@ -736,14 +737,22 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                            + (1 - b.spacer_porosity) * 8 / b.channel_height))
         ## ==========================================================================
         # Pressure drop fixed
-        if (self.config.pressure_change_type == PressureChangeType.fixed
+        if (self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length
                 and self.config.has_pressure_change):
             @self.Constraint(self.flowsheet().config.time,
                              doc='Fixed pressure drop across unit')
-            def eq_pressure_drop_fixed(b, t):
+            def eq_pressure_drop_fixed_per_unit_length(b, t):
                 return (b.deltaP_stage[t] ==
                         sum(b.deltaP[t, x] * b.length / nfe
                             for x in b.feed_side.length_domain if x != 0))
+        elif (self.config.pressure_change_type == PressureChangeType.fixed_per_stage
+                and self.config.has_pressure_change):
+            @self.Constraint(self.flowsheet().config.time,
+                             self.feed_side.length_domain,
+                             doc='Fixed pressure drop across unit')
+            def eq_pressure_drop_fixed_per_stage(b, t, x):
+                return b.deltaP_stage[t] == b.length * b.deltaP[t, x]
+
         ## ==========================================================================
         # Feed-side isothermal conditions
 
