@@ -482,9 +482,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         if self.config.has_pressure_change:
             self.deltaP_stage=Var(
                 self.flowsheet().config.time,
-                initialize=1e5,
-                bounds=(0, 1e6),
-                domain=NonNegativeReals,
+                initialize=-1e5,
+                bounds=(-1e6, 0),
+                domain=NegativeReals,
                 units=units_meta('pressure'),
                 doc='''Pressure drop across unit''')
 
