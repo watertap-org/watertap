@@ -28,7 +28,7 @@ class TestNaClProperty_idaes(PropertyTestHarness_idaes):
         self.has_density_terms = False
 
 
-class TestSeawaterProperty(PropertyTestHarness):
+class TestNaClProperty(PropertyTestHarness):
     def configure(self):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
