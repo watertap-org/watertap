@@ -118,107 +118,6 @@ from pyomo.environ import log10
 
 __author__ = "Andres Calderon, Austin Ladshaw"
 
-# Heat capacities, enthalpies and entropies
-class SolidConstant(object):
-
-    # Ideal liquid properties methods
-    class cp_mol_sol_comp(object):
-
-        @staticmethod
-        def build_parameters(cobj):
-            units = cobj.parent_block().get_metadata().derived_units
-            cobj.cp_mol_sol_comp_coeff = Var(
-                doc="Parameter for solid phase molar heat capacity",
-                units=units["heat_capacity_mole"])
-            set_param_from_config(cobj, param="cp_mol_sol_comp_coeff")
-
-        @staticmethod
-        def return_expression(b, cobj, T):
-            # Specific heat capacity
-            cp = cobj.cp_mol_sol_comp_coeff
-            return cp
-
-    class enth_mol_sol_comp(object):
-
-        @staticmethod
-        def build_parameters(cobj):
-            if not hasattr(cobj, "cp_mol_sol_comp_coeff"):
-                Constant.cp_mol_sol_comp.build_parameters(cobj)
-
-            if cobj.parent_block().config.include_enthalpy_of_formation:
-                units = cobj.parent_block().get_metadata().derived_units
-
-                cobj.enth_mol_form_sol_comp_ref = Var(
-                        doc="Solid phase molar heat of formation @ Tref",
-                        units=units["energy_mole"])
-                set_param_from_config(cobj, param="enth_mol_form_sol_comp_ref")
-
-        @staticmethod
-        def return_expression(b, cobj, T):
-            # Specific enthalpy
-            units = b.params.get_metadata().derived_units
-            Tr = b.params.temperature_ref
-
-            h_form = (cobj.enth_mol_form_sol_comp_ref if
-                    b.params.config.include_enthalpy_of_formation
-                    else 0*units["energy_mole"])
-
-            h = cobj.cp_mol_sol_comp_coeff*(T-Tr) + h_form
-
-            return h
-
-    class entr_mol_sol_comp(object):
-
-        @staticmethod
-        def build_parameters(cobj):
-            if not hasattr(cobj, "cp_mol_sol_comp_coeff"):
-                Constant.cp_mol_sol_comp.build_parameters(cobj)
-
-            units = cobj.parent_block().get_metadata().derived_units
-
-            cobj.entr_mol_form_sol_comp_ref = Var(
-                    doc="Solid phase molar entropy of formation @ Tref",
-                    units=units["entropy_mole"])
-            set_param_from_config(cobj, param="entr_mol_form_sol_comp_ref")
-
-        @staticmethod
-        def return_expression(b, cobj, T):
-            # Specific entropy
-            units = b.params.get_metadata().derived_units
-            Tr = b.params.temperature_ref
-
-            s = cobj.cp_mol_sol_comp_coeff*log(T/Tr) + cobj.entr_mol_form_sol_comp_ref
-
-            return s
-
-    class dens_mol_liq_comp(object):
-
-        @staticmethod
-        def build_parameters(cobj):
-            units = cobj.parent_block().get_metadata().derived_units
-            cobj.dens_mol_sol_comp_coeff = Var(
-                    doc="Parameter for solid phase molar density",
-                    units=units["density_mole"])
-            set_param_from_config(cobj, param="dens_mol_sol_comp_coeff")
-
-        @staticmethod
-        def return_expression(b, cobj, T):
-            # Molar density
-            rho = cobj.dens_mol_sol_comp_coeff
-            return rho
-
-def dummy_h(b, *args, **kwargs):
-    return 0
-
-def dummy_s(b, *args, **kwargs):
-    return 0
-
-def dummy_dens(b, *args, **kwargs):
-    return 55000 #mol/m**3
-
-def dummy_cp(b, *args, **kwargs):
-    return 635 #J/mol/K
-
 # Configuration dictionary
 thermo_config = {
     "components": {
@@ -677,33 +576,40 @@ thermo_config = {
                     # End parameter_data
                     },
         # Solid species - Just making this simple change cause major convergence problems
-        #'FePO4(s)': {"type": Component, "valid_phase_types": PT.solidPhase,
-        #      "dens_mol_sol_comp": dummy_dens,
-        #      "enth_mol_sol_comp": dummy_h,
-        #      "cp_mol_sol_comp": dummy_cp,
-        #      "entr_mol_sol_comp": dummy_s,
-        #            },
-
-        'FePO4(s)': {"type": Solute, "valid_phase_types": PT.aqueousPhase,
-              "dens_mol_liq_comp": Constant,
-              "enth_mol_liq_comp": Constant,
-              "cp_mol_liq_comp": Constant,
-              "entr_mol_liq_comp": Constant,
+        'FePO4(s)': {"type": Component, "valid_phase_types": PT.solidPhase,
+              "dens_mol_sol_comp": Constant,
+              "enth_mol_sol_comp": Constant,
+              "cp_mol_sol_comp": Constant,
+              "entr_mol_sol_comp": Constant,
               "parameter_data": {
                     "mw": (150.8, pyunits.g/pyunits.mol),
-                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
-                    "cp_mol_liq_comp_coeff": (635000, pyunits.J/pyunits.kmol/pyunits.K),
-                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ/pyunits.mol),
-                    "entr_mol_form_liq_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
+                    "dens_mol_sol_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_sol_comp_coeff": (635000, pyunits.J/pyunits.kmol/pyunits.K),
+                    "enth_mol_form_sol_comp_ref": (0, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_sol_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
                                 },
                     },
+
+        #'FePO4(s)': {"type": Solute, "valid_phase_types": PT.aqueousPhase,
+        #      "dens_mol_liq_comp": Constant,
+        #      "enth_mol_liq_comp": Constant,
+        #      "cp_mol_liq_comp": Constant,
+        #      "entr_mol_liq_comp": Constant,
+        #      "parameter_data": {
+        #            "mw": (150.8, pyunits.g/pyunits.mol),
+        #            "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+        #            "cp_mol_liq_comp_coeff": (635000, pyunits.J/pyunits.kmol/pyunits.K),
+        #            "enth_mol_form_liq_comp_ref": (0, pyunits.kJ/pyunits.mol),
+        #            "entr_mol_form_liq_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
+        #                        },
+        #            },
 
               },
               # End Component list
         "phases":  {'Liq': {"type": AqueousPhase,
                             "equation_of_state": Ideal},
-                    #'Sol': {"type": SolidPhase,
-                    #                    "equation_of_state": Ideal}
+                    'Sol': {"type": SolidPhase,
+                                        "equation_of_state": Ideal}
                     },
 
         "state_definition": FTPx,
@@ -1050,7 +956,7 @@ reaction_config = {
                     "concentration_form": ConcentrationForm.molarity,
                     "parameter_data": {
                         "dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
-                        "k_eq_ref": (10**-23, pyunits.mol**2/pyunits.L**2),
+                        "k_eq_ref": (10**-26, pyunits.mol**2/pyunits.L**2),
                         "T_eq_ref": (300.0, pyunits.K),
                         "reaction_order": { ("Sol", "FePO4(s)"): 0,
                                             ("Liq", "Fe_3+"): 1,
@@ -1095,15 +1001,16 @@ if __name__ == "__main__":
 
     model.fs.rxn_params = GenericReactionParameterBlock(
             default={"property_package": model.fs.thermo_params,
-                    #**reaction_config
-                    **reaction_dummy
+                    **reaction_config
+                    #**reaction_dummy
                     })
 
     model.fs.unit = EquilibriumReactor(default={
             "property_package": model.fs.thermo_params,
             "reaction_package": model.fs.rxn_params,
             "has_rate_reactions": False,
-            "has_equilibrium_reactions": False,
+            "has_equilibrium_reactions": True,
+            #"has_equilibrium_reactions": False,
             "has_heat_transfer": False,
             "has_heat_of_reaction": False,
             "has_pressure_change": False,
@@ -1327,9 +1234,28 @@ if __name__ == "__main__":
 
     print("Phosphorus Removal Efficiency (%) =\t" + str((total_phosphorus_in-total_phosphorus)/total_phosphorus_in*100))
 
+    print()
+
+    Fe = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","Fe_3+"])/1000
+    PO4 = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","PO4_3-"])/1000
+
+    #print(Fe)
+    #print(PO4)
+    #print(Fe*PO4)
+    Ksp = value(model.fs.unit.control_volume.reactions[0.0].k_eq["FePO4_Ksp"].expr)/1000/1000
+    #print(log10(Ksp))
+
+    if Ksp >= Fe*PO4:
+        print("Constraint is satisfied!")
+    else:
+        print("Constraint is VIOLATED!")
+    print("Ksp =\t"+str(Ksp))
+    print("Fe*PO4 =\t"+str(Fe*PO4))
+
     try:
-        for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
-            print(value(model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]]))
-            model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]].pprint()
+        #for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
+        #    print(value(model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]]))
+        #    #model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]].pprint()
+        pass
     except:
         pass
