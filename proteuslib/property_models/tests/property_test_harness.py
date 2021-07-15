@@ -38,7 +38,28 @@ from idaes.core.util import get_solver
 
 
 # -----------------------------------------------------------------------------
-class PropertyTestHarness(object):
+class PropertyAttributeError(AttributeError):
+    """
+    ProteusLib exception for generic attribute errors arising from property package testing.
+    """
+    pass
+
+
+class PropertyValueError(ValueError):
+    """
+    ProteusLib exception for generic value errors arising from property package testing.
+    """
+    pass
+
+
+class PropertyRuntimeError(RuntimeError):
+    """
+    ProteusLib exception for generic runtime errors arising from property package testing.
+    """
+    pass
+
+
+class PropertyTestHarness():
     def configure_class(self, m):
         self.configure()
 
@@ -99,7 +120,7 @@ class PropertyTestHarness(object):
         # test that the parameter variables are fixed
         for v in m.fs.properties.component_data_objects(Var):
             if not v.is_fixed():
-                raise Exception(
+                raise PropertyRuntimeError(
                     "Variable {v_name} is unfixed, but all variables on the "
                     "property parameter block must be fixed by default".format(
                         v_name=v.name))
@@ -111,7 +132,7 @@ class PropertyTestHarness(object):
         state_vars_dict = m.fs.stream[0].define_state_vars()
         # check minimum number of state variables (i.e. flow, temperature, pressure)
         if len(state_vars_dict) < 3:
-            raise Exception(
+            raise PropertyValueError(
                 "Property package has {num_state_vars} state variables, which is less "
                 "than the minimum of 3 (i.e. flow, temperature, and pressure)".format(
                     num_state_vars=len(state_vars_dict)))
@@ -120,7 +141,7 @@ class PropertyTestHarness(object):
         metadata = m.fs.properties.get_metadata().properties
         for sv_name in state_vars_dict:
             if sv_name not in metadata:
-                raise Exception(
+                raise PropertyAttributeError(
                     "State variable {sv_name} is not included in the "
                     "metadata".format(sv_name=sv_name))
 
@@ -131,7 +152,7 @@ class PropertyTestHarness(object):
         for v_name in metadata:
             if metadata[v_name]['method'] is None:
                 if not hasattr(m.fs.stream[0], v_name):
-                    raise Exception(
+                    raise PropertyAttributeError(
                         "Property {v_name} is included in the metadata but is not found "
                         "on the stateblock".format(v_name=v_name))
 
@@ -144,7 +165,7 @@ class PropertyTestHarness(object):
         for v_name in metadata:
             if metadata[v_name]['method'] is not None:
                 if m.fs.stream[0].is_property_constructed(v_name):
-                    raise Exception(
+                    raise PropertyAttributeError(
                         "Property {v_name} is an on-demand property, but was found "
                         "on the stateblock without being demanded".format(v_name=v_name))
 
@@ -152,7 +173,7 @@ class PropertyTestHarness(object):
         for v_name in metadata:
             if metadata[v_name]['method'] is not None:
                 if not hasattr(m.fs.stream[0], v_name):
-                    raise Exception(
+                    raise PropertyAttributeError(
                         "Property {v_name} is an on-demand property, but was not built "
                         "when demanded".format(v_name=v_name))
 
@@ -162,25 +183,25 @@ class PropertyTestHarness(object):
         blk = m.fs.stream[0]
         stats = m._test_objs.stateblock_statistics
         if number_variables(blk) != stats['number_variables']:
-            raise Exception(
+            raise PropertyValueError(
                 "The number of variables were {num}, but {num_test} was "
                 "expected ".format(
                     num=number_variables(blk),
                     num_test=stats['number_variables']))
         if number_total_constraints(blk) != stats['number_total_constraints']:
-            raise Exception(
+            raise PropertyValueError(
                 "The number of constraints were {num}, but {num_test} was "
                 "expected ".format(
                     num=number_total_constraints(blk),
                     num_test=stats['number_total_constraints']))
         if number_unused_variables(blk) != stats['number_unused_variables']:
-            raise Exception(
+            raise PropertyValueError(
                 "The number of unused variables were {num}, but {num_test} was "
                 "expected ".format(
                     num=number_unused_variables(blk),
                     num_test=stats['number_unused_variables']))
         if degrees_of_freedom(blk) != stats['default_degrees_of_freedom']:
-            raise Exception(
+            raise PropertyValueError(
                 "The number of degrees of freedom were {num}, but {num_test} was "
                 "expected ".format(
                     num=degrees_of_freedom(blk),
@@ -200,7 +221,7 @@ class PropertyTestHarness(object):
         unscaled_var_list = list(unscaled_variables_generator(m.fs.stream[0]))
         if len(unscaled_var_list) != 0:
             unscaled_var_name_list = [v.name for v in unscaled_var_list]
-            raise Exception(
+            raise PropertyAttributeError(
                 "The following variable(s) are unscaled: {lst}".format(
                     lst=unscaled_var_name_list))
 
@@ -208,7 +229,7 @@ class PropertyTestHarness(object):
         unscaled_constraint_list = list(unscaled_constraints_generator(m.fs.stream[0]))
         if len(unscaled_constraint_list) != 0:
             unscaled_constraint_name_list = [c.name for c in unscaled_constraint_list]
-            raise Exception(
+            raise PropertyAttributeError(
                 "The following constraint(s) are unscaled: {lst}".format(
                     lst=unscaled_constraint_name_list))
 
@@ -246,7 +267,7 @@ class PropertyTestHarness(object):
                 c_violated_lst.append(c.name)
 
         if len(c_violated_lst) > 0:
-            raise Exception(
+            raise PropertyRuntimeError(
                 "Default initialization did not converge, the following constraint(s) "
                 "are undefined or violate the equality or inequality: {violated_lst}".format(
                     violated_lst=c_violated_lst))
@@ -266,7 +287,7 @@ class PropertyTestHarness(object):
         for (v_name, ind), val in m._test_objs.default_solution.items():
             var = getattr(m.fs.stream[0], v_name)
             if not pytest.approx(val, rel=1e-3) == value(var[ind]):
-                raise Exception(
+                raise PropertyValueError(
                     "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, "
                     "but it has a value of {val_t}. \nUpdate default_solution dict in the "
                     "configure function that sets up the PropertyTestHarness".format(
@@ -280,7 +301,7 @@ class PropertyTestHarness(object):
             lst = []
             for (var, val) in badly_scaled_var_list:
                 lst.append((var.name, val))
-            raise Exception(
+            raise PropertyValueError(
                 "The following variable(s) are poorly scaled: {lst}".format(lst=lst))
 
     @pytest.mark.component
@@ -304,7 +325,7 @@ class PropertyTestHarness(object):
         for (v_name, ind), val in m._test_objs.default_solution.items():
             var = getattr(m.fs.stream[0], v_name)
             if not pytest.approx(val, rel=1e-3) == value(var[ind]):
-                raise Exception(
+                raise PropertyValueError(
                     "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, "
                     "but it has a value of {val_t}. \nUpdate default_solution dict in the "
                     "configure function that sets up the PropertyTestHarness".format(
@@ -356,14 +377,14 @@ class PropertyTestHarness(object):
                 else:
                     continue  # skip property if it was not created
                 if not pytest.approx(val, rel=1e-3) == value(var[ind]):
-                    raise Exception(
+                    raise PropertyValueError(
                         "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, "
                         "but it has a value of {val_t}. \nUpdate default_solution dict in the "
                         "configure function that sets up the PropertyTestHarness".format(
                             v_name=v_name, ind=ind, val=val, val_t=value(var[ind])))
 
 
-class PropertyRegressionTest(object):
+class PropertyRegressionTest():
     def configure_class(self):
         self.solver = None  # string for solver, if None use IDAES default
         self.optarg = None  # dictionary for solver options, if None use IDAES default
@@ -431,7 +452,7 @@ class PropertyRegressionTest(object):
         for (v_str, ind), val in self.regression_solution.items():
             var = getattr(m.fs.stream[0], v_str)
             if not pytest.approx(val, rel=1e-3) == value(var[ind]):
-                raise Exception(
+                raise PropertyValueError(
                     "Variable {v_str} with index {ind} is expected to have a value of {val} +/- 0.1%, but it "
                     "has a value of {val_t}. \nUpdate regression_solution in the configure function "
                     "that sets up the PropertyRegressionTest".format(
@@ -443,5 +464,5 @@ class PropertyRegressionTest(object):
             lst = []
             for (var, val) in badly_scaled_var_list:
                 lst.append((var.name, val))
-            raise Exception(
+            raise PropertyValueError(
                 "The following variable(s) are badly scaled: {lst}".format(lst=lst))
