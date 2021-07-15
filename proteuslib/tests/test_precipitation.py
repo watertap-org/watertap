@@ -960,7 +960,7 @@ reaction_config = {
 
                         # NOTE: Below is just a test value to demonstrate that
                         #       the model 'can' work. Significant issues remain
-                        #       in how solids are implemented 
+                        #       in how solids are implemented
                         "k_eq_ref": (10**-26, pyunits.mol**2/pyunits.L**2),
                         "T_eq_ref": (300.0, pyunits.K),
                         "reaction_order": { ("Sol", "FePO4(s)"): 0,
@@ -1113,7 +1113,7 @@ if __name__ == "__main__":
         for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
             # i[0] = time, i[1] = reaction
             scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 1)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 1/scale)
             iscale.constraint_scaling_transform(model.fs.unit.control_volume.reactions[0.0].
                     equilibrium_constraint[i[1]], 1)
     except:
@@ -1145,6 +1145,14 @@ if __name__ == "__main__":
             iscale.constraint_scaling_transform(
                 model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
             iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
+        #NOTE: trying to scale solids in this way is significantly worse
+        #else:
+        #    iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+        #    iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+        #    iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+        #    iscale.constraint_scaling_transform(
+        #        model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+        #    iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
 
 
@@ -1254,6 +1262,7 @@ if __name__ == "__main__":
         print("Constraint is satisfied!")
     else:
         print("Constraint is VIOLATED!")
+        print("\tRelative error: "+str(Ksp/Fe/PO4)+">=1")
     print("Ksp =\t"+str(Ksp))
     print("Fe*PO4 =\t"+str(Fe*PO4))
 

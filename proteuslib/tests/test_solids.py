@@ -406,6 +406,37 @@ reaction_dummy = {
     }
     # End reaction_config definition
 
+# Actual solubility product
+reaction_solubility = {
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K},
+    "equilibrium_reactions": {
+        "AB_Ksp": {
+                    "stoichiometry": {  ("Sol", "AB"): -1,
+                                        ("Liq", "A"): 1,
+                                        ("Liq", "B"): 1},
+                    "heat_of_reaction": constant_dh_rxn,
+                    "equilibrium_constant": van_t_hoff,
+                    "equilibrium_form": solubility_product,
+                    "concentration_form": ConcentrationForm.molarity,
+                    "parameter_data": {
+                        "dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
+                        "k_eq_ref": (10**-10, pyunits.mol**2/pyunits.L**2),
+                        "T_eq_ref": (300.0, pyunits.K),
+                        "reaction_order": { ("Sol", "AB"): 0,
+                                            ("Liq", "A"): 1,
+                                            ("Liq", "B"): 1}
+                        }
+                        # End parameter_data
+                }
+                # End Reaction
+         }
+         # End equilibrium_reactions
+    }
+    # End reaction_config definition
 
 
 # Get default solver for testing
@@ -654,7 +685,7 @@ def run_case2b(xA, scaling=True):
 
 def run_case3(xA, xB, xAB=1e-25, scaling=True):
     print("==========================================================================")
-    print("Case 2a: A and B are aqueous, AB is solid that forms from reaction")
+    print("Case 3: A and B are aqueous, AB is solid that forms from reaction")
     print("xA = "+str(xA))
     print("xB = "+str(xB))
     print("xAB = "+str(xAB))
@@ -667,14 +698,14 @@ def run_case3(xA, xB, xAB=1e-25, scaling=True):
 
     model.fs.rxn_params = GenericReactionParameterBlock(
             default={"property_package": model.fs.thermo_params,
-                    **reaction_dummy
+                    **reaction_solubility
                     })
 
     model.fs.unit = EquilibriumReactor(default={
             "property_package": model.fs.thermo_params,
             "reaction_package": model.fs.rxn_params,
             "has_rate_reactions": False,
-            "has_equilibrium_reactions": False,
+            "has_equilibrium_reactions": True,
             "has_heat_transfer": False,
             "has_heat_of_reaction": False,
             "has_pressure_change": False,
@@ -691,8 +722,35 @@ def run_case3(xA, xB, xAB=1e-25, scaling=True):
     model.fs.unit.outlet.temperature.fix(298.)
     model.fs.unit.inlet.flow_mol.fix(10)
 
+    # For equilibrium reactions
+    try:
+        for rid in model.fs.rxn_params.equilibrium_reaction_idx:
+            scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
+
+            # Not all equilibrium reactions will have an eps factor
+            try:
+                # Want to set eps in some fashion similar to this
+                if scale < 1e-16:
+                    model.fs.rxn_params.component("reaction_"+rid).eps.value = scale*1e-2
+                else:
+                    model.fs.rxn_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
+            except:
+                pass
+    except:
+        pass
+
     # Scaling
     if scaling == True:
+        try:
+            #Add scaling factors for reactions
+            for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
+                # i[0] = time, i[1] = reaction
+                scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
+                iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 1/scale)
+                iscale.constraint_scaling_transform(model.fs.unit.control_volume.reactions[0.0].
+                        equilibrium_constraint[i[1]], 1)
+        except:
+            pass
 
         # For species
         min = 1e-10
@@ -712,13 +770,13 @@ def run_case3(xA, xB, xAB=1e-25, scaling=True):
                     model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
                 iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
             #NOTE: trying to scale solids in this way is significantly worse
-            else:
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-                iscale.constraint_scaling_transform(
-                    model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-                iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
+            #else:
+            #    iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+            #    iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+            #    iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+            #    iscale.constraint_scaling_transform(
+            #        model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+            #    iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
 
         iscale.calculate_scaling_factors(model.fs.unit)
@@ -742,37 +800,73 @@ def run_case3(xA, xB, xAB=1e-25, scaling=True):
     #       Code throws errors whenever referencing 'conc_mol_phase_comp' and will
     #       crash if I try to report
     for i in model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp:
-        print(str(i)+"\t"+str(value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[i])))
+        print(str(i)+"\t"+str(value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[i])/1000))
+
+    A = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","A"])/1000
+    B = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","B"])/1000
+    Ksp = value(model.fs.unit.control_volume.reactions[0.0].k_eq["AB_Ksp"].expr)/1000/1000
+
+    print()
+    if Ksp >= A*B:
+        print("Constraint is satisfied!")
+    else:
+        print("Constraint is VIOLATED!")
+        print("\tRelative error: "+str(Ksp/A/B)+">=1")
+    print("Ksp =\t"+str(Ksp))
+    print("A*B =\t"+str(A*B))
 
     print("==========================================================================")
 
 if __name__ == "__main__":
-    #run_case1(xA=1e-9, xB=1e-9, scaling=True)
-    #run_case1(xA=1e-2, xB=1e-9, scaling=True)
-    #run_case1(xA=1e-9, xB=1e-2, scaling=True)
-    #run_case1(xA=1e-2, xB=1e-2, scaling=True)
 
-    #run_case1(xA=1e-9, xB=1e-9, scaling=False)
-    #run_case1(xA=1e-2, xB=1e-9, scaling=False)
-    #run_case1(xA=1e-9, xB=1e-2, scaling=False)
-    #run_case1(xA=1e-2, xB=1e-2, scaling=False)
+    '''
+    run_case1(xA=1e-9, xB=1e-9, scaling=True)
+    run_case1(xA=1e-2, xB=1e-9, scaling=True)
+    run_case1(xA=1e-9, xB=1e-2, scaling=True)
+    run_case1(xA=1e-2, xB=1e-2, scaling=True)
 
-    #run_case2a(xA=1e-9, xB=1e-9, scaling=True)
-    #run_case2a(xA=1e-2, xB=1e-9, scaling=True)
-    #run_case2a(xA=1e-9, xB=1e-2, scaling=True)
-    #run_case2a(xA=1e-2, xB=1e-2, scaling=True)
+    run_case1(xA=1e-9, xB=1e-9, scaling=False)
+    run_case1(xA=1e-2, xB=1e-9, scaling=False)
+    run_case1(xA=1e-9, xB=1e-2, scaling=False)
+    run_case1(xA=1e-2, xB=1e-2, scaling=False)
+    '''
 
-    #run_case2a(xA=1e-9, xB=1e-9, scaling=False)
-    #run_case2a(xA=1e-2, xB=1e-9, scaling=False)
-    #run_case2a(xA=1e-9, xB=1e-2, scaling=False)
-    #run_case2a(xA=1e-2, xB=1e-2, scaling=False)
+    '''
+    run_case2a(xA=1e-9, xB=1e-9, scaling=True)
+    run_case2a(xA=1e-2, xB=1e-9, scaling=True)
+    run_case2a(xA=1e-9, xB=1e-2, scaling=True)
+    run_case2a(xA=1e-2, xB=1e-2, scaling=True)
 
-    #run_case2b(xA=1e-9, scaling=True)
-    #run_case2b(xA=1e-2, scaling=True)
-    #run_case2b(xA=0.5, scaling=True)
+    run_case2a(xA=1e-9, xB=1e-9, scaling=False)
+    run_case2a(xA=1e-2, xB=1e-9, scaling=False)
+    run_case2a(xA=1e-9, xB=1e-2, scaling=False)
+    run_case2a(xA=1e-2, xB=1e-2, scaling=False)
+    '''
 
-    #run_case2b(xA=1e-9, scaling=False)
-    #run_case2b(xA=1e-2, scaling=False)
-    #run_case2b(xA=0.5, scaling=False)
+    '''
+    run_case2b(xA=1e-9, scaling=True)
+    run_case2b(xA=1e-2, scaling=True)
+    run_case2b(xA=0.5, scaling=True)
+
+    run_case2b(xA=1e-9, scaling=False)
+    run_case2b(xA=1e-2, scaling=False)
+    run_case2b(xA=0.5, scaling=False)
+    '''
+
 
     run_case3(xA=1e-9, xB=1e-9, xAB=1e-25, scaling=False)
+    run_case3(xA=1e-9, xB=1e-2, xAB=1e-25, scaling=False)
+    run_case3(xA=1e-2, xB=1e-2, xAB=1e-25, scaling=False)
+    run_case3(xA=1e-9, xB=1e-9, xAB=1e-2, scaling=False)
+    run_case3(xA=1e-9, xB=1e-2, xAB=1e-2, scaling=False)
+    run_case3(xA=1e-2, xB=1e-9, xAB=1e-2, scaling=False)
+    run_case3(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=False)
+
+    run_case3(xA=1e-9, xB=1e-9, xAB=1e-25, scaling=True)
+    run_case3(xA=1e-9, xB=1e-2, xAB=1e-25, scaling=True)
+    run_case3(xA=1e-2, xB=1e-2, xAB=1e-25, scaling=True)
+    run_case3(xA=1e-9, xB=1e-9, xAB=1e-2, scaling=True)
+    run_case3(xA=1e-9, xB=1e-2, xAB=1e-2, scaling=True)
+    run_case3(xA=1e-2, xB=1e-9, xAB=1e-2, scaling=True)
+    run_case3(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=True)
+    
