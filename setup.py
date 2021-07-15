@@ -57,6 +57,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/plain",
     author="NAWI team",
+    license="BSD",
     # Classifiers help users find your project by categorizing it.
     #
     # For a list of valid classifiers, see https://pypi.org/classifiers/
