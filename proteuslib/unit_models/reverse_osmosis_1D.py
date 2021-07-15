@@ -23,7 +23,8 @@ from pyomo.environ import (Var,
                            exp,
                            value,
                            Constraint,
-                           Block)
+                           Block,
+                           TerminationCondition)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import (ControlVolume1DBlock,
@@ -373,6 +374,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != MomentumBalanceType.none):
             add_object_reference(self, 'deltaP', feed_side.deltaP)
+            self.deltaP.setub(0)
 
         self._make_performance()
 
@@ -557,7 +559,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="Sherwood number in feed channel")
-        if self.config.pressure_change_type == PressureChangeType.calculated:
+        if (self.config.pressure_change_type == PressureChangeType.calculated
+                and self.config.has_pressure_change):
             self.velocity = Var(
                 self.flowsheet().config.time,
                 self.feed_side.length_domain,
@@ -925,6 +928,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
+        if optarg is None:
+            optarg = {'nlp_scaling_method': 'user-scaling'}
         opt = get_solver(solver, optarg)
 
         init_log.info('Starting initialization')
@@ -954,9 +959,11 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # Step 2: Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+            assert results.solver.termination_condition == TerminationCondition.optimal
 
-        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        #     res = opt.solve(blk, tee=slc.tee)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+            assert res.solver.termination_condition == TerminationCondition.optimal
 
     def _get_performance_contents(self, time_point=0):
         feed_inlet = self.feed_side.properties[time_point, self.feed_side.length_domain.first()]
@@ -1108,7 +1115,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 iscale.set_scaling_factor(v, sf)
         if hasattr(self, 'deltaP'):
             for v in self.feed_side.pressure_dx.values():
-                iscale.set_scaling_factor(v, 1)
+                iscale.set_scaling_factor(v, 1e-3)
         else:
             for v in self.feed_side.pressure_dx.values():
                 iscale.set_scaling_factor(v, 1e5)
@@ -1219,6 +1226,12 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         if hasattr(self, 'eq_friction_factor_darcy'):
             for ind, c in self.eq_friction_factor_darcy.items():
                 sf = iscale.get_scaling_factor(self.friction_factor_darcy[ind])
+                iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, 'eq_dP_dx'):
+            for ind, c in self.eq_dP_dx.items():
+                sf = (iscale.get_scaling_factor(self.deltaP[ind])
+                      * iscale.get_scaling_factor(self.dh))
                 iscale.constraint_scaling_transform(c, sf)
 
 
