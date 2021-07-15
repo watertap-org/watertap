@@ -109,6 +109,7 @@ from idaes.generic_models.properties.core.reactions.equilibrium_constant import 
 )
 from .error import ConfigGeneratorError, BadConfiguration
 
+
 _log = logging.getLogger(__name__)
 
 
@@ -502,11 +503,12 @@ class DataWrapper:
     avoid extra work on repeated accesses.
     """
 
-    #: Subclasses should set this to the list of top-level keys that should be added, i.e. merged,
-    #: into the result when an instance is added to the base data wrapper.
+    #: Subclasses should set this to the list of top-level keys that should be added,
+    # i.e. merged, into the result when an instance is added to the base data wrapper.
     merge_keys = ()
 
-    def __init__(self, data: Dict, config_gen_class: Type[ConfigGenerator] = None, validate_as_type=None):
+    def __init__(self, data: Dict, config_gen_class: Type[ConfigGenerator] = None,
+                 validate_as_type=None):
         """Ctor.
 
         Args:
@@ -537,7 +539,8 @@ class DataWrapper:
             Python dict that can be passed to the IDAES as a config.
         """
         if self._config is None:
-            # the config_gen() call will copy its input, so get the result from the .config attr
+            # the config_gen() call will copy its input, so get the result from
+            # the .config attr
             self._config = self._config_gen(self._data, name=self.name).config
         return self._config
 
@@ -731,15 +734,16 @@ class Reaction(DataWrapper):
         """See documentation on parent class."""
         whoami = "Reaction.from_idaes_config"  # for logging
 
-        # get inverse mapping of strings and values from ReactionConfig.substitute_values, used
-        # for calls to _method_to_str()
+        # get inverse mapping of strings and values from
+        # ReactionConfig.substitute_values, used for calls to _method_to_str()
         subst_strings = {}
         for _, mapping in ReactionConfig.substitute_values.items():
             for k, v in mapping.items():
                 subst_strings[v] = k
 
         if "equilibrium_reactions" not in config:
-            raise BadConfiguration(config=config, whoami=whoami, missing="equilibrium_reactions")
+            raise BadConfiguration(config=config, whoami=whoami,
+                                   missing="equilibrium_reactions")
         result = []
         # XXX: base units?
         for name, r in config["equilibrium_reactions"].items():
@@ -759,14 +763,16 @@ class Reaction(DataWrapper):
 
     @classmethod
     def _convert_stoichiometry(cls, src, tgt):
-        data = {}
+        data, component_list = {}, []
         for key, value in src.items():
             phase, species = key
             if phase in data:
                 data[phase][species] = value  # set species & quantity
             else:
                 data[phase] = {species: value}  # create new dictionary
+            component_list.append(species)
         tgt["stoichiometry"] = data
+        tgt["components"] = component_list
 
 
 class Base(DataWrapper):

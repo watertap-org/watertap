@@ -56,6 +56,14 @@ def level_from_verbosity(vb):
     return level
 
 
+def _connect(url, db):
+    """Connect to Mongo at given URL and database."""
+    _log.info(f"Begin: Connect to MongoDB at: {url}/{db}")
+    db = ElectrolyteDB(url=url, db=db)
+    _log.info(f"End: Connect to MongoDB at: {url}/{db}")
+    return db
+
+
 @click.group()
 @click.version_option(version=None)
 @click.option(
@@ -121,7 +129,8 @@ def command_base(verbose, quiet):
 def load_data(input_file, data_type, url, database, validate, bootstrap):
     if bootstrap:
         if _db_is_empty(url, database):
-            _load_bootstrap(url, database)
+            edb = _connect(url, database)
+            _load_bootstrap(edb, do_validate=validate)
         else:
             click.echo(f"Cannot bootstrap: database {database} at {url} already exists "
                        f"and has one or more of the EDB collections")
@@ -133,10 +142,11 @@ def load_data(input_file, data_type, url, database, validate, bootstrap):
         if data_type is None:
             click.echo("Error: -t/--type is required")
             return -2
-        _load(input_file, data_type, url, database, validate)
+        edb = _connect(url, database)
+        _load(input_file, data_type, edb, do_validate=validate)
 
 
-def _load(input_file, data_type, url, database, validate):
+def _load(input_file, data_type, edb, do_validate=True):
     print_messages = _log.isEnabledFor(logging.ERROR)
     filename = input_file.name
     _log.debug(f"Reading records from input file '{filename}'")
@@ -144,35 +154,31 @@ def _load(input_file, data_type, url, database, validate):
     if isinstance(input_data, dict):  # make single record into a list of length one
         input_data = [input_data]
     _log.info(f"Read {len(input_data)} records from input file '{filename}'")
-    if validate:
-        _log.info("Validating records")
-        if data_type == "component":
-            vld = validate_component
-        elif data_type == "reaction":
-            vld = validate_reaction
-        elif data_type == "base":
-            def vld(x):
-                _log.warning("No validation for records of type 'base' (yet)")
-                return x
+    if do_validate:
+        if data_type == "base":
+            _log.warning("No validation for records of type 'base' (yet)")
+            data = input_data
         else:
-            raise RuntimeError(f"Unexpected data type: {data_type}")
-        data = []
-        for record in input_data:
-            try:
-                d = vld(record)
-            except ValidationError as err:
-                click.echo(f"Validation failed: {err}")
-                if print_messages:
-                    click.echo("Record:")
-                    click.echo(json.dumps(record, indent=2))
-                return -1
-            data.append(d)
+            _log.info("Validating records")
+            if data_type in ("component", "reaction"):
+                obj_type = data_type
+            else:
+                raise RuntimeError(f"Unexpected data type: {data_type}")
+            data = []
+            for record in input_data:
+                try:
+                    validate(record, obj_type=obj_type)
+                except ValidationError as err:
+                    click.echo(f"Validation failed: {err}")
+                    if print_messages:
+                        click.echo("Record:")
+                        click.echo(json.dumps(record, indent=2))
+                    return -1
+                data.append(record)
     else:
         data = input_data
-    _log.info(f"Connecting to MongoDB at: {url}/{database}")
-    db = ElectrolyteDB(url=url, db=database)
     _log.info(f"Loading records into collection '{data_type}'")
-    n = db.load(data, rec_type=data_type)
+    n = edb.load(data, rec_type=data_type)
     if print_messages:
         click.echo(f"Loaded {n} record(s) into collection '{data_type}'")
 
@@ -186,22 +192,26 @@ def _db_is_empty(url, database):
     if not collections:
         return True
     if not {"base", "component", "reaction"}.intersection(collections):
-        _log.warning("Bootstrapping into non-empty database, but without any EDB collections")
+        _log.warning("Bootstrapping into non-empty database,"
+                     "but without any EDB collections")
         return True
     return False
 
-def _load_bootstrap(url, database):
-    _log.info(f"Start: Bootstrapping database {database} at {url}")
+
+def _load_bootstrap(edb, **kwargs):
+    _log.info(f"Begin: Bootstrapping database {edb.database} at {edb.url}")
     for t in "base", "component", "reaction":
         _log.info(f"Loading collection: {t}")
         filename = t + ".json"
         path = get_edb_data(filename)
-        _load(path.open("r"), t, url, database, False)
-    _log.info(f"Done: Bootstrapping database {database} at {url}")
+        _load(path.open("r"), t, edb, **kwargs)
+    _log.info(f"End: Bootstrapping database {edb.database} at {edb.url}")
 
 #################################################################################
 # DUMP command
 #################################################################################
+
+
 @command_base.command(
     name="dump", help="Dump JSON records from the Electrolyte Database"
 )
