@@ -763,18 +763,19 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 return (b.deltaP_stage[t] ==
                         sum(b.deltaP[t, x] * b.length / nfe
                             for x in b.feed_side.length_domain if x != 0))
-        elif (self.config.pressure_change_type == PressureChangeType.fixed_per_stage
+
+        if (self.config.pressure_change_type == PressureChangeType.fixed_per_stage
                 and self.config.has_pressure_change):
             @self.Constraint(self.flowsheet().config.time,
                              self.feed_side.length_domain,
                              doc='Fixed pressure drop across unit')
             def eq_pressure_drop(b, t, x):
                 return b.deltaP_stage[t] == b.length * b.deltaP[t, x]
-        elif (self.config.pressure_change_type == PressureChangeType.calculated
+
+        if (self.config.pressure_change_type == PressureChangeType.calculated
                 and self.config.has_pressure_change):
             ## ==========================================================================
             # Crossflow velocity
-
             @self.Constraint(self.flowsheet().config.time,
                              self.feed_side.length_domain,
                              doc="Crossflow velocity constraint")
@@ -792,7 +793,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                              self.feed_side.length_domain,
                              doc="Darcy friction factor constraint")
             def eq_friction_factor_darcy(b, t, x):
-                return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
+                if x == self.feed_side.length_domain.first():
+                    return Constraint.Skip
+                else:
+                    return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
             ## ==========================================================================
             # Pressure change per unit length due to friction
             # -1/2*f/dh*density*velocity^2
@@ -806,16 +810,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 else:
                     bulk = b.feed_side.properties[t, x]
                     return (b.deltaP[t, x] * b.dh ==
-                            0.5 * b.friction_factor_darcy[t, x]
+                            -0.5 * b.friction_factor_darcy[t, x]
                             * bulk.dens_mass_phase['Liq'] * b.velocity[t, x]**2)
-            @self.Constraint(self.flowsheet().config.time,
-                             self.feed_side.length_domain,
-                             doc="pressure drop only")
-            def eq_deltaP_negative(b, t, x):
-                if x == self.feed_side.length_domain.first():
-                    return Constraint.Skip
-                else:
-                    return b.deltaP[t, x] <= 0
         ## ==========================================================================
         # Feed-side isothermal conditions
 
