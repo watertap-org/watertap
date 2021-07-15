@@ -37,22 +37,13 @@ import proteuslib.property_models.NaCl_prop_pack \
     as props
 
 from idaes.core.util import get_solver
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import *
-#                                               (degrees_of_freedom,
-#                                               number_variables,
-#                                               number_total_constraints,
-#                                               number_unused_variables,
-#                                               unused_variables_set,
-#                                               unfixed_variables_in_activated_equalities_set,
-#                                               variables_set,
-#                                               fixed_variables_in_activated_equalities_set)
+
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_variables_generator,
                                      unscaled_constraints_generator,
                                      badly_scaled_var_generator,
-                                     get_scaling_factor,
                                      set_scaling_factor)
 
 # -----------------------------------------------------------------------------
@@ -68,6 +59,7 @@ def test_config():
 
     assert len(m.fs.unit.config) == 16
 
+
     #
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -81,6 +73,7 @@ def test_config():
     assert m.fs.unit.config.pressure_change_type is PressureChangeType.fixed_per_stage
     assert m.fs.unit.config.concentration_polarization_type is ConcentrationPolarizationType.calculated
     assert m.fs.unit.config.mass_transfer_coefficient is MassTransferCoefficient.calculated
+
 
 @pytest.mark.unit
 def test_option_has_pressure_change():
@@ -197,6 +190,7 @@ class TestReverseOsmosis():
         feed_flow_mass = 1
         feed_mass_frac_NaCl = 0.035
         feed_pressure = 70e5
+
         feed_temperature = 273.15 + 25
         A = 4.2e-12
         B = 3.5e-8
@@ -233,7 +227,6 @@ class TestReverseOsmosis():
             assert isinstance(port, Port)
 
         # test pyomo objects on unit
-        # TODO: uncomment relevant vars/constraints once added into model and delete remaining
         unit_objs_type_dict = {'dens_solvent': Param,
                                'A_comp': Var,
                                'B_comp': Var,
@@ -304,14 +297,11 @@ class TestReverseOsmosis():
         # test statistics
         assert number_variables(m) == 1171
         assert number_total_constraints(m) == 1120
-        unused_list = unused_variables_set(m)
-        [print(i) for i in unused_list]
-        assert number_unused_variables(m) == 28  # TODO: vars from property package parameters (old message from 0dRO)
+        assert number_unused_variables(m) == 28
 
     @pytest.mark.integration
     def test_units(self, RO_frame):
         m = RO_frame
-        # TODO: add assert_units_equivalent for several variables
         assert_units_consistent(m.fs.unit)
 
     @pytest.mark.unit
@@ -332,11 +322,9 @@ class TestReverseOsmosis():
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
-        [print(i) for i in unscaled_var_list]
         assert len(unscaled_var_list) == 0
         # check that all constraints have been scaled
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        [print(i) for i in unscaled_constraint_list]
         assert len(unscaled_constraint_list) == 0
 
     @pytest.mark.component
@@ -347,13 +335,12 @@ class TestReverseOsmosis():
     def test_var_scaling(self, RO_frame):
         m = RO_frame
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i, j) for i, j in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
     def test_solve(self, RO_frame):
         m = RO_frame
-        m.fs.unit.initialize()
+
         solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
 
@@ -684,7 +671,7 @@ class TestReverseOsmosis():
         #Check for poorly scaled variables
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
-#
+
         # Solve
         solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
@@ -1367,7 +1354,7 @@ class TestReverseOsmosis():
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
         assert len(unscaled_constraint_list) == 0
 
-        initialization_tester(RO_frame)
+        initialization_tester(m)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []

@@ -25,6 +25,7 @@ from pyomo.environ import (Var,
                            Constraint,
                            Block,
                            TerminationCondition)
+
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import (ControlVolume1DBlock,
@@ -68,6 +69,7 @@ class PressureChangeType(Enum):
     fixed_per_unit_length = auto()   # pressure drop per unit length is user-specified value
     calculated = auto()              # pressure drop across membrane channel is calculated
     
+
 @declare_process_block_class("ReverseOsmosis1D")
 class ReverseOsmosis1DData(UnitModelBlockData):
     """Standard 1D Reverse Osmosis Unit Model Class."""
@@ -323,7 +325,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 "'has_pressure_change' must be set to True"
                     .format(self.config.pressure_change_type))
 
-
     def build(self):
         """
         Build 1D RO model (pre-DAE transformation).
@@ -385,12 +386,14 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             self.flowsheet().config.time,
             doc="Material properties of mixed permeate exiting the module",
             default=tmp_dict)
+
         # Membrane interface: indexed state block
         self.feed_side.properties_interface = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             self.feed_side.length_domain,
             doc="Material properties of feed-side membrane interface",
             default=tmp_dict)
+
         # Add port to permeate_out
         self.add_port(name="permeate_outlet", block=self.permeate_out)
 
@@ -398,6 +401,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         """ Add references to control volume geometry."""
         add_object_reference(self, 'length', feed_side.length)
         add_object_reference(self, 'area_cross', feed_side.area)
+
 
         # Add reference to pressure drop for feed side only
         if (self.config.has_pressure_change is True and
@@ -606,6 +610,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="Darcy friction factor in feed channel")
+
         # ==========================================================================
         # Volumetric Recovery rate
 
@@ -669,6 +674,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 elif comp.is_solute():
                     return (b.flux_mass_phase_comp[t, x, p, j] == b.B_comp[t, j]
                             * (interface.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j]))
+
         # ==========================================================================
         # Final permeate mass flow rate (of solvent and solute) --> Mp,j, final = sum(Mp,j)
 
@@ -921,7 +927,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             return interface.flow_vol_phase['Liq'] ==\
                    bulk.flow_vol_phase['Liq']
 
-
     def initialize(blk,
                    feed_side_args=None,
                    permeate_side_args=None,
@@ -959,6 +964,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # Create solver
         if optarg is None:
             optarg = {'nlp_scaling_method': 'user-scaling'}
+
         opt = get_solver(solver, optarg)
 
         init_log.info('Starting initialization')
@@ -1004,7 +1010,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         var_dict["Membrane Area"] = self.area
         var_dict["Membrane Length"] = self.length
         var_dict["Membrane Width"] = self.width
-
         #TODO: add more vars
         return {"vars": var_dict}
 
@@ -1142,6 +1147,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 if comp.is_solute:
                     sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
                 iscale.set_scaling_factor(v, sf)
+
         if hasattr(self, 'deltaP'):
             for v in self.feed_side.pressure_dx.values():
                 iscale.set_scaling_factor(v, 1e-3)
@@ -1162,7 +1168,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         iscale.constraint_scaling_transform(self.eq_area, sf)
 
         for ind, c in self.eq_permeate_production.items():
-            # TODO: revise this scaling factor
+            # TODO: revise this scaling factor; setting to 1 for now
             iscale.constraint_scaling_transform(c, 1)
 
         for ind, c in self.eq_flux_mass.items():
