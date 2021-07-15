@@ -175,7 +175,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
     **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
 
     CONFIG.declare("pressure_change_type", ConfigValue(
-        default=PressureChangeType.calculated,
+        default=PressureChangeType.fixed_per_stage,
         domain=In(PressureChangeType),
         description="Pressure change term construction flag",
         doc="""
@@ -293,6 +293,35 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 "difference."
             )
             self.config.transformation_scheme = "BACKWARD"
+
+        if (self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated
+                and self.config.mass_transfer_coefficient == MassTransferCoefficient.none):
+            raise ConfigurationError(
+                "\n'mass_transfer_coefficient' and 'concentration_polarization_type' options configured incorrectly:\n"
+                "'mass_transfer_coefficient' cannot be set to MassTransferCoefficient.none "
+                "while 'concentration_polarization_type' is set to ConcentrationPolarizationType.calculated.\n "
+                "\n\nSet 'mass_transfer_coefficient' to MassTransferCoefficient.fixed or "
+                "MassTransferCoefficient.calculated "
+                "\nor set 'concentration_polarization_type' to ConcentrationPolarizationType.fixed or "
+                "ConcentrationPolarizationType.none")
+        if (self.config.concentration_polarization_type != ConcentrationPolarizationType.calculated
+                and self.config.mass_transfer_coefficient != MassTransferCoefficient.none):
+            raise ConfigurationError(
+                "\nConflict between configuration options:\n"
+                "'mass_transfer_coefficient' cannot be set to {} "
+                "while 'concentration_polarization_type' is set to {}.\n\n"
+                "'mass_transfer_coefficient' must be set to MassTransferCoefficient.none\nor "
+                "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated"
+                    .format(self.config.mass_transfer_coefficient, self.config.concentration_polarization_type))
+        if (self.config.pressure_change_type is not PressureChangeType.fixed_per_stage
+                and self.config.has_pressure_change is False):
+            raise ConfigurationError(
+                "\nConflict between configuration options:\n"
+                "'has_pressure_change' cannot be False "
+                "while 'pressure_change_type' is set to {}.\n\n"
+                "'pressure_change_type' must be set to PressureChangeType.fixed_per_stage\nor "
+                "'has_pressure_change' must be set to True"
+                    .format(self.config.pressure_change_type))
 
 
     def build(self):

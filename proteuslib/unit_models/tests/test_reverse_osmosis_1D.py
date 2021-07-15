@@ -78,7 +78,7 @@ def test_config():
     assert not m.fs.unit.config.has_pressure_change
     assert m.fs.unit.config.property_package is \
            m.fs.properties
-    assert m.fs.unit.config.pressure_change_type is PressureChangeType.calculated
+    assert m.fs.unit.config.pressure_change_type is PressureChangeType.fixed_per_stage
     assert m.fs.unit.config.concentration_polarization_type is ConcentrationPolarizationType.calculated
     assert m.fs.unit.config.mass_transfer_coefficient is MassTransferCoefficient.calculated
 
