@@ -956,6 +956,11 @@ reaction_config = {
                     "concentration_form": ConcentrationForm.molarity,
                     "parameter_data": {
                         "dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
+                        #"k_eq_ref": (10**-23, pyunits.mol**2/pyunits.L**2),
+
+                        # NOTE: Below is just a test value to demonstrate that
+                        #       the model 'can' work. Significant issues remain
+                        #       in how solids are implemented 
                         "k_eq_ref": (10**-26, pyunits.mol**2/pyunits.L**2),
                         "T_eq_ref": (300.0, pyunits.K),
                         "reaction_order": { ("Sol", "FePO4(s)"): 0,
