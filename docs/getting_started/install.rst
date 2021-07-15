@@ -51,7 +51,7 @@ If you are going to use ProteusLib's functionality, but *do not* plan to contrib
 
 	.. code-block:: shell
 
-		pip install https://github.com/nawi-hub/proteuslib/archive/main.zip
+		pip install proteuslib
 
 #. To verify that the installation was successful, open a Python interpreter and try importing some of ProteusLib's modules, e.g.:
 
