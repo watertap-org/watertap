@@ -699,12 +699,7 @@ class TestChlorination():
 
         # Inherent reactions have eps in the 'thermo_params'
         for rid in model.fs.thermo_params.inherent_reaction_idx:
-            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
-            # Want to set eps in some fashion similar to this
-            if scale < 1e-16:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = eps
-            else:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = eps
+            model.fs.thermo_params.component("reaction_"+rid).eps.value = eps
 
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
@@ -714,12 +709,7 @@ class TestChlorination():
 
         # Equilibiurm reactions have eps in the 'rxn_params'
         for rid in model.fs.rxn_params.equilibrium_reaction_idx:
-            scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
-            # Want to set eps in some fashion similar to this
-            if scale < 1e-16:
-                model.fs.rxn_params.component("reaction_"+rid).eps.value = eps
-            else:
-                model.fs.rxn_params.component("reaction_"+rid).eps.value = eps
+            model.fs.rxn_params.component("reaction_"+rid).eps.value = eps
 
         # NOTE: Because the k values for these ammonium chloride reactions are extremely high,
         #       we are scaling these slightly differently from the rest of the reactions
@@ -782,7 +772,7 @@ class TestChlorination():
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
         assert pytest.approx(6.0413, rel=1e-5) == pH
-        assert pytest.approx(7.8946, rel=1e-5) == pOH
+        assert pytest.approx(7.8950, rel=1e-5) == pOH
 
         hypo_remaining = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"])/1000
         hypo_remaining += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"])/1000
