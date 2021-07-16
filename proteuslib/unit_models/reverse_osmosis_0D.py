@@ -1055,12 +1055,48 @@ class ReverseOsmosisData(UnitModelBlockData):
         if hasattr(self, "width"):
             var_dict["Membrane Width"] = self.width
         if hasattr(self, "deltaP"):
-            var_dict["Pressure Change"] = self.deltaP[time_point]
+            var_dict["Pressure Drop"] = self.deltaP[time_point]
         if hasattr(self, "N_Re_io"):
-            var_dict["Inlet Reynolds Number"] = self.N_Re_io[time_point, 'in']
-        if hasattr(self, "N_Re_io"):
-            var_dict["Outlet Reynolds Number"] = self.N_Re_io[time_point, 'out']
-        # TODO: add more vars
+            var_dict["Reynolds Number @Inlet"] = self.N_Re_io[time_point, 'in']
+            var_dict["Reynolds Number @Outlet"] = self.N_Re_io[time_point, 'out']
+        if hasattr(self, "velocity_io"):
+            var_dict["Velocity @Inlet"] = self.velocity_io[time_point, 'in']
+            var_dict["Velocity @Outlet"] = self.velocity_io[time_point, 'out']
+        var_dict['Concentration @Inlet,Membrane-Interface '] = (
+                    self.feed_side.properties_interface_in[time_point].conc_mass_phase_comp['Liq', 'NaCl'])
+        var_dict['Concentration @Outlet,Membrane-Interface '] = (
+            self.feed_side.properties_interface_out[time_point].conc_mass_phase_comp['Liq','NaCl'])
+        var_dict['Concentration @Inlet,Bulk'] = (
+                    self.feed_side.properties_in[time_point].conc_mass_phase_comp['Liq', 'NaCl'])
+        var_dict['Concentration @Outlet,Bulk'] = (
+            self.feed_side.properties_out[time_point].conc_mass_phase_comp['Liq','NaCl'])
+        if self.feed_side.properties_interface_out[time_point].is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Outlet,Membrane-Interface '] = (
+                self.feed_side.properties_interface_out[time_point].pressure_osm)
+        if self.feed_side.properties_out[time_point].is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Outlet,Bulk'] = (
+                self.feed_side.properties_out[time_point].pressure_osm)
+        if self.feed_side.properties_interface_in[time_point].is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Inlet,Membrane-Interface'] = (
+                self.feed_side.properties_interface_in[time_point].pressure_osm)
+        if self.feed_side.properties_in[time_point].is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Inlet,Bulk'] = (
+                self.feed_side.properties_in[time_point].pressure_osm)
+        if self.feed_side.properties_in[time_point].is_property_constructed('flow_vol_phase'):
+            var_dict['Volumetric Flowrate @Inlet'] = (
+                self.feed_side.properties_in[time_point].flow_vol_phase['Liq'])
+        if self.feed_side.properties_out[time_point].is_property_constructed('flow_vol_phase'):
+            var_dict['Volumetric Flowrate @Outlet'] = (
+                self.feed_side.properties_in[time_point].flow_vol_phase['Liq'])
+
+        # TODO: (1) add more vars, (2) would be nice to add units to output, and (3) should be able to report output of
+        #  "NaN" or "Not Reported", mainly for properties that exist but are not necessarily constructed within model
+        #  constraints. One example in this case is the osmotic pressure of the bulk feed, which would certainly be of
+        #  interest to users with a background in desalination (it is currently not reported because it is not directly
+        #  used in any model constraints). Furthermore, the report() method seems to be limited to Pyomo Var objects for
+        #  which the pyomo value() method is applied to. That is, a Pyomo Var object must be used; e.g., providing a
+        #  list as output would yield an error.
+
         return {"vars": var_dict}
 
     def _get_stream_table_contents(self, time_point=0):
