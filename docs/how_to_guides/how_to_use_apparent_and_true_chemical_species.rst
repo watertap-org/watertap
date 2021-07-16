@@ -1,7 +1,7 @@
 How to use apparent and true chemical species
 =============================================
 
-:doc:`how_to_setup_simple_chemistry`
+:doc: `how_to_setup_simple_chemistry`
 
 In ProteusLib, most all chemical processes simulated will be considered "true"
 species, i.e., species that actually exist in an aqueous solution. However, their
