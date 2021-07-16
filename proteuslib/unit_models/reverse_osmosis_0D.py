@@ -12,7 +12,7 @@
 ###############################################################################
 
 
-from enum import Enum
+from enum import Enum, auto
 from copy import deepcopy
 # Import Pyomo libraries
 from pyomo.environ import (Var,
@@ -46,22 +46,22 @@ _log = idaeslog.getLogger(__name__)
 
 
 class ConcentrationPolarizationType(Enum):
-    none = 0        # simplified assumption: no concentration polarization
-    fixed = 1       # simplified assumption: concentration polarization modulus is a user specified value
-    calculated = 2  # calculate concentration polarization (concentration at membrane interface)
+    none = auto()                    # simplified assumption: no concentration polarization
+    fixed = auto()                   # simplified assumption: concentration polarization modulus is a user specified value
+    calculated = auto()              # calculate concentration polarization (concentration at membrane interface)
 
 
 class MassTransferCoefficient(Enum):
-    none = 0        # mass transfer coefficient not utilized for concentration polarization effect
-    fixed = 1       # mass transfer coefficient is a user specified value
-    calculated = 2  # mass transfer coefficient is calculated
+    none = auto()                    # mass transfer coefficient not utilized for concentration polarization effect
+    fixed = auto()                   # mass transfer coefficient is a user specified value
+    calculated = auto()              # mass transfer coefficient is calculated
     # TODO: add option for users to define their own relationship?
 
 
 class PressureChangeType(Enum):
-    fixed_per_stage = 1        # pressure drop across membrane channel is a user-specified value
-    fixed_per_unit_length = 2  # pressure drop per unit length across membrane channel is a user-specified value
-    calculated = 3             # pressure drop across membrane channel is calculated
+    fixed_per_stage = auto()         # pressure drop across membrane channel is a user-specified value
+    fixed_per_unit_length = auto()   # pressure drop per unit length across membrane channel is a user-specified value
+    calculated = auto()              # pressure drop across membrane channel is calculated
 
 
 @declare_process_block_class("ReverseOsmosis0D")
@@ -1047,6 +1047,8 @@ class ReverseOsmosisData(UnitModelBlockData):
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
+        var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[time_point, 'Liq']
+        var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[time_point, 'Liq', 'H2O']
         var_dict["Membrane Area"] = self.area
         if hasattr(self, "length"):
             var_dict["Membrane Length"] = self.length
@@ -1054,6 +1056,10 @@ class ReverseOsmosisData(UnitModelBlockData):
             var_dict["Membrane Width"] = self.width
         if hasattr(self, "deltaP"):
             var_dict["Pressure Change"] = self.deltaP[time_point]
+        if hasattr(self, "N_Re_io"):
+            var_dict["Inlet Reynolds Number"] = self.N_Re_io[time_point, 'in']
+        if hasattr(self, "N_Re_io"):
+            var_dict["Outlet Reynolds Number"] = self.N_Re_io[time_point, 'out']
         # TODO: add more vars
         return {"vars": var_dict}
 
