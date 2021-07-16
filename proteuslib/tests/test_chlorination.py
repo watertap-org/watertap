@@ -60,8 +60,10 @@ from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rx
 # Import safe log power law equation
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
 
-# Import built-in Gibb's Energy function
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import gibbs_energy
+# Import k-value functions 
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+    gibbs_energy,
+    van_t_hoff)
 
 # Import built-in van't Hoff function
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff

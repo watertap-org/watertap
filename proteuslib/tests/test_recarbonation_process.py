@@ -53,8 +53,6 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
     gibbs_energy,
-)
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
     van_t_hoff,
 )
 
