@@ -729,21 +729,6 @@ class TestChlorination():
             iscale.constraint_scaling_transform(model.fs.unit.control_volume.reactions[0.0].
                     equilibrium_constraint[i[1]], 0.01)
 
-        # Next, try adding scaling for species
-        min = 1e-6
-        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
-            # i[0] = phase, i[1] = species
-            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
-                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
-            else:
-                scale = min
-            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-            iscale.constraint_scaling_transform(
-                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
-
         iscale.calculate_scaling_factors(model.fs.unit)
 
         assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
