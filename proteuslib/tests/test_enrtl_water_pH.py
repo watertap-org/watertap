@@ -11,16 +11,15 @@
 #
 ###############################################################################
 
-'''
+"""
     This test is to establish that the core chemistry packages in IDAES solve
     a simple water dissociation problem and return the correct pH value, as well
     as excerising the implementation of the ENRTL model within that same context.
 
     This test also includes checking the pH value of a typical acid and checking
-    the calculated activity coefficients for a relatively dilute system of ions. 
-'''
+    the calculated activity coefficients for a relatively dilute system of ions.
+"""
 # Importing testing libraries
-import unittest
 import pytest
 
 # Importing the object for units from pyomo
@@ -35,7 +34,6 @@ from idaes.core.phases import PhaseType as PT
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
 from idaes.generic_models.properties.core.pure.electrolyte import relative_permittivity_constant
 from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.eos.enrtl import ENRTL
 from idaes.generic_models.properties.core.eos.enrtl_reference_states import Unsymmetric
 
