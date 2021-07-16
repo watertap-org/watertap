@@ -37,18 +37,19 @@ an ``"Apparent"`` species.
 
 .. testcode::
 
-  # Importing the object for units from pyomo
   from pyomo.environ import units as pyunits
-
-  # Imports from idaes core
   from idaes.core import AqueousPhase
-  from idaes.core.components import Solvent, Cation, Anion
 
-  # Imports from idaes generic models
+  # Add Apparent in this import statement
+  from idaes.core.components import Solvent, Cation, Anion, Apparent
+
   import idaes.generic_models.properties.core.pure.Perrys as Perrys
   from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
   from idaes.generic_models.properties.core.state_definitions import FTPx
   from idaes.generic_models.properties.core.eos.ideal import Ideal
+
+  # Add the import for StateIndex
+  from idaes.generic_models.properties.core.generic.generic_property import StateIndex
 
   # Configuration dictionary
   thermo_config = {
@@ -182,10 +183,6 @@ an ``"Apparent"`` species.
                       },
 
           "state_definition": FTPx,
-
-          # This is an optional dictionary to setup bounds on
-          #   the state variables. Names below MUST correspond
-          #   to the 'FTPx' type state definition
           "state_bounds": {"flow_mol": (0, 50, 100),
                            "temperature": (273.15, 300, 650),
                            "pressure": (5e4, 1e5, 1e6)
@@ -196,13 +193,8 @@ an ``"Apparent"`` species.
           #   apparent species.
           "state_components": StateIndex.true,
 
-          # These are generally optional parameters, however, because we
-          #   are using the Perry's model to calculate temperature dependent
-          #   properties, we MUST provide these here.
           "pressure_ref": 1e5,
           "temperature_ref": 300,
-
-          # Our dictionary for base units MUST define the following
           "base_units": {"time": pyunits.s,
                          "length": pyunits.m,
                          "mass": pyunits.kg,
