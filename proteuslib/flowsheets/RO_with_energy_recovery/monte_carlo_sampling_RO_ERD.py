@@ -22,7 +22,7 @@ solve(m, solver=solver)
 sweep_params = {}
 sweep_params['A_comp'] = NormalSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
 sweep_params['B_comp'] = NormalSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
-sweep_params['Porosity'] = UniformSample(m.fs.RO.spacer_porosity, 0.95, 0.99)
+sweep_params['Spacer_porosity'] = UniformSample(m.fs.RO.spacer_porosity, 0.95, 0.99)
 
 # Run the parameter sweep study using num_samples randomly drawn from the above range
 output_filename = 'output/monte_carlo_results.csv'
