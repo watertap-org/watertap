@@ -730,7 +730,7 @@ class TestChlorination():
                     equilibrium_constraint[i[1]], 0.01)
 
         # Next, try adding scaling for species
-        min = 1e-10
+        min = 1e-6
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
             if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
@@ -777,7 +777,7 @@ class TestChlorination():
     @pytest.mark.component
     def test_solve(self, chlorination_obj):
         model = chlorination_obj
-        solver.options['max_iter'] = 20
+        solver.options['max_iter'] = 2
         results = solver.solve(model)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
