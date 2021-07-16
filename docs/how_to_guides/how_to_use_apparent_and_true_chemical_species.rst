@@ -37,91 +37,59 @@ an ``"Apparent"`` species.
 
 .. testcode::
 
-# Importing the object for units from pyomo
-from pyomo.environ import units as pyunits
+  # Importing the object for units from pyomo
+  from pyomo.environ import units as pyunits
 
-# Imports from idaes core
-from idaes.core import AqueousPhase
-from idaes.core.components import Solvent, Cation, Anion
+  # Imports from idaes core
+  from idaes.core import AqueousPhase
+  from idaes.core.components import Solvent, Cation, Anion
 
-# Imports from idaes generic models
-import idaes.generic_models.properties.core.pure.Perrys as Perrys
-from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
-from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.eos.ideal import Ideal
+  # Imports from idaes generic models
+  import idaes.generic_models.properties.core.pure.Perrys as Perrys
+  from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
+  from idaes.generic_models.properties.core.state_definitions import FTPx
+  from idaes.generic_models.properties.core.eos.ideal import Ideal
 
-# Configuration dictionary
-thermo_config = {
-    "components": {
-        'H2O': {"type": Solvent,
-              # Define the methods used to calculate the following properties
-              "dens_mol_liq_comp": Perrys,
-              "enth_mol_liq_comp": Perrys,
-              "cp_mol_liq_comp": Perrys,
-              "entr_mol_liq_comp": Perrys,
-              # Parameter data is always associated with the methods defined above
-              "parameter_data": {
-                    "mw": (18.0153, pyunits.g/pyunits.mol),
-                    # Parameters here come from Perry's Handbook:  p. 2-98
-                    "dens_mol_liq_comp_coeff": {
-                        '1': (5.459, pyunits.kmol*pyunits.m**-3),
-                        '2': (0.30542, pyunits.dimensionless),
-                        '3': (647.13, pyunits.K),
-                        '4': (0.081, pyunits.dimensionless)},
-                    "enth_mol_form_liq_comp_ref": (-285.830, pyunits.kJ/pyunits.mol),
-                    "enth_mol_form_vap_comp_ref": (0, pyunits.kJ/pyunits.mol),
-                    # Parameters here come Perry's Handbook:  p. 2-174
-                    "cp_mol_liq_comp_coeff": {
-                        '1': (2.7637E5, pyunits.J/pyunits.kmol/pyunits.K),
-                        '2': (-2.0901E3, pyunits.J/pyunits.kmol/pyunits.K**2),
-                        '3': (8.125, pyunits.J/pyunits.kmol/pyunits.K**3),
-                        '4': (-1.4116E-2, pyunits.J/pyunits.kmol/pyunits.K**4),
-                        '5': (9.3701E-6, pyunits.J/pyunits.kmol/pyunits.K**5)},
-                    "cp_mol_ig_comp_coeff": {
-                        'A': (30.09200, pyunits.J/pyunits.mol/pyunits.K),
-                        'B': (6.832514, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-1),
-                        'C': (6.793435, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-2),
-                        'D': (-2.534480, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-3),
-                        'E': (0.082139, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**2),
-                        'F': (-250.8810, pyunits.kJ/pyunits.mol),
-                        'G': (223.3967, pyunits.J/pyunits.mol/pyunits.K),
-                        'H': (0, pyunits.kJ/pyunits.mol)},
-                    "entr_mol_form_liq_comp_ref": (69.95, pyunits.J/pyunits.K/pyunits.mol)
-                    # End parameter_data
-                    }},
-        'H_+': {"type": Cation, "charge": 1,
-              # Define the methods used to calculate the following properties
-              "dens_mol_liq_comp": Constant,
-              "enth_mol_liq_comp": Constant,
-              "cp_mol_liq_comp": Constant,
-              "entr_mol_liq_comp": Constant,
-              # Parameter data is always associated with the methods defined above
-              "parameter_data": {
-                    "mw": (1.00784, pyunits.g/pyunits.mol),
-                    "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ/pyunits.mol),
-                    "cp_mol_liq_comp_coeff": (75000, pyunits.J/pyunits.kmol/pyunits.K),
-                    "entr_mol_form_liq_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
-                                },
-                    # End parameter_data
-                    },
-        'OH_-': {"type": Anion, "charge": -1,
-              # Define the methods used to calculate the following properties
-              "dens_mol_liq_comp": Constant,
-              "enth_mol_liq_comp": Constant,
-              "cp_mol_liq_comp": Constant,
-              "entr_mol_liq_comp": Constant,
-              # Parameter data is always associated with the methods defined above
-              "parameter_data": {
-                    "mw": (17.008, pyunits.g/pyunits.mol),
-                    "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-                    "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ/pyunits.mol),
-                    "cp_mol_liq_comp_coeff": (75000, pyunits.J/pyunits.kmol/pyunits.K),
-                    "entr_mol_form_liq_comp_ref": (-10.75, pyunits.J/pyunits.K/pyunits.mol)
-                                },
-                    # End parameter_data
-                    },
-          'Na_+': {"type": Cation, "charge": 1,
+  # Configuration dictionary
+  thermo_config = {
+      "components": {
+          'H2O': {"type": Solvent,
+                # Define the methods used to calculate the following properties
+                "dens_mol_liq_comp": Perrys,
+                "enth_mol_liq_comp": Perrys,
+                "cp_mol_liq_comp": Perrys,
+                "entr_mol_liq_comp": Perrys,
+                # Parameter data is always associated with the methods defined above
+                "parameter_data": {
+                      "mw": (18.0153, pyunits.g/pyunits.mol),
+                      # Parameters here come from Perry's Handbook:  p. 2-98
+                      "dens_mol_liq_comp_coeff": {
+                          '1': (5.459, pyunits.kmol*pyunits.m**-3),
+                          '2': (0.30542, pyunits.dimensionless),
+                          '3': (647.13, pyunits.K),
+                          '4': (0.081, pyunits.dimensionless)},
+                      "enth_mol_form_liq_comp_ref": (-285.830, pyunits.kJ/pyunits.mol),
+                      "enth_mol_form_vap_comp_ref": (0, pyunits.kJ/pyunits.mol),
+                      # Parameters here come Perry's Handbook:  p. 2-174
+                      "cp_mol_liq_comp_coeff": {
+                          '1': (2.7637E5, pyunits.J/pyunits.kmol/pyunits.K),
+                          '2': (-2.0901E3, pyunits.J/pyunits.kmol/pyunits.K**2),
+                          '3': (8.125, pyunits.J/pyunits.kmol/pyunits.K**3),
+                          '4': (-1.4116E-2, pyunits.J/pyunits.kmol/pyunits.K**4),
+                          '5': (9.3701E-6, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                      "cp_mol_ig_comp_coeff": {
+                          'A': (30.09200, pyunits.J/pyunits.mol/pyunits.K),
+                          'B': (6.832514, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-1),
+                          'C': (6.793435, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-2),
+                          'D': (-2.534480, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-3),
+                          'E': (0.082139, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**2),
+                          'F': (-250.8810, pyunits.kJ/pyunits.mol),
+                          'G': (223.3967, pyunits.J/pyunits.mol/pyunits.K),
+                          'H': (0, pyunits.kJ/pyunits.mol)},
+                      "entr_mol_form_liq_comp_ref": (69.95, pyunits.J/pyunits.K/pyunits.mol)
+                      # End parameter_data
+                      }},
+          'H_+': {"type": Cation, "charge": 1,
                 # Define the methods used to calculate the following properties
                 "dens_mol_liq_comp": Constant,
                 "enth_mol_liq_comp": Constant,
@@ -129,15 +97,15 @@ thermo_config = {
                 "entr_mol_liq_comp": Constant,
                 # Parameter data is always associated with the methods defined above
                 "parameter_data": {
-                      "mw": (22.989769, pyunits.g/pyunits.mol),
+                      "mw": (1.00784, pyunits.g/pyunits.mol),
                       "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-                      "enth_mol_form_liq_comp_ref": (-240.1, pyunits.kJ/pyunits.mol),
+                      "enth_mol_form_liq_comp_ref": (0, pyunits.kJ/pyunits.mol),
                       "cp_mol_liq_comp_coeff": (75000, pyunits.J/pyunits.kmol/pyunits.K),
-                      "entr_mol_form_liq_comp_ref": (59, pyunits.J/pyunits.K/pyunits.mol)
+                      "entr_mol_form_liq_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
                                   },
                       # End parameter_data
                       },
-          'Cl_-': {"type": Anion, "charge": -1,
+          'OH_-': {"type": Anion, "charge": -1,
                 # Define the methods used to calculate the following properties
                 "dens_mol_liq_comp": Constant,
                 "enth_mol_liq_comp": Constant,
@@ -145,68 +113,100 @@ thermo_config = {
                 "entr_mol_liq_comp": Constant,
                 # Parameter data is always associated with the methods defined above
                 "parameter_data": {
-                      "mw": (35.453, pyunits.g/pyunits.mol),
+                      "mw": (17.008, pyunits.g/pyunits.mol),
                       "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-                      "enth_mol_form_liq_comp_ref": (-167.2, pyunits.kJ/pyunits.mol),
+                      "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ/pyunits.mol),
                       "cp_mol_liq_comp_coeff": (75000, pyunits.J/pyunits.kmol/pyunits.K),
-                      "entr_mol_form_liq_comp_ref": (56.5, pyunits.J/pyunits.K/pyunits.mol)
+                      "entr_mol_form_liq_comp_ref": (-10.75, pyunits.J/pyunits.K/pyunits.mol)
                                   },
                       # End parameter_data
                       },
+            'Na_+': {"type": Cation, "charge": 1,
+                  # Define the methods used to calculate the following properties
+                  "dens_mol_liq_comp": Constant,
+                  "enth_mol_liq_comp": Constant,
+                  "cp_mol_liq_comp": Constant,
+                  "entr_mol_liq_comp": Constant,
+                  # Parameter data is always associated with the methods defined above
+                  "parameter_data": {
+                        "mw": (22.989769, pyunits.g/pyunits.mol),
+                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
+                        "enth_mol_form_liq_comp_ref": (-240.1, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (75000, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (59, pyunits.J/pyunits.K/pyunits.mol)
+                                    },
+                        # End parameter_data
+                        },
+            'Cl_-': {"type": Anion, "charge": -1,
+                  # Define the methods used to calculate the following properties
+                  "dens_mol_liq_comp": Constant,
+                  "enth_mol_liq_comp": Constant,
+                  "cp_mol_liq_comp": Constant,
+                  "entr_mol_liq_comp": Constant,
+                  # Parameter data is always associated with the methods defined above
+                  "parameter_data": {
+                        "mw": (35.453, pyunits.g/pyunits.mol),
+                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
+                        "enth_mol_form_liq_comp_ref": (-167.2, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (75000, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (56.5, pyunits.J/pyunits.K/pyunits.mol)
+                                    },
+                        # End parameter_data
+                        },
 
-          # This is how an Apparent species is defined in the configuration dictionary
-          #   it requires the same parameter arguments as True species, but also needs
-          #   a dictionary for "dissociation_species" that tells how much of each
-          #   true species this Apparent species is formed from.
-          'NaCl': {"type": Apparent,
-                "dissociation_species": {"Na_+":1, "Cl_-":1},
-                # Define the methods used to calculate the following properties
-                "dens_mol_liq_comp": Constant,
-                "enth_mol_liq_comp": Constant,
-                "cp_mol_liq_comp": Constant,
-                "entr_mol_liq_comp": Constant,
-                # Parameter data is always associated with the methods defined above
-                "parameter_data": {
-                    "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-                    "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
-                    "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
-                    "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
-                                  },
-                          # End parameter_data
-                          },
-              },
-              # End Component list
+            # This is how an Apparent species is defined in the configuration dictionary
+            #   it requires the same parameter arguments as True species, but also needs
+            #   a dictionary for "dissociation_species" that tells how much of each
+            #   true species this Apparent species is formed from.
+            'NaCl': {"type": Apparent,
+                  "dissociation_species": {"Na_+":1, "Cl_-":1},
+                  # Define the methods used to calculate the following properties
+                  "dens_mol_liq_comp": Constant,
+                  "enth_mol_liq_comp": Constant,
+                  "cp_mol_liq_comp": Constant,
+                  "entr_mol_liq_comp": Constant,
+                  # Parameter data is always associated with the methods defined above
+                  "parameter_data": {
+                      "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
+                      "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
+                      "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
+                      "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
+                                    },
+                            # End parameter_data
+                            },
+                },
+                # End Component list
 
-        "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": Ideal},
-                    },
+          "phases":  {'Liq': {"type": AqueousPhase,
+                              "equation_of_state": Ideal},
+                      },
 
-        "state_definition": FTPx,
+          "state_definition": FTPx,
 
-        # This is an optional dictionary to setup bounds on
-        #   the state variables. Names below MUST correspond
-        #   to the 'FTPx' type state definition
-        "state_bounds": {"flow_mol": (0, 50, 100),
-                         "temperature": (273.15, 300, 650),
-                         "pressure": (5e4, 1e5, 1e6)
-                     },
+          # This is an optional dictionary to setup bounds on
+          #   the state variables. Names below MUST correspond
+          #   to the 'FTPx' type state definition
+          "state_bounds": {"flow_mol": (0, 50, 100),
+                           "temperature": (273.15, 300, 650),
+                           "pressure": (5e4, 1e5, 1e6)
+                       },
 
-        # We must define the 'StateIndex' as "true". This is because in ProteusLib,
-        #   all speciation reactions are defined on the true species, not the
-        #   apparent species. 
-        "state_components": StateIndex.true,
+          # We must define the 'StateIndex' as "true". This is because in ProteusLib,
+          #   all speciation reactions are defined on the true species, not the
+          #   apparent species.
+          "state_components": StateIndex.true,
 
-        # These are generally optional parameters, however, because we
-        #   are using the Perry's model to calculate temperature dependent
-        #   properties, we MUST provide these here.
-        "pressure_ref": 1e5,
-        "temperature_ref": 300,
+          # These are generally optional parameters, however, because we
+          #   are using the Perry's model to calculate temperature dependent
+          #   properties, we MUST provide these here.
+          "pressure_ref": 1e5,
+          "temperature_ref": 300,
 
-        # Our dictionary for base units MUST define the following
-        "base_units": {"time": pyunits.s,
-                       "length": pyunits.m,
-                       "mass": pyunits.kg,
-                       "amount": pyunits.mol,
-                       "temperature": pyunits.K},
-    }
-    # End thermo_config definition
+          # Our dictionary for base units MUST define the following
+          "base_units": {"time": pyunits.s,
+                         "length": pyunits.m,
+                         "mass": pyunits.kg,
+                         "amount": pyunits.mol,
+                         "temperature": pyunits.K},
+      }
+      # End thermo_config definition
