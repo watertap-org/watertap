@@ -1,3 +1,5 @@
+.. _rst_tutorial:
+
 How to setup simple chemistry
 =============================
 
