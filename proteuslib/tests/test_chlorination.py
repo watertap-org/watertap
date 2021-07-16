@@ -695,15 +695,16 @@ class TestChlorination():
     @pytest.mark.component
     def test_scaling(self, chlorination_obj):
         model = chlorination_obj
+        eps = 1e-20
 
         # Inherent reactions have eps in the 'thermo_params'
         for rid in model.fs.thermo_params.inherent_reaction_idx:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
             # Want to set eps in some fashion similar to this
             if scale < 1e-16:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*1e-4
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = eps
             else:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*1e-4
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = eps
 
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
@@ -716,9 +717,9 @@ class TestChlorination():
             scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
             # Want to set eps in some fashion similar to this
             if scale < 1e-16:
-                model.fs.rxn_params.component("reaction_"+rid).eps.value = scale*1e-4
+                model.fs.rxn_params.component("reaction_"+rid).eps.value = eps
             else:
-                model.fs.rxn_params.component("reaction_"+rid).eps.value = 1e-16*1e-4
+                model.fs.rxn_params.component("reaction_"+rid).eps.value = eps
 
         # NOTE: Because the k values for these ammonium chloride reactions are extremely high,
         #       we are scaling these slightly differently from the rest of the reactions
