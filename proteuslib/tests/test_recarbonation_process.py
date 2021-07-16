@@ -16,7 +16,6 @@
     of CO2 into water.
 """
 # =================== Import Statements ==============================
-import unittest
 import pytest
 
 # Import specific pyomo objects
@@ -32,7 +31,6 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.environ import units as pyunits
 
-import idaes.logger as idaeslog
 from idaes.core.util import scaling as iscale
 
 from idaes.core.util import get_solver
@@ -40,8 +38,6 @@ from idaes.core.util import get_solver
 # Import idaes methods to check the model during construction
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
-    fixed_variables_set,
-    activated_constraints_set,
 )
 
 # Import the idaes objects for Generic Properties and Reactions
@@ -57,8 +53,6 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
     gibbs_energy,
-)
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
     van_t_hoff,
 )
 
