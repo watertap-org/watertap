@@ -11,7 +11,7 @@
 #
 ###############################################################################
 
-'''
+"""
     This test is to establish that the core chemistry packages in IDAES
     can solve a complex chlorination problem wherein the hypochlorite
     species get scavenged by NH3 in solution. NH3 binds with the chlorine
@@ -34,9 +34,8 @@
         NH3 + HOCl <---> NH2Cl + H2O
         NH2Cl + HOCl <---> NHCl2 + H2O
         NHCl2 + HOCl <---> NCl3 + H2O
-'''
+"""
 # Importing testing libraries
-import unittest
 import pytest
 
 # Importing the object for units from pyomo
@@ -75,8 +74,6 @@ from pyomo.environ import (ConcreteModel,
                            Suffix)
 
 from idaes.core.util import scaling as iscale
-
-import idaes.logger as idaeslog
 
 # Import pyomo methods to check the system units
 from pyomo.util.check_units import assert_units_consistent
@@ -698,21 +695,53 @@ class TestChlorination():
     @pytest.mark.component
     def test_scaling(self, chlorination_obj):
         model = chlorination_obj
-        eps = 1e-20
 
         # Inherent reactions have eps in the 'thermo_params'
-        model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
-        model.fs.thermo_params.reaction_NH4_Ka.eps.value = eps
-        model.fs.thermo_params.reaction_HOCl_Ka.eps.value = eps
+        for rid in model.fs.thermo_params.inherent_reaction_idx:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
+            # Want to set eps in some fashion similar to this
+            if scale < 1e-16:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*1e-4
+            else:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*1e-4
 
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 1/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.properties_out[0.0].
+                    inherent_equilibrium_constraint[i[1]], 0.1)
 
         # Equilibiurm reactions have eps in the 'rxn_params'
-        model.fs.rxn_params.reaction_NH2Cl_K.eps.value = eps
-        model.fs.rxn_params.reaction_NHCl2_K.eps.value = eps
-        model.fs.rxn_params.reaction_NCl3_K.eps.value = eps
+        for rid in model.fs.rxn_params.equilibrium_reaction_idx:
+            scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
+            # Want to set eps in some fashion similar to this
+            if scale < 1e-16:
+                model.fs.rxn_params.component("reaction_"+rid).eps.value = scale*1e-4
+            else:
+                model.fs.rxn_params.component("reaction_"+rid).eps.value = 1e-16*1e-4
+
+        # NOTE: Because the k values for these ammonium chloride reactions are extremely high,
+        #       we are scaling these slightly differently from the rest of the reactions
+        for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
+            scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.reactions[0.0].
+                    equilibrium_constraint[i[1]], 0.01)
+
+        # Next, try adding scaling for species
+        min = 1e-10
+        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+            # i[0] = phase, i[1] = species
+            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
+                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
+            else:
+                scale = min
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+            iscale.constraint_scaling_transform(
+                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
         iscale.calculate_scaling_factors(model.fs.unit)
 
@@ -733,6 +762,7 @@ class TestChlorination():
 
         solver.options['bound_push'] = 1e-20
         solver.options['mu_init'] = 1e-6
+        solver.options['max_iter'] = 250
         model.fs.unit.initialize(optarg=solver.options)
 
         fin_fixed_vars = fixed_variables_set(model)
@@ -755,18 +785,18 @@ class TestChlorination():
     def test_solution(self, chlorination_obj):
         model = chlorination_obj
 
-        assert pytest.approx(300.0016, rel=1e-5) == value(model.fs.unit.outlet.temperature[0])
-        assert pytest.approx(10, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
-        assert pytest.approx(101325, rel=1e-5) == value(model.fs.unit.outlet.pressure[0])
+        assert pytest.approx(300.002, rel=1e-5) == value(model.fs.unit.outlet.temperature[0])
+        assert pytest.approx(10.0000, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(101325., rel=1e-5) == value(model.fs.unit.outlet.pressure[0])
 
         total_molar_density = \
             value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
-        assert pytest.approx(55.20446, rel=1e-5) == total_molar_density
+        assert pytest.approx(55.2044, rel=1e-5) == total_molar_density
 
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
         assert pytest.approx(6.0413, rel=1e-5) == pH
-        assert pytest.approx(7.8945, rel=1e-5) == pOH
+        assert pytest.approx(7.8946, rel=1e-5) == pOH
 
         hypo_remaining = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"])/1000
         hypo_remaining += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"])/1000
@@ -775,5 +805,5 @@ class TestChlorination():
         combined_chlorine += 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","NHCl2"])/1000
         combined_chlorine += 3*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","NCl3"])/1000
 
-        assert pytest.approx(2.506835, rel=1e-5) == hypo_remaining*70900
-        assert pytest.approx(12.603826, rel=1e-5) == combined_chlorine*70900
+        assert pytest.approx(2.50683, rel=1e-5) == hypo_remaining*70900
+        assert pytest.approx(12.6038, rel=1e-5) == combined_chlorine*70900
