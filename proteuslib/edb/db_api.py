@@ -92,18 +92,29 @@ class ElectrolyteDB:
             All reactions containing any of the names (or all reactions,
             if not specified)
         """
-        if component_names:
-            # if it has a space and a charge, take the formula part only
-            cnames = [c.split(" ", 1)[0] for c in component_names]
-            if any_components:
-                query = {"components": {"$in": cnames}}
-            else:
-                raise NotImplementedError("broken")
-        else:
-            query = {}
         collection = self._db.reaction
-        result = Result(iterator=collection.find(filter=query), item_class=Reaction)
-        return result
+        if component_names:
+            if any_components:
+                # if it has a space and a charge, take the formula part only
+                cnames = [c.split(" ", 1)[0] for c in component_names]
+                query = {"components": {"$in": cnames}}
+                it = collection.find(filter=query)
+            else:
+                # normalize component names, build a set
+                cnames = {c.replace("_", " ") for c in component_names}
+                # Brute force table scan: need to restructure DB for this to be
+                # easy to do with a MongoDB query, i.e. need to put all the
+                # *keys* for stoichiometry.Liq as *values* in an array, then do a:
+                # {$not: {$elemMatch: { $nin: [<components>] } } } on that array
+                found = []
+                for item in collection.find():
+                    item_comp = set(item["stoichiometry"]["Liq"].keys())
+                    if item_comp.issubset(cnames):
+                        found.append(item)
+                it = iter(found)
+        else:
+            it = collection.find()
+        return Result(iterator=it, item_class=Reaction)
 
     def get_base(self, name: str = None):
         """Get base information by name of its type.
