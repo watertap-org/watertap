@@ -771,8 +771,8 @@ class TestChlorination():
 
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-        assert pytest.approx(6.0414, rel=1e-5) == pH
-        assert pytest.approx(7.8946, rel=1e-5) == pOH
+        assert pytest.approx(6.04135, rel=1e-5) == pH
+        assert pytest.approx(7.89455, rel=1e-5) == pOH
 
         hypo_remaining = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"])/1000
         hypo_remaining += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"])/1000
