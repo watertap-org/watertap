@@ -5,5 +5,6 @@ Unit Models
    :maxdepth: 1
    
    reverse_osmosis_0D
+   reverse_osmosis_1D
    nanofiltration_0D
    pressure_exchanger

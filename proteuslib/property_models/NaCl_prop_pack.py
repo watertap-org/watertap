@@ -269,7 +269,7 @@ class _NaClStateBlock(StateBlock):
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         '''
-        Method to relase state variables fixed during initialisation.
+        Method to release state variables fixed during initialisation.
 
         Keyword Arguments:
             flags : dict containing information of which state variables

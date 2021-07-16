@@ -49,6 +49,8 @@ Sets
 
 \*Solute depends on the imported property model; example shown here is for the NaCl property model.
 
+.. _0dro_variables:
+
 Variables
 ----------
 
@@ -134,6 +136,7 @@ if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
    "Friction factor", ":math:`f`", "friction_factor_darcy_io", "[t, x]", ":math:`\text{dimensionless}`"
    "Pressure drop per unit length of feed channel at inlet/outlet", ":math:`ΔP/Δx`", "dP_dx_io", "[t, x]", ":math:`\text{Pa/m}`"
 
+.. _0dro_equations:
 
 Equations
 -----------
