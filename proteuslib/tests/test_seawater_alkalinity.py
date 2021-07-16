@@ -11,7 +11,7 @@
 #
 ###############################################################################
 
-'''
+"""
     This test is to establish that the core chemistry packages in IDAES
     can solve a more complex aqueous speciation problem meant to mimic
     the salinity, pH, and alkalinity of real seawater. Note that not all
@@ -25,9 +25,8 @@
         NaHCO3 <---> Na + HCO3
     Other species:
         Cl
-'''
+"""
 # Importing testing libraries
-import unittest
 import pytest
 
 # Importing the object for units from pyomo
@@ -52,11 +51,10 @@ from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rx
 # Import safe log power law equation
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
 
-# Import built-in Gibb's Energy function
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import gibbs_energy
-
-# Import built-in van't Hoff function
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
+# Import k-value functions
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+    gibbs_energy,
+    van_t_hoff)
 
 # Import specific pyomo objects
 from pyomo.environ import (ConcreteModel,
@@ -66,8 +64,6 @@ from pyomo.environ import (ConcreteModel,
                            Suffix)
 
 from idaes.core.util import scaling as iscale
-
-import idaes.logger as idaeslog
 
 # Import pyomo methods to check the system units
 from pyomo.util.check_units import assert_units_consistent
@@ -843,36 +839,36 @@ class TestSeawaterAlkalinity():
         model = inherent_reactions_config
 
         assert pytest.approx(297.9, rel=1e-5) == value(model.fs.unit.outlet.temperature[0])
-        assert pytest.approx(10.0002908, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(10.00029, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
         assert pytest.approx(101325, rel=1e-5) == value(model.fs.unit.outlet.pressure[0])
 
         total_molar_density = \
             value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
-        assert pytest.approx(54.836892, rel=1e-5) == total_molar_density
+        assert pytest.approx(54.8368, rel=1e-5) == total_molar_density
 
         total_salt = value(model.fs.unit.outlet.mole_frac_comp[0, "Na_+"])*total_molar_density*23
         total_salt += value(model.fs.unit.outlet.mole_frac_comp[0, "Cl_-"])*total_molar_density*35.44
         total_salt += value(model.fs.unit.outlet.mole_frac_comp[0, "NaHCO3"])*total_molar_density*84
         psu = total_salt/(total_molar_density*18)*1000
-        assert pytest.approx(32.6610588, rel=1e-5) == psu
+        assert pytest.approx(32.66105, rel=1e-5) == psu
 
         total_carbonate = value(model.fs.unit.outlet.mole_frac_comp[0, "NaHCO3"])*total_molar_density
         total_carbonate += value(model.fs.unit.outlet.mole_frac_comp[0, "H2CO3"])*total_molar_density
         total_carbonate += value(model.fs.unit.outlet.mole_frac_comp[0, "HCO3_-"])*total_molar_density
         total_carbonate += value(model.fs.unit.outlet.mole_frac_comp[0, "CO3_2-"])*total_molar_density
-        assert pytest.approx(0.002061326858, rel=1e-5) == total_carbonate
+        assert pytest.approx(0.002061326, rel=1e-5) == total_carbonate
 
         carbonate_alk = value(model.fs.unit.outlet.mole_frac_comp[0, "HCO3_-"])*total_molar_density
         carbonate_alk += 2*value(model.fs.unit.outlet.mole_frac_comp[0, "CO3_2-"])*total_molar_density
         carbonate_alk += value(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"])*total_molar_density
         carbonate_alk -= value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])*total_molar_density
         carbonate_alk = carbonate_alk*50000
-        assert pytest.approx(79.75170863, rel=1e-5) == carbonate_alk
+        assert pytest.approx(79.75170, rel=1e-5) == carbonate_alk
 
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-        assert pytest.approx(8.32259791, rel=1e-5) == pH
-        assert pytest.approx(5.68181555, rel=1e-5) == pOH
+        assert pytest.approx(8.32259, rel=1e-5) == pH
+        assert pytest.approx(5.68181, rel=1e-5) == pOH
         assert pytest.approx(0.97986, rel=1e-5) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
 
     @pytest.mark.component
@@ -880,7 +876,7 @@ class TestSeawaterAlkalinity():
         model = equilibrium_reactions_config
 
         assert pytest.approx(297.9, rel=1e-5) == value(model.fs.unit.outlet.temperature[0])
-        assert pytest.approx(10.0002908, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(10.0002, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
         assert pytest.approx(101325, rel=1e-5) == value(model.fs.unit.outlet.pressure[0])
 
         total_molar_density = \
@@ -891,23 +887,23 @@ class TestSeawaterAlkalinity():
         total_salt += value(model.fs.unit.outlet.mole_frac_comp[0, "Cl_-"])*total_molar_density*35.44
         total_salt += value(model.fs.unit.outlet.mole_frac_comp[0, "NaHCO3"])*total_molar_density*84
         psu = total_salt/(total_molar_density*18)*1000
-        assert pytest.approx(32.6610588, rel=1e-5) == psu
+        assert pytest.approx(32.66105, rel=1e-5) == psu
 
         total_carbonate = value(model.fs.unit.outlet.mole_frac_comp[0, "NaHCO3"])*total_molar_density
         total_carbonate += value(model.fs.unit.outlet.mole_frac_comp[0, "H2CO3"])*total_molar_density
         total_carbonate += value(model.fs.unit.outlet.mole_frac_comp[0, "HCO3_-"])*total_molar_density
         total_carbonate += value(model.fs.unit.outlet.mole_frac_comp[0, "CO3_2-"])*total_molar_density
-        assert pytest.approx(0.002061326858, rel=1e-5) == total_carbonate
+        assert pytest.approx(0.002061326, rel=1e-5) == total_carbonate
 
         carbonate_alk = value(model.fs.unit.outlet.mole_frac_comp[0, "HCO3_-"])*total_molar_density
         carbonate_alk += 2*value(model.fs.unit.outlet.mole_frac_comp[0, "CO3_2-"])*total_molar_density
         carbonate_alk += value(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"])*total_molar_density
         carbonate_alk -= value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])*total_molar_density
         carbonate_alk = carbonate_alk*50000
-        assert pytest.approx(79.75170863, rel=1e-5) == carbonate_alk
+        assert pytest.approx(79.75170, rel=1e-5) == carbonate_alk
 
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-        assert pytest.approx(8.32259791, rel=1e-5) == pH
-        assert pytest.approx(5.68181555, rel=1e-5) == pOH
+        assert pytest.approx(8.32259, rel=1e-5) == pH
+        assert pytest.approx(5.68181, rel=1e-5) == pOH
         assert pytest.approx(0.97986, rel=1e-5) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
