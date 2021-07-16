@@ -10,5 +10,3 @@ which is a special component type in the **thermo-properties** configuration dic
 
 For more information on creating a **thermo-properties** configuration dictionary,
 see 'How to setup simple chemistry'.
-
-:ref:`rst_tutorial`
