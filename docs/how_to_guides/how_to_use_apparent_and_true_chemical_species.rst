@@ -206,7 +206,7 @@ an ``"Apparent"`` species.
 
 .. note::
 
-    When you define a species as ``"Apparent"``, and specify ``"state_components": StateIndex.true``,
+    When you define a species as ``"Apparent"`` and specify ``"state_components": StateIndex.true``,
     you cannot reference that species as part of your inlet variables or in any
     reactions in the system. The ``"StateIndex"`` is used to define what species
     can be used in reactions or in the inlet ports to set initial states. For ProteusLib,
