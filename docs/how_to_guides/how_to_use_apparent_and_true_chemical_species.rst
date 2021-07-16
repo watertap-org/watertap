@@ -19,3 +19,22 @@ What you need to update in the thermo-properties configuration dictionary
 2. Specify specific species as ``"Apparent"`` within its component definition
 3. Give a list of "true" species it will dissociate into
 4. Define a "state_components" argument in the config and specify ``"StateIndex.true"``
+
+
+Add the following import statements
+-----------------------------------
+
+.. testsetup::
+
+   # quiet idaes logs
+   import idaes.logger as idaeslogger
+   idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
+   idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
+
+.. testcode::
+
+    # Importing the component types
+    from idaes.core.components import Apparent
+
+    # Importing the state basis 
+    from idaes.generic_models.properties.core.generic.generic_property import StateIndex
