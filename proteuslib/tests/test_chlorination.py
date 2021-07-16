@@ -777,7 +777,7 @@ class TestChlorination():
     @pytest.mark.component
     def test_solve(self, chlorination_obj):
         model = chlorination_obj
-        solver.options['max_iter'] = 2
+        solver.options['max_iter'] = 20
         results = solver.solve(model)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
