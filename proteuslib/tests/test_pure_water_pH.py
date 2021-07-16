@@ -11,12 +11,11 @@
 #
 ###############################################################################
 
-'''
+"""
     This test is to establish that the core chemistry packages in IDAES solve
     a simple water dissociation problem and return the correct pH value.
-'''
+"""
 # Importing testing libraries
-import unittest
 import pytest
 
 # Importing the object for units from pyomo
@@ -41,11 +40,10 @@ from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rx
 # Import safe log power law equation
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
 
-# Import built-in Gibb's Energy function
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import gibbs_energy
-
-# Import built-in van't Hoff function
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
+# Import k-value functions
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+    gibbs_energy,
+    van_t_hoff)
 
 # Import specific pyomo objects
 from pyomo.environ import (ConcreteModel,
@@ -55,8 +53,6 @@ from pyomo.environ import (ConcreteModel,
                            Suffix)
 
 from idaes.core.util import scaling as iscale
-
-import idaes.logger as idaeslog
 
 # Import pyomo methods to check the system units
 from pyomo.util.check_units import assert_units_consistent
@@ -506,7 +502,7 @@ class TestPureWater():
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
         assert pytest.approx(7.00059, rel=1e-5) == pH
         assert pytest.approx(7.00059, rel=1e-5) == pOH
-        assert pytest.approx(0.99999999, rel=1e-5) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
+        assert pytest.approx(0.99999, rel=1e-5) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
 
     @pytest.mark.component
     def test_solution_equilibrium(self, equilibrium_reactions_config):
@@ -523,4 +519,4 @@ class TestPureWater():
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
         assert pytest.approx(7.00059, rel=1e-5) == pH
         assert pytest.approx(7.00059, rel=1e-5) == pOH
-        assert pytest.approx(0.99999999, rel=1e-5) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
+        assert pytest.approx(0.99999, rel=1e-5) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
