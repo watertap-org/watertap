@@ -10,3 +10,12 @@ which is a special component type in the **thermo-properties** configuration dic
 
 For more information on creating a **thermo-properties** configuration dictionary,
 see 'How to setup simple chemistry'.
+
+
+What you need to update in the thermo-properties configuration dictionary
+-------------------------------------------------------------------------
+
+1. Add the ``"Apparent"`` and ``"StateIndex"`` objects under your import statements
+2. Specify specific species as ``"Apparent"`` within its component definition
+3. Give a list of "true" species it will dissociate into
+4. Define a "state_components" argument in the config and specify ``"StateIndex.true"``
