@@ -711,13 +711,26 @@ class TestChlorination():
         for rid in model.fs.rxn_params.equilibrium_reaction_idx:
             model.fs.rxn_params.component("reaction_"+rid).eps.value = eps
 
-        # NOTE: Because the k values for these ammonium chloride reactions are extremely high,
-        #       we are scaling these slightly differently from the rest of the reactions
         for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
             iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10/scale)
             iscale.constraint_scaling_transform(model.fs.unit.control_volume.reactions[0.0].
                     equilibrium_constraint[i[1]], 0.1)
+
+        # Next, try adding scaling for species
+        min = 1e-10
+        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+            # i[0] = phase, i[1] = species
+            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
+                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
+            else:
+                scale = min
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+            iscale.constraint_scaling_transform(
+                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
         iscale.calculate_scaling_factors(model.fs.unit)
 
