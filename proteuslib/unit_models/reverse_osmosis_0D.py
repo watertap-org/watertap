@@ -1055,7 +1055,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         if hasattr(self, "width"):
             var_dict["Membrane Width"] = self.width
         if hasattr(self, "deltaP"):
-            var_dict["Pressure Drop"] = self.deltaP[time_point]
+            var_dict["Pressure Change"] = self.deltaP[time_point]
         if hasattr(self, "N_Re_io"):
             var_dict["Reynolds Number @Inlet"] = self.N_Re_io[time_point, 'in']
             var_dict["Reynolds Number @Outlet"] = self.N_Re_io[time_point, 'out']
