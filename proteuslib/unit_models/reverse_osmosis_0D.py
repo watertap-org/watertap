@@ -37,6 +37,7 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -925,6 +926,8 @@ class ReverseOsmosisData(UnitModelBlockData):
         Returns:
             None
         """
+        assert degrees_of_freedom(blk) == 0
+
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver and options
