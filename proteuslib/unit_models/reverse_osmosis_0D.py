@@ -926,10 +926,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         Returns:
             None
         """
-        if degrees_of_freedom(blk) != 0:
-            raise Exception(f"Initialization was called on {blk} "
-                            f"but it had {degrees_of_freedom(blk)} degrees of freedom "
-                            f"when 0 was expected. Check that the appropriate variables are fixed.")
+
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver and options
@@ -972,6 +969,10 @@ class ReverseOsmosisData(UnitModelBlockData):
             hold_state=True)
 
         init_log.info_high("Initialization Step 1 Complete.")
+        if degrees_of_freedom(blk) != 0:
+            raise Exception(f"Initialization was called on {blk} "
+                            f"but it had {degrees_of_freedom(blk)} degrees of freedom "
+                            f"when 0 was expected. Check that the appropriate variables are fixed.")
         # ---------------------------------------------------------------------
         # Initialize other state blocks
         # base properties on inlet state block
