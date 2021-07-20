@@ -415,7 +415,6 @@ class TestReverseOsmosis():
 
         m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
         m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
-        # m.fs.unit.deltaP.fix(0)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
