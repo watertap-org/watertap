@@ -1001,15 +1001,60 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             assert res.solver.termination_condition == TerminationCondition.optimal
 
     def _get_performance_contents(self, time_point=0):
-        feed_inlet = self.feed_side.properties[time_point, self.feed_side.length_domain.first()]
-        feed_outlet = self.feed_side.properties[time_point, self.feed_side.length_domain.last()]
-        interface_inlet = self.feed_side.properties_interface[time_point, self.feed_side.length_domain.first()]
-        interface_outlet = self.feed_side.properties_interface[time_point, self.feed_side.length_domain.last()]
+        x_in = self.feed_side.length_domain.first()
+        x_out = self.feed_side.length_domain.last()
+        feed_inlet = self.feed_side.properties[time_point, x_in]
+        feed_outlet = self.feed_side.properties[time_point, x_out]
+        interface_inlet = self.feed_side.properties_interface[time_point, x_in]
+        interface_outlet = self.feed_side.properties_interface[time_point, x_out]
         permeate = self.permeate_out[time_point]
         var_dict = {}
+        var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[time_point, 'Liq']
+        # var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[time_point, 'Liq', 'H2O']
         var_dict["Membrane Area"] = self.area
-        var_dict["Membrane Length"] = self.length
-        var_dict["Membrane Width"] = self.width
+        if hasattr(self, "length"):
+            var_dict["Membrane Length"] = self.length
+        if hasattr(self, "width"):
+            var_dict["Membrane Width"] = self.width
+        if hasattr(self, "deltaP_stage"):
+            var_dict["Pressure Change"] = self.deltaP_stage[time_point]
+        if hasattr(self, "N_Re"):
+            var_dict["Reynolds Number @Inlet"] = self.N_Re[time_point, x_in]
+            var_dict["Reynolds Number @Outlet"] = self.N_Re[time_point, x_out]
+        if hasattr(self, "velocity"):
+            var_dict["Velocity @Inlet"] = self.velocity[time_point, x_in]
+            var_dict["Velocity @Outlet"] = self.velocity[time_point, x_out]
+        if interface_inlet.is_property_constructed('conc_mass_phase_comp'):
+            var_dict['Concentration @Inlet,Membrane-Interface '] = (
+                interface_inlet.conc_mass_phase_comp['Liq', 'NaCl'])
+        if interface_outlet.is_property_constructed('conc_mass_phase_comp'):
+            var_dict['Concentration @Outlet,Membrane-Interface '] = (
+                interface_outlet.conc_mass_phase_comp['Liq', 'NaCl'])
+        if feed_inlet.is_property_constructed('conc_mass_phase_comp'):
+            var_dict['Concentration @Inlet,Bulk'] = (
+                feed_inlet.conc_mass_phase_comp['Liq', 'NaCl'])
+        if feed_outlet.is_property_constructed('conc_mass_phase_comp'):
+            var_dict['Concentration @Outlet,Bulk'] = (
+                feed_outlet.conc_mass_phase_comp['Liq', 'NaCl'])
+        if interface_outlet.is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Outlet,Membrane-Interface '] = (
+                interface_outlet.pressure_osm)
+        if feed_outlet.is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Outlet,Bulk'] = (
+                feed_outlet.pressure_osm)
+        if interface_inlet.is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Inlet,Membrane-Interface'] = (
+                interface_inlet.pressure_osm)
+        if feed_inlet.is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Inlet,Bulk'] = (
+                feed_inlet.pressure_osm)
+        if feed_inlet.is_property_constructed('flow_vol_phase'):
+            var_dict['Volumetric Flowrate @Inlet'] = (
+                feed_inlet.flow_vol_phase['Liq'])
+        if feed_outlet.is_property_constructed('flow_vol_phase'):
+            var_dict['Volumetric Flowrate @Outlet'] = (
+                feed_outlet.flow_vol_phase['Liq'])
+
         #TODO: add more vars
         return {"vars": var_dict}
 

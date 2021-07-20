@@ -1087,7 +1087,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 self.feed_side.properties_in[time_point].flow_vol_phase['Liq'])
         if self.feed_side.properties_out[time_point].is_property_constructed('flow_vol_phase'):
             var_dict['Volumetric Flowrate @Outlet'] = (
-                self.feed_side.properties_in[time_point].flow_vol_phase['Liq'])
+                self.feed_side.properties_out[time_point].flow_vol_phase['Liq'])
 
         # TODO: (1) add more vars, (2) would be nice to add units to output, and (3) should be able to report output of
         #  "NaN" or "Not Reported", mainly for properties that exist but are not necessarily constructed within model
