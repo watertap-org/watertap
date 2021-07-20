@@ -589,7 +589,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         init_log.info_high("Initialization Step 1 Complete.")
         if degrees_of_freedom(blk) != 0:
             raise Exception(f"Initialization was called on {blk} "
-                            f"but it had {degrees_of_freedom(blk)} degrees of freedom "
+                            f"but it had {degrees_of_freedom(blk)} degree(s) of freedom "
                             f"when 0 was expected. Check that the appropriate variables are fixed.")
         # ---------------------------------------------------------------------
         # Step 2: Solve unit
