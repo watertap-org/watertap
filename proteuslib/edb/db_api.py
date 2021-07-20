@@ -76,26 +76,45 @@ class ElectrolyteDB:
         return result
 
     def get_reactions(
-        self, component_names: Optional[List] = None
+        self, component_names: Optional[List] = None,
+            any_components: bool = False
     ) -> Result:
         """Get reaction information.
 
         Args:
             component_names: List of component names
+            any_components: If False, the default, only return reactions where
+               one side of the reaction has all components provided.
+               If true, return the (potentially larger) set of reactions where
+               any of the components listed are present.
 
         Returns:
             All reactions containing any of the names (or all reactions,
             if not specified)
         """
-        # if it has a space and a charge, take the formula part only
-        if component_names:
-            cnames = [c.split(" ", 1)[0] for c in component_names]
-            query = {"components": {"$in": cnames}}
-        else:
-            query = {}
         collection = self._db.reaction
-        result = Result(iterator=collection.find(filter=query), item_class=Reaction)
-        return result
+        if component_names:
+            if any_components:
+                # if it has a space and a charge, take the formula part only
+                cnames = [c.split(" ", 1)[0] for c in component_names]
+                query = {"components": {"$in": cnames}}
+                it = collection.find(filter=query)
+            else:
+                # normalize component names, build a set
+                cnames = {c.replace("_", " ") for c in component_names}
+                # Brute force table scan: need to restructure DB for this to be
+                # easy to do with a MongoDB query, i.e. need to put all the
+                # *keys* for stoichiometry.Liq as *values* in an array, then do a:
+                # {$not: {$elemMatch: { $nin: [<components>] } } } on that array
+                found = []
+                for item in collection.find():
+                    item_comp = set(item["stoichiometry"]["Liq"].keys())
+                    if item_comp.issubset(cnames):
+                        found.append(item)
+                it = iter(found)
+        else:
+            it = collection.find()
+        return Result(iterator=it, item_class=Reaction)
 
     def get_base(self, name: str = None):
         """Get base information by name of its type.
