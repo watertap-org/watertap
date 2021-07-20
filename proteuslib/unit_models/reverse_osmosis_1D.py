@@ -558,8 +558,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         Returns:
             None
         """
-        assert degrees_of_freedom(blk) == 0
-
+        if degrees_of_freedom(blk) != 0:
+            raise Exception(f"Initialization was called on {blk} "
+                            f"but it had {degrees_of_freedom(blk)} degrees of freedom "
+                            f"when 0 was expected. Check that the appropriate variables are fixed.")
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
