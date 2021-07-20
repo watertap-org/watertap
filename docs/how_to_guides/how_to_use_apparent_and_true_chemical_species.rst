@@ -25,7 +25,7 @@ Example Configuration Dictionary
 --------------------------------
 
 This is best understood by going through an example. In this case, we will consider
-building off of the 'How to setup simple chemistry' guide and add ``"NaCl"`` as
+building off of the :ref:`How to setup simple chemistry<how_to_setup_simple_chemistry>` guide and add ``"NaCl"`` as
 an ``"Apparent"`` species.
 
 .. testsetup::
