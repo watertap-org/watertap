@@ -9,7 +9,7 @@ to understand how to define a species in a given configuration file as "apparent
 which is a special component type in the **thermo-properties** configuration dictionary.
 
 For more information on creating a **thermo-properties** configuration dictionary,
-see 'How to setup simple chemistry'.
+see :ref:`How to setup simple chemistry<how_to_setup_simple_chemistry>`.
 
 
 What you need to update in the thermo-properties configuration dictionary
@@ -210,4 +210,4 @@ an ``"Apparent"`` species.
     you cannot reference that species as part of your inlet variables or in any
     reactions in the system. The ``"StateIndex"`` is used to define what species
     can be used in reactions or in the inlet ports to set initial states. For ProteusLib,
-    we will always define reactions on a true species basis. 
+    we will always define reactions on a true species basis.
