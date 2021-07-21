@@ -409,8 +409,8 @@ def parameter_sweep(model, sweep_params, outputs, results_file, optimize_functio
 
     # Make a directory for saved outputs
     if rank == 0:
-        dirname = os.path.dirname(results_file)
-        if dirname != '':
+        if results_file is not None:
+            dirname = os.path.dirname(results_file)
             os.makedirs(dirname, exist_ok=True)
         if debugging_data_dir is not None:
             os.makedirs(debugging_data_dir, exist_ok=True)
@@ -432,7 +432,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file, optimize_functio
     # Create the global filename and data
     global_save_data = np.hstack((global_values, global_results))
 
-    if rank == 0:
+    if rank == 0 and results_file is not None:
         # Save the global data
         np.savetxt(results_file, global_save_data, header=data_header, delimiter=', ', fmt='%.6e')
     
