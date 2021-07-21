@@ -62,6 +62,7 @@ def main():
     display_state(m)
 
     # optimize and display
+    optimize_set_up(m)
     optimize(m, solver=solver)
     print('\n***---Optimization results---***')
     display_system(m)
@@ -330,8 +331,7 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.s10)
     m.fs.M1.initialize(optarg=optarg, outlvl=idaeslog.INFO)
 
-
-def optimize(m, solver=None):
+def optimize_set_up(m):
     # objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
@@ -363,9 +363,9 @@ def optimize(m, solver=None):
     # ---checking model---
     check_dof(m, dof_expected=1)
 
+def optimize(m, solver=None):
     # --solve---
     solve(m, solver=solver)
-
 
 def display_system(m):
     print('---system metrics---')
