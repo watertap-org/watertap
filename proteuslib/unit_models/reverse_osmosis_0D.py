@@ -37,6 +37,7 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
@@ -926,6 +927,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         Returns:
             None
         """
+
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver and options
@@ -968,6 +970,10 @@ class ReverseOsmosisData(UnitModelBlockData):
             hold_state=True)
 
         init_log.info_high("Initialization Step 1 Complete.")
+        if degrees_of_freedom(blk) != 0:
+            raise Exception(f"Initialization was called on {blk} "
+                            f"but it had {degrees_of_freedom(blk)} degree(s) of freedom "
+                            f"when 0 was expected. Check that the appropriate variables are fixed.")
         # ---------------------------------------------------------------------
         # Initialize other state blocks
         # base properties on inlet state block
