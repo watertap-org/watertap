@@ -696,7 +696,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          doc="Mass transfer from feed to permeate")
         def eq_connect_mass_transfer(b, t, x, p, j):
             if x == b.feed_side.length_domain.first():
-                return Constraint.Skip
+                return b.permeate_side[t, x].get_material_flow_terms(p, j) == 0
             else:
                 return (b.permeate_side[t, x].get_material_flow_terms(p, j)
                         == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length / nfe)
@@ -748,22 +748,16 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                              self.feed_side.length_domain,
                              doc="Sherwood number")
             def eq_N_Sh(b, t, x):
-                if x == self.feed_side.length_domain.first():
-                    return Constraint.Skip
-                else:
-                    return (b.N_Sh[t, x] ==
-                            0.46 * (b.N_Re[t, x] * b.N_Sc[t, x])**0.36)
+                return (b.N_Sh[t, x] ==
+                        0.46 * (b.N_Re[t, x] * b.N_Sc[t, x])**0.36)
 
             @self.Constraint(self.flowsheet().config.time,
                              self.feed_side.length_domain,
                              doc="Schmidt number")
             def eq_N_Sc(b, t, x):
-                if x == self.feed_side.length_domain.first():
-                    return Constraint.Skip
-                else:
-                    bulk = b.feed_side.properties[t, x]
-                    return (b.N_Sc[t, x] * bulk.dens_mass_phase['Liq'] * bulk.diffus_phase['Liq'] ==
-                            bulk.visc_d_phase['Liq'])
+                bulk = b.feed_side.properties[t, x]
+                return (b.N_Sc[t, x] * bulk.dens_mass_phase['Liq'] * bulk.diffus_phase['Liq'] ==
+                        bulk.visc_d_phase['Liq'])
 
         if (self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
             or (self.config.pressure_change_type == PressureChangeType.calculated
@@ -776,13 +770,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                              self.feed_side.length_domain,
                              doc="Reynolds number")
             def eq_N_Re(b, t, x):
-                if x == self.feed_side.length_domain.first():
-                    return Constraint.Skip
-                else:
-                    bulk = b.feed_side.properties[t, x]
-                    return (b.N_Re[t, x] * b.area_cross * bulk.visc_d_phase['Liq'] ==
-                            sum(bulk.flow_mass_phase_comp['Liq', j] for j in b.config.property_package.component_list)
-                            * b.dh)
+                bulk = b.feed_side.properties[t, x]
+                return (b.N_Re[t, x] * b.area_cross * bulk.visc_d_phase['Liq'] ==
+                        sum(bulk.flow_mass_phase_comp['Liq', j] for j in b.config.property_package.component_list)
+                        * b.dh)
 
             @self.Constraint(doc="Hydraulic diameter")  # eqn. 17 in Schock & Miquel, 1987
             def eq_dh(b):
@@ -818,11 +809,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                              self.feed_side.length_domain,
                              doc="Crossflow velocity constraint")
             def eq_velocity(b, t, x):
-                if x == self.feed_side.length_domain.first():
-                    return Constraint.Skip
-                else:
-                    bulk = b.feed_side.properties[t, x]
-                    return b.velocity[t, x] * b.area_cross == bulk.flow_vol_phase['Liq']
+                bulk = b.feed_side.properties[t, x]
+                return b.velocity[t, x] * b.area_cross == bulk.flow_vol_phase['Liq']
             ## ==========================================================================
             # Darcy friction factor based on eq. S27 in SI for Cost Optimization of Osmotically Assisted Reverse Osmosis
             # TODO: this relationship for friction factor is specific to a particular spacer geometry. Add alternatives.
@@ -831,10 +819,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                              self.feed_side.length_domain,
                              doc="Darcy friction factor constraint")
             def eq_friction_factor_darcy(b, t, x):
-                if x == self.feed_side.length_domain.first():
-                    return Constraint.Skip
-                else:
-                    return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
+                return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
             ## ==========================================================================
             # Pressure change per unit length due to friction
             # -1/2*f/dh*density*velocity^2
@@ -843,13 +828,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                              self.feed_side.length_domain,
                              doc="pressure change per unit length due to friction")
             def eq_dP_dx(b, t, x):
-                if x == self.feed_side.length_domain.first():
-                    return Constraint.Skip
-                else:
-                    bulk = b.feed_side.properties[t, x]
-                    return (b.deltaP[t, x] * b.dh ==
-                            -0.5 * b.friction_factor_darcy[t, x]
-                            * bulk.dens_mass_phase['Liq'] * b.velocity[t, x]**2)
+                bulk = b.feed_side.properties[t, x]
+                return (b.deltaP[t, x] * b.dh ==
+                        -0.5 * b.friction_factor_darcy[t, x]
+                        * bulk.dens_mass_phase['Liq'] * b.velocity[t, x]**2)
         ## ==========================================================================
         # Feed-side isothermal conditions
 
