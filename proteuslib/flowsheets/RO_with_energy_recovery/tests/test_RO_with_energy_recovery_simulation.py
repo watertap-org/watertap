@@ -39,7 +39,7 @@ from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 from proteuslib.unit_models.pressure_exchanger import PressureExchanger
 from proteuslib.unit_models.pump_isothermal import Pump
 from proteuslib.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
-build, set_operating_conditions, initialize_system, solve, optimize, display_system, display_state, display_design)
+build, set_operating_conditions, initialize_system, solve, optimize_set_up, optimize, display_system, display_state, display_design)
 
 
 solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
@@ -274,6 +274,7 @@ PXR HP out: 0.517 kg/s, 67389 ppm, 1.0 bar
     def test_optimization(self, system_frame):
         m = system_frame
 
+        optimize_set_up(m)
         optimize(m, solver=solver)
 
         # check decision variables
