@@ -23,6 +23,7 @@ from pyomo.environ import (Var,
                            exp,
                            value,
                            Constraint,
+                           Expression,
                            Block,
                            assert_optimal_termination)
 
@@ -69,7 +70,7 @@ class PressureChangeType(Enum):
     fixed_per_stage = auto()         # pressure drop across channel is user-specified value
     fixed_per_unit_length = auto()   # pressure drop per unit length is user-specified value
     calculated = auto()              # pressure drop across membrane channel is calculated
-    
+
 
 @declare_process_block_class("ReverseOsmosis1D")
 class ReverseOsmosis1DData(UnitModelBlockData):
@@ -259,6 +260,17 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             doc="""Number of collocation points to use per finite element when
             discretizing length domain (default=5)"""))
 
+    CONFIG.declare("has_full_reporting", ConfigValue(
+            default=False,
+            domain=In([True, False]),
+            description="Level of reporting results",
+            doc="""Level of reporting results. 
+    **default** - False.
+    **Valid values:** {
+    **False** - include minimal reporting of results,
+    **True** - report additional properties of interest that aren't constructed by
+     the unit model by default. Also, report averaged expression values"""))
+
     def _process_config(self):
         #TODO: add config errors here:
         for c in self.config.property_package.component_list:
@@ -412,6 +424,37 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         self._make_performance()
 
+        self._add_expressions()
+
+        self._get_performance_contents()
+
+    def _add_expressions(self):
+        if self.config.has_full_reporting is False:
+            pass
+        else:
+            @self.Expression(self.flowsheet().config.time,
+                             self.config.property_package.phase_list,
+                             self.config.property_package.component_list,
+                             doc="Average flux expression")
+            def flux_mass_phase_comp_avg(b, t, p, j):
+                return sum(b.flux_mass_phase_comp[t, x, p, j]
+                           for x in self.feed_side.length_domain
+                           if x > 0) / self.nfe
+            if hasattr(self, 'N_Re'):
+                @self.Expression(self.flowsheet().config.time,
+                                 doc="Average Reynolds Number expression")
+                def N_Re_avg(b, t):
+                    return sum(b.N_Re[t, x]
+                               for x in self.feed_side.length_domain) / self.nfe
+            if hasattr(self, 'Kf'):
+                @self.Expression(self.flowsheet().config.time,
+                                 self.solute_list,
+                                 doc="Average mass transfer coefficient expression")
+                def Kf_avg(b, t, j):
+                    return sum(b.Kf[t, x, j]
+                               for x in self.feed_side.length_domain
+                               if x > 0) / self.nfe
+
     def _make_performance(self):
         """
         Variables and constraints for unit model.
@@ -427,7 +470,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         units_meta = \
             self.config.property_package.get_metadata().get_derived_units
 
-        nfe = len(self.feed_side.length_domain)-1
+        self.nfe = Param(
+            initialize=(len(self.feed_side.length_domain)-1),
+            units=pyunits.dimensionless,
+            doc='''Number of finite elements''')
 
         # ==========================================================================
         """ Unit model variables"""
@@ -734,7 +780,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 return b.permeate_side[t, x].get_material_flow_terms(p, j) == 0
             else:
                 return (b.permeate_side[t, x].get_material_flow_terms(p, j)
-                        == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length / nfe)
+                        == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length / b.nfe)
 
         # # ==========================================================================
         # Concentration polarization
@@ -825,7 +871,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                              doc='Pressure drop across unit')
             def eq_pressure_drop(b, t):
                 return (b.deltaP_stage[t] ==
-                        sum(b.deltaP[t, x] * b.length / nfe
+                        sum(b.deltaP[t, x] * b.length / b.nfe
                             for x in b.feed_side.length_domain if x != 0))
 
         if (self.config.pressure_change_type == PressureChangeType.fixed_per_stage
@@ -1025,64 +1071,73 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             assert_optimal_termination(res)
         init_log.info('Initialization Step 3: final solve successful.')
 
-
     def _get_performance_contents(self, time_point=0):
         x_in = self.feed_side.length_domain.first()
+        x_interface_in = value(1/self.nfe)
         x_out = self.feed_side.length_domain.last()
         feed_inlet = self.feed_side.properties[time_point, x_in]
         feed_outlet = self.feed_side.properties[time_point, x_out]
-        interface_inlet = self.feed_side.properties_interface[time_point, x_in]
+        interface_inlet = self.feed_side.properties_interface[time_point, x_interface_in]
         interface_outlet = self.feed_side.properties_interface[time_point, x_out]
         permeate = self.permeate_out[time_point]
         var_dict = {}
+        expr_dict = {}
         var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[time_point, 'Liq']
         var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[time_point, 'Liq', 'H2O']
         var_dict["Membrane Area"] = self.area
-        if hasattr(self, "length"):
+        if hasattr(self, "length") or self.config.has_full_reporting:
             var_dict["Membrane Length"] = self.length
-        if hasattr(self, "width"):
+        if hasattr(self, "width") or self.config.has_full_reporting:
             var_dict["Membrane Width"] = self.width
-        if hasattr(self, "deltaP_stage"):
+        if hasattr(self, "deltaP_stage") or self.config.has_full_reporting:
             var_dict["Pressure Change"] = self.deltaP_stage[time_point]
-        if hasattr(self, "N_Re"):
+        if hasattr(self, "N_Re") or self.config.has_full_reporting:
             var_dict["Reynolds Number @Inlet"] = self.N_Re[time_point, x_in]
             var_dict["Reynolds Number @Outlet"] = self.N_Re[time_point, x_out]
-        if hasattr(self, "velocity"):
+        if hasattr(self, "velocity") or self.config.has_full_reporting:
             var_dict["Velocity @Inlet"] = self.velocity[time_point, x_in]
             var_dict["Velocity @Outlet"] = self.velocity[time_point, x_out]
-        if interface_inlet.is_property_constructed('conc_mass_phase_comp'):
+        if interface_inlet.is_property_constructed('conc_mass_phase_comp') or self.config.has_full_reporting:
             var_dict['Concentration @Inlet,Membrane-Interface '] = (
                 interface_inlet.conc_mass_phase_comp['Liq', 'NaCl'])
-        if interface_outlet.is_property_constructed('conc_mass_phase_comp'):
+        if interface_outlet.is_property_constructed('conc_mass_phase_comp') or self.config.has_full_reporting:
             var_dict['Concentration @Outlet,Membrane-Interface '] = (
                 interface_outlet.conc_mass_phase_comp['Liq', 'NaCl'])
-        if feed_inlet.is_property_constructed('conc_mass_phase_comp'):
+        if feed_inlet.is_property_constructed('conc_mass_phase_comp') or self.config.has_full_reporting:
             var_dict['Concentration @Inlet,Bulk'] = (
                 feed_inlet.conc_mass_phase_comp['Liq', 'NaCl'])
-        if feed_outlet.is_property_constructed('conc_mass_phase_comp'):
+        if feed_outlet.is_property_constructed('conc_mass_phase_comp') or self.config.has_full_reporting:
             var_dict['Concentration @Outlet,Bulk'] = (
                 feed_outlet.conc_mass_phase_comp['Liq', 'NaCl'])
-        if interface_outlet.is_property_constructed('pressure_osm'):
+        if interface_outlet.is_property_constructed('pressure_osm') or self.config.has_full_reporting:
             var_dict['Osmotic Pressure @Outlet,Membrane-Interface '] = (
                 interface_outlet.pressure_osm)
-        if feed_outlet.is_property_constructed('pressure_osm'):
+        if feed_outlet.is_property_constructed('pressure_osm') or self.config.has_full_reporting:
             var_dict['Osmotic Pressure @Outlet,Bulk'] = (
                 feed_outlet.pressure_osm)
-        if interface_inlet.is_property_constructed('pressure_osm'):
+        if interface_inlet.is_property_constructed('pressure_osm') or self.config.has_full_reporting:
             var_dict['Osmotic Pressure @Inlet,Membrane-Interface'] = (
                 interface_inlet.pressure_osm)
-        if feed_inlet.is_property_constructed('pressure_osm'):
+        if feed_inlet.is_property_constructed('pressure_osm') or self.config.has_full_reporting:
             var_dict['Osmotic Pressure @Inlet,Bulk'] = (
                 feed_inlet.pressure_osm)
-        if feed_inlet.is_property_constructed('flow_vol_phase'):
+        if feed_inlet.is_property_constructed('flow_vol_phase') or self.config.has_full_reporting:
             var_dict['Volumetric Flowrate @Inlet'] = (
                 feed_inlet.flow_vol_phase['Liq'])
-        if feed_outlet.is_property_constructed('flow_vol_phase'):
+        if feed_outlet.is_property_constructed('flow_vol_phase') or self.config.has_full_reporting:
             var_dict['Volumetric Flowrate @Outlet'] = (
                 feed_outlet.flow_vol_phase['Liq'])
+        if hasattr(self, 'dh') or self.config.has_full_reporting:
+            var_dict["Hydraulic Diameter"] = self.dh
 
-        #TODO: add more vars
-        return {"vars": var_dict}
+        if self.config.has_full_reporting:
+            expr_dict['Average Solvent Flux (LMH)'] = self.flux_mass_phase_comp_avg[time_point, 'Liq', 'H2O'] * 3.6e3
+            expr_dict['Average Solute Flux (GMH)'] = self.flux_mass_phase_comp_avg[time_point, 'Liq', 'NaCl'] * 3.6e6
+            expr_dict['Average Reynolds Number'] = self.N_Re_avg[time_point]
+            expr_dict['Average Mass Transfer Coefficient (mm/h)'] = self.Kf_avg[time_point, 'NaCl'] * 3.6e6
+
+        # TODO: add more vars
+        return {"vars": var_dict, "exprs": expr_dict}
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(

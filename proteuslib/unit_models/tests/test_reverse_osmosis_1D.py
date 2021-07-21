@@ -184,18 +184,19 @@ class TestReverseOsmosis():
             "pressure_change_type": PressureChangeType.calculated,
             "transformation_scheme": "BACKWARD",
             "transformation_method": "dae.finite_difference",
-            "finite_elements": 100
+            "finite_elements": 100,
+            "has_full_reporting": True
         })
 
         # fully specify system
-        feed_flow_mass = 1/3.6
-        feed_mass_frac_NaCl = 0.035
+        feed_flow_mass = 1000 /3600
+        feed_mass_frac_NaCl = 0.034283
         feed_pressure = 70e5
 
         feed_temperature = 273.15 + 25
         A = 4.2e-12
         B = 3.5e-8
-        pressure_atmospheric = 101325
+        pressure_atmospheric = 1e5
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
 
         m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
@@ -250,6 +251,7 @@ class TestReverseOsmosis():
                                'velocity': Var,
                                'friction_factor_darcy': Var,
                                'mass_transfer_phase_comp': Var,
+                               'nfe': Param,
                                'eq_mass_transfer_term': Constraint,
                                'eq_permeate_production': Constraint,
                                'eq_flux_mass': Constraint,
@@ -271,7 +273,10 @@ class TestReverseOsmosis():
                                'eq_pressure_drop': Constraint,
                                'eq_velocity': Constraint,
                                'eq_friction_factor_darcy': Constraint,
-                               'eq_dP_dx': Constraint
+                               'eq_dP_dx': Constraint,
+                               'N_Re_avg': Expression,
+                               'Kf_avg': Expression,
+                               'flux_mass_phase_comp_avg': Expression
                                }
         for (obj_str, obj_type) in unit_objs_type_dict.items():
             obj = getattr(m.fs.unit, obj_str)
@@ -298,8 +303,8 @@ class TestReverseOsmosis():
             assert isinstance(sb, props.NaClStateBlock)
 
         # test statistics
-        assert number_variables(m) == 5575
-        assert number_total_constraints(m) == 5532
+        assert number_variables(m) == 5583
+        assert number_total_constraints(m) == 5540
         assert number_unused_variables(m) == 20
 
     @pytest.mark.integration
@@ -378,18 +383,23 @@ class TestReverseOsmosis():
     @pytest.mark.component
     def test_solution(self, RO_frame):
         m = RO_frame
-        assert (pytest.approx(21.2500, rel=1e-3) ==
+        assert (pytest.approx(20.1100, rel=1e-3) ==
                 value(m.fs.unit.area))
-        assert (pytest.approx(2.211e-3, rel=1e-3) ==
+        assert (pytest.approx(2.500e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp[0, 1, 'Liq', 'H2O']))
-        assert (pytest.approx(2.622e-6, rel=1e-3) ==
+        assert (pytest.approx(2.599e-6, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp[0, 1, 'Liq', 'NaCl']))
+        assert (pytest.approx(24.001, rel=1e-3) ==
+                value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O'] * 3.6e3))
+        assert (pytest.approx(8.0338, rel=1e-3) ==
+                value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl'] * 3.6e6))
         assert (pytest.approx(0.1340, rel=1e-3) ==
                 value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'H2O']))
-        assert (pytest.approx(4.811e-5, rel=1e-3) ==
+        assert (pytest.approx(4.4897e-5, rel=1e-3) ==
                 value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'NaCl']))
-        assert (pytest.approx(-1.644e5, rel=1e-3) == value(m.fs.unit.deltaP_stage[0]))
-
+        assert (pytest.approx(-1.5596e5, rel=1e-3) == value(m.fs.unit.deltaP_stage[0]))
+        assert (pytest.approx(274.24, rel=1e-3) == value(m.fs.unit.N_Re_avg[0]))
+        assert (pytest.approx(112.00, rel=1e-3) == value(m.fs.unit.Kf_avg[0, 'NaCl'] * 3.6e6))
 
     @pytest.mark.component
     def TestReverseOsmosis_basic(self):
