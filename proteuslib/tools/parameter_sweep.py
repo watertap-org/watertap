@@ -411,7 +411,9 @@ def parameter_sweep(model, sweep_params, outputs, results_file, optimize_functio
     if rank == 0:
         if results_file is not None:
             dirname = os.path.dirname(results_file)
-            os.makedirs(dirname, exist_ok=True)
+            if dirname != '':
+                os.makedirs(dirname, exist_ok=True)
+                
         if debugging_data_dir is not None:
             os.makedirs(debugging_data_dir, exist_ok=True)
 
