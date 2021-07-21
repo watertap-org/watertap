@@ -12,7 +12,7 @@
 ###############################################################################
 
 
-from enum import Enum
+from enum import Enum, auto
 from copy import deepcopy
 # Import Pyomo libraries
 from pyomo.environ import (Var,
@@ -37,7 +37,9 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
+from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -45,22 +47,22 @@ _log = idaeslog.getLogger(__name__)
 
 
 class ConcentrationPolarizationType(Enum):
-    none = 0        # simplified assumption: no concentration polarization
-    fixed = 1       # simplified assumption: concentration polarization modulus is a user specified value
-    calculated = 2  # calculate concentration polarization (concentration at membrane interface)
+    none = auto()                    # simplified assumption: no concentration polarization
+    fixed = auto()                   # simplified assumption: concentration polarization modulus is a user specified value
+    calculated = auto()              # calculate concentration polarization (concentration at membrane interface)
 
 
 class MassTransferCoefficient(Enum):
-    none = 0        # mass transfer coefficient not utilized for concentration polarization effect
-    fixed = 1       # mass transfer coefficient is a user specified value
-    calculated = 2  # mass transfer coefficient is calculated
+    none = auto()                    # mass transfer coefficient not utilized for concentration polarization effect
+    fixed = auto()                   # mass transfer coefficient is a user specified value
+    calculated = auto()              # mass transfer coefficient is calculated
     # TODO: add option for users to define their own relationship?
 
 
 class PressureChangeType(Enum):
-    fixed_per_stage = 1        # pressure drop across membrane channel is a user-specified value
-    fixed_per_unit_length = 2  # pressure drop per unit length across membrane channel is a user-specified value
-    calculated = 3             # pressure drop across membrane channel is calculated
+    fixed_per_stage = auto()         # pressure drop across membrane channel is a user-specified value
+    fixed_per_unit_length = auto()   # pressure drop per unit length across membrane channel is a user-specified value
+    calculated = auto()              # pressure drop across membrane channel is calculated
 
 
 @declare_process_block_class("ReverseOsmosis0D")
@@ -925,6 +927,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         Returns:
             None
         """
+
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver and options
@@ -967,6 +970,10 @@ class ReverseOsmosisData(UnitModelBlockData):
             hold_state=True)
 
         init_log.info_high("Initialization Step 1 Complete.")
+        if degrees_of_freedom(blk) != 0:
+            raise Exception(f"Initialization was called on {blk} "
+                            f"but it had {degrees_of_freedom(blk)} degree(s) of freedom "
+                            f"when 0 was expected. Check that the appropriate variables are fixed.")
         # ---------------------------------------------------------------------
         # Initialize other state blocks
         # base properties on inlet state block
@@ -1045,12 +1052,68 @@ class ReverseOsmosisData(UnitModelBlockData):
         )
 
     def _get_performance_contents(self, time_point=0):
-        # TODO: make a unit specific stream table
         var_dict = {}
+        var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[time_point, 'Liq']
+        var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[time_point, 'Liq', 'H2O']
+        var_dict["Membrane Area"] = self.area
+        if hasattr(self, "length"):
+            var_dict["Membrane Length"] = self.length
+        if hasattr(self, "width"):
+            var_dict["Membrane Width"] = self.width
         if hasattr(self, "deltaP"):
             var_dict["Pressure Change"] = self.deltaP[time_point]
+        if hasattr(self, "N_Re_io"):
+            var_dict["Reynolds Number @Inlet"] = self.N_Re_io[time_point, 'in']
+            var_dict["Reynolds Number @Outlet"] = self.N_Re_io[time_point, 'out']
+        if hasattr(self, "velocity_io"):
+            var_dict["Velocity @Inlet"] = self.velocity_io[time_point, 'in']
+            var_dict["Velocity @Outlet"] = self.velocity_io[time_point, 'out']
+        var_dict['Concentration @Inlet,Membrane-Interface '] = (
+                    self.feed_side.properties_interface_in[time_point].conc_mass_phase_comp['Liq', 'NaCl'])
+        var_dict['Concentration @Outlet,Membrane-Interface '] = (
+            self.feed_side.properties_interface_out[time_point].conc_mass_phase_comp['Liq','NaCl'])
+        var_dict['Concentration @Inlet,Bulk'] = (
+                    self.feed_side.properties_in[time_point].conc_mass_phase_comp['Liq', 'NaCl'])
+        var_dict['Concentration @Outlet,Bulk'] = (
+            self.feed_side.properties_out[time_point].conc_mass_phase_comp['Liq','NaCl'])
+        if self.feed_side.properties_interface_out[time_point].is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Outlet,Membrane-Interface '] = (
+                self.feed_side.properties_interface_out[time_point].pressure_osm)
+        if self.feed_side.properties_out[time_point].is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Outlet,Bulk'] = (
+                self.feed_side.properties_out[time_point].pressure_osm)
+        if self.feed_side.properties_interface_in[time_point].is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Inlet,Membrane-Interface'] = (
+                self.feed_side.properties_interface_in[time_point].pressure_osm)
+        if self.feed_side.properties_in[time_point].is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Inlet,Bulk'] = (
+                self.feed_side.properties_in[time_point].pressure_osm)
+        if self.feed_side.properties_in[time_point].is_property_constructed('flow_vol_phase'):
+            var_dict['Volumetric Flowrate @Inlet'] = (
+                self.feed_side.properties_in[time_point].flow_vol_phase['Liq'])
+        if self.feed_side.properties_out[time_point].is_property_constructed('flow_vol_phase'):
+            var_dict['Volumetric Flowrate @Outlet'] = (
+                self.feed_side.properties_in[time_point].flow_vol_phase['Liq'])
+
+        # TODO: (1) add more vars, (2) would be nice to add units to output, and (3) should be able to report output of
+        #  "NaN" or "Not Reported", mainly for properties that exist but are not necessarily constructed within model
+        #  constraints. One example in this case is the osmotic pressure of the bulk feed, which would certainly be of
+        #  interest to users with a background in desalination (it is currently not reported because it is not directly
+        #  used in any model constraints). Furthermore, the report() method seems to be limited to Pyomo Var objects for
+        #  which the pyomo value() method is applied to. That is, a Pyomo Var object must be used; e.g., providing a
+        #  list as output would yield an error.
 
         return {"vars": var_dict}
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {
+                "Feed Inlet": self.inlet,
+                "Feed Outlet": self.retentate,
+                "Permeate Outlet": self.permeate,
+            },
+            time_point=time_point,
+        )
 
     def get_costing(self, module=None, **kwargs):
         self.costing = Block()

@@ -1,3 +1,5 @@
+.. _how_to_setup_simple_chemistry:
+
 How to setup simple chemistry
 =============================
 
