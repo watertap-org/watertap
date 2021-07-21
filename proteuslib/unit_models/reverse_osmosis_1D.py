@@ -264,12 +264,12 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             default=False,
             domain=In([True, False]),
             description="Level of reporting results",
-            doc="""Level of reporting results. 
-    **default** - False.
-    **Valid values:** {
-    **False** - include minimal reporting of results,
-    **True** - report additional properties of interest that aren't constructed by
-     the unit model by default. Also, report averaged expression values"""))
+            doc="""Level of reporting results.
+            **default** - False.
+            **Valid values:** {
+            **False** - include minimal reporting of results,
+            **True** - report additional properties of interest that aren't constructed by
+            the unit model by default. Also, report averaged expression values"""))
 
     def _process_config(self):
         #TODO: add config errors here:
@@ -429,6 +429,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         self._get_performance_contents()
 
     def _add_expressions(self):
+        """
+        Generate expressions for additional results desired for full report
+        """
         if self.config.has_full_reporting is False:
             pass
         else:
@@ -473,7 +476,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         self.nfe = Param(
             initialize=(len(self.feed_side.length_domain)-1),
             units=pyunits.dimensionless,
-            doc='''Number of finite elements''')
+            doc="Number of finite elements")
 
         # ==========================================================================
         """ Unit model variables"""
