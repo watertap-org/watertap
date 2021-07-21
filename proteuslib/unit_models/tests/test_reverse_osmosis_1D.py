@@ -17,9 +17,7 @@ from pyomo.environ import (ConcreteModel,
                            SolverStatus,
                            value,
                            Param,
-                           Var,
-                           Expression,
-                           Constraint)
+                           assert_optimal_termination)
 from pyomo.util.check_units import (assert_units_consistent,
                                     assert_units_equivalent)
 from pyomo.network import Port
@@ -353,9 +351,7 @@ class TestReverseOsmosis():
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-               TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert_optimal_termination(results)
 
     @pytest.mark.component
     def test_conservation(self, RO_frame):
@@ -526,8 +522,7 @@ class TestReverseOsmosis():
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert_optimal_termination(results)
 
         # Check mass conservation
         b = m.fs.unit
@@ -686,8 +681,7 @@ class TestReverseOsmosis():
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert_optimal_termination(results)
 
         # Check mass conservation
         b = m.fs.unit
@@ -843,8 +837,7 @@ class TestReverseOsmosis():
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert_optimal_termination(results)
 
         # Check mass conservation
         b = m.fs.unit
@@ -1015,9 +1008,7 @@ class TestReverseOsmosis():
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-               TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert_optimal_termination(results)
 
         # Check mass conservation
         b = m.fs.unit
@@ -1194,9 +1185,7 @@ class TestReverseOsmosis():
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-               TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert_optimal_termination(results)
 
         # Check mass conservation
         b = m.fs.unit
@@ -1372,8 +1361,7 @@ class TestReverseOsmosis():
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert_optimal_termination(results)
 
         # Check mass conservation
         b = m.fs.unit

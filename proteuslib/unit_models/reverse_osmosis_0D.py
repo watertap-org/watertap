@@ -932,6 +932,8 @@ class ReverseOsmosisData(UnitModelBlockData):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver and options
+        if optarg is None:
+            optarg = {'nlp_scaling_method': 'user-scaling'}
         opt = get_solver(solver, optarg)
 
         # assumptions
