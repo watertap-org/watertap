@@ -25,7 +25,8 @@ from pyomo.environ import (Var,
                            Block,
                            units as pyunits,
                            exp,
-                           value)
+                           value,
+                           assert_optimal_termination)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -1041,6 +1042,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
+            assert_optimal_termination(res)
         init_log.info_high(
             "Initialization Step 3 {}.".format(idaeslog.condition(res)))
 

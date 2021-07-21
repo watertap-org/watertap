@@ -24,7 +24,7 @@ from pyomo.environ import (Var,
                            value,
                            Constraint,
                            Block,
-                           TerminationCondition)
+                           assert_optimal_termination)
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
@@ -981,11 +981,11 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # Step 2: Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-            assert results.solver.termination_condition == TerminationCondition.optimal
+            assert_optimal_termination(results)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-            assert res.solver.termination_condition == TerminationCondition.optimal
+            assert_optimal_termination(res)
 
     def _get_performance_contents(self, time_point=0):
         x_in = self.feed_side.length_domain.first()
