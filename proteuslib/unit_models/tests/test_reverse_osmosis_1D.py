@@ -55,7 +55,7 @@ def test_config():
     m.fs.properties = props.NaClParameterBlock()
     m.fs.unit = ReverseOsmosis1D(default={"property_package": m.fs.properties})
 
-    assert len(m.fs.unit.config) == 16
+    assert len(m.fs.unit.config) == 17
 
 
     #
@@ -71,7 +71,7 @@ def test_config():
     assert m.fs.unit.config.pressure_change_type is PressureChangeType.fixed_per_stage
     assert m.fs.unit.config.concentration_polarization_type is ConcentrationPolarizationType.calculated
     assert m.fs.unit.config.mass_transfer_coefficient is MassTransferCoefficient.calculated
-
+    assert not m.fs.unit.config.has_full_reporting
 
 @pytest.mark.unit
 def test_option_has_pressure_change():
