@@ -460,6 +460,29 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc='Volumetric recovery rate')
 
+        def recovery_mass_phase_comp_initialize(b, t, p, j):
+            if j in self.solvent_list:
+                return 0.4037
+            elif j in self.solute_list:
+                return 0.0033
+
+        def recovery_mass_phase_comp_bounds(b, t, p, j):
+            ub = 1 - 1e-6
+            if j in self.solvent_list:
+                lb = 1e-2
+            elif j in self.solute_list:
+                lb = 1e-5
+            return lb, ub
+
+        self.recovery_mass_phase_comp = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            initialize=recovery_mass_phase_comp_initialize,
+            bounds=recovery_mass_phase_comp_bounds,
+            units=pyunits.dimensionless,
+            doc='Mass-based component recovery')
+
         def flux_mass_phase_comp_initialize(b, t, x, p, j):
             if j in self.solvent_list:
                 return 5e-4
@@ -503,7 +526,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # TODO: replace self.recovery_vol_phase[t, 'Liq'] w/self.recovery_mass_phase_comp[t, 'Liq', j])
         def mass_transfer_phase_comp_initialize(b, t, x, p, j):
             return value(self.feed_side.properties[t, x].get_material_flow_terms('Liq', j)
-                         * self.recovery_vol_phase[t, 'Liq'])
+                         * self.recovery_mass_phase_comp[t, 'Liq', j])
 
         self.mass_transfer_phase_comp = Var(
             self.flowsheet().config.time,
@@ -620,6 +643,17 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             return (b.recovery_vol_phase[t, 'Liq'] ==
                     b.permeate_out[t].flow_vol_phase['Liq'] /
                     b.feed_side.properties[t, self.feed_side.length_domain.first()].flow_vol_phase['Liq'])
+
+        # ==========================================================================
+        # Mass-based Component Recovery rate
+
+        @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.component_list)
+        def eq_recovery_mass_phase_comp(b, t, j):
+            return (b.recovery_mass_phase_comp[t, 'Liq', j]
+                    * b.feed_side.properties[t, b.feed_side.length_domain.first()].flow_mass_phase_comp['Liq', j] ==
+                    b.permeate_out[t].flow_mass_phase_comp['Liq', j])
+
         # ==========================================================================
         # Mass transfer term equation
 
@@ -951,7 +985,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         opt = get_solver(solver, optarg)
 
-        init_log.info('Starting initialization')
+        init_log.info('Starting Initialization Step 1: initialize blocks.')
         # ---------------------------------------------------------------------
         # Step 1: Initialize feed_side, permeate_side, and permeate_out blocks
         flags_feed_side = blk.feed_side.initialize(
@@ -959,33 +993,38 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             optarg=optarg,
             solver=solver,
             state_args=feed_side_args)
-
+        init_log.info('Feed-side initialization complete. Initialize permeate-side. ')
         flags_permeate_side = blk.permeate_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=permeate_side_args)
-
+        init_log.info('Permeate-side initialization complete. Initialize permeate outlet. ')
         flags_permeate_out = blk.permeate_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=permeate_block_args)
+        init_log.info('Permeate outlet initialization complete. Initialize permeate outlet. ')
 
-        init_log.info_high("Initialization Step 1 Complete.")
         if degrees_of_freedom(blk) != 0:
             raise Exception(f"Initialization was called on {blk} "
                             f"but it had {degrees_of_freedom(blk)} degree(s) of freedom "
                             f"when 0 was expected. Check that the appropriate variables are fixed.")
         # ---------------------------------------------------------------------
         # Step 2: Solve unit
+        init_log.info('Initialization Step 1 Complete: all state blocks initialized.\n'
+                      'Starting Initialization Step 2: solve indexed blocks.')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
             assert_optimal_termination(results)
-
+        init_log.info('Initialization Step 2 Complete: solve indexed blocks successful.\n'
+                      'Starting Initialization Step 3: perform final solve.')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
             assert_optimal_termination(res)
+        init_log.info('Initialization Step 3: final solve successful.')
+
 
     def _get_performance_contents(self, time_point=0):
         x_in = self.feed_side.length_domain.first()
@@ -997,7 +1036,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         permeate = self.permeate_out[time_point]
         var_dict = {}
         var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[time_point, 'Liq']
-        # var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[time_point, 'Liq', 'H2O']
+        var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[time_point, 'Liq', 'H2O']
         var_dict["Membrane Area"] = self.area
         if hasattr(self, "length"):
             var_dict["Membrane Length"] = self.length
@@ -1086,6 +1125,17 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.dens_solvent) is None:
             sf = iscale.get_scaling_factor(self.feed_side.properties[0, 0].dens_mass_phase['Liq'])
             iscale.set_scaling_factor(self.dens_solvent, sf)
+
+        if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
+            iscale.set_scaling_factor(self.recovery_vol_phase, 1)
+
+        for (t, p, j), v in self.recovery_mass_phase_comp.items():
+            if j in self.solvent_list:
+                sf = 1
+            elif j in self.solute_list:
+                sf = 100
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
 
         for (t, x, p, j), v in self.flux_mass_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
@@ -1225,6 +1275,11 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         for t, c in self.eq_recovery_vol_phase.items():
             iscale.constraint_scaling_transform(self.eq_recovery_vol_phase[t], 1)
+
+        for (t, j), c in self.eq_recovery_mass_phase_comp.items():
+            sf = (iscale.get_scaling_factor(self.recovery_mass_phase_comp[t, 'Liq', j])
+                  * iscale.get_scaling_factor(self.feed_inlet.flow_mass_phase_comp[0, 'Liq', j]))
+            iscale.constraint_scaling_transform(c, sf)
 
         for (t, x, j), c in self.feed_side.eq_concentration_polarization.items():
             prop_interface = self.feed_side.properties_interface[t, x]

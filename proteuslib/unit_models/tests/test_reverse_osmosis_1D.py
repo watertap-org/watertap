@@ -210,7 +210,7 @@ class TestReverseOsmosis():
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.N_Re[0, 0].fix(400)
-        m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.5)
+        m.fs.unit.recovery_mass_phase_comp[0, 'Liq', 'H2O'].fix(0.5)
         m.fs.unit.spacer_porosity.fix(0.97)
         m.fs.unit.channel_height.fix(0.001)
 
@@ -237,6 +237,7 @@ class TestReverseOsmosis():
                                'width': Var,
                                'length': Var,
                                'recovery_vol_phase': Var,
+                               'recovery_mass_phase_comp': Var,
                                'Kf': Var,
                                'channel_height': Var,
                                'spacer_porosity': Var,
@@ -256,6 +257,7 @@ class TestReverseOsmosis():
                                'eq_feed_isothermal': Constraint,
                                'eq_permeate_isothermal': Constraint,
                                'eq_recovery_vol_phase': Constraint,
+                               'eq_recovery_mass_phase_comp': Constraint,
                                'eq_area': Constraint,
                                'eq_mass_flux_equal_mass_transfer': Constraint,
                                'eq_permeate_outlet_isothermal': Constraint,
@@ -296,8 +298,8 @@ class TestReverseOsmosis():
             assert isinstance(sb, props.NaClStateBlock)
 
         # test statistics
-        assert number_variables(m) == 5573
-        assert number_total_constraints(m) == 5530
+        assert number_variables(m) == 5575
+        assert number_total_constraints(m) == 5532
         assert number_unused_variables(m) == 20
 
     @pytest.mark.integration
@@ -317,8 +319,8 @@ class TestReverseOsmosis():
         m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e1, index=('Liq', 'H2O'))
         m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e4, index=('Liq', 'NaCl'))
 
-        set_scaling_factor(m.fs.unit.permeate_side[0, 0].flow_mass_phase_comp['Liq','H2O'], 1e5)
-        set_scaling_factor(m.fs.unit.permeate_side[0, 0].flow_mass_phase_comp['Liq','NaCl'], 1e5)
+        set_scaling_factor(m.fs.unit.permeate_side[0, 0].flow_mass_phase_comp['Liq', 'H2O'], 0)
+        set_scaling_factor(m.fs.unit.permeate_side[0, 0].flow_mass_phase_comp['Liq', 'NaCl'], 0)
 
         for x in m.fs.unit.feed_side.length_domain:
             set_scaling_factor(m.fs.unit.mass_transfer_phase_comp[0, x, 'Liq', 'NaCl'], 1e3)
@@ -367,8 +369,8 @@ class TestReverseOsmosis():
             b.permeate_out[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
 
         assert value(flow_mass_inlet) == pytest.approx(1/3.6, rel=1e-3)
-        assert value(flow_mass_retentate) == pytest.approx(0.1424, rel=1e-3)
-        assert value(flow_mass_permeate) == pytest.approx(0.1353, rel=1e-3)
+        assert value(flow_mass_retentate) == pytest.approx(0.1437, rel=1e-3)
+        assert value(flow_mass_permeate) == pytest.approx(0.1341, rel=1e-3)
 
         assert (abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate
                           )) <= 1e-2)
@@ -376,17 +378,17 @@ class TestReverseOsmosis():
     @pytest.mark.component
     def test_solution(self, RO_frame):
         m = RO_frame
-        assert (pytest.approx(21.8500, rel=1e-3) ==
+        assert (pytest.approx(21.2500, rel=1e-3) ==
                 value(m.fs.unit.area))
-        assert (pytest.approx(2.086e-3, rel=1e-3) ==
+        assert (pytest.approx(2.211e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp[0, 1, 'Liq', 'H2O']))
-        assert (pytest.approx(2.632e-6, rel=1e-3) ==
+        assert (pytest.approx(2.622e-6, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp[0, 1, 'Liq', 'NaCl']))
-        assert (pytest.approx(0.1353, rel=1e-3) ==
+        assert (pytest.approx(0.1340, rel=1e-3) ==
                 value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'H2O']))
-        assert (pytest.approx(4.968e-5, rel=1e-3) ==
+        assert (pytest.approx(4.811e-5, rel=1e-3) ==
                 value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'NaCl']))
-        assert (pytest.approx(-1.674e5, rel=1e-3) == value(m.fs.unit.deltaP_stage[0]))
+        assert (pytest.approx(-1.644e5, rel=1e-3) == value(m.fs.unit.deltaP_stage[0]))
 
 
     @pytest.mark.component
