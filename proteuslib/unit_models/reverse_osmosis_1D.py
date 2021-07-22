@@ -1158,8 +1158,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-
         # setting scaling factors for variables
+        for j in self.config.property_package.component_list:
+            iscale.set_scaling_factor(self.permeate_side[0, 0].flow_mass_phase_comp['Liq', j], 0)
         # these variables should have user input, if not there will be a warning
         if iscale.get_scaling_factor(self.area) is None:
             sf = iscale.get_scaling_factor(self.area, default=1, warning=True)
