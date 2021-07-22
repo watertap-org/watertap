@@ -473,19 +473,6 @@ class TestReverseOsmosis():
                 continue  # do not test hidden references
             assert obj_str in unit_objs_type_dict
 
-        # test feed-side control volume and associated stateblocks
-        assert isinstance(m.fs.unit.feed_side, ControlVolume1DBlock)
-        cv_stateblock_lst = ['properties']
-        for sb_str in cv_stateblock_lst:
-            sb = getattr(m.fs.unit.feed_side, sb_str)
-            assert isinstance(sb, props.NaClStateBlock)
-
-        stateblock_lst = ['permeate_side', 'permeate_out']
-        for sb_str in stateblock_lst:
-            sb = getattr(m.fs.unit, sb_str)
-            assert isinstance(sb, StateBlock)
-            assert isinstance(sb, props.NaClStateBlock)
-
         # test statistics
         assert number_variables(m) == 980
         assert number_total_constraints(m) == 937
@@ -633,20 +620,7 @@ class TestReverseOsmosis():
                 continue  # do not test hidden references
             assert obj_str in unit_objs_type_dict
 
-        # test feed-side control volume and associated stateblocks
-        assert isinstance(m.fs.unit.feed_side, ControlVolume1DBlock)
-        cv_stateblock_lst = ['properties']
-        for sb_str in cv_stateblock_lst:
-            sb = getattr(m.fs.unit.feed_side, sb_str)
-            assert isinstance(sb, props.NaClStateBlock)
-
-        stateblock_lst = ['permeate_side', 'permeate_out']
-        for sb_str in stateblock_lst:
-            sb = getattr(m.fs.unit, sb_str)
-            assert isinstance(sb, StateBlock)
-            assert isinstance(sb, props.NaClStateBlock)
-
-        # test statistics
+       # test statistics
         assert number_variables(m) == 1001
         assert number_total_constraints(m) == 937
         assert number_unused_variables(m) == 30
@@ -785,19 +759,6 @@ class TestReverseOsmosis():
             if obj_str[0] == '_':
                 continue  # do not test hidden references
             assert obj_str in unit_objs_type_dict
-
-        # test feed-side control volume and associated stateblocks
-        assert isinstance(m.fs.unit.feed_side, ControlVolume1DBlock)
-        cv_stateblock_lst = ['properties']
-        for sb_str in cv_stateblock_lst:
-            sb = getattr(m.fs.unit.feed_side, sb_str)
-            assert isinstance(sb, props.NaClStateBlock)
-
-        stateblock_lst = ['permeate_side', 'permeate_out']
-        for sb_str in stateblock_lst:
-            sb = getattr(m.fs.unit, sb_str)
-            assert isinstance(sb, StateBlock)
-            assert isinstance(sb, props.NaClStateBlock)
 
         # test statistics
         assert number_variables(m) == 1001
@@ -945,19 +906,6 @@ class TestReverseOsmosis():
             if obj_str[0] == '_':
                 continue  # do not test hidden references
             assert obj_str in unit_objs_type_dict
-
-        # test feed-side control volume and associated stateblocks
-        assert isinstance(m.fs.unit.feed_side, ControlVolume1DBlock)
-        cv_stateblock_lst = ['properties']
-        for sb_str in cv_stateblock_lst:
-            sb = getattr(m.fs.unit.feed_side, sb_str)
-            assert isinstance(sb, props.NaClStateBlock)
-
-        stateblock_lst = ['permeate_side', 'permeate_out']
-        for sb_str in stateblock_lst:
-            sb = getattr(m.fs.unit, sb_str)
-            assert isinstance(sb, StateBlock)
-            assert isinstance(sb, props.NaClStateBlock)
 
         # test statistics
         assert number_variables(m) == 1107
@@ -1115,19 +1063,6 @@ class TestReverseOsmosis():
                 continue  # do not test hidden references
             assert obj_str in unit_objs_type_dict
 
-        # test feed-side control volume and associated stateblocks
-        assert isinstance(m.fs.unit.feed_side, ControlVolume1DBlock)
-        cv_stateblock_lst = ['properties']
-        for sb_str in cv_stateblock_lst:
-            sb = getattr(m.fs.unit.feed_side, sb_str)
-            assert isinstance(sb, props.NaClStateBlock)
-
-        stateblock_lst = ['permeate_side', 'permeate_out']
-        for sb_str in stateblock_lst:
-            sb = getattr(m.fs.unit, sb_str)
-            assert isinstance(sb, StateBlock)
-            assert isinstance(sb, props.NaClStateBlock)
-
         # test statistics
         assert number_variables(m) == 1129
         assert number_total_constraints(m) == 1060
@@ -1283,19 +1218,6 @@ class TestReverseOsmosis():
             if obj_str[0] == '_':
                 continue  # do not test hidden references
             assert obj_str in unit_objs_type_dict
-
-        # test feed-side control volume and associated stateblocks
-        assert isinstance(m.fs.unit.feed_side, ControlVolume1DBlock)
-        cv_stateblock_lst = ['properties']
-        for sb_str in cv_stateblock_lst:
-            sb = getattr(m.fs.unit.feed_side, sb_str)
-            assert isinstance(sb, props.NaClStateBlock)
-
-        stateblock_lst = ['permeate_side', 'permeate_out']
-        for sb_str in stateblock_lst:
-            sb = getattr(m.fs.unit, sb_str)
-            assert isinstance(sb, StateBlock)
-            assert isinstance(sb, props.NaClStateBlock)
 
         # test statistics
         assert number_variables(m) == 1129
