@@ -269,7 +269,7 @@ def _process_sweep_params(sweep_params):
 
 # ================================================================
 
-def parameter_sweep(model, sweep_params, outputs, results_file, optimize_function=_default_optimize,
+def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
         optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
         mpi_comm=None, debugging_data_dir=None, num_samples=None, seed=None):
 
@@ -277,7 +277,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file, optimize_functio
     This function offers a general way to perform repeated optimizations
     of a model for the purposes of exploring a parameter space while
     monitoring multiple outputs. 
-    Writes single CSV file to ``results_file`` with all inputs and resulting outputs.
+    If provided, writes single CSV file to ``results_file`` with all inputs and resulting outputs.
 
     Arguments:
 
@@ -295,8 +295,8 @@ def parameter_sweep(model, sweep_params, outputs, results_file, optimize_functio
                   on ``model`` whose values to report as values. E.g.,
                   ``outputs['Short/Pretty-print Name'] = model.fs.variable_or_expression_to_report``.
 
-        results_file : The path and file name where the results are to be saved; subdirectories
-                       will be created as needed.
+        results_file (optional) : The path and file name where the results are to be saved;
+                                   subdirectories will be created as needed.
 
         optimize_function (optional) : A user-defined function to perform the optimization of flowsheet
                                        ``model`` and loads the results back into ``model``. The first
@@ -409,9 +409,11 @@ def parameter_sweep(model, sweep_params, outputs, results_file, optimize_functio
 
     # Make a directory for saved outputs
     if rank == 0:
-        dirname = os.path.dirname(results_file)
-        if dirname != '':
-            os.makedirs(dirname, exist_ok=True)
+        if results_file is not None:
+            dirname = os.path.dirname(results_file)
+            if dirname != '':
+                os.makedirs(dirname, exist_ok=True)
+                
         if debugging_data_dir is not None:
             os.makedirs(debugging_data_dir, exist_ok=True)
 
@@ -432,7 +434,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file, optimize_functio
     # Create the global filename and data
     global_save_data = np.hstack((global_values, global_results))
 
-    if rank == 0:
+    if rank == 0 and results_file is not None:
         # Save the global data
         np.savetxt(results_file, global_save_data, header=data_header, delimiter=', ', fmt='%.6e')
     
