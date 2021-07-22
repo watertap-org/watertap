@@ -18,7 +18,7 @@ from proteuslib.flowsheets.RO_with_energy_recovery.monte_carlo_sampling_RO_ERD i
 @pytest.mark.component
 def test_monte_carlo_sampling():
 
-    # Define truth values
+    # Define truth values (defined with rng_seed=1)
     truth_values = np.array([[2.84923065e-12, 2.95005437e-08, 9.80005773e-01, 2.73387066e+00, 4.58469101e-01],
                              [3.46351569e-12, 3.30797282e-08, 9.83385027e-01, 2.72795706e+00, 4.48196806e-01],
                              [3.61939655e-12, 3.06107079e-08, 9.79926626e-01, 2.72796370e+00, 4.46124238e-01],
@@ -30,8 +30,9 @@ def test_monte_carlo_sampling():
                              [4.81217268e-12, 4.23105397e-08, 9.77675085e-01, 2.72300670e+00, 4.34671785e-01],
                              [4.87240588e-12, 3.41378590e-08, 9.89554444e-01, 2.72040293e+00, 4.35064581e-01]])
 
-    global_results = run_parameter_sweep(None)
+    # Run the parameter sweep 
+    global_results = run_parameter_sweep(None, seed=1)
 
-    # Loop through individual values for specificity
+    # Compare individual values for specificity
     for value, truth_value in zip(truth_values.flatten(), global_results.flatten()):
         assert value == pytest.approx(truth_value)

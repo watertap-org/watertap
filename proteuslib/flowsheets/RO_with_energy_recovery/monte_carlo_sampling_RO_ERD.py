@@ -20,7 +20,7 @@ from proteuslib.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery impor
     solve,
     optimize)
 
-def run_parameter_sweep(output_filename):
+def run_parameter_sweep(results_file, seed=None):
 
     # Set up the solver
     solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
@@ -39,16 +39,17 @@ def run_parameter_sweep(output_filename):
     sweep_params['B_comp'] = NormalSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
     sweep_params['Spacer_porosity'] = UniformSample(m.fs.RO.spacer_porosity, 0.95, 0.99)
 
+    # Define the outputs to be saved
+    outputs = {}
+    outputs['EC'] = m.fs.specific_energy_consumption
+    outputs['LCOW'] = m.fs.costing.LCOW
+
     # Run the parameter sweep study using num_samples randomly drawn from the above range
     num_samples = 10
 
-    # Suppress the CSV-file output for this test
-    output_filename = None 
-
-    global_results = parameter_sweep(m, sweep_params, {'EC':m.fs.specific_energy_consumption, 'LCOW': m.fs.costing.LCOW},
-        output_filename, optimize_function=optimize, optimize_kwargs={'solver':solver}, num_samples=num_samples, seed=1)
-
-    print(global_results)
+    # Run the parameter sweep
+    global_results = parameter_sweep(m, sweep_params, outputs, results_file=results_file, 
+        optimize_function=optimize, optimize_kwargs={'solver':solver}, num_samples=num_samples, seed=seed)
 
     return global_results
 
