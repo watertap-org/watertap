@@ -34,5 +34,5 @@ def test_monte_carlo_sampling():
     global_results = run_parameter_sweep(None, seed=1)
 
     # Compare individual values for specificity
-    for value, truth_value in zip(truth_values.flatten(), global_results.flatten()):
+    for value, truth_value in zip(global_results.flatten(), truth_values.flatten()):
         assert value == pytest.approx(truth_value)
