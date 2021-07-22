@@ -439,13 +439,6 @@ class TestReverseOsmosis():
         m.fs.unit.length.fix(8)
         m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.4)
 
-        # test ports
-        port_lst = ['feed_inlet', 'feed_outlet', 'permeate_outlet']
-        for port_str in port_lst:
-            port = getattr(m.fs.unit, port_str)
-            assert len(port.vars) == 3  # number of state variables for NaCl property package
-            assert isinstance(port, Port)
-
         # test pyomo objects on unit
         unit_objs_type_dict = {'dens_solvent': Param,
                                'A_comp': Var,
@@ -605,13 +598,6 @@ class TestReverseOsmosis():
         m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.4)
         m.fs.unit.cp_modulus.fix(1.1)
 
-        # test ports
-        port_lst = ['feed_inlet', 'feed_outlet', 'permeate_outlet']
-        for port_str in port_lst:
-            port = getattr(m.fs.unit, port_str)
-            assert len(port.vars) == 3  # number of state variables for NaCl property package
-            assert isinstance(port, Port)
-
         # test pyomo objects on unit
         unit_objs_type_dict = {'dens_solvent': Param,
                                'A_comp': Var,
@@ -765,15 +751,7 @@ class TestReverseOsmosis():
         m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.4)
         m.fs.unit.Kf.fix(2e-5)
 
-        # test ports
-        port_lst = ['feed_inlet', 'feed_outlet', 'permeate_outlet']
-        for port_str in port_lst:
-            port = getattr(m.fs.unit, port_str)
-            assert len(port.vars) == 3  # number of state variables for NaCl property package
-            assert isinstance(port, Port)
-
         # test pyomo objects on unit
-        #TODO: uncomment relevant vars/constraints once added into model and delete remaining
         unit_objs_type_dict = {'dens_solvent': Param,
                                'A_comp': Var,
                                'B_comp': Var,
@@ -921,14 +899,7 @@ class TestReverseOsmosis():
         m.fs.unit.spacer_porosity.fix(0.75)
         m.fs.unit.channel_height.fix(0.002)
 
-        # test ports
-        port_lst = ['feed_inlet', 'feed_outlet', 'permeate_outlet']
-        for port_str in port_lst:
-            port = getattr(m.fs.unit, port_str)
-            assert len(port.vars) == 3  # number of state variables for NaCl property package
-            assert isinstance(port, Port)
-
-        # test pyomo objects on unit
+         # test pyomo objects on unit
         unit_objs_type_dict = {'dens_solvent': Param,
                                'A_comp': Var,
                                'B_comp': Var,
@@ -1093,13 +1064,6 @@ class TestReverseOsmosis():
         m.fs.unit.spacer_porosity.fix(0.75)
         m.fs.unit.channel_height.fix(0.002)
         m.fs.unit.deltaP.fix(-0.1e5)
-
-        # test ports
-        port_lst = ['feed_inlet', 'feed_outlet', 'permeate_outlet']
-        for port_str in port_lst:
-            port = getattr(m.fs.unit, port_str)
-            assert len(port.vars) == 3  # number of state variables for NaCl property package
-            assert isinstance(port, Port)
 
         # test pyomo objects on unit
         unit_objs_type_dict = {'dens_solvent': Param,
@@ -1269,13 +1233,6 @@ class TestReverseOsmosis():
         m.fs.unit.spacer_porosity.fix(0.75)
         m.fs.unit.channel_height.fix(0.002)
         m.fs.unit.deltaP_stage.fix(-62435.6)
-
-        # test ports
-        port_lst = ['feed_inlet', 'feed_outlet', 'permeate_outlet']
-        for port_str in port_lst:
-            port = getattr(m.fs.unit, port_str)
-            assert len(port.vars) == 3  # number of state variables for NaCl property package
-            assert isinstance(port, Port)
 
         # test pyomo objects on unit
         unit_objs_type_dict = {'dens_solvent': Param,
