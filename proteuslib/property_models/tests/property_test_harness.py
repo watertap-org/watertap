@@ -310,7 +310,7 @@ class PropertyTestHarness():
 
         # check if calculate_state runs and solves rather than how its used
         fix_state_vars(m.fs.stream)  # normal use of calculate_state would fix a property
-        results = m.fs.stream.calculate_state(vars_args={})
+        results = m.fs.stream.calculate_state(var_args={})
         assert results.solver.status == SolverStatus.ok
         assert results.solver.termination_condition == TerminationCondition.optimal
 
@@ -476,3 +476,4 @@ class PropertyRegressionTest():
                 lst.append((var.name, val))
             raise PropertyValueError(
                 "The following variable(s) are badly scaled: {lst}".format(lst=lst))
+

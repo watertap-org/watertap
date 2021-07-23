@@ -493,7 +493,7 @@ class _SeawaterStateBlock(StateBlock):
         revert_state_vars(self, flags)
         init_log.info('{} State Released.'.format(self.name))
 
-    def calculate_state(self, vars_args=None, hold_state=False, outlvl=idaeslog.NOTSET,
+    def calculate_state(self, var_args=None, hold_state=False, outlvl=idaeslog.NOTSET,
                         solver=None, optarg=None):
         """
         Solves state blocks given a set of variables and their values. Typically
@@ -501,7 +501,7 @@ class _SeawaterStateBlock(StateBlock):
         cannot be fixed in initialization routines.
 
         Keyword Arguments:
-            vars_args : dictionary with variables and their values {(VAR_NAME, INDEX): VALUE}
+            var_args : dictionary with variables and their values {(VAR_NAME, INDEX): VALUE}
             hold_state : flag indicating whether the state variable should be fixed after calculate state
                          - True - State variables will be fixed
                          - False - State variables will remain unfixed, unless already fixed
@@ -523,7 +523,7 @@ class _SeawaterStateBlock(StateBlock):
         flags = {}  # dictionary noting which variables were fixed and their previous state
         for k in self.keys():
             sb = self[k]
-            for (v_name, ind), val in vars_args.items():
+            for (v_name, ind), val in var_args.items():
                 var = getattr(sb, v_name)
                 if var[ind].is_fixed():
                     flags[(k, v_name, ind)] = True
@@ -532,7 +532,7 @@ class _SeawaterStateBlock(StateBlock):
                             "\n\tWhile using the calculate_state method, {v_name} was "
                             "fixed to a value {val}, but it was already fixed to value {val_2}. "
                             "\n\tUnfix the variable before calling the calculate_state "
-                            "method or update the vars_args."
+                            "method or update the var_args."
                             "".format(sb=sb.name, v_name=var.name, val=val, val_2=value(var[ind])))
                 else:
                     flags[(k, v_name, ind)] = False
@@ -541,7 +541,7 @@ class _SeawaterStateBlock(StateBlock):
             if degrees_of_freedom(sb) != 0:
                 raise RuntimeError("\n\tWhile calculating the state of {sb}, the degrees "
                                    "of freedom were {dof}, but 0 is required. "
-                                   "\n\tCheck vars_args and ensure the correct fixed "
+                                   "\n\tCheck var_args and ensure the correct fixed "
                                    "variables are provided."
                                    "".format(sb=sb.name, dof=degrees_of_freedom(sb)))
 
@@ -555,7 +555,7 @@ class _SeawaterStateBlock(StateBlock):
                           "This suggests that the user provided infeasible inputs "
                           "or that the model is poorly scaled.")
 
-        # unfix all variables fixed with vars_args
+        # unfix all variables fixed with var_args
         for (k, v_name, ind), previously_fixed in flags.items():
             if not previously_fixed:
                 var = getattr(self[k], v_name)
