@@ -19,7 +19,8 @@ from pyomo.environ import (ConcreteModel,
                            Param,
                            Var,
                            Expression,
-                           Constraint)
+                           Constraint,
+                           assert_optimal_termination)
 from pyomo.network import Port
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
@@ -174,7 +175,7 @@ def test_option_pressure_change_calculated():
     assert isinstance(m.fs.unit.spacer_porosity, Var)
     assert isinstance(m.fs.unit.N_Re_io, Var)
 
-    
+
 class TestReverseOsmosis():
     @pytest.fixture(scope="class")
     def RO_frame(self):
@@ -334,9 +335,7 @@ class TestReverseOsmosis():
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-               TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert_optimal_termination(results)
 
     @pytest.mark.component
     def test_conservation(self, RO_frame):
@@ -452,8 +451,7 @@ class TestReverseOsmosis():
         assert len(unscaled_constraint_list) == 0
 
         # # test initialization
-        # initialization_tester(m)  # TODO: address why initialization_tester results in a badly scaled var test failure
-        m.fs.unit.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
+        initialization_tester(m)
 
         # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
@@ -464,9 +462,7 @@ class TestReverseOsmosis():
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-               TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert_optimal_termination(results)
 
         # test solution
         assert (pytest.approx(3.815e-3, rel=1e-3) ==
@@ -564,9 +560,7 @@ class TestReverseOsmosis():
         results = solver.solve(m, tee=True)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-               TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert_optimal_termination(results)
 
         # test solution
         assert (pytest.approx(4.562e-3, rel=1e-3) ==
@@ -651,8 +645,7 @@ class TestReverseOsmosis():
         assert len(unscaled_constraint_list) == 0
 
         # test initialization
-        # initialization_tester(m)  # TODO: address why initialization_tester results in a badly scaled var test failure
-        m.fs.unit.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
+        initialization_tester(m)
 
         # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
@@ -663,9 +656,7 @@ class TestReverseOsmosis():
         results = solver.solve(m, tee=True)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-               TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert_optimal_termination(results)
 
         # test solution
         assert (pytest.approx(-1.661e5, rel=1e-3) == value(m.fs.unit.deltaP[0]))
@@ -769,9 +760,7 @@ class TestReverseOsmosis():
         results = solver.solve(m, tee=True)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-               TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert_optimal_termination(results)
 
         # test solution
         assert (pytest.approx(-3.000e5, rel=1e-3) == value(m.fs.unit.deltaP[0]))
