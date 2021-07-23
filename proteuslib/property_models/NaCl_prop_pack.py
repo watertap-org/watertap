@@ -360,6 +360,8 @@ class _NaClStateBlock(StateBlock):
         if hold_state:
             fix_state_vars(self)
 
+        return results
+
 @declare_process_block_class("NaClStateBlock",
                              block_class=_NaClStateBlock)
 class NaClStateBlockData(StateBlockData):
