@@ -18,8 +18,8 @@ Initial property package for H2O-NaCl system
 import idaes.logger as idaeslog
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Expression, log, Reals, NonNegativeReals, \
-    Var, Set, Param, sqrt, log10, TerminationCondition, Suffix
+from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, \
+    Var, Param, TerminationCondition, Suffix, value
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores
@@ -203,7 +203,7 @@ class _NaClStateBlock(StateBlock):
                                                phase component flows
                          pressure : value at which to initialize pressure
                          temperature : value at which to initialize temperature
-            outlvl : sets output level of initialization routine
+            outlvl : sets output level of initialization routine (default=idaeslog.NOTSET)
             optarg : solver options dictionary object (default=None)
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
@@ -243,9 +243,14 @@ class _NaClStateBlock(StateBlock):
         for k in self.keys():
             dof = degrees_of_freedom(self[k])
             if dof != 0:
-                raise PropertyPackageError("State vars fixed but degrees of "
-                                           "freedom for state block is not "
-                                           "zero during initialization.")
+                raise PropertyPackageError("\nWhile initializing {sb_name}, the degrees of freedom "
+                                           "are {dof}, when zero is required. \nInitialization assumes "
+                                           "that the state variables should be fixed and that no other "
+                                           "variables are fixed. \nIf other properties have a "
+                                           "predetermined value, use the calculate_state method "
+                                           "before using initialize to determine the values for "
+                                           "the state variables and avoid fixing the property variables."
+                                           "".format(sb_name=self.name, dof=dof))
 
         # ---------------------------------------------------------------------
         skip_solve = True  # skip solve if only state variables are present
@@ -282,6 +287,78 @@ class _NaClStateBlock(StateBlock):
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
         revert_state_vars(self, flags)
         init_log.info_high('{} State Released.'.format(self.name))
+
+    def calculate_state(self, vars_args=None, hold_state=False, outlvl=idaeslog.NOTSET,
+                        solver=None, optarg=None):
+        """
+        Solves state blocks given a set of variables and their values. Typically
+        used before initialization to solve for state variables because non-state variables
+        cannot be fixed in initialization routines.
+
+        Keyword Arguments:
+            vars_args : dictionary with variables and their values {(VAR_NAME, INDEX): VALUE}
+            hold_state : flag indicating whether the state variable should be fixed after calculate state
+                         - True - State variables will be fixed
+                         - False - State variables will remain unfixed, unless already fixed
+            outlvl : idaes logger object that sets output level of solve call (default=idaeslog.NOTSET)
+            solver : solver name string if None is provided the default solver
+                     for IDAES will be used (default = None)
+            optarg : solver options dictionary object (default={})
+
+        Returns:
+            results object from state block solve
+        """
+        # Get logger
+        solve_log = idaeslog.getSolveLogger(self.name, level=outlvl, tag="properties")
+
+        # Set solver and options
+        opt = get_solver(solver, optarg)
+
+        # Fix variables and check degrees of freedom
+        flags = {}  # dictionary noting which variables were fixed and their previous state
+        for k in self.keys():
+            sb = self[k]
+            for (v_name, ind), val in vars_args.items():
+                var = getattr(sb, v_name)
+                if var[ind].is_fixed():
+                    flags[(k, v_name, ind)] = True
+                    if value(var[ind]) != val:
+                        raise ConfigurationError(
+                            "\n\tWhile using the calculate_state method, {v_name} was "
+                            "fixed to a value {val}, but it was already fixed to value {val_2}. "
+                            "\n\tUnfix the variable before calling the calculate_state "
+                            "method or update the vars_args."
+                            "".format(sb=sb.name, v_name=var.name, val=val, val_2=value(var[ind])))
+                else:
+                    flags[(k, v_name, ind)] = False
+                    var[ind].fix(val)
+
+            if degrees_of_freedom(sb) != 0:
+                raise RuntimeError("\n\tWhile calculating the state of {sb}, the degrees "
+                                   "of freedom were {dof}, but 0 is required. "
+                                   "\n\tCheck vars_args and ensure the correct fixed "
+                                   "variables are provided."
+                                   "".format(sb=sb.name, dof=degrees_of_freedom(sb)))
+
+        # Solve
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = solve_indexed_blocks(opt, [self], tee=slc.tee)
+            solve_log.info_high("Calculate state: {}.".format(idaeslog.condition(results)))
+
+        if results.solver.termination_condition != TerminationCondition.optimal:
+            raise Warning("The solver failed to converge to an optimal solution. "
+                          "This suggests that the user provided infeasible inputs "
+                          "or that the model is poorly scaled.")
+
+        # unfix all variables fixed with vars_args
+        for (k, v_name, ind), previously_fixed in flags.items():
+            if not previously_fixed:
+                var = getattr(self[k], v_name)
+                var[ind].unfix()
+
+        # fix state variables if hold_state
+        if hold_state:
+            fix_state_vars(self)
 
 @declare_process_block_class("NaClStateBlock",
                              block_class=_NaClStateBlock)
