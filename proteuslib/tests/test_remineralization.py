@@ -82,6 +82,7 @@ from pyomo.environ import (ConcreteModel,
 
 # Import idaes methods to check the model during construction
 from idaes.core.util import scaling as iscale
+from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -728,7 +729,7 @@ class TestRemineralization():
     @pytest.mark.component
     def test_solve_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
-        solver.options['max_iter'] = 2
+        # solver.options['max_iter'] = 2
         results = solver.solve(model)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
@@ -840,9 +841,10 @@ class TestRemineralization():
         check.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
         check.fs.thermo_params.reaction_CO2_to_H2CO3.eps.value = eps
 
-        solver.options['bound_push'] = 1e-20
-        solver.options['mu_init'] = 1e-6
-        solver.options['max_iter'] = 1000
+        # solver.options['bound_push'] = 1e-20
+        # solver.options['mu_init'] = 1e-6
+        # solver.options['max_iter'] = 1000
+        solver.options['nlp_scaling_method'] = 'none'
         check.fs.unit.initialize(optarg=solver.options)
 
         results = solver.solve(check, tee=True)
@@ -1493,16 +1495,45 @@ class TestRemineralizationCSTR():
     @pytest.mark.component
     def test_initialize_solver_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
-        solver.options['bound_push'] = 1e-20
-        solver.options['mu_init'] = 1e-6
-        solver.options['max_iter'] = 2000
-        model.fs.unit.initialize(optarg=solver.options)
+        solver.options['nlp_scaling_method'] = 'user-scaling'
+        # solver.options['bound_push'] = 1e-20
+        # solver.options['mu_init'] = 1e-6
+        # solver.options['max_iter'] = 2000
+        model.fs.unit.initialize(optarg=solver.options)  # Don't think initialize checks for optimal and ok termination but it should
         assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.component
+    def test_var_scaling(self, remineralization_cstr_kin):
+        m = remineralization_cstr_kin
+
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        for i, j in badly_scaled_var_lst:
+            if iscale.get_scaling_factor(i) is not None:
+                sf = iscale.get_scaling_factor(i)
+                sf_new = sf / value(j) / 1000
+
+            else:
+                sf = 1
+                sf_new = 1 / value(j)
+
+            # if value(j) is not None:
+            iscale.set_scaling_factor(i, sf_new)
+            print(sf, type(sf), j, type(j), sf_new, type(sf_new))
+
+        badly_scaled_var_lst2 = list(badly_scaled_var_generator(m))
+
+        [print(i,j) for i,j in badly_scaled_var_lst2]
+        assert badly_scaled_var_lst2 == []
 
     @pytest.mark.component
     def test_solve_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
-        solver.options['max_iter'] = 2
+        # solver.options['max_iter'] = 10000
+        # solver.options['bound_push'] = 1e-20
+        # solver.options['mu_init'] = 1e-6
+        solver.options['nlp_scaling_method'] = 'user-scaling'
+        # solver.options['warm_start_init_point'] = 'yes'
+
         results = solver.solve(model)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
