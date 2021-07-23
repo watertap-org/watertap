@@ -1502,28 +1502,28 @@ class TestRemineralizationCSTR():
         model.fs.unit.initialize(optarg=solver.options)  # Don't think initialize checks for optimal and ok termination but it should
         assert degrees_of_freedom(model) == 0
 
-    @pytest.mark.component
-    def test_var_scaling(self, remineralization_cstr_kin):
-        m = remineralization_cstr_kin
-
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        for i, j in badly_scaled_var_lst:
-            if iscale.get_scaling_factor(i) is not None:
-                sf = iscale.get_scaling_factor(i)
-                sf_new = sf / value(j) / 1000
-
-            else:
-                sf = 1
-                sf_new = 1 / value(j)
-
-            # if value(j) is not None:
-            iscale.set_scaling_factor(i, sf_new)
-            print(sf, type(sf), j, type(j), sf_new, type(sf_new))
-
-        badly_scaled_var_lst2 = list(badly_scaled_var_generator(m))
-
-        [print(i,j) for i,j in badly_scaled_var_lst2]
-        assert badly_scaled_var_lst2 == []
+    # @pytest.mark.component
+    # def test_var_scaling(self, remineralization_cstr_kin):
+    #     m = remineralization_cstr_kin
+    #
+    #     badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+    #     for i, j in badly_scaled_var_lst:
+    #         if iscale.get_scaling_factor(i) is not None:
+    #             sf = iscale.get_scaling_factor(i)
+    #             sf_new = sf / value(j) / 1000
+    #
+    #         else:
+    #             sf = 1
+    #             sf_new = 1 / value(j)
+    #
+    #         # if value(j) is not None:
+    #         iscale.set_scaling_factor(i, sf_new)
+    #         print(sf, type(sf), j, type(j), sf_new, type(sf_new))
+    #
+    #     badly_scaled_var_lst2 = list(badly_scaled_var_generator(m))
+    #
+    #     [print(i,j) for i,j in badly_scaled_var_lst2]
+    #     assert badly_scaled_var_lst2 == []
 
     @pytest.mark.component
     def test_solve_cstr_kin(self, remineralization_cstr_kin):
@@ -1531,10 +1531,12 @@ class TestRemineralizationCSTR():
         # solver.options['max_iter'] = 10000
         # solver.options['bound_push'] = 1e-20
         # solver.options['mu_init'] = 1e-6
+        # solver.options
+        solver.options['halt_on_ampl_error'] = 'yes'
         solver.options['nlp_scaling_method'] = 'user-scaling'
         # solver.options['warm_start_init_point'] = 'yes'
 
-        results = solver.solve(model)
+        results = solver.solve(model, tee=True, symbolic_solver_labels=True)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
