@@ -305,6 +305,16 @@ class PropertyTestHarness():
                 "The following variable(s) are poorly scaled: {lst}".format(lst=lst))
 
     @pytest.mark.component
+    def test_calculate_state(self, frame_stateblock):
+        m = frame_stateblock
+
+        # check if calculate_state runs and solves rather than how its used
+        fix_state_vars(m.fs.stream)  # normal use of calculate_state would fix a property
+        results = m.fs.stream.calculate_state(vars_args={})
+        assert results.solver.status == SolverStatus.ok
+        assert results.solver.termination_condition == TerminationCondition.optimal
+
+    @pytest.mark.component
     def test_default_solve(self, frame_stateblock):
         m = frame_stateblock
 
