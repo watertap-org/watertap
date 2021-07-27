@@ -1027,23 +1027,23 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         Returns:
             None
         """
-
-        def _raise_if_infeasible(fail_flag, fail_point=None):
-            if fail_point is None:
-                msg = 'The solver failed to converge to an optimal solution.' \
-                      'This suggests that the user provided infeasible inputs or ' \
-                      'that the model is poorly scaled.'
-            else:
-                msg = f"{fail_point} failed. The solver failed to converge to an optimal solution. " \
+        def _check_solve(results, checkpoint=None):
+            def _raise_if_infeasible(fail_flag):
+                msg = f"{checkpoint} failed. The solver failed to converge to an optimal solution. " \
                       f"This suggests that the user provided infeasible inputs or that the model is poorly scaled."
-            if fail_flag is True:
-                raise RuntimeError(msg)
-            elif fail_flag is False:
-                init_log.warning(msg)
+                if fail_flag is True:
+                    raise RuntimeError(msg)
+                elif fail_flag is False:
+                    init_log.warning(msg)
+                else:
+                    raise Exception(f'The fail_on_warning argument in the initialize method was set to {fail_flag}. '
+                                    f'fail_on_warning is a boolean argument. Set fail_on_warning to True or False.')
+            if checkpoint is None:
+                checkpoint = 'Initialization step'
+            if check_optimal_termination(results):
+                init_log.info(f'{checkpoint} successful.')
             else:
-                raise Exception(f'The fail_on_warning argument in the initialize method was set to {fail_flag}. '
-                                f'fail_on_warning is a boolean argument. Set fail_on_warning to True or False.')
-
+                _raise_if_infeasible(fail_flag=fail_on_warning)
 
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
@@ -1086,17 +1086,12 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                       'Starting Initialization Step 2: solve indexed blocks.')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        if check_optimal_termination(results):
-            init_log.info('Initialization Step 2 complete: solve indexed blocks successful.')
-        else:
-            _raise_if_infeasible(fail_flag=fail_on_warning, fail_point='Initialization Step 2: solve indexed blocks')
+        _check_solve(results, checkpoint='Initialization Step 2: solve indexed blocks')
         init_log.info('Starting Initialization Step 3: perform final solve.')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-        if check_optimal_termination(res):
-            init_log.info('Initialization Step 3 complete: final solve successful.')
-        else:
-            _raise_if_infeasible(fail_flag=fail_on_warning, fail_point='Initialization Step 3: final solve')
+        _check_solve(res, checkpoint='Initialization Step 3: final solve')
+
 
     def _get_performance_contents(self, time_point=0):
         x_in = self.feed_side.length_domain.first()
