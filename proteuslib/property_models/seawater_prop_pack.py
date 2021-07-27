@@ -19,7 +19,7 @@ import idaes.logger as idaeslog
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, \
-    Var, Param, Suffix, value, log, log10, exp, TerminationCondition
+    Var, Param, Suffix, value, log, log10, exp, check_optimal_termination
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores
@@ -516,7 +516,7 @@ class _SeawaterStateBlock(StateBlock):
         # Get logger
         solve_log = idaeslog.getSolveLogger(self.name, level=outlvl, tag="properties")
 
-        # Initialize at default values (not user provided)
+        # Initialize at current state values (not user provided)
         self.initialize(solver=solver, optarg=optarg, outlvl=outlvl)
 
         # Set solver and options
@@ -528,35 +528,44 @@ class _SeawaterStateBlock(StateBlock):
             sb = self[k]
             for (v_name, ind), val in var_args.items():
                 var = getattr(sb, v_name)
+                if iscale.get_scaling_factor(var[ind]) is None:
+                    _log.warning(
+                            "While using the calculate_state method on {sb_name}, variable {v_name} "
+                            "was provided as an argument in var_args, but it does not have a scaling "
+                            "factor. This suggests that the calculate_scaling_factor method has not been "
+                            "used or the variable was created on demand after the scaling factors were "
+                            "calculated. It is recommended to touch all relevant variables (i.e. call "
+                            "them or set an initial value) before using the calculate_scaling_factor "
+                            "method.".format(v_name=v_name, sb_name=sb.name))
                 if var[ind].is_fixed():
                     flags[(k, v_name, ind)] = True
                     if value(var[ind]) != val:
                         raise ConfigurationError(
-                            "\n\tWhile using the calculate_state method, {v_name} was "
+                            "While using the calculate_state method on {sb_name}, {v_name} was "
                             "fixed to a value {val}, but it was already fixed to value {val_2}. "
-                            "\n\tUnfix the variable before calling the calculate_state "
-                            "method or update the var_args."
-                            "".format(sb=sb.name, v_name=var.name, val=val, val_2=value(var[ind])))
+                            "Unfix the variable before calling the calculate_state "
+                            "method or update var_args."
+                            "".format(sb_name=sb.name, v_name=var.name, val=val, val_2=value(var[ind])))
                 else:
                     flags[(k, v_name, ind)] = False
                     var[ind].fix(val)
 
             if degrees_of_freedom(sb) != 0:
-                raise RuntimeError("\n\tWhile calculating the state of {sb}, the degrees "
-                                   "of freedom were {dof}, but 0 is required. "
-                                   "\n\tCheck var_args and ensure the correct fixed "
-                                   "variables are provided."
-                                   "".format(sb=sb.name, dof=degrees_of_freedom(sb)))
+                raise RuntimeError("While using the calculate_state method on {sb_name}, the degrees "
+                                   "of freedom were {dof}, but 0 is required. Check var_args and ensure "
+                                   "the correct fixed variables are provided."
+                                   "".format(sb_name=sb.name, dof=degrees_of_freedom(sb)))
 
         # Solve
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = solve_indexed_blocks(opt, [self], tee=slc.tee)
             solve_log.info_high("Calculate state: {}.".format(idaeslog.condition(results)))
 
-        if results.solver.termination_condition != TerminationCondition.optimal:
-            raise Warning("The solver failed to converge to an optimal solution. "
-                          "This suggests that the user provided infeasible inputs "
-                          "or that the model is poorly scaled.")
+        if not check_optimal_termination(results):
+            _log.warning("While using the calculate_state method on {sb_name}, the solver failed "
+                         "to converge to an optimal solution. This suggests that the user provided "
+                         "infeasible inputs, or that the model is poorly scaled, poorly initialized, "
+                         "or degenerate.")
 
         # unfix all variables fixed with var_args
         for (k, v_name, ind), previously_fixed in flags.items():
