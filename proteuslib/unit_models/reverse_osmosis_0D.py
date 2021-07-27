@@ -26,7 +26,7 @@ from pyomo.environ import (Var,
                            units as pyunits,
                            exp,
                            value,
-                           assert_optimal_termination)
+                           check_optimal_termination)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -901,7 +901,13 @@ class ReverseOsmosisData(UnitModelBlockData):
                     * (b.feed_side.properties_out[t].pressure_osm
                     - b.permeate_side.properties_out[t].pressure_osm))
 
-    def initialize(blk, initialize_guess=None, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None):
+    def initialize(blk,
+                   initialize_guess=None,
+                   state_args=None,
+                   outlvl=idaeslog.NOTSET,
+                   solver=None,
+                   optarg=None,
+                   fail_on_warning=False):
         """
         General wrapper for RO initialization routines
 
@@ -925,9 +931,27 @@ class ReverseOsmosisData(UnitModelBlockData):
             solver : solver object or string indicating which solver to use during
                      initialization, if None provided the default solver will be used
                      (default = None)
+            fail_on_warning : boolean argument to fail or only produce  warning upon unsuccessful solve (default=False)
+
         Returns:
             None
         """
+        def _raise_if_infeasible(fail_flag, fail_point=None):
+            if fail_point is None:
+                msg = 'The solver failed to converge to an optimal solution.' \
+                      'This suggests that the user provided infeasible inputs or ' \
+                      'that the model is poorly scaled.'
+            else:
+                msg = f"{fail_point} failed. The solver failed to converge to an optimal solution. " \
+                      f"This suggests that the user provided infeasible inputs or that the model is poorly scaled."
+            if fail_flag is True:
+                raise RuntimeError(msg)
+            elif fail_flag is False:
+                init_log.warning(msg)
+            else:
+                raise Exception(f'The fail_on_warning argument in the initialize method was set to {fail_flag}. '
+                                f'fail_on_warning is a boolean argument. Set fail_on_warning to True or False.')
+
 
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
@@ -1044,10 +1068,11 @@ class ReverseOsmosisData(UnitModelBlockData):
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-            assert_optimal_termination(res)
-        init_log.info_high(
-            "Initialization Step 3 {}.".format(idaeslog.condition(res)))
-
+        if check_optimal_termination(res):
+            pass
+        else:
+            _raise_if_infeasible(fail_flag=fail_on_warning,
+                                 fail_point='Initialization Step 3')
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.feed_side.release_state(flags, outlvl)
