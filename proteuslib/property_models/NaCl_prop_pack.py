@@ -311,6 +311,9 @@ class _NaClStateBlock(StateBlock):
         # Get logger
         solve_log = idaeslog.getSolveLogger(self.name, level=outlvl, tag="properties")
 
+        # Initialize at default values (not user provided)
+        self.initialize(solver=solver, optarg=optarg, outlvl=outlvl)
+
         # Set solver and options
         opt = get_solver(solver, optarg)
 
