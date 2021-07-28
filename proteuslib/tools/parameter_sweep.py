@@ -12,87 +12,14 @@
 ###############################################################################
 import numpy as np
 import pyomo.environ as pyo
-import sys
 import os
 import itertools
 import warnings
 
-from enum import Enum, auto
-from abc import abstractmethod, ABC 
 from idaes.core.util import get_solver
 
-# ================================================================
+from .sample import SamplingType, LinearSample
 
-class SamplingType(Enum):
-    FIXED = auto()
-    RANDOM = auto()
-
-# ================================================================
-
-class _Sample(ABC): 
-
-    def __init__(self, pyomo_object, *args, **kwargs):
-        # Check for indexed with single value
-        if pyomo_object.is_indexed() and len(pyomo_object) == 1:
-            pyomo_object = pyomo_object.values()[0]
-
-        # Make sure we are a Var() or Param()
-        if not (pyomo_object.is_parameter_type() or pyomo_object.is_variable_type()):
-            raise ValueError(f"The sweep parameter needs to be a pyomo Param or Var but {type(pyomo_object)} was provided instead.")
-        self.pyomo_object = pyomo_object 
-        self.setup(*args, **kwargs)
-
-    @abstractmethod 
-    def sample(self, num_samples): 
-        pass 
-
-    @abstractmethod 
-    def setup(self, *args, **kwargs): 
-        pass 
-
-# ================================================================
-
-class RandomSample(_Sample):
-    sampling_type = SamplingType.RANDOM
-
-class FixedSample(_Sample):
-    sampling_type = SamplingType.FIXED
-
-# ================================================================
-
-class LinearSample(FixedSample):
-
-    def sample(self, num_samples): 
-        return np.linspace(self.lower_limit, self.upper_limit, self.num_samples)
-
-    def setup(self, lower_limit, upper_limit, num_samples):
-        self.lower_limit = lower_limit
-        self.upper_limit = upper_limit
-        self.num_samples = num_samples
-
-# ================================================================
-
-class UniformSample(RandomSample):
-
-    def sample(self, num_samples): 
-        return np.random.uniform(self.lower_limit, self.upper_limit, num_samples)
-
-    def setup(self, lower_limit, upper_limit):
-        self.lower_limit = lower_limit
-        self.upper_limit = upper_limit
-
-# ================================================================
-
-class NormalSample(RandomSample):
-
-    def sample(self, num_samples): 
-        return np.random.normal(self.mean, self.sd, num_samples)
-
-    def setup(self, mean, sd):
-        self.mean = mean
-        self.sd = sd
-
-# ================================================================
 
 def _init_mpi(mpi_comm=None):
 
@@ -179,20 +106,8 @@ def _divide_combinations(global_combo_array, rank, num_procs):
 
 def _update_model_values(m, param_dict, values):
 
-    for k, item in enumerate(param_dict.values()):
-
-        param = item.pyomo_object
-
-        if param.is_variable_type():
-            # Fix the single value to values[k]
-            param.fix(values[k])
-
-        elif param.is_parameter_type():
-            # Fix the single value to values[k]
-            param.set_value(values[k])
-
-        else:
-            raise RuntimeError(f"Unrecognized Pyomo object {param}")
+    for val, item in zip(values, param_dict.values()):
+        item.set_value(val)
 
 # ================================================================
 
@@ -238,7 +153,7 @@ def _default_optimize(model, options=None, tee=False):
     solver = get_solver(options=options)
     results = solver.solve(m, tee=tee)
 
-    if results.solver.termination_condition != pyo.TerminationCondition.optimal:
+    if not pyo.check_optimal_termination(results):
         raise RuntimeError("The solver failed to converge to an optimal solution. "
                            "This suggests that the user provided infeasible inputs "
                            "or that the model is poorly scaled.")
@@ -286,10 +201,8 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
                 function.
 
         sweep_params: A dictionary containing the values to vary with the format
-                      ``sweep_params['Short/Pretty-print Name'] =
-                      (model.fs.variable_or_param[index], lower_limit, upper_limit, num_samples)``.
-                      A uniform number of samples ``num_samples`` will be take between
-                      the ``lower_limit`` and ``upper_limit``.
+                      ``sweep_params['Short/Pretty-print Name'] = Sample(model.fs.variable_or_param[index],...)``
+                      Samples will be taken as defined in the sampling class.
 
         outputs : A dictionary containing "short names" as keys and and Pyomo objects
                   on ``model`` whose values to report as values. E.g.,

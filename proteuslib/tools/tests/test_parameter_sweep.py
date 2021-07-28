@@ -23,11 +23,11 @@ from proteuslib.tools.parameter_sweep import (_init_mpi,
                                                _divide_combinations,
                                                _update_model_values,
                                                _aggregate_results,
-                                               parameter_sweep,
-                                               LinearSample,
-                                               UniformSample,
-                                               NormalSample,
-                                               SamplingType)
+                                               parameter_sweep)
+from proteuslib.tools.sample import (LinearSample,
+                                     UniformSample,
+                                     NormalSample,
+                                     SamplingType)
 
 # -----------------------------------------------------------------------------
 
@@ -67,7 +67,7 @@ class TestParallelManager():
 
         ls = LinearSample(indexed_var, None, None, None)
 
-        assert ls.pyomo_object is indexed_var['a']
+        assert ls._pyomo_object is indexed_var['a']
 
     @pytest.mark.unit
     def test_multiple_indices_error(self):
