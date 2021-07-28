@@ -1044,16 +1044,6 @@ class SeawaterStateBlockData(StateBlockData):
                         sf *= iscale.get_scaling_factor(self.params.mw_comp[j])
                         iscale.set_scaling_factor(self.molality_comp[j], sf)
 
-            for j in self.params.component_list:
-                sf_dens = iscale.get_scaling_factor(self.dens_mass_phase['Liq'])
-                if iscale.get_scaling_factor(self.conc_mass_phase_comp['Liq', j]) is None:
-                    if j == 'H2O':
-                        iscale.set_scaling_factor(self.conc_mass_phase_comp['Liq', j], sf_dens)
-                    elif j == 'TDS':
-                        iscale.set_scaling_factor(
-                            self.conc_mass_phase_comp['Liq', j],
-                            sf_dens * iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j]))
-
         if self.is_property_constructed('enth_flow'):
             iscale.set_scaling_factor(self.enth_flow,
                                       iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'])
