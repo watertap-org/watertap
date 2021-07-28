@@ -42,6 +42,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
+from proteuslib.util.initialization import check_solve, check_dof
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -904,10 +905,12 @@ class ReverseOsmosisData(UnitModelBlockData):
     def initialize(blk,
                    initialize_guess=None,
                    state_args=None,
-                   outlvl=idaeslog.NOTSET,
+                   outlvl_init=idaeslog.INFO,
+                   outlvl_solve=idaeslog.NOTSET,
                    solver=None,
                    optarg=None,
-                   fail_on_warning=False):
+                   fail_on_warning=False,
+                   ignore_dof=False):
         """
         General wrapper for RO initialization routines
 
@@ -926,37 +929,20 @@ class ReverseOsmosisData(UnitModelBlockData):
                          package(s) to provide an initial state for the inlet
                          feed side state block (see documentation of the specific
                          property package) (default = None).
-            outlvl : sets output level of initialization routine
+            outlvl_init : sets output level of InitLogger, init_log (default= idaeslog.INFO)
+            outlvl_solve sets output level of SolveLogger, solve_log (default= idaeslog.NOTSET)
             optarg : solver options dictionary object (default=None)
             solver : solver object or string indicating which solver to use during
                      initialization, if None provided the default solver will be used
                      (default = None)
             fail_on_warning : boolean argument to fail or only produce  warning upon unsuccessful solve (default=False)
-
+            ignore_dof : boolean argument to ignore when DOF != 0 (default=False)
         Returns:
             None
         """
-        def _check_solve(results, checkpoint=None):
-            def _raise_if_infeasible(fail_flag):
-                msg = f"{checkpoint} failed. The solver failed to converge to an optimal solution. " \
-                      f"This suggests that the user provided infeasible inputs or that the model is poorly scaled."
-                if fail_flag is True:
-                    raise RuntimeError(msg)
-                elif fail_flag is False:
-                    init_log.warning(msg)
-                else:
-                    raise Exception(f'The fail_on_warning argument in the initialize method was set to {fail_flag}. '
-                                    f'fail_on_warning is a boolean argument. Set fail_on_warning to True or False.')
-            if checkpoint is None:
-                checkpoint = 'Initialization step'
-            if check_optimal_termination(results):
-                init_log.info(f'{checkpoint} successful.')
-            else:
-                _raise_if_infeasible(fail_flag=fail_on_warning)
 
-
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl_init, tag="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl_solve, tag="unit")
         # Set solver and options
         if optarg is None:
             optarg = {'nlp_scaling_method': 'user-scaling'}
@@ -992,17 +978,15 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         # Initialize feed inlet state block
         flags = blk.feed_side.properties_in.initialize(
-            outlvl=outlvl,
+            outlvl=outlvl_init,
             optarg=optarg,
             solver=solver,
             state_args=state_args,
             hold_state=True)
 
         init_log.info_high("Initialization Step 1 Complete.")
-        if degrees_of_freedom(blk) != 0:
-            raise Exception(f"Initialization was called on {blk} "
-                            f"but it had {degrees_of_freedom(blk)} degree(s) of freedom "
-                            f"when 0 was expected. Check that the appropriate variables are fixed.")
+        if ignore_dof is False:
+            check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
         # ---------------------------------------------------------------------
         # Initialize other state blocks
         # base properties on inlet state block
@@ -1035,32 +1019,32 @@ class ReverseOsmosisData(UnitModelBlockData):
             state_args_interface_out['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
 
         blk.feed_side.properties_out.initialize(
-            outlvl=outlvl,
+            outlvl=outlvl_init,
             optarg=optarg,
             solver=solver,
             state_args=state_args_retentate,)
         blk.feed_side.properties_interface_in.initialize(
-                outlvl=outlvl,
+                outlvl=outlvl_init,
                 optarg=optarg,
                 solver=solver,
                 state_args=state_args_interface_in,)
         blk.feed_side.properties_interface_out.initialize(
-                outlvl=outlvl,
+                outlvl=outlvl_init,
                 optarg=optarg,
                 solver=solver,
                 state_args=state_args_interface_out,)
         blk.permeate_side.properties_mixed.initialize(
-            outlvl=outlvl,
+            outlvl=outlvl_init,
             optarg=optarg,
             solver=solver,
             state_args=state_args_permeate,)
         blk.permeate_side.properties_in.initialize(
-            outlvl=outlvl,
+            outlvl=outlvl_init,
             optarg=optarg,
             solver=solver,
             state_args=state_args_permeate,)
         blk.permeate_side.properties_out.initialize(
-            outlvl=outlvl,
+            outlvl=outlvl_init,
             optarg=optarg,
             solver=solver,
             state_args=state_args_permeate,)
@@ -1068,12 +1052,12 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Solve unit
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        with idaeslog.solver_log(solve_log, outlvl_solve) as slc:
             res = opt.solve(blk, tee=slc.tee)
-        _check_solve(res, checkpoint='Initialization Step 3')
+        check_solve(res, checkpoint='Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.feed_side.release_state(flags, outlvl)
+        blk.feed_side.release_state(flags, outlvl_init)
         init_log.info(
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )

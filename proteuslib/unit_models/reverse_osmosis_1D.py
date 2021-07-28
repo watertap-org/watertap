@@ -41,11 +41,10 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.initialization import solve_indexed_blocks
 from enum import Enum, auto
-
+from proteuslib.util.initialization import check_solve, check_dof
 import idaes.logger as idaeslog
 
 
@@ -53,6 +52,7 @@ __author__ = "Adam Atia"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
 
 class ConcentrationPolarizationType(Enum):
     none = auto()                    # no concentration polarization
@@ -1024,31 +1024,12 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
             optarg : solver options dictionary object (default=None, use default solver options)
-
             fail_on_warning : boolean argument to fail or only produce  warning upon unsuccessful solve (default=False)
-
             ignore_dof : boolean argument to ignore when DOF != 0 (default=False)
         Returns:
             None
+
         """
-        def _check_solve(results, checkpoint=None):
-            def _raise_if_infeasible(fail_flag):
-                msg = f"{checkpoint} failed. The solver failed to converge to an optimal solution. " \
-                      f"This suggests that the user provided infeasible inputs or that the model is poorly scaled."
-                if fail_flag is True:
-                    init_log.error(msg)
-                    raise ValueError(msg)
-                elif fail_flag is False:
-                    init_log.warning(msg)
-                else:
-                    raise ValueError(f'The fail_on_warning argument in the initialize method was set to {fail_flag}. '
-                                     f'fail_on_warning is a boolean argument. Set fail_on_warning to True or False.')
-            if checkpoint is None:
-                checkpoint = 'Initialization step'
-            if check_optimal_termination(results):
-                init_log.info(f'{checkpoint} successful.')
-            else:
-                _raise_if_infeasible(fail_flag=fail_on_warning)
 
         init_log = idaeslog.getInitLogger(blk.name, outlvl_init, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl_solve, tag="unit")
@@ -1082,31 +1063,18 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         init_log.info('Permeate outlet initialization complete. Initialize permeate outlet. ')
 
         if ignore_dof is False:
-            if degrees_of_freedom(blk) != 0:
-                msg = f"Initialization was called on {blk} "
-                f"but it had {degrees_of_freedom(blk)} degree(s) of freedom "
-                f"when 0 was expected. Check that the appropriate variables are fixed. Use keyword arg ignore_dof=True" \
-                f"to skip this check"
-                if fail_on_warning is True:
-                    init_log.error(msg)
-                    raise ValueError('Non-zero degrees of freedom')
-                elif fail_on_warning is False:
-                    init_log.warning(msg)
-                else:
-                    raise ValueError(f'The fail_on_warning argument in the initialize method was set to {fail_flag}. '
-                                     f'fail_on_warning is a boolean argument. Set fail_on_warning to True or False.')
-
+           check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
         # ---------------------------------------------------------------------
         # Step 2: Solve unit
         init_log.info('Initialization Step 1 complete: all state blocks initialized.'
                       'Starting Initialization Step 2: solve indexed blocks.')
         with idaeslog.solver_log(solve_log, outlvl_solve) as slc:
             results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        _check_solve(results, checkpoint='Initialization Step 2: solve indexed blocks')
+        check_solve(results, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 2: solve indexed blocks')
         init_log.info('Starting Initialization Step 3: perform final solve.')
         with idaeslog.solver_log(solve_log, outlvl_solve) as slc:
             res = opt.solve(blk, tee=slc.tee)
-        _check_solve(res, checkpoint='Initialization Step 3: final solve')
+        check_solve(res, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 3: final solve')
 
 
     def _get_performance_contents(self, time_point=0):
