@@ -15,7 +15,7 @@ import proteuslib.property_models.seawater_prop_pack as props
 from idaes.generic_models.properties.tests.test_harness import \
     PropertyTestHarness as PropertyTestHarness_idaes
 from proteuslib.property_models.tests.property_test_harness import \
-    (PropertyTestHarness, PropertyRegressionTest)
+    (PropertyTestHarness, PropertyRegressionTest, PropertyCalculateStateTest)
 
 # -----------------------------------------------------------------------------
 class TestSeawaterProperty_idaes(PropertyTestHarness_idaes):
@@ -130,3 +130,60 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
                                     ('cp_phase', 'Liq'): 3.916e3,
                                     ('therm_cond_phase', 'Liq'): 0.5854,
                                     ('dh_vap', None): 2.353e6}
+
+
+@pytest.mark.component
+class TestSeawaterCalculateState_1(PropertyCalculateStateTest):
+    def configure(self):
+        self.prop_pack = props.SeawaterParameterBlock
+        self.param_args = {}
+
+        self.solver = 'ipopt'
+        self.optarg = {'nlp_scaling_method': 'user-scaling'}
+
+        self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e-1,
+                             ('flow_mass_phase_comp', ('Liq', 'TDS')): 1e1}
+        self.var_args = {('flow_vol_phase', 'Liq'): 2e-2,
+                         ('mass_frac_phase_comp', ('Liq', 'TDS')): 0.05,
+                         ('temperature', None): 273.15 + 25,
+                         ('pressure', None): 5e5}
+        self.state_solution = {('flow_mass_phase_comp', ('Liq', 'H2O')): 19.66,
+                               ('flow_mass_phase_comp', ('Liq', 'TDS')): 1.035}
+
+
+@pytest.mark.component
+class TestNaClCalculateState_2(PropertyCalculateStateTest):
+    def configure(self):
+        self.prop_pack = props.SeawaterParameterBlock
+        self.param_args = {}
+
+        self.solver = 'ipopt'
+        self.optarg = {'nlp_scaling_method': 'user-scaling'}
+
+        self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1,
+                             ('flow_mass_phase_comp', ('Liq', 'TDS')): 1e2}
+        self.var_args = {('flow_vol_phase', 'Liq'): 1e-3,
+                         ('pressure_osm', None): 100e5,
+                         ('temperature', None): 273.15 + 25,
+                         ('pressure', None): 5e5}
+        self.state_solution = {('flow_mass_phase_comp', ('Liq', 'H2O')): 0.9604,
+                               ('flow_mass_phase_comp', ('Liq', 'TDS')): 0.1231}
+
+@pytest.mark.component
+class TestNaClCalculateState_3(PropertyCalculateStateTest):
+    def configure(self):
+        self.prop_pack = props.SeawaterParameterBlock
+        self.param_args = {}
+
+        self.solver = 'ipopt'
+        self.optarg = {'nlp_scaling_method': 'user-scaling'}
+
+        self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1,
+                             ('flow_mass_phase_comp', ('Liq', 'TDS')): 1e2}
+        self.var_args = {('flow_vol_phase', 'Liq'): 1e-3,
+                         ('mass_frac_phase_comp', ('Liq', 'TDS')): 0.06,
+                         ('pressure_sat', None): 3e4,
+                         ('pressure', None): 5e5}
+        self.state_solution = {('flow_mass_phase_comp', ('Liq', 'H2O')): 0.9605,
+                               ('flow_mass_phase_comp', ('Liq', 'TDS')): 0.0613,
+                               ('temperature', None): 343.05}
