@@ -168,6 +168,78 @@ def test_option_pressure_change_calculated():
     assert isinstance(m.fs.unit.spacer_porosity, Var)
     assert isinstance(m.fs.unit.N_Re, Var)
 
+class Test_initialization_args():
+    @pytest.fixture(scope="class")
+    def m(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = props.NaClParameterBlock()
+
+        m.fs.unit = ReverseOsmosis1D(default={
+            "property_package": m.fs.properties,
+            "has_pressure_change": True,
+            "concentration_polarization_type": ConcentrationPolarizationType.calculated,
+            "mass_transfer_coefficient": MassTransferCoefficient.calculated,
+            "pressure_change_type": PressureChangeType.calculated,
+            "transformation_scheme": "BACKWARD",
+            "transformation_method": "dae.finite_difference",
+            "finite_elements": 5,
+            "has_full_reporting": True
+        })
+
+        # fully specify system
+        feed_flow_mass = 1000 / 3600
+        feed_mass_frac_NaCl = 0.034283
+        feed_pressure = 70e5
+
+        feed_temperature = 273.15 + 25
+        A = 4.2e-12
+        B = 3.5e-8
+        pressure_atmospheric = 1e5
+        feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
+            feed_flow_mass * feed_mass_frac_NaCl)
+
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
+            feed_flow_mass * feed_mass_frac_H2O)
+
+        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.A_comp.fix(A)
+        m.fs.unit.B_comp.fix(B)
+        m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.N_Re[0, 0].fix(400)
+        m.fs.unit.recovery_mass_phase_comp[0, 'Liq', 'H2O'].fix(0.5)
+        m.fs.unit.spacer_porosity.fix(0.97)
+        m.fs.unit.channel_height.fix(0.001)
+
+        return m
+
+    @pytest.mark.component
+    def test_initialize_ignore_dof(self, m):
+         # Unfix a variable and check that ignore_dof arg works
+        temp = m.fs.unit.N_Re[0, 0].value
+        m.fs.unit.N_Re[0, 0].unfix()
+        # Next line should pass since we are ignoring non-zero DOF
+        m.fs.unit.initialize(ignore_dof=True, fail_on_warning=False)
+        # Check that ValueError is thrown when ignore_dof and fail_on_warning are set to do so
+        with pytest.raises(ValueError):
+            m.fs.unit.initialize(ignore_dof=False, fail_on_warning=True)
+        # Refix that variable
+        m.fs.unit.N_Re[0, 0].fix(temp)
+
+    @pytest.mark.component
+    def test_initialize_fail_on_warning(self, m):
+        # Cause a failed initialization and check that ValueError is thrown
+        temp = m.fs.unit.feed_inlet.pressure[0].value
+        m.fs.unit.feed_inlet.pressure[0].fix(0.1 * temp)
+        # Next line should pass since only a warning is given
+        m.fs.unit.initialize(ignore_dof=True, fail_on_warning=False)
+        # Set fail_on_warning to True
+        with pytest.raises(ValueError):
+            m.fs.unit.initialize(ignore_dof=True, fail_on_warning=True)
 
 class TestReverseOsmosis():
     @pytest.fixture(scope="class")

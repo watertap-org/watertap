@@ -997,10 +997,12 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                    feed_side_args=None,
                    permeate_side_args=None,
                    permeate_block_args=None,
-                   outlvl=idaeslog.NOTSET,
+                   outlvl_init=idaeslog.INFO,
+                   outlvl_solve=idaeslog.NOTSET,
                    solver=None,
                    optarg=None,
-                   fail_on_warning=False):
+                   fail_on_warning=False,
+                   ignore_dof=False):
         """
         Initialization routine for 1D-RO unit.
 
@@ -1017,13 +1019,15 @@ class ReverseOsmosis1DData(UnitModelBlockData):
              package(s) of the final permeate StateBlock to provide an initial state for
              initialization (see documentation of the specific
              property package)
-            outlvl : sets output level of initialization routine
+            outlvl_init : sets output level of InitLogger, init_log (default= idaeslog.INFO)
+            outlvl_solve sets output level of SolveLogger, solve_log (default= idaeslog.NOTSET)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
             optarg : solver options dictionary object (default=None, use default solver options)
 
             fail_on_warning : boolean argument to fail or only produce  warning upon unsuccessful solve (default=False)
 
+            ignore_dof : boolean argument to ignore when DOF != 0 (default=False)
         Returns:
             None
         """
@@ -1032,12 +1036,13 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 msg = f"{checkpoint} failed. The solver failed to converge to an optimal solution. " \
                       f"This suggests that the user provided infeasible inputs or that the model is poorly scaled."
                 if fail_flag is True:
-                    raise RuntimeError(msg)
+                    init_log.error(msg)
+                    raise ValueError(msg)
                 elif fail_flag is False:
                     init_log.warning(msg)
                 else:
-                    raise Exception(f'The fail_on_warning argument in the initialize method was set to {fail_flag}. '
-                                    f'fail_on_warning is a boolean argument. Set fail_on_warning to True or False.')
+                    raise ValueError(f'The fail_on_warning argument in the initialize method was set to {fail_flag}. '
+                                     f'fail_on_warning is a boolean argument. Set fail_on_warning to True or False.')
             if checkpoint is None:
                 checkpoint = 'Initialization step'
             if check_optimal_termination(results):
@@ -1045,8 +1050,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             else:
                 _raise_if_infeasible(fail_flag=fail_on_warning)
 
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl_init, tag="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl_solve, tag="unit")
 
         # Create solver
         if optarg is None:
@@ -1058,37 +1063,48 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Step 1: Initialize feed_side, permeate_side, and permeate_out blocks
         flags_feed_side = blk.feed_side.initialize(
-            outlvl=outlvl,
+            outlvl=outlvl_init,
             optarg=optarg,
             solver=solver,
             state_args=feed_side_args)
         init_log.info('Feed-side initialization complete. Initialize permeate-side. ')
         flags_permeate_side = blk.permeate_side.initialize(
-            outlvl=outlvl,
+            outlvl=outlvl_init,
             optarg=optarg,
             solver=solver,
             state_args=permeate_side_args)
         init_log.info('Permeate-side initialization complete. Initialize permeate outlet. ')
         flags_permeate_out = blk.permeate_out.initialize(
-            outlvl=outlvl,
+            outlvl=outlvl_init,
             optarg=optarg,
             solver=solver,
             state_args=permeate_block_args)
         init_log.info('Permeate outlet initialization complete. Initialize permeate outlet. ')
 
-        if degrees_of_freedom(blk) != 0:
-            raise Exception(f"Initialization was called on {blk} "
-                            f"but it had {degrees_of_freedom(blk)} degree(s) of freedom "
-                            f"when 0 was expected. Check that the appropriate variables are fixed.")
+        if ignore_dof is False:
+            if degrees_of_freedom(blk) != 0:
+                msg = f"Initialization was called on {blk} "
+                f"but it had {degrees_of_freedom(blk)} degree(s) of freedom "
+                f"when 0 was expected. Check that the appropriate variables are fixed. Use keyword arg ignore_dof=True" \
+                f"to skip this check"
+                if fail_on_warning is True:
+                    init_log.error(msg)
+                    raise ValueError('Non-zero degrees of freedom')
+                elif fail_on_warning is False:
+                    init_log.warning(msg)
+                else:
+                    raise ValueError(f'The fail_on_warning argument in the initialize method was set to {fail_flag}. '
+                                     f'fail_on_warning is a boolean argument. Set fail_on_warning to True or False.')
+
         # ---------------------------------------------------------------------
         # Step 2: Solve unit
         init_log.info('Initialization Step 1 complete: all state blocks initialized.'
                       'Starting Initialization Step 2: solve indexed blocks.')
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        with idaeslog.solver_log(solve_log, outlvl_solve) as slc:
             results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         _check_solve(results, checkpoint='Initialization Step 2: solve indexed blocks')
         init_log.info('Starting Initialization Step 3: perform final solve.')
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        with idaeslog.solver_log(solve_log, outlvl_solve) as slc:
             res = opt.solve(blk, tee=slc.tee)
         _check_solve(res, checkpoint='Initialization Step 3: final solve')
 
