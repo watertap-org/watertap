@@ -19,7 +19,7 @@ import idaes.logger as idaeslog
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, \
-    Var, Param, TerminationCondition, Suffix, value, check_optimal_termination
+    Var, Param, Suffix, value, check_optimal_termination
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores

@@ -200,9 +200,7 @@ class TestNaClCalculateState_3(PropertyCalculateStateTest):
         self.optarg = {'nlp_scaling_method': 'user-scaling'}
 
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1,
-                             ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e2,
-                             # ('conc_mass_phase_comp', ('Liq', 'NaCl')):
-                             }
+                             ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e2}
         self.var_args = {('flow_vol_phase', 'Liq'): 1e-3,
                          ('pressure_osm', None): 100e5,
                          ('temperature', None): 273.15 + 25,

@@ -20,7 +20,6 @@ from pyomo.environ import (ConcreteModel,
                            Var,
                            Constraint,
                            value,
-                           SolverStatus,
                            assert_optimal_termination)
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import (FlowsheetBlock,
