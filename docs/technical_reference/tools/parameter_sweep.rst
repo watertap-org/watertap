@@ -12,15 +12,28 @@ Overview
 The parameter sweep tool systematically fixes variables or modifies
 mutable parameters on a flowsheet (or Pyomo ConcreteModel), optimizes
 the flowsheet, and reports user-specified results.
+The parameter sweep tool can be operated in one of two ways: sweeping a 
+fixed set of parameters, or allowing for random samples from a distribution.
+While different fixed or random sampling types can be combined, in a single
+parameter sweep the user must use either all fixed or all random sampling types.
+(This implementation detail may be relaxed in future releases.)
 
-For each item the user wants to change, they specify a "short" name
-as a key, and then a tuple specifying the Pyomo object to be changed,
-a lower limit, an upper limit, and the number of elements to be sampled 
-for this parameter between the lower limit and upper limit.
+For the "fixed" sampling type, `LinearSample`, the parameter sweep tool will evaluate the 
+cross product of all the specified parameters, whereas with the "random" sampling
+types `UniformSample` and `NormalSample` the parameter sweep tool will evaluate
+a fixed number of samples specified in `num_samples`. With either sampling type,
+the values of the Pyomo objects (Vars, Expressions, etc.), that the user specifies
+in `outputs`.
+
+For each item the user wants to change, they specify a `sweep_params` dictionary.
+The keys are "short" names, and the values are one of the included `Sample` objects.
+In all cases the `Sample` objects are instantiated with the Pyomo object to be changed,
+with additional arguements depending on the sampling type. For example, for the fixed
+`LinearSample` the user would also specify a lower limit, an upper limit, and the number
+of elements to be sampled for this parameter between the lower limit and upper limit.
 Each item should be sampled at least twice to capture the upper and lower
-limit. The parameter sweep tool will evaluate the cross product of all
-the specified parameters, and report the values of the Pyomo objects (Vars,
-Expressions, etc.), that the user specifies in `outputs`.
+limit. The random `UniformSample` requires a lower limit and upper limit, and the
+`NormalSample` requires a mean and standard deviation.
 
 In addition to the parameters to sweep and the values to track for output,
 the user must provide an `optimize_function`, which takes the `model` as an

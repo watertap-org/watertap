@@ -25,7 +25,8 @@ from pyomo.environ import (Var,
                            Block,
                            units as pyunits,
                            exp,
-                           value)
+                           value,
+                           assert_optimal_termination)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -931,6 +932,8 @@ class ReverseOsmosisData(UnitModelBlockData):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver and options
+        if optarg is None:
+            optarg = {'nlp_scaling_method': 'user-scaling'}
         opt = get_solver(solver, optarg)
 
         # assumptions
@@ -1041,6 +1044,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
+            assert_optimal_termination(res)
         init_log.info_high(
             "Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
@@ -1093,7 +1097,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 self.feed_side.properties_in[time_point].flow_vol_phase['Liq'])
         if self.feed_side.properties_out[time_point].is_property_constructed('flow_vol_phase'):
             var_dict['Volumetric Flowrate @Outlet'] = (
-                self.feed_side.properties_in[time_point].flow_vol_phase['Liq'])
+                self.feed_side.properties_out[time_point].flow_vol_phase['Liq'])
 
         # TODO: (1) add more vars, (2) would be nice to add units to output, and (3) should be able to report output of
         #  "NaN" or "Not Reported", mainly for properties that exist but are not necessarily constructed within model
