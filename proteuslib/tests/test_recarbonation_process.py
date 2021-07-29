@@ -656,19 +656,19 @@ class TestCarbonationProcess:
             )
             / 1000
         )
-        assert pytest.approx(55.1847856, rel=1e-5) == total_molar_density
+        assert pytest.approx(55.134246239110006, rel=1e-5) == total_molar_density
         pH = -value(
             log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"] * total_molar_density)
         )
         pOH = -value(
             log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"] * total_molar_density)
         )
-        assert pytest.approx(5.33698164, rel=1e-5) == pH
-        assert pytest.approx(8.598909, rel=1e-5) == pOH
+        assert pytest.approx(5.337180505886661, rel=1e-5) == pH
+        assert pytest.approx(8.598710282454222, rel=1e-5) == pOH
 
         CO2_sorbed = value(
             model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[
                 ("Liq", "CO2")
             ]
         )
-        assert pytest.approx(27.5409958, rel=1e-5) == CO2_sorbed
+        assert pytest.approx(27.51577110413848, rel=1e-5) == CO2_sorbed
