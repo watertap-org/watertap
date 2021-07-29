@@ -11,8 +11,8 @@
 #
 ###############################################################################
 '''
-    This test is for the tuturials in the ../../tutorials/ directory.
-    For now, it mearly checks that the tutorials execute without raising
+    This test is for the tutorials in the ../../tutorials/ directory.
+    For now, it merely checks that the tutorials execute without raising
     an exception, it does not check for correctness
 '''
 

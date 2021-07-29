@@ -421,7 +421,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
         comm.Barrier()
 
     # Write a header string for all data files
-    data_header = ', '.join(itertools.chain(sweep_params,outputs))
+    data_header = ','.join(itertools.chain(sweep_params,outputs))
 
     if debugging_data_dir is not None:
         # Create the local filename and data
@@ -436,7 +436,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
 
     if rank == 0 and results_file is not None:
         # Save the global data
-        np.savetxt(results_file, global_save_data, header=data_header, delimiter=', ', fmt='%.6e')
+        np.savetxt(results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
     
     return global_save_data
 
