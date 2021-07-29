@@ -273,21 +273,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
     def _process_config(self):
         #TODO: add config errors here:
-        for c in self.config.property_package.component_list:
-            comp = self.config.property_package.get_component(c)
-            try:
-                if comp.is_solvent():
-                    self.solvent_list.add(c)
-                if comp.is_solute():
-                    self.solute_list.add(c)
-            except TypeError:
-                raise ConfigurationError("RO model only supports one solvent and one or more solutes,"
-                                         "the provided property package has specified a component '{}' "
-                                         "that is not a solvent or solute".format(c))
-        if len(self.solvent_list) > 1:
+        if len(self.config.property_package.solvent_set) > 1:
             raise ConfigurationError("RO model only supports one solvent component,"
                                      "the provided property package has specified {} solvent components"
-                                     .format(len(self.solvent_list)))
+                                     .format(len(self.config.property_package.solvent_set)))
 
         if self.config.transformation_method is useDefault:
             _log.warning(
@@ -353,8 +342,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
-        self.solvent_list = Set()
-        self.solute_list = Set()
         self._process_config()
 
         # Build 1D Control volume for feed side
@@ -432,6 +419,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         """
         Generate expressions for additional results desired for full report
         """
+        solute_set = self.config.property_package.solute_set
+
         if self.config.has_full_reporting is False:
             pass
         else:
@@ -451,7 +440,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                                for x in self.feed_side.length_domain) / self.nfe
             if hasattr(self, 'Kf'):
                 @self.Expression(self.flowsheet().config.time,
-                                 self.solute_list,
+                                 solute_set,
                                  doc="Average mass transfer coefficient expression")
                 def Kf_avg(b, t, j):
                     return sum(b.Kf[t, x, j]
@@ -468,6 +457,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         Returns:
             None
         """
+        solvent_set = self.config.property_package.solvent_set
+        solute_set = self.config.property_package.solute_set
 
         # Units
         units_meta = \
@@ -482,7 +473,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         """ Unit model variables"""
         self.A_comp = Var(
             self.flowsheet().config.time,
-            self.solvent_list,
+            solvent_set,
             initialize=1e-12,
             bounds=(1e-18, 1e-6),
             domain=NonNegativeReals,
@@ -490,7 +481,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             doc="""Solvent permeability coeff.""")
         self.B_comp = Var(
             self.flowsheet().config.time,
-            self.solute_list,
+            solute_set,
             initialize=1e-8,
             bounds=(1e-11, 1e-5),
             domain=NonNegativeReals,
@@ -510,16 +501,16 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             doc='Volumetric recovery rate')
 
         def recovery_mass_phase_comp_initialize(b, t, p, j):
-            if j in self.solvent_list:
+            if j in solvent_set:
                 return 0.4037
-            elif j in self.solute_list:
+            elif j in solute_set:
                 return 0.0033
 
         def recovery_mass_phase_comp_bounds(b, t, p, j):
             ub = 1 - 1e-6
-            if j in self.solvent_list:
+            if j in solvent_set:
                 lb = 1e-2
-            elif j in self.solute_list:
+            elif j in solute_set:
                 lb = 1e-5
             return lb, ub
 
@@ -533,16 +524,16 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             doc='Mass-based component recovery')
 
         def flux_mass_phase_comp_initialize(b, t, x, p, j):
-            if j in self.solvent_list:
+            if j in solvent_set:
                 return 5e-4
-            elif j in self.solute_list:
+            elif j in solute_set:
                 return 1e-6
 
         def flux_mass_phase_comp_bounds(b, t, x, p, j):
-            if j in self.solvent_list:
+            if j in solvent_set:
                 ub = 3e-2
                 lb = 1e-4
-            elif j in self.solute_list:
+            elif j in solute_set:
                 ub = 1e-3
                 lb = 1e-8
             return lb, ub
@@ -601,7 +592,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             self.cp_modulus = Var(
                 self.flowsheet().config.time,
                 self.feed_side.length_domain,
-                self.solute_list,
+                solute_set,
                 initialize=1.1,
                 bounds=(0.9, 3),
                 domain=NonNegativeReals,
@@ -612,7 +603,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             self.Kf = Var(
                 self.flowsheet().config.time,
                 self.feed_side.length_domain,
-                self.solute_list,
+                solute_set,
                 initialize=5e-5,
                 bounds=(1e-6, 1e-3),
                 domain=NonNegativeReals,
@@ -790,7 +781,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         @self.feed_side.Constraint(self.flowsheet().config.time,
                                    self.feed_side.length_domain,
-                                   self.solute_list,
+                                   solute_set,
                                    doc="Concentration polarization")
         def eq_concentration_polarization(b, t, x, j):
             if x == self.feed_side.length_domain.first():
@@ -817,7 +808,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
             @self.Constraint(self.flowsheet().config.time,
                              self.feed_side.length_domain,
-                             self.solute_list,
+                             solute_set,
                              doc="Mass transfer coefficient in feed channel")
             def eq_Kf(b, t, x, j):
                 if x == self.feed_side.length_domain.first():
@@ -1192,9 +1183,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             iscale.set_scaling_factor(self.recovery_vol_phase, 1)
 
         for (t, p, j), v in self.recovery_mass_phase_comp.items():
-            if j in self.solvent_list:
+            if j in self.config.property_package.solvent_set:
                 sf = 1
-            elif j in self.solute_list:
+            elif j in self.config.property_package.solute_set:
                 sf = 100
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
