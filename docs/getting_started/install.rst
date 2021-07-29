@@ -29,7 +29,7 @@ If you are going to use ProteusLib's functionality, but *do not* plan to contrib
 
 	.. code-block:: shell
 
-		conda create --name proteuslib --yes python=3.8
+		conda create --name proteuslib --yes python=3.8 pip=21.1
 
 #. Activate the ``proteuslib`` environment:
 
@@ -71,7 +71,7 @@ If you plan to contribute to ProteusLib's codebase, choose this option.
 
 	.. code-block:: shell
 
-		conda create --name proteuslib-dev --yes python=3.8 && conda activate proteuslib-dev
+		conda create --name proteuslib-dev --yes python=3.8 pip=21.1 && conda activate proteuslib-dev
 
 	.. note:: For more information about using Conda environments, refer to the ":ref:`about-conda`" section above.
 
