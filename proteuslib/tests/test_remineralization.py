@@ -86,6 +86,8 @@ from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
+import idaes.logger as idaeslog
+
 __author__ = "Austin Ladshaw"
 
 # Configuration dictionary
@@ -777,7 +779,7 @@ class TestRemineralization():
         assert pytest.approx( 3.650683833103911e-05, rel=1e-5) == nahco3
 
         h2co3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','H2CO3'])
-        assert pytest.approx( 8.127521460828011e-07, rel=1e-5) == h2co3
+        assert pytest.approx( 8.127405258855469e-07, rel=1e-5) == h2co3
 
         caoh = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','Ca(OH)2'])
         assert pytest.approx( 5.335361713728932e-09, rel=1e-5) == caoh
@@ -1332,7 +1334,7 @@ reaction_config_cstr = {
                "concentration_form": ConcentrationForm.molarity,
                "parameter_data": {
                    "dh_rxn_ref": (0, pyunits.J/pyunits.mol),
-                   "arrhenius_const": (4e-5, 1/pyunits.s),
+                   "arrhenius_const": (4e-6, 1/pyunits.s),
                    "energy_activation": (0, pyunits.J/pyunits.mol)}
                    },
         "R2": {"stoichiometry": {("Liq", "Ca(OH)2"): -1,
@@ -1344,7 +1346,7 @@ reaction_config_cstr = {
                "concentration_form": ConcentrationForm.molarity,
                "parameter_data": {
                    "dh_rxn_ref": (0, pyunits.J/pyunits.mol),
-                   "arrhenius_const": (4e-5, 1/pyunits.s),
+                   "arrhenius_const": (4e-6, 1/pyunits.s),
                    "energy_activation": (0, pyunits.J/pyunits.mol)}
                    }
          }
@@ -1464,22 +1466,22 @@ class TestRemineralizationCSTR():
     def test_scaling_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
 
-        #Custom eps factors for reaction constraints
-        eps = 1e-20
-        model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
-        model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
-        model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
-        model.fs.thermo_params.reaction_CO2_to_H2CO3.eps.value = eps
+        # Iterate through the reactions to set appropriate eps values
+        for rid in model.fs.thermo_params.inherent_reaction_idx:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
+            # Want to set eps in some fashion similar to this
+            if scale < 1e-16:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*1e-2
+            else:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
 
-        #Add scaling factors for reaction extent
+        #Add scaling factors for reactions
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
+            # i[0] = time, i[1] = reaction
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 1/scale)
-
-        for i in model.fs.unit.control_volume.rate_reaction_extent:
-            scale = value(model.fs.unit.control_volume.reactions[0.0].k_rxn[i[1]].expr)
-            scale_rate = value(model.fs.unit.control_volume.reactions[0.0].reaction_rate[i[1]].expr)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.rate_reaction_extent[0.0,i[1]], 1/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.properties_out[0.0].
+                    inherent_equilibrium_constraint[i[1]], 0.1)
 
         iscale.calculate_scaling_factors(model.fs.unit)
 
@@ -1495,48 +1497,17 @@ class TestRemineralizationCSTR():
     @pytest.mark.component
     def test_initialize_solver_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
-        solver.options['nlp_scaling_method'] = 'user-scaling'
-        # solver.options['bound_push'] = 1e-20
-        # solver.options['mu_init'] = 1e-6
-        # solver.options['max_iter'] = 2000
-        model.fs.unit.initialize(optarg=solver.options)  # Don't think initialize checks for optimal and ok termination but it should
+        solver.options['bound_push'] = 1e-20
+        solver.options['mu_init'] = 1e-6
+        model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(model) == 0
-
-    # @pytest.mark.component
-    # def test_var_scaling(self, remineralization_cstr_kin):
-    #     m = remineralization_cstr_kin
-    #
-    #     badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-    #     for i, j in badly_scaled_var_lst:
-    #         if iscale.get_scaling_factor(i) is not None:
-    #             sf = iscale.get_scaling_factor(i)
-    #             sf_new = sf / value(j) / 1000
-    #
-    #         else:
-    #             sf = 1
-    #             sf_new = 1 / value(j)
-    #
-    #         # if value(j) is not None:
-    #         iscale.set_scaling_factor(i, sf_new)
-    #         print(sf, type(sf), j, type(j), sf_new, type(sf_new))
-    #
-    #     badly_scaled_var_lst2 = list(badly_scaled_var_generator(m))
-    #
-    #     [print(i,j) for i,j in badly_scaled_var_lst2]
-    #     assert badly_scaled_var_lst2 == []
 
     @pytest.mark.component
     def test_solve_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
-        # solver.options['max_iter'] = 10000
-        # solver.options['bound_push'] = 1e-20
-        # solver.options['mu_init'] = 1e-6
-        # solver.options
-        solver.options['halt_on_ampl_error'] = 'yes'
-        solver.options['nlp_scaling_method'] = 'user-scaling'
-        # solver.options['warm_start_init_point'] = 'yes'
-
-        results = solver.solve(model, tee=True, symbolic_solver_labels=True)
+        solver.options['bound_push'] = 1e-20
+        solver.options['mu_init'] = 1e-6
+        results = solver.solve(model, tee=False, symbolic_solver_labels=True)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
@@ -1549,24 +1520,10 @@ class TestRemineralizationCSTR():
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
 
-        assert pytest.approx(8.185636878774185, rel=1e-5) == pH
-        assert pytest.approx(5.815532410640433, rel=1e-5) == pOH
+        assert pytest.approx(8.039316396034033, rel=1e-5) == pH
+        assert pytest.approx(5.96185289337987, rel=1e-5) == pOH
 
         # Calculate total hardness
         TH = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'Ca_2+')])/1000
         TH = TH*50000
-        assert pytest.approx(56.99559488197527, rel=1e-5) == TH
-
-        # Calculating carbonate alkalinity to determine the split of total hardness
-        CarbAlk = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'CO3_2-')])/1000
-        CarbAlk += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'HCO3_-')])/1000
-        CarbAlk = 50000*CarbAlk
-        assert pytest.approx(154.76189826843955, rel=1e-5) == CarbAlk
-
-        # Non-Carbonate Hardness only exists if there is excess hardness above alkalinity
-        if TH <= CarbAlk:
-            NCH = 0
-        else:
-            NCH = TH - CarbAlk
-        CH = TH - NCH
-        assert pytest.approx(TH, rel=1e-5) == CH
+        assert pytest.approx(41.00828038041198, rel=1e-5) == TH
