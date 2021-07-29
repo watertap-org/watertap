@@ -1159,6 +1159,7 @@ class TestSimplePhosphorusRemoval:
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
+    @pytest.mark.skip
     @pytest.mark.component
     def test_solution_simple_phosphorus_removal(self, simple_phosphorus_removal):
         model = simple_phosphorus_removal
