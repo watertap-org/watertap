@@ -50,8 +50,10 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
+        echo '::group::Output of "conda install" commands'
+        conda install --quiet --yes pip=21.1 wheel setuptools
+        echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
-        python -m pip install --progress-bar off --upgrade pip wheel setuptools
         pip install --progress-bar off -r requirements-dev.txt
         echo '::endgroup::'
         echo '::group::Display installed packages'
