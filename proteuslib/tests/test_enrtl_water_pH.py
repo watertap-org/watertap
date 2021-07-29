@@ -834,4 +834,4 @@ class TestENRTLcarbonicAcid():
         total_acid += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HCO3_-"])/1000
         total_acid += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","CO3_2-"])/1000
 
-        assert pytest.approx(0.0020611, rel=1e-5) == total_acid
+        assert pytest.approx(0.002061178349769601, rel=1e-5) == total_acid
