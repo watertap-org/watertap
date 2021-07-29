@@ -724,14 +724,14 @@ class TestRemineralization():
         model = remineralization_appr_equ
         solver.options['bound_push'] = 1e-20
         solver.options['mu_init'] = 1e-6
-        solver.options['max_iter'] = 2000
         model.fs.unit.initialize(optarg=solver.options)
         assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
     def test_solve_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
-        # solver.options['max_iter'] = 2
+        solver.options['bound_push'] = 1e-20
+        solver.options['mu_init'] = 1e-6
         results = solver.solve(model)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
