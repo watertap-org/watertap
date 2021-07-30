@@ -12,7 +12,7 @@
 ###############################################################################
 
 import pytest
-from pyomo.environ import ConcreteModel,
+from pyomo.environ import ConcreteModel
 
 from idaes.core import (FlowsheetBlock,
                         ControlVolume1DBlock)
