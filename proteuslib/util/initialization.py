@@ -19,19 +19,22 @@ __author__ = "Adam Atia"
 
 from pyomo.environ import check_optimal_termination
 from idaes.core.util.model_statistics import degrees_of_freedom
+import idaes.logger as idaeslog
 
+_log = idaeslog.getLogger(__name__)
 
-def check_solve(results, checkpoint=None, logger=None, fail_flag=False):
+def check_solve(results, checkpoint=None, logger=_log, fail_flag=False):
     """
     Check that solver termination is optimal and OK in an initialization routine.
     If the check fails, proceed through initialization with only a logger warning by default,
-    or set fail_flag=True to raise an error.
+    or set fail_flag=True to raise an error. This should also work for checking a solve outside
+    of an initialization routine.
 
     Keyword Arguments:
             results : solver results
             checkpoint : Optional string argument to specify the step of initialization being checked
                         (e.g., checkpoint="Initialization step 1: solve indexed blocks")
-            logger : Required argument for loading idaes.getInitLogger object (e.g., logger=init_log)
+            logger : Optional argument for loading idaes.getInitLogger object (e.g., logger=init_log)
             fail_flag : Boolean argument to specify error or warning (Default: fail_flag=False produces logger warning.
                         set fail_flag=True to raise an error and stop the initialization routine.)
     Returns:
@@ -41,13 +44,15 @@ def check_solve(results, checkpoint=None, logger=None, fail_flag=False):
 
     if logger is None:
         raise ValueError('Set logger. For example, logger=init_log')
-    if checkpoint is None:
-        checkpoint = 'Initialization step'
     if check_optimal_termination(results):
         logger.info(f'{checkpoint} successful.')
     else:
-        msg = f"{checkpoint} failed. The solver failed to converge to an optimal solution. " \
-              f"This suggests that the user provided infeasible inputs or that the model is poorly scaled."
+        if checkpoint is None:
+            msg = f"The solver failed to converge to an optimal solution. " \
+                  f"This suggests that the user provided infeasible inputs or that the model is poorly scaled."
+        else:
+            msg = f"{checkpoint} failed. The solver failed to converge to an optimal solution. " \
+                  f"This suggests that the user provided infeasible inputs or that the model is poorly scaled."
         if fail_flag is True:
             logger.error(msg)
             raise ValueError(msg)
@@ -58,7 +63,7 @@ def check_solve(results, checkpoint=None, logger=None, fail_flag=False):
                              f'fail_on_warning is a boolean argument. Set fail_on_warning to True or False.')
 
 
-def check_dof(blk, fail_flag, logger=None):
+def check_dof(blk, fail_flag, logger=_log):
     """
     Check that degrees of freedom are 0. If not 0, either throw a warning and continue or throw an error and stop.
 
@@ -67,6 +72,8 @@ def check_dof(blk, fail_flag, logger=None):
             fail_flag : Boolean argument to specify error or warning
             (Default: fail_flag=False produces logger warning. Set fail_flag=True to raise an error and stop
              the initialization routine.)
+            logger : Optional argument for loading idaes.getInitLogger object (e.g., logger=init_log)
+
     Returns:
         None
 
@@ -75,7 +82,7 @@ def check_dof(blk, fail_flag, logger=None):
         if logger is None:
             raise ValueError('Set logger. For example, logger=init_log')
         msg = f"Non-zero degrees of freedom: Degrees of freedom on {blk} = {degrees_of_freedom(blk)}. " \
-              f"Fix {degrees_of_freedom(blk)} more variable or set keyword arg to ignore_dof=True"
+              f"Fix {degrees_of_freedom(blk)} more variable(s) or set keyword arg to ignore_dof=True"
         if fail_flag is True:
             logger.error(msg)
             raise ValueError(msg)

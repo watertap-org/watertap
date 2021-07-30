@@ -43,6 +43,10 @@ import idaes.core.util.scaling as iscale
 from proteuslib.util.initialization import check_solve, check_dof
 import idaes.logger as idaeslog
 
+
+__author__ = "Tim Bartholomew, Adam Atia"
+
+# Set up logger
 _log = idaeslog.getLogger(__name__)
 
 

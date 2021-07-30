@@ -14,7 +14,6 @@
 
 # Import Pyomo libraries
 from pyomo.environ import (Var,
-                           Set,
                            Param,
                            Suffix,
                            NonNegativeReals,
