@@ -35,7 +35,7 @@ def test_check_dof():
     m.abcon = Constraint(rule=m.a + m.b == 10)
     # check_dof should pass since fail_flag=False produces warning for DOF!=0
     check_dof(m, fail_flag=False)
-    # Verify error since no variables were fixed
+    # Verify error is raised since DOF!=0
     with pytest.raises(ValueError, match="Non-zero degrees of freedom: Degrees of freedom on unknown = 1. "
                                          "Fix 1 more variable\(s\) or set keyword arg to ignore_dof=True"):
         check_dof(m, fail_flag=True)
@@ -52,7 +52,7 @@ def test_check_solve():
     results = solver.solve(m)
     # check_solve should pass since fail_flag=False and only warning will be produced
     check_solve(results, logger=_log, fail_flag=False)
-    # Without calling calculate_scaling_factors() or initialization, expect the solve to fail and raise error
+    # expect the solve to fail and raise error
     with pytest.raises(ValueError, match="The solver failed to converge to an optimal solution. This suggests that the "
                                          "user provided infeasible inputs or that the model is poorly scaled."):
         check_solve(results, logger=_log, fail_flag=True)
