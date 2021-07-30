@@ -225,7 +225,8 @@ class Test_initialization_args():
         # Next line should pass since we are ignoring non-zero DOF
         m.fs.unit.initialize(ignore_dof=True, fail_on_warning=False)
         # Check that ValueError is thrown when ignore_dof and fail_on_warning are set to do so
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Non-zero degrees of freedom: Degrees of freedom on fs.unit = 1. "
+                                             "Fix 1 more variable or set keyword arg to ignore_dof=True"):
             m.fs.unit.initialize(ignore_dof=False, fail_on_warning=True)
         # Refix that variable
         m.fs.unit.N_Re[0, 0].fix(temp)
@@ -238,7 +239,9 @@ class Test_initialization_args():
         # Next line should pass since only a warning is given
         m.fs.unit.initialize(ignore_dof=True, fail_on_warning=False)
         # Set fail_on_warning to True
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Initialization Step 2: solve indexed blocks failed. The solver failed to "
+                                             "converge to an optimal solution. This suggests that the user provided "
+                                             "infeasible inputs or that the model is poorly scaled."):
             m.fs.unit.initialize(ignore_dof=True, fail_on_warning=True)
 
 class TestReverseOsmosis():
