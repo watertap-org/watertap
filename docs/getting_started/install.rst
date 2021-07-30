@@ -93,6 +93,36 @@ If you plan to contribute to ProteusLib's codebase, choose this option.
 
 		pytest
 
+Installing in existing development environments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When either the ``proteuslib`` package or one of its dependencies are installed, it should be possible to update those packages within an existing developer environment.
+
+.. important:: In case of any issue or unexpected behavior when updating an existing environment,
+    first try to see if the issues are solved if a freshly created environment is used instead.
+
+#. Activate the environment, if not already active:
+
+    .. code-block:: shell
+
+        conda activate proteuslib-dev
+
+#. Enter the directory where your local clone of the ProteusLib repository is located, and pull the latest changes using ``git pull``:
+
+    .. code-block:: shell
+        
+        cd /path/to/your/clone
+        git pull
+
+#. Run the ``pip install`` command targeting the ``requirements-dev.txt`` file.
+
+    .. code-block:: shell
+
+        pip --no-cache-dir install --force-reinstall -r requirements-dev.txt
+
+    .. note:: The ``--no-cache-dir`` and ``--force-install`` pip flags are used to ensure that existing packages are not erroneously reused by pip,
+        which would cause the wrong (outdated) version to be present in the environment after installation.
+
 
 
 
