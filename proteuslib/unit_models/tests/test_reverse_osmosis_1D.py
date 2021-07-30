@@ -13,17 +13,17 @@
 
 import pytest
 from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
                            value,
                            Param,
+                           Var,
+                           Constraint,
+                           Expression,
                            assert_optimal_termination)
-from pyomo.util.check_units import (assert_units_consistent,
-                                    assert_units_equivalent)
+from pyomo.util.check_units import assert_units_consistent
+
 from pyomo.network import Port
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
-                        EnergyBalanceType,
                         MomentumBalanceType,
                         ControlVolume1DBlock,
                         StateBlock)
@@ -35,7 +35,10 @@ import proteuslib.property_models.NaCl_prop_pack \
     as props
 
 from idaes.core.util import get_solver
-from idaes.core.util.model_statistics import *
+from idaes.core.util.model_statistics import (number_variables,
+                                              number_unused_variables,
+                                              number_total_constraints,
+                                              degrees_of_freedom)
 
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (calculate_scaling_factors,
@@ -560,7 +563,6 @@ class TestReverseOsmosis():
         # test statistics
         assert number_variables(m) == 982
         assert number_total_constraints(m) == 941
-        unused_list = unused_variables_set(m)
         assert number_unused_variables(m) == 27
 
         # Test units
@@ -1192,7 +1194,6 @@ class TestReverseOsmosis():
         # test statistics
         assert number_variables(m) == 1133
         assert number_total_constraints(m) == 1069
-        unused_list = unused_variables_set(m)
         assert number_unused_variables(m) == 21
 
         assert_units_consistent(m.fs.unit)
@@ -1359,7 +1360,6 @@ class TestReverseOsmosis():
         # test statistics
         assert number_variables(m) == 1133
         assert number_total_constraints(m) == 1089
-        unused_list = unused_variables_set(m)
         assert number_unused_variables(m) == 20
 
         assert_units_consistent(m.fs.unit)

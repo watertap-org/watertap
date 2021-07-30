@@ -986,7 +986,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                    feed_side_args=None,
                    permeate_side_args=None,
                    permeate_block_args=None,
-                   outlvl=idaeslog.INFO,
+                   outlvl=idaeslog.NOTSET,
                    solver=None,
                    optarg=None,
                    fail_on_warning=False,

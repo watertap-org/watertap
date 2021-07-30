@@ -893,7 +893,7 @@ class ReverseOsmosisData(UnitModelBlockData):
     def initialize(blk,
                    initialize_guess=None,
                    state_args=None,
-                   outlvl=idaeslog.INFO,
+                   outlvl=idaeslog.NOTSET,
                    solver=None,
                    optarg=None,
                    fail_on_warning=False,
@@ -916,7 +916,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                          package(s) to provide an initial state for the inlet
                          feed side state block (see documentation of the specific
                          property package) (default = None).
-            outlvl_init : sets output level of initialization routine
+            outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default=None)
             solver : solver object or string indicating which solver to use during
                      initialization, if None provided the default solver will be used

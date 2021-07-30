@@ -13,8 +13,6 @@
 
 import pytest
 from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
                            value,
                            Param,
                            Var,
