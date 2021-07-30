@@ -986,8 +986,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                    feed_side_args=None,
                    permeate_side_args=None,
                    permeate_block_args=None,
-                   outlvl_init=idaeslog.INFO,
-                   outlvl_solve=idaeslog.NOTSET,
+                   outlvl=idaeslog.INFO,
                    solver=None,
                    optarg=None,
                    fail_on_warning=False,
@@ -1008,8 +1007,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
              package(s) of the final permeate StateBlock to provide an initial state for
              initialization (see documentation of the specific
              property package)
-            outlvl_init : sets output level of InitLogger, init_log (default= idaeslog.INFO)
-            outlvl_solve sets output level of SolveLogger, solve_log (default= idaeslog.NOTSET)
+            outlvl : sets output level of initialization routine
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
             optarg : solver options dictionary object (default=None, use default solver options)
@@ -1020,8 +1018,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         """
 
-        init_log = idaeslog.getInitLogger(blk.name, outlvl_init, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl_solve, tag="unit")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
         if optarg is None:
@@ -1033,19 +1031,19 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Step 1: Initialize feed_side, permeate_side, and permeate_out blocks
         flags_feed_side = blk.feed_side.initialize(
-            outlvl=outlvl_init,
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=feed_side_args)
         init_log.info('Feed-side initialization complete. Initialize permeate-side. ')
         flags_permeate_side = blk.permeate_side.initialize(
-            outlvl=outlvl_init,
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=permeate_side_args)
         init_log.info('Permeate-side initialization complete. Initialize permeate outlet. ')
         flags_permeate_out = blk.permeate_out.initialize(
-            outlvl=outlvl_init,
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=permeate_block_args)
@@ -1057,11 +1055,11 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # Step 2: Solve unit
         init_log.info('Initialization Step 1 complete: all state blocks initialized.'
                       'Starting Initialization Step 2: solve indexed blocks.')
-        with idaeslog.solver_log(solve_log, outlvl_solve) as slc:
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         check_solve(results, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 2: solve indexed blocks')
         init_log.info('Starting Initialization Step 3: perform final solve.')
-        with idaeslog.solver_log(solve_log, outlvl_solve) as slc:
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         check_solve(res, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 3: final solve')
 

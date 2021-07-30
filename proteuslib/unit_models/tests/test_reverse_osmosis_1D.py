@@ -558,7 +558,6 @@ class TestReverseOsmosis():
         assert number_variables(m) == 982
         assert number_total_constraints(m) == 941
         unused_list = unused_variables_set(m)
-        [print(i) for i in unused_list]
         assert number_unused_variables(m) == 27
 
         # Test units
@@ -588,7 +587,6 @@ class TestReverseOsmosis():
 
         # Test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i, j) for i, j in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
         # Solve
@@ -739,8 +737,6 @@ class TestReverseOsmosis():
         initialization_tester(m)
         #Check for poorly scaled variables
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i,j) for i,j in badly_scaled_var_lst]
-
         assert badly_scaled_var_lst == []
 
         # Solve
@@ -888,8 +884,6 @@ class TestReverseOsmosis():
         initialization_tester(m)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i,j) for i,j in badly_scaled_var_lst]
-
         assert badly_scaled_var_lst == []
 
         solver.options = {'nlp_scaling_method': 'user-scaling'}
@@ -1046,14 +1040,11 @@ class TestReverseOsmosis():
         assert len(unscaled_var_list) == 0
         # check that all constraints have been scaled
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        [print(i) for i in unscaled_constraint_list]
         assert len(unscaled_constraint_list) == 0
 
         initialization_tester(m)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i,j) for i,j in badly_scaled_var_lst]
-
         assert badly_scaled_var_lst == []
 
         solver.options = {'nlp_scaling_method': 'user-scaling'}
@@ -1199,7 +1190,6 @@ class TestReverseOsmosis():
         assert number_variables(m) == 1133
         assert number_total_constraints(m) == 1069
         unused_list = unused_variables_set(m)
-        [print(i) for i in unused_list]
         assert number_unused_variables(m) == 21
 
         assert_units_consistent(m.fs.unit)
@@ -1222,8 +1212,6 @@ class TestReverseOsmosis():
         initialization_tester(m)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i,j) for i,j in badly_scaled_var_lst]
-
         assert badly_scaled_var_lst == []
 
         solver.options = {'nlp_scaling_method': 'user-scaling'}
@@ -1369,7 +1357,6 @@ class TestReverseOsmosis():
         assert number_variables(m) == 1133
         assert number_total_constraints(m) == 1089
         unused_list = unused_variables_set(m)
-        [print(i) for i in unused_list]
         assert number_unused_variables(m) == 20
 
         assert_units_consistent(m.fs.unit)
@@ -1392,8 +1379,6 @@ class TestReverseOsmosis():
         initialization_tester(m)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i,j) for i,j in badly_scaled_var_lst]
-
         assert badly_scaled_var_lst == []
 
         solver.options = {'nlp_scaling_method': 'user-scaling'}

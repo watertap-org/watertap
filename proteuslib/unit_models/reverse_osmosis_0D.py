@@ -893,8 +893,7 @@ class ReverseOsmosisData(UnitModelBlockData):
     def initialize(blk,
                    initialize_guess=None,
                    state_args=None,
-                   outlvl_init=idaeslog.INFO,
-                   outlvl_solve=idaeslog.NOTSET,
+                   outlvl=idaeslog.INFO,
                    solver=None,
                    optarg=None,
                    fail_on_warning=False,
@@ -917,8 +916,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                          package(s) to provide an initial state for the inlet
                          feed side state block (see documentation of the specific
                          property package) (default = None).
-            outlvl_init : sets output level of InitLogger, init_log (default= idaeslog.INFO)
-            outlvl_solve sets output level of SolveLogger, solve_log (default= idaeslog.NOTSET)
+            outlvl_init : sets output level of initialization routine
             optarg : solver options dictionary object (default=None)
             solver : solver object or string indicating which solver to use during
                      initialization, if None provided the default solver will be used
@@ -929,8 +927,8 @@ class ReverseOsmosisData(UnitModelBlockData):
             None
         """
 
-        init_log = idaeslog.getInitLogger(blk.name, outlvl_init, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl_solve, tag="unit")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver and options
         if optarg is None:
             optarg = {'nlp_scaling_method': 'user-scaling'}
@@ -966,7 +964,7 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         # Initialize feed inlet state block
         flags = blk.feed_side.properties_in.initialize(
-            outlvl=outlvl_init,
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args,
@@ -1007,32 +1005,32 @@ class ReverseOsmosisData(UnitModelBlockData):
             state_args_interface_out['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
 
         blk.feed_side.properties_out.initialize(
-            outlvl=outlvl_init,
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args_retentate,)
         blk.feed_side.properties_interface_in.initialize(
-                outlvl=outlvl_init,
+                outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
                 state_args=state_args_interface_in,)
         blk.feed_side.properties_interface_out.initialize(
-                outlvl=outlvl_init,
+                outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
                 state_args=state_args_interface_out,)
         blk.permeate_side.properties_mixed.initialize(
-            outlvl=outlvl_init,
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args_permeate,)
         blk.permeate_side.properties_in.initialize(
-            outlvl=outlvl_init,
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args_permeate,)
         blk.permeate_side.properties_out.initialize(
-            outlvl=outlvl_init,
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args_permeate,)
@@ -1040,12 +1038,12 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Solve unit
-        with idaeslog.solver_log(solve_log, outlvl_solve) as slc:
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         check_solve(res, checkpoint='Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.feed_side.release_state(flags, outlvl_init)
+        blk.feed_side.release_state(flags, outlvl)
         init_log.info(
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )
