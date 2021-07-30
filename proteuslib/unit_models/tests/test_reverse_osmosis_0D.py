@@ -224,7 +224,7 @@ class Test_initialization_args():
         m.fs.unit.initialize(ignore_dof=True, fail_on_warning=False)
         # Check that ValueError is thrown when ignore_dof and fail_on_warning are set to do so
         with pytest.raises(ValueError, match="Non-zero degrees of freedom: Degrees of freedom on fs.unit = 1. "
-                                             "Fix 1 more variable or set keyword arg to ignore_dof=True"):
+                                             "Fix 1 more variable\(s\) or set keyword arg to ignore_dof=True"):
             m.fs.unit.initialize(ignore_dof=False, fail_on_warning=True)
         # Refix that variable
         m.fs.unit.N_Re_io[0, 'in'].fix(temp)
