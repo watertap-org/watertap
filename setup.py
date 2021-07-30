@@ -43,7 +43,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the proteuslib development
-    "idaes-pse @ https://github.com/nawi-hub/idaes-pse/archive/1.10.1.proteuslib.2021.07.01.zip",
+    "idaes-pse @ https://github.com/nawi-hub/idaes-pse/archive/1.10.1.proteuslib.2021.07.22.zip",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -99,7 +99,7 @@ setup(
         # tutorial tests
         "nbformat",
         # https://www.python.org/dev/peps/pep-0508/#environment-markers
-        'pywin32==225 ; platform_system=="Windows" and python_version>="3.8"'
+        'pywin32==225 ; platform_system=="Windows" and python_version>="3.8"',
     ],
     extras_require={
         "dev": [
