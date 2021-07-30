@@ -23,9 +23,7 @@ from pyomo.environ import (Var,
                            exp,
                            value,
                            Constraint,
-                           Expression,
-                           Block,
-                           check_optimal_termination)
+                           Block)
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
@@ -1062,7 +1060,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             state_args=permeate_block_args)
         init_log.info('Permeate outlet initialization complete. Initialize permeate outlet. ')
 
-        if ignore_dof is False:
+        if not ignore_dof:
            check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
         # ---------------------------------------------------------------------
         # Step 2: Solve unit

@@ -25,8 +25,7 @@ from pyomo.environ import (Var,
                            Block,
                            units as pyunits,
                            exp,
-                           value,
-                           check_optimal_termination)
+                           value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -38,7 +37,6 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
@@ -985,7 +983,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             hold_state=True)
 
         init_log.info_high("Initialization Step 1 Complete.")
-        if ignore_dof is False:
+        if not ignore_dof:
             check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
         # ---------------------------------------------------------------------
         # Initialize other state blocks
