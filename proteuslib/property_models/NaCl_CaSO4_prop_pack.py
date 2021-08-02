@@ -39,6 +39,7 @@ from idaes.core.util.initialization import (fix_state_vars,
 from idaes.core.util.testing import get_default_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import PropertyPackageError
+from idaes.core.util.misc import extract_data
 import idaes.core.util.scaling as iscale
 
 # Set up logger
@@ -64,6 +65,17 @@ class PropParameterData(PhysicalParameterBlock):
 
         # phases
         self.Liq = LiquidPhase()
+
+        # molecular weight
+        mw_comp_data = {'H2O': 18.01528E-3,
+                        'NaCl': 58.44E-3,
+                        'CaSO4': 136.14E-3}
+
+        self.mw_comp = Param(self.component_list,
+                             mutable=False,
+                             initialize=extract_data(mw_comp_data),
+                             units=pyunits.kg / pyunits.mol,
+                             doc="Molecular weight kg/mol")
 
         # ---default scaling---
         self.set_default_scaling('temperature', 1e-2)
@@ -285,8 +297,11 @@ class PropStateBlockData(StateBlockData):
 
         # default scaling factors have already been set with
         # idaes.core.property_base.calculate_scaling_factors()
-        # for the following variables: flow_mass_phase_comp, pressure,
-        # temperature, dens_mass, visc_d, diffus, osm_coeff, and enth_mass
+
+        # scaling factors for parameters
+        for j, v in self.params.mw_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(self.params.mw_comp, 1e-1)  # not sure why this isn't 1e2 in NaCl prop model
 
         # these variables should have user input
         if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O']) is None:

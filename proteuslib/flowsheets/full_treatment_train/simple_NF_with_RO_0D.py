@@ -12,7 +12,7 @@
 ###############################################################################
 from pyomo.environ import ConcreteModel, TransformationFactory,\
                           Expression, SolverFactory, Constraint, \
-                          Objective, Var, NonNegativeReals
+                          Objective, Var, NonNegativeReals, maximize
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.environ import units as pyunits
 from idaes.core import FlowsheetBlock
@@ -45,11 +45,12 @@ from idaes.core.util import get_solver
 # import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 #
-# import proteuslib.property_models.NaCl_prop_pack as nacl
-# from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
-#                                                        ConcentrationPolarizationType,
-#                                                        MassTransferCoefficient,
-#                                                        PressureChangeType)
+from idaes.generic_models.unit_models.translator import Translator
+import proteuslib.property_models.seawater_prop_pack as tds_props
+from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
+                                                       ConcentrationPolarizationType,
+                                                       MassTransferCoefficient,
+                                                       PressureChangeType)
 # from proteuslib.unit_models.pressure_exchanger import PressureExchanger
 # from proteuslib.unit_models.pump_isothermal import Pump
 # import proteuslib.flowsheets.RO_with_energy_recovery.financials as financials
@@ -64,24 +65,26 @@ def build_flowsheet():
     ### Build the flowsheet model object ###
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = nacl_caso4.PropParameterBlock()
+    m.fs.properties_NF = nacl_caso4.PropParameterBlock()
 
+    # ==========================================================================
+    # Pretreatment train: nanofiltration
     ### Add the mixer block ###
     m.fs.pre_mixer = Mixer(default={
-            "property_package": m.fs.properties,
+            "property_package": m.fs.properties_NF,
             "inlet_list": ['recycle', 'bypass'],
             "energy_mixing_type": MixingType.none
             })
     ### Add the mixer block ###
     m.fs.post_mixer = Mixer(default={
-            "property_package": m.fs.properties,
+            "property_package": m.fs.properties_NF,
             "inlet_list": ['pretreatment', 'bypass'],
             "energy_mixing_type": MixingType.none
             })
 
     ### Add the splitter block ###
     m.fs.bypass = Separator(default={
-            "property_package": m.fs.properties,
+            "property_package": m.fs.properties_NF,
             "outlet_list": ['pretreatment', 'bypass'],
             "ideal_separation": False,
             "split_basis": SplittingType.totalFlow,
@@ -90,7 +93,7 @@ def build_flowsheet():
 
     ### Add the separator block ###
     m.fs.NF = Separator(default={
-            "property_package": m.fs.properties,
+            "property_package": m.fs.properties_NF,
             "outlet_list": ['retentate', 'permeate'],
             "ideal_separation": False,
             "split_basis": SplittingType.componentFlow,
@@ -99,14 +102,46 @@ def build_flowsheet():
 
     ### Add the splitter block ###
     m.fs.split = Separator(default={
-            "property_package": m.fs.properties,
+            "property_package": m.fs.properties_NF,
             "outlet_list": ['disposal', 'recycle'],
             "ideal_separation": False,
             "split_basis": SplittingType.totalFlow,
             "energy_split_basis": EnergySplittingType.equal_temperature
             })
 
-    ### Add connections ###
+    # ==========================================================================
+    # Translate NaCl-CaSO4 to TDS property model
+    m.fs.properties_RO = tds_props.SeawaterParameterBlock()
+    m.fs.translator = Translator(
+        default={"inlet_property_package": m.fs.properties_NF,
+                 "outlet_property_package": m.fs.properties_RO})
+
+    m.fs.eq_H2O_trans = Constraint(expr=m.fs.translator.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'] ==
+                                        m.fs.translator.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O'])
+
+    def rule_TDS(b, j):
+        inlet = b.translator.inlet
+        outlet = b.translator.outlet
+        return (sum(inlet.flow_mass_phase_comp[0, 'Liq', j]
+                    for j in b.translator.params.solute_set)
+                == outlet.flow_mass_phase_comp[0, 'Liq', 'TDS'])
+
+    m.fs.eq_TDS_trans = Constraint(rule=rule_TDS)
+
+    # ==========================================================================
+    # Primary treatment train: Reverse osmosis
+    m.fs.HP_pump = Pump(default={'property_package': m.fs.properties})
+    m.fs.RO = ReverseOsmosis0D(default={
+        "property_package": m.fs.properties,
+        "has_pressure_change_type": True,
+        "pressure_change_type": PressureChangeType.calculated,
+        "mass_transfer_coefficient": MassTransferCoefficient.calculated,
+        "concentration_polarization_type": ConcentrationPolarizationType.calculated,
+    })
+    m.fs.product = Product(default={'property_package': m.fs.properties})
+    m.fs.RO_disposal = Product(default={'property_package': m.fs.properties})
+    # ==========================================================================
+    # Nanofiltration connections
     #
     #            ------------------------------------|
     #            |                                   v
@@ -124,6 +159,19 @@ def build_flowsheet():
     m.fs.S4 = Arc(source=m.fs.NF.retentate,        destination=m.fs.split.inlet)
     m.fs.S5 = Arc(source=m.fs.NF.permeate,         destination=m.fs.post_mixer.pretreatment)
     m.fs.S6 = Arc(source=m.fs.split.recycle,       destination=m.fs.pre_mixer.recycle)
+
+    # ==========================================================================
+    # Reverse osmosis connections
+    #
+    #
+    # NF post_mixer --> HP_pump ---> RO_stage ---> Permeate
+    #                                     |
+    #                                     V
+    #                                  disposal
+    #
+
+
+
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # Create a water recover vars
@@ -193,9 +241,9 @@ def set_dof(m):
     ### fix RO recovery ###
     m.fs.RO_water_recovery.fix(0.6)
 
-    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1/mass_flow, index=('Liq', 'H2O'))
-    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1/mass_flow * 1e2, index=('Liq', 'NaCl'))
-    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1/mass_flow * 1e4, index=('Liq', 'CaSO4'))
+    m.fs.properties_NF.set_default_scaling('flow_mass_phase_comp', 1/mass_flow, index=('Liq', 'H2O'))
+    m.fs.properties_NF.set_default_scaling('flow_mass_phase_comp', 1/mass_flow * 1e2, index=('Liq', 'NaCl'))
+    m.fs.properties_NF.set_default_scaling('flow_mass_phase_comp', 1/mass_flow * 1e4, index=('Liq', 'CaSO4'))
     iscale.calculate_scaling_factors(m)
 
     check_dof(m, fail_flag=True)
@@ -212,6 +260,7 @@ def simulate(m):
     check_solve(results, checkpoint="Simulation", fail_flag=True)
 
 def minimize_pretreatment(original_m, system_water_recovery):
+    # Currently not converging
     ### Copy over the model ###
     m = copy.deepcopy(original_m)
 
@@ -229,16 +278,18 @@ def minimize_pretreatment(original_m, system_water_recovery):
     scaling_mass_fac = 0.002
 
     m.fs.eq_no_scaling = Constraint(
-        expr=m.fs.post_mixer.outlet.flow_mass_phase_comp[0, 'Liq', 'CaSO4']/(1-m.fs.RO_water_recovery) <= scaling_mass_fac)
+        expr=m.fs.post_mixer.outlet.flow_mass_phase_comp[0, 'Liq', 'CaSO4'] <= scaling_mass_fac * (
+                1 - m.fs.RO_water_recovery))
 
     ### Create objective for
     # m.fs.objective = Objective(expr=m.fs.split.split_fraction[0, "recycle"])
     m.fs.objective = Objective(expr=m.fs.NF.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'])
     # m.fs.objective = Objective(expr=-m.fs.system_water_recovery)
 
+    check_dof(m, fail_flag=False)
     # ---solving---
-    results = solver.solve(m, tee=False)
-    check_solve(results, checkpoint="Solve for minimal pretreatment")
+    results = solver.solve(m, tee=True)
+    check_solve(results, checkpoint="Solve for minimal pretreatment", fail_flag=True)
 
     return m
 
@@ -269,15 +320,11 @@ def maximize_system_recovery(original_m, RO_water_recovery):
     check_solve(results, checkpoint="Solve for max system recovery")
     return m
 
-def main():
-    m = build_flowsheet()
-    set_dof(m)
-    simulate(m)
-
+def print_optimal_results(m):
     print("-------------------------------------")
     print("|       Minimize Pretreatment       |")
     print("-------------------------------------")
-    m1 = minimize_pretreatment(m,0.99)
+    m1 = minimize_pretreatment(m, 0.6566)
     min_recycle_fraction, RO_water_recovery, System_water_recovery, NF_inflow, bypass_fraction = [
         m1.fs.split.split_fraction[0, "recycle"].value,
         m1.fs.RO_water_recovery.value,
@@ -285,10 +332,10 @@ def main():
         m1.fs.NF.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].value,
         m1.fs.bypass.split_fraction[0, "bypass"].value,
     ]
-    print("recycle fraction:      {:>5.2f} %".format(min_recycle_fraction*100))
-    print("bypassed fraction:     {:>5.2f} %".format(bypass_fraction*100))
-    print("RO water recovery:     {:>5.2f} %".format(RO_water_recovery*100))
-    print("System water recovery: {:>5.2f} %".format(System_water_recovery*100))
+    print("recycle fraction:      {:>5.2f} %".format(min_recycle_fraction * 100))
+    print("bypassed fraction:     {:>5.2f} %".format(bypass_fraction * 100))
+    print("RO water recovery:     {:>5.2f} %".format(RO_water_recovery * 100))
+    print("System water recovery: {:>5.2f} %".format(System_water_recovery * 100))
     print("NF inflow:             {:>5.2f} kg/s".format(NF_inflow))
     print("-------------------------------------")
     print()
@@ -297,7 +344,7 @@ def main():
     print("-------------------------------------")
     print("|     Maximize System Recovery      |")
     print("-------------------------------------")
-    m2 = maximize_system_recovery(m,0.70)
+    m2 = maximize_system_recovery(m, 0.70)
     min_recycle_fraction, RO_water_recovery, System_water_recovery, NF_inflow, bypass_fraction = [
         m2.fs.split.split_fraction[0, "recycle"].value,
         m2.fs.RO_water_recovery.value,
@@ -305,12 +352,18 @@ def main():
         m2.fs.NF.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].value,
         m2.fs.bypass.split_fraction[0, "bypass"].value,
     ]
-    print("recycle fraction:      {:>5.2f} %".format(min_recycle_fraction*100))
-    print("bypassed fraction:     {:>5.2f} %".format(bypass_fraction*100))
-    print("RO water recovery:     {:>5.2f} %".format(RO_water_recovery*100))
-    print("System water recovery: {:>5.2f} %".format(System_water_recovery*100))
+    print("recycle fraction:      {:>5.2f} %".format(min_recycle_fraction * 100))
+    print("bypassed fraction:     {:>5.2f} %".format(bypass_fraction * 100))
+    print("RO water recovery:     {:>5.2f} %".format(RO_water_recovery * 100))
+    print("System water recovery: {:>5.2f} %".format(System_water_recovery * 100))
     print("NF inflow:             {:>5.2f} kg/s".format(NF_inflow))
     print("-------------------------------------")
+
+def main():
+    m = build_flowsheet()
+    set_dof(m)
+    simulate(m)
+
 
 if __name__ == "__main__":
     main()
