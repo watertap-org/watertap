@@ -19,7 +19,7 @@ import idaes.logger as idaeslog
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Reals, NonNegativeReals, \
-    Var, Suffix
+    Var, Suffix, Param
 from pyomo.environ import units as pyunits
 from pyomo.opt import SolverFactory
 

@@ -16,7 +16,7 @@ from pyomo.environ import ConcreteModel, TransformationFactory,\
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.environ import units as pyunits
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models import Mixer, Separator
+from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
 from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
 from idaes.generic_models.unit_models.mixer import MixingType
 from idaes.core.util.model_statistics import degrees_of_freedom, unfixed_variables_in_activated_equalities_set, activated_equalities_set
@@ -40,9 +40,7 @@ from idaes.core.util import get_solver
 #                                             propagate_state,
 #                                             fix_state_vars,
 #                                             revert_state_vars)
-# from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
 # from idaes.generic_models.unit_models.mixer import MomentumMixingType
-# import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 #
 from idaes.generic_models.unit_models.translator import Translator
@@ -52,7 +50,7 @@ from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
                                                        MassTransferCoefficient,
                                                        PressureChangeType)
 # from proteuslib.unit_models.pressure_exchanger import PressureExchanger
-# from proteuslib.unit_models.pump_isothermal import Pump
+from proteuslib.unit_models.pump_isothermal import Pump
 # import proteuslib.flowsheets.RO_with_energy_recovery.financials as financials
 
 # Set up logger
@@ -119,39 +117,48 @@ def build_flowsheet():
     m.fs.eq_H2O_trans = Constraint(expr=m.fs.translator.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'] ==
                                         m.fs.translator.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O'])
 
-    def rule_TDS(b, j):
-        inlet = b.translator.inlet
-        outlet = b.translator.outlet
-        return (sum(inlet.flow_mass_phase_comp[0, 'Liq', j]
-                    for j in b.translator.params.solute_set)
-                == outlet.flow_mass_phase_comp[0, 'Liq', 'TDS'])
+    # def rule_TDS(b):
+    #     inlet = b.translator.inlet
+    #     outlet = b.translator.outlet
+    #     return (sum(inlet.flow_mass_phase_comp[0, 'Liq', j]
+    #                 for j in b.translator.params.solute_set)
+    #             == outlet.flow_mass_phase_comp[0, 'Liq', 'TDS'])
 
-    m.fs.eq_TDS_trans = Constraint(rule=rule_TDS)
+    m.fs.eq_TDS_trans = Constraint(expr=
+                                   (m.fs.translator.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']
+                                   + m.fs.translator.inlet.flow_mass_phase_comp[0, 'Liq', 'CaSO4'])
+                                   == m.fs.translator.outlet.flow_mass_phase_comp[0, 'Liq', 'TDS'])
+    m.fs.eq_temp = Constraint(expr=m.fs.translator.inlet.temperature[0]
+                                   == m.fs.translator.outlet.temperature[0])
+    m.fs.eq_pressure = Constraint(expr=m.fs.translator.inlet.pressure[0]
+                                       == m.fs.translator.outlet.pressure[0])
 
     # ==========================================================================
     # Primary treatment train: Reverse osmosis
-    m.fs.HP_pump = Pump(default={'property_package': m.fs.properties})
+    m.fs.HP_pump = Pump(default={'property_package': m.fs.properties_RO})
     m.fs.RO = ReverseOsmosis0D(default={
-        "property_package": m.fs.properties,
-        "has_pressure_change_type": True,
+        "property_package": m.fs.properties_RO,
+        "has_pressure_change": True,
         "pressure_change_type": PressureChangeType.calculated,
         "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-        "concentration_polarization_type": ConcentrationPolarizationType.calculated,
+        "concentration_polarization_type": ConcentrationPolarizationType.calculated
     })
-    m.fs.product = Product(default={'property_package': m.fs.properties})
-    m.fs.RO_disposal = Product(default={'property_package': m.fs.properties})
+    m.fs.permeate = Product(default={'property_package': m.fs.properties_RO})
+    m.fs.RO_disposal = Product(default={'property_package': m.fs.properties_RO})
     # ==========================================================================
     # Nanofiltration connections
     #
-    #            ------------------------------------|
-    #            |                                   v
-    #  feed -> bypass  -> pre_mixer ----> NF --> post_mixer --> to RO model
-    #                         ^           |
-    #                         |           V
-    #                      recycle ---  split
-    #                                     |
-    #                                     V
-    #                                  disposal
+    #            ----------------(S2)--------------------------------|
+    #            |                                                   v
+    #  feed --> bypass--(S1)--> pre_mixer --(S3)--> NF --(S5)--> post_mixer --> to RO model
+    #                               ^               |
+    #                               |              (S4)
+    #                             (S6)              |
+    #                               |               V
+    #                            recycle <-------split
+    #                                               |
+    #                                               V
+    #                                            disposal
     #
     m.fs.S1 = Arc(source=m.fs.bypass.pretreatment, destination=m.fs.pre_mixer.bypass)
     m.fs.S2 = Arc(source=m.fs.bypass.bypass,       destination=m.fs.post_mixer.bypass)
@@ -164,23 +171,27 @@ def build_flowsheet():
     # Reverse osmosis connections
     #
     #
-    # NF post_mixer --> HP_pump ---> RO_stage ---> Permeate
-    #                                     |
-    #                                     V
-    #                                  disposal
+    # NF post_mixer --(S7)--> HP_pump --(S8)--> RO_stage --(S10)--> Permeate
+    #                                              |
+    #                                            (S9)
+    #                                              |
+    #                                              V
+    #                                           disposal
     #
-
-
+    m.fs.S7 = Arc(source=m.fs.post_mixer.outlet, destination=m.fs.HP_pump.inlet)
+    m.fs.S8 = Arc(source=m.fs.HP_pump.outlet, destination=m.fs.RO.inlet)
+    m.fs.S9 = Arc(source=m.fs.RO.retentate, destination=m.fs.RO_disposal)
+    m.fs.S10 = Arc(source=m.fs.RO.permeate, destination=m.fs.permeate)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # Create a water recover vars
-    m.fs.RO_water_recovery = Var(
-            initialize=0.5,
-            bounds=(0, 1),
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc='RO Water Recovery')
+    # m.fs.RO_water_recovery = Var(
+    #         initialize=0.5,
+    #         bounds=(0, 1),
+    #         domain=NonNegativeReals,
+    #         units=pyunits.dimensionless,
+    #         doc='RO Water Recovery')
 
     m.fs.system_water_recovery = Var(
             initialize=0.5,
@@ -191,8 +202,9 @@ def build_flowsheet():
 
     ### Add water recovery constraints ###
     m.fs.eq_system_recovery = Constraint(
-        expr=m.fs.system_water_recovery==(m.fs.post_mixer.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']*m.fs.RO_water_recovery)
-                                         /m.fs.bypass.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'])
+        expr=m.fs.system_water_recovery == (m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']
+                                          * m.fs.RO.recovery_mass_phase[0, 'Liq', 'H2O'])
+                                         / m.fs.bypass.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'])
 
     ### Add QOI ###
     # m.fs.system_water_recovery = Expression(
