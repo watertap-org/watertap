@@ -75,7 +75,12 @@ class SeawaterParameterData(PhysicalParameterBlock):
         - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of 
         existing correlations and data,"Desalination and Water Treatment, Vol.16, pp.354 - 380, April 2010.
         (2017 corrections provided at http://web.mit.edu/seawater)
+        
+        Diffusivity for NaCl is being used temporarily based on
+        Bartholomew & Mauter (2019) https://doi.org/10.1016/j.memsci.2018.11.067
         '''
+        #TODO: Edit comment above about diffusivity when/if relationship is changed
+
         # parameters
         # molecular weight
         mw_comp_data = {'H2O': 18.01528e-3,
@@ -156,6 +161,16 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.visc_d_param_B_3 = Var(
             within=Reals, initialize=4.724e-4, units=t_inv_units**2,
             doc='Dynamic viscosity parameter 3 for term B')
+
+        # diffusivity parameters, eq 6 in Bartholomew
+        diffus_param_dict = {'0': 1.51e-9, '1': -2.00e-9, '2': 3.01e-8,
+                             '3': -1.22e-7, '4': 1.53e-7}
+        self.diffus_param = Var(
+            diffus_param_dict.keys(),
+            domain=Reals,
+            initialize=diffus_param_dict,
+            units=pyunits.m ** 2 / pyunits.s,
+            doc='Dynamic viscosity parameters')
 
         # osmotic coefficient parameters, eq. 49 in Sharqawy
         self.osm_coeff_param_1 = Var(
@@ -385,9 +400,9 @@ class SeawaterParameterData(PhysicalParameterBlock):
              'pressure_sat': {'method': '_pressure_sat'},
              'cp_phase': {'method': '_cp_phase'},
              'therm_cond_phase': {'method': '_therm_cond_phase'},
-             'dh_vap': {'method': '_dh_vap'}})
-        # TODO: add diffusivity variable and constraint since it is needed when calculating mass transfer coefficient in
-        #  current implementation of 0D RO model
+             'dh_vap': {'method': '_dh_vap'},
+             'diffus_phase': {'method':'_diffus_phase'}
+             })
         obj.add_default_units({'time': pyunits.s,
                                'length': pyunits.m,
                                'mass': pyunits.kg,
@@ -683,6 +698,23 @@ class SeawaterStateBlockData(StateBlockData):
                  + b.params.visc_d_param_B_3 * t**2)
             return b.visc_d_phase['Liq'] == mu_w * (1+A*s+B*s**2)
         self.eq_visc_d_phase = Constraint(rule=rule_visc_d_phase)
+
+    def _diffus_phase(self):  #TODO: diffusivity from NaCl prop model used temporarily--reconsider this
+        self.diffus_phase = Var(
+            self.params.phase_list,
+            initialize=1e-9,
+            bounds=(1e-10, 1e-8),
+            units=pyunits.m ** 2 * pyunits.s ** -1,
+            doc="Diffusivity")
+
+        def rule_diffus_phase(b):  # diffusivity, eq 6 in Bartholomew, substituting NaCl w/ TDS
+            return b.diffus_phase['Liq'] == (b.params.diffus_param['4'] * b.mass_frac_phase_comp['Liq', 'TDS'] ** 4
+                                      + b.params.diffus_param['3'] * b.mass_frac_phase_comp['Liq', 'TDS'] ** 3
+                                      + b.params.diffus_param['2'] * b.mass_frac_phase_comp['Liq', 'TDS'] ** 2
+                                      + b.params.diffus_param['1'] * b.mass_frac_phase_comp['Liq', 'TDS']
+                                      + b.params.diffus_param['0'])
+        self.eq_diffus_phase = Constraint(rule=rule_diffus_phase)
+
 
     def _osm_coeff(self):
         self.osm_coeff = Var(
