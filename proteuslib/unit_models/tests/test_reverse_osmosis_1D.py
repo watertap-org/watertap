@@ -13,17 +13,17 @@
 
 import pytest
 from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
                            value,
                            Param,
+                           Var,
+                           Constraint,
+                           Expression,
                            assert_optimal_termination)
-from pyomo.util.check_units import (assert_units_consistent,
-                                    assert_units_equivalent)
+from pyomo.util.check_units import assert_units_consistent
+
 from pyomo.network import Port
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
-                        EnergyBalanceType,
                         MomentumBalanceType,
                         ControlVolume1DBlock,
                         StateBlock)
@@ -35,7 +35,10 @@ import proteuslib.property_models.NaCl_prop_pack \
     as props
 
 from idaes.core.util import get_solver
-from idaes.core.util.model_statistics import *
+from idaes.core.util.model_statistics import (number_variables,
+                                              number_unused_variables,
+                                              number_total_constraints,
+                                              degrees_of_freedom)
 
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (calculate_scaling_factors,
@@ -168,6 +171,81 @@ def test_option_pressure_change_calculated():
     assert isinstance(m.fs.unit.spacer_porosity, Var)
     assert isinstance(m.fs.unit.N_Re, Var)
 
+class Test_initialization_args():
+    @pytest.fixture(scope="class")
+    def m(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = props.NaClParameterBlock()
+
+        m.fs.unit = ReverseOsmosis1D(default={
+            "property_package": m.fs.properties,
+            "has_pressure_change": True,
+            "concentration_polarization_type": ConcentrationPolarizationType.calculated,
+            "mass_transfer_coefficient": MassTransferCoefficient.calculated,
+            "pressure_change_type": PressureChangeType.calculated,
+            "transformation_scheme": "BACKWARD",
+            "transformation_method": "dae.finite_difference",
+            "finite_elements": 5,
+            "has_full_reporting": True
+        })
+
+        # fully specify system
+        feed_flow_mass = 1000 / 3600
+        feed_mass_frac_NaCl = 0.034283
+        feed_pressure = 70e5
+
+        feed_temperature = 273.15 + 25
+        A = 4.2e-12
+        B = 3.5e-8
+        pressure_atmospheric = 1e5
+        feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
+
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
+            feed_flow_mass * feed_mass_frac_NaCl)
+
+        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
+            feed_flow_mass * feed_mass_frac_H2O)
+
+        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.A_comp.fix(A)
+        m.fs.unit.B_comp.fix(B)
+        m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.N_Re[0, 0].fix(400)
+        m.fs.unit.recovery_mass_phase_comp[0, 'Liq', 'H2O'].fix(0.5)
+        m.fs.unit.spacer_porosity.fix(0.97)
+        m.fs.unit.channel_height.fix(0.001)
+
+        return m
+
+    @pytest.mark.component
+    def test_initialize_ignore_dof(self, m):
+         # Unfix a variable and check that ignore_dof arg works
+        temp = m.fs.unit.N_Re[0, 0].value
+        m.fs.unit.N_Re[0, 0].unfix()
+        # Next line should pass since we are ignoring non-zero DOF
+        m.fs.unit.initialize(ignore_dof=True, fail_on_warning=False)
+        # Check that ValueError is thrown when ignore_dof and fail_on_warning are set to do so
+        with pytest.raises(ValueError, match="Non-zero degrees of freedom: Degrees of freedom on fs.unit = 1. "
+                                             "Fix 1 more variable\(s\) or set keyword arg to ignore_dof=True"):
+            m.fs.unit.initialize(ignore_dof=False, fail_on_warning=True)
+        # Refix that variable
+        m.fs.unit.N_Re[0, 0].fix(temp)
+
+    @pytest.mark.component
+    def test_initialize_fail_on_warning(self, m):
+        # Cause a failed initialization and check that ValueError is thrown
+        temp = m.fs.unit.feed_inlet.pressure[0].value
+        m.fs.unit.feed_inlet.pressure[0].fix(0.1 * temp)
+        # Next line should pass since only a warning is given
+        m.fs.unit.initialize(ignore_dof=True, fail_on_warning=False)
+        # Set fail_on_warning to True
+        with pytest.raises(ValueError, match="Initialization Step 2: solve indexed blocks failed. The solver failed to "
+                                             "converge to an optimal solution. This suggests that the user provided "
+                                             "infeasible inputs or that the model is poorly scaled."):
+            m.fs.unit.initialize(ignore_dof=True, fail_on_warning=True)
 
 class TestReverseOsmosis():
     @pytest.fixture(scope="class")
@@ -485,8 +563,6 @@ class TestReverseOsmosis():
         # test statistics
         assert number_variables(m) == 982
         assert number_total_constraints(m) == 941
-        unused_list = unused_variables_set(m)
-        [print(i) for i in unused_list]
         assert number_unused_variables(m) == 27
 
         # Test units
@@ -516,7 +592,6 @@ class TestReverseOsmosis():
 
         # Test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i, j) for i, j in badly_scaled_var_lst]
         assert badly_scaled_var_lst == []
 
         # Solve
@@ -667,8 +742,6 @@ class TestReverseOsmosis():
         initialization_tester(m)
         #Check for poorly scaled variables
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i,j) for i,j in badly_scaled_var_lst]
-
         assert badly_scaled_var_lst == []
 
         # Solve
@@ -816,8 +889,6 @@ class TestReverseOsmosis():
         initialization_tester(m)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i,j) for i,j in badly_scaled_var_lst]
-
         assert badly_scaled_var_lst == []
 
         solver.options = {'nlp_scaling_method': 'user-scaling'}
@@ -974,14 +1045,11 @@ class TestReverseOsmosis():
         assert len(unscaled_var_list) == 0
         # check that all constraints have been scaled
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        [print(i) for i in unscaled_constraint_list]
         assert len(unscaled_constraint_list) == 0
 
         initialization_tester(m)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i,j) for i,j in badly_scaled_var_lst]
-
         assert badly_scaled_var_lst == []
 
         solver.options = {'nlp_scaling_method': 'user-scaling'}
@@ -1126,8 +1194,6 @@ class TestReverseOsmosis():
         # test statistics
         assert number_variables(m) == 1133
         assert number_total_constraints(m) == 1069
-        unused_list = unused_variables_set(m)
-        [print(i) for i in unused_list]
         assert number_unused_variables(m) == 21
 
         assert_units_consistent(m.fs.unit)
@@ -1150,8 +1216,6 @@ class TestReverseOsmosis():
         initialization_tester(m)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i,j) for i,j in badly_scaled_var_lst]
-
         assert badly_scaled_var_lst == []
 
         solver.options = {'nlp_scaling_method': 'user-scaling'}
@@ -1296,8 +1360,6 @@ class TestReverseOsmosis():
         # test statistics
         assert number_variables(m) == 1133
         assert number_total_constraints(m) == 1089
-        unused_list = unused_variables_set(m)
-        [print(i) for i in unused_list]
         assert number_unused_variables(m) == 20
 
         assert_units_consistent(m.fs.unit)
@@ -1320,8 +1382,6 @@ class TestReverseOsmosis():
         initialization_tester(m)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        [print(i,j) for i,j in badly_scaled_var_lst]
-
         assert badly_scaled_var_lst == []
 
         solver.options = {'nlp_scaling_method': 'user-scaling'}

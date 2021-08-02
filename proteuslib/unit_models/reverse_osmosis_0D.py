@@ -25,8 +25,7 @@ from pyomo.environ import (Var,
                            Block,
                            units as pyunits,
                            exp,
-                           value,
-                           assert_optimal_termination)
+                           value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -38,12 +37,16 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
+from proteuslib.util.initialization import check_solve, check_dof
 import idaes.logger as idaeslog
 
+
+__author__ = "Tim Bartholomew, Adam Atia"
+
+# Set up logger
 _log = idaeslog.getLogger(__name__)
 
 
@@ -891,7 +894,14 @@ class ReverseOsmosisData(UnitModelBlockData):
                     * (b.feed_side.properties_out[t].pressure_osm
                     - b.permeate_side.properties_out[t].pressure_osm))
 
-    def initialize(blk, initialize_guess=None, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None):
+    def initialize(blk,
+                   initialize_guess=None,
+                   state_args=None,
+                   outlvl=idaeslog.NOTSET,
+                   solver=None,
+                   optarg=None,
+                   fail_on_warning=False,
+                   ignore_dof=False):
         """
         General wrapper for RO initialization routines
 
@@ -915,6 +925,8 @@ class ReverseOsmosisData(UnitModelBlockData):
             solver : solver object or string indicating which solver to use during
                      initialization, if None provided the default solver will be used
                      (default = None)
+            fail_on_warning : boolean argument to fail or only produce  warning upon unsuccessful solve (default=False)
+            ignore_dof : boolean argument to ignore when DOF != 0 (default=False)
         Returns:
             None
         """
@@ -963,10 +975,8 @@ class ReverseOsmosisData(UnitModelBlockData):
             hold_state=True)
 
         init_log.info_high("Initialization Step 1 Complete.")
-        if degrees_of_freedom(blk) != 0:
-            raise Exception(f"Initialization was called on {blk} "
-                            f"but it had {degrees_of_freedom(blk)} degree(s) of freedom "
-                            f"when 0 was expected. Check that the appropriate variables are fixed.")
+        if not ignore_dof:
+            check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
         # ---------------------------------------------------------------------
         # Initialize other state blocks
         # base properties on inlet state block
@@ -1034,10 +1044,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-            assert_optimal_termination(res)
-        init_log.info_high(
-            "Initialization Step 3 {}.".format(idaeslog.condition(res)))
-
+        check_solve(res, checkpoint='Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.feed_side.release_state(flags, outlvl)
