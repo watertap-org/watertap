@@ -296,6 +296,8 @@ def solve_flowsheet(m):
     check_solve(results, checkpoint="Simulation Solve", fail_flag=True)
 
 def optimize_flowsheet(m):
+    #TODO: add objective function
+
     # [print(i) for i in fixed_variables_set(m)]
     # print(len(fixed_variables_set(m)))
     # print('===========================================================')
@@ -308,11 +310,16 @@ def optimize_flowsheet(m):
 
     m.fs.bypass.split_fraction[0.0, 'bypass'].unfix()
     m.fs.split.split_fraction[0, "recycle"].unfix()
+    # m.fs.RO.design_permeate_conc = Constraint(
+    #     expr=m.fs.RO.permeate_side.properties_mixed[0].mass_frac_phase_comp['Liq', 'TDS'] <= 5e-6)
+    m.fs.objective = Objective(expr=-m.fs.system_water_recovery)
+
 
     results = solver.solve(m, tee=False)
     check_solve(results, checkpoint="Simulation Solve", fail_flag=True)
 
 def print_results(m):
+    m.fs.RO.report()
     min_recycle_fraction, RO_water_recovery, System_water_recovery, NF_inflow, bypass_fraction = [
         m.fs.split.split_fraction[0, "recycle"].value,
         m.fs.RO.recovery_vol_phase[0, 'Liq'].value,
@@ -333,7 +340,6 @@ def main():
     initialize_flowsheet(m)
     solve_flowsheet(m)
     optimize_flowsheet(m)
-    m.fs.RO.report()
     print_results(m)
 
 
