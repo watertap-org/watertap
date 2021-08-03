@@ -18,7 +18,7 @@ as they provide a way to seamlessly switch between different projects without co
 
 Using Conda environments is not mandatory to be able to install and use ProteusLib; however, it is strongly recommended.
 
-To use Conda environments, the ``conda`` package manager is required. Refer to the `Conda installation guide <https://conda.io/projects/conda/en/latest/user-guide/install/index.html>`_ for detailed steps on how to install Conda for your operating system.
+To use Conda environments, the ``conda`` package manager is required. Refer to the `Conda installation guide <https://docs.conda.io/projects/conda/en/latest/user-guide/install/>`_ for detailed steps on how to install Conda for your operating system.
 
 General installation
 --------------------
