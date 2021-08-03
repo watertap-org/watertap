@@ -375,6 +375,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling('cp_phase', 1e-3, index='Liq')
         self.set_default_scaling('therm_cond_phase', 1e0, index='Liq')
         self.set_default_scaling('dh_vap', 1e-6)
+        self.set_default_scaling('diffus_phase', 1e9)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -1018,7 +1019,7 @@ class SeawaterStateBlockData(StateBlockData):
 
         # property relationships with phase index, but simple constraint
         v_str_lst_phase = ['dens_mass_phase', 'flow_vol_phase', 'visc_d_phase', 'enth_mass_phase',
-                           'cp_phase', 'therm_cond_phase']
+                           'diffus_phase', 'cp_phase', 'therm_cond_phase']
         for v_str in v_str_lst_phase:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
