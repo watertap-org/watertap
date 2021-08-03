@@ -45,7 +45,10 @@ def check_solve(results, checkpoint=None, logger=_log, fail_flag=False):
     if logger is None:
         raise ValueError('Set logger. For example, logger=init_log')
     if check_optimal_termination(results):
-        logger.info(f'{checkpoint} successful.')
+        if checkpoint is None:
+            logger.info(f'Solve successful.')
+        else:
+            logger.info(f'{checkpoint} successful.')
     else:
         if checkpoint is None:
             msg = f"The solver failed to converge to an optimal solution. " \
