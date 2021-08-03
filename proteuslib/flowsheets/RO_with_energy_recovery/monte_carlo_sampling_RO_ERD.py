@@ -55,3 +55,4 @@ def run_parameter_sweep(results_file, seed=None):
 
 if __name__ == '__main__':
     run_parameter_sweep('output/monte_carlo_results.csv')
+    # run_parameter_sweep('output/monte_carlo_results.csv', seed=1)  # for running testing case
