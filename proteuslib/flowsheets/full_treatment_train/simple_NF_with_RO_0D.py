@@ -12,14 +12,14 @@
 ###############################################################################
 from pyomo.environ import ConcreteModel, TransformationFactory,\
                           Expression, SolverFactory, Constraint, \
-                          Objective, Var, NonNegativeReals, maximize, value
+                          Objective, Var, NonNegativeReals, maximize, value, ConstraintList
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.environ import units as pyunits
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
 from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
 from idaes.generic_models.unit_models.mixer import MixingType
-from idaes.core.util.model_statistics import degrees_of_freedom, unfixed_variables_in_activated_equalities_set, activated_equalities_set
+from idaes.core.util.model_statistics import fixed_variables_set, fixed_variables_in_activated_equalities_set, degrees_of_freedom, unfixed_variables_in_activated_equalities_set, activated_equalities_set
 import idaes.core.util.scaling as iscale
 import proteuslib.property_models.NaCl_CaSO4_prop_pack as nacl_caso4
 from proteuslib.util.initialization import check_solve, check_dof
@@ -113,24 +113,17 @@ def build_flowsheet():
     m.fs.translator = Translator(
         default={"inlet_property_package": m.fs.properties_NF,
                  "outlet_property_package": m.fs.properties_RO})
-
-    m.fs.eq_H2O_trans = Constraint(expr=m.fs.translator.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'] ==
+    #TODO: put these constraints on the translator block
+    m.fs.translator.constraints = ConstraintList()
+    m.fs.translator.constraints.add(m.fs.translator.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'] ==
                                         m.fs.translator.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O'])
 
-    # def rule_TDS(b):
-    #     inlet = b.translator.inlet
-    #     outlet = b.translator.outlet
-    #     return (sum(inlet.flow_mass_phase_comp[0, 'Liq', j]
-    #                 for j in b.translator.params.solute_set)
-    #             == outlet.flow_mass_phase_comp[0, 'Liq', 'TDS'])
-
-    m.fs.eq_TDS_trans = Constraint(expr=
-                                   (m.fs.translator.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']
-                                   + m.fs.translator.inlet.flow_mass_phase_comp[0, 'Liq', 'CaSO4'])
+    m.fs.translator.constraints.add(m.fs.translator.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']
+                                   + m.fs.translator.inlet.flow_mass_phase_comp[0, 'Liq', 'CaSO4']
                                    == m.fs.translator.outlet.flow_mass_phase_comp[0, 'Liq', 'TDS'])
-    m.fs.eq_temp = Constraint(expr=m.fs.translator.inlet.temperature[0]
+    m.fs.translator.constraints.add(m.fs.translator.inlet.temperature[0]
                                    == m.fs.translator.outlet.temperature[0])
-    m.fs.eq_pressure = Constraint(expr=m.fs.translator.inlet.pressure[0]
+    m.fs.translator.constraints.add(m.fs.translator.inlet.pressure[0]
                                        == m.fs.translator.outlet.pressure[0])
 
     # ==========================================================================
@@ -185,14 +178,6 @@ def build_flowsheet():
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
-    # Create a water recover vars
-    # m.fs.RO_water_recovery = Var(
-    #         initialize=0.5,
-    #         bounds=(0, 1),
-    #         domain=NonNegativeReals,
-    #         units=pyunits.dimensionless,
-    #         doc='RO Water Recovery')
-
     m.fs.system_water_recovery = Var(
             initialize=0.5,
             bounds=(0, 1),
@@ -220,7 +205,7 @@ def set_dof(m):
     mass_flow = 1
     x_NaCl = 0.005
     x_CaSO4 = 0.0015
-    feed_temp = 273.15 + 25
+    feed_temp = 298.15
     m.fs.bypass.inlet.pressure.fix(101325)
     m.fs.bypass.inlet.temperature.fix(feed_temp)
     m.fs.bypass.inlet.flow_mass_phase_comp[0.0, 'Liq', 'NaCl'].fix(x_NaCl * mass_flow)
@@ -275,21 +260,56 @@ def set_dof(m):
 
     check_dof(m, fail_flag=True)
 
-def simulate(m):
+def initialize_flowsheet(m):
     m.fs.HP_pump.initialize()
 
     m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'] = \
-        value(m.fs.translator.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O'])
+        0.97657
+        # value(m.fs.translator.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O'])
     m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'TDS'] = \
-        value(m.fs.translator.outlet.flow_mass_phase_comp[0, 'Liq', 'TDS'])
+        0.0060476
+        # value(m.fs.translator.outlet.flow_mass_phase_comp[0, 'Liq', 'TDS'])
     m.fs.RO.feed_side.properties_in[0].temperature = \
         value(m.fs.translator.outlet.temperature[0])
     m.fs.RO.feed_side.properties_in[0].pressure = \
         value(m.fs.HP_pump.control_volume.properties_out[0].pressure)
 
-    m.fs.RO.initialize(fail_on_warning=False, ignore_dof=False)
-    # ---solving---
-    results = solver.solve(m, tee=True)
+    m.fs.RO.area.setub(100)
+    m.fs.RO.initialize(
+        # initialize_guess={'deltaP': 0,
+        #                   'solvent_recovery': 0.4,
+        #
+        #                   },
+        # state_args={'flow_mass_phase_comp':
+        #                 {('Liq', 'TDS'): m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'TDS'].value,
+        #                  ('Liq', 'H2O'): m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'].value
+        #                  },
+        #             'temperature': m.fs.RO.feed_side.properties_in[0].temperature.value,
+        #             'pressure': m.fs.RO.feed_side.properties_in[0].pressure.value
+        #             },
+        fail_on_warning=False,
+        ignore_dof=False)
+
+
+def solve_flowsheet(m):
+    results = solver.solve(m, tee=False)
+    check_solve(results, checkpoint="Simulation Solve", fail_flag=True)
+
+def optimize_flowsheet(m):
+    # [print(i) for i in fixed_variables_set(m)]
+    # print(len(fixed_variables_set(m)))
+    # print('===========================================================')
+    # [print(i) for i in fixed_variables_in_activated_equalities_set(m)]
+    # print(len(fixed_variables_in_activated_equalities_set(m)))
+
+    m.fs.RO.velocity_io[0.0, 'out'].unfix()
+    m.fs.HP_pump.control_volume.properties_out[0.0].pressure.unfix()
+    m.fs.RO.recovery_vol_phase[0, 'Liq'].unfix()
+
+    m.fs.bypass.split_fraction[0.0, 'bypass'].unfix()
+    m.fs.split.split_fraction[0, "recycle"].unfix()
+
+    results = solver.solve(m, tee=False)
     check_solve(results, checkpoint="Simulation Solve", fail_flag=True)
 
 def print_results(m):
@@ -310,7 +330,10 @@ def print_results(m):
 def main():
     m = build_flowsheet()
     set_dof(m)
-    simulate(m)
+    initialize_flowsheet(m)
+    solve_flowsheet(m)
+    optimize_flowsheet(m)
+    m.fs.RO.report()
     print_results(m)
 
 

@@ -25,7 +25,8 @@ from pyomo.environ import (Var,
                            Block,
                            units as pyunits,
                            exp,
-                           value)
+                           value,
+                           check_optimal_termination)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -1044,6 +1045,8 @@ class ReverseOsmosisData(UnitModelBlockData):
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
+        if not check_optimal_termination(res):
+            blk.report()
         check_solve(res, checkpoint='Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
         # ---------------------------------------------------------------------
         # Release Inlet state
@@ -1069,14 +1072,19 @@ class ReverseOsmosisData(UnitModelBlockData):
         if hasattr(self, "velocity_io"):
             var_dict["Velocity @Inlet"] = self.velocity_io[time_point, 'in']
             var_dict["Velocity @Outlet"] = self.velocity_io[time_point, 'out']
-        var_dict['Concentration @Inlet,Membrane-Interface '] = (
-                    self.feed_side.properties_interface_in[time_point].conc_mass_phase_comp['Liq', 'NaCl'])
-        var_dict['Concentration @Outlet,Membrane-Interface '] = (
-            self.feed_side.properties_interface_out[time_point].conc_mass_phase_comp['Liq','NaCl'])
-        var_dict['Concentration @Inlet,Bulk'] = (
-                    self.feed_side.properties_in[time_point].conc_mass_phase_comp['Liq', 'NaCl'])
-        var_dict['Concentration @Outlet,Bulk'] = (
-            self.feed_side.properties_out[time_point].conc_mass_phase_comp['Liq','NaCl'])
+        for j in self.config.property_package.solute_set:
+            cin_mem_name=f'{j} Concentration @Inlet,Membrane-Interface '
+            var_dict[cin_mem_name] = (
+                        self.feed_side.properties_interface_in[time_point].conc_mass_phase_comp['Liq', j])
+            cout_mem_name=f'{j} Concentration @Outlet,Membrane-Interface '
+            var_dict[cout_mem_name] = (
+                self.feed_side.properties_interface_out[time_point].conc_mass_phase_comp['Liq', j])
+            cin_bulk_name=f'{j} Concentration @Inlet,Bulk '
+            var_dict[cin_bulk_name] = (
+                        self.feed_side.properties_in[time_point].conc_mass_phase_comp['Liq', j])
+            cout_bulk_name=f'{j} Concentration @Outlet,Bulk '
+            var_dict[cout_bulk_name] = (
+                self.feed_side.properties_out[time_point].conc_mass_phase_comp['Liq', j])
         if self.feed_side.properties_interface_out[time_point].is_property_constructed('pressure_osm'):
             var_dict['Osmotic Pressure @Outlet,Membrane-Interface '] = (
                 self.feed_side.properties_interface_out[time_point].pressure_osm)
