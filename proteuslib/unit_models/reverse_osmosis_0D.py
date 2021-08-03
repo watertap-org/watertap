@@ -1085,6 +1085,9 @@ class ReverseOsmosisData(UnitModelBlockData):
             cout_bulk_name=f'{j} Concentration @Outlet,Bulk '
             var_dict[cout_bulk_name] = (
                 self.feed_side.properties_out[time_point].conc_mass_phase_comp['Liq', j])
+            cp_name=f'{j} Permeate Concentration '
+            var_dict[cp_name] = (
+                self.permeate_side.properties_mixed[time_point].conc_mass_phase_comp['Liq', j])
         if self.feed_side.properties_interface_out[time_point].is_property_constructed('pressure_osm'):
             var_dict['Osmotic Pressure @Outlet,Membrane-Interface '] = (
                 self.feed_side.properties_interface_out[time_point].pressure_osm)
