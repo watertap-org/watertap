@@ -217,16 +217,14 @@ def build_flowsheet():
     return m
 
 def set_dof(m):
-    ### initialize feed mixer ###
     mass_flow = 1
     x_NaCl = 0.005
     x_CaSO4 = 0.0015
-    room_temp = 273.15 + 25
+    feed_temp = 273.15 + 25
     m.fs.bypass.inlet.pressure.fix(101325)
-    m.fs.bypass.inlet.temperature.fix(room_temp)
+    m.fs.bypass.inlet.temperature.fix(feed_temp)
     m.fs.bypass.inlet.flow_mass_phase_comp[0.0, 'Liq', 'NaCl'].fix(x_NaCl * mass_flow)
     m.fs.bypass.inlet.flow_mass_phase_comp[0.0, 'Liq', 'CaSO4'].fix(x_CaSO4 * mass_flow)
-    # m.fs.bypass.inlet.flow_mass_phase_comp[0.0, 'Liq', 'H2O'].fix((1 - x_NaCl - x_CaSO4) * mass_flow)
 
     m.fs.feed_H2O = Constraint(
         expr=m.fs.bypass.inlet.flow_mass_phase_comp[0.0, 'Liq', 'H2O'] ==
@@ -239,8 +237,8 @@ def set_dof(m):
 
 
     ### Fix mixer temp out ###
-    m.fs.pre_mixer.outlet.temperature.fix(room_temp)
-    m.fs.post_mixer.outlet.temperature.fix(room_temp)
+    m.fs.pre_mixer.outlet.temperature.fix(feed_temp)
+    m.fs.post_mixer.outlet.temperature.fix(feed_temp)
 
     ### set NF recover ratio ###
     m.fs.NF.split_fraction[0, "permeate", "H2O"].fix(0.85)
@@ -278,11 +276,6 @@ def set_dof(m):
     check_dof(m, fail_flag=True)
 
 def simulate(m):
-    # m.fs.pre_mixer.initialize(hold_state=True)
-    # m.fs.post_mixer.initialize((hold_state=True)
-    # m.fs.bypass.initialize()
-    # m.fs.NF.initialize()
-    # m.fs.split.initialize()
     m.fs.HP_pump.initialize()
 
     m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'] = \
@@ -299,99 +292,13 @@ def simulate(m):
     results = solver.solve(m, tee=True)
     check_solve(results, checkpoint="Simulation Solve", fail_flag=True)
 
-def minimize_pretreatment(original_m, system_water_recovery):
-    # Currently not converging
-    ### Copy over the model ###
-    m = copy.deepcopy(original_m)
-    ### Unfix the split disposal ###
-    m.fs.split.split_fraction[0,  "recycle"].unfix()
-    m.fs.split.split_fraction[0,  "recycle"].setlb(0.0)
-    m.fs.split.split_fraction[0,  "recycle"].setub(1.0)
-    m.fs.bypass.split_fraction[0, "bypass"].unfix()
-    m.fs.bypass.split_fraction[0, "bypass"].setlb(0.0)
-    m.fs.bypass.split_fraction[0, "bypass"].setub(1.0)
-    m.fs.RO.recovery_mass_phase_comp.unfix()
-    m.fs.system_water_recovery.fix(system_water_recovery)
-
-    ### Create a constraint to prevent scaling ###
-    # scaling_mass_fac = 0.002
-    #
-    # m.fs.eq_no_scaling = Constraint(
-    #     expr=m.fs.post_mixer.outlet.flow_mass_phase_comp[0, 'Liq', 'CaSO4'] <= scaling_mass_fac
-    #          * (1 - m.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O']))
-
-    ### Create objective for
-    # m.fs.objective = Objective(expr=m.fs.split.split_fraction[0, "recycle"])
-    m.fs.objective = Objective(expr=m.fs.NF.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'])
-    # m.fs.objective = Objective(expr=-m.fs.system_water_recovery)
-
-    check_dof(m, fail_flag=False)
-    # ---solving---
-    results = solver.solve(m, tee=False)
-    check_solve(results, checkpoint="Solve for minimal pretreatment", fail_flag=False)
-
-    return m
-
-def maximize_system_recovery(original_m, RO_water_recovery):
-    ### Copy over the model ###
-    m = copy.deepcopy(original_m)
-
-    ### Unfix the split disposal ###
-    m.fs.split.split_fraction[0,  "recycle"].unfix()
-    m.fs.split.split_fraction[0,  "recycle"].setlb(0.0)
-    m.fs.split.split_fraction[0,  "recycle"].setub(1.0)
-    m.fs.bypass.split_fraction[0, "bypass"].unfix()
-    m.fs.bypass.split_fraction[0, "bypass"].setlb(0.0)
-    m.fs.bypass.split_fraction[0, "bypass"].setub(1.0)
-    m.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'].fix(RO_water_recovery)
-    m.fs.system_water_recovery.unfix()
-    m.fs.HP_pump.control_volume.properties_out[0].pressure.unfix()
-    # ### Create a constraint to prevent scaling ###
-    # scaling_mass_fac = 0.002
-    # m.fs.eq_no_scaling = Constraint(
-    #     expr=m.fs.post_mixer.outlet.flow_mass_phase_comp[0, 'Liq', 'CaSO4'] / (
-    #                 1 - m.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'])
-    #          <= scaling_mass_fac)
-
-    ### Create objective for
-    m.fs.objective = Objective(expr=-m.fs.system_water_recovery)
-
-    # ---solving---
-    results = solver.solve(m, tee=False)
-    check_solve(results, checkpoint="Solve for max system recovery")
-    return m
-
-def print_optimal_results(m):
-    print("-------------------------------------")
-    print("|       Minimize Pretreatment       |")
-    print("-------------------------------------")
-    m1 = minimize_pretreatment(m, 0.6566)
+def print_results(m):
     min_recycle_fraction, RO_water_recovery, System_water_recovery, NF_inflow, bypass_fraction = [
-        m1.fs.split.split_fraction[0, "recycle"].value,
-        m1.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'].value,
-        m1.fs.system_water_recovery.value,
-        m1.fs.NF.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].value,
-        m1.fs.bypass.split_fraction[0, "bypass"].value,
-    ]
-    print("recycle fraction:      {:>5.2f} %".format(min_recycle_fraction * 100))
-    print("bypassed fraction:     {:>5.2f} %".format(bypass_fraction * 100))
-    print("RO water recovery:     {:>5.2f} %".format(RO_water_recovery * 100))
-    print("System water recovery: {:>5.2f} %".format(System_water_recovery * 100))
-    print("NF inflow:             {:>5.2f} kg/s".format(NF_inflow))
-    print("-------------------------------------")
-    print()
-    print()
-    print()
-    print("-------------------------------------")
-    print("|     Maximize System Recovery      |")
-    print("-------------------------------------")
-    m2 = maximize_system_recovery(m, 0.70)
-    min_recycle_fraction, RO_water_recovery, System_water_recovery, NF_inflow, bypass_fraction = [
-        m2.fs.split.split_fraction[0, "recycle"].value,
-        m2.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'].value,
-        m2.fs.system_water_recovery.value,
-        m2.fs.NF.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].value,
-        m2.fs.bypass.split_fraction[0, "bypass"].value,
+        m.fs.split.split_fraction[0, "recycle"].value,
+        m.fs.RO.recovery_vol_phase[0, 'Liq'].value,
+        m.fs.system_water_recovery.value,
+        m.fs.NF.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].value,
+        m.fs.bypass.split_fraction[0, "bypass"].value,
     ]
     print("recycle fraction:      {:>5.2f} %".format(min_recycle_fraction * 100))
     print("bypassed fraction:     {:>5.2f} %".format(bypass_fraction * 100))
@@ -404,20 +311,8 @@ def main():
     m = build_flowsheet()
     set_dof(m)
     simulate(m)
-    # print_optimal_results(m)
-    min_recycle_fraction, RO_water_recovery, System_water_recovery, NF_inflow, bypass_fraction = [
-        m.fs.split.split_fraction[0, "recycle"].value,
-        m.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O'].value,
-        m.fs.system_water_recovery.value,
-        m.fs.NF.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].value,
-        m.fs.bypass.split_fraction[0, "bypass"].value,
-    ]
-    print("recycle fraction:      {:>5.2f} %".format(min_recycle_fraction * 100))
-    print("bypassed fraction:     {:>5.2f} %".format(bypass_fraction * 100))
-    print("RO water recovery:     {:>5.2f} %".format(RO_water_recovery * 100))
-    print("System water recovery: {:>5.2f} %".format(System_water_recovery * 100))
-    print("NF inflow:             {:>5.2f} kg/s".format(NF_inflow))
-    print("-------------------------------------")
+    print_results(m)
+
 
 if __name__ == "__main__":
     main()
