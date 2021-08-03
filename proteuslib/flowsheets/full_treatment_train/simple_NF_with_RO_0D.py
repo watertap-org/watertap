@@ -193,7 +193,7 @@ def build_flowsheet():
               / sum(
                          m.fs.bypass.inlet.flow_mass_phase_comp[0, 'Liq', j] for j in
                          m.fs.properties_NF.component_list))
-
+    #TODO: add SI var and constraints for CaSO4
     scaling_mass_frac = 0.002
 
     m.fs.eq_no_scaling = Constraint(expr=m.fs.post_mixer.outlet.flow_mass_phase_comp[0, 'Liq', 'CaSO4']
