@@ -283,7 +283,7 @@ def solve_flowsheet(m):
     check_solve(results, checkpoint="Simulation Solve", fail_flag=True)
 
 def optimize_flowsheet(m):
-    #TODO: add objective function
+    #TODO: add objective function for LCOW
 
     # [print(i) for i in fixed_variables_set(m)]
     # print(len(fixed_variables_set(m)))
