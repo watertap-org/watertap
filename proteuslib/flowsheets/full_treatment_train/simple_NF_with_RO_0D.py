@@ -316,7 +316,7 @@ def optimize_flowsheet(m):
 
 
     results = solver.solve(m, tee=False)
-    check_solve(results, checkpoint="Simulation Solve", fail_flag=True)
+    check_solve(results, checkpoint="Final optimization", fail_flag=True)
 
 def print_results(m):
     m.fs.RO.report()
@@ -336,10 +336,15 @@ def print_results(m):
 
 def main():
     m = build_flowsheet()
+
     set_dof(m)
+
     initialize_flowsheet(m)
+
     solve_flowsheet(m)
+
     optimize_flowsheet(m)
+
     print_results(m)
 
 
