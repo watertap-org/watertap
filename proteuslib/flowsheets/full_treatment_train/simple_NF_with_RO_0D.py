@@ -275,20 +275,7 @@ def initialize_flowsheet(m):
         value(m.fs.HP_pump.control_volume.properties_out[0].pressure)
 
     m.fs.RO.area.setub(100)
-    m.fs.RO.initialize(
-        # initialize_guess={'deltaP': 0,
-        #                   'solvent_recovery': 0.4,
-        #
-        #                   },
-        # state_args={'flow_mass_phase_comp':
-        #                 {('Liq', 'TDS'): m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'TDS'].value,
-        #                  ('Liq', 'H2O'): m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'].value
-        #                  },
-        #             'temperature': m.fs.RO.feed_side.properties_in[0].temperature.value,
-        #             'pressure': m.fs.RO.feed_side.properties_in[0].pressure.value
-        #             },
-        fail_on_warning=False,
-        ignore_dof=False)
+    m.fs.RO.initialize(fail_on_warning=False, ignore_dof=False)
 
 
 def solve_flowsheet(m):
