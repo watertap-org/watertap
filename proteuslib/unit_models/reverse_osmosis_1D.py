@@ -14,7 +14,6 @@
 
 # Import Pyomo libraries
 from pyomo.environ import (Var,
-                           Set,
                            Param,
                            Suffix,
                            NonNegativeReals,
@@ -23,9 +22,7 @@ from pyomo.environ import (Var,
                            exp,
                            value,
                            Constraint,
-                           Expression,
-                           Block,
-                           assert_optimal_termination)
+                           Block)
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
@@ -41,11 +38,10 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.initialization import solve_indexed_blocks
 from enum import Enum, auto
-
+from proteuslib.util.initialization import check_solve, check_dof
 import idaes.logger as idaeslog
 
 
@@ -53,6 +49,7 @@ __author__ = "Adam Atia"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
 
 class ConcentrationPolarizationType(Enum):
     none = auto()                    # no concentration polarization
@@ -273,21 +270,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
     def _process_config(self):
         #TODO: add config errors here:
-        for c in self.config.property_package.component_list:
-            comp = self.config.property_package.get_component(c)
-            try:
-                if comp.is_solvent():
-                    self.solvent_list.add(c)
-                if comp.is_solute():
-                    self.solute_list.add(c)
-            except TypeError:
-                raise ConfigurationError("RO model only supports one solvent and one or more solutes,"
-                                         "the provided property package has specified a component '{}' "
-                                         "that is not a solvent or solute".format(c))
-        if len(self.solvent_list) > 1:
+        if len(self.config.property_package.solvent_set) > 1:
             raise ConfigurationError("RO model only supports one solvent component,"
                                      "the provided property package has specified {} solvent components"
-                                     .format(len(self.solvent_list)))
+                                     .format(len(self.config.property_package.solvent_set)))
 
         if self.config.transformation_method is useDefault:
             _log.warning(
@@ -353,8 +339,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
-        self.solvent_list = Set()
-        self.solute_list = Set()
         self._process_config()
 
         # Build 1D Control volume for feed side
@@ -432,6 +416,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         """
         Generate expressions for additional results desired for full report
         """
+        solute_set = self.config.property_package.solute_set
+
         if self.config.has_full_reporting is False:
             pass
         else:
@@ -451,7 +437,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                                for x in self.feed_side.length_domain) / self.nfe
             if hasattr(self, 'Kf'):
                 @self.Expression(self.flowsheet().config.time,
-                                 self.solute_list,
+                                 solute_set,
                                  doc="Average mass transfer coefficient expression")
                 def Kf_avg(b, t, j):
                     return sum(b.Kf[t, x, j]
@@ -468,6 +454,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         Returns:
             None
         """
+        solvent_set = self.config.property_package.solvent_set
+        solute_set = self.config.property_package.solute_set
 
         # Units
         units_meta = \
@@ -482,7 +470,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         """ Unit model variables"""
         self.A_comp = Var(
             self.flowsheet().config.time,
-            self.solvent_list,
+            solvent_set,
             initialize=1e-12,
             bounds=(1e-18, 1e-6),
             domain=NonNegativeReals,
@@ -490,7 +478,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             doc="""Solvent permeability coeff.""")
         self.B_comp = Var(
             self.flowsheet().config.time,
-            self.solute_list,
+            solute_set,
             initialize=1e-8,
             bounds=(1e-11, 1e-5),
             domain=NonNegativeReals,
@@ -510,16 +498,16 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             doc='Volumetric recovery rate')
 
         def recovery_mass_phase_comp_initialize(b, t, p, j):
-            if j in self.solvent_list:
+            if j in solvent_set:
                 return 0.4037
-            elif j in self.solute_list:
+            elif j in solute_set:
                 return 0.0033
 
         def recovery_mass_phase_comp_bounds(b, t, p, j):
             ub = 1 - 1e-6
-            if j in self.solvent_list:
+            if j in solvent_set:
                 lb = 1e-2
-            elif j in self.solute_list:
+            elif j in solute_set:
                 lb = 1e-5
             return lb, ub
 
@@ -533,16 +521,16 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             doc='Mass-based component recovery')
 
         def flux_mass_phase_comp_initialize(b, t, x, p, j):
-            if j in self.solvent_list:
+            if j in solvent_set:
                 return 5e-4
-            elif j in self.solute_list:
+            elif j in solute_set:
                 return 1e-6
 
         def flux_mass_phase_comp_bounds(b, t, x, p, j):
-            if j in self.solvent_list:
+            if j in solvent_set:
                 ub = 3e-2
                 lb = 1e-4
-            elif j in self.solute_list:
+            elif j in solute_set:
                 ub = 1e-3
                 lb = 1e-8
             return lb, ub
@@ -601,7 +589,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             self.cp_modulus = Var(
                 self.flowsheet().config.time,
                 self.feed_side.length_domain,
-                self.solute_list,
+                solute_set,
                 initialize=1.1,
                 bounds=(0.9, 3),
                 domain=NonNegativeReals,
@@ -612,7 +600,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             self.Kf = Var(
                 self.flowsheet().config.time,
                 self.feed_side.length_domain,
-                self.solute_list,
+                solute_set,
                 initialize=5e-5,
                 bounds=(1e-6, 1e-3),
                 domain=NonNegativeReals,
@@ -790,7 +778,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         @self.feed_side.Constraint(self.flowsheet().config.time,
                                    self.feed_side.length_domain,
-                                   self.solute_list,
+                                   solute_set,
                                    doc="Concentration polarization")
         def eq_concentration_polarization(b, t, x, j):
             if x == self.feed_side.length_domain.first():
@@ -817,7 +805,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
             @self.Constraint(self.flowsheet().config.time,
                              self.feed_side.length_domain,
-                             self.solute_list,
+                             solute_set,
                              doc="Mass transfer coefficient in feed channel")
             def eq_Kf(b, t, x, j):
                 if x == self.feed_side.length_domain.first():
@@ -999,7 +987,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                    permeate_block_args=None,
                    outlvl=idaeslog.NOTSET,
                    solver=None,
-                   optarg=None):
+                   optarg=None,
+                   fail_on_warning=False,
+                   ignore_dof=False):
         """
         Initialization routine for 1D-RO unit.
 
@@ -1020,9 +1010,11 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
             optarg : solver options dictionary object (default=None, use default solver options)
-
+            fail_on_warning : boolean argument to fail or only produce  warning upon unsuccessful solve (default=False)
+            ignore_dof : boolean argument to ignore when DOF != 0 (default=False)
         Returns:
             None
+
         """
 
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
@@ -1056,23 +1048,20 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             state_args=permeate_block_args)
         init_log.info('Permeate outlet initialization complete. Initialize permeate outlet. ')
 
-        if degrees_of_freedom(blk) != 0:
-            raise Exception(f"Initialization was called on {blk} "
-                            f"but it had {degrees_of_freedom(blk)} degree(s) of freedom "
-                            f"when 0 was expected. Check that the appropriate variables are fixed.")
+        if not ignore_dof:
+           check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
         # ---------------------------------------------------------------------
         # Step 2: Solve unit
-        init_log.info('Initialization Step 1 Complete: all state blocks initialized.\n'
+        init_log.info('Initialization Step 1 complete: all state blocks initialized.'
                       'Starting Initialization Step 2: solve indexed blocks.')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-            assert_optimal_termination(results)
-        init_log.info('Initialization Step 2 Complete: solve indexed blocks successful.\n'
-                      'Starting Initialization Step 3: perform final solve.')
+        check_solve(results, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 2: solve indexed blocks')
+        init_log.info('Starting Initialization Step 3: perform final solve.')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-            assert_optimal_termination(res)
-        init_log.info('Initialization Step 3: final solve successful.')
+        check_solve(res, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 3: final solve')
+
 
     def _get_performance_contents(self, time_point=0):
         x_in = self.feed_side.length_domain.first()
@@ -1189,9 +1178,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             iscale.set_scaling_factor(self.recovery_vol_phase, 1)
 
         for (t, p, j), v in self.recovery_mass_phase_comp.items():
-            if j in self.solvent_list:
+            if j in self.config.property_package.solvent_set:
                 sf = 1
-            elif j in self.solute_list:
+            elif j in self.config.property_package.solute_set:
                 sf = 100
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)

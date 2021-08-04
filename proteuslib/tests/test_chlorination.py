@@ -60,7 +60,7 @@ from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rx
 # Import safe log power law equation
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
 
-# Import k-value functions 
+# Import k-value functions
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
     gibbs_energy,
     van_t_hoff)
@@ -103,6 +103,8 @@ from idaes.core import FlowsheetBlock
 
 # Import log10 function from pyomo
 from pyomo.environ import log10
+
+import idaes.logger as idaeslog
 
 __author__ = "Austin Ladshaw"
 
@@ -699,9 +701,14 @@ class TestChlorination():
         model = chlorination_obj
         eps = 1e-20
 
-        # Inherent reactions have eps in the 'thermo_params'
+        # Iterate through the reactions to set appropriate eps values
         for rid in model.fs.thermo_params.inherent_reaction_idx:
-            model.fs.thermo_params.component("reaction_"+rid).eps.value = eps
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
+            # Want to set eps in some fashion similar to this
+            if scale < 1e-16:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*1e-2
+            else:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
 
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
@@ -753,8 +760,7 @@ class TestChlorination():
 
         solver.options['bound_push'] = 1e-20
         solver.options['mu_init'] = 1e-6
-        solver.options['max_iter'] = 250
-        model.fs.unit.initialize(optarg=solver.options)
+        model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
         fin_fixed_vars = fixed_variables_set(model)
         fin_act_consts = activated_constraints_set(model)
