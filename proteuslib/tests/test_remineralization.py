@@ -696,17 +696,9 @@ class TestRemineralization():
     def test_scaling_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
 
-        '''#Custom eps factors for reaction constraints
-        eps = 1e-20
-        model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
-        model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
-        model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
-        model.fs.thermo_params.reaction_CO2_to_H2CO3.eps.value = eps
-
-        #Add scaling factors for reaction extent
-        for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
-            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)'''
+        # NOTE: The constraints and variables associated with the 'apparent' species
+        #       is messing very badly with the convergence of this problem. So much so
+        #       that convergence is much better if I DO NOT apply custom scaling.
 
         # Iterate through the reactions to set appropriate eps values
         '''factor = 1e-4
@@ -749,7 +741,6 @@ class TestRemineralization():
 
         assert hasattr(model.fs.unit.control_volume.properties_in[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
-        assert degrees_of_freedom(model) == 1
 
     @pytest.mark.component
     def test_initialize_solver_appr_equ(self, remineralization_appr_equ):
@@ -757,7 +748,7 @@ class TestRemineralization():
         solver.options['bound_push'] = 1e-20
         solver.options['mu_init'] = 1e-6
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        assert degrees_of_freedom(model) == 1
+        assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
     def test_solve_appr_equ(self, remineralization_appr_equ):
@@ -768,7 +759,6 @@ class TestRemineralization():
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
-        assert degrees_of_freedom(model) == 1
 
     @pytest.mark.component
     def test_solution_appr_equ(self, remineralization_appr_equ):
