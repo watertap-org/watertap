@@ -397,13 +397,14 @@ class TestPureWater():
         model = inherent_reactions_config
 
         # Iterate through the reactions to set appropriate eps values
+        factor = 1e-4
         for rid in model.fs.thermo_params.inherent_reaction_idx:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
             # Want to set eps in some fashion similar to this
             if scale < 1e-16:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*1e-2
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*factor
             else:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
 
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
@@ -412,7 +413,7 @@ class TestPureWater():
                     inherent_equilibrium_constraint[i[1]], 0.1)
 
         # Next, try adding scaling for species
-        min = 1e-10
+        min = 1e-6
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
             if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
@@ -439,13 +440,14 @@ class TestPureWater():
         model = equilibrium_reactions_config
 
         # Equilibiurm reactions have eps in the 'rxn_params'
+        factor = 1e-4
         for rid in model.fs.rxn_params.equilibrium_reaction_idx:
             scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
             # Want to set eps in some fashion similar to this
             if scale < 1e-16:
-                model.fs.rxn_params.component("reaction_"+rid).eps.value = scale*1e-2
+                model.fs.rxn_params.component("reaction_"+rid).eps.value = scale*factor
             else:
-                model.fs.rxn_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
+                model.fs.rxn_params.component("reaction_"+rid).eps.value = 1e-16*factor
 
         for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
@@ -454,7 +456,7 @@ class TestPureWater():
                     equilibrium_constraint[i[1]], 0.1)
 
         # Next, try adding scaling for species
-        min = 1e-10
+        min = 1e-6
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
             if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
