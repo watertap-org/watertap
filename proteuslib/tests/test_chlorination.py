@@ -450,9 +450,6 @@ thermo_config = {
                    "equilibrium_form": log_power_law_equil,
                    "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
-                       #"dh_rxn_ref": (52.21, pyunits.kJ/pyunits.mol),
-                       #"ds_rxn_ref": (-2.4, pyunits.J/pyunits.mol/pyunits.K),
-                       #"T_eq_ref": (300, pyunits.K),
                        "dh_rxn_ref": (52.21, pyunits.J/pyunits.mol),
                        "k_eq_ref": (10**-9.2767/55.2, pyunits.dimensionless),
                        "T_eq_ref": (298, pyunits.K),
@@ -475,9 +472,6 @@ thermo_config = {
                    "equilibrium_form": log_power_law_equil,
                    "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
-                       #"dh_rxn_ref": (13.8, pyunits.kJ/pyunits.mol),
-                       #"ds_rxn_ref": (-100, pyunits.J/pyunits.mol/pyunits.K),
-                       #"T_eq_ref": (300, pyunits.K),
                        "dh_rxn_ref": (13.8, pyunits.J/pyunits.mol),
                        "k_eq_ref": (10**-7.6422/55.2, pyunits.dimensionless),
                        "T_eq_ref": (298, pyunits.K),
@@ -496,6 +490,9 @@ thermo_config = {
     }
     # End thermo_config definition
 
+# NOTE: These reactions are (usually) complete reactions, thus, it may be
+#       better to model them as "stoichiometric" reactions for better
+#       convergence behavior of the non-linear system
 # Define the reaction_config for water dissociation
 reaction_config = {
     "base_units": {"time": pyunits.s,
@@ -514,9 +511,6 @@ reaction_config = {
                "equilibrium_form": log_power_law_equil,
                "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
-                   #"dh_rxn_ref": (0, pyunits.J/pyunits.mol),
-                   #"k_eq_ref": (10**11.4,pyunits.L/pyunits.mol),
-                   #"T_eq_ref": (300, pyunits.K),
                    "dh_rxn_ref": (0, pyunits.J/pyunits.mol),
                    "k_eq_ref": (10**-11.4/55.2, pyunits.dimensionless),
                    "T_eq_ref": (298, pyunits.K),
@@ -541,9 +535,6 @@ reaction_config = {
                "equilibrium_form": log_power_law_equil,
                "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
-                   #"dh_rxn_ref": (0, pyunits.J/pyunits.mol),
-                   #"k_eq_ref": (10**10.7,pyunits.L/pyunits.mol),
-                   #"T_eq_ref": (300, pyunits.K),
                    "dh_rxn_ref": (0, pyunits.J/pyunits.mol),
                    "k_eq_ref": (10**-10.7/55.2*10**-11.4/55.2, pyunits.dimensionless),
                    "T_eq_ref": (298, pyunits.K),
@@ -559,26 +550,23 @@ reaction_config = {
                },
                # End R2
         "NCl3_K": {
-                "stoichiometry": {("Liq", "NH3"): 1,
-                                 ("Liq", "HOCl"): 3,
+                "stoichiometry": {("Liq", "NHCl2"): 1,
+                                 ("Liq", "HOCl"): 1,
                                  ("Liq", "NCl3"): -1,
-                                 ("Liq", "H2O"): -3},
+                                 ("Liq", "H2O"): -1},
                "heat_of_reaction": constant_dh_rxn,
                "equilibrium_constant": van_t_hoff,
                "equilibrium_form": log_power_law_equil,
                "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
-                   #"dh_rxn_ref": (0, pyunits.J/pyunits.mol),
-                   #"k_eq_ref": (10**8.7,pyunits.L/pyunits.mol),
-                   #"T_eq_ref": (300, pyunits.K),
                    "dh_rxn_ref": (0, pyunits.J/pyunits.mol),
-                   "k_eq_ref": (10**-8.7/55.2*10**-10.7/55.2*10**-11.4/55.2, pyunits.dimensionless),
+                   "k_eq_ref": (10**-8.7/55.2, pyunits.dimensionless),
                    "T_eq_ref": (298, pyunits.K),
 
                    # By default, reaction orders follow stoichiometry
                    #    manually set reaction order here to override
-                   "reaction_order": {("Liq", "NH3"): 1,
-                                    ("Liq", "HOCl"): 3,
+                   "reaction_order": {("Liq", "NHCl2"): 1,
+                                    ("Liq", "HOCl"): 1,
                                     ("Liq", "NCl3"): -1,
                                     ("Liq", "H2O"): 0}
                     }
@@ -616,7 +604,7 @@ class TestChlorination():
         model.fs.unit.inlet.mole_frac_comp[0, "OCl_-"].fix( 0. )
         model.fs.unit.inlet.mole_frac_comp[0, "NH4_+"].fix( 0. )
 
-        zero = 1e-20
+        zero = 1e-10
         model.fs.unit.inlet.mole_frac_comp[0, "NH2Cl"].fix( zero )
         model.fs.unit.inlet.mole_frac_comp[0, "NHCl2"].fix( zero )
         model.fs.unit.inlet.mole_frac_comp[0, "NCl3"].fix( zero )
@@ -702,7 +690,7 @@ class TestChlorination():
         model = chlorination_obj
         assert (number_variables(model) == 292)
         assert (number_total_constraints(model) == 87)
-        assert (number_unused_variables(model) == 60)
+        assert (number_unused_variables(model) == 57)
 
     @pytest.mark.unit
     def test_custom_log_power_law_eps_options(self, chlorination_obj):
@@ -782,7 +770,7 @@ class TestChlorination():
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
-        solver.options['bound_push'] = 1e-20
+        solver.options['bound_push'] = 1e-10
         solver.options['mu_init'] = 1e-6
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
@@ -817,8 +805,8 @@ class TestChlorination():
 
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-        assert pytest.approx(6.04135, rel=1e-5) == pH
-        assert pytest.approx(7.89455, rel=1e-5) == pOH
+        assert pytest.approx(6.0496754, rel=1e-5) == pH
+        assert pytest.approx(7.950195, rel=1e-5) == pOH
 
         hypo_remaining = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"])/1000
         hypo_remaining += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"])/1000
@@ -827,5 +815,5 @@ class TestChlorination():
         combined_chlorine += 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","NHCl2"])/1000
         combined_chlorine += 3*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","NCl3"])/1000
 
-        assert pytest.approx(2.50683, rel=1e-5) == hypo_remaining*70900
-        assert pytest.approx(12.6038, rel=1e-5) == combined_chlorine*70900
+        assert pytest.approx(2.5056588, rel=1e-5) == hypo_remaining*70900
+        assert pytest.approx(12.607332, rel=1e-5) == combined_chlorine*70900
