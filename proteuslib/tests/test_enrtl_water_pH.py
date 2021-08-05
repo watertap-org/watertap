@@ -86,6 +86,8 @@ from idaes.core import FlowsheetBlock
 # Import log10 function from pyomo
 from pyomo.environ import log10
 
+import idaes.logger as idaeslog
+
 __author__ = "Austin Ladshaw"
 
 # Configuration dictionary
@@ -325,14 +327,35 @@ class TestENRTLwater():
     def test_scaling_water(self, water_model):
         model = water_model
 
-        #Custom eps factors for reaction constraints
-        eps = 1e-20
-        model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
+        # Iterate through the reactions to set appropriate eps values
+        for rid in model.fs.thermo_params.inherent_reaction_idx:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
+            # Want to set eps in some fashion similar to this
+            if scale < 1e-16:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*1e-2
+            else:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
 
-        #Add scaling factors for reaction extent
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
             iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.properties_out[0.0].
+                    inherent_equilibrium_constraint[i[1]], 0.1)
+
+        # Next, try adding scaling for species
+        min = 1e-6
+        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+            # i[0] = phase, i[1] = species
+            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
+                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
+            else:
+                scale = min
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+            iscale.constraint_scaling_transform(
+                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
         iscale.calculate_scaling_factors(model.fs.unit)
 
@@ -769,15 +792,35 @@ class TestENRTLcarbonicAcid():
     def test_scaling_carbonic_acid(self, carbonic_acid_model):
         model = carbonic_acid_model
 
-        eps = 1e-20
-        model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
-        model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
-        model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
+        # Iterate through the reactions to set appropriate eps values
+        for rid in model.fs.thermo_params.inherent_reaction_idx:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
+            # Want to set eps in some fashion similar to this
+            if scale < 1e-16:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*1e-2
+            else:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
 
-        #Add scaling factors for reaction extent
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
             iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.properties_out[0.0].
+                    inherent_equilibrium_constraint[i[1]], 0.1)
+
+        # Next, try adding scaling for species
+        min = 1e-6
+        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+            # i[0] = phase, i[1] = species
+            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
+                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
+            else:
+                scale = min
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+            iscale.constraint_scaling_transform(
+                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
         iscale.calculate_scaling_factors(model.fs.unit)
 
@@ -795,8 +838,8 @@ class TestENRTLcarbonicAcid():
         model = carbonic_acid_model
         solver.options['bound_push'] = 1e-20
         solver.options['mu_init'] = 1e-6
-        solver.options['max_iter'] = 100
-        model.fs.unit.initialize(optarg=solver.options)
+        solver.options['max_iter'] = 1000
+        model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
