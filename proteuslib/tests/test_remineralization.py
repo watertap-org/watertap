@@ -151,10 +151,10 @@ thermo_config = {
                     "pressure_crit": (73.825E5, pyunits.Pa),
                     "temperature_crit": (304.23, pyunits.K),
                     "dens_mol_liq_comp_coeff": {
-                        '1': (2.768, pyunits.kmol*pyunits.m**-3),
-                        '2': (0.26212, None),
-                        '3': (304.21, pyunits.K),
-                        '4': (0.2908, None)},
+                        '1': (0.000789, pyunits.kmol * pyunits.m ** -3),
+                        '2': (0.000956, pyunits.dimensionless),
+                        '3': (500.78, pyunits.K),
+                        '4': (0.94599, pyunits.dimensionless)},
                     "cp_mol_ig_comp_coeff": {
                        'A': (24.99735, pyunits.J/pyunits.mol/pyunits.K),
                        'B': (55.18696, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-1),
@@ -451,7 +451,7 @@ thermo_config = {
 
         "state_definition": FTPx,
         "state_bounds": {"flow_mol": (0, 50, 100),
-                         "temperature": (273.15, 300, 650),
+                         "temperature": (273.15, 300, 500),
                          "pressure": (5e4, 1e5, 1e6)
                      },
         "state_components": StateIndex.true,
@@ -471,13 +471,13 @@ thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "OH_-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": gibbs_energy,
+                   "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.molarity,
+                   "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
-                       "dh_rxn_ref": (55.830, pyunits.kJ/pyunits.mol),
-                       "ds_rxn_ref": (-80.7, pyunits.J/pyunits.mol/pyunits.K),
-                       "T_eq_ref": (300, pyunits.K),
+                       "dh_rxn_ref": (55.830, pyunits.J/pyunits.mol),
+                       "k_eq_ref": (10**-14/55.2/55.2, pyunits.dimensionless),
+                       "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
                        #    manually set reaction order here to override
@@ -493,13 +493,13 @@ thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "HCO3_-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": gibbs_energy,
+                   "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.molarity,
+                   "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
                        "dh_rxn_ref": (7.7, pyunits.kJ/pyunits.mol),
-                       "ds_rxn_ref": (-95.8, pyunits.J/pyunits.mol/pyunits.K),
-                       "T_eq_ref": (300, pyunits.K),
+                       "k_eq_ref": (10**-6.35/55.2, pyunits.dimensionless),
+                       "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
                        #    manually set reaction order here to override
@@ -515,13 +515,13 @@ thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "CO3_2-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": gibbs_energy,
+                   "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.molarity,
+                   "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
                        "dh_rxn_ref": (14.9, pyunits.kJ/pyunits.mol),
-                       "ds_rxn_ref": (-148.1, pyunits.J/pyunits.mol/pyunits.K),
-                       "T_eq_ref": (300, pyunits.K),
+                       "k_eq_ref": (10**-10.33/55.2, pyunits.dimensionless),
+                       "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
                        #    manually set reaction order here to override
@@ -539,11 +539,11 @@ thermo_config = {
                    "heat_of_reaction": constant_dh_rxn,
                    "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.molarity,
+                   "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
-                       "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                       "k_eq_ref": (1.7*10**-3,None),
-                       "T_eq_ref": (300, pyunits.K),
+                       "dh_rxn_ref": (0, pyunits.kJ / pyunits.mol),
+                       "k_eq_ref": (1.7*10**-3, pyunits.dimensionless),
+                       "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
                        #    manually set reaction order here to override
@@ -696,7 +696,7 @@ class TestRemineralization():
     def test_scaling_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
 
-        #Custom eps factors for reaction constraints
+        '''#Custom eps factors for reaction constraints
         eps = 1e-20
         model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
         model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
@@ -706,7 +706,38 @@ class TestRemineralization():
         #Add scaling factors for reaction extent
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)'''
+
+        # Iterate through the reactions to set appropriate eps values
+        factor = 1e-4
+        for rid in model.fs.thermo_params.inherent_reaction_idx:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
+            # Want to set eps in some fashion similar to this
+            if scale < 1e-16:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*factor
+            else:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
+
+        for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
             iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.properties_out[0.0].
+                    inherent_equilibrium_constraint[i[1]], 0.1)
+
+        # Next, try adding scaling for species
+        min = 1e-4
+        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+            # i[0] = phase, i[1] = species
+            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
+                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
+            else:
+                scale = min
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+            iscale.constraint_scaling_transform(
+                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
         iscale.calculate_scaling_factors(model.fs.unit)
 
@@ -718,24 +749,26 @@ class TestRemineralization():
 
         assert hasattr(model.fs.unit.control_volume.properties_in[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
+        assert degrees_of_freedom(model) == 1
 
     @pytest.mark.component
     def test_initialize_solver_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
         solver.options['bound_push'] = 1e-20
         solver.options['mu_init'] = 1e-6
-        model.fs.unit.initialize(optarg=solver.options)
-        assert degrees_of_freedom(model) == 0
+        model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+        assert degrees_of_freedom(model) == 1
 
     @pytest.mark.component
     def test_solve_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
         solver.options['bound_push'] = 1e-20
         solver.options['mu_init'] = 1e-6
-        results = solver.solve(model)
+        results = solver.solve(model, tee=True)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
+        assert degrees_of_freedom(model) == 1
 
     @pytest.mark.component
     def test_solution_appr_equ(self, remineralization_appr_equ):
@@ -855,10 +888,10 @@ thermo_config_cstr = {
                     "pressure_crit": (73.825E5, pyunits.Pa),
                     "temperature_crit": (304.23, pyunits.K),
                     "dens_mol_liq_comp_coeff": {
-                        '1': (2.768, pyunits.kmol*pyunits.m**-3),
-                        '2': (0.26212, None),
-                        '3': (304.21, pyunits.K),
-                        '4': (0.2908, None)},
+                        '1': (0.000789, pyunits.kmol * pyunits.m ** -3),
+                        '2': (0.000956, pyunits.dimensionless),
+                        '3': (500.78, pyunits.K),
+                        '4': (0.94599, pyunits.dimensionless)},
                     "cp_mol_ig_comp_coeff": {
                        'A': (24.99735, pyunits.J/pyunits.mol/pyunits.K),
                        'B': (55.18696, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-1),
@@ -1125,7 +1158,7 @@ thermo_config_cstr = {
 
         "state_definition": FTPx,
         "state_bounds": {"flow_mol": (0, 50, 100),
-                         "temperature": (273.15, 300, 650),
+                         "temperature": (273.15, 300, 500),
                          "pressure": (5e4, 1e5, 1e6)
                      },
 
