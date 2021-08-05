@@ -604,10 +604,9 @@ class TestChlorination():
         model.fs.unit.inlet.mole_frac_comp[0, "OCl_-"].fix( 0. )
         model.fs.unit.inlet.mole_frac_comp[0, "NH4_+"].fix( 0. )
 
-        zero = 0
-        model.fs.unit.inlet.mole_frac_comp[0, "NH2Cl"].fix( zero )
-        model.fs.unit.inlet.mole_frac_comp[0, "NHCl2"].fix( zero )
-        model.fs.unit.inlet.mole_frac_comp[0, "NCl3"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "NH2Cl"].fix( 0. )
+        model.fs.unit.inlet.mole_frac_comp[0, "NHCl2"].fix( 0. )
+        model.fs.unit.inlet.mole_frac_comp[0, "NCl3"].fix( 0. )
 
         waste_stream_ammonia = 1 #mg/L
         total_molar_density = 54.8 #mol/L
@@ -805,8 +804,8 @@ class TestChlorination():
 
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-        assert pytest.approx(6.0496754, rel=1e-5) == pH
-        assert pytest.approx(7.950195, rel=1e-5) == pOH
+        assert pytest.approx(6.049675, rel=1e-4) == pH
+        assert pytest.approx(7.950195, rel=1e-4) == pOH
 
         hypo_remaining = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"])/1000
         hypo_remaining += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"])/1000
