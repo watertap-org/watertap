@@ -503,7 +503,7 @@ reaction_config = {
     "equilibrium_reactions": {
         "NH2Cl_K": {
                 "stoichiometry": {("Liq", "NH3"): 1,
-                                 ("Liq", "HOCl"): 1,
+                                 ("Liq", "HOCl"): 3,
                                  ("Liq", "NH2Cl"): -1,
                                  ("Liq", "H2O"): -1},
                "heat_of_reaction": constant_dh_rxn,
@@ -525,54 +525,6 @@ reaction_config = {
                     # End parameter_data
                },
                # End R1
-        "NHCl2_K": {
-                "stoichiometry": {("Liq", "NH3"): 1,
-                                 ("Liq", "HOCl"): 2,
-                                 ("Liq", "NHCl2"): -1,
-                                 ("Liq", "H2O"): -2},
-               "heat_of_reaction": constant_dh_rxn,
-               "equilibrium_constant": van_t_hoff,
-               "equilibrium_form": log_power_law_equil,
-               "concentration_form": ConcentrationForm.moleFraction,
-               "parameter_data": {
-                   "dh_rxn_ref": (0, pyunits.J/pyunits.mol),
-                   "k_eq_ref": (10**-10.7/55.2*10**-11.4/55.2, pyunits.dimensionless),
-                   "T_eq_ref": (298, pyunits.K),
-
-                   # By default, reaction orders follow stoichiometry
-                   #    manually set reaction order here to override
-                   "reaction_order": {("Liq", "NH3"): 1,
-                                    ("Liq", "HOCl"): 2,
-                                    ("Liq", "NHCl2"): -1,
-                                    ("Liq", "H2O"): 0}
-                    }
-                    # End parameter_data
-               },
-               # End R2
-        "NCl3_K": {
-                "stoichiometry": {("Liq", "NHCl2"): 1,
-                                 ("Liq", "HOCl"): 1,
-                                 ("Liq", "NCl3"): -1,
-                                 ("Liq", "H2O"): -1},
-               "heat_of_reaction": constant_dh_rxn,
-               "equilibrium_constant": van_t_hoff,
-               "equilibrium_form": log_power_law_equil,
-               "concentration_form": ConcentrationForm.moleFraction,
-               "parameter_data": {
-                   "dh_rxn_ref": (0, pyunits.J/pyunits.mol),
-                   "k_eq_ref": (10**-8.7/55.2, pyunits.dimensionless),
-                   "T_eq_ref": (298, pyunits.K),
-
-                   # By default, reaction orders follow stoichiometry
-                   #    manually set reaction order here to override
-                   "reaction_order": {("Liq", "NHCl2"): 1,
-                                    ("Liq", "HOCl"): 1,
-                                    ("Liq", "NCl3"): -1,
-                                    ("Liq", "H2O"): 0}
-                    }
-                    # End parameter_data
-               }
-               # End R3
          }
          # End equilibrium_reactions
     }
