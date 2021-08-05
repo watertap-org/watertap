@@ -13,8 +13,6 @@
 
 import pytest
 from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
                            value,
                            Param,
                            Var,
@@ -38,15 +36,12 @@ from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
-                                              number_unused_variables,
-                                              variables_set)
+                                              number_unused_variables)
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_variables_generator,
                                      unscaled_constraints_generator,
-                                     badly_scaled_var_generator,
-                                     get_scaling_factor,
-                                     set_scaling_factor)
+                                     badly_scaled_var_generator)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
