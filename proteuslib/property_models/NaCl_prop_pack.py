@@ -291,13 +291,15 @@ class _NaClStateBlock(StateBlock):
     def calculate_state(self, var_args=None, hold_state=False, outlvl=idaeslog.NOTSET,
                         solver=None, optarg=None):
         """
-        Solves state blocks given a set of variables and their values. Typically
-        used before initialization to solve for state variables because non-state variables
+        Solves state blocks given a set of variables and their values. These variables can
+        be state variables or properties. This method is typically used before
+        initialization to solve for state variables because non-state variables (i.e. properties)
         cannot be fixed in initialization routines.
 
         Keyword Arguments:
-            var_args : dictionary with variables and their values {(VAR_NAME, INDEX): VALUE}
-            hold_state : flag indicating whether the state variable should be fixed after calculate state.
+            var_args : dictionary with variables and their values, they can be state variables or properties
+                       {(VAR_NAME, INDEX): VALUE}
+            hold_state : flag indicating whether all of the state variables should be fixed after calculate state.
                          True - State variables will be fixed.
                          False - State variables will remain unfixed, unless already fixed.
             outlvl : idaes logger object that sets output level of solve call (default=idaeslog.NOTSET)
