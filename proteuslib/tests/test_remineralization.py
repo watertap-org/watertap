@@ -356,86 +356,7 @@ thermo_config = {
                                 },
                     # End parameter_data
                     },
-        'NaHCO3': {  "type": Apparent,  "valid_phase_types": PT.aqueousPhase,
-                    "dissociation_species": {"Na_+":1, "HCO3_-":1},
-                    # Define the methods used to calculate the following properties
-                    "dens_mol_liq_comp": Constant,
-                    "enth_mol_liq_comp": Constant,
-                    "cp_mol_liq_comp": Constant,
-                    "entr_mol_liq_comp": Constant,
-                    # Parameter data is always associated with the methods defined above
-                    "parameter_data": {
-                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
-                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
-                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
-                            },
-                    # End parameter_data
-                    },
-        'Ca(OH)2': {  "type": Apparent,  "valid_phase_types": PT.aqueousPhase,
-                    "dissociation_species": {"Ca_2+":1, "OH_-":2},
-                    # Define the methods used to calculate the following properties
-                    "dens_mol_liq_comp": Constant,
-                    "enth_mol_liq_comp": Constant,
-                    "cp_mol_liq_comp": Constant,
-                    "entr_mol_liq_comp": Constant,
-                    # Parameter data is always associated with the methods defined above
-                    "parameter_data": {
-                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
-                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
-                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
-                            },
-                    # End parameter_data
-                    },
-        'NaOH': {  "type": Apparent,  "valid_phase_types": PT.aqueousPhase,
-                    "dissociation_species": {"Na_+":1, "OH_-":1},
-                    # Define the methods used to calculate the following properties
-                    "dens_mol_liq_comp": Constant,
-                    "enth_mol_liq_comp": Constant,
-                    "cp_mol_liq_comp": Constant,
-                    "entr_mol_liq_comp": Constant,
-                    # Parameter data is always associated with the methods defined above
-                    "parameter_data": {
-                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
-                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
-                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
-                            },
-                    # End parameter_data
-                    },
-        'CaCO3': {  "type": Apparent,  "valid_phase_types": PT.aqueousPhase,
-                    "dissociation_species": {"Ca_2+":1, "CO3_2-":1},
-                    # Define the methods used to calculate the following properties
-                    "dens_mol_liq_comp": Constant,
-                    "enth_mol_liq_comp": Constant,
-                    "cp_mol_liq_comp": Constant,
-                    "entr_mol_liq_comp": Constant,
-                    # Parameter data is always associated with the methods defined above
-                    "parameter_data": {
-                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
-                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
-                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
-                            },
-                    # End parameter_data
-                    },
-        'Ca(HCO3)2': {  "type": Apparent,  "valid_phase_types": PT.aqueousPhase,
-                    "dissociation_species": {"Ca_2+":1, "HCO3_-":2},
-                    # Define the methods used to calculate the following properties
-                    "dens_mol_liq_comp": Constant,
-                    "enth_mol_liq_comp": Constant,
-                    "cp_mol_liq_comp": Constant,
-                    "entr_mol_liq_comp": Constant,
-                    # Parameter data is always associated with the methods defined above
-                    "parameter_data": {
-                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
-                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
-                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
-                            },
-                    # End parameter_data
-                    },
+
               },
               # End Component list
 
@@ -454,7 +375,7 @@ thermo_config = {
                          "temperature": (273.15, 300, 500),
                          "pressure": (5e4, 1e5, 1e6)
                      },
-        "state_components": StateIndex.true,
+        #"state_components": StateIndex.true,
 
         "pressure_ref": 1e5,
         "temperature_ref": 300,
@@ -636,7 +557,7 @@ class TestRemineralization():
         model = remineralization_appr_equ
 
         assert hasattr(model.fs.thermo_params, 'component_list')
-        assert len(model.fs.thermo_params.component_list) == 14
+        #assert len(model.fs.thermo_params.component_list) == 14
         assert 'H2O' in model.fs.thermo_params.component_list
         assert isinstance(model.fs.thermo_params.H2O, Solvent)
         assert 'H_+' in model.fs.thermo_params.component_list
@@ -662,7 +583,7 @@ class TestRemineralization():
         assert 'CO3_2-' in model.fs.thermo_params.component_list
         assert isinstance(model.fs.thermo_params.component('CO3_2-'), Anion)
 
-        assert 'NaHCO3' in model.fs.thermo_params.component_list
+        '''assert 'NaHCO3' in model.fs.thermo_params.component_list
         assert isinstance(model.fs.thermo_params.component('NaHCO3'), Apparent)
 
         assert 'Ca(OH)2' in model.fs.thermo_params.component_list
@@ -675,7 +596,7 @@ class TestRemineralization():
         assert isinstance(model.fs.thermo_params.component('CaCO3'), Apparent)
 
         assert 'Ca(HCO3)2' in model.fs.thermo_params.component_list
-        assert isinstance(model.fs.thermo_params.component('Ca(HCO3)2'), Apparent)
+        assert isinstance(model.fs.thermo_params.component('Ca(HCO3)2'), Apparent)'''
 
         assert hasattr(model.fs.thermo_params, 'phase_list')
         assert len(model.fs.thermo_params.phase_list) == 2
@@ -717,7 +638,7 @@ class TestRemineralization():
                     inherent_equilibrium_constraint[i[1]], 0.1)
 
         # Next, try adding scaling for species
-        min = 1e-4
+        min = 1e-6
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             #print(i[1]) # apparent species not being scaled here...
             # i[0] = phase, i[1] = species
