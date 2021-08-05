@@ -14,7 +14,6 @@
 
 # Import Pyomo libraries
 from pyomo.environ import (Var,
-                           Set,
                            Param,
                            Suffix,
                            NonNegativeReals,
@@ -23,9 +22,7 @@ from pyomo.environ import (Var,
                            exp,
                            value,
                            Constraint,
-                           Expression,
-                           Block,
-                           assert_optimal_termination)
+                           Block)
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
@@ -41,11 +38,10 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.initialization import solve_indexed_blocks
 from enum import Enum, auto
-
+from proteuslib.util.initialization import check_solve, check_dof
 import idaes.logger as idaeslog
 
 
@@ -53,6 +49,7 @@ __author__ = "Adam Atia"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
 
 class ConcentrationPolarizationType(Enum):
     none = auto()                    # no concentration polarization
@@ -990,7 +987,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                    permeate_block_args=None,
                    outlvl=idaeslog.NOTSET,
                    solver=None,
-                   optarg=None):
+                   optarg=None,
+                   fail_on_warning=False,
+                   ignore_dof=False):
         """
         Initialization routine for 1D-RO unit.
 
@@ -1011,9 +1010,11 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
             optarg : solver options dictionary object (default=None, use default solver options)
-
+            fail_on_warning : boolean argument to fail or only produce  warning upon unsuccessful solve (default=False)
+            ignore_dof : boolean argument to ignore when DOF != 0 (default=False)
         Returns:
             None
+
         """
 
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
@@ -1047,23 +1048,20 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             state_args=permeate_block_args)
         init_log.info('Permeate outlet initialization complete. Initialize permeate outlet. ')
 
-        if degrees_of_freedom(blk) != 0:
-            raise Exception(f"Initialization was called on {blk} "
-                            f"but it had {degrees_of_freedom(blk)} degree(s) of freedom "
-                            f"when 0 was expected. Check that the appropriate variables are fixed.")
+        if not ignore_dof:
+           check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
         # ---------------------------------------------------------------------
         # Step 2: Solve unit
-        init_log.info('Initialization Step 1 Complete: all state blocks initialized.\n'
+        init_log.info('Initialization Step 1 complete: all state blocks initialized.'
                       'Starting Initialization Step 2: solve indexed blocks.')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-            assert_optimal_termination(results)
-        init_log.info('Initialization Step 2 Complete: solve indexed blocks successful.\n'
-                      'Starting Initialization Step 3: perform final solve.')
+        check_solve(results, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 2: solve indexed blocks')
+        init_log.info('Starting Initialization Step 3: perform final solve.')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-            assert_optimal_termination(res)
-        init_log.info('Initialization Step 3: final solve successful.')
+        check_solve(res, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 3: final solve')
+
 
     def _get_performance_contents(self, time_point=0):
         x_in = self.feed_side.length_domain.first()
