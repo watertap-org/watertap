@@ -622,7 +622,7 @@ class TestRemineralization():
         #       that convergence is much better if I DO NOT apply custom scaling.
 
         # Iterate through the reactions to set appropriate eps values
-        factor = 1e-4
+        '''factor = 1e-4
         for rid in model.fs.thermo_params.inherent_reaction_idx:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
             # Want to set eps in some fashion similar to this
@@ -651,7 +651,7 @@ class TestRemineralization():
             iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
             iscale.constraint_scaling_transform(
                 model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)'''
 
         iscale.calculate_scaling_factors(model.fs.unit)
         #model.fs.unit.control_volume.pprint()
