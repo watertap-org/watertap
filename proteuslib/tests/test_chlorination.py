@@ -33,7 +33,9 @@
     Equilibrium Reactions:
         NH3 + HOCl <---> NH2Cl + H2O
         NH2Cl + HOCl <---> NHCl2 + H2O
+            NH3 + 2 HOCl <---> NHCl2 + 2 H2O
         NHCl2 + HOCl <---> NCl3 + H2O
+            NH3 + 3 HOCl <---> NCl3 + 3 H2O
 """
 # Importing testing libraries
 import pytest
@@ -530,10 +532,10 @@ reaction_config = {
                },
                # End R1
         "NHCl2_K": {
-                "stoichiometry": {("Liq", "NH2Cl"): 1,
-                                 ("Liq", "HOCl"): 1,
+                "stoichiometry": {("Liq", "NH3"): 1,
+                                 ("Liq", "HOCl"): 2,
                                  ("Liq", "NHCl2"): -1,
-                                 ("Liq", "H2O"): -1},
+                                 ("Liq", "H2O"): -2},
                "heat_of_reaction": constant_dh_rxn,
                "equilibrium_constant": van_t_hoff,
                "equilibrium_form": log_power_law_equil,
@@ -543,13 +545,13 @@ reaction_config = {
                    #"k_eq_ref": (10**10.7,pyunits.L/pyunits.mol),
                    #"T_eq_ref": (300, pyunits.K),
                    "dh_rxn_ref": (0, pyunits.J/pyunits.mol),
-                   "k_eq_ref": (10**-10.7/55.2, pyunits.dimensionless),
+                   "k_eq_ref": (10**-10.7/55.2*10**-11.4/55.2, pyunits.dimensionless),
                    "T_eq_ref": (298, pyunits.K),
 
                    # By default, reaction orders follow stoichiometry
                    #    manually set reaction order here to override
-                   "reaction_order": {("Liq", "NH2Cl"): 1,
-                                    ("Liq", "HOCl"): 1,
+                   "reaction_order": {("Liq", "NH3"): 1,
+                                    ("Liq", "HOCl"): 2,
                                     ("Liq", "NHCl2"): -1,
                                     ("Liq", "H2O"): 0}
                     }
@@ -557,10 +559,10 @@ reaction_config = {
                },
                # End R2
         "NCl3_K": {
-                "stoichiometry": {("Liq", "NHCl2"): 1,
-                                 ("Liq", "HOCl"): 1,
+                "stoichiometry": {("Liq", "NH3"): 1,
+                                 ("Liq", "HOCl"): 3,
                                  ("Liq", "NCl3"): -1,
-                                 ("Liq", "H2O"): -1},
+                                 ("Liq", "H2O"): -3},
                "heat_of_reaction": constant_dh_rxn,
                "equilibrium_constant": van_t_hoff,
                "equilibrium_form": log_power_law_equil,
@@ -570,13 +572,13 @@ reaction_config = {
                    #"k_eq_ref": (10**8.7,pyunits.L/pyunits.mol),
                    #"T_eq_ref": (300, pyunits.K),
                    "dh_rxn_ref": (0, pyunits.J/pyunits.mol),
-                   "k_eq_ref": (10**-8.7/55.2, pyunits.dimensionless),
+                   "k_eq_ref": (10**-8.7/55.2*10**-10.7/55.2*10**-11.4/55.2, pyunits.dimensionless),
                    "T_eq_ref": (298, pyunits.K),
 
                    # By default, reaction orders follow stoichiometry
                    #    manually set reaction order here to override
-                   "reaction_order": {("Liq", "NHCl2"): 1,
-                                    ("Liq", "HOCl"): 1,
+                   "reaction_order": {("Liq", "NH3"): 1,
+                                    ("Liq", "HOCl"): 3,
                                     ("Liq", "NCl3"): -1,
                                     ("Liq", "H2O"): 0}
                     }
@@ -614,11 +616,12 @@ class TestChlorination():
         model.fs.unit.inlet.mole_frac_comp[0, "OCl_-"].fix( 0. )
         model.fs.unit.inlet.mole_frac_comp[0, "NH4_+"].fix( 0. )
 
-        model.fs.unit.inlet.mole_frac_comp[0, "NH2Cl"].fix( 0. )
-        model.fs.unit.inlet.mole_frac_comp[0, "NHCl2"].fix( 0. )
-        model.fs.unit.inlet.mole_frac_comp[0, "NCl3"].fix( 0. )
+        zero = 1e-20
+        model.fs.unit.inlet.mole_frac_comp[0, "NH2Cl"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "NHCl2"].fix( zero )
+        model.fs.unit.inlet.mole_frac_comp[0, "NCl3"].fix( zero )
 
-        waste_stream_ammonia = 2 #mg/L
+        waste_stream_ammonia = 1 #mg/L
         total_molar_density = 54.8 #mol/L
         total_ammonia_inlet = waste_stream_ammonia/17000 # mol/L
         total_molar_density+=total_ammonia_inlet
