@@ -500,7 +500,7 @@ thermo_config = {
 # NOTE: These reactions are (usually) complete reactions, thus, it may be
 #       better to model them as "stoichiometric" reactions for better
 #       convergence behavior of the non-linear system
-# Define the reaction_config for NH3/HOCl reaction 
+# Define the reaction_config for NH3/HOCl reaction
 reaction_config = {
     "base_units": {"time": pyunits.s,
                    "length": pyunits.m,
@@ -646,9 +646,9 @@ class TestChlorination():
     @pytest.mark.unit
     def test_stats(self, chlorination_obj):
         model = chlorination_obj
-        assert (number_variables(model) == 292)
-        assert (number_total_constraints(model) == 87)
-        assert (number_unused_variables(model) == 57)
+        assert (number_variables(model) == 264)
+        assert (number_total_constraints(model) == 85)
+        assert (number_unused_variables(model) == 43)
 
     @pytest.mark.unit
     def test_custom_log_power_law_eps_options(self, chlorination_obj):
@@ -735,7 +735,7 @@ class TestChlorination():
         fin_fixed_vars = fixed_variables_set(model)
         fin_act_consts = activated_constraints_set(model)
 
-        assert degrees_of_freedom(model) == 1
+        assert degrees_of_freedom(model) == 0
 
         assert len(fin_act_consts) == len(orig_act_consts)
         assert len(fin_fixed_vars) == len(orig_fixed_vars)
@@ -747,7 +747,6 @@ class TestChlorination():
         results = solver.solve(model, tee=True)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
-        assert degrees_of_freedom(model) == 1
 
     @pytest.mark.component
     def test_solution(self, chlorination_obj):
@@ -763,8 +762,8 @@ class TestChlorination():
 
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-        assert pytest.approx(6.049675, rel=1e-4) == pH
-        assert pytest.approx(7.950195, rel=1e-4) == pOH
+        assert pytest.approx(6.0522334, rel=1e-4) == pH
+        assert pytest.approx(7.94783425, rel=1e-4) == pOH
 
         hypo_remaining = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"])/1000
         hypo_remaining += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"])/1000
@@ -773,5 +772,7 @@ class TestChlorination():
         combined_chlorine += 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","NHCl2"])/1000
         combined_chlorine += 3*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","NCl3"])/1000
 
-        assert pytest.approx(2.5056588, rel=1e-3) == hypo_remaining*70900
-        assert pytest.approx(12.607332, rel=1e-3) == combined_chlorine*70900
+        hypo_remaining = hypo_remaining*70900
+        combined_chlorine = combined_chlorine*70900
+        assert pytest.approx(2.50902829, rel=1e-3) == hypo_remaining
+        assert pytest.approx(12.607332, rel=1e-3) == combined_chlorine
