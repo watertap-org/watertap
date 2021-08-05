@@ -717,7 +717,7 @@ class TestRemineralization():
                     inherent_equilibrium_constraint[i[1]], 0.1)
 
         # Next, try adding scaling for species
-        min = 1e-6
+        min = 1e-4
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             #print(i[1]) # apparent species not being scaled here...
             # i[0] = phase, i[1] = species
@@ -794,7 +794,6 @@ class TestRemineralization():
         CH = TH - NCH
         assert pytest.approx(TH, rel=1e-5) == CH
 
-    @pytest.mark.skip
     @pytest.mark.component
     def test_validation_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
