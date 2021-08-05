@@ -328,13 +328,14 @@ class TestENRTLwater():
         model = water_model
 
         # Iterate through the reactions to set appropriate eps values
+        factor = 1e-4
         for rid in model.fs.thermo_params.inherent_reaction_idx:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
             # Want to set eps in some fashion similar to this
             if scale < 1e-16:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*1e-2
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*factor
             else:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
 
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
@@ -793,13 +794,14 @@ class TestENRTLcarbonicAcid():
         model = carbonic_acid_model
 
         # Iterate through the reactions to set appropriate eps values
+        factor = 1e-4
         for rid in model.fs.thermo_params.inherent_reaction_idx:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
             # Want to set eps in some fashion similar to this
             if scale < 1e-16:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*1e-2
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*factor
             else:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
 
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
