@@ -13,26 +13,16 @@
 
 """
     This test is to establish: (i) that IDAES can solve dilute system associated
-    with remineralization processes, (ii) that IDAES can correctly assign ions
-    to a set of apparent species, (iii) the solution of the system with the IDAES
-    assigned apparent species set is the same as the prior solve used to establish
-    that set, and (iv) that IDAES can mix-and-match inherent reactions with kinetic
-    reactions to emulate more realistic solution chemistry. Solutions are checked
-    with approximations to solution pH, alkalinity, and hardness after a typical
-    remineralization process.
+    with remineralization processes and (ii) that IDAES can mix-and-match inherent
+    reactions with kinetic reactions to emulate more realistic solution chemistry.
+    Solutions are checked with approximations to solution pH, alkalinity, and
+    hardness after a typical remineralization process.
 
     Inherent Reactions:
         H2O <---> H + OH
         H2CO3 <---> H + HCO3
         HCO3 <---> H + CO3
         H2O + CO2 <--> H2CO3
-
-    Additional Apparent species:
-        NaHCO3
-        Ca(OH)2
-        Ca(HCO3)2
-        NaOH
-        CaCO3
 
     Kinetic Reactions:
         NaHCO3 --> Na + HCO3
@@ -638,7 +628,7 @@ class TestRemineralization():
                     inherent_equilibrium_constraint[i[1]], 0.1)
 
         # Next, try adding scaling for species
-        min = 1e-6
+        min = 1e-10
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             #print(i[1]) # apparent species not being scaled here...
             # i[0] = phase, i[1] = species
