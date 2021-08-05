@@ -814,5 +814,5 @@ class TestChlorination():
         combined_chlorine += 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","NHCl2"])/1000
         combined_chlorine += 3*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","NCl3"])/1000
 
-        assert pytest.approx(2.5056588, rel=1e-5) == hypo_remaining*70900
-        assert pytest.approx(12.607332, rel=1e-5) == combined_chlorine*70900
+        assert pytest.approx(2.5056588, rel=1e-4) == hypo_remaining*70900
+        assert pytest.approx(12.607332, rel=1e-4) == combined_chlorine*70900
