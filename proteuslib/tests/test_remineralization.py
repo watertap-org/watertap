@@ -441,13 +441,14 @@ thermo_config = {
 
         "phases":  {'Liq': {"type": AqueousPhase,
                             "equation_of_state": Ideal},
-                    'Vap': {"type": VaporPhase,
-                            "equation_of_state": Ideal}},
+                    #'Vap': {"type": VaporPhase,
+                    #        "equation_of_state": Ideal}
+                            },
 
         # Defining phase equilibria
-        "phases_in_equilibrium": [("Vap", "Liq")],
-        "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
-        "bubble_dew_method": IdealBubbleDew,
+        #"phases_in_equilibrium": [("Vap", "Liq")],
+        #"phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
+        #"bubble_dew_method": IdealBubbleDew,
 
         "state_definition": FTPx,
         "state_bounds": {"flow_mol": (0, 50, 100),
@@ -696,10 +697,6 @@ class TestRemineralization():
     def test_scaling_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
 
-        # NOTE: The constraints and variables associated with the 'apparent' species
-        #       is messing very badly with the convergence of this problem. So much so
-        #       that convergence is much better if I DO NOT apply custom scaling.
-
         # Iterate through the reactions to set appropriate eps values
         factor = 1e-4
         for rid in model.fs.thermo_params.inherent_reaction_idx:
@@ -717,9 +714,8 @@ class TestRemineralization():
                     inherent_equilibrium_constraint[i[1]], 0.1)
 
         # Next, try adding scaling for species
-        min = 1e-5
+        min = 1e-6
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
-            #print(i[1]) # apparent species not being scaled here...
             # i[0] = phase, i[1] = species
             if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
                 scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
