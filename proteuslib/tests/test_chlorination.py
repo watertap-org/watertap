@@ -604,7 +604,7 @@ class TestChlorination():
         model.fs.unit.inlet.mole_frac_comp[0, "OCl_-"].fix( 0. )
         model.fs.unit.inlet.mole_frac_comp[0, "NH4_+"].fix( 0. )
 
-        zero = 1e-10
+        zero = 1e-20
         model.fs.unit.inlet.mole_frac_comp[0, "NH2Cl"].fix( zero )
         model.fs.unit.inlet.mole_frac_comp[0, "NHCl2"].fix( zero )
         model.fs.unit.inlet.mole_frac_comp[0, "NCl3"].fix( zero )
