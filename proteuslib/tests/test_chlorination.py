@@ -30,13 +30,18 @@
         NH4 <---> H + NH3
         HOCl <---> H + OCl
 
-    Equilibrium Reactions:
+    True NH3/HOCl Reactions (not included):
         NH3 + HOCl <---> NH2Cl + H2O
         NH2Cl + HOCl <---> NHCl2 + H2O
-            NH3 + 2 HOCl <---> NHCl2 + 2 H2O
         NHCl2 + HOCl <---> NCl3 + H2O
-            NH3 + 3 HOCl <---> NCl3 + 3 H2O
 
+    NOTE: Although there are several cascading reactions for NH3 to scavenge
+        HOCl, we only care about the fact that every 1 NH3 can take upto
+        3 HOCl, so here I am lumping all ammonia chloride formation reactions
+        into a single reaction. This vastly improves the convergence behavior
+        of the full system of equations.
+
+    Effective NH3/HOCl Reaction (included):
         NH3 + 3 HOCl <---> NCl3 + 3 H2O
 """
 # Importing testing libraries
@@ -495,7 +500,7 @@ thermo_config = {
 # NOTE: These reactions are (usually) complete reactions, thus, it may be
 #       better to model them as "stoichiometric" reactions for better
 #       convergence behavior of the non-linear system
-# Define the reaction_config for water dissociation
+# Define the reaction_config for NH3/HOCl reaction 
 reaction_config = {
     "base_units": {"time": pyunits.s,
                    "length": pyunits.m,
