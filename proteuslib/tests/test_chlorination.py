@@ -36,6 +36,8 @@
             NH3 + 2 HOCl <---> NHCl2 + 2 H2O
         NHCl2 + HOCl <---> NCl3 + H2O
             NH3 + 3 HOCl <---> NCl3 + 3 H2O
+
+        NH3 + 3 HOCl <---> NCl3 + 3 H2O
 """
 # Importing testing libraries
 import pytest
@@ -504,8 +506,8 @@ reaction_config = {
         "NH2Cl_K": {
                 "stoichiometry": {("Liq", "NH3"): 1,
                                  ("Liq", "HOCl"): 3,
-                                 ("Liq", "NH2Cl"): -1,
-                                 ("Liq", "H2O"): -1},
+                                 ("Liq", "NCl3"): -1,
+                                 ("Liq", "H2O"): -3},
                "heat_of_reaction": constant_dh_rxn,
                "equilibrium_constant": van_t_hoff,
                "equilibrium_form": log_power_law_equil,
@@ -519,7 +521,7 @@ reaction_config = {
                    #    manually set reaction order here to override
                    "reaction_order": {("Liq", "NH3"): 1,
                                     ("Liq", "HOCl"): 1,
-                                    ("Liq", "NH2Cl"): -1,
+                                    ("Liq", "NCl3"): -1,
                                     ("Liq", "H2O"): 0}
                     }
                     # End parameter_data
