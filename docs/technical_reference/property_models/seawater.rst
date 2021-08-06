@@ -83,7 +83,7 @@ Relationships
    "Specific heat capacity", "Equation 9 in Sharqawy et al. (2010)"
    "Thermal conductivity", "Equation 13 in Sharqawy et al. (2010)"
    "Latent heat of vaporization", "Equations 37 and 55 in Sharqawy et al. (2010)"
-   "Diffusivity", "Equation 6 in Bartholomew et al. (2010)"
+   "Diffusivity", "Equation 6 in Bartholomew et al. (2019)"
 
 
 
@@ -144,5 +144,4 @@ M.H. Sharqawy, J.H.L. V, S.M. Zubair, Thermophysical properties of seawater: a r
 F.J. Millero, R. Feistel, D.G. Wright, T.J. McDougall, The composition of Standard Seawater and the definition of the Reference-Composition Salinity Scale, Deep-Sea Research Part I. 55 (2008) 50–72. https://doi.org/10.1016/j.dsr.2007.10.001.
 
 T.V. Bartholomew, M.S. Mauter, Computational framework for modeling membrane processes without process and solution property simplifications, Journal of Membrane Science. 573 (2019) 682–693. https://doi.org/10.1016/j.memsci.2018.11.067.
-
 
