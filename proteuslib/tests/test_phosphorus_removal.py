@@ -33,12 +33,13 @@
         H2O <---> H + OH
         H2CO3 <---> H + HCO3
         HCO3 <---> H + CO3
-        H3PO4 <---> H + H2PO4
+        #H3PO4 <---> H + H2PO4
         H2PO4 <---> H + HPO4
         HPO4 <---> H + PO4
-        FeCl <---> Fe + Cl
+        #FeCl <---> Fe + Cl
         FeOH <---> Fe + OH
         Fe(OH)2 <---> FeOH + OH
+            Fe(OH)2 <---> Fe + 2 OH
         Fe(OH)3 <---> Fe(OH)2 + OH
         Fe(OH)4 <---> Fe(OH)3 + OH
         FeHPO4 <---> Fe + HPO4
@@ -777,31 +778,31 @@ thermo_config = {
             #                # End parameter_data
             #        },
             #        # End R7
-            #"FeOH_K": {
-            #            "stoichiometry": {  ("Liq", "FeOH_2+"): -1,
-            #                                ("Liq", "Fe_3+"): 1,
-            #                                ("Liq", "OH_-"): 1},
-            #            "heat_of_reaction": constant_dh_rxn,
-            #            "equilibrium_constant": van_t_hoff,
-            #            "equilibrium_form": log_power_law_equil,
-            #            "concentration_form": ConcentrationForm.moleFraction,
-            #            "parameter_data": {
-            #                #"dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
-            #                #"k_eq_ref": (1.768e-12, pyunits.mol/pyunits.L),
-            #                #"T_eq_ref": (300.0, pyunits.K),
-            #                "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-            #                "k_eq_ref": (1.768e-12/55.2, pyunits.dimensionless),
-            #                "T_eq_ref": (298, pyunits.K),
+            "FeOH_K": {
+                        "stoichiometry": {  ("Liq", "FeOH_2+"): -1,
+                                            ("Liq", "Fe_3+"): 1,
+                                            ("Liq", "OH_-"): 1},
+                        "heat_of_reaction": constant_dh_rxn,
+                        "equilibrium_constant": van_t_hoff,
+                        "equilibrium_form": log_power_law_equil,
+                        "concentration_form": ConcentrationForm.moleFraction,
+                        "parameter_data": {
+                            #"dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
+                            #"k_eq_ref": (1.768e-12, pyunits.mol/pyunits.L),
+                            #"T_eq_ref": (300.0, pyunits.K),
+                            "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
+                            "k_eq_ref": (1.768e-12/55.2, pyunits.dimensionless),
+                            "T_eq_ref": (298, pyunits.K),
 
-            #                # By default, reaction orders follow stoichiometry
-            #                #    manually set reaction order here to override
-            #                "reaction_order": { ("Liq", "FeOH_2+"): -1,
-            #                                    ("Liq", "Fe_3+"): 1,
-            #                                    ("Liq", "OH_-"): 1}
-            #                }
-            #                # End parameter_data
-            #        },
-            #        # End R8
+                            # By default, reaction orders follow stoichiometry
+                            #    manually set reaction order here to override
+                            "reaction_order": { ("Liq", "FeOH_2+"): -1,
+                                                ("Liq", "Fe_3+"): 1,
+                                                ("Liq", "OH_-"): 1}
+                            }
+                            # End parameter_data
+                    },
+                    # End R8
             "FeOH2_K": {
                         "stoichiometry": {  ("Liq", "Fe(OH)2_+"): -1,
                                             ("Liq", "FeOH_2+"): 1,
@@ -877,6 +878,9 @@ thermo_config = {
                             # End parameter_data
                     },
                     # End R11
+
+            # May need to add back below
+
             #"FeHPO4_K": {
             #            "stoichiometry": {  ("Liq", "FeHPO4_+"): -1,
             #                                ("Liq", "Fe_3+"): 1,
