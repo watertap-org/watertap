@@ -680,7 +680,8 @@ class TestChlorination():
             iscale.constraint_scaling_transform(model.fs.unit.control_volume.properties_out[0.0].
                     inherent_equilibrium_constraint[i[1]], 0.1)
 
-        # Equilibiurm reactions have eps in the 'rxn_params'
+        # Equilibrium reactions have eps in the 'rxn_params'
+
         factor = 1e-4
         for rid in model.fs.rxn_params.equilibrium_reaction_idx:
             scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
