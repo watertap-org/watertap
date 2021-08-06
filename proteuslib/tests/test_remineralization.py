@@ -787,22 +787,22 @@ class TestRemineralization():
         #           process, then the model will result in same pH, hardness, and
         #           alkalinity, assuming same reaction sets apply
         nahco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','NaHCO3'])
-        assert pytest.approx( 3.6490406403736244e-05, rel=1e-4) == nahco3
+        assert pytest.approx( 3.6490406403736244e-05, rel=1e-3) == nahco3
 
         h2co3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','H2CO3'])
-        assert pytest.approx( 8.127381781520279e-07, rel=1e-4) == h2co3
+        assert pytest.approx( 8.127381781520279e-07, rel=1e-3) == h2co3
 
         caoh = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','Ca(OH)2'])
-        assert pytest.approx( 5.303703532167982e-09, rel=1e-4) == caoh
+        assert pytest.approx( 5.303703532167982e-09, rel=1e-3) == caoh
 
         naoh = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','NaOH'])
-        assert pytest.approx( 1.8209382127110066e-08, rel=1e-4) == naoh
+        assert pytest.approx( 1.8209382127110066e-08, rel=1e-3) == naoh
 
         caco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','CaCO3'])
-        assert pytest.approx( 1.581439142347598e-07, rel=1e-4) == caco3
+        assert pytest.approx( 1.581439142347598e-07, rel=1e-3) == caco3
 
         cahco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','Ca(HCO3)2'])
-        assert pytest.approx( 1.0628273709826089e-05, rel=1e-4) == cahco3
+        assert pytest.approx( 1.0628273709826089e-05, rel=1e-3) == cahco3
 
 
 # Configuration dictionary
