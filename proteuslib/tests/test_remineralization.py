@@ -21,6 +21,11 @@
     with approximations to solution pH, alkalinity, and hardness after a typical
     remineralization process.
 
+    NOTE: Scaling for the kinetics is not yet perfected. You will still see AMPL
+            errors in the solve for kinetics due to the use of an 'unsafe' power
+            law rate function. These errors occur mostly when values for molefractions
+            become zero, which cannot be evaluated in a power law function.
+
     Inherent Reactions:
         H2O <---> H + OH
         H2CO3 <---> H + HCO3
@@ -1411,126 +1416,6 @@ class TestRemineralizationCSTR():
             scale = value(model.fs.unit.control_volume.reactions[0.0].reaction_rate[i].expr)
             iscale.set_scaling_factor(model.fs.unit.control_volume.rate_reaction_extent[0.0,i], 10/scale)
 
-        '''for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
-            scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10/scale)
-            iscale.constraint_scaling_transform(model.fs.unit.control_volume.reactions[0.0].
-                    equilibrium_constraint[i[1]], 0.1)'''
-
-
-        """
-        2 Suffix Declarations
-        constraint_transformed_scaling_factor : Direction=Suffix.LOCAL, Datatype=Suffix.FLOAT
-            Key                                                                                  : Value
-            fs.unit.control_volume.inherent_reaction_stoichiometry_constraint[0.0,Liq,'Ca(OH)2'] :  5882.352941176471
-                  fs.unit.control_volume.inherent_reaction_stoichiometry_constraint[0.0,Liq,CO2] :  5882.352941176471
-               fs.unit.control_volume.inherent_reaction_stoichiometry_constraint[0.0,Liq,CO3_2-] :  5882.352941176471
-                fs.unit.control_volume.inherent_reaction_stoichiometry_constraint[0.0,Liq,Ca_2+] :  5882.352941176471
-                fs.unit.control_volume.inherent_reaction_stoichiometry_constraint[0.0,Liq,H2CO3] :  5882.352941176471
-                  fs.unit.control_volume.inherent_reaction_stoichiometry_constraint[0.0,Liq,H2O] :  5882.352941176471
-               fs.unit.control_volume.inherent_reaction_stoichiometry_constraint[0.0,Liq,HCO3_-] :  5882.352941176471
-                  fs.unit.control_volume.inherent_reaction_stoichiometry_constraint[0.0,Liq,H_+] :  5882.352941176471
-               fs.unit.control_volume.inherent_reaction_stoichiometry_constraint[0.0,Liq,NaHCO3] :  5882.352941176471
-                 fs.unit.control_volume.inherent_reaction_stoichiometry_constraint[0.0,Liq,Na_+] :  5882.352941176471
-                 fs.unit.control_volume.inherent_reaction_stoichiometry_constraint[0.0,Liq,OH_-] :  5882.352941176471
-                                         fs.unit.control_volume.material_balances[0.0,'Ca(OH)2'] :           926711.0
-                                               fs.unit.control_volume.material_balances[0.0,CO2] :            20000.0
-                                            fs.unit.control_volume.material_balances[0.0,CO3_2-] :         10000000.0
-                                             fs.unit.control_volume.material_balances[0.0,Ca_2+] :         10000000.0
-                                             fs.unit.control_volume.material_balances[0.0,H2CO3] :         10000000.0
-                                               fs.unit.control_volume.material_balances[0.0,H2O] : 10.005481397304592
-                                            fs.unit.control_volume.material_balances[0.0,HCO3_-] :         10000000.0
-                                               fs.unit.control_volume.material_balances[0.0,H_+] :         10000000.0
-                                            fs.unit.control_volume.material_balances[0.0,NaHCO3] : 269915.82524271845
-                                              fs.unit.control_volume.material_balances[0.0,Na_+] :         10000000.0
-                                              fs.unit.control_volume.material_balances[0.0,OH_-] :         10000000.0
-                                                    fs.unit.control_volume.pressure_balance[0.0] :              1e-05
-                fs.unit.control_volume.rate_reaction_stoichiometry_constraint[0.0,Liq,'Ca(OH)2'] :                  1
-                      fs.unit.control_volume.rate_reaction_stoichiometry_constraint[0.0,Liq,CO2] :                  1
-                   fs.unit.control_volume.rate_reaction_stoichiometry_constraint[0.0,Liq,CO3_2-] :                  1
-                    fs.unit.control_volume.rate_reaction_stoichiometry_constraint[0.0,Liq,Ca_2+] :                  1
-                    fs.unit.control_volume.rate_reaction_stoichiometry_constraint[0.0,Liq,H2CO3] :                  1
-                      fs.unit.control_volume.rate_reaction_stoichiometry_constraint[0.0,Liq,H2O] :                  1
-                   fs.unit.control_volume.rate_reaction_stoichiometry_constraint[0.0,Liq,HCO3_-] :                  1
-                      fs.unit.control_volume.rate_reaction_stoichiometry_constraint[0.0,Liq,H_+] :                  1
-                   fs.unit.control_volume.rate_reaction_stoichiometry_constraint[0.0,Liq,NaHCO3] :                  1
-                     fs.unit.control_volume.rate_reaction_stoichiometry_constraint[0.0,Liq,Na_+] :                  1
-                     fs.unit.control_volume.rate_reaction_stoichiometry_constraint[0.0,Liq,OH_-] :                  1
-        scaling_factor : Direction=Suffix.EXPORT, Datatype=Suffix.FLOAT
-            Key                                                                    : Value
-                 fs.unit.control_volume.inherent_reaction_extent[0.0,CO2_to_H2CO3] :  5882.352941176471
-                    fs.unit.control_volume.inherent_reaction_extent[0.0,H2CO3_Ka1] : 22575.712294732988
-                    fs.unit.control_volume.inherent_reaction_extent[0.0,H2CO3_Ka2] : 222576929.06389275
-                       fs.unit.control_volume.inherent_reaction_extent[0.0,H2O_Kw] : 1002696016.0606802
-            fs.unit.control_volume.inherent_reaction_generation[0.0,Liq,'Ca(OH)2'] :  5882.352941176471
-                  fs.unit.control_volume.inherent_reaction_generation[0.0,Liq,CO2] :  5882.352941176471
-               fs.unit.control_volume.inherent_reaction_generation[0.0,Liq,CO3_2-] :  5882.352941176471
-                fs.unit.control_volume.inherent_reaction_generation[0.0,Liq,Ca_2+] :  5882.352941176471
-                fs.unit.control_volume.inherent_reaction_generation[0.0,Liq,H2CO3] :  5882.352941176471
-                  fs.unit.control_volume.inherent_reaction_generation[0.0,Liq,H2O] :  5882.352941176471
-               fs.unit.control_volume.inherent_reaction_generation[0.0,Liq,HCO3_-] :  5882.352941176471
-                  fs.unit.control_volume.inherent_reaction_generation[0.0,Liq,H_+] :  5882.352941176471
-               fs.unit.control_volume.inherent_reaction_generation[0.0,Liq,NaHCO3] :  5882.352941176471
-                 fs.unit.control_volume.inherent_reaction_generation[0.0,Liq,Na_+] :  5882.352941176471
-                 fs.unit.control_volume.inherent_reaction_generation[0.0,Liq,OH_-] :  5882.352941176471
-                fs.unit.control_volume.rate_reaction_generation[0.0,Liq,'Ca(OH)2'] :                  1
-                      fs.unit.control_volume.rate_reaction_generation[0.0,Liq,CO2] :                  1
-                   fs.unit.control_volume.rate_reaction_generation[0.0,Liq,CO3_2-] :                  1
-                    fs.unit.control_volume.rate_reaction_generation[0.0,Liq,Ca_2+] :                  1
-                    fs.unit.control_volume.rate_reaction_generation[0.0,Liq,H2CO3] :                  1
-                      fs.unit.control_volume.rate_reaction_generation[0.0,Liq,H2O] :                  1
-                   fs.unit.control_volume.rate_reaction_generation[0.0,Liq,HCO3_-] :                  1
-                      fs.unit.control_volume.rate_reaction_generation[0.0,Liq,H_+] :                  1
-                   fs.unit.control_volume.rate_reaction_generation[0.0,Liq,NaHCO3] :                  1
-                     fs.unit.control_volume.rate_reaction_generation[0.0,Liq,Na_+] :                  1
-                     fs.unit.control_volume.rate_reaction_generation[0.0,Liq,OH_-] :                  1
-                                                     fs.unit.control_volume.volume :                0.1
-                                                fs.unit.control_volume.volume[0.0] :                0.1
-
-
-        """
-
-        """
-        WARNING  idaes.core.util.scaling:scaling.py:221
-            Missing scaling factor for fs.unit.control_volume.rate_reaction_extent[0.0,R1]
-        WARNING  idaes.core.util.scaling:scaling.py:221
-            Missing scaling factor for fs.unit.control_volume.rate_reaction_extent[0.0,R2]
-
-        """
-
-        """
-        model.fs.unit.control_volume.reactions[0.0].pprint()
-
-        {Member of reactions} : Reaction properties in control volume
-    Size=1, Index=fs._time, Active=True
-    fs.unit.control_volume.reactions[0.0] : Active=True
-        2 Expression Declarations
-            k_rxn : Reaction rate constant
-                Size=2, Index=fs.rxn_params.rate_reaction_idx
-                Key : Expression
-                 R1 : fs.rxn_params.reaction_R1.arrhenius_const*exp(- fs.rxn_params.reaction_R1.energy_activation/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K)*fs.unit.control_volume.properties_out[0.0].temperature))
-                 R2 : fs.rxn_params.reaction_R2.arrhenius_const*exp(- fs.rxn_params.reaction_R2.energy_activation/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K)*fs.unit.control_volume.properties_out[0.0].temperature))
-            reaction_rate : Reaction rate
-                Size=2, Index=fs.rxn_params.rate_reaction_idx
-                Key : Expression
-                 R1 : (fs.rxn_params.reaction_R1.arrhenius_const*exp(- fs.rxn_params.reaction_R1.energy_activation/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K)*fs.unit.control_volume.properties_out[0.0].temperature)))*fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[Liq,NaHCO3]**fs.rxn_params.reaction_R1.reaction_order[Liq,NaHCO3]
-                 R2 : (fs.rxn_params.reaction_R2.arrhenius_const*exp(- fs.rxn_params.reaction_R2.energy_activation/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K)*fs.unit.control_volume.properties_out[0.0].temperature)))*fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[Liq,'Ca(OH)2']**fs.rxn_params.reaction_R2.reaction_order[Liq,'Ca(OH)2']
-
-        2 Declarations: reaction_rate k_rxn
-
-        """
-
-        """
-        model.fs.unit.control_volume.rate_reaction_extent.pprint()
-
-        rate_reaction_extent : Extent of kinetic reactions
-    Size=2, Index=fs.unit.control_volume.rate_reaction_extent_index, Units=mol/s
-    Key         : Lower : Value : Upper : Fixed : Stale : Domain
-    (0.0, 'R1') :  None :   0.0 :  None : False : False :  Reals
-    (0.0, 'R2') :  None :   0.0 :  None : False : False :  Reals
-
-        """
-
         # Next, try adding scaling for species
         min = 1e-6
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
@@ -1551,9 +1436,6 @@ class TestRemineralizationCSTR():
         iscale.set_scaling_factor(model.fs.unit.control_volume.volume, 10/model.fs.unit.volume[0.0].value)
 
         iscale.calculate_scaling_factors(model.fs.unit)
-        #model.fs.unit.control_volume.rate_reaction_extent.pprint()
-        #model.fs.unit.control_volume.pprint()
-        #assert degrees_of_freedom(model) == 1
 
         assert hasattr(model.fs.unit.control_volume, 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
@@ -1570,7 +1452,7 @@ class TestRemineralizationCSTR():
         solver.options['bound_push'] = 1e-20
         solver.options['mu_init'] = 1e-6
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        assert degrees_of_freedom(model) == 1
+        assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
     def test_solve_cstr_kin(self, remineralization_cstr_kin):
@@ -1581,7 +1463,6 @@ class TestRemineralizationCSTR():
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
-        assert degrees_of_freedom(model) == 1
 
     @pytest.mark.component
     def test_solution_cstr_kin(self, remineralization_cstr_kin):
@@ -1591,19 +1472,19 @@ class TestRemineralizationCSTR():
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
 
-        #assert pytest.approx(5.341578882862819, rel=1e-5) == pH
-        #assert pytest.approx(8.659592164713462, rel=1e-5) == pOH
+        assert pytest.approx(8.1628836, rel=1e-4) == pH
+        assert pytest.approx(5.8382856, rel=1e-4) == pOH
 
         # Calculate total hardness
         TH = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'Ca_2+')])/1000
         TH = TH*50000
-        assert pytest.approx(59.524889, rel=1e-5) == TH
+        assert pytest.approx(54.110449, rel=1e-4) == TH
 
         # Calculating carbonate alkalinity to determine the split of total hardness
         CarbAlk = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'CO3_2-')])/1000
         CarbAlk += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'HCO3_-')])/1000
         CarbAlk = 50000*CarbAlk
-        assert pytest.approx(161.6301239, rel=1e-5) == CarbAlk
+        assert pytest.approx(146.927839, rel=1e-4) == CarbAlk
 
         # Non-Carbonate Hardness only exists if there is excess hardness above alkalinity
         if TH <= CarbAlk:
@@ -1612,12 +1493,3 @@ class TestRemineralizationCSTR():
             NCH = TH - CarbAlk
         CH = TH - NCH
         assert pytest.approx(TH, rel=1e-5) == CH
-
-        nahco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','NaHCO3'])
-        assert pytest.approx( 3.6490406403736244e-05, rel=1e-3) == nahco3
-
-        h2co3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','H2CO3'])
-        assert pytest.approx( 8.127381781520279e-07, rel=1e-3) == h2co3
-
-        caco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','CaCO3'])
-        assert pytest.approx( 1.581439142347598e-07, rel=1e-3) == caco3
