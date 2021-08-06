@@ -1207,7 +1207,7 @@ class TestSimplePhosphorusRemoval:
         carbonate_alk -= value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])*total_molar_density
         carbonate_alk = carbonate_alk*50000
 
-        assert pytest.approx(100.7109343, rel=1e-5) == carbonate_alk
+        assert pytest.approx(100.7109343, rel=1e-4) == carbonate_alk
 
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
@@ -1226,8 +1226,8 @@ class TestSimplePhosphorusRemoval:
         phos_precip = value(model.fs.unit.outlet.mole_frac_comp[0, "FePO4(s)"])*total_molar_density
         phos_precip = phos_precip*95000
 
-        assert pytest.approx(0.3235406, rel=1e-5) == total_phosphorus
-        assert pytest.approx(9.3784716, rel=1e-5) == phos_precip
+        assert pytest.approx(0.3235406, rel=1e-4) == total_phosphorus
+        assert pytest.approx(9.3784716, rel=1e-4) == phos_precip
 
         total_iron = value(model.fs.unit.outlet.mole_frac_comp[0, "Fe_3+"])*total_molar_density
         total_iron += value(model.fs.unit.outlet.mole_frac_comp[0, "FeCl_2+"])*total_molar_density
@@ -1243,4 +1243,4 @@ class TestSimplePhosphorusRemoval:
         iron_precip = iron_precip*55800
 
         assert pytest.approx(0.01523535, rel=1e-4) == total_iron
-        assert pytest.approx(5.50861807, rel=1e-5) == iron_precip
+        assert pytest.approx(5.50861807, rel=1e-4) == iron_precip
