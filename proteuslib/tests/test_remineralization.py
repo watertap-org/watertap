@@ -440,15 +440,7 @@ thermo_config = {
               # End Component list
 
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": Ideal},
-                    #'Vap': {"type": VaporPhase,
-                    #        "equation_of_state": Ideal}
-                            },
-
-        # Defining phase equilibria
-        #"phases_in_equilibrium": [("Vap", "Liq")],
-        #"phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
-        #"bubble_dew_method": IdealBubbleDew,
+                            "equation_of_state": Ideal}},
 
         "state_definition": FTPx,
         "state_bounds": {"flow_mol": (0, 50, 100),
@@ -679,9 +671,8 @@ class TestRemineralization():
         assert isinstance(model.fs.thermo_params.component('Ca(HCO3)2'), Apparent)
 
         assert hasattr(model.fs.thermo_params, 'phase_list')
-        assert len(model.fs.thermo_params.phase_list) == 2
+        assert len(model.fs.thermo_params.phase_list) == 1
         assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
-        assert isinstance(model.fs.thermo_params.Vap, VaporPhase)
 
     @pytest.mark.unit
     def test_units_appr_equ(self, remineralization_appr_equ):
@@ -729,7 +720,6 @@ class TestRemineralization():
             iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
         iscale.calculate_scaling_factors(model.fs.unit)
-        #model.fs.unit.control_volume.pprint()
 
         assert hasattr(model.fs.unit.control_volume, 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
@@ -739,7 +729,6 @@ class TestRemineralization():
 
         assert hasattr(model.fs.unit.control_volume.properties_in[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
-        assert degrees_of_freedom(model) == 1
 
     @pytest.mark.component
     def test_initialize_solver_appr_equ(self, remineralization_appr_equ):
@@ -747,7 +736,7 @@ class TestRemineralization():
         solver.options['bound_push'] = 1e-10
         solver.options['mu_init'] = 1e-6
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        assert degrees_of_freedom(model) == 1
+        assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
     def test_solve_appr_equ(self, remineralization_appr_equ):
@@ -758,7 +747,6 @@ class TestRemineralization():
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
-        assert degrees_of_freedom(model) == 1
 
     @pytest.mark.component
     def test_solution_appr_equ(self, remineralization_appr_equ):
@@ -768,19 +756,19 @@ class TestRemineralization():
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
 
-        #assert pytest.approx(8.205408733919795, rel=1e-5) == pH
-        assert pytest.approx(5.795760555786688, rel=1e-5) == pOH
+        assert pytest.approx(8.2018656, rel=1e-4) == pH
+        assert pytest.approx(5.7987456, rel=1e-4) == pOH
 
         # Calculate total hardness
         TH = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'Ca_2+')])/1000
         TH = TH*50000
-        assert pytest.approx(59.52729840790867, rel=1e-5) == TH
+        assert pytest.approx(59.524889, rel=1e-5) == TH
 
         # Calculating carbonate alkalinity to determine the split of total hardness
         CarbAlk = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'CO3_2-')])/1000
         CarbAlk += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'HCO3_-')])/1000
         CarbAlk = 50000*CarbAlk
-        assert pytest.approx(161.63611694952652, rel=1e-5) == CarbAlk
+        assert pytest.approx(161.6301239, rel=1e-5) == CarbAlk
 
         # Non-Carbonate Hardness only exists if there is excess hardness above alkalinity
         if TH <= CarbAlk:
@@ -799,22 +787,22 @@ class TestRemineralization():
         #           process, then the model will result in same pH, hardness, and
         #           alkalinity, assuming same reaction sets apply
         nahco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','NaHCO3'])
-        assert pytest.approx( 3.650683833103911e-05, rel=1e-5) == nahco3
+        assert pytest.approx( 3.6490406403736244e-05, rel=1e-4) == nahco3
 
         h2co3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','H2CO3'])
-        assert pytest.approx( 8.127522837138634e-07, rel=1e-5) == h2co3
+        assert pytest.approx( 8.127381781520279e-07, rel=1e-4) == h2co3
 
         caoh = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','Ca(OH)2'])
-        assert pytest.approx( 5.340065455684705e-09, rel=1e-5) == caoh
+        assert pytest.approx( 5.303703532167982e-09, rel=1e-4) == caoh
 
         naoh = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','NaOH'])
-        assert pytest.approx( 1.8334224731184164e-08, rel=1e-5) == naoh
+        assert pytest.approx( 1.8209382127110066e-08, rel=1e-4) == naoh
 
         caco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','CaCO3'])
-        assert pytest.approx( 1.5332636545379076e-07, rel=1e-5) == caco3
+        assert pytest.approx( 1.581439142347598e-07, rel=1e-4) == caco3
 
         cahco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','Ca(HCO3)2'])
-        assert pytest.approx( 1.0633059708069641e-05, rel=1e-5) == cahco3
+        assert pytest.approx( 1.0628273709826089e-05, rel=1e-4) == cahco3
 
 
 # Configuration dictionary
