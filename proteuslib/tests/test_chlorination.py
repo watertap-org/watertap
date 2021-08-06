@@ -508,7 +508,7 @@ reaction_config = {
                    "amount": pyunits.mol,
                    "temperature": pyunits.K},
     "equilibrium_reactions": {
-        "NH2Cl_K": {
+        "NCl3_K": {
                 "stoichiometry": {("Liq", "NH3"): 1,
                                  ("Liq", "HOCl"): 3,
                                  ("Liq", "NCl3"): -1,
