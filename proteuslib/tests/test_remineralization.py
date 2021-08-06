@@ -1131,14 +1131,7 @@ thermo_config_cstr = {
 
         "phases":  {'Liq': {"type": AqueousPhase,
                             "equation_of_state": Ideal},
-                    #'Vap': {"type": VaporPhase,
-                    #        "equation_of_state": Ideal}
                             },
-
-        # Defining phase equilibria
-        #"phases_in_equilibrium": [("Vap", "Liq")],
-        #"phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
-        #"bubble_dew_method": IdealBubbleDew,
 
         "state_definition": FTPx,
         "state_bounds": {"flow_mol": (0, 50, 100),

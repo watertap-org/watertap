@@ -746,14 +746,12 @@ class TestSeawaterAlkalinity():
         model = inherent_reactions_config
         assert (number_variables(model) == 268)
         assert (number_total_constraints(model) == 59)
-        #assert (number_unused_variables(model) == 88)
 
     @pytest.mark.unit
     def test_stats_equilibrium(self, equilibrium_reactions_config):
         model = equilibrium_reactions_config
         assert (number_variables(model) == 220)
         assert (number_total_constraints(model) == 59)
-        #assert (number_unused_variables(model) == 40)
 
     @pytest.mark.component
     def test_scaling_inherent(self, inherent_reactions_config):
