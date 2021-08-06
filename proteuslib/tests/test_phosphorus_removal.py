@@ -29,6 +29,11 @@
     module would be mathematically equivalent to a precipitation
     problem with the same species.
 
+    NOTE: Iron speciation is exceedingly complex and involved. In order to
+    try and improve convergence, numerous reactions were left out. These
+    reactions are relatively minor under our conditions of interest. The
+    removed reactions are noted below.
+
     Reactions:
         H2O <---> H + OH
         H2CO3 <---> H + HCO3
@@ -37,7 +42,7 @@
         H2PO4 <---> H + HPO4
         HPO4 <---> H + PO4
             #FeCl <---> Fe + Cl (minor reaction, removed)
-        FeOH <---> Fe + OH
+        FeOH <---> Fe + OH (NOTE: This is a minor reaction, but is left in)
         Fe(OH)2 <---> FeOH + OH
         Fe(OH)3 <---> Fe(OH)2 + OH
         Fe(OH)4 <---> Fe(OH)3 + OH
@@ -677,31 +682,6 @@ thermo_config = {
                         # End parameter_data
                    },
                    # End R3
-            #"H3PO4_Ka1": {
-            #        "stoichiometry": {("Liq", "H3PO4"): -1,
-            #                         ("Liq", "H_+"): 1,
-            #                         ("Liq", "H2PO4_-"): 1},
-            #        "heat_of_reaction": constant_dh_rxn,
-            #        "equilibrium_constant": van_t_hoff,
-            #        "equilibrium_form": log_power_law_equil,
-            #        "concentration_form": ConcentrationForm.moleFraction,
-            #        "parameter_data": {
-            #            #"dh_rxn_ref": (-8, pyunits.kJ/pyunits.mol),
-            #            #"ds_rxn_ref": (-67.6, pyunits.J/pyunits.mol/pyunits.K),
-            #            #"T_eq_ref": (300, pyunits.K),
-            #            "dh_rxn_ref": (-8, pyunits.kJ/pyunits.mol),
-            #            "k_eq_ref": (10**-2.129/55.2, pyunits.dimensionless),
-            #            "T_eq_ref": (298, pyunits.K),
-
-            #           # By default, reaction orders follow stoichiometry
-            #           #    manually set reaction order here to override
-            #            "reaction_order": { ("Liq", "H3PO4"): -1,
-            #                                ("Liq", "H_+"): 1,
-            #                                ("Liq", "H2PO4_-"): 1}
-            #            }
-            #            # End parameter_data
-            #       },
-            #       # End R4
             "H3PO4_Ka2": {
                         "stoichiometry": {  ("Liq", "H2PO4_-"): -1,
                                             ("Liq", "H_+"): 1,
@@ -711,9 +691,6 @@ thermo_config = {
                         "equilibrium_form": log_power_law_equil,
                         "concentration_form": ConcentrationForm.moleFraction,
                         "parameter_data": {
-                            #"dh_rxn_ref": (4.2, pyunits.kJ/pyunits.mol),
-                            #"ds_rxn_ref": (-123.8, pyunits.J/pyunits.mol/pyunits.K),
-                            #"T_eq_ref": (300, pyunits.K),
                             "dh_rxn_ref": (4.2, pyunits.kJ/pyunits.mol),
                             "k_eq_ref": (10**-5.73/55.2, pyunits.dimensionless),
                             "T_eq_ref": (298, pyunits.K),
@@ -736,9 +713,6 @@ thermo_config = {
                         "equilibrium_form": log_power_law_equil,
                         "concentration_form": ConcentrationForm.moleFraction,
                         "parameter_data": {
-                            #"dh_rxn_ref": (14.7, pyunits.kJ/pyunits.mol),
-                            #"ds_rxn_ref": (-188.6, pyunits.J/pyunits.mol/pyunits.K),
-                            #"T_eq_ref": (300, pyunits.K),
                             "dh_rxn_ref": (14.7, pyunits.kJ/pyunits.mol),
                             "k_eq_ref": (10**-7.275/55.2, pyunits.dimensionless),
                             "T_eq_ref": (298, pyunits.K),
@@ -752,31 +726,6 @@ thermo_config = {
                             # End parameter_data
                     },
                     # End R6
-            #"FeCl_K": {
-            #            "stoichiometry": {  ("Liq", "FeCl_2+"): -1,
-            #                                ("Liq", "Fe_3+"): 1,
-            #                                ("Liq", "Cl_-"): 1},
-            #            "heat_of_reaction": constant_dh_rxn,
-            #            "equilibrium_constant": van_t_hoff,
-            #            "equilibrium_form": log_power_law_equil,
-            #            "concentration_form": ConcentrationForm.moleFraction,
-            #            "parameter_data": {
-            #                #"dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
-            #                #"k_eq_ref": (10**-0.5, pyunits.mol/pyunits.L),
-            #                #"T_eq_ref": (300.0, pyunits.K),
-            #                "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-            #                "k_eq_ref": (10**-0.5/55.2, pyunits.dimensionless),
-            #                "T_eq_ref": (298, pyunits.K),
-
-            #                # By default, reaction orders follow stoichiometry
-            #                #    manually set reaction order here to override
-            #                "reaction_order": { ("Liq", "FeCl_2+"): -1,
-            #                                    ("Liq", "Fe_3+"): 1,
-            #                                    ("Liq", "Cl_-"): 1}
-            #                }
-            #                # End parameter_data
-            #        },
-            #        # End R7
             "FeOH_K": {
                         "stoichiometry": {  ("Liq", "FeOH_2+"): -1,
                                             ("Liq", "Fe_3+"): 1,
@@ -786,9 +735,6 @@ thermo_config = {
                         "equilibrium_form": log_power_law_equil,
                         "concentration_form": ConcentrationForm.moleFraction,
                         "parameter_data": {
-                            #"dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
-                            #"k_eq_ref": (1.768e-12, pyunits.mol/pyunits.L),
-                            #"T_eq_ref": (300.0, pyunits.K),
                             "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
                             "k_eq_ref": (1.768e-12/55.2, pyunits.dimensionless),
                             "T_eq_ref": (298, pyunits.K),
@@ -811,9 +757,6 @@ thermo_config = {
                         "equilibrium_form": log_power_law_equil,
                         "concentration_form": ConcentrationForm.moleFraction,
                         "parameter_data": {
-                            #"dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
-                            #"k_eq_ref": (3.757e-11, pyunits.mol/pyunits.L),
-                            #"T_eq_ref": (300.0, pyunits.K),
                             "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
                             "k_eq_ref": (3.757e-11/55.2, pyunits.dimensionless),
                             "T_eq_ref": (298, pyunits.K),
@@ -836,9 +779,6 @@ thermo_config = {
                         "equilibrium_form": log_power_law_equil,
                         "concentration_form": ConcentrationForm.moleFraction,
                         "parameter_data": {
-                            #"dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
-                            #"k_eq_ref": (9.765e-7, pyunits.mol/pyunits.L),
-                            #"T_eq_ref": (300.0, pyunits.K),
                             "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
                             "k_eq_ref": (9.765e-7/55.2, pyunits.dimensionless),
                             "T_eq_ref": (298, pyunits.K),
@@ -861,9 +801,6 @@ thermo_config = {
                         "equilibrium_form": log_power_law_equil,
                         "concentration_form": ConcentrationForm.moleFraction,
                         "parameter_data": {
-                            #"dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
-                            #"k_eq_ref": (1.097e-6, pyunits.mol/pyunits.L),
-                            #"T_eq_ref": (300.0, pyunits.K),
                             "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
                             "k_eq_ref": (1.097e-6/55.2, pyunits.dimensionless),
                             "T_eq_ref": (298, pyunits.K),
@@ -877,59 +814,6 @@ thermo_config = {
                             # End parameter_data
                     },
                     # End R11
-
-            # May need to add back below
-
-            #"FeHPO4_K": {
-            #            "stoichiometry": {  ("Liq", "FeHPO4_+"): -1,
-            #                                ("Liq", "Fe_3+"): 1,
-            #                                ("Liq", "HPO4_2-"): 1},
-            #            "heat_of_reaction": constant_dh_rxn,
-            #            "equilibrium_constant": van_t_hoff,
-            #            "equilibrium_form": log_power_law_equil,
-            #            "concentration_form": ConcentrationForm.moleFraction,
-            #            "parameter_data": {
-            #                #"dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
-            #                #"k_eq_ref": (10**-9, pyunits.mol/pyunits.L),
-            #                #"T_eq_ref": (300.0, pyunits.K),
-            #                "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-            #                "k_eq_ref": (10**-9/55.2, pyunits.dimensionless),
-            #                "T_eq_ref": (298, pyunits.K),
-
-            #                # By default, reaction orders follow stoichiometry
-            #                #    manually set reaction order here to override
-            #                "reaction_order": { ("Liq", "FeHPO4_+"): -1,
-            #                                    ("Liq", "Fe_3+"): 1,
-            #                                    ("Liq", "HPO4_2-"): 1}
-            #                }
-            #                # End parameter_data
-            #        },
-            #        # End R12
-            #"FeH2PO4_K": {
-            #            "stoichiometry": {  ("Liq", "FeH2PO4_2+"): -1,
-            #                                ("Liq", "Fe_3+"): 1,
-            #                                ("Liq", "H2PO4_-"): 1},
-            #            "heat_of_reaction": constant_dh_rxn,
-            #            "equilibrium_constant": van_t_hoff,
-            #            "equilibrium_form": log_power_law_equil,
-            #            "concentration_form": ConcentrationForm.moleFraction,
-            #            "parameter_data": {
-            #                #"dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
-            #                #"k_eq_ref": (10**-13.4, pyunits.mol/pyunits.L),
-            #                #"T_eq_ref": (300.0, pyunits.K),
-            #                "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-            #                "k_eq_ref": (10**-13.4/55.2, pyunits.dimensionless),
-            #                "T_eq_ref": (298, pyunits.K),
-
-            #                # By default, reaction orders follow stoichiometry
-            #                #    manually set reaction order here to override
-            #                "reaction_order": { ("Liq", "FeH2PO4_2+"): -1,
-            #                                    ("Liq", "Fe_3+"): 1,
-            #                                    ("Liq", "H2PO4_-"): 1}
-            #                }
-            #                # End parameter_data
-            #        },
-            #        # End R13
             "FePO4_Ksp": {
                         "stoichiometry": {  ("Liq", "FePO4(s)"): -1,
                                             ("Liq", "Fe_3+"): 1,
@@ -1187,7 +1071,6 @@ class TestSimplePhosphorusRemoval:
     @pytest.mark.component
     def test_solve_equilibrium(self, simple_phosphorus_removal):
         model = simple_phosphorus_removal
-        #solver.options["max_iter"] = 5
         solver.options["bound_push"] = 1e-20
         solver.options["mu_init"] = 1e-6
         results = solver.solve(model, tee=True)
