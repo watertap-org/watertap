@@ -33,17 +33,16 @@
         H2O <---> H + OH
         H2CO3 <---> H + HCO3
         HCO3 <---> H + CO3
-        #H3PO4 <---> H + H2PO4
+            #H3PO4 <---> H + H2PO4 (minor reaction, removed)
         H2PO4 <---> H + HPO4
         HPO4 <---> H + PO4
-        #FeCl <---> Fe + Cl
+            #FeCl <---> Fe + Cl (minor reaction, removed)
         FeOH <---> Fe + OH
         Fe(OH)2 <---> FeOH + OH
-            Fe(OH)2 <---> Fe + 2 OH
         Fe(OH)3 <---> Fe(OH)2 + OH
         Fe(OH)4 <---> Fe(OH)3 + OH
-        FeHPO4 <---> Fe + HPO4
-        FeH2PO4 <---> Fe + H2PO4
+            #FeHPO4 <---> Fe + HPO4 (minor reaction, removed)
+            #FeH2PO4 <---> Fe + H2PO4 (minor reaction, removed)
         FePO4 <---> Fe + PO4
     Other species:
         Na
@@ -940,9 +939,6 @@ thermo_config = {
                         "equilibrium_form": log_power_law_equil,
                         "concentration_form": ConcentrationForm.moleFraction,
                         "parameter_data": {
-                            #"dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
-                            #"k_eq_ref": (10**-23, pyunits.mol**2/pyunits.L**2),
-                            #"T_eq_ref": (300.0, pyunits.K),
                             "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
                             "k_eq_ref": (10**-23/55.2/55.2, pyunits.dimensionless),
                             "T_eq_ref": (298, pyunits.K),
@@ -1023,7 +1019,7 @@ class TestSimplePhosphorusRemoval:
         total_carbonate_inlet = 0.00206 # mol/L (typical value for seawater = 2.06E-3 M)
         frac_CO3_to_NaHCO3 = 0.99
         total_phosphate_inlet = 3.22e-6 # mol/L (typical value for seawater = 3.22E-6 M)
-        total_phosphate_inlet += 1e-4 # mol/L (additional phosphorus)
+        total_phosphate_inlet += 1e-4 # mol/L (additional phosphorus [what we want to remove])
         total_iron_inlet = 5.38e-8 # mol/L (typical value for seawater = 5.38E-8 M)
         total_iron_inlet += 1e-4 # mol/L (additional iron added for phosphorus removal) [Added as FeCl3]
         NaOH_added = 1e-4 # mol/L (added to raise pH and induce precipitation)
@@ -1186,7 +1182,7 @@ class TestSimplePhosphorusRemoval:
         solver.options["bound_push"] = 1e-20
         solver.options["mu_init"] = 1e-6
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        assert degrees_of_freedom(model) == 1
+        assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
     def test_solve_equilibrium(self, simple_phosphorus_removal):
@@ -1198,15 +1194,10 @@ class TestSimplePhosphorusRemoval:
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
-        assert degrees_of_freedom(model) == 1
 
     @pytest.mark.component
     def test_solution_simple_phosphorus_removal(self, simple_phosphorus_removal):
         model = simple_phosphorus_removal
-
-        #assert pytest.approx(298, rel=1e-5) == value(model.fs.unit.outlet.temperature[0])
-        #assert pytest.approx(9.99979, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
-        #assert pytest.approx(101325, rel=1e-5) == value(model.fs.unit.outlet.pressure[0])
 
         total_molar_density = value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
 
@@ -1216,13 +1207,13 @@ class TestSimplePhosphorusRemoval:
         carbonate_alk -= value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])*total_molar_density
         carbonate_alk = carbonate_alk*50000
 
-        #assert pytest.approx(98.9290, rel=1e-5) == carbonate_alk
+        assert pytest.approx(100.7109343, rel=1e-5) == carbonate_alk
 
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
 
-        #assert pytest.approx(7.71111, rel=1e-5) == pH
-        #assert pytest.approx(6.29053, rel=1e-5) == pOH
+        assert pytest.approx(8.0910674, rel=1e-4) == pH
+        assert pytest.approx(5.9181854, rel=1e-4) == pOH
 
         total_phosphorus = value(model.fs.unit.outlet.mole_frac_comp[0, "H3PO4"])*total_molar_density
         total_phosphorus += value(model.fs.unit.outlet.mole_frac_comp[0, "H2PO4_-"])*total_molar_density
@@ -1235,11 +1226,8 @@ class TestSimplePhosphorusRemoval:
         phos_precip = value(model.fs.unit.outlet.mole_frac_comp[0, "FePO4(s)"])*total_molar_density
         phos_precip = phos_precip*95000
 
-        #assert pytest.approx(7.10260446574586, rel=1e-5) == total_phosphorus
-        print(total_phosphorus)
-        print(pH)
-        print(pOH)
-        assert pytest.approx(88.2050, rel=1e-5) == phos_precip
+        assert pytest.approx(0.3235406, rel=1e-5) == total_phosphorus
+        assert pytest.approx(9.3784716, rel=1e-5) == phos_precip
 
         total_iron = value(model.fs.unit.outlet.mole_frac_comp[0, "Fe_3+"])*total_molar_density
         total_iron += value(model.fs.unit.outlet.mole_frac_comp[0, "FeCl_2+"])*total_molar_density
@@ -1254,5 +1242,5 @@ class TestSimplePhosphorusRemoval:
         iron_precip = value(model.fs.unit.outlet.mole_frac_comp[0, "FePO4(s)"])*total_molar_density
         iron_precip = iron_precip*55800
 
-        assert pytest.approx(3.9951680694800653, rel=1e-5) == total_iron
-        assert pytest.approx(51.8088, rel=1e-5) == iron_precip
+        assert pytest.approx(0.01523535, rel=1e-5) == total_iron
+        assert pytest.approx(5.50861807, rel=1e-5) == iron_precip
