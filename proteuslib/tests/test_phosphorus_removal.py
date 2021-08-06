@@ -677,31 +677,31 @@ thermo_config = {
                         # End parameter_data
                    },
                    # End R3
-            "H3PO4_Ka1": {
-                    "stoichiometry": {("Liq", "H3PO4"): -1,
-                                     ("Liq", "H_+"): 1,
-                                     ("Liq", "H2PO4_-"): 1},
-                    "heat_of_reaction": constant_dh_rxn,
-                    "equilibrium_constant": van_t_hoff,
-                    "equilibrium_form": log_power_law_equil,
-                    "concentration_form": ConcentrationForm.moleFraction,
-                    "parameter_data": {
-                        #"dh_rxn_ref": (-8, pyunits.kJ/pyunits.mol),
-                        #"ds_rxn_ref": (-67.6, pyunits.J/pyunits.mol/pyunits.K),
-                        #"T_eq_ref": (300, pyunits.K),
-                        "dh_rxn_ref": (-8, pyunits.kJ/pyunits.mol),
-                        "k_eq_ref": (10**-2.129/55.2, pyunits.dimensionless),
-                        "T_eq_ref": (298, pyunits.K),
+            #"H3PO4_Ka1": {
+            #        "stoichiometry": {("Liq", "H3PO4"): -1,
+            #                         ("Liq", "H_+"): 1,
+            #                         ("Liq", "H2PO4_-"): 1},
+            #        "heat_of_reaction": constant_dh_rxn,
+            #        "equilibrium_constant": van_t_hoff,
+            #        "equilibrium_form": log_power_law_equil,
+            #        "concentration_form": ConcentrationForm.moleFraction,
+            #        "parameter_data": {
+            #            #"dh_rxn_ref": (-8, pyunits.kJ/pyunits.mol),
+            #            #"ds_rxn_ref": (-67.6, pyunits.J/pyunits.mol/pyunits.K),
+            #            #"T_eq_ref": (300, pyunits.K),
+            #            "dh_rxn_ref": (-8, pyunits.kJ/pyunits.mol),
+            #            "k_eq_ref": (10**-2.129/55.2, pyunits.dimensionless),
+            #            "T_eq_ref": (298, pyunits.K),
 
-                       # By default, reaction orders follow stoichiometry
-                       #    manually set reaction order here to override
-                        "reaction_order": { ("Liq", "H3PO4"): -1,
-                                            ("Liq", "H_+"): 1,
-                                            ("Liq", "H2PO4_-"): 1}
-                        }
-                        # End parameter_data
-                   },
-                   # End R4
+            #           # By default, reaction orders follow stoichiometry
+            #           #    manually set reaction order here to override
+            #            "reaction_order": { ("Liq", "H3PO4"): -1,
+            #                                ("Liq", "H_+"): 1,
+            #                                ("Liq", "H2PO4_-"): 1}
+            #            }
+            #            # End parameter_data
+            #       },
+            #       # End R4
             "H3PO4_Ka2": {
                         "stoichiometry": {  ("Liq", "H2PO4_-"): -1,
                                             ("Liq", "H_+"): 1,
