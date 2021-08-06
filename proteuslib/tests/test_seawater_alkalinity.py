@@ -368,13 +368,13 @@ thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "OH_-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": gibbs_energy,
+                   "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.molarity,
+                   "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
-                       "dh_rxn_ref": (55.830, pyunits.kJ/pyunits.mol),
-                       "ds_rxn_ref": (-80.7, pyunits.J/pyunits.mol/pyunits.K),
-                       "T_eq_ref": (300, pyunits.K),
+                       "dh_rxn_ref": (55.830, pyunits.J/pyunits.mol),
+                       "k_eq_ref": (10**-14/55.2/55.2, pyunits.dimensionless),
+                       "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
                        #    manually set reaction order here to override
@@ -390,13 +390,13 @@ thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "HCO3_-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": gibbs_energy,
+                   "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.molarity,
+                   "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
                        "dh_rxn_ref": (7.7, pyunits.kJ/pyunits.mol),
-                       "ds_rxn_ref": (-95.8, pyunits.J/pyunits.mol/pyunits.K),
-                       "T_eq_ref": (300, pyunits.K),
+                       "k_eq_ref": (10**-6.35/55.2, pyunits.dimensionless),
+                       "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
                        #    manually set reaction order here to override
@@ -412,13 +412,13 @@ thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "CO3_2-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": gibbs_energy,
+                   "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.molarity,
+                   "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
                        "dh_rxn_ref": (14.9, pyunits.kJ/pyunits.mol),
-                       "ds_rxn_ref": (-148.1, pyunits.J/pyunits.mol/pyunits.K),
-                       "T_eq_ref": (300, pyunits.K),
+                       "k_eq_ref": (10**-10.33/55.2, pyunits.dimensionless),
+                       "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
                        #    manually set reaction order here to override
@@ -434,13 +434,13 @@ thermo_config = {
                                      ("Liq", "Na_+"): 1,
                                      ("Liq", "HCO3_-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": gibbs_energy,
+                   "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.molarity,
+                   "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
                        "dh_rxn_ref": (13.43, pyunits.kJ/pyunits.mol),
-                       "ds_rxn_ref": (50.2, pyunits.J/pyunits.mol/pyunits.K),
-                       "T_eq_ref": (300, pyunits.K),
+                       "k_eq_ref": (10**0.27/55.2, pyunits.dimensionless),
+                       "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
                        #    manually set reaction order here to override
@@ -469,13 +469,13 @@ reaction_config = {
                                  ("Liq", "H_+"): 1,
                                  ("Liq", "OH_-"): 1},
                "heat_of_reaction": constant_dh_rxn,
-               "equilibrium_constant": gibbs_energy,
+               "equilibrium_constant": van_t_hoff,
                "equilibrium_form": log_power_law_equil,
-               "concentration_form": ConcentrationForm.molarity,
+               "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
-                   "dh_rxn_ref": (55.830, pyunits.kJ/pyunits.mol),
-                   "ds_rxn_ref": (-80.7, pyunits.J/pyunits.mol/pyunits.K),
-                   "T_eq_ref": (300, pyunits.K),
+                   "dh_rxn_ref": (55.830, pyunits.J/pyunits.mol),
+                   "k_eq_ref": (10**-14/55.2/55.2, pyunits.dimensionless),
+                   "T_eq_ref": (298, pyunits.K),
 
                    # By default, reaction orders follow stoichiometry
                    #    manually set reaction order here to override
@@ -491,13 +491,13 @@ reaction_config = {
                                  ("Liq", "H_+"): 1,
                                  ("Liq", "HCO3_-"): 1},
                "heat_of_reaction": constant_dh_rxn,
-               "equilibrium_constant": gibbs_energy,
+               "equilibrium_constant": van_t_hoff,
                "equilibrium_form": log_power_law_equil,
-               "concentration_form": ConcentrationForm.molarity,
+               "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
                    "dh_rxn_ref": (7.7, pyunits.kJ/pyunits.mol),
-                   "ds_rxn_ref": (-95.8, pyunits.J/pyunits.mol/pyunits.K),
-                   "T_eq_ref": (300, pyunits.K),
+                   "k_eq_ref": (10**-6.35/55.2, pyunits.dimensionless),
+                   "T_eq_ref": (298, pyunits.K),
 
                    # By default, reaction orders follow stoichiometry
                    #    manually set reaction order here to override
@@ -513,13 +513,13 @@ reaction_config = {
                                  ("Liq", "H_+"): 1,
                                  ("Liq", "CO3_2-"): 1},
                "heat_of_reaction": constant_dh_rxn,
-               "equilibrium_constant": gibbs_energy,
+               "equilibrium_constant": van_t_hoff,
                "equilibrium_form": log_power_law_equil,
-               "concentration_form": ConcentrationForm.molarity,
+               "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
                    "dh_rxn_ref": (14.9, pyunits.kJ/pyunits.mol),
-                   "ds_rxn_ref": (-148.1, pyunits.J/pyunits.mol/pyunits.K),
-                   "T_eq_ref": (300, pyunits.K),
+                   "k_eq_ref": (10**-10.33/55.2, pyunits.dimensionless),
+                   "T_eq_ref": (298, pyunits.K),
 
                    # By default, reaction orders follow stoichiometry
                    #    manually set reaction order here to override
@@ -535,13 +535,13 @@ reaction_config = {
                                  ("Liq", "Na_+"): 1,
                                  ("Liq", "HCO3_-"): 1},
                "heat_of_reaction": constant_dh_rxn,
-               "equilibrium_constant": gibbs_energy,
+               "equilibrium_constant": van_t_hoff,
                "equilibrium_form": log_power_law_equil,
-               "concentration_form": ConcentrationForm.molarity,
+               "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
                    "dh_rxn_ref": (13.43, pyunits.kJ/pyunits.mol),
-                   "ds_rxn_ref": (50.2, pyunits.J/pyunits.mol/pyunits.K),
-                   "T_eq_ref": (300, pyunits.K),
+                   "k_eq_ref": (10**0.27/55.2, pyunits.dimensionless),
+                   "T_eq_ref": (298, pyunits.K),
 
                    # By default, reaction orders follow stoichiometry
                    #    manually set reaction order here to override
@@ -746,18 +746,48 @@ class TestSeawaterAlkalinity():
         model = inherent_reactions_config
         assert (number_variables(model) == 268)
         assert (number_total_constraints(model) == 59)
-        assert (number_unused_variables(model) == 88)
 
     @pytest.mark.unit
     def test_stats_equilibrium(self, equilibrium_reactions_config):
         model = equilibrium_reactions_config
         assert (number_variables(model) == 220)
         assert (number_total_constraints(model) == 59)
-        assert (number_unused_variables(model) == 40)
 
     @pytest.mark.component
     def test_scaling_inherent(self, inherent_reactions_config):
         model = inherent_reactions_config
+
+        # Iterate through the reactions to set appropriate eps values
+        factor = 1e-4
+        for rid in model.fs.thermo_params.inherent_reaction_idx:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
+            # Want to set eps in some fashion similar to this
+            if scale < 1e-16:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*factor
+            else:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
+
+        for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.properties_out[0.0].
+                    inherent_equilibrium_constraint[i[1]], 0.1)
+
+        # Next, try adding scaling for species
+        min = 1e-6
+        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+            # i[0] = phase, i[1] = species
+            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
+                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
+            else:
+                scale = min
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+            iscale.constraint_scaling_transform(
+                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
+
         iscale.calculate_scaling_factors(model.fs.unit)
 
         assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
@@ -769,6 +799,39 @@ class TestSeawaterAlkalinity():
     @pytest.mark.component
     def test_scaling_equilibrium(self, equilibrium_reactions_config):
         model = equilibrium_reactions_config
+
+        # Equilibrium reactions have eps in the 'rxn_params'
+
+        factor = 1e-4
+        for rid in model.fs.rxn_params.equilibrium_reaction_idx:
+            scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
+            # Want to set eps in some fashion similar to this
+            if scale < 1e-16:
+                model.fs.rxn_params.component("reaction_"+rid).eps.value = scale*factor
+            else:
+                model.fs.rxn_params.component("reaction_"+rid).eps.value = 1e-16*factor
+
+        for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
+            scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.reactions[0.0].
+                    equilibrium_constraint[i[1]], 0.1)
+
+        # Next, try adding scaling for species
+        min = 1e-6
+        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+            # i[0] = phase, i[1] = species
+            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
+                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
+            else:
+                scale = min
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+            iscale.constraint_scaling_transform(
+                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
+
         iscale.calculate_scaling_factors(model.fs.unit)
 
         assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
@@ -863,12 +926,12 @@ class TestSeawaterAlkalinity():
         carbonate_alk += value(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"])*total_molar_density
         carbonate_alk -= value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])*total_molar_density
         carbonate_alk = carbonate_alk*50000
-        assert pytest.approx(79.49837631997777, rel=1e-5) == carbonate_alk
+        assert pytest.approx(79.3897375619494, rel=1e-5) == carbonate_alk
 
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-        assert pytest.approx(8.32259, rel=1e-5) == pH
-        assert pytest.approx(5.6819032153756535, rel=1e-5) == pOH
+        assert pytest.approx(8.3176417, rel=1e-5) == pH
+        assert pytest.approx(5.6916706, rel=1e-5) == pOH
         assert pytest.approx(0.97986, rel=1e-5) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
 
     @pytest.mark.component
@@ -900,10 +963,10 @@ class TestSeawaterAlkalinity():
         carbonate_alk += value(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"])*total_molar_density
         carbonate_alk -= value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])*total_molar_density
         carbonate_alk = carbonate_alk*50000
-        assert pytest.approx(79.49837631997777, rel=1e-5) == carbonate_alk
+        assert pytest.approx(79.3897375619494, rel=1e-5) == carbonate_alk
 
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-        assert pytest.approx(8.32259, rel=1e-5) == pH
-        assert pytest.approx(5.6819032153756535, rel=1e-5) == pOH
+        assert pytest.approx(8.3176417, rel=1e-5) == pH
+        assert pytest.approx(5.6916706, rel=1e-5) == pOH
         assert pytest.approx(0.97986, rel=1e-5) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])

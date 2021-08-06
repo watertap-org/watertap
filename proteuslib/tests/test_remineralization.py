@@ -21,6 +21,11 @@
     with approximations to solution pH, alkalinity, and hardness after a typical
     remineralization process.
 
+    NOTE: Scaling for the kinetics is not yet perfected. You will still see AMPL
+            errors in the solve for kinetics due to the use of an 'unsafe' power
+            law rate function. These errors occur mostly when values for molefractions
+            become zero, which cannot be evaluated in a power law function.
+
     Inherent Reactions:
         H2O <---> H + OH
         H2CO3 <---> H + HCO3
@@ -151,10 +156,10 @@ thermo_config = {
                     "pressure_crit": (73.825E5, pyunits.Pa),
                     "temperature_crit": (304.23, pyunits.K),
                     "dens_mol_liq_comp_coeff": {
-                        '1': (2.768, pyunits.kmol*pyunits.m**-3),
-                        '2': (0.26212, None),
-                        '3': (304.21, pyunits.K),
-                        '4': (0.2908, None)},
+                        '1': (0.000789, pyunits.kmol * pyunits.m ** -3),
+                        '2': (0.000956, pyunits.dimensionless),
+                        '3': (500.78, pyunits.K),
+                        '4': (0.94599, pyunits.dimensionless)},
                     "cp_mol_ig_comp_coeff": {
                        'A': (24.99735, pyunits.J/pyunits.mol/pyunits.K),
                        'B': (55.18696, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-1),
@@ -440,18 +445,11 @@ thermo_config = {
               # End Component list
 
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": Ideal},
-                    'Vap': {"type": VaporPhase,
                             "equation_of_state": Ideal}},
-
-        # Defining phase equilibria
-        "phases_in_equilibrium": [("Vap", "Liq")],
-        "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
-        "bubble_dew_method": IdealBubbleDew,
 
         "state_definition": FTPx,
         "state_bounds": {"flow_mol": (0, 50, 100),
-                         "temperature": (273.15, 300, 650),
+                         "temperature": (273.15, 300, 500),
                          "pressure": (5e4, 1e5, 1e6)
                      },
         "state_components": StateIndex.true,
@@ -471,13 +469,13 @@ thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "OH_-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": gibbs_energy,
+                   "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.molarity,
+                   "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
-                       "dh_rxn_ref": (55.830, pyunits.kJ/pyunits.mol),
-                       "ds_rxn_ref": (-80.7, pyunits.J/pyunits.mol/pyunits.K),
-                       "T_eq_ref": (300, pyunits.K),
+                       "dh_rxn_ref": (55.830, pyunits.J/pyunits.mol),
+                       "k_eq_ref": (10**-14/55.2/55.2, pyunits.dimensionless),
+                       "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
                        #    manually set reaction order here to override
@@ -493,13 +491,13 @@ thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "HCO3_-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": gibbs_energy,
+                   "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.molarity,
+                   "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
                        "dh_rxn_ref": (7.7, pyunits.kJ/pyunits.mol),
-                       "ds_rxn_ref": (-95.8, pyunits.J/pyunits.mol/pyunits.K),
-                       "T_eq_ref": (300, pyunits.K),
+                       "k_eq_ref": (10**-6.35/55.2, pyunits.dimensionless),
+                       "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
                        #    manually set reaction order here to override
@@ -515,13 +513,13 @@ thermo_config = {
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "CO3_2-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": gibbs_energy,
+                   "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.molarity,
+                   "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
                        "dh_rxn_ref": (14.9, pyunits.kJ/pyunits.mol),
-                       "ds_rxn_ref": (-148.1, pyunits.J/pyunits.mol/pyunits.K),
-                       "T_eq_ref": (300, pyunits.K),
+                       "k_eq_ref": (10**-10.33/55.2, pyunits.dimensionless),
+                       "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
                        #    manually set reaction order here to override
@@ -539,11 +537,11 @@ thermo_config = {
                    "heat_of_reaction": constant_dh_rxn,
                    "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.molarity,
+                   "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
-                       "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                       "k_eq_ref": (1.7*10**-3,None),
-                       "T_eq_ref": (300, pyunits.K),
+                       "dh_rxn_ref": (0, pyunits.kJ / pyunits.mol),
+                       "k_eq_ref": (1.7*10**-3, pyunits.dimensionless),
+                       "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
                        #    manually set reaction order here to override
@@ -678,9 +676,8 @@ class TestRemineralization():
         assert isinstance(model.fs.thermo_params.component('Ca(HCO3)2'), Apparent)
 
         assert hasattr(model.fs.thermo_params, 'phase_list')
-        assert len(model.fs.thermo_params.phase_list) == 2
+        assert len(model.fs.thermo_params.phase_list) == 1
         assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
-        assert isinstance(model.fs.thermo_params.Vap, VaporPhase)
 
     @pytest.mark.unit
     def test_units_appr_equ(self, remineralization_appr_equ):
@@ -696,17 +693,36 @@ class TestRemineralization():
     def test_scaling_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
 
-        #Custom eps factors for reaction constraints
-        eps = 1e-20
-        model.fs.thermo_params.reaction_H2O_Kw.eps.value = eps
-        model.fs.thermo_params.reaction_H2CO3_Ka1.eps.value = eps
-        model.fs.thermo_params.reaction_H2CO3_Ka2.eps.value = eps
-        model.fs.thermo_params.reaction_CO2_to_H2CO3.eps.value = eps
+        # Iterate through the reactions to set appropriate eps values
+        factor = 1e-4
+        for rid in model.fs.thermo_params.inherent_reaction_idx:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
+            # Want to set eps in some fashion similar to this
+            if scale < 1e-16:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*factor
+            else:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
 
-        #Add scaling factors for reaction extent
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
             iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.properties_out[0.0].
+                    inherent_equilibrium_constraint[i[1]], 0.1)
+
+        # Next, try adding scaling for species
+        min = 1e-6
+        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+            # i[0] = phase, i[1] = species
+            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
+                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
+            else:
+                scale = min
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+            iscale.constraint_scaling_transform(
+                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
         iscale.calculate_scaling_factors(model.fs.unit)
 
@@ -722,17 +738,17 @@ class TestRemineralization():
     @pytest.mark.component
     def test_initialize_solver_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
-        solver.options['bound_push'] = 1e-20
+        solver.options['bound_push'] = 1e-10
         solver.options['mu_init'] = 1e-6
-        model.fs.unit.initialize(optarg=solver.options)
+        model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
     def test_solve_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
-        solver.options['bound_push'] = 1e-20
+        solver.options['bound_push'] = 1e-10
         solver.options['mu_init'] = 1e-6
-        results = solver.solve(model)
+        results = solver.solve(model, tee=True)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
@@ -745,19 +761,19 @@ class TestRemineralization():
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
 
-        assert pytest.approx(8.205408733919795, rel=1e-5) == pH
-        assert pytest.approx(5.795760555786688, rel=1e-5) == pOH
+        assert pytest.approx(8.2018656, rel=1e-4) == pH
+        assert pytest.approx(5.7987456, rel=1e-4) == pOH
 
         # Calculate total hardness
         TH = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'Ca_2+')])/1000
         TH = TH*50000
-        assert pytest.approx(59.52729840790867, rel=1e-5) == TH
+        assert pytest.approx(59.524889, rel=1e-5) == TH
 
         # Calculating carbonate alkalinity to determine the split of total hardness
         CarbAlk = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'CO3_2-')])/1000
         CarbAlk += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'HCO3_-')])/1000
         CarbAlk = 50000*CarbAlk
-        assert pytest.approx(161.63611694952652, rel=1e-5) == CarbAlk
+        assert pytest.approx(161.6301239, rel=1e-5) == CarbAlk
 
         # Non-Carbonate Hardness only exists if there is excess hardness above alkalinity
         if TH <= CarbAlk:
@@ -776,22 +792,22 @@ class TestRemineralization():
         #           process, then the model will result in same pH, hardness, and
         #           alkalinity, assuming same reaction sets apply
         nahco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','NaHCO3'])
-        assert pytest.approx( 3.650683833103911e-05, rel=1e-5) == nahco3
+        assert pytest.approx( 3.6490406403736244e-05, rel=1e-3) == nahco3
 
         h2co3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','H2CO3'])
-        assert pytest.approx( 8.127522837138634e-07, rel=1e-5) == h2co3
+        assert pytest.approx( 8.127381781520279e-07, rel=1e-3) == h2co3
 
         caoh = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','Ca(OH)2'])
-        assert pytest.approx( 5.340065455684705e-09, rel=1e-5) == caoh
+        assert pytest.approx( 5.303703532167982e-09, rel=1e-3) == caoh
 
         naoh = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','NaOH'])
-        assert pytest.approx( 1.8334224731184164e-08, rel=1e-5) == naoh
+        assert pytest.approx( 1.8209382127110066e-08, rel=1e-3) == naoh
 
         caco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','CaCO3'])
-        assert pytest.approx( 1.5332636545379076e-07, rel=1e-5) == caco3
+        assert pytest.approx( 1.581439142347598e-07, rel=1e-3) == caco3
 
         cahco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','Ca(HCO3)2'])
-        assert pytest.approx( 1.0633059708069641e-05, rel=1e-5) == cahco3
+        assert pytest.approx( 1.0628273709826089e-05, rel=1e-3) == cahco3
 
 
 # Configuration dictionary
@@ -855,10 +871,10 @@ thermo_config_cstr = {
                     "pressure_crit": (73.825E5, pyunits.Pa),
                     "temperature_crit": (304.23, pyunits.K),
                     "dens_mol_liq_comp_coeff": {
-                        '1': (2.768, pyunits.kmol*pyunits.m**-3),
-                        '2': (0.26212, None),
-                        '3': (304.21, pyunits.K),
-                        '4': (0.2908, None)},
+                        '1': (0.000789, pyunits.kmol * pyunits.m ** -3),
+                        '2': (0.000956, pyunits.dimensionless),
+                        '3': (500.78, pyunits.K),
+                        '4': (0.94599, pyunits.dimensionless)},
                     "cp_mol_ig_comp_coeff": {
                        'A': (24.99735, pyunits.J/pyunits.mol/pyunits.K),
                        'B': (55.18696, pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-1),
@@ -1115,17 +1131,11 @@ thermo_config_cstr = {
 
         "phases":  {'Liq': {"type": AqueousPhase,
                             "equation_of_state": Ideal},
-                    'Vap': {"type": VaporPhase,
-                            "equation_of_state": Ideal}},
-
-        # Defining phase equilibria
-        "phases_in_equilibrium": [("Vap", "Liq")],
-        "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
-        "bubble_dew_method": IdealBubbleDew,
+                            },
 
         "state_definition": FTPx,
         "state_bounds": {"flow_mol": (0, 50, 100),
-                         "temperature": (273.15, 300, 650),
+                         "temperature": (273.15, 300, 500),
                          "pressure": (5e4, 1e5, 1e6)
                      },
 
@@ -1247,7 +1257,7 @@ reaction_config_cstr = {
                "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
                    "dh_rxn_ref": (0, pyunits.J/pyunits.mol),
-                   "arrhenius_const": (1e-10, pyunits.mol/pyunits.m**3/pyunits.s),
+                   "arrhenius_const": (1, pyunits.mol/pyunits.m**3/pyunits.s),
                    "energy_activation": (0, pyunits.J/pyunits.mol)}
                    },
         "R2": {"stoichiometry": {("Liq", "Ca(OH)2"): -1,
@@ -1259,7 +1269,7 @@ reaction_config_cstr = {
                "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
                    "dh_rxn_ref": (0, pyunits.J/pyunits.mol),
-                   "arrhenius_const": (1e-10, pyunits.mol/pyunits.m**3/pyunits.s),
+                   "arrhenius_const": (1, pyunits.mol/pyunits.m**3/pyunits.s),
                    "energy_activation": (0, pyunits.J/pyunits.mol)}
                    }
          }
@@ -1361,9 +1371,8 @@ class TestRemineralizationCSTR():
         assert isinstance(model.fs.thermo_params.component('Ca(OH)2'), Solute)
 
         assert hasattr(model.fs.thermo_params, 'phase_list')
-        assert len(model.fs.thermo_params.phase_list) == 2
+        assert len(model.fs.thermo_params.phase_list) == 1
         assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
-        assert isinstance(model.fs.thermo_params.Vap, VaporPhase)
 
     @pytest.mark.unit
     def test_units_cstr_kin(self, remineralization_cstr_kin):
@@ -1380,21 +1389,44 @@ class TestRemineralizationCSTR():
         model = remineralization_cstr_kin
 
         # Iterate through the reactions to set appropriate eps values
+        factor = 1e-4
         for rid in model.fs.thermo_params.inherent_reaction_idx:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
             # Want to set eps in some fashion similar to this
             if scale < 1e-16:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*1e-2
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*factor
             else:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
 
-        #Add scaling factors for reactions
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
-            # i[0] = time, i[1] = reaction
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
             iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
             iscale.constraint_scaling_transform(model.fs.unit.control_volume.properties_out[0.0].
                     inherent_equilibrium_constraint[i[1]], 0.1)
+
+        # Scaling for kinetic reactions
+        for i in model.fs.rxn_params.rate_reaction_idx:
+            scale = value(model.fs.unit.control_volume.reactions[0.0].reaction_rate[i].expr)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.rate_reaction_extent[0.0,i], 10/scale)
+
+        # Next, try adding scaling for species
+        min = 1e-6
+        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+            # i[0] = phase, i[1] = species
+            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
+                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
+            else:
+                scale = min
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+            iscale.constraint_scaling_transform(
+                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
+
+        # CSTR has a volume variable that needs a scaling factor
+        #       NOTE: Volume is indexed by time
+        iscale.set_scaling_factor(model.fs.unit.control_volume.volume, 10/model.fs.unit.volume[0.0].value)
 
         iscale.calculate_scaling_factors(model.fs.unit)
 
@@ -1407,7 +1439,6 @@ class TestRemineralizationCSTR():
         assert hasattr(model.fs.unit.control_volume.properties_in[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
-    @pytest.mark.skip
     @pytest.mark.component
     def test_initialize_solver_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
@@ -1416,18 +1447,16 @@ class TestRemineralizationCSTR():
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(model) == 0
 
-    @pytest.mark.skip
     @pytest.mark.component
     def test_solve_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
         solver.options['bound_push'] = 1e-20
         solver.options['mu_init'] = 1e-6
-        results = solver.solve(model, tee=False, symbolic_solver_labels=True)
+        results = solver.solve(model, tee=True, symbolic_solver_labels=True)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.skip
     @pytest.mark.component
     def test_solution_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
@@ -1436,5 +1465,24 @@ class TestRemineralizationCSTR():
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
 
-        assert pytest.approx(5.341578882862819, rel=1e-5) == pH
-        assert pytest.approx(8.659592164713462, rel=1e-5) == pOH
+        assert pytest.approx(8.1628836, rel=1e-4) == pH
+        assert pytest.approx(5.8382856, rel=1e-4) == pOH
+
+        # Calculate total hardness
+        TH = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'Ca_2+')])/1000
+        TH = TH*50000
+        assert pytest.approx(54.110449, rel=1e-4) == TH
+
+        # Calculating carbonate alkalinity to determine the split of total hardness
+        CarbAlk = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'CO3_2-')])/1000
+        CarbAlk += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'HCO3_-')])/1000
+        CarbAlk = 50000*CarbAlk
+        assert pytest.approx(146.927839, rel=1e-4) == CarbAlk
+
+        # Non-Carbonate Hardness only exists if there is excess hardness above alkalinity
+        if TH <= CarbAlk:
+            NCH = 0
+        else:
+            NCH = TH - CarbAlk
+        CH = TH - NCH
+        assert pytest.approx(TH, rel=1e-5) == CH
