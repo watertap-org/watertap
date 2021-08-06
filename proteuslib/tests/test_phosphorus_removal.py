@@ -877,56 +877,56 @@ thermo_config = {
                             # End parameter_data
                     },
                     # End R11
-            "FeHPO4_K": {
-                        "stoichiometry": {  ("Liq", "FeHPO4_+"): -1,
-                                            ("Liq", "Fe_3+"): 1,
-                                            ("Liq", "HPO4_2-"): 1},
-                        "heat_of_reaction": constant_dh_rxn,
-                        "equilibrium_constant": van_t_hoff,
-                        "equilibrium_form": log_power_law_equil,
-                        "concentration_form": ConcentrationForm.moleFraction,
-                        "parameter_data": {
-                            #"dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
-                            #"k_eq_ref": (10**-9, pyunits.mol/pyunits.L),
-                            #"T_eq_ref": (300.0, pyunits.K),
-                            "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                            "k_eq_ref": (10**-9/55.2, pyunits.dimensionless),
-                            "T_eq_ref": (298, pyunits.K),
+            #"FeHPO4_K": {
+            #            "stoichiometry": {  ("Liq", "FeHPO4_+"): -1,
+            #                                ("Liq", "Fe_3+"): 1,
+            #                                ("Liq", "HPO4_2-"): 1},
+            #            "heat_of_reaction": constant_dh_rxn,
+            #            "equilibrium_constant": van_t_hoff,
+            #            "equilibrium_form": log_power_law_equil,
+            #            "concentration_form": ConcentrationForm.moleFraction,
+            #            "parameter_data": {
+            #                #"dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
+            #                #"k_eq_ref": (10**-9, pyunits.mol/pyunits.L),
+            #                #"T_eq_ref": (300.0, pyunits.K),
+            #                "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
+            #                "k_eq_ref": (10**-9/55.2, pyunits.dimensionless),
+            #                "T_eq_ref": (298, pyunits.K),
 
-                            # By default, reaction orders follow stoichiometry
-                            #    manually set reaction order here to override
-                            "reaction_order": { ("Liq", "FeHPO4_+"): -1,
-                                                ("Liq", "Fe_3+"): 1,
-                                                ("Liq", "HPO4_2-"): 1}
-                            }
-                            # End parameter_data
-                    },
-                    # End R12
-            "FeH2PO4_K": {
-                        "stoichiometry": {  ("Liq", "FeH2PO4_2+"): -1,
-                                            ("Liq", "Fe_3+"): 1,
-                                            ("Liq", "H2PO4_-"): 1},
-                        "heat_of_reaction": constant_dh_rxn,
-                        "equilibrium_constant": van_t_hoff,
-                        "equilibrium_form": log_power_law_equil,
-                        "concentration_form": ConcentrationForm.moleFraction,
-                        "parameter_data": {
-                            #"dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
-                            #"k_eq_ref": (10**-13.4, pyunits.mol/pyunits.L),
-                            #"T_eq_ref": (300.0, pyunits.K),
-                            "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                            "k_eq_ref": (10**-13.4/55.2, pyunits.dimensionless),
-                            "T_eq_ref": (298, pyunits.K),
+            #                # By default, reaction orders follow stoichiometry
+            #                #    manually set reaction order here to override
+            #                "reaction_order": { ("Liq", "FeHPO4_+"): -1,
+            #                                    ("Liq", "Fe_3+"): 1,
+            #                                    ("Liq", "HPO4_2-"): 1}
+            #                }
+            #                # End parameter_data
+            #        },
+            #        # End R12
+            #"FeH2PO4_K": {
+            #            "stoichiometry": {  ("Liq", "FeH2PO4_2+"): -1,
+            #                                ("Liq", "Fe_3+"): 1,
+            #                                ("Liq", "H2PO4_-"): 1},
+            #            "heat_of_reaction": constant_dh_rxn,
+            #            "equilibrium_constant": van_t_hoff,
+            #            "equilibrium_form": log_power_law_equil,
+            #            "concentration_form": ConcentrationForm.moleFraction,
+            #            "parameter_data": {
+            #                #"dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
+            #                #"k_eq_ref": (10**-13.4, pyunits.mol/pyunits.L),
+            #                #"T_eq_ref": (300.0, pyunits.K),
+            #                "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
+            #                "k_eq_ref": (10**-13.4/55.2, pyunits.dimensionless),
+            #                "T_eq_ref": (298, pyunits.K),
 
-                            # By default, reaction orders follow stoichiometry
-                            #    manually set reaction order here to override
-                            "reaction_order": { ("Liq", "FeH2PO4_2+"): -1,
-                                                ("Liq", "Fe_3+"): 1,
-                                                ("Liq", "H2PO4_-"): 1}
-                            }
-                            # End parameter_data
-                    },
-                    # End R13
+            #                # By default, reaction orders follow stoichiometry
+            #                #    manually set reaction order here to override
+            #                "reaction_order": { ("Liq", "FeH2PO4_2+"): -1,
+            #                                    ("Liq", "Fe_3+"): 1,
+            #                                    ("Liq", "H2PO4_-"): 1}
+            #                }
+            #                # End parameter_data
+            #        },
+            #        # End R13
             "FePO4_Ksp": {
                         "stoichiometry": {  ("Liq", "FePO4(s)"): -1,
                                             ("Liq", "Fe_3+"): 1,
