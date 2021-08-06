@@ -1023,10 +1023,10 @@ class TestSimplePhosphorusRemoval:
         total_carbonate_inlet = 0.00206 # mol/L (typical value for seawater = 2.06E-3 M)
         frac_CO3_to_NaHCO3 = 0.99
         total_phosphate_inlet = 3.22e-6 # mol/L (typical value for seawater = 3.22E-6 M)
-        total_phosphate_inlet += 1e-3 # mol/L (additional phosphorus)
+        total_phosphate_inlet += 1e-4 # mol/L (additional phosphorus)
         total_iron_inlet = 5.38e-8 # mol/L (typical value for seawater = 5.38E-8 M)
-        total_iron_inlet += 1e-3 # mol/L (additional iron added for phosphorus removal) [Added as FeCl3]
-        NaOH_added = 1e-3 # mol/L (added to raise pH and induce precipitation)
+        total_iron_inlet += 1e-4 # mol/L (additional iron added for phosphorus removal) [Added as FeCl3]
+        NaOH_added = 1e-4 # mol/L (added to raise pH and induce precipitation)
 
         model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix(
                     NaOH_added/total_molar_density )
