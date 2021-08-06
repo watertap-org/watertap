@@ -1242,5 +1242,5 @@ class TestSimplePhosphorusRemoval:
         iron_precip = value(model.fs.unit.outlet.mole_frac_comp[0, "FePO4(s)"])*total_molar_density
         iron_precip = iron_precip*55800
 
-        assert pytest.approx(0.01523535, rel=1e-5) == total_iron
+        assert pytest.approx(0.01523535, rel=1e-4) == total_iron
         assert pytest.approx(5.50861807, rel=1e-5) == iron_precip
