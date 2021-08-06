@@ -607,7 +607,7 @@ class TestCarbonationProcess:
     def test_scaling_equilibrium(self, equilibrium_config):
         model = equilibrium_config
 
-        # Equilibiurm reactions have eps in the 'rxn_params'
+        # Equilibrium reactions have eps in the 'rxn_params'
         factor = 1e-4
         for rid in model.fs.rxn_params.equilibrium_reaction_idx:
             scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
