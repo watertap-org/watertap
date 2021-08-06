@@ -11,6 +11,7 @@ This seawater property package:
    * does not support dynamics
    * properties do not incorporate validity ranges for temperature and salinity
    * pressure-dependencies for property relationships are not incorporated
+   * assumes diffusivity of NaCl based on `Bartholomew & Mauter (2019) <https://doi.org/10.1016/j.memsci.2018.11.067>`_
 
 Sets
 ----
@@ -48,6 +49,7 @@ Properties
    "Specific heat capacity", ":math:`c_p`", "cp_phase", "[p]", ":math:`\text{J/kg/K}`"
    "Thermal conductivity", ":math:`\kappa`", "therm_cond_phase", "[p]", ":math:`\text{W/m/K}`"
    "Latent heat of vaporization", ":math:`h_{vap}`", "dh_vap", "None", ":math:`\text{J/kg}`"
+   "Diffusivity", ":math:`D`", "diffus_phase", "[p]", ":math:`\text{m}^2\text{/s}`"
 
 
 **The properties make use of the average molecular weight of sea salt, ≈ 31.40 g/mol, reported in the Reference-Composition Salinity Scale (Millero et al., 2008)  to convert to moles.**
@@ -81,6 +83,8 @@ Relationships
    "Specific heat capacity", "Equation 9 in Sharqawy et al. (2010)"
    "Thermal conductivity", "Equation 13 in Sharqawy et al. (2010)"
    "Latent heat of vaporization", "Equations 37 and 55 in Sharqawy et al. (2010)"
+   "Diffusivity", "Equation 6 in Bartholomew et al. (2010)"
+
 
 
 Note: Osmotic pressure calculation (based on equation 48 in Nayar et al. (2016)) uses the density of water as a function of temperature (:math:`\rho_w`) and the ideal gas constant (:math:`R\text{, 8.314 J/mol}\cdotp\text{K}`), in addition to previously defined variables.
@@ -126,6 +130,7 @@ The default scaling factors are as follows:
    * 1e-3 for the specific heat capacity
    * 1 for thermal conductivity
    * 1e-6 for latent heat of vaporization
+   * 1e9 for diffusivity
 
 Scaling factors for other variables can be calculated based on their relationships with the user-supplied or default scaling factors.
    
@@ -137,4 +142,7 @@ K.G.Nayar, M.H.Sharqawy, L.D.Banchik, and J.H.Lienhard V, "Thermophysical proper
 M.H. Sharqawy, J.H.L. V, S.M. Zubair, Thermophysical properties of seawater: a review of existing correlations and data, Desalination and Water Treatment. 16 (2010) 354–380. https://doi.org/10.5004/dwt.2010.1079. (2017 corrections provided at http://web.mit.edu/seawater )
 
 F.J. Millero, R. Feistel, D.G. Wright, T.J. McDougall, The composition of Standard Seawater and the definition of the Reference-Composition Salinity Scale, Deep-Sea Research Part I. 55 (2008) 50–72. https://doi.org/10.1016/j.dsr.2007.10.001.
+
+T.V. Bartholomew, M.S. Mauter, Computational framework for modeling membrane processes without process and solution property simplifications, Journal of Membrane Science. 573 (2019) 682–693. https://doi.org/10.1016/j.memsci.2018.11.067.
+
 
