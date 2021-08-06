@@ -658,7 +658,7 @@ class TestChlorination():
         assert hasattr(model.fs.thermo_params.reaction_H2O_Kw, 'eps')
 
         assert hasattr(model.fs.rxn_params, 'reaction_NCl3_K')
-        assert hasattr(model.fs.rxn_params.reaction_NH2Cl_K, 'eps')
+        assert hasattr(model.fs.rxn_params.reaction_NCl3_K, 'eps')
 
     @pytest.mark.component
     def test_scaling(self, chlorination_obj):
