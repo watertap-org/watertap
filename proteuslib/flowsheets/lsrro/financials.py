@@ -50,14 +50,13 @@ def add_costing_param_block(self):
         doc='Energy recovery device cost parameters')
 
     # traditional parameters are the only Vars on the block and should be fixed
-    for v in b.component_objects(Var, descend_into=True):
-        for i in v:
-            if v[i].value is None:
-                raise ConfigurationError(
-                    "{} parameter {} was not assigned"
-                    " a value. Please check your configuration "
-                    "arguments.".format(b.name, v.local_name))
-            v[i].fix()
+    for v in b.component_data_objects(Var, descend_into=True):
+        if v.value is None:
+            raise ConfigurationError(
+                "{} parameter {} was not assigned"
+                " a value. Please check your configuration "
+                "arguments.".format(b.name, v.local_name))
+        v.fix()
 
 
 def get_system_costing(self):
@@ -88,7 +87,7 @@ def get_system_costing(self):
 
     capital_cost_var_lst = []
     operating_cost_var_lst = []
-    for b_unit in self.component_objects(Block, descend_into=True):
+    for b_unit in self.component_data_objects(Block, descend_into=True):
         if hasattr(b_unit, 'costing'):
             capital_cost_var_lst.append(b_unit.costing.capital_cost)
             operating_cost_var_lst.append(b_unit.costing.operating_cost)

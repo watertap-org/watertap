@@ -37,15 +37,20 @@ class TestLSRRO_1Stage:
         return build(N=1)
 
     def test_build(self, m):
+        m.compute_statistics()
+        assert m.statistics.number_of_variables == 247
+        assert m.statistics.number_of_constraints == 170
+        assert m.statistics.number_of_objectives == 0
+
         assert_units_consistent(m.fs)
 
     def test_simulation(self, m):
         simulate(m)
 
         # product test
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.033930496, rel=1e-6)
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(5.5589030e-05, rel=1e-6)
 
         # disposal test
@@ -64,9 +69,9 @@ class TestLSRRO_1Stage:
         optimize(m)
 
         # product test
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.402007225, rel=1e-6)
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.00045562534592, rel=1e-6)
 
         # disposal test
@@ -87,15 +92,20 @@ class TestLSRRO_2Stage:
         return build(N=2)
 
     def test_build(self, m):
+        m.compute_statistics()
+        assert m.statistics.number_of_variables == 492
+        assert m.statistics.number_of_constraints == 360
+        assert m.statistics.number_of_objectives == 0
+
         assert_units_consistent(m.fs)
 
     def test_simulation(self, m):
         simulate(m)
 
         # product test
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.0572860373, rel=1e-6)
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(5.0857733223e-05, rel=1e-6)
 
         # disposal test
@@ -114,9 +124,9 @@ class TestLSRRO_2Stage:
         optimize(m)
 
         # product test
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.75116169022, rel=1e-6)
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.000408174016456, rel=1e-6)
 
         # disposal test
@@ -137,15 +147,20 @@ class TestLSRRO_3Stage:
         return build(N=3)
 
     def test_build(self, m):
+        m.compute_statistics()
+        assert m.statistics.number_of_variables == 737
+        assert m.statistics.number_of_constraints == 550
+        assert m.statistics.number_of_objectives == 0
+
         assert_units_consistent(m.fs)
 
     def test_simulation(self, m):
         simulate(m)
 
         # product test
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.06116934948, rel=1e-6)
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(5.0216246455804524e-05, rel=1e-6)
 
         # disposal test
@@ -164,9 +179,9 @@ class TestLSRRO_3Stage:
         optimize(m)
 
         # product test
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.4570430146694281, rel=1e-6)
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.00048188821319752726, rel=1e-6)
 
         # disposal test
@@ -188,15 +203,20 @@ class TestLSRRO_4Stage:
         return build(N=4)
 
     def test_build(self, m):
+        m.compute_statistics()
+        assert m.statistics.number_of_variables == 982
+        assert m.statistics.number_of_constraints == 740
+        assert m.statistics.number_of_objectives == 0
+
         assert_units_consistent(m.fs)
 
     def test_simulation(self, m):
         simulate(m)
 
         # product test
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.0622020581538581, rel=1e-6)
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(5.006060005647094e-05, rel=1e-6)
 
         # disposal test
@@ -215,9 +235,9 @@ class TestLSRRO_4Stage:
         optimize(m)
 
         # product test
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.7511508232832104, rel=1e-6)
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.00040435571225970544, rel=1e-6)
 
         # disposal test
@@ -238,15 +258,20 @@ class TestLSRRO_5Stage:
         return build(N=5)
 
     def test_build(self, m):
+        m.compute_statistics()
+        assert m.statistics.number_of_variables == 1227 
+        assert m.statistics.number_of_constraints == 930
+        assert m.statistics.number_of_objectives == 0
+
         assert_units_consistent(m.fs)
 
     def test_simulation(self, m):
         simulate(m)
 
         # product test
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.06251865466527008, rel=1e-6)
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(5.002363496358118e-05, rel=1e-6)
 
         # disposal test
@@ -265,9 +290,9 @@ class TestLSRRO_5Stage:
         optimize(m)
 
         # product test
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.7511524942511427, rel=1e-6)
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.000404932672929006, rel=1e-6)
 
         # disposal test
@@ -289,15 +314,19 @@ class TestLSRRO_NStage:
         return build(N=N)
 
     def test_build(self, m):
+        assert m.statistics.number_of_variables ==
+        assert m.statistics.number_of_constraints ==
+        assert m.statistics.number_of_objectives == 0
+
         assert_units_consistent(m.fs)
 
     def test_simulation(self, m):
         simulate(m)
 
         # product test
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(, rel=1e-6)
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(, rel=1e-6)
 
         # disposal test
@@ -316,9 +345,9 @@ class TestLSRRO_NStage:
         optimize(m)
 
         # product test
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(, rel=1e-6)
-        assert pyo.value(m.fs.Stage1.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(, rel=1e-6)
 
         # disposal test
