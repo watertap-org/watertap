@@ -26,15 +26,16 @@ from idaes.generic_models.unit_models.mixer import MomentumMixingType
 from idaes.core.util.scaling import (unscaled_variables_generator,
                                      unscaled_constraints_generator)
 
-from proteuslib.flowsheets.lsrro.lsrro import build, simulate, set_up_optimization, optimize
+from proteuslib.flowsheets.lsrro.lsrro import build, set_operating_conditions, optimize_set_up, solve
 
-
-solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
+# for test regressions
+solver = pyo.SolverFactory('ipopt')
+solver.options = {'nlp_scaling_method': 'user-scaling'}
 
 class TestLSRRO_1Stage:
     @pytest.fixture(scope="class")
     def m(self):
-        return build(N=1)
+        return build(number_of_stages=1)
 
     def test_build(self, m):
         m.compute_statistics()
@@ -45,7 +46,8 @@ class TestLSRRO_1Stage:
         assert_units_consistent(m.fs)
 
     def test_simulation(self, m):
-        simulate(m)
+        set_operating_conditions(m)
+        solve(m, solver=solver)
 
         # product test
         assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
@@ -65,8 +67,8 @@ class TestLSRRO_1Stage:
         assert pyo.value(m.fs.water_recovery) == pytest.approx(0.0362893006, rel=1e-6)
 
     def test_optimize(self, m):
-        set_up_optimization(m)
-        optimize(m)
+        optimize_set_up(m)
+        solve(m, solver=solver)
 
         # product test
         assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
@@ -89,7 +91,7 @@ class TestLSRRO_1Stage:
 class TestLSRRO_2Stage:
     @pytest.fixture(scope="class")
     def m(self):
-        return build(N=2)
+        return build(number_of_stages=2)
 
     def test_build(self, m):
         m.compute_statistics()
@@ -100,7 +102,8 @@ class TestLSRRO_2Stage:
         assert_units_consistent(m.fs)
 
     def test_simulation(self, m):
-        simulate(m)
+        set_operating_conditions(m)
+        solve(m, solver=solver)
 
         # product test
         assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
@@ -120,8 +123,8 @@ class TestLSRRO_2Stage:
         assert pyo.value(m.fs.water_recovery) == pytest.approx(0.06126848914, rel=1e-6)
 
     def test_optimize(self, m):
-        set_up_optimization(m)
-        optimize(m)
+        optimize_set_up(m)
+        solve(m, solver=solver)
 
         # product test
         assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
@@ -144,7 +147,7 @@ class TestLSRRO_2Stage:
 class TestLSRRO_3Stage:
     @pytest.fixture(scope="class")
     def m(self):
-        return build(N=3)
+        return build(number_of_stages=3)
 
     def test_build(self, m):
         m.compute_statistics()
@@ -155,7 +158,8 @@ class TestLSRRO_3Stage:
         assert_units_consistent(m.fs)
 
     def test_simulation(self, m):
-        simulate(m)
+        set_operating_conditions(m)
+        solve(m, solver=solver)
 
         # product test
         assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
@@ -175,8 +179,8 @@ class TestLSRRO_3Stage:
         assert pyo.value(m.fs.water_recovery) == pytest.approx(0.06542176415136916, rel=1e-6)
 
     def test_optimize(self, m):
-        set_up_optimization(m)
-        optimize(m)
+        optimize_set_up(m)
+        solve(m, solver=solver)
 
         # product test
         assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
@@ -200,7 +204,7 @@ class TestLSRRO_3Stage:
 class TestLSRRO_4Stage:
     @pytest.fixture(scope="class")
     def m(self):
-        return build(N=4)
+        return build(number_of_stages=4)
 
     def test_build(self, m):
         m.compute_statistics()
@@ -211,7 +215,8 @@ class TestLSRRO_4Stage:
         assert_units_consistent(m.fs)
 
     def test_simulation(self, m):
-        simulate(m)
+        set_operating_conditions(m)
+        solve(m, solver=solver)
 
         # product test
         assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
@@ -231,8 +236,8 @@ class TestLSRRO_4Stage:
         assert pyo.value(m.fs.water_recovery) == pytest.approx(0.06652626540519582, rel=1e-6)
 
     def test_optimize(self, m):
-        set_up_optimization(m)
-        optimize(m)
+        optimize_set_up(m)
+        solve(m, solver=solver)
 
         # product test
         assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
@@ -255,7 +260,7 @@ class TestLSRRO_4Stage:
 class TestLSRRO_5Stage:
     @pytest.fixture(scope="class")
     def m(self):
-        return build(N=5)
+        return build(number_of_stages=5)
 
     def test_build(self, m):
         m.compute_statistics()
@@ -266,7 +271,8 @@ class TestLSRRO_5Stage:
         assert_units_consistent(m.fs)
 
     def test_simulation(self, m):
-        simulate(m)
+        set_operating_conditions(m)
+        solve(m, solver=solver)
 
         # product test
         assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
@@ -286,8 +292,8 @@ class TestLSRRO_5Stage:
         assert pyo.value(m.fs.water_recovery) == pytest.approx(0.06686487129975409, rel=1e-6)
 
     def test_optimize(self, m):
-        set_up_optimization(m)
-        optimize(m)
+        optimize_set_up(m)
+        solve(m, solver=solver)
 
         # product test
         assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
@@ -311,7 +317,7 @@ class TestLSRRO_5Stage:
 class TestLSRRO_NStage:
     @pytest.fixture(scope="class")
     def m(self):
-        return build(N=N)
+        return build(number_of_stages=N)
 
     def test_build(self, m):
         assert m.statistics.number_of_variables ==
@@ -321,7 +327,8 @@ class TestLSRRO_NStage:
         assert_units_consistent(m.fs)
 
     def test_simulation(self, m):
-        simulate(m)
+        set_operating_conditions(m)
+        solve(m, solver=solver)
 
         # product test
         assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
@@ -341,8 +348,8 @@ class TestLSRRO_NStage:
         assert pyo.value(m.fs.water_recovery) == pytest.approx(, rel=1e-6)
 
     def test_optimize(self, m):
-        set_up_optimization(m)
-        optimize(m)
+        optimize_set_up(m)
+        solve(m, solver=solver)
 
         # product test
         assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \

@@ -13,10 +13,11 @@
 
 from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition, \
     value, Param, Var, Constraint, Expression, Objective, TransformationFactory, \
-    Block, NonNegativeReals, PositiveIntegers, RangeSet
+    Block, NonNegativeReals, PositiveIntegers, RangeSet, check_optimal_termination
 from pyomo.environ import units as pyunits
 from pyomo.network import Arc, SequentialDecomposition
 from idaes.core import FlowsheetBlock
+from idaes.core.util import get_solver
 from idaes.generic_models.unit_models import Mixer, Separator
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -38,7 +39,7 @@ idaeslogger.getLogger("idaes.core").setLevel(idaeslogger.CRITICAL)
 idaeslogger.getLogger("idaes.init").setLevel(idaeslogger.CRITICAL)
 
 
-def build(N=2):
+def build(number_of_stages=2):
     # ---building model---
     m = ConcreteModel()
 
@@ -46,7 +47,7 @@ def build(N=2):
     m.fs.properties = props.NaClParameterBlock()
     financials.add_costing_param_block(m.fs)
 
-    m.fs.NumberOfStages = Param(initialize=N)
+    m.fs.NumberOfStages = Param(initialize=number_of_stages)
     m.fs.StageSet = RangeSet(m.fs.NumberOfStages)
     m.fs.LSRRO_StageSet = RangeSet(2, m.fs.NumberOfStages)
     m.fs.NonFinal_StageSet = RangeSet(m.fs.NumberOfStages-1)
@@ -119,7 +120,7 @@ def build(N=2):
     arc_id = 1
     for n in m.fs.StageSet:
 
-        if n < N:
+        if n < number_of_stages:
             ### Connect the Pump n to the Mixer n
             s = m.fs.P[n].outlet
             d = m.fs.M[n].upstream
@@ -169,9 +170,7 @@ def build(N=2):
     return m
 
 
-def simulate(m, viz_params=None, verbose=False):
-    if viz_params is None:
-        viz_params = dict()
+def set_operating_conditions(m, verbose=False, solver=None):
 
     # ---specifications---
     # parameters
@@ -230,25 +229,6 @@ def simulate(m, viz_params=None, verbose=False):
     m.fs.ERD.control_volume.properties_out[0].pressure.fix(pressure_atm)
     iscale.set_scaling_factor(m.fs.ERD.control_volume.work, 1e-3)
 
-    # ---set the viz parameters, if they exist---
-    for k, viz_param in viz_params.items():
-        if verbose:
-            print(f"Setting {viz_param.component} to {viz_param.value*viz_param.viz_to_model_conversion} "
-                  f"for viz object {k}.")
-        component = m.find_component(viz_param.component)
-        if component.is_variable_type():
-            if viz_param.lb is not None:
-                component.setlb(viz_param.viz_to_model_conversion*viz_param.lb)
-            if viz_param.ub is not None:
-                component.setub(viz_param.viz_to_model_conversion*viz_param.ub)
-            if viz_param.value is not None:
-                component.fix(viz_param.viz_to_model_conversion*viz_param.value)
-        elif component.is_parameter_type():
-            if viz_param.value is not None:
-                component.value = viz_param.viz_to_model_conversion*viz_param.value
-        else:
-            raise RuntimeError(f"Unrecognized component {component} of type {type(component)}")
-
     # initialize stages
     for stage in m.fs.Stage.values():
         stage.width.setlb(low_width_factor*value(stage.area))
@@ -267,15 +247,19 @@ def simulate(m, viz_params=None, verbose=False):
 
     # ---initializing---
     # set up solvers
-    solver = SolverFactory('ipopt')
-    solver.options = {'nlp_scaling_method': 'user-scaling', 'max_iter': 5000}
+    if solver is None:
+        solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
 
     # set up SD tool
     feed_mass_frac_NaCl = value(m.fs.P[1].inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']/ feed_flow_mass)
     feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
     seq = SequentialDecomposition()
-    seq.options.select_tear_method = "heuristic"
-    seq.options.tear_method = "Wegstein"
+    #if not SolverFactory("glpk").available():
+    if True:
+        seq.options.select_tear_method = "heuristic"
+        seq.options.tear_method = "Wegstein"
+    else:
+        seq.options.tear_solver = "glpk"
     seq.options.iterLim = 2
     # assess tear
     G = seq.create_graph(m)
@@ -292,35 +276,23 @@ def simulate(m, viz_params=None, verbose=False):
         unit.initialize(optarg=solver.options, outlvl=outlvl)
     seq.run(m, func_initialize)
 
+
+def solve(m, solver=None, tee=False):
     # ---solving---
-    try:
-        results = solver.solve(m, tee=False)
-        assert results.solver.termination_condition == TerminationCondition.optimal
-    except:
+    if solver is None:
+        solver = get_solver(options={'nlp_scaling_method':'user-scaling'})
+
+    results = solver.solve(m, tee=tee)
+    if check_optimal_termination(results):
+        return m
+    else:
         print("The current configuration is infeasible. Please adjust the decision variables.")
         return None
 
-    # ---displaying---
 
-    if verbose:
-        print('\n   Initial simulation')
-        display_metrics(m)
-        display_state(m)
-        display_design(m)
-
-    return m
-
-
-def set_up_optimization(m, obj='LCOW', viz_params=None, verbose=False, set_water_recovery=False):
-    # ---optimizing---
-    if viz_params is None:
-        viz_params = dict()
+def optimize_set_up(m, verbose=False, set_water_recovery=False):
     # objective
-    if obj == 'EC':
-        m.fs.objective = Objective(expr=m.fs.EC)
-    elif obj == 'LCOW':
-        m.fs.objective = Objective(expr=m.fs.costing.LCOW)
-
+    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
     for pump in m.fs.P.values():
         pump.control_volume.properties_out[0].pressure.unfix()  # pressure out of pump 1 [Pa]
@@ -355,36 +327,11 @@ def set_up_optimization(m, obj='LCOW', viz_params=None, verbose=False, set_water
 
     # additional constraints
     if set_water_recovery:
-        # TODO: add slider for optimization step to 
-        #       set the value this is fixed to
-        #       default: 0.50; min: 0.30; max: 0.70
         m.fs.water_recovery.fix(0.5) # product mass flow rate fraction of feed [-]
 
-    # ---set the viz parameters, if they exist---
-    for k, viz_param in viz_params.items():
-        if verbose:
-            msg_set = f"Setting {viz_param.component} to {viz_param.value*viz_param.viz_to_model_conversion} for viz object {k}."
-            msg_bounds = f"Feeing {viz_param.component} and setting bounds for viz object {k}."
-        component = m.find_component(viz_param.component)
-        if component.is_variable_type():
-            if viz_param.lb is not None:
-                component.setlb(viz_param.viz_to_model_conversion*viz_param.lb)
-            if viz_param.ub is not None:
-                component.setub(viz_param.viz_to_model_conversion*viz_param.ub)
-            if viz_param.value is not None and viz_param.fixed_optimize:
-                if verbose: print(msg_set)
-                component.fix(viz_param.viz_to_model_conversion*viz_param.value)
-            else:
-                if verbose: print(msg_bounds)
-                component.unfix()
-        elif component.is_parameter_type():
-            if viz_param.value is not None:
-                if verbose: print(msg_set)
-                component.value = viz_param.viz_to_model_conversion*viz_param.value
-        else:
-            raise RuntimeError(f"Unrecognized component {component} of type {type(component)}")
-
-    if obj == 'EC':
+    if False:
+        # TODO: these constraints should not be needed
+        #       per Adam 2021 Aug 9
         # Create flux constraints
         @m.fs.Constraint(m.fs.StageSet)
         def eq_min_avg_flux(fs, stage):
@@ -399,27 +346,6 @@ def set_up_optimization(m, obj='LCOW', viz_params=None, verbose=False, set_water
 
     return m
 
-
-def optimize(m, verbose=False):
-    # ---solving minimization problem---
-    solver = SolverFactory('ipopt')
-    solver.options = {'nlp_scaling_method': 'user-scaling'}
-    try:
-        results = solver.solve(m, tee=False)
-        assert results.solver.termination_condition == TerminationCondition.optimal
-    except:
-        print("The current configuration is infeasible. "
-              "Please adjust the number of stages, feed concentration, or target water recovery.")
-        return None
-
-    # ---displaying---
-    if verbose:
-        print('\n   Optimization')
-        metrics = display_metrics(m)
-        display_state(m)
-        display_design(m)
-
-    return m
 
 def display_metrics(m):
     print('----system metrics----')
@@ -554,12 +480,13 @@ def display_demo(m):
         sr = m.fs.Stage[stage].rejection_phase_comp[0, 'Liq', 'NaCl'].value
         print(f"Stage {stage}: Water recovery: {wr*100:.2f}%, Salt rejection: {sr*100:.2f}%")
 
-def main(N):
-    m = build_model(N=N)
-    simulate(m)
+def main(number_of_stages):
+    m = build_model(number_of_stages)
+    set_operating_conditions(m)
+    solve(m)
     # print('finished simulation')
-    set_up_optimization(m, 'LCOW', set_water_recovery=True)
-    optimize(m, verbose=True)
+    optimize_set_up(m, set_water_recovery=True)
+    solve(m)
 
     print('---Close to bounds---')
     infeas.log_close_to_bounds(m)
@@ -568,6 +495,6 @@ def main(N):
     return m
 
 if __name__ == "__main__":
-    N = 4
-    main(N)
+    import sys
+    main(int(sys.argv[1]))
 
