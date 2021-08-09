@@ -32,8 +32,8 @@ class TestSeawaterProperty(PropertyTestHarness):
         self.param_args = {}
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1,
                              ('flow_mass_phase_comp', ('Liq', 'TDS')): 1e2}
-        self.stateblock_statistics = {'number_variables': 24,
-                                      'number_total_constraints': 20,
+        self.stateblock_statistics = {'number_variables': 25,
+                                      'number_total_constraints': 21,
                                       'number_unused_variables': 1,  # pressure is unused
                                       'default_degrees_of_freedom': 3}  # 4 state vars, but pressure is not active
         self.default_solution = {('mass_frac_phase_comp', ('Liq', 'H2O')): 0.965,
@@ -55,7 +55,8 @@ class TestSeawaterProperty(PropertyTestHarness):
                                  ('pressure_sat', None): 3111,
                                  ('cp_phase', 'Liq'): 4001,
                                  ('therm_cond_phase', 'Liq'): 0.6086,
-                                 ('dh_vap', None): 2.356e6}
+                                 ('dh_vap', None): 2.356e6,
+                                 ('diffus_phase', 'Liq'): 1.471e-9}
 
 
 @pytest.mark.component
@@ -92,7 +93,8 @@ class TestSeawaterPropertySolution_1(PropertyRegressionTest):
                                     ('pressure_sat', None): 1.229e4,
                                     ('cp_phase', 'Liq'): 4.130e3,
                                     ('therm_cond_phase', 'Liq'): 0.6400,
-                                    ('dh_vap', None): 2.358e6}
+                                    ('dh_vap', None): 2.358e6,
+                                    ('diffus_phase', 'Liq'): 1.493e-9}
 
 
 @pytest.mark.component
@@ -129,4 +131,5 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
                                     ('pressure_sat', None): 1.194e3,
                                     ('cp_phase', 'Liq'): 3.916e3,
                                     ('therm_cond_phase', 'Liq'): 0.5854,
-                                    ('dh_vap', None): 2.353e6}
+                                    ('dh_vap', None): 2.353e6,
+                                    ('diffus_phase', 'Liq'): 1.471e-9}
