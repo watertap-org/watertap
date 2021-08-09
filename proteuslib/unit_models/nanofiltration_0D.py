@@ -656,13 +656,268 @@ class NanoFiltrationData(UnitModelBlockData):
         def eq_permeate_isothermal(b, t):
             return b.feed_side.properties_out[t].temperature == \
                    b.permeate_side.properties_mixed[t].temperature
+        # # Permeate-side stateblocks
+        @self.permeate_side.Constraint(self.flowsheet().config.time,
+                                   self.io_list,
+                                   solute_set,
+                                   doc="Permeate mass fraction")
+        def eq_mass_frac_permeate_io(b, t, x, j):
+            if x == 'in':
+                prop_io = b.properties_in[t]
+            elif x == 'out':
+                prop_io = b.properties_out[t]
+            return (prop_io.mass_frac_phase_comp['Liq', j]
+                    * sum(self.flux_mass_io_phase_comp[t, x, 'Liq', jj]
+                          for jj in self.config.property_package.component_list)
+                    == self.flux_mass_io_phase_comp[t, x, 'Liq', j])
+
+        @self.permeate_side.Constraint(self.flowsheet().config.time,
+                                       self.io_list,
+                                       doc="Permeate temperature")
+        def eq_temperature_permeate_io(b, t, x):
+            if x == 'in':
+                prop_io = b.properties_in[t]
+            elif x == 'out':
+                prop_io = b.properties_out[t]
+            return prop_io.temperature == b.properties_mixed[t].temperature
+
+        @self.permeate_side.Constraint(self.flowsheet().config.time,
+                                       self.io_list,
+                                       doc="Permeate pressure")
+        def eq_pressure_permeate_io(b, t, x):
+            if x == 'in':
+                prop_io = b.properties_in[t]
+            elif x == 'out':
+                prop_io = b.properties_out[t]
+            return prop_io.pressure == b.properties_mixed[t].pressure
+
+        @self.permeate_side.Constraint(self.flowsheet().config.time,
+                                       self.io_list,
+                                       doc="Permeate flowrate")
+        def eq_flow_vol_permeate_io(b, t, x):
+            if x == 'in':
+                prop_io = b.properties_in[t]
+            elif x == 'out':
+                prop_io = b.properties_out[t]
+            return prop_io.flow_vol_phase['Liq'] == b.properties_mixed[t].flow_vol_phase['Liq']
+
+        # Concentration polarization
+        @self.feed_side.Constraint(self.flowsheet().config.time,
+                                   self.io_list,
+                                   solute_set,
+                                   doc="Concentration polarization")
+        def eq_concentration_polarization_io(b, t, x, j):
+            if x == 'in':
+                prop_io = b.properties_in[t]
+                prop_interface_io = b.properties_interface_in[t]
+            elif x == 'out':
+                prop_io = b.properties_out[t]
+                prop_interface_io = b.properties_interface_out[t]
+            if self.config.concentration_polarization_type == ConcentrationPolarizationType.none:
+                return prop_interface_io.conc_mass_phase_comp['Liq', j] == \
+                       prop_io.conc_mass_phase_comp['Liq', j]
+            elif self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
+                return (prop_interface_io.conc_mass_phase_comp['Liq', j] ==
+                        prop_io.conc_mass_phase_comp['Liq', j]
+                        * self.cp_modulus[t, j])
+            elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
+                jw = self.flux_mass_io_phase_comp[t, x, 'Liq', 'H2O'] / self.dens_solvent
+                js = self.flux_mass_io_phase_comp[t, x, 'Liq', j]
+                return (prop_interface_io.conc_mass_phase_comp['Liq', j] ==
+                        prop_io.conc_mass_phase_comp['Liq', j] * exp(jw / self.Kf_io[t, x, j])
+                        - js / jw * (exp(jw / self.Kf_io[t, x, j]) - 1))
+        # Mass transfer coefficient calculation
+        if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
+            @self.Constraint(self.flowsheet().config.time,
+                                       self.io_list,
+                                       solute_set,
+                                       doc="Mass transfer coefficient in feed channel")
+            def eq_Kf_io(b, t, x, j):
+                if x == 'in':
+                    prop_io = b.feed_side.properties_in[t]
+                elif x == 'out':
+                    prop_io = b.feed_side.properties_out[t]
+                return (b.Kf_io[t, x, j] * b.dh ==
+                        prop_io.diffus_phase['Liq']
+                        * b.N_Sh_io[t, x])
+
+            @self.Constraint(self.flowsheet().config.time,
+                                       self.io_list,
+                                       doc="Sherwood number")
+            def eq_N_Sh_io(b, t, x):
+                return (b.N_Sh_io[t, x] ==
+                        0.46 * (b.N_Re_io[t, x] * b.N_Sc_io[t, x])**0.36)
+
+            @self.Constraint(self.flowsheet().config.time,
+                                       self.io_list,
+                                       doc="Schmidt number")
+            def eq_N_Sc_io(b, t, x):
+                if x == 'in':
+                    prop_io = b.feed_side.properties_in[t]
+                elif x == 'out':
+                    prop_io = b.feed_side.properties_out[t]
+                return (b.N_Sc_io[t, x] * prop_io.dens_mass_phase['Liq'] * prop_io.diffus_phase['Liq'] ==
+                        prop_io.visc_d_phase['Liq'])
+
+        if hasattr(self, 'length') or hasattr(self, 'width'):
+            @self.Constraint(doc="Membrane area")
+            def eq_area(b):
+                return b.area == b.length * b.width
+
+        if (self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
+            or self.config.pressure_change_type == PressureChangeType.calculated):
+            @self.Expression(doc="Cross-sectional area")
+            def area_cross(b):
+                return b.channel_height * b.width * b.spacer_porosity
+
+            @self.Constraint(self.flowsheet().config.time,
+                                       self.io_list,
+                                       doc="Reynolds number")
+            def eq_N_Re_io(b, t, x):
+                if x == 'in':
+                    prop_io = b.feed_side.properties_in[t]
+                elif x == 'out':
+                    prop_io = b.feed_side.properties_out[t]
+                return (b.N_Re_io[t, x] * b.area_cross * prop_io.visc_d_phase['Liq'] ==
+                        sum(prop_io.flow_mass_phase_comp['Liq', j] for j in b.config.property_package.component_list)
+                        * b.dh)
+
+            @self.Constraint(doc="Hydraulic diameter")  # eqn. 17 in Schock & Miquel, 1987
+            def eq_dh(b):
+                return (b.dh ==
+                        4 * b.spacer_porosity
+                        / (2 / b.channel_height
+                           + (1 - b.spacer_porosity) * 8 / b.channel_height))
+
+        if self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length:
+            # Pressure change equation when dP/dx = user-specified constant,
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="pressure change due to friction")
+            def eq_pressure_change(b, t):
+                return b.deltaP[t] == b.dP_dx[t] * b.length
+
+        elif self.config.pressure_change_type == PressureChangeType.calculated:
+            # Crossflow velocity at inlet and outlet
+            @self.Constraint(self.flowsheet().config.time,
+                             self.io_list,
+                             doc="Crossflow velocity constraint")
+            def eq_velocity_io(b, t, x):
+                if x == 'in':
+                    prop_io = b.feed_side.properties_in[t]
+                elif x == 'out':
+                    prop_io = b.feed_side.properties_out[t]
+                return b.velocity_io[t, x] * b.area_cross == prop_io.flow_vol_phase['Liq']
+
+            # Darcy friction factor based on eq. S27 in SI for Cost Optimization of Osmotically Assisted Reverse Osmosis
+            # TODO: this relationship for friction factor is specific to a particular spacer geometry. Add alternatives.
+            @self.Constraint(self.flowsheet().config.time,
+                             self.io_list,
+                             doc="Darcy friction factor constraint")
+            def eq_friction_factor_darcy_io(b, t, x):
+                return (b.friction_factor_darcy_io[t, x] - 0.42) * b.N_Re_io[t, x] == 189.3
+
+            # Pressure change per unit length due to friction,
+            # -1/2*f/dh*density*velocity^2
+            @self.Constraint(self.flowsheet().config.time,
+                             self.io_list,
+                             doc="pressure change per unit length due to friction")
+            def eq_dP_dx_io(b, t, x):
+                if x == 'in':
+                    prop_io = b.feed_side.properties_in[t]
+                elif x == 'out':
+                    prop_io = b.feed_side.properties_out[t]
+                return (b.dP_dx_io[t, x] * b.dh ==
+                        -0.5 * b.friction_factor_darcy_io[t, x]
+                        * prop_io.dens_mass_phase['Liq'] * b.velocity_io[t, x]**2)
+
+            # Average pressure change per unit length due to friction
+            @self.Expression(self.flowsheet().config.time,
+                             doc="expression for average pressure change per unit length due to friction")
+            def dP_dx_avg(b, t):
+                return 0.5 * sum(b.dP_dx_io[t, x] for x in b.io_list)
+
+            # Pressure change equation
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="pressure change due to friction")
+            def eq_pressure_change(b, t):
+                return b.deltaP[t] == b.dP_dx_avg[t] * b.length
+
+        # Bulk and interface connection on the feed-side
+        @self.feed_side.Constraint(self.flowsheet().config.time,
+                                   self.io_list,
+                                   doc="Temperature at interface")
+        def eq_equal_temp_interface_io(b, t, x):
+            if x == 'in':
+                prop_io = b.properties_in[t]
+                prop_interface_io = b.properties_interface_in[t]
+            elif x == 'out':
+                prop_io = b.properties_out[t]
+                prop_interface_io = b.properties_interface_out[t]
+            return prop_interface_io.temperature == \
+                   prop_io.temperature
+
+        @self.feed_side.Constraint(self.flowsheet().config.time,
+                                   self.io_list,
+                                   doc="Pressure at interface")
+        def eq_equal_pressure_interface_io(b, t, x):
+            if x == 'in':
+                prop_io = b.properties_in[t]
+                prop_interface_io = b.properties_interface_in[t]
+            elif x == 'out':
+                prop_io = b.properties_out[t]
+                prop_interface_io = b.properties_interface_out[t]
+            return prop_interface_io.pressure == \
+                   prop_io.pressure
+
+        @self.feed_side.Constraint(self.flowsheet().config.time,
+                                   self.io_list,
+                                   doc="Volumetric flow at interface of inlet")
+        def eq_equal_flow_vol_interface_io(b, t, x):
+            if x == 'in':
+                prop_io = b.properties_in[t]
+                prop_interface_io = b.properties_interface_in[t]
+            elif x == 'out':
+                prop_io = b.properties_out[t]
+                prop_interface_io = b.properties_interface_out[t]
+            return prop_interface_io.flow_vol_phase['Liq'] ==\
+                   prop_io.flow_vol_phase['Liq']
+
+        # constraints for additional variables (i.e. variables not used in other constraints)
+        @self.Constraint(self.flowsheet().config.time)
+        def eq_recovery_vol_phase(b, t):
+            return (b.recovery_vol_phase[t, 'Liq'] ==
+                    b.permeate_side.properties_mixed[t].flow_vol_phase['Liq'] /
+                    b.feed_side.properties_in[t].flow_vol_phase['Liq'])
+
+        @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.component_list)
+        def eq_recovery_mass_phase_comp(b, t, j):
+            return (b.recovery_mass_phase_comp[t, 'Liq', j] ==
+                    b.permeate_side.properties_mixed[t].flow_mass_phase_comp['Liq', j] /
+                    b.feed_side.properties_in[t].flow_mass_phase_comp['Liq', j])
+
+        @self.Constraint(self.flowsheet().config.time,
+                         solute_set)
+        def eq_rejection_phase_comp(b, t, j):
+            return (b.rejection_phase_comp[t, 'Liq', j] ==
+                    1 - (b.permeate_side.properties_mixed[t].conc_mass_phase_comp['Liq', j] /
+                         b.feed_side.properties_in[t].conc_mass_phase_comp['Liq', j]))
+
+        @self.Constraint(self.flowsheet().config.time)
+        def eq_over_pressure_ratio(b, t):
+            return (b.feed_side.properties_out[t].pressure ==
+                    b.over_pressure_ratio[t]
+                    * (b.feed_side.properties_out[t].pressure_osm
+                    - b.permeate_side.properties_out[t].pressure_osm))
 
     def initialize(
             blk,
             state_args=None,
             outlvl=idaeslog.NOTSET,
             solver=None,
-            optarg=None):
+            optarg=None,
+            fail_on_warning=False,
+            ignore_dof=False):
         """
         General wrapper for pressure changer initialization routines
 
@@ -675,12 +930,16 @@ class NanoFiltrationData(UnitModelBlockData):
             optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
                      initialization (default = None)
+            fail_on_warning : boolean argument to fail or only produce  warning upon unsuccessful solve (default=False)
+            ignore_dof : boolean argument to ignore when DOF != 0 (default=False)
 
         Returns: None
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver options
+        if optarg is None:
+            optarg = {'nlp_scaling_method': 'user-scaling'}
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
@@ -692,6 +951,8 @@ class NanoFiltrationData(UnitModelBlockData):
             state_args=state_args,
         )
         init_log.info_high("Initialization Step 1 Complete.")
+        if not ignore_dof:
+            check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
         # ---------------------------------------------------------------------
         # Initialize permeate
         # Set state_args from inlet state
