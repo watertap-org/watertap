@@ -19,7 +19,8 @@ from pyomo.environ import (Block,
                            Suffix,
                            NonNegativeReals,
                            Reference,
-                           units as pyunits)
+                           units as pyunits,
+                           value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -514,32 +515,55 @@ class NanoFiltrationData(UnitModelBlockData):
             has_pressure_change=self.config.has_pressure_change)
 
         # Add permeate block
+        self.permeate_side = ControlVolume0DBlock(default={
+            "dynamic": False,
+            "has_holdup": False,
+            "property_package": self.config.property_package,
+            "property_package_args": self.config.property_package_args})
+
+        self.permeate_side.add_state_blocks(
+            has_phase_equilibrium=False)
+
+        # Add additional state blocks
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package
-        tmp_dict["defined_state"] = False  # permeate block is not an inlet
-        self.properties_permeate = self.config.property_package.state_block_class(
+        tmp_dict["defined_state"] = False  # these blocks are not inlets
+        # Interface properties
+        self.feed_side.properties_interface_in = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
-            doc="Material properties of permeate",
+            doc="Material properties of feed-side interface at inlet",
+            default=tmp_dict)
+        self.feed_side.properties_interface_out = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of feed-side interface at outlet",
+            default=tmp_dict)
+        self.permeate_side.properties_mixed = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of mixed permeate",
             default=tmp_dict)
 
         # Add Ports
         self.add_inlet_port(name='inlet', block=self.feed_side)
         self.add_outlet_port(name='retentate', block=self.feed_side)
-        self.add_port(name='permeate', block=self.properties_permeate)
+        self.add_port(name='permeate', block=self.permeate_side.properties_mixed)
 
         # References for control volume
         # pressure change
         if (self.config.has_pressure_change is True and
-                self.config.momentum_balance_type != 'none'):
+                self.config.momentum_balance_type != MomentumBalanceType.none):
             self.deltaP = Reference(self.feed_side.deltaP)
 
         # mass transfer
+        def mass_transfer_phase_comp_initialize(b, t, p, j):
+            return value(b.feed_side.properties_in[t].get_material_flow_terms('Liq', j)
+                         * b.recovery_mass_phase_comp[t, 'Liq', j])
+
         self.mass_transfer_phase_comp = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
-            initialize=1,
+            initialize=mass_transfer_phase_comp_initialize,
             bounds=(1e-8, 1e6),
             domain=NonNegativeReals,
             units=units_meta('mass')*units_meta('time')**-1,
@@ -558,77 +582,59 @@ class NanoFiltrationData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Average flux expression")
         def flux_mass_phase_comp_avg(b, t, p, j):
-            return 0.5 * (b.flux_mass_phase_comp_in[t, p, j] + b.flux_mass_phase_comp_out[t, p, j])
+            return 0.5 * sum(b.flux_mass_io_phase_comp[t, x, p, j] for x in self.io_list)
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Permeate production")
         def eq_permeate_production(b, t, p, j):
-            return (b.properties_permeate[t].get_material_flow_terms(p, j)
+            return (b.permeate_side.properties_mixed[t].get_material_flow_terms(p, j)
                     == b.area * b.flux_mass_phase_comp_avg[t, p, j])
 
         @self.Constraint(self.flowsheet().config.time,
+                         self.io_list,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
-                         doc="Inlet water and salt flux")
-        def eq_flux_in(b, t, p, j):
-            prop_feed = b.feed_side.properties_in[t]
-            prop_perm = b.properties_permeate[t]
+                         doc="Water and salt flux")
+        def eq_flux_io(b, t, x, p, j):
+            if x == 'in':
+                prop_feed = b.feed_side.properties_in[t]
+                prop_feed_inter = b.feed_side.properties_interface_in[t]
+                prop_perm = b.permeate_side.properties_in[t]
+            elif x == 'out':
+                prop_feed = b.feed_side.properties_out[t]
+                prop_feed_inter = b.feed_side.properties_interface_out[t]
+                prop_perm = b.permeate_side.properties_out[t]
             comp = self.config.property_package.get_component(j)
             if comp.is_solvent():
-                return (b.flux_mass_phase_comp_in[t, p, j] == b.A_comp[t, j] * b.dens_solvent
+                return (b.[t, x, p, j] == b.A_comp[t, j] * b.dens_solvent
                         * ((prop_feed.pressure - prop_perm.pressure)
-                           - b.sigma[t] * (prop_feed.pressure_osm - prop_perm.pressure_osm)))
+                           - b.sigma[t, j] * (prop_feed_inter.pressure_osm - prop_perm.pressure_osm)))
             elif comp.is_solute():
-                return (b.flux_mass_phase_comp_in[t, p, j] == b.B_comp[t, j]
-                        * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j])
-                        + ((1 - b.sigma[t]) * b.flux_mass_phase_comp_in[t, p, j]
-                           * 1 / b.dens_solvent * b.avg_conc_mass_phase_comp_in[t, p, j])
-                        )
-
-        @self.Constraint(self.flowsheet().config.time,
-                         self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
-                         doc="Outlet water and salt flux")
-        def eq_flux_out(b, t, p, j):
-            prop_feed = b.feed_side.properties_out[t]
-            prop_perm = b.properties_permeate[t]
-            comp = self.config.property_package.get_component(j)
-            if comp.is_solvent():
-                return (b.flux_mass_phase_comp_out[t, p, j] == b.A_comp[t, j] * b.dens_solvent
-                        * ((prop_feed.pressure - prop_perm.pressure)
-                           - b.sigma[t] * (prop_feed.pressure_osm - prop_perm.pressure_osm)))
-            elif comp.is_solute():
-                return (b.flux_mass_phase_comp_out[t, p, j] == b.B_comp[t, j]
-                        * (prop_feed.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j])
-                        + ((1 - b.sigma[t]) * b.flux_mass_phase_comp_out[t, p, j]
-                           * 1 / b.dens_solvent * b.avg_conc_mass_phase_comp_out[t, p, j])
-                        )
+                return (b.flux_mass_io_phase_comp[t, x, p, j] == b.B_comp[t, j]
+                        * (prop_feed_inter.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j])
+                        + ((1 - b.sigma[t, x]) * b.flux_mass_io_phase_comp[t, x, p, j]
+                           * 1 / b.dens_solvent * b.avg_conc_mass_phase_comp_io[t, x, p, j]))
 
         # Average concentration
+        # Assuming membrane-interface concentration as feed concentration rather than the bulk
         # COMMENT: Chen approximation of logarithmic average implemented
         @self.Constraint(self.flowsheet().config.time,
+                         self.io_list,
                          self.config.property_package.phase_list,
                          solute_set,
                          doc="Average inlet concentration")
-        def eq_avg_conc_in(b, t, p, j):
-            prop_feed = b.feed_side.properties_in[t]
-            prop_perm = b.properties_permeate[t]
-            return (b.avg_conc_mass_phase_comp_in[t, p, j] ==
-                    (prop_feed.conc_mass_phase_comp[p, j] * prop_perm.conc_mass_phase_comp[p, j] *
-                     (prop_feed.conc_mass_phase_comp[p, j] + prop_perm.conc_mass_phase_comp[p, j])/2)**(1/3))
-
-        @self.Constraint(self.flowsheet().config.time,
-                         self.config.property_package.phase_list,
-                         solute_set,
-                         doc="Average inlet concentration")
-        def eq_avg_conc_out(b, t, p, j):
-            prop_feed = b.feed_side.properties_out[t]
-            prop_perm = b.properties_permeate[t]
-            return (b.avg_conc_mass_phase_comp_out[t, p, j] ==
-                    (prop_feed.conc_mass_phase_comp[p, j] * prop_perm.conc_mass_phase_comp[p, j] *
-                     (prop_feed.conc_mass_phase_comp[p, j] + prop_perm.conc_mass_phase_comp[p, j])/2)**(1/3))
+        def eq_avg_conc_io(b, t, x, p, j):
+            if x == 'in':
+                prop_feed_inter = b.feed_side.properties_interface_in[t]
+                prop_perm = b.permeate_side.properties_in[t]
+            elif x == 'out':
+                prop_feed_inter = b.feed_side.properties_interface_out[t]
+                prop_perm = b.permeate_side.properties_out[t]
+            return (b.avg_conc_mass_phase_comp_io[t, x, p, j] ==
+                    (prop_feed_inter.conc_mass_phase_comp[p, j] * prop_perm.conc_mass_phase_comp[p, j] *
+                     (prop_feed_inter.conc_mass_phase_comp[p, j] + prop_perm.conc_mass_phase_comp[p, j])/2)**(1/3))
 
         # Feed and permeate-side connection
         @self.Constraint(self.flowsheet().config.time,
@@ -636,20 +642,20 @@ class NanoFiltrationData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Mass transfer from feed to permeate")
         def eq_connect_mass_transfer(b, t, p, j):
-            return (b.properties_permeate[t].get_material_flow_terms(p, j)
+            return (b.permeate_side.properties_mixed[t].get_material_flow_terms(p, j)
                     == -b.feed_side.mass_transfer_term[t, p, j])
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="Enthalpy transfer from feed to permeate")
         def eq_connect_enthalpy_transfer(b, t):
-            return (b.properties_permeate[t].get_enthalpy_flow_terms('Liq')
+            return (b.permeate_side.properties_mixed[t].get_enthalpy_flow_terms('Liq')
                     == -b.feed_side.enthalpy_transfer[t])
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="Isothermal assumption for permeate")
         def eq_permeate_isothermal(b, t):
             return b.feed_side.properties_out[t].temperature == \
-                   b.properties_permeate[t].temperature
+                   b.permeate_side.properties_mixed[t].temperature
 
     def initialize(
             blk,
