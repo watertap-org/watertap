@@ -20,8 +20,7 @@ from pyomo.environ import (ConcreteModel,
                            Var,
                            Constraint,
                            value,
-                           SolverStatus,
-                           TerminationCondition)
+                           assert_optimal_termination)
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import (FlowsheetBlock,
                         ControlVolume0DBlock)
@@ -314,8 +313,7 @@ class PropertyTestHarness():
         # solve model
         opt = get_solver()
         results = opt.solve(m.fs.stream[0])
-        assert results.solver.status == SolverStatus.ok
-        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert_optimal_termination(results)
 
         # check convergence
         # TODO: update this when IDAES API is updated to return solver status for initialize()
@@ -445,8 +443,7 @@ class PropertyRegressionTest():
         # solve model
         opt = get_solver(self.solver, self.optarg)
         results = opt.solve(m)
-        assert results.solver.status == SolverStatus.ok
-        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert_optimal_termination(results)
 
         # check results
         for (v_str, ind), val in self.regression_solution.items():
@@ -465,4 +462,81 @@ class PropertyRegressionTest():
             for (var, val) in badly_scaled_var_list:
                 lst.append((var.name, val))
             raise PropertyValueError(
-                "The following variable(s) are badly scaled: {lst}".format(lst=lst))
+                "The following variable(s) are poorly scaled: {lst}".format(lst=lst))
+
+
+class PropertyCalculateStateTest():
+    def configure_class(self):
+        self.solver = None  # string for solver, if None use IDAES default
+        self.optarg = None  # dictionary for solver options, if None use IDAES default
+        self.configure()
+
+    def configure(self):
+        """
+        Placeholder method to allow user to setup the property regression test.
+
+        The configure function must set the attributes:
+
+        prop_pack: property package parameter block
+
+        param_args: dictionary for property parameter arguments
+
+        solver: string name for solver, if not provided or None will use IDAES default
+
+        optarg: dictionary of solver options, if not provided or None will use IDAES default
+
+        scaling_args: dictionary of scaling arguments
+            keys = (string name of variable, tuple index), values = scaling factor
+
+        var_args: dictionary of specified variables
+            keys = (string name of variable, tuple index), values = value
+
+        state_solution: dictionary of the values for the state variables
+            keys = (string name of variable, tuple index), values = value
+        """
+        pass
+
+    @pytest.mark.component
+    def test_calculate_state(self):
+        self.configure_class()
+
+        # create model
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.properties = self.prop_pack()
+        m.fs.stream = m.fs.properties.build_state_block([0], default=self.param_args)
+
+        # set default scaling
+        for (v_str, ind), sf in self.scaling_args.items():
+            m.fs.properties.set_default_scaling(v_str, sf, index=ind)
+
+        # touch all properties in var_args
+        for (v_name, ind), val in self.var_args.items():
+            getattr(m.fs.stream[0], v_name)
+
+        # scale model
+        calculate_scaling_factors(m)
+
+        # calculate state
+        results = m.fs.stream.calculate_state(var_args=self.var_args, solver=self.solver, optarg=self.optarg)
+        assert_optimal_termination(results)
+
+        # check results
+        for (v_str, ind), val in self.state_solution.items():
+            var = getattr(m.fs.stream[0], v_str)
+            if not pytest.approx(val, rel=1e-3) == value(var[ind]):
+                raise PropertyValueError(
+                    "Variable {v_str} with index {ind} is expected to have a value of {val} +/- 0.1%, but it "
+                    "has a value of {val_t}. \nUpdate state_solution in the configure function "
+                    "that sets up the PropertyCalculateStateTest".format(
+                        v_str=v_str, ind=ind, val=val, val_t=value(var[ind])))
+
+        # check if any variables are badly scaled
+        badly_scaled_var_list = list(badly_scaled_var_generator(m, large=1e2, small=1e-2))
+        if len(badly_scaled_var_list) != 0:
+            lst = []
+            for (var, val) in badly_scaled_var_list:
+                lst.append((var.name, val))
+                print(var.name, var.value)
+            raise PropertyValueError(
+                "The following variable(s) are poorly scaled: {lst}".format(lst=lst))
