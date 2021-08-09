@@ -39,6 +39,24 @@ import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
+class ConcentrationPolarizationType(Enum):
+    none = auto()                    # simplified assumption: no concentration polarization
+    fixed = auto()                   # simplified assumption: concentration polarization modulus is a user specified value
+    calculated = auto()              # calculate concentration polarization (concentration at membrane interface)
+
+
+class MassTransferCoefficient(Enum):
+    none = auto()                    # mass transfer coefficient not utilized for concentration polarization effect
+    fixed = auto()                   # mass transfer coefficient is a user specified value
+    calculated = auto()              # mass transfer coefficient is calculated
+    # TODO: add option for users to define their own relationship?
+
+
+class PressureChangeType(Enum):
+    fixed_per_stage = auto()         # pressure drop across membrane channel is a user-specified value
+    fixed_per_unit_length = auto()   # pressure drop per unit length across membrane channel is a user-specified value
+    calculated = auto()              # pressure drop across membrane channel is calculated
+
 
 @declare_process_block_class("NanoFiltration0D")
 class NanoFiltrationData(UnitModelBlockData):
@@ -54,123 +72,203 @@ class NanoFiltrationData(UnitModelBlockData):
         domain=In([False]),
         default=False,
         description="Dynamic model flag - must be False",
-        doc="""Indicates whether this model will be dynamic or not,
-    **default** = False. NF units do not support dynamic
-    behavior."""))
+        doc="""Indicates whether this model will be dynamic or not.
+        **default** = False. NF units do not support dynamic
+        behavior."""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=False,
         domain=In([False]),
         description="Holdup construction flag - must be False",
         doc="""Indicates whether holdup terms should be constructed or not.
-    **default** - False. NF units do not have defined volume, thus
-    this must be False."""))
+        **default** - False. NF units do not have defined volume, thus
+        this must be False."""))
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
-        doc="""Indicates what type of mass balance should be constructed,
-    **default** - MaterialBalanceType.useDefault.
-    **Valid values:** {
-    **MaterialBalanceType.useDefault - refer to property package for default
-    balance type
-    **MaterialBalanceType.none** - exclude material balances,
-    **MaterialBalanceType.componentPhase** - use phase component balances,
-    **MaterialBalanceType.componentTotal** - use total component balances,
-    **MaterialBalanceType.elementTotal** - use total element balances,
-    **MaterialBalanceType.total** - use total material balance.}"""))
+        doc="""Indicates what type of mass balance should be constructed.
+        **default** - MaterialBalanceType.useDefault.
+        **Valid values:** {
+        **MaterialBalanceType.useDefault - refer to property package for default
+        balance type
+        **MaterialBalanceType.none** - exclude material balances,
+        **MaterialBalanceType.componentPhase** - use phase component balances,
+        **MaterialBalanceType.componentTotal** - use total component balances,
+        **MaterialBalanceType.elementTotal** - use total element balances,
+        **MaterialBalanceType.total** - use total material balance.}"""))
     CONFIG.declare("energy_balance_type", ConfigValue(
         default=EnergyBalanceType.useDefault,
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed,
-    **default** - EnergyBalanceType.useDefault.
-    **Valid values:** {
-    **EnergyBalanceType.useDefault - refer to property package for default
-    balance type
-    **EnergyBalanceType.none** - exclude energy balances,
-    **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
-    **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
-    **EnergyBalanceType.energyTotal** - single energy balance for material,
-    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
+        doc="""Indicates what type of energy balance should be constructed.
+        **default** - EnergyBalanceType.useDefault.
+        **Valid values:** {
+        **EnergyBalanceType.useDefault - refer to property package for default
+        balance type
+        **EnergyBalanceType.none** - exclude energy balances,
+        **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
+        **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
+        **EnergyBalanceType.energyTotal** - single energy balance for material,
+        **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
     CONFIG.declare("momentum_balance_type", ConfigValue(
         default=MomentumBalanceType.pressureTotal,
         domain=In(MomentumBalanceType),
         description="Momentum balance construction flag",
-        doc="""Indicates what type of momentum balance should be constructed,
-    **default** - MomentumBalanceType.pressureTotal.
-    **Valid values:** {
-    **MomentumBalanceType.none** - exclude momentum balances,
-    **MomentumBalanceType.pressureTotal** - single pressure balance for material,
-    **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
-    **MomentumBalanceType.momentumTotal** - single momentum balance for material,
-    **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
+        doc="""Indicates what type of momentum balance should be constructed.
+        **default** - MomentumBalanceType.pressureTotal.
+        **Valid values:** {
+        **MomentumBalanceType.none** - exclude momentum balances,
+        **MomentumBalanceType.pressureTotal** - single pressure balance for material,
+        **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
+        **MomentumBalanceType.momentumTotal** - single momentum balance for material,
+        **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
         domain=In([True, False]),
         description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-    constructed,
-    **default** - False.
-    **Valid values:** {
-    **True** - include pressure change terms,
-    **False** - exclude pressure change terms.}"""))
+        doc="""Indicates whether terms for pressure change should be constructed.
+        **default** - False.
+        **Valid values:** {
+        **True** - include pressure change terms,
+        **False** - exclude pressure change terms.}"""))
+    CONFIG.declare("pressure_change_type", ConfigValue(
+        default=PressureChangeType.fixed_per_stage,
+        domain=In(PressureChangeType),
+        description="Pressure change term construction flag",
+        doc="""
+            Indicates what type of pressure change calculation will be made. To use any of the 
+            ``pressure_change_type`` options to account for pressure drop, the configuration keyword 
+            ``has_pressure_change`` must also be set to ``True``. Also, if a value is specified for pressure 
+            change, it should be negative to represent pressure drop. 
+
+            **default** - ``PressureChangeType.fixed_per_stage`` 
+
+
+        .. csv-table::
+            :header: "Configuration Options", "Description"
+
+            "``PressureChangeType.fixed_per_stage``", "Specify an estimated value for pressure drop across the membrane feed channel"
+            "``PressureChangeType.fixed_per_unit_length``", "Specify an estimated value for pressure drop per unit length across the membrane feed channel"
+            "``PressureChangeType.calculated``", "Allow model to perform calculation of pressure drop across the membrane feed channel"
+
+    """))
+    CONFIG.declare("concentration_polarization_type", ConfigValue(
+        default=ConcentrationPolarizationType.none,
+        domain=In(ConcentrationPolarizationType),
+        description="External concentration polarization effect in RO",
+        doc="""
+            Options to account for concentration polarization.
+
+            **default** - ``ConcentrationPolarizationType.none`` 
+
+        .. csv-table::
+            :header: "Configuration Options", "Description"
+
+            "``ConcentrationPolarizationType.none``", "Simplifying assumption to ignore concentration polarization"
+            "``ConcentrationPolarizationType.fixed``", "Specify an estimated value for the concentration polarization modulus"
+            "``ConcentrationPolarizationType.calculated``", "Allow model to perform calculation of membrane-interface concentration"
+
+        """))
+    CONFIG.declare("mass_transfer_coefficient", ConfigValue(
+        default=MassTransferCoefficient.none,
+        domain=In(MassTransferCoefficient),
+        description="Mass transfer coefficient in NF feed channel",
+        doc="""
+            Options to account for mass transfer coefficient.
+
+            **default** - ``MassTransferCoefficient.none`` 
+
+        .. csv-table::
+            :header: "Configuration Options", "Description"
+
+            "``MassTransferCoefficient.none``", "Mass transfer coefficient not used in calculations"
+            "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
+            "``MassTransferCoefficient.calculated``", "Allow model to perform calculation of mass transfer coefficient"
+
+    """))
+
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
         description="Property package to use for control volume",
         doc="""Property parameter object used to define property calculations,
-    **default** - useDefault.
-    **Valid values:** {
-    **useDefault** - use default package from parent model or flowsheet,
-    **PhysicalParameterObject** - a PhysicalParameterBlock object.}"""))
+        **default** - useDefault.
+        **Valid values:** {
+        **useDefault** - use default package from parent model or flowsheet,
+        **PhysicalParameterObject** - a PhysicalParameterBlock object.}"""))
     CONFIG.declare("property_package_args", ConfigBlock(
         implicit=True,
         description="Arguments to use for constructing property packages",
         doc="""A ConfigBlock with arguments to be passed to a property block(s)
-    and used when constructing these,
-    **default** - None.
-    **Valid values:** {
-    see property package for documentation.}"""))
+        and used when constructing these.
+        **default** - None.
+        **Valid values:** {
+        see property package for documentation.}"""))
 
-
-    def build(self):
-        # Call UnitModel.build to setup dynamics
-        super().build()
-
-        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
-
+    def _process_config(self):
+        """Check for configuration errors
+        """
         if (len(self.config.property_package.phase_list) > 1
                 or 'Liq' not in [p for p in self.config.property_package.phase_list]):
             raise ConfigurationError(
                 "NF model only supports one liquid phase ['Liq'],"
                 "the property package has specified the following phases {}"
-                    .format([p for p in self.config.property_package.phase_list]))
+                .format([p for p in self.config.property_package.phase_list]))
+        if (self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated
+                and self.config.mass_transfer_coefficient == MassTransferCoefficient.none):
+            raise ConfigurationError(
+                "\n'mass_transfer_coefficient' and 'concentration_polarization_type' options configured incorrectly:\n"
+                "'mass_transfer_coefficient' cannot be set to MassTransferCoefficient.none "
+                "while 'concentration_polarization_type' is set to ConcentrationPolarizationType.calculated.\n "
+                "\n\nSet 'mass_transfer_coefficient' to MassTransferCoefficient.fixed or "
+                "MassTransferCoefficient.calculated "
+                "\nor set 'concentration_polarization_type' to ConcentrationPolarizationType.fixed or "
+                "ConcentrationPolarizationType.none")
+        if (self.config.concentration_polarization_type != ConcentrationPolarizationType.calculated
+                and self.config.mass_transfer_coefficient != MassTransferCoefficient.none):
+            raise ConfigurationError(
+                "\nConflict between configuration options:\n"
+                "'mass_transfer_coefficient' cannot be set to {} "
+                "while 'concentration_polarization_type' is set to {}.\n\n"
+                "'mass_transfer_coefficient' must be set to MassTransferCoefficient.none\nor "
+                "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated"
+                .format(self.config.mass_transfer_coefficient, self.config.concentration_polarization_type))
+        if (self.config.pressure_change_type is not PressureChangeType.fixed_per_stage
+                and self.config.has_pressure_change is False):
+            raise ConfigurationError(
+                "\nConflict between configuration options:\n"
+                "'has_pressure_change' cannot be False "
+                "while 'pressure_change_type' is set to {}.\n\n"
+                "'pressure_change_type' must be set to PressureChangeType.fixed_per_stage\nor "
+                "'has_pressure_change' must be set to True"
+                .format(self.config.pressure_change_type))
+
+        if len(self.config.property_package.solvent_set) > 1:
+            raise ConfigurationError("NF model only supports one solvent component,"
+                                     "the provided property package has specified {} solvent components"
+                                     .format(len(self.config.property_package.solvent_set)))
+
+    def build(self):
+        """
+        Build the NF model.
+        """
+        # Call UnitModel.build to setup dynamics
+        super().build()
+
+        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
-        # TODO: update IDAES such that solvent and solute lists are automatically created on the parameter block
-        self.solvent_list = Set()
-        self.solute_list = Set()
-        for c in self.config.property_package.component_list:
-            comp = self.config.property_package.get_component(c)
-            try:
-                if comp.is_solvent():
-                    self.solvent_list.add(c)
-                if comp.is_solute():
-                    self.solute_list.add(c)
-            except TypeError:
-                raise ConfigurationError("NF model only supports one solvent and one or more solutes,"
-                                         "the provided property package has specified a component '{}' "
-                                         "that is not a solvent or solute".format(c))
-        if len(self.solvent_list) > 1:
-            raise ConfigurationError("NF model only supports one solvent component,"
-                                     "the provided property package has specified {} solvent components"
-                                     .format(len(self.solvent_list)))
+        self.io_list = Set(initialize=['in', 'out'])  # inlet/outlet set
+
+        solvent_set = self.config.property_package.solvent_set
+        solute_set = self.config.property_package.solute_set
+
 
         # Add unit parameters
         self.A_comp = Var(
             self.flowsheet().config.time,
-            self.solvent_list,
+            solvent_set,
             initialize=1e-12,
             bounds=(1e-18, 1e-6),
             domain=NonNegativeReals,
@@ -178,7 +276,7 @@ class NanoFiltrationData(UnitModelBlockData):
             doc='Solvent permeability coeff.')
         self.B_comp = Var(
             self.flowsheet().config.time,
-            self.solute_list,
+            solute_set,
             initialize=1e-8,
             bounds=(1e-11, 1e-5),
             domain=NonNegativeReals,
@@ -186,8 +284,9 @@ class NanoFiltrationData(UnitModelBlockData):
             doc='Solute permeability coeff.')
         self.sigma = Var(
             self.flowsheet().config.time,
+            solute_set,
             initialize=0.5,
-            bounds=(1e-8, 1e6),
+            bounds=(1e-8, 1),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc='Reflection coefficient')
@@ -197,46 +296,200 @@ class NanoFiltrationData(UnitModelBlockData):
             doc='Pure water density')
 
         # Add unit variables
-        self.flux_mass_phase_comp_in = Var(
+        def flux_mass_io_phase_comp_initialize(b, t, io, p, j):
+            if j in solvent_set:
+                return 5e-4
+            elif j in solute_set:
+                return 1e-6
+
+        def flux_mass_io_phase_comp_bounds(b, t, io, p, j):
+            if j in solvent_set:
+                ub = 3e-2
+                lb = 1e-4
+            elif j in solute_set:
+                ub = 1e-3
+                lb = 1e-8
+            return lb, ub
+
+        self.flux_mass_io_phase_comp = Var(
             self.flowsheet().config.time,
+            self.io_list,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
-            initialize=1e-3,
-            bounds=(1e-12, 1e6),
+            initialize=flux_mass_io_phase_comp_initialize,
+            bounds=flux_mass_io_phase_comp_bounds,
             units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
-            doc='Flux at feed inlet')
-        self.flux_mass_phase_comp_out = Var(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            initialize=1e-3,
-            bounds=(1e-12, 1e6),
-            units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
-            doc='Flux at feed outlet')
-        self.avg_conc_mass_phase_comp_in = Var(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            self.solute_list,
-            initialize=1e-3,
-            bounds=(1e-8, 1e6),
-            domain=NonNegativeReals,
-            units=units_meta('mass')*units_meta('length')**-3,
-            doc='Average solute concentration at feed inlet')
-        self.avg_conc_mass_phase_comp_out = Var(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            self.solute_list,
-            initialize=1e-3,
-            bounds=(1e-8, 1e6),
-            domain=NonNegativeReals,
-            units=units_meta('mass')*units_meta('length')**-3,
-            doc='Average solute concentration at feed outlet')
+            doc='Mass flux across membrane at inlet and outlet')
+
         self.area = Var(
-            initialize=1,
-            bounds=(1e-8, 1e6),
+            initialize=10,
+            bounds=(1e-1, 1e3),
             domain=NonNegativeReals,
             units=units_meta('length') ** 2,
             doc='Membrane area')
+
+        def recovery_mass_phase_comp_initialize(b, t, p, j):
+            if j in solvent_set:
+                return 0.1
+            elif j in solute_set:
+                return 0.01
+
+        def recovery_mass_phase_comp_bounds(b, t, p, j):
+            ub = 1 - 1e-6
+            if j in solvent_set:
+                lb = 1e-2
+            elif j in solute_set:
+                lb = 1e-5
+            return lb, ub
+
+        self.recovery_mass_phase_comp = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            initialize=recovery_mass_phase_comp_initialize,
+            bounds=recovery_mass_phase_comp_bounds,
+            units=pyunits.dimensionless,
+            doc='Mass-based component recovery')
+
+        self.recovery_vol_phase = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            initialize=0.1,
+            bounds=(1e-2, 1 - 1e-6),
+            units=pyunits.dimensionless,
+            doc='Volumetric-based recovery')
+
+        self.rejection_phase_comp = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            solute_set,
+            initialize=0.9,
+            bounds=(1e-2, 1 - 1e-6),
+            units=pyunits.dimensionless,
+            doc='Observed solute rejection')
+
+        self.over_pressure_ratio = Var(
+            self.flowsheet().config.time,
+            initialize=1.1,
+            bounds=(0.5, 5),
+            units=pyunits.dimensionless,
+            doc='Over pressure ratio')
+
+        if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
+            self.cp_modulus = Var(
+                self.flowsheet().config.time,
+                solute_set,
+                initialize=1.1,
+                bounds=(0.9, 3),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc='Concentration polarization modulus')
+
+        if self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
+            self.Kf_io = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                solute_set,
+                initialize=5e-5,
+                bounds=(1e-6, 1e-3),
+                domain=NonNegativeReals,
+                units=units_meta('length') * units_meta('time')**-1,
+                doc='Mass transfer coefficient in feed channel at inlet and outlet')
+        if ((self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)
+                or self.config.pressure_change_type == PressureChangeType.calculated):
+            self.channel_height = Var(
+                initialize=1e-3,
+                bounds=(1e-4, 5e-3),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Feed-channel height')
+            self.dh = Var(
+                initialize=1e-3,
+                bounds=(1e-4, 5e-3),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Hydraulic diameter of feed channel')
+            self.spacer_porosity = Var(
+                initialize=0.95,
+                bounds=(0.1, 0.99),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc='Feed-channel spacer porosity')
+            self.N_Re_io = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                initialize=5e2,
+                bounds=(10, 5e3),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Reynolds number at inlet and outlet")
+        if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
+            self.N_Sc_io = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                initialize=5e2,
+                bounds=(1e2, 2e3),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Schmidt number at inlet and outlet")
+            self.N_Sh_io = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                initialize=1e2,
+                bounds=(1, 3e2),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Sherwood number at inlet and outlet")
+
+        if ((self.config.pressure_change_type != PressureChangeType.fixed_per_stage)
+                or (self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)):
+            self.length = Var(
+                initialize=10,
+                bounds=(0.1, 5e2),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Effective membrane length')
+            self.width = Var(
+                initialize=1,
+                bounds=(0.1, 5e2),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Effective feed-channel width')
+
+        if self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length:
+            self.dP_dx = Var(
+                self.flowsheet().config.time,
+                initialize=-5e4,
+                bounds=(-2e5, -1e3),
+                domain=NegativeReals,
+                units=units_meta('pressure')*units_meta('length')**-1,
+                doc="pressure drop per unit length across feed channel")
+
+        if self.config.pressure_change_type == PressureChangeType.calculated:
+            self.velocity_io = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                initialize=0.5,
+                bounds=(1e-2, 5),
+                domain=NonNegativeReals,
+                units=units_meta('length')/units_meta('time'),
+                doc="Crossflow velocity in feed channel at inlet and outlet")
+            self.friction_factor_darcy_io = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                initialize=0.5,
+                bounds=(1e-2, 5),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Darcy friction factor in feed channel at inlet and outlet")
+            self.dP_dx_io = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                initialize=-5e4,
+                bounds=(-2e5, -1e3),
+                domain=NegativeReals,
+                units=units_meta('pressure')*units_meta('length')**-1,
+                doc="Pressure drop per unit length of feed channel at inlet and outlet")
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(default={
@@ -357,7 +610,7 @@ class NanoFiltrationData(UnitModelBlockData):
         # COMMENT: Chen approximation of logarithmic average implemented
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
-                         self.solute_list,
+                         solute_set,
                          doc="Average inlet concentration")
         def eq_avg_conc_in(b, t, p, j):
             prop_feed = b.feed_side.properties_in[t]
@@ -368,7 +621,7 @@ class NanoFiltrationData(UnitModelBlockData):
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
-                         self.solute_list,
+                         solute_set,
                          doc="Average inlet concentration")
         def eq_avg_conc_out(b, t, p, j):
             prop_feed = b.feed_side.properties_out[t]
