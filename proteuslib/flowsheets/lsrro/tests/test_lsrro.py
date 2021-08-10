@@ -50,15 +50,15 @@ class TestLSRRO_1Stage:
         solve(m, solver=solver)
 
         # product test
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.033930496, rel=1e-5)
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(5.5589030e-05, rel=1e-5)
 
         # disposal test
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.9010695, rel=1e-5)
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.0649444109, rel=1e-5)
 
         # LCOW
@@ -71,15 +71,15 @@ class TestLSRRO_1Stage:
         solve(m, solver=solver)
 
         # product test
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.402007225, rel=1e-5)
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.00045562534592, rel=1e-5)
 
         # disposal test
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.5329927745, rel=1e-5)
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.06454437465, rel=1e-5)
 
         # LCOW
@@ -106,15 +106,15 @@ class TestLSRRO_2Stage:
         solve(m, solver=solver)
 
         # product test
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.0572860373, rel=1e-5)
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(5.0857733223e-05, rel=1e-5)
 
         # disposal test
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.87771396265, rel=1e-5)
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.064949142266, rel=1e-5)
 
         # LCOW
@@ -127,15 +127,15 @@ class TestLSRRO_2Stage:
         solve(m, solver=solver)
 
         # product test
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.75116169022, rel=1e-5)
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.000408174016456, rel=1e-5)
 
         # disposal test
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.18383830977799, rel=1e-5)
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.06459182598354, rel=1e-5)
 
         # LCOW
@@ -162,15 +162,15 @@ class TestLSRRO_3Stage:
         solve(m, solver=solver)
 
         # product test
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.06116934948, rel=1e-5)
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(5.0216246455804524e-05, rel=1e-5)
 
         # disposal test
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.87383065051846, rel=1e-5)
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.0649497837535442, rel=1e-5)
 
         # LCOW
@@ -183,15 +183,15 @@ class TestLSRRO_3Stage:
         solve(m, solver=solver)
 
         # product test
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.4570430146694281, rel=1e-5)
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.00048188821319752726, rel=1e-5)
 
         # disposal test
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.47795698533057196, rel=1e-5)
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.06451811178680247, rel=1e-5)
 
         # LCOW
@@ -219,15 +219,15 @@ class TestLSRRO_4Stage:
         solve(m, solver=solver)
 
         # product test
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.0622020581538581, rel=1e-5)
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(5.006060005647094e-05, rel=1e-5)
 
         # disposal test
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.8727979418461419, rel=1e-5)
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.06494993939994353, rel=1e-5)
 
         # LCOW
@@ -240,15 +240,15 @@ class TestLSRRO_4Stage:
         solve(m, solver=solver)
 
         # product test
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.7511508232832104, rel=1e-5)
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.00040435571225970544, rel=1e-5)
 
         # disposal test
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.18384917671678971, rel=1e-5)
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.0645956442877403, rel=1e-5)
 
         # LCOW
@@ -275,15 +275,15 @@ class TestLSRRO_5Stage:
         solve(m, solver=solver)
 
         # product test
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.06251865466527008, rel=1e-5)
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(5.002363496358118e-05, rel=1e-5)
 
         # disposal test
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.8724813453347299, rel=1e-5)
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.06494997636503641, rel=1e-5)
 
         # LCOW
@@ -296,15 +296,15 @@ class TestLSRRO_5Stage:
         solve(m, solver=solver)
 
         # product test
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.7511524942511427, rel=1e-5)
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.000404932672929006, rel=1e-5)
 
         # disposal test
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(0.1838475057488573, rel=1e-5)
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(0.06459506732707102, rel=1e-5)
 
         # LCOW
@@ -331,15 +331,15 @@ class TestLSRRO_NStage:
         solve(m, solver=solver)
 
         # product test
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(, rel=1e-5)
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(, rel=1e-5)
 
         # disposal test
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(, rel=1e-5)
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(, rel=1e-5)
 
         # LCOW
@@ -352,15 +352,15 @@ class TestLSRRO_NStage:
         solve(m, solver=solver)
 
         # product test
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(, rel=1e-5)
-        assert pyo.value(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(, rel=1e-5)
 
         # disposal test
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == \
                 pytest.approx(, rel=1e-5)
-        assert pyo.value(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
+        assert pyo.value(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == \
                 pytest.approx(, rel=1e-5)
 
         # LCOW

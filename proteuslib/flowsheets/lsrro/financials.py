@@ -105,7 +105,7 @@ def get_system_costing(self):
         expr=b.operating_cost_total == sum(operating_cost_var_lst))
     b.eq_LCOW = Constraint(
         expr=b.LCOW == (b.investment_cost_total * self.costing_param.factor_capital_annualization
-                        + b.operating_cost_total) / (self.AWP / (pyunits.m**3/pyunits.year)))
+                        + b.operating_cost_total) / (self.AnnualWaterProduction / (pyunits.m**3/pyunits.year)))
 
 
 def _make_vars(self):

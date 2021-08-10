@@ -53,38 +53,38 @@ def build(number_of_stages=2):
     m.fs.NonFinal_StageSet = RangeSet(m.fs.NumberOfStages-1)
 
     # Add the mixers
-    m.fs.M = Mixer(m.fs.NonFinal_StageSet, default={
+    m.fs.Mixers = Mixer(m.fs.NonFinal_StageSet, default={
             "property_package": m.fs.properties,
             "momentum_mixing_type": MomentumMixingType.equality,  # booster pump will match pressure
             "inlet_list": ['upstream', 'downstream']})
 
     total_pump_work = 0
     # Add the pumps
-    m.fs.P = Pump(m.fs.StageSet, default={"property_package": m.fs.properties})
-    for pump in m.fs.P.values():
+    m.fs.PrimaryPumps = Pump(m.fs.StageSet, default={"property_package": m.fs.properties})
+    for pump in m.fs.PrimaryPumps.values():
         pump.get_costing(module=financials, pump_type="High pressure")
         total_pump_work += pump.work_mechanical[0]
 
     # Add the equalizer pumps
-    m.fs.EqP = Pump(m.fs.LSRRO_StageSet, default={"property_package": m.fs.properties})
-    for pump in m.fs.EqP.values():
+    m.fs.BoosterPumps = Pump(m.fs.LSRRO_StageSet, default={"property_package": m.fs.properties})
+    for pump in m.fs.BoosterPumps.values():
         pump.get_costing(module=financials, pump_type="High pressure")
         total_pump_work += pump.work_mechanical[0]
 
     # Add the stages ROs
-    m.fs.Stage = ReverseOsmosis0D(m.fs.StageSet, default={
+    m.fs.ROUnits = ReverseOsmosis0D(m.fs.StageSet, default={
             "property_package": m.fs.properties,
             "has_pressure_change": True,
             "pressure_change_type": PressureChangeType.calculated,
             "mass_transfer_coefficient": MassTransferCoefficient.calculated,
             "concentration_polarization_type": ConcentrationPolarizationType.calculated})
-    for ro_unit in m.fs.Stage.values():
+    for ro_unit in m.fs.ROUnits.values():
         ro_unit.get_costing(module=financials)
 
-    # Add ERD
-    m.fs.ERD = Pump(default={"property_package": m.fs.properties})
-    m.fs.ERD.get_costing(module=financials, pump_type="Pressure exchanger")
-    total_pump_work += m.fs.ERD.work_mechanical[0]
+    # Add EnergyRecoveryDevice
+    m.fs.EnergyRecoveryDevice = Pump(default={"property_package": m.fs.properties})
+    m.fs.EnergyRecoveryDevice.get_costing(module=financials, pump_type="Pressure exchanger")
+    total_pump_work += m.fs.EnergyRecoveryDevice.work_mechanical[0]
 
     # additional variables or expressions
     # system water recovery
@@ -95,17 +95,18 @@ def build(number_of_stages=2):
             units=pyunits.dimensionless,
             doc='System Water Recovery')
     m.fs.eq_water_recovery = Constraint(expr=\
-              sum(m.fs.P[1].inlet.flow_mass_phase_comp[0,'Liq',:]) * m.fs.water_recovery == \
-              sum(m.fs.Stage[1].permeate.flow_mass_phase_comp[0,'Liq',:]) )
+              sum(m.fs.PrimaryPumps[1].inlet.flow_mass_phase_comp[0,'Liq',:]) * m.fs.water_recovery == \
+              sum(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0,'Liq',:]) )
     # energy consumption [J/m3]
-    m.fs.EC = Expression(
-        expr=total_pump_work/sum(m.fs.Stage[1].permeate.flow_mass_phase_comp[0,'Liq',:]) \
-             * m.fs.Stage[1].permeate_side.properties_mixed[0].dens_mass_phase['Liq'])
+    m.fs.EnergyConsumption = Expression(
+        expr=total_pump_work/sum(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0,'Liq',:]) \
+             * m.fs.ROUnits[1].permeate_side.properties_mixed[0].dens_mass_phase['Liq'])
     # annual water production
-    m.fs.AWP = Expression(
-            expr=(pyunits.convert(sum(m.fs.Stage[1].permeate.flow_mass_phase_comp[0,'Liq',:]),
-                              to_units=pyunits.kg / pyunits.year)
-              / m.fs.Stage[1].permeate_side.properties_mixed[0].dens_mass_phase['Liq']) * m.fs.costing_param.load_factor)
+    m.fs.AnnualWaterProduction = Expression(expr=(
+        pyunits.convert(sum(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0,'Liq',:]),
+                to_units=pyunits.kg / pyunits.year)
+        / m.fs.ROUnits[1].permeate_side.properties_mixed[0].dens_mass_phase['Liq'] ) \
+        * m.fs.costing_param.load_factor )
 
     # costing
     financials.get_system_costing(m.fs)
@@ -114,30 +115,37 @@ def build(number_of_stages=2):
 
     # Connect the Pump n to the Mixer n
     m.fs.pump_to_mixer = Arc(m.fs.NonFinal_StageSet,
-            rule=lambda fs,n : {'source':fs.P[n].outlet, 'destination':fs.M[n].upstream})
+            rule=lambda fs,n : {'source':fs.PrimaryPumps[n].outlet,
+                                'destination':fs.Mixers[n].upstream})
 
     # Connect the Mixer n to the Stage n
     m.fs.mixer_to_stage = Arc(m.fs.NonFinal_StageSet,
-            rule=lambda fs,n : {'source':fs.M[n].outlet, 'destination':fs.Stage[n].inlet})
+            rule=lambda fs,n : {'source':fs.Mixers[n].outlet,
+                                'destination':fs.ROUnits[n].inlet})
 
     # Connect the Stage n to the Pump n+1
     m.fs.stage_to_pump = Arc(m.fs.NonFinal_StageSet,
-            rule=lambda fs,n : {'source':fs.Stage[n].retentate, 'destination':fs.P[n+1].inlet})
+            rule=lambda fs,n : {'source':fs.ROUnits[n].retentate,
+                                'destination':fs.PrimaryPumps[n+1].inlet})
 
     # Connect the Stage n to the Eq Pump n
     m.fs.stage_to_eq_pump = Arc(m.fs.LSRRO_StageSet,
-            rule=lambda fs,n : {'source':fs.Stage[n].permeate, 'destination':fs.EqP[n].inlet})
+            rule=lambda fs,n : {'source':fs.ROUnits[n].permeate,
+                                'destination':fs.BoosterPumps[n].inlet})
 
     # Connect the Eq Pump n to the Mixer n-1
     m.fs.eq_pump_to_mixer = Arc(m.fs.LSRRO_StageSet,
-            rule=lambda fs,n : {'source':fs.EqP[n].outlet, 'destination':fs.M[n-1].downstream})
+            rule=lambda fs,n : {'source':fs.BoosterPumps[n].outlet,
+                                'destination':fs.Mixers[n-1].downstream})
 
     # Connect the Pump N to the Stage N
     last_stage = m.fs.StageSet.last()
-    m.fs.pump_to_stage = Arc(source=m.fs.P[last_stage].outlet, destination=m.fs.Stage[last_stage].inlet)
+    m.fs.pump_to_stage = Arc(source=m.fs.PrimaryPumps[last_stage].outlet,
+            destination=m.fs.ROUnits[last_stage].inlet)
 
-    # Connect Final Stage to ERD Pump
-    m.fs.stage_to_erd = Arc(source=m.fs.Stage[last_stage].retentate, destination=m.fs.ERD.inlet)
+    # Connect Final Stage to EnergyRecoveryDevice Pump
+    m.fs.stage_to_erd = Arc(source=m.fs.ROUnits[last_stage].retentate,
+            destination=m.fs.EnergyRecoveryDevice.inlet)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -170,25 +178,25 @@ def set_operating_conditions(m, verbose=False, solver=None):
     feed_temperature = 273.15 + 25
 
     # initialize feed mixer
-    m.fs.P[1].inlet.pressure[0].fix(pressure_atm)
-    m.fs.P[1].inlet.temperature[0].fix(feed_temperature)
-    m.fs.P[1].inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_flow_mass * feed_mass_frac_NaCl)
-    m.fs.P[1].inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(feed_flow_mass * (1-feed_mass_frac_NaCl))
+    m.fs.PrimaryPumps[1].inlet.pressure[0].fix(pressure_atm)
+    m.fs.PrimaryPumps[1].inlet.temperature[0].fix(feed_temperature)
+    m.fs.PrimaryPumps[1].inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_flow_mass * feed_mass_frac_NaCl)
+    m.fs.PrimaryPumps[1].inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(feed_flow_mass * (1-feed_mass_frac_NaCl))
 
     # initialize pumps
-    for pump in m.fs.P.values():
+    for pump in m.fs.PrimaryPumps.values():
         pump.control_volume.properties_out[0].pressure = 65e5  # pressure out of pump 1 [Pa]
         pump.efficiency_pump.fix(pump_efi)
         pump.control_volume.properties_out[0].pressure.fix()  # value set in decision variables
         iscale.set_scaling_factor(pump.control_volume.work, 1e-3)
 
     # initialize eq pumps
-    for pump in m.fs.EqP.values():
+    for pump in m.fs.BoosterPumps.values():
         pump.efficiency_pump.fix(pump_efi)
         iscale.set_scaling_factor(pump.control_volume.work, 1e-3)
 
     # initialize stages
-    for idx, stage in m.fs.Stage.items():
+    for idx, stage in m.fs.ROUnits.items():
         if idx > m.fs.StageSet.first():
             B_scale = 100.0
         else:
@@ -201,15 +209,14 @@ def set_operating_conditions(m, verbose=False, solver=None):
         stage.permeate.pressure[0].fix(pressure_atm)
         #stage.N_Re_io[0, 'in'].fix(500)
 
-    # energy recovery device
-    m.fs.ERD.efficiency_pump.fix(erd_efi)
-    m.fs.ERD.control_volume.properties_out[0].pressure.fix(pressure_atm)
-    iscale.set_scaling_factor(m.fs.ERD.control_volume.work, 1e-3)
-
-    # initialize stages
-    for stage in m.fs.Stage.values():
+        # TODO: this leaves a degree of freedom in initialize
         stage.width.setlb(low_width_factor*value(stage.area))
         stage.width.setub(upper_width_factor*value(stage.area))
+
+    # energy recovery device
+    m.fs.EnergyRecoveryDevice.efficiency_pump.fix(erd_efi)
+    m.fs.EnergyRecoveryDevice.control_volume.properties_out[0].pressure.fix(pressure_atm)
+    iscale.set_scaling_factor(m.fs.EnergyRecoveryDevice.control_volume.work, 1e-3)
 
     # ---scaling---
     m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
@@ -220,7 +227,7 @@ def set_operating_conditions(m, verbose=False, solver=None):
     assert_units_consistent(m)
     assert degrees_of_freedom(m) == m.fs.NumberOfStages
 
-    print('Feed Concentration = %.1f ppt' % (value(m.fs.P[1].inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'])*1000))
+    print('Feed Concentration = %.1f ppt' % (value(m.fs.PrimaryPumps[1].inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'])*1000))
 
     # ---initializing---
     # set up solvers
@@ -259,21 +266,21 @@ def optimize_set_up(m, water_recovery=None):
     # objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
-    for pump in m.fs.P.values():
+    for pump in m.fs.PrimaryPumps.values():
         pump.control_volume.properties_out[0].pressure.unfix()  # pressure out of pump 1 [Pa]
         pump.control_volume.properties_out[0].pressure.setlb(10e5)
         pump.control_volume.properties_out[0].pressure.setub(80e5) #### SET FOR MAX ALLOW PRES Custom for loop
         pump.deltaP.setlb(0)
 
     # unfix eq pumps
-    for pump in m.fs.EqP.values():
+    for pump in m.fs.BoosterPumps.values():
         pump.control_volume.properties_out[0].pressure.unfix()  # pressure out of pump 1 [Pa]
         pump.control_volume.properties_out[0].pressure.setlb(10e5)
         pump.control_volume.properties_out[0].pressure.setub(80e5) #### SET FOR MAX ALLOW PRES
         pump.deltaP.setlb(0)
 
     # unfix stages
-    for idx, stage in m.fs.Stage.items():
+    for idx, stage in m.fs.ROUnits.items():
         stage.area.unfix()  # area in membrane stage 1 [m2]
         stage.width.unfix()
         stage.area.setlb(1)
@@ -306,33 +313,33 @@ def display_metrics(m):
 
     metrics = {}
 
-    metrics['feed_flow_mass'] = sum(m.fs.P[1].inlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
-    metrics['feed_mass_frac_NaCl'] = m.fs.P[1].inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / metrics['feed_flow_mass']
+    metrics['feed_flow_mass'] = sum(m.fs.PrimaryPumps[1].inlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
+    metrics['feed_mass_frac_NaCl'] = m.fs.PrimaryPumps[1].inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / metrics['feed_flow_mass']
     print('Feed: %.2f kg/s, %.0f ppm' % (metrics['feed_flow_mass'], metrics['feed_mass_frac_NaCl'] * 1e6))
 
-    metrics['prod_flow_mass'] = sum(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
-    metrics['prod_mass_frac_ppm'] = m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / metrics['prod_flow_mass'] * 1e6
+    metrics['prod_flow_mass'] = sum(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
+    metrics['prod_mass_frac_ppm'] = m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / metrics['prod_flow_mass'] * 1e6
     print('Product: %.2f kg/s, %.0f ppm' % (metrics['prod_flow_mass'], metrics['prod_mass_frac_ppm']))
 
-    metrics['disp_flow_mass'] = sum(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
-    metrics['disp_mass_frac_ppm'] = m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / metrics['disp_flow_mass'] * 1e6
+    metrics['disp_flow_mass'] = sum(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
+    metrics['disp_mass_frac_ppm'] = m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / metrics['disp_flow_mass'] * 1e6
     print('Disposal: %.2f kg/s, %.0f ppm' % (metrics['disp_flow_mass'], metrics['disp_mass_frac_ppm']))
 
-    metrics['disp_pressure_osm'] = m.fs.Stage[m.fs.StageSet.last()].feed_side.properties_out[0].pressure_osm.value / 1e5
+    metrics['disp_pressure_osm'] = m.fs.ROUnits[m.fs.StageSet.last()].feed_side.properties_out[0].pressure_osm.value / 1e5
     print('Disposal osmotic pressure: %.1f bar' % metrics['disp_pressure_osm'])
 
-    metrics['recovery'] = 100.0*sum(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O'])/sum(m.fs.P[1].inlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O'])
+    metrics['recovery'] = 100.0*sum(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O'])/sum(m.fs.PrimaryPumps[1].inlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O'])
     # print('metrics['Recovery']: %.1f%%' % (metrics['prod_flow_mass'] / metrics['feed_flow_mass'] * 100))
     print('Recovery: %.1f%%' % (metrics['recovery']))
 
-    metrics['EC'] = value(m.fs.EC)/3.6e6  # energy consumption [kWh/m3]
-    print('Energy Consumption: %.6e kWh/m3' % metrics['EC'])
+    metrics['EnergyConsumption'] = value(m.fs.EnergyConsumption)/3.6e6  # energy consumption [kWh/m3]
+    print('Energy Consumption: %.6e kWh/m3' % metrics['EnergyConsumption'])
 
     metrics['LCOW'] = value(m.fs.costing.LCOW)
     print('Levelized cost of water: %.6e $/m3' % metrics['LCOW'])
 
     # m.fs.LCOW = Var(metrics['LCOW'])
-    # m.fs.EC = Var(metrics['EC'])
+    # m.fs.EnergyConsumption = Var(metrics['EnergyConsumption'])
 
     return metrics 
 
@@ -348,32 +355,32 @@ def display_state(m):
               % (flow_mass, mass_frac_ppm, pressure_bar, temperature_C))
 
     if m.fs.NumberOfStages == 2:
-        print_state('Feed       ', m.fs.P[1].inlet)
-        print_state('Recycle    ', m.fs.M[1].downstream)
-        print_state('M[1] outlet  ', m.fs.M[1].outlet)
-        print_state('P[1] outlet  ', m.fs.P[1].outlet)
-        print_state('RO perm    ', m.fs.Stage[1].permeate)
-        print_state('RO reten   ', m.fs.Stage[1].retentate)
-        print_state('P[2] outlet  ', m.fs.P[2].outlet)
-        print_state('LSRRO perm ', m.fs.Stage[2].permeate)
-        print_state('LSRRO reten', m.fs.Stage[2].retentate)
-        print_state('ERD outlet ', m.fs.ERD.outlet)
+        print_state('Feed       ', m.fs.PrimaryPumps[1].inlet)
+        print_state('Recycle    ', m.fs.Mixers[1].downstream)
+        print_state('M[1] outlet  ', m.fs.Mixers[1].outlet)
+        print_state('P[1] outlet  ', m.fs.PrimaryPumps[1].outlet)
+        print_state('RO perm    ', m.fs.ROUnits[1].permeate)
+        print_state('RO reten   ', m.fs.ROUnits[1].retentate)
+        print_state('P[2] outlet  ', m.fs.PrimaryPumps[2].outlet)
+        print_state('LSRRO perm ', m.fs.ROUnits[2].permeate)
+        print_state('LSRRO reten', m.fs.ROUnits[2].retentate)
+        print_state('EnergyRecoveryDevice outlet ', m.fs.EnergyRecoveryDevice.outlet)
     elif m.fs.NumberOfStages == 3:
-        print_state('Feed        ', m.fs.P[1].inlet)
-        print_state('Recycle     ', m.fs.M[1].downstream)
-        print_state('M[1] outlet   ', m.fs.M[1].outlet)
-        print_state('P[1] outlet   ', m.fs.P[1].outlet)
-        print_state('RO perm     ', m.fs.Stage[1].permeate)
-        print_state('RO reten    ', m.fs.Stage[1].retentate)
-        print_state('P[2] outlet   ', m.fs.P[2].outlet)
-        print_state('Recycle 2   ', m.fs.EqP[2].outlet)
-        print_state('M[2] outlet   ', m.fs.M[2].outlet)
-        print_state('LSRRO1 perm ', m.fs.Stage[2].permeate)
-        print_state('LSRRO1 reten', m.fs.Stage[2].retentate)
-        print_state('P3 outlet   ', m.fs.P[2].outlet)
-        print_state('LSRRO2 perm ', m.fs.Stage[3].permeate)
-        print_state('LSRRO2 reten', m.fs.Stage[3].retentate)
-        print_state('ERD outlet  ', m.fs.ERD.outlet)
+        print_state('Feed        ', m.fs.PrimaryPumps[1].inlet)
+        print_state('Recycle     ', m.fs.Mixers[1].downstream)
+        print_state('M[1] outlet   ', m.fs.Mixers[1].outlet)
+        print_state('P[1] outlet   ', m.fs.PrimaryPumps[1].outlet)
+        print_state('RO perm     ', m.fs.ROUnits[1].permeate)
+        print_state('RO reten    ', m.fs.ROUnits[1].retentate)
+        print_state('P[2] outlet   ', m.fs.PrimaryPumps[2].outlet)
+        print_state('Recycle 2   ', m.fs.BoosterPumps[2].outlet)
+        print_state('M[2] outlet   ', m.fs.Mixers[2].outlet)
+        print_state('LSRRO1 perm ', m.fs.ROUnits[2].permeate)
+        print_state('LSRRO1 reten', m.fs.ROUnits[2].retentate)
+        print_state('P3 outlet   ', m.fs.PrimaryPumps[2].outlet)
+        print_state('LSRRO2 perm ', m.fs.ROUnits[3].permeate)
+        print_state('LSRRO2 reten', m.fs.ROUnits[3].retentate)
+        print_state('EnergyRecoveryDevice outlet  ', m.fs.EnergyRecoveryDevice.outlet)
     else:
         print(f"No state variables implemented for number of stages {m.fs.NumberOfStages}")
 
@@ -400,38 +407,38 @@ def display_design(m):
                  stage.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value
                  / sum(stage.permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl']) * 1e6))
 
-    print('ERD \npower recovered: %.1f kW' % (-m.fs.ERD.work_mechanical[0].value / 1e3))
+    print('EnergyRecoveryDevice \npower recovered: %.1f kW' % (-m.fs.EnergyRecoveryDevice.work_mechanical[0].value / 1e3))
 
 def display_demo(m):
     print('----system metrics----')
 
     metrics = {}
 
-    metrics['feed_flow_mass'] = sum(m.fs.P[1].inlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
-    metrics['feed_mass_frac_NaCl'] = m.fs.P[1].inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / metrics['feed_flow_mass']
+    metrics['feed_flow_mass'] = sum(m.fs.PrimaryPumps[1].inlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
+    metrics['feed_mass_frac_NaCl'] = m.fs.PrimaryPumps[1].inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / metrics['feed_flow_mass']
     print('Feed: %.2f kg/s, %.0f ppm' % (metrics['feed_flow_mass'], metrics['feed_mass_frac_NaCl'] * 1e6))
 
-    metrics['prod_flow_mass'] = sum(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
-    metrics['prod_mass_frac_ppm'] = m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / metrics['prod_flow_mass'] * 1e6
+    metrics['prod_flow_mass'] = sum(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
+    metrics['prod_mass_frac_ppm'] = m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / metrics['prod_flow_mass'] * 1e6
     print('Product: %.2f kg/s, %.0f ppm' % (metrics['prod_flow_mass'], metrics['prod_mass_frac_ppm']))
 
-    metrics['disp_flow_mass'] = sum(m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
-    metrics['disp_mass_frac_ppm'] = m.fs.ERD.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / metrics['disp_flow_mass'] * 1e6
+    metrics['disp_flow_mass'] = sum(m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
+    metrics['disp_mass_frac_ppm'] = m.fs.EnergyRecoveryDevice.outlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / metrics['disp_flow_mass'] * 1e6
     print('Disposal: %.2f kg/s, %.0f ppm' % (metrics['disp_flow_mass'], metrics['disp_mass_frac_ppm']))
 
-    metrics['recovery'] = 100.0*sum(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O'])/sum(m.fs.P[1].inlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O'])
+    metrics['recovery'] = 100.0*sum(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O'])/sum(m.fs.PrimaryPumps[1].inlet.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O'])
     # print('metrics['Recovery']: %.1f%%' % (metrics['prod_flow_mass'] / metrics['feed_flow_mass'] * 100))
     print('Recovery: %.1f%%' % (metrics['recovery']))
 
-    metrics['EC'] = value(m.fs.EC)/3.6e6  # energy consumption [kWh/m3]
-    print('Energy Consumption: %.2f kWh/m3' % metrics['EC'])
+    metrics['EnergyConsumption'] = value(m.fs.EnergyConsumption)/3.6e6  # energy consumption [kWh/m3]
+    print('Energy Consumption: %.2f kWh/m3' % metrics['EnergyConsumption'])
 
     metrics['LCOW'] = value(m.fs.costing.LCOW)
     print('Levelized cost of water: %.2f $/m3' % metrics['LCOW'])
 
     for stage in m.fs.StageSet:
-        wr = m.fs.Stage[stage].recovery_mass_phase_comp[0, 'Liq', 'H2O'].value
-        sr = m.fs.Stage[stage].rejection_phase_comp[0, 'Liq', 'NaCl'].value
+        wr = m.fs.ROUnits[stage].recovery_mass_phase_comp[0, 'Liq', 'H2O'].value
+        sr = m.fs.ROUnits[stage].rejection_phase_comp[0, 'Liq', 'NaCl'].value
         print(f"Stage {stage}: Water recovery: {wr*100:.2f}%, Salt rejection: {sr*100:.2f}%")
 
 def main(number_of_stages):
