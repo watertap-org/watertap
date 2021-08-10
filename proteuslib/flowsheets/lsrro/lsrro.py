@@ -94,9 +94,9 @@ def build(number_of_stages=2):
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc='System Water Recovery')
-    m.fs.eq_water_recovery = Constraint(
-        expr=(  m.fs.P[1].inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'] * m.fs.water_recovery ==
-              m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O'] ) )
+    m.fs.eq_water_recovery = Constraint(expr=\
+              sum(m.fs.P[1].inlet.flow_mass_phase_comp[0,'Liq',:]) * m.fs.water_recovery == \
+              sum(m.fs.Stage[1].permeate.flow_mass_phase_comp[0,'Liq',:]) )
     # energy consumption [J/m3]
     m.fs.EC = Expression(
         expr=total_pump_work/sum(m.fs.Stage[1].permeate.flow_mass_phase_comp[0,'Liq',:]) \
