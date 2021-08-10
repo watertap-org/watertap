@@ -99,12 +99,11 @@ def build(number_of_stages=2):
               m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', 'H2O'] ) )
     # energy consumption [J/m3]
     m.fs.EC = Expression(
-        expr=(total_pump_work)
-             / sum(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', j] for j in ['H2O', 'NaCl'])
+        expr=total_pump_work/sum(m.fs.Stage[1].permeate.flow_mass_phase_comp[0,'Liq',:]) \
              * m.fs.Stage[1].permeate_side.properties_mixed[0].dens_mass_phase['Liq'])
     # annual water production
     m.fs.AWP = Expression(
-        expr=(pyunits.convert(sum(m.fs.Stage[1].permeate.flow_mass_phase_comp[0, 'Liq', j] for j in ['H2O', 'NaCl']),
+            expr=(pyunits.convert(sum(m.fs.Stage[1].permeate.flow_mass_phase_comp[0,'Liq',:]),
                               to_units=pyunits.kg / pyunits.year)
               / m.fs.Stage[1].permeate_side.properties_mixed[0].dens_mass_phase['Liq']) * m.fs.costing_param.load_factor)
 
