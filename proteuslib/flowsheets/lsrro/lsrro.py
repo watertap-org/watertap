@@ -235,10 +235,9 @@ def set_operating_conditions(m, verbose=False, solver=None):
     seq = SequentialDecomposition()
     if not SolverFactory("glpk").available():
         seq.options.select_tear_method = "heuristic"
-        seq.options.tear_method = "Wegstein"
     else:
         seq.options.tear_solver = "glpk"
-    seq.options.iterLim = 5
+    seq.options.iterLim = m.fs.NumberOfStages
 
     # run SD tool
     def func_initialize(unit):
@@ -260,7 +259,7 @@ def solve(m, solver=None, tee=False):
         return None
 
 
-def optimize_set_up(m, verbose=False, set_water_recovery=False):
+def optimize_set_up(m, water_recovery=None):
     # objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
@@ -296,12 +295,12 @@ def optimize_set_up(m, verbose=False, set_water_recovery=False):
     min_avg_flux = min_avg_flux / 3600 * pyunits.kg / pyunits.m**2 / pyunits.s  # [kg/m2-s]
 
     # additional constraints
-    if set_water_recovery:
-        m.fs.water_recovery.fix(0.5) # product mass flow rate fraction of feed [-]
+    if water_recovery is not None:
+        m.fs.water_recovery.fix(water_recovery) # product mass flow rate fraction of feed [-]
 
     # ---checking model---
     assert_units_consistent(m)
-    assert degrees_of_freedom(m) == 4 * m.fs.NumberOfStages - (2 if set_water_recovery else 1)
+    assert degrees_of_freedom(m) == 4 * m.fs.NumberOfStages - (1 if (water_recovery is None) else 2)
 
     return m
 
