@@ -299,17 +299,6 @@ def optimize_set_up(m, verbose=False, set_water_recovery=False):
     if set_water_recovery:
         m.fs.water_recovery.fix(0.5) # product mass flow rate fraction of feed [-]
 
-    if False:
-        # TODO: these constraints should not be needed
-        #       per Adam 2021 Aug 9
-        # Create flux constraints
-        @m.fs.Constraint(m.fs.StageSet)
-        def eq_min_avg_flux(fs, stage):
-            return min_avg_flux <= sum(
-                    fs.Stage[stage].flux_mass_phase_comp_avg[0, 'Liq', j] for j in ['H2O', 'NaCl'])
-        for constr in m.fs.eq_min_avg_flux.values():
-            iscale.constraint_scaling_transform(constr, 1e3)  # scaling constraint
-
     # ---checking model---
     assert_units_consistent(m)
     assert degrees_of_freedom(m) == 4 * m.fs.NumberOfStages - (2 if set_water_recovery else 1)
