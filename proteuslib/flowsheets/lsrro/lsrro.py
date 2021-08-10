@@ -144,8 +144,7 @@ def build(number_of_stages=2):
 
     # additional bounding
     for b in m.component_data_objects(Block, descend_into=True):
-        if hasattr(b, 'flux_mass_io_comp'):
-            b.flux_mass_io_comp[0, 'out', 'H2O'].setlb(2.778e-4)
+        # NaCl solubility limit
         if hasattr(b, 'mass_frac_phase_comp'):
             b.mass_frac_phase_comp['Liq', 'NaCl'].setub(0.26)
 
@@ -472,7 +471,6 @@ def main(number_of_stages):
     print('---Close to bounds---')
     infeas.log_close_to_bounds(m)
 
-    # m.fs.EqP[2].display()
     return m
 
 if __name__ == "__main__":
