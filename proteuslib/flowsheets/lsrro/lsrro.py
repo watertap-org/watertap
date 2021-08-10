@@ -112,51 +112,33 @@ def build(number_of_stages=2):
     financials.get_system_costing(m.fs)
 
     # connections
-    def add_arc(s,d,arc_id):
-        arc_name = "s%02d" % arc_id; arc_id+=1
-        setattr(m.fs,arc_name, Arc(source=s, destination=d))
-        return arc_id
 
-    arc_id = 1
-    for n in m.fs.StageSet:
+    # Connect the Pump n to the Mixer n
+    m.fs.pump_to_mixer = Arc(m.fs.NonFinal_StageSet,
+            rule=lambda fs,n : {'source':fs.P[n].outlet, 'destination':fs.M[n].upstream})
 
-        if n < number_of_stages:
-            ### Connect the Pump n to the Mixer n
-            s = m.fs.P[n].outlet
-            d = m.fs.M[n].upstream
-            arc_id = add_arc(s,d,arc_id)
+    # Connect the Mixer n to the Stage n
+    m.fs.mixer_to_stage = Arc(m.fs.NonFinal_StageSet,
+            rule=lambda fs,n : {'source':fs.M[n].outlet, 'destination':fs.Stage[n].inlet})
 
-            ### Connect the Mixer n to the Stage n
-            s = m.fs.M[n].outlet
-            d = m.fs.Stage[n].inlet
-            arc_id = add_arc(s,d,arc_id)
+    # Connect the Stage n to the Pump n+1
+    m.fs.stage_to_pump = Arc(m.fs.NonFinal_StageSet,
+            rule=lambda fs,n : {'source':fs.Stage[n].retentate, 'destination':fs.P[n+1].inlet})
 
-            ### Connect the Stage n to the Pump n+1
-            s = m.fs.Stage[n].retentate
-            d = m.fs.P[n+1].inlet
-            arc_id = add_arc(s,d,arc_id)
-        else:
-            ### Connect the Pump N to the Stage N
-            s = m.fs.P[n].outlet
-            d = m.fs.Stage[n].inlet
-            arc_id = add_arc(s,d,arc_id)
-          
-        if n > 1:
-            ### Connect the Stage n to the Eq Pump n
-            s = m.fs.Stage[n].permeate
-            d = m.fs.EqP[n].inlet
-            arc_id = add_arc(s,d,arc_id)
+    # Connect the Stage n to the Eq Pump n
+    m.fs.stage_to_eq_pump = Arc(m.fs.LSRRO_StageSet,
+            rule=lambda fs,n : {'source':fs.Stage[n].permeate, 'destination':fs.EqP[n].inlet})
 
-            ### Connect the Eq Pump n to the Mixer n-1
-            s = m.fs.EqP[n].outlet
-            d = m.fs.M[n-1].downstream
-            arc_id = add_arc(s,d,arc_id)
+    # Connect the Eq Pump n to the Mixer n-1
+    m.fs.eq_pump_to_mixer = Arc(m.fs.LSRRO_StageSet,
+            rule=lambda fs,n : {'source':fs.EqP[n].outlet, 'destination':fs.M[n-1].downstream})
 
+    # Connect the Pump N to the Stage N
+    last_stage = m.fs.StageSet.last()
+    m.fs.pump_to_stage = Arc(source=m.fs.P[last_stage].outlet, destination=m.fs.Stage[last_stage].inlet)
 
-    ### Connect Final Stage to ERD Pump
-    s = m.fs.Stage[m.fs.StageSet.last()].retentate
-    d = m.fs.ERD.inlet
-    arc_id = add_arc(s,d,arc_id)
+    # Connect Final Stage to ERD Pump
+    m.fs.stage_to_erd = Arc(source=m.fs.Stage[last_stage].retentate, destination=m.fs.ERD.inlet)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
