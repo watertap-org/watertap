@@ -173,10 +173,7 @@ def set_operating_conditions(m, verbose=False, solver=None):
     m.fs.P[1].inlet.pressure[0].fix(pressure_atm)
     m.fs.P[1].inlet.temperature[0].fix(feed_temperature)
     m.fs.P[1].inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_flow_mass * feed_mass_frac_NaCl)
-    m.fs.feed_H2O = Constraint(
-            expr=m.fs.P[1].inlet.flow_mass_phase_comp[0.0, 'Liq', 'H2O'] == 
-                 (1.0 - m.fs.P[1].inlet.flow_mass_phase_comp[0.0, 'Liq', 'NaCl']/feed_flow_mass) * feed_flow_mass
-        )
+    m.fs.P[1].inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(feed_flow_mass * (1-feed_mass_frac_NaCl))
 
     # initialize pumps
     for pump in m.fs.P.values():
