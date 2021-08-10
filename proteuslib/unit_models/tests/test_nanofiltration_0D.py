@@ -84,7 +84,7 @@ class TestNanoFiltration():
     def test_config(self, NF_frame):
         m = NF_frame
         # check unit config arguments
-        assert len(m.fs.unit.config) == 8
+        assert len(m.fs.unit.config) == 11
 
         assert not m.fs.unit.config.dynamic
         assert not m.fs.unit.config.has_holdup
@@ -106,24 +106,28 @@ class TestNanoFiltration():
         port_lst = ['inlet', 'retentate', 'permeate']
         port_vars_lst = ['flow_mass_phase_comp', 'pressure', 'temperature']
         for port_str in port_lst:
-            assert hasattr(m.fs.unit, port_str)
             port = getattr(m.fs.unit, port_str)
             assert len(port.vars) == 3
             assert isinstance(port, Port)
-            for var_str in port_vars_lst:
-                assert hasattr(port, var_str)
-                var = getattr(port, var_str)
-                assert isinstance(var, Var)
 
         # test unit objects (including parameters, variables, and constraints)
-        unit_objs_lst = ['A_comp', 'B_comp', 'sigma', 'dens_solvent',
-                         'flux_mass_phase_comp_in', 'flux_mass_phase_comp_out',
-                         'avg_conc_mass_phase_comp_in', 'avg_conc_mass_phase_comp_out', 'area',
-                         'deltaP', 'mass_transfer_phase_comp', 'flux_mass_phase_comp_avg',
-                         'eq_mass_transfer_term', 'eq_permeate_production',
-                         'eq_flux_in', 'eq_flux_out',
-                         'eq_avg_conc_in', 'eq_avg_conc_out',
-                         'eq_connect_mass_transfer', 'eq_connect_enthalpy_transfer',
+        unit_objs_lst = ['A_comp',
+                         'B_comp',
+                         'sigma',
+                         'dens_solvent',
+                         'flux_mass_io_phase_comp',
+                         'flux_mass_io_phase_comp',
+                         'avg_conc_io_mass_phase_comp',
+                         'area',
+                         'deltaP',
+                         'mass_transfer_phase_comp',
+                         'flux_mass_phase_comp_avg',
+                         'eq_mass_transfer_term',
+                         'eq_permeate_production',
+                         'eq_flux_io',
+                         'eq_avg_conc_io',
+                         'eq_connect_mass_transfer',
+                         'eq_connect_enthalpy_transfer',
                          'eq_permeate_isothermal']
         for obj_str in unit_objs_lst:
             assert hasattr(m.fs.unit, obj_str)

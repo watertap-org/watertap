@@ -1039,19 +1039,18 @@ class NanoFiltrationData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].dens_mass_phase['Liq'])
             iscale.set_scaling_factor(self.dens_solvent, sf)
 
-        for vobj in [self.flux_mass_phase_comp_in, self.flux_mass_phase_comp_out]:
-            for (t, p, j), v in vobj.items():
-                if iscale.get_scaling_factor(v) is None:
-                    comp = self.config.property_package.get_component(j)
-                    if comp.is_solvent():  # scaling based on solvent flux equation
-                        sf = (iscale.get_scaling_factor(self.A_comp[t, j])
-                              * iscale.get_scaling_factor(self.dens_solvent)
-                              * iscale.get_scaling_factor(self.feed_side.properties_in[t].pressure))
-                        iscale.set_scaling_factor(v, sf)
-                    elif comp.is_solute():  # scaling based on solute flux equation
-                        sf = (iscale.get_scaling_factor(self.B_comp[t, j])
-                              * iscale.get_scaling_factor(self.feed_side.properties_in[t].conc_mass_phase_comp[p, j]))
-                        iscale.set_scaling_factor(v, sf)
+        for (t, x, p, j), v in self.flux_mass_io_phase_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                comp = self.config.property_package.get_component(j)
+                if comp.is_solvent():  # scaling based on solvent flux equation
+                    sf = (iscale.get_scaling_factor(self.A_comp[t, j])
+                          * iscale.get_scaling_factor(self.dens_solvent)
+                          * iscale.get_scaling_factor(self.feed_side.properties_in[t].pressure))
+                    iscale.set_scaling_factor(v, sf)
+                elif comp.is_solute():  # scaling based on solute flux equation
+                    sf = (iscale.get_scaling_factor(self.B_comp[t, j])
+                          * iscale.get_scaling_factor(self.feed_side.properties_in[t].conc_mass_phase_comp[p, j]))
+                    iscale.set_scaling_factor(v, sf)
 
         for (t, x, p, j), v in self.avg_conc_mass_io_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
@@ -1100,12 +1099,8 @@ class NanoFiltrationData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
             iscale.constraint_scaling_transform(c, sf)
 
-        for ind, c in self.eq_flux_in.items():
-            sf = iscale.get_scaling_factor(self.flux_mass_phase_comp_in[ind])
-            iscale.constraint_scaling_transform(c, sf)
-
-        for ind, c in self.eq_flux_out.items():
-            sf = iscale.get_scaling_factor(self.flux_mass_phase_comp_out[ind])
+        for ind, c in self.eq_flux_io.items():
+            sf = iscale.get_scaling_factor(self.flux_mass_io_phase_comp[ind])
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_avg_conc_io.items():
