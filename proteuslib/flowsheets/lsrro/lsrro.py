@@ -254,13 +254,12 @@ def set_operating_conditions(m, verbose=False, solver=None):
     feed_mass_frac_NaCl = value(m.fs.P[1].inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']/ feed_flow_mass)
     feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
     seq = SequentialDecomposition()
-    #if not SolverFactory("glpk").available():
-    if True:
+    if not SolverFactory("glpk").available():
         seq.options.select_tear_method = "heuristic"
         seq.options.tear_method = "Wegstein"
     else:
         seq.options.tear_solver = "glpk"
-    seq.options.iterLim = 2
+    seq.options.iterLim = 5
     # assess tear
     G = seq.create_graph(m)
     tear_guesses = {
