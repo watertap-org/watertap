@@ -35,6 +35,8 @@ from idaes.core.util import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
+from proteuslib.util.initialization import check_dof, check_solve
+from enum import Enum, auto
 import idaes.logger as idaeslog
 
 
@@ -285,7 +287,6 @@ class NanoFiltrationData(UnitModelBlockData):
             doc='Solute permeability coeff.')
         self.sigma = Var(
             self.flowsheet().config.time,
-            solute_set,
             initialize=0.5,
             bounds=(1e-8, 1),
             domain=NonNegativeReals,
@@ -321,6 +322,16 @@ class NanoFiltrationData(UnitModelBlockData):
             bounds=flux_mass_io_phase_comp_bounds,
             units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Mass flux across membrane at inlet and outlet')
+
+        self.avg_conc_mass_io_phase_comp = Var(
+            self.flowsheet().config.time,
+            self.io_list,
+            self.config.property_package.phase_list,
+            solute_set,
+            initialize=10,
+            bounds=(1e-3, 2e3),
+            units=pyunits.kg * pyunits.m ** -3,
+            doc="Average mass concentration at inlet and outlet")
 
         self.area = Var(
             initialize=10,
@@ -595,7 +606,7 @@ class NanoFiltrationData(UnitModelBlockData):
         @self.Constraint(self.flowsheet().config.time,
                          self.io_list,
                          self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
+                         solute_set,
                          doc="Water and salt flux")
         def eq_flux_io(b, t, x, p, j):
             if x == 'in':
@@ -606,25 +617,25 @@ class NanoFiltrationData(UnitModelBlockData):
                 prop_feed = b.feed_side.properties_out[t]
                 prop_feed_inter = b.feed_side.properties_interface_out[t]
                 prop_perm = b.permeate_side.properties_out[t]
-            comp = self.config.property_package.get_component(j)
+            comp = b.config.property_package.get_component(j)
             if comp.is_solvent():
-                return (b.[t, x, p, j] == b.A_comp[t, j] * b.dens_solvent
+                return (b.flux_mass_io_phase_comp[t, x, p, j] == b.A_comp[t, j] * b.dens_solvent
                         * ((prop_feed.pressure - prop_perm.pressure)
-                           - b.sigma[t, j] * (prop_feed_inter.pressure_osm - prop_perm.pressure_osm)))
+                           - b.sigma[t] * (prop_feed_inter.pressure_osm - prop_perm.pressure_osm)))
             elif comp.is_solute():
                 return (b.flux_mass_io_phase_comp[t, x, p, j] == b.B_comp[t, j]
                         * (prop_feed_inter.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j])
-                        + ((1 - b.sigma[t, x]) * b.flux_mass_io_phase_comp[t, x, p, j]
-                           * 1 / b.dens_solvent * b.avg_conc_mass_phase_comp_io[t, x, p, j]))
+                        + ((1 - b.sigma[t]) * b.flux_mass_io_phase_comp[t, x, p, j]
+                           * 1 / b.dens_solvent * b.avg_conc_mass_io_phase_comp[t, x, p, j]))
 
-        # Average concentration
+            # Average concentration
         # Assuming membrane-interface concentration as feed concentration rather than the bulk
         # COMMENT: Chen approximation of logarithmic average implemented
         @self.Constraint(self.flowsheet().config.time,
                          self.io_list,
                          self.config.property_package.phase_list,
                          solute_set,
-                         doc="Average inlet concentration")
+                         doc="Average concentration")
         def eq_avg_conc_io(b, t, x, p, j):
             if x == 'in':
                 prop_feed_inter = b.feed_side.properties_interface_in[t]
@@ -632,7 +643,7 @@ class NanoFiltrationData(UnitModelBlockData):
             elif x == 'out':
                 prop_feed_inter = b.feed_side.properties_interface_out[t]
                 prop_perm = b.permeate_side.properties_out[t]
-            return (b.avg_conc_mass_phase_comp_io[t, x, p, j] ==
+            return (b.avg_conc_mass_io_phase_comp[t, x, p, j] ==
                     (prop_feed_inter.conc_mass_phase_comp[p, j] * prop_perm.conc_mass_phase_comp[p, j] *
                      (prop_feed_inter.conc_mass_phase_comp[p, j] + prop_perm.conc_mass_phase_comp[p, j])/2)**(1/3))
 
@@ -981,9 +992,7 @@ class NanoFiltrationData(UnitModelBlockData):
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-        init_log.info_high(
-            "Initialization Step 3 {}.".format(idaeslog.condition(res)))
-
+        check_solve(res, checkpoint='Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.feed_side.release_state(flags, outlvl + 1)
@@ -1044,11 +1053,14 @@ class NanoFiltrationData(UnitModelBlockData):
                               * iscale.get_scaling_factor(self.feed_side.properties_in[t].conc_mass_phase_comp[p, j]))
                         iscale.set_scaling_factor(v, sf)
 
-        for vobj in [self.avg_conc_mass_phase_comp_in, self.avg_conc_mass_phase_comp_out]:
-            for (t, p, j), v in vobj.items():
-                if iscale.get_scaling_factor(v) is None:
-                    sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].conc_mass_phase_comp[p, j])
-                    iscale.set_scaling_factor(v, sf)
+        for (t, x, p, j), v in self.avg_conc_mass_io_phase_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                if x == 'in':
+                    prop_feed = self.feed_side.properties_in[t]
+                elif x == 'out':
+                    prop_feed = self.feed_side.properties_out[t]
+                sf = iscale.get_scaling_factor(prop_feed.conc_mass_phase_comp[p, j])
+                iscale.set_scaling_factor(v, sf)
 
         for (t, p, j), v in self.feed_side.mass_transfer_term.items():
             if iscale.get_scaling_factor(v) is None:
@@ -1096,12 +1108,8 @@ class NanoFiltrationData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.flux_mass_phase_comp_out[ind])
             iscale.constraint_scaling_transform(c, sf)
 
-        for ind, c in self.eq_avg_conc_in.items():
-            sf = iscale.get_scaling_factor(self.avg_conc_mass_phase_comp_in[ind])
-            iscale.constraint_scaling_transform(c, sf)
-
-        for ind, c in self.eq_avg_conc_out.items():
-            sf = iscale.get_scaling_factor(self.avg_conc_mass_phase_comp_out[ind])
+        for ind, c in self.eq_avg_conc_io.items():
+            sf = iscale.get_scaling_factor(self.avg_conc_mass_io_phase_comp[ind])
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_connect_mass_transfer.items():
