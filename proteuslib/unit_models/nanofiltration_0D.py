@@ -68,6 +68,7 @@ class NanoFiltrationData(UnitModelBlockData):
     - zero dimensional model
     - steady state only
     - single liquid phase only
+    - single solute only
     """
     CONFIG = ConfigBlock()
 

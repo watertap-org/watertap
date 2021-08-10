@@ -17,12 +17,15 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            value,
-                           Var)
+                           Var,
+                           Expression,
+                           Param)
 from pyomo.network import Port
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
-                        MomentumBalanceType)
+                        MomentumBalanceType,
+                        ControlVolume0DBlock)
 from proteuslib.unit_models.nanofiltration_0D import NanoFiltration0D
 import proteuslib.property_models.NaCl_prop_pack as props
 
@@ -51,7 +54,7 @@ class TestNanoFiltration():
 
         m.fs.unit = NanoFiltration0D(default={
             "property_package": m.fs.properties,
-            "has_pressure_change": True, })
+            "has_pressure_change": True })
 
         # fully specify system
         feed_flow_mass = 1
@@ -66,10 +69,8 @@ class TestNanoFiltration():
         pressure_atmospheric = 101325
 
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
-        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
-            feed_flow_mass * feed_mass_frac_NaCl)
-        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
-            feed_flow_mass * feed_mass_frac_H2O)
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_flow_mass * feed_mass_frac_NaCl)
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(feed_flow_mass * feed_mass_frac_H2O)
         m.fs.unit.inlet.pressure[0].fix(feed_pressure)
         m.fs.unit.inlet.temperature[0].fix(feed_temperature)
         m.fs.unit.deltaP.fix(-membrane_pressure_drop)
@@ -110,57 +111,78 @@ class TestNanoFiltration():
             assert len(port.vars) == 3
             assert isinstance(port, Port)
 
-        # test unit objects (including parameters, variables, and constraints)
-        unit_objs_lst = ['A_comp',
-                         'B_comp',
-                         'sigma',
-                         'dens_solvent',
-                         'flux_mass_io_phase_comp',
-                         'flux_mass_io_phase_comp',
-                         'avg_conc_io_mass_phase_comp',
-                         'area',
-                         'deltaP',
-                         'mass_transfer_phase_comp',
-                         'flux_mass_phase_comp_avg',
-                         'eq_mass_transfer_term',
-                         'eq_permeate_production',
-                         'eq_flux_io',
-                         'eq_avg_conc_io',
-                         'eq_connect_mass_transfer',
-                         'eq_connect_enthalpy_transfer',
-                         'eq_permeate_isothermal']
-        for obj_str in unit_objs_lst:
-            assert hasattr(m.fs.unit, obj_str)
+        # test pyomo objects on unit
+        unit_objs_type_dict = {'dens_solvent': Param,
+                               'A_comp': Var,
+                               'B_comp': Var,
+                               'sigma': Var,
+                               'flux_mass_io_phase_comp': Var,
+                               'avg_conc_mass_io_phase_comp': Var,
+                               'area': Var,
+                               'recovery_vol_phase': Var,
+                               'recovery_mass_phase_comp': Var,
+                               'rejection_phase_comp': Var,
+                               'over_pressure_ratio': Var,
+                               'deltaP': Var,
+                               'mass_transfer_phase_comp': Var,
+                               'flux_mass_phase_comp_avg': Expression,
+                               'eq_mass_transfer_term': Constraint,
+                               'eq_permeate_production': Constraint,
+                               'eq_flux_io': Constraint,
+                               'eq_avg_conc_io': Constraint,
+                               'eq_connect_mass_transfer': Constraint,
+                               'eq_connect_enthalpy_transfer': Constraint,
+                               'eq_permeate_isothermal': Constraint,
+                               'eq_recovery_vol_phase': Constraint,
+                               'eq_recovery_mass_phase_comp': Constraint,
+                               'eq_rejection_phase_comp': Constraint,
+                               'eq_over_pressure_ratio': Constraint}
+        for obj_str, obj_type in unit_objs_type_dict.items():
+            obj = getattr(m.fs.unit, obj_str)
+            assert isinstance(obj, obj_type)
+        # check that all added unit objects are tested
+        for obj in m.fs.unit.component_objects(
+                [Param, Var, Expression, Constraint], descend_into=False):
+            obj_str = obj.local_name
+            if obj_str[0] == '_':
+                continue  # do not test hidden references
+            assert obj_str in unit_objs_type_dict
 
+        # test feed-side control volume and associated stateblocks
+        assert isinstance(m.fs.unit.feed_side, ControlVolume0DBlock)
+        cv_stateblock_lst = ['properties_in', 'properties_out',
+                             'properties_interface_in', 'properties_interface_out']
+        for sb_str in cv_stateblock_lst:
+            sb = getattr(m.fs.unit.feed_side, sb_str)
+            assert isinstance(sb, props.NaClStateBlock)
+        # test objects added to control volume
+        cv_objs_type_dict = {'eq_concentration_polarization_io': Constraint,
+                             'eq_equal_temp_interface_io': Constraint,
+                             'eq_equal_pressure_interface_io': Constraint,
+                             'eq_equal_flow_vol_interface_io': Constraint}
+        for (obj_str, obj_type) in cv_objs_type_dict.items():
+            obj = getattr(m.fs.unit.feed_side, obj_str)
+            assert isinstance(obj, obj_type)
 
-        # test state block objects
-        cv_name = 'feed_side'
-        cv_stateblock_lst = ['properties_in', 'properties_out']
-        stateblock_objs_lst = \
-            ['flow_mass_phase_comp', 'pressure', 'temperature', 'pressure_osm',
-             'osm_coeff', 'mass_frac_phase_comp', 'conc_mass_phase_comp',
-             'dens_mass_phase', 'enth_mass_phase',
-             'eq_pressure_osm', 'eq_osm_coeff', 'eq_mass_frac_phase_comp',
-             'eq_conc_mass_phase_comp', 'eq_dens_mass_phase', 'eq_enth_mass_phase'
-             ]
-        # control volume
-        assert hasattr(m.fs.unit, cv_name)
-        cv_blk = getattr(m.fs.unit, cv_name)
-        for blk_str in cv_stateblock_lst:
-            assert hasattr(cv_blk, blk_str)
-            blk = getattr(cv_blk, blk_str)
-            for obj_str in stateblock_objs_lst:
-                assert hasattr(blk[0], obj_str)
-        # permeate
-        assert hasattr(m.fs.unit, 'properties_permeate')
-        blk = getattr(m.fs.unit, 'properties_permeate')
-        for var_str in stateblock_objs_lst:
-            assert hasattr(blk[0], var_str)
+        # test permeate-side control volume and associated stateblocks
+        assert isinstance(m.fs.unit.permeate_side, ControlVolume0DBlock)
+        cv_stateblock_lst = ['properties_in', 'properties_out', 'properties_mixed']
+        for sb_str in cv_stateblock_lst:
+            sb = getattr(m.fs.unit.permeate_side, sb_str)
+            assert isinstance(sb, props.NaClStateBlock)
+        # test objects added to control volume
+        cv_objs_type_dict = {'eq_mass_frac_permeate_io': Constraint,
+                             'eq_temperature_permeate_io': Constraint,
+                             'eq_pressure_permeate_io': Constraint,
+                             'eq_flow_vol_permeate_io': Constraint}
+        for (obj_str, obj_type) in cv_objs_type_dict.items():
+            obj = getattr(m.fs.unit.permeate_side, obj_str)
+            assert isinstance(obj, obj_type)
 
         # test statistics
-        assert number_variables(m) == 73
-        assert number_total_constraints(m) == 45
-        assert number_unused_variables(m) == 7  # vars from property package parameters
+        assert number_variables(m) == 118
+        assert number_total_constraints(m) == 88
+        assert number_unused_variables(m) == 8  # vars from property package parameters
 
     @pytest.mark.unit
     def test_dof(self, NF_frame):
@@ -174,6 +196,7 @@ class TestNanoFiltration():
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
+        [print(i) for i in unscaled_var_list]
         assert len(unscaled_var_list) == 0
         # check that all constraints have been scaled
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
@@ -211,7 +234,7 @@ class TestNanoFiltration():
         flow_mass_retentate = sum(
             b.feed_side.properties_out[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
         flow_mass_permeate = sum(
-            b.properties_permeate[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
+            b.permeate_side.properties_mixed[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
 
         assert (abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate
                           )) <= 1e-6)
@@ -219,7 +242,7 @@ class TestNanoFiltration():
         assert (abs(value(
             flow_mass_inlet * b.feed_side.properties_in[0].enth_mass_phase['Liq']
             - flow_mass_retentate * b.feed_side.properties_out[0].enth_mass_phase['Liq']
-            - flow_mass_permeate * b.properties_permeate[0].enth_mass_phase['Liq']
+            - flow_mass_permeate * b.permeate_side.properties_mixed[0].enth_mass_phase['Liq']
         )) <= 1e-6)
 
     @pytest.mark.component
