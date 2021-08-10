@@ -232,8 +232,6 @@ def set_operating_conditions(m, verbose=False, solver=None):
         solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
 
     # set up SD tool
-    feed_mass_frac_NaCl = value(m.fs.P[1].inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']/ feed_flow_mass)
-    feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
     seq = SequentialDecomposition()
     if not SolverFactory("glpk").available():
         seq.options.select_tear_method = "heuristic"
@@ -241,15 +239,7 @@ def set_operating_conditions(m, verbose=False, solver=None):
     else:
         seq.options.tear_solver = "glpk"
     seq.options.iterLim = 5
-    # assess tear
-    G = seq.create_graph(m)
-    tear_guesses = {
-        "flow_mass_phase_comp": {
-            (0, 'Liq', 'NaCl'): feed_flow_mass * feed_mass_frac_NaCl * 1.2,
-            (0, 'Liq', 'H2O'): feed_flow_mass * feed_mass_frac_H2O * 1.2},
-        "temperature": {0: feed_temperature},
-        "pressure": {0: pressure_atm}}
-    seq.set_guesses_for(m.fs.P[1].inlet, tear_guesses)
+
     # run SD tool
     def func_initialize(unit):
         outlvl = idaeslogger.INFO if verbose else idaeslogger.CRITICAL
