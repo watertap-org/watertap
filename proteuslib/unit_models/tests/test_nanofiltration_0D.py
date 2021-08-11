@@ -26,7 +26,7 @@ from idaes.core import (FlowsheetBlock,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         ControlVolume0DBlock)
-from proteuslib.unit_models.nanofiltration_0D import NanoFiltration0D
+from proteuslib.unit_models.nanofiltration_0D import NanoFiltration0D, ConcentrationPolarizationType
 import proteuslib.property_models.NaCl_prop_pack as props
 
 from idaes.core.util import get_solver
@@ -54,7 +54,8 @@ class TestNanoFiltration():
 
         m.fs.unit = NanoFiltration0D(default={
             "property_package": m.fs.properties,
-            "has_pressure_change": True })
+            "has_pressure_change": True,
+            "concentration_polarization_type": ConcentrationPolarizationType.fixed})
 
         # fully specify system
         feed_flow_mass = 1
@@ -79,6 +80,7 @@ class TestNanoFiltration():
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.sigma.fix(sigma)
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.cp_modulus.fix(1.1)
         return m
 
     @pytest.mark.unit
@@ -98,6 +100,9 @@ class TestNanoFiltration():
         assert m.fs.unit.config.has_pressure_change
         assert m.fs.unit.config.property_package is \
                m.fs.properties
+        assert m.fs.unit.config.concentration_polarization_type == \
+               ConcentrationPolarizationType.fixed
+        assert isinstance(m.fs.unit.cp_modulus, Var)
 
     @pytest.mark.unit
     def test_build(self, NF_frame):
@@ -119,6 +124,7 @@ class TestNanoFiltration():
                                'flux_mass_io_phase_comp': Var,
                                'avg_conc_mass_io_phase_comp': Var,
                                'area': Var,
+                               'cp_modulus': Var,
                                'recovery_vol_phase': Var,
                                'recovery_mass_phase_comp': Var,
                                'rejection_phase_comp': Var,
@@ -180,9 +186,9 @@ class TestNanoFiltration():
             assert isinstance(obj, obj_type)
 
         # test statistics
-        assert number_variables(m) == 118
-        assert number_total_constraints(m) == 88
-        assert number_unused_variables(m) == 8  # vars from property package parameters
+        assert number_variables(m) == 128
+        assert number_total_constraints(m) == 99
+        assert number_unused_variables(m) == 7  # vars from property package parameters
 
     @pytest.mark.unit
     def test_dof(self, NF_frame):
@@ -196,7 +202,6 @@ class TestNanoFiltration():
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
-        [print(i) for i in unscaled_var_list]
         assert len(unscaled_var_list) == 0
         # check that all constraints have been scaled
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
@@ -248,11 +253,11 @@ class TestNanoFiltration():
     @pytest.mark.component
     def test_solution(self, NF_frame):
         m = NF_frame
-        assert (pytest.approx(1.079e-2, rel=1e-3) ==
+        assert (pytest.approx(1.055e-2, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
-        assert (pytest.approx(3.435e-4, rel=1e-3) ==
+        assert (pytest.approx(3.563e-4, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl']))
-        assert (pytest.approx(0.5396, rel=1e-3) ==
-                value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
-        assert (pytest.approx(1.717e-2, rel=1e-3) ==
-                value(m.fs.unit.properties_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
+        assert (pytest.approx(0.5276, rel=1e-3) ==
+                value(m.fs.unit.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']))
+        assert (pytest.approx(1.782e-2, rel=1e-3) ==
+                value(m.fs.unit.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']))
