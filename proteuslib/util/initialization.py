@@ -17,7 +17,8 @@ This module contains utility functions for initialization of ProteusLib models.
 
 __author__ = "Adam Atia"
 
-from pyomo.environ import check_optimal_termination
+from pyomo.network.arc import _ArcData
+from pyomo.environ import check_optimal_termination, Var
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 
@@ -133,3 +134,41 @@ def assert_no_degrees_of_freedom(blk):
 
     """
     check_dof(blk, True)
+
+def propagate_state(stream, direction="forward"):
+    """
+    This method propagates values between Ports along Arcs. Values can be
+    propagated in either direction using the direction argument.
+
+    Args:
+        stream : Arc object along which to propagate values
+        direction: direction in which to propagate values. Default = 'forward'
+                Valid value: 'forward', 'backward'.
+
+    Returns:
+        None
+    """
+    if not isinstance(stream, _ArcData):
+        raise TypeError("Unexpected type of stream argument. Value must be "
+                        "a Pyomo Arc.")
+
+    if direction == "forward":
+        value_source = stream.source
+        value_dest = stream.destination
+    elif direction == "backward":
+        value_source = stream.destination
+        value_dest = stream.source
+    else:
+        raise ValueError("Unexpected value for direction argument: ({}). "
+                         "Value must be either 'forward' or 'backward'."
+                         .format(direction))
+
+    for v in value_source.vars:
+        if not isinstance(value_dest.vars[v], Var):
+            raise TypeError("Port contains one or more members which are "
+                            "not Vars. propogate_state works by assigning "
+                            "to the value attribute, thus can only be "
+                            "when Port members are Pyomo Vars.")
+        for i in value_source.vars[v]:
+            if not value_dest.vars[v][i].fixed:
+                value_dest.vars[v][i].value = value_source.vars[v][i].value

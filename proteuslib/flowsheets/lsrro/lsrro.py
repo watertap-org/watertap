@@ -18,7 +18,10 @@ from pyomo.environ import units as pyunits
 from pyomo.network import Arc, SequentialDecomposition
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
-from idaes.generic_models.unit_models import Mixer, Separator
+from idaes.core.util.initialization import (solve_indexed_blocks,
+                                            fix_state_vars,
+                                            revert_state_vars)
+from idaes.generic_models.unit_models import Feed, Product, Mixer, Separator
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
@@ -31,6 +34,7 @@ from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
                                                        MassTransferCoefficient,
                                                        PressureChangeType)
 from proteuslib.unit_models.pump_isothermal import Pump
+from proteuslib.util.initialization import propagate_state, assert_degrees_of_freedom, assert_no_degrees_of_freedom
 
 import proteuslib.flowsheets.lsrro.financials as financials
 
@@ -51,6 +55,10 @@ def build(number_of_stages=2):
     m.fs.StageSet = RangeSet(m.fs.NumberOfStages)
     m.fs.LSRRO_StageSet = RangeSet(2, m.fs.NumberOfStages)
     m.fs.NonFinal_StageSet = RangeSet(m.fs.NumberOfStages-1)
+
+    m.fs.feed = Feed(default={'property_package': m.fs.properties})
+    m.fs.product = Product(default={'property_package': m.fs.properties})
+    m.fs.disposal = Product(default={'property_package': m.fs.properties})
 
     # Add the mixers
     m.fs.Mixers = Mixer(m.fs.NonFinal_StageSet, default={
@@ -95,23 +103,29 @@ def build(number_of_stages=2):
             units=pyunits.dimensionless,
             doc='System Water Recovery')
     m.fs.eq_water_recovery = Constraint(expr=\
-              sum(m.fs.PrimaryPumps[1].inlet.flow_mass_phase_comp[0,'Liq',:]) * m.fs.water_recovery == \
-              sum(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0,'Liq',:]) )
+              sum(m.fs.feed.flow_mass_phase_comp[0,'Liq',:]) * m.fs.water_recovery == \
+              sum(m.fs.product.flow_mass_phase_comp[0,'Liq',:]) )
     # energy consumption [J/m3]
     m.fs.EnergyConsumption = Expression(
-        expr=total_pump_work/sum(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0,'Liq',:]) \
-             * m.fs.ROUnits[1].permeate_side.properties_mixed[0].dens_mass_phase['Liq'])
+        expr=total_pump_work/sum(m.fs.product.flow_mass_phase_comp[0,'Liq',:]) \
+             * m.fs.product.properties[0].dens_mass_phase['Liq'])
     # annual water production
     m.fs.AnnualWaterProduction = Expression(expr=(
-        pyunits.convert(sum(m.fs.ROUnits[1].permeate.flow_mass_phase_comp[0,'Liq',:]),
+        pyunits.convert(sum(m.fs.product.flow_mass_phase_comp[0,'Liq',:]),
                 to_units=pyunits.kg / pyunits.year)
-        / m.fs.ROUnits[1].permeate_side.properties_mixed[0].dens_mass_phase['Liq'] ) \
+        / m.fs.product.properties[0].dens_mass_phase['Liq'] ) \
         * m.fs.costing_param.load_factor )
 
     # costing
     financials.get_system_costing(m.fs)
 
     # connections
+
+    # Connect the feed to the first pump
+    m.fs.feed_to_pump = Arc(source=m.fs.feed.outlet, destination=m.fs.PrimaryPumps[1].inlet)
+
+    # Connect the primary RO permeate to the product
+    m.fs.primary_RO_to_product = Arc(source=m.fs.ROUnits[1].permeate, destination=m.fs.product.inlet)
 
     # Connect the Pump n to the Mixer n
     m.fs.pump_to_mixer = Arc(m.fs.NonFinal_StageSet,
@@ -147,6 +161,10 @@ def build(number_of_stages=2):
     m.fs.stage_to_erd = Arc(source=m.fs.ROUnits[last_stage].retentate,
             destination=m.fs.EnergyRecoveryDevice.inlet)
 
+    # Connect the EnergyRecoveryDevice to the disposal
+    m.fs.erd_to_disposal = Arc(source=m.fs.EnergyRecoveryDevice.outlet,
+            destination=m.fs.disposal.inlet)
+
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # additional bounding
@@ -158,7 +176,7 @@ def build(number_of_stages=2):
     return m
 
 
-def set_operating_conditions(m, verbose=False, solver=None):
+def set_operating_conditions(m):
 
     # ---specifications---
     # parameters
@@ -168,8 +186,8 @@ def set_operating_conditions(m, verbose=False, solver=None):
     mem_B = 3.5e-8  # membrane salt permeability coefficient [m/s]
     height = 1e-3  # channel height in membrane stage [m]
     spacer_porosity = 0.97  # spacer porosity in membrane stage [-]
-    low_width_factor = 0.01 # membrane stage width factor [-]
-    upper_width_factor = 0.20 # membrane stage width factor [-]
+    width = 5 # membrane width factor [m]
+    area = 50 # membrane area [m^2]
     pressure_atm = 101325  # atmospheric pressure [Pa]
 
     # feed
@@ -177,11 +195,11 @@ def set_operating_conditions(m, verbose=False, solver=None):
     feed_mass_frac_NaCl = 65.0/1000.0
     feed_temperature = 273.15 + 25
 
-    # initialize feed mixer
-    m.fs.PrimaryPumps[1].inlet.pressure[0].fix(pressure_atm)
-    m.fs.PrimaryPumps[1].inlet.temperature[0].fix(feed_temperature)
-    m.fs.PrimaryPumps[1].inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_flow_mass * feed_mass_frac_NaCl)
-    m.fs.PrimaryPumps[1].inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(feed_flow_mass * (1-feed_mass_frac_NaCl))
+    # initialize feed
+    m.fs.feed.pressure[0].fix(pressure_atm)
+    m.fs.feed.temperature[0].fix(feed_temperature)
+    m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_flow_mass * feed_mass_frac_NaCl)
+    m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(feed_flow_mass * (1-feed_mass_frac_NaCl))
 
     # initialize pumps
     for pump in m.fs.PrimaryPumps.values():
@@ -205,13 +223,9 @@ def set_operating_conditions(m, verbose=False, solver=None):
         stage.B_comp.fix(mem_B*B_scale)
         stage.channel_height.fix(height)
         stage.spacer_porosity.fix(spacer_porosity)
-        stage.area.fix(25)  # value set in decision variables
+        stage.area.fix(area)  # value set in decision variables
+        stage.width.fix(width)
         stage.permeate.pressure[0].fix(pressure_atm)
-        #stage.N_Re_io[0, 'in'].fix(500)
-
-        # TODO: this leaves a degree of freedom in initialize
-        stage.width.setlb(low_width_factor*value(stage.area))
-        stage.width.setub(upper_width_factor*value(stage.area))
 
     # energy recovery device
     m.fs.EnergyRecoveryDevice.efficiency_pump.fix(erd_efi)
@@ -225,22 +239,108 @@ def set_operating_conditions(m, verbose=False, solver=None):
 
     # ---checking model---
     assert_units_consistent(m)
-    assert degrees_of_freedom(m) == m.fs.NumberOfStages
+    assert_no_degrees_of_freedom(m)
 
-    print('Feed Concentration = %.1f ppt' % (value(m.fs.PrimaryPumps[1].inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'])*1000))
+    print('Feed Concentration = %.1f ppt' % (value(m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'])*1000))
+
+
+def _lsrro_mixer_guess_initializer( mixer, solvent_multiplier, solute_multiplier, optarg ):
+    solute_set = mixer.config.property_package.solute_set
+    solvent_set = mixer.config.property_package.solvent_set
+
+    for vname in mixer.upstream.vars:
+        if vname == 'flow_mass_phase_comp':
+            for time, phase, comp in mixer.upstream.vars[vname]:
+                if comp in solute_set:
+                    mixer.downstream.vars[vname][time,phase,comp].value = \
+                            solute_multiplier*mixer.upstream.vars[vname][time,phase,comp].value
+                elif comp in solvent_set:
+                    mixer.downstream.vars[vname][time,phase,comp].value = \
+                            solvent_multiplier*mixer.upstream.vars[vname][time,phase,comp].value
+                else:
+                    raise RuntimeError(f"Unknown component {comp}")
+        else: # copy the state
+            for idx in mixer.upstream.vars[vname]:
+                mixer.downstream.vars[vname][idx].value = mixer.upstream.vars[vname][idx].value
+
+    mixer.initialize(optarg=optarg)
+
+def do_initialization_pass(m, optarg, guess_mixers):
+
+    # start with the feed
+    m.fs.feed.initialize(optarg=optarg)
+
+    propagate_state(m.fs.feed_to_pump)
+
+    last_stage = m.fs.StageSet.last()
+    first_stage = m.fs.StageSet.first()
+    for stage in m.fs.StageSet:
+        m.fs.PrimaryPumps[stage].initialize(optarg=optarg)
+
+        if stage == last_stage:
+            propagate_state(m.fs.pump_to_stage)
+        else:
+            propagate_state(m.fs.pump_to_mixer[stage])
+            if guess_mixers:
+                _lsrro_mixer_guess_initializer( m.fs.Mixers[stage],
+                        solvent_multiplier=0.5, solute_multiplier=0.2, optarg=optarg )
+            else:
+                m.fs.Mixers[stage].initialize(optarg=optarg)
+            propagate_state(m.fs.mixer_to_stage[stage])
+
+        m.fs.ROUnits[stage].initialize(optarg=optarg)
+
+        if stage == first_stage:
+            propagate_state(m.fs.primary_RO_to_product)
+        else:
+            propagate_state(m.fs.stage_to_eq_pump[stage])
+            m.fs.BoosterPumps[stage].initialize(optarg=optarg)
+            propagate_state(m.fs.eq_pump_to_mixer[stage])
+
+        if stage == last_stage:
+            propagate_state(m.fs.stage_to_erd)
+        else:
+            propagate_state(m.fs.stage_to_pump[stage])
+
+    # for the end stage
+    propagate_state(m.fs.erd_to_disposal)
+
+
+def do_backwards_initialization_pass(m, optarg):
+
+    first_stage = m.fs.StageSet.first()
+    for stage in reversed(m.fs.NonFinal_StageSet):
+        m.fs.Mixers[stage].initialize(optarg=optarg)
+        propagate_state(m.fs.mixer_to_stage[stage])
+        m.fs.ROUnits[stage].initialize(optarg=optarg)
+        propagate_state(m.fs.stage_to_pump[stage])
+        if stage == first_stage:
+            propagate_state(m.fs.primary_RO_to_product)
+        else:
+            propagate_state(m.fs.stage_to_eq_pump[stage])
+            m.fs.BoosterPumps[stage].initialize(optarg=optarg)
+            propagate_state(m.fs.eq_pump_to_mixer[stage])
+
+
+def initialize(m, verbose=False, solver=None):
 
     # ---initializing---
     # set up solvers
     if solver is None:
         solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
 
+    optarg = solver.options
+    do_initialization_pass(m, optarg=optarg, guess_mixers=True)
+    for _ in range(m.fs.NumberOfStages.value//2):
+        do_backwards_initialization_pass(m, optarg=optarg)
+        do_initialization_pass(m, optarg=optarg, guess_mixers=False)
+
     # set up SD tool
     seq = SequentialDecomposition()
-    if not SolverFactory("glpk").available():
-        seq.options.select_tear_method = "heuristic"
-    else:
-        seq.options.tear_solver = "glpk"
+    seq.options.tear_method = "Wegstein"
     seq.options.iterLim = m.fs.NumberOfStages
+    seq.options.tear_set = list(m.fs.eq_pump_to_mixer.values())
+    seq.options.log_info = True
 
     # run SD tool
     def func_initialize(unit):
@@ -303,7 +403,7 @@ def optimize_set_up(m, water_recovery=None):
 
     # ---checking model---
     assert_units_consistent(m)
-    assert degrees_of_freedom(m) == 4 * m.fs.NumberOfStages - (1 if (water_recovery is None) else 2)
+    assert_degrees_of_freedom(m, 4 * m.fs.NumberOfStages - (1 if (water_recovery is None) else 2))
 
     return m
 
