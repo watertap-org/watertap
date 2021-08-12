@@ -37,6 +37,7 @@ from idaes.core.util import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
+from idaes.core.util.tables import create_stream_table_dataframe
 from proteuslib.util.initialization import check_dof, check_solve
 from enum import Enum, auto
 from copy import deepcopy
@@ -1071,12 +1072,77 @@ class NanoFiltrationData(UnitModelBlockData):
         )
 
     def _get_performance_contents(self, time_point=0):
-        # TODO: make a unit specific stream table
         var_dict = {}
+        var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[time_point, 'Liq']
+        var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[time_point, 'Liq', 'H2O']
+        var_dict["Membrane Area"] = self.area
+        if hasattr(self, "length"):
+            var_dict["Membrane Length"] = self.length
+        if hasattr(self, "width"):
+            var_dict["Membrane Width"] = self.width
         if hasattr(self, "deltaP"):
             var_dict["Pressure Change"] = self.deltaP[time_point]
+        if hasattr(self, "N_Re_io"):
+            var_dict["Reynolds Number @Inlet"] = self.N_Re_io[time_point, 'in']
+            var_dict["Reynolds Number @Outlet"] = self.N_Re_io[time_point, 'out']
+        if hasattr(self, "velocity_io"):
+            var_dict["Velocity @Inlet"] = self.velocity_io[time_point, 'in']
+            var_dict["Velocity @Outlet"] = self.velocity_io[time_point, 'out']
+        for j in self.config.property_package.solute_set:
+            var_dict[f'{j} Reflection Coefficient'] = self.sigma[time_point]
+            cin_mem_name=f'{j} Concentration @Inlet,Membrane-Interface '
+            var_dict[cin_mem_name] = (
+                        self.feed_side.properties_interface_in[time_point].conc_mass_phase_comp['Liq', j])
+            cout_mem_name=f'{j} Concentration @Outlet,Membrane-Interface '
+            var_dict[cout_mem_name] = (
+                self.feed_side.properties_interface_out[time_point].conc_mass_phase_comp['Liq', j])
+            cin_bulk_name=f'{j} Concentration @Inlet,Bulk '
+            var_dict[cin_bulk_name] = (
+                        self.feed_side.properties_in[time_point].conc_mass_phase_comp['Liq', j])
+            cout_bulk_name=f'{j} Concentration @Outlet,Bulk '
+            var_dict[cout_bulk_name] = (
+                self.feed_side.properties_out[time_point].conc_mass_phase_comp['Liq', j])
+            cp_name=f'{j} Permeate Concentration '
+            var_dict[cp_name] = (
+                self.permeate_side.properties_mixed[time_point].conc_mass_phase_comp['Liq', j])
+        if self.feed_side.properties_interface_out[time_point].is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Outlet,Membrane-Interface '] = (
+                self.feed_side.properties_interface_out[time_point].pressure_osm)
+        if self.feed_side.properties_out[time_point].is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Outlet,Bulk'] = (
+                self.feed_side.properties_out[time_point].pressure_osm)
+        if self.feed_side.properties_interface_in[time_point].is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Inlet,Membrane-Interface'] = (
+                self.feed_side.properties_interface_in[time_point].pressure_osm)
+        if self.feed_side.properties_in[time_point].is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Inlet,Bulk'] = (
+                self.feed_side.properties_in[time_point].pressure_osm)
+        if self.feed_side.properties_in[time_point].is_property_constructed('flow_vol_phase'):
+            var_dict['Volumetric Flowrate @Inlet'] = (
+                self.feed_side.properties_in[time_point].flow_vol_phase['Liq'])
+        if self.feed_side.properties_out[time_point].is_property_constructed('flow_vol_phase'):
+            var_dict['Volumetric Flowrate @Outlet'] = (
+                self.feed_side.properties_out[time_point].flow_vol_phase['Liq'])
+
+        # TODO: (1) add more vars, (2) would be nice to add units to output, and (3) should be able to report output of
+        #  "NaN" or "Not Reported", mainly for properties that exist but are not necessarily constructed within model
+        #  constraints. One example in this case is the osmotic pressure of the bulk feed, which would certainly be of
+        #  interest to users with a background in desalination (it is currently not reported because it is not directly
+        #  used in any model constraints). Furthermore, the report() method seems to be limited to Pyomo Var objects for
+        #  which the pyomo value() method is applied to. That is, a Pyomo Var object must be used; e.g., providing a
+        #  list as output would yield an error.
 
         return {"vars": var_dict}
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {
+                "Feed Inlet": self.inlet,
+                "Feed Outlet": self.retentate,
+                "Permeate Outlet": self.permeate,
+            },
+            time_point=time_point,
+        )
 
     def get_costing(self, module=None, **kwargs):
         self.costing = Block()
