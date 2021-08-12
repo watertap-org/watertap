@@ -54,7 +54,8 @@ Types of Reactions
 Inherent Reactions using log_power_law_equil form
 -------------------------------------------------
 
-Inherent reactions (see Documentation Pending) are placed into the **GenericParameterBlock**
+Inherent reactions (see :ref:`How to use inherent reactions<how_to_use_inherent_reactions>`)
+are placed into the **GenericParameterBlock**
 rather than the **GenericReactionParameterBlock**. As such, the scaling methods employed
 must be applied to the **thermo_params** for this set of reactions. The code segment below
 shows a demonstration of scaling factors that generally work well for these types of reactions.
