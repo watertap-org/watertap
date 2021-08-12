@@ -271,7 +271,6 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
-        # TODO: update IDAES such that solvent and solute lists are automatically created on the parameter block
         self.io_list = Set(initialize=['in', 'out'])  # inlet/outlet set
 
         solvent_set = self.config.property_package.solvent_set
@@ -723,7 +722,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 elif x == 'out':
                     prop_io = b.feed_side.properties_out[t]
                 return (b.Kf_io[t, x, j] * b.dh ==
-                        prop_io.diffus_phase['Liq']  # TODO: add diff coefficient to SW prop and consider multi-components
+                        prop_io.diffus_phase['Liq']
                         * b.N_Sh_io[t, x])
 
             @self.Constraint(self.flowsheet().config.time,

@@ -19,7 +19,7 @@ import idaes.logger as idaeslog
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, \
-    Var, Param, Suffix, value, log, log10, exp
+    Var, Param, Suffix, value, log, log10, exp, check_optimal_termination
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores
@@ -38,7 +38,7 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.exceptions import PropertyPackageError
+from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 import idaes.core.util.scaling as iscale
 
 # Set up logger
@@ -75,7 +75,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
         - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of 
         existing correlations and data,"Desalination and Water Treatment, Vol.16, pp.354 - 380, April 2010.
         (2017 corrections provided at http://web.mit.edu/seawater)
-        
+
         Diffusivity for NaCl is being used temporarily based on
         Bartholomew & Mauter (2019) https://doi.org/10.1016/j.memsci.2018.11.067
         '''
@@ -404,6 +404,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
              'dh_vap': {'method': '_dh_vap'},
              'diffus_phase': {'method':'_diffus_phase'}
              })
+
         obj.add_default_units({'time': pyunits.s,
                                'length': pyunits.m,
                                'mass': pyunits.kg,
@@ -509,6 +510,93 @@ class _SeawaterStateBlock(StateBlock):
         revert_state_vars(self, flags)
         init_log.info('{} State Released.'.format(self.name))
 
+    def calculate_state(self, var_args=None, hold_state=False, outlvl=idaeslog.NOTSET,
+                        solver=None, optarg=None):
+        """
+        Solves state blocks given a set of variables and their values. These variables can
+        be state variables or properties. This method is typically used before
+        initialization to solve for state variables because non-state variables (i.e. properties)
+        cannot be fixed in initialization routines.
+
+        Keyword Arguments:
+            var_args : dictionary with variables and their values, they can be state variables or properties
+                       {(VAR_NAME, INDEX): VALUE}
+            hold_state : flag indicating whether all of the state variables should be fixed after calculate state.
+                         True - State variables will be fixed.
+                         False - State variables will remain unfixed, unless already fixed.
+            outlvl : idaes logger object that sets output level of solve call (default=idaeslog.NOTSET)
+            solver : solver name string if None is provided the default solver
+                     for IDAES will be used (default = None)
+            optarg : solver options dictionary object (default={})
+
+        Returns:
+            results object from state block solve
+        """
+        # Get logger
+        solve_log = idaeslog.getSolveLogger(self.name, level=outlvl, tag="properties")
+
+        # Initialize at current state values (not user provided)
+        self.initialize(solver=solver, optarg=optarg, outlvl=outlvl)
+
+        # Set solver and options
+        opt = get_solver(solver, optarg)
+
+        # Fix variables and check degrees of freedom
+        flags = {}  # dictionary noting which variables were fixed and their previous state
+        for k in self.keys():
+            sb = self[k]
+            for (v_name, ind), val in var_args.items():
+                var = getattr(sb, v_name)
+                if iscale.get_scaling_factor(var[ind]) is None:
+                    _log.warning(
+                            "While using the calculate_state method on {sb_name}, variable {v_name} "
+                            "was provided as an argument in var_args, but it does not have a scaling "
+                            "factor. This suggests that the calculate_scaling_factor method has not been "
+                            "used or the variable was created on demand after the scaling factors were "
+                            "calculated. It is recommended to touch all relevant variables (i.e. call "
+                            "them or set an initial value) before using the calculate_scaling_factor "
+                            "method.".format(v_name=v_name, sb_name=sb.name))
+                if var[ind].is_fixed():
+                    flags[(k, v_name, ind)] = True
+                    if value(var[ind]) != val:
+                        raise ConfigurationError(
+                            "While using the calculate_state method on {sb_name}, {v_name} was "
+                            "fixed to a value {val}, but it was already fixed to value {val_2}. "
+                            "Unfix the variable before calling the calculate_state "
+                            "method or update var_args."
+                            "".format(sb_name=sb.name, v_name=var.name, val=val, val_2=value(var[ind])))
+                else:
+                    flags[(k, v_name, ind)] = False
+                    var[ind].fix(val)
+
+            if degrees_of_freedom(sb) != 0:
+                raise RuntimeError("While using the calculate_state method on {sb_name}, the degrees "
+                                   "of freedom were {dof}, but 0 is required. Check var_args and ensure "
+                                   "the correct fixed variables are provided."
+                                   "".format(sb_name=sb.name, dof=degrees_of_freedom(sb)))
+
+        # Solve
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = solve_indexed_blocks(opt, [self], tee=slc.tee)
+            solve_log.info_high("Calculate state: {}.".format(idaeslog.condition(results)))
+
+        if not check_optimal_termination(results):
+            _log.warning("While using the calculate_state method on {sb_name}, the solver failed "
+                         "to converge to an optimal solution. This suggests that the user provided "
+                         "infeasible inputs, or that the model is poorly scaled, poorly initialized, "
+                         "or degenerate.")
+
+        # unfix all variables fixed with var_args
+        for (k, v_name, ind), previously_fixed in flags.items():
+            if not previously_fixed:
+                var = getattr(self[k], v_name)
+                var[ind].unfix()
+
+        # fix state variables if hold_state
+        if hold_state:
+            fix_state_vars(self)
+
+        return results
 
 @declare_process_block_class("SeawaterStateBlock",
                              block_class=_SeawaterStateBlock)
@@ -701,6 +789,7 @@ class SeawaterStateBlockData(StateBlockData):
         self.eq_visc_d_phase = Constraint(rule=rule_visc_d_phase)
 
     def _diffus_phase(self):  #TODO: diffusivity from NaCl prop model used temporarily--reconsider this
+
         self.diffus_phase = Var(
             self.params.phase_list,
             initialize=1e-9,
@@ -710,12 +799,12 @@ class SeawaterStateBlockData(StateBlockData):
 
         def rule_diffus_phase(b):  # diffusivity, eq 6 in Bartholomew, substituting NaCl w/ TDS
             return b.diffus_phase['Liq'] == (b.params.diffus_param['4'] * b.mass_frac_phase_comp['Liq', 'TDS'] ** 4
-                                      + b.params.diffus_param['3'] * b.mass_frac_phase_comp['Liq', 'TDS'] ** 3
-                                      + b.params.diffus_param['2'] * b.mass_frac_phase_comp['Liq', 'TDS'] ** 2
-                                      + b.params.diffus_param['1'] * b.mass_frac_phase_comp['Liq', 'TDS']
-                                      + b.params.diffus_param['0'])
-        self.eq_diffus_phase = Constraint(rule=rule_diffus_phase)
+                                             + b.params.diffus_param['3'] * b.mass_frac_phase_comp['Liq', 'TDS'] ** 3
+                                             + b.params.diffus_param['2'] * b.mass_frac_phase_comp['Liq', 'TDS'] ** 2
+                                             + b.params.diffus_param['1'] * b.mass_frac_phase_comp['Liq', 'TDS']
+                                             + b.params.diffus_param['0'])
 
+        self.eq_diffus_phase = Constraint(rule=rule_diffus_phase)
 
     def _osm_coeff(self):
         self.osm_coeff = Var(
@@ -991,16 +1080,6 @@ class SeawaterStateBlockData(StateBlockData):
                         sf = iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j])
                         sf *= iscale.get_scaling_factor(self.params.mw_comp[j])
                         iscale.set_scaling_factor(self.molality_comp[j], sf)
-
-            for j in self.params.component_list:
-                sf_dens = iscale.get_scaling_factor(self.dens_mass_phase['Liq'])
-                if iscale.get_scaling_factor(self.conc_mass_phase_comp['Liq', j]) is None:
-                    if j == 'H2O':
-                        iscale.set_scaling_factor(self.conc_mass_phase_comp['Liq', j], sf_dens)
-                    elif j == 'TDS':
-                        iscale.set_scaling_factor(
-                            self.conc_mass_phase_comp['Liq', j],
-                            sf_dens * iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j]))
 
         if self.is_property_constructed('enth_flow'):
             iscale.set_scaling_factor(self.enth_flow,
