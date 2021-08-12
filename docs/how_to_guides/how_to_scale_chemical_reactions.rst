@@ -29,6 +29,13 @@ different scenarios will be discussed and demonstrated below.
     These values can and may need to change for your particular problem.
 
 
+.. note::
+
+    IMPORTANT: Scaling of just the chemical reactions is insufficient for solving
+    a chemistry module. User's MUST also scale the chemical species in the system
+    due to the dilute nature of aqueous chemistry. See TBD. 
+
+
 Types of Reactions
 ------------------
 
@@ -117,3 +124,28 @@ Equilibrium Scaling Demonstration
     These scaling arguments are identical to the **Inherent Reaction** scaling methods,
     however, because these reactions exist in a different location of the model, we
     showed this here for completeness. All reactions, regardless of location, need scaling.
+
+
+Rate Reactions using power_law_rate form
+----------------------------------------
+
+Rate reactions only exist in the **GenericReactionParameterBlock** and so these scaling
+arguments apply to **rxn_params** for these types of reactions. These are much simpler to
+scale than both the **Inherent** and **Equilibrium** reactions, but are just as important
+to apply scaling for. Below is a demonstration off applying scaling.
+
+Rate Reaction Scaling Demonstration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block::
+
+    # Scaling for kinetic reactions
+    for i in model.fs.rxn_params.rate_reaction_idx:
+        scale = value(model.fs.unit.control_volume.reactions[0.0].reaction_rate[i].expr)
+        iscale.set_scaling_factor(model.fs.unit.control_volume.rate_reaction_extent[0.0,i], 10/scale)
+
+
+Stoichiometric Reactions
+------------------------
+
+TBD
