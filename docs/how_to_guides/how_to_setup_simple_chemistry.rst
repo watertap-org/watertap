@@ -41,7 +41,7 @@ What you will need
     required for others. Additionally, certain reactions can actually be defined
     in the **thermo-properties** dictionary and would therefore NOT be included in
     the **reaction-properties** dictionary. The differences will be covered in another
-    how-to guide.
+    how-to guide (see :ref:`How to use inherent reactions<how_to_use_inherent_reactions>`)
 
 
 The **thermo-properties** configuration dictionary
@@ -243,8 +243,9 @@ options available. More information can be found in `StateDefinition`_.
 The **reaction-properties** configuration dictionary
 ----------------------------------------------------
 
-If you did not include reactions in the **thermo-properties** dictionary (a topic
-discussed later) and your system involves reactions, then you MUST also create and
+If you did not include reactions in the **thermo-properties** dictionary
+(see :ref:`How to use inherent reactions<how_to_use_inherent_reactions>`)
+and your system involves reactions, then you MUST also create and
 provide a **reaction-properties** configuration dictionary. Unlike the **thermo-properties**
 configuration dictionary, most of the keys within the **reaction-properties** dictionary
 are optional and depend on your system. The major keys to be aware of are as follows...
