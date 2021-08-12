@@ -22,6 +22,13 @@ different scenarios will be discussed and demonstrated below.
     see :ref:`How to setup simple chemistry<how_to_setup_simple_chemistry>`.
 
 
+.. note::
+
+    The scaling factor constants used in these demonstrations are the best found
+    for these types of problems based on numerical testing of a variety of problems.
+    These values can and may need to change for your particular problem. 
+
+
 Types of Reactions
 ------------------
 
@@ -57,3 +64,15 @@ shows a demonstration of scaling factors that generally work well for these type
         iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
         iscale.constraint_scaling_transform(model.fs.unit.control_volume.properties_out[0.0].
                 inherent_equilibrium_constraint[i[1]], 0.1)
+
+
+What this code segment is doing is to first assign an **eps** value for the **log_power_law_equil**
+function. The default value is generally insufficient, so we change that value to always be at least
+4 orders of magnitude less than the **k_eq** value calculated for each reaction.
+
+Next, we create scaling factors for the **inherent_reaction_extent** variable based on the inverse
+of that calculated **k_eq** value.
+
+Lastly, we perform a scaling transformation of the **inherent_equilibrium_constraint**. In our case,
+we scale this constraint down by a factor of 0.1 because the **log_power_law_equil** constraint
+form is already scaled up reasonably well.
