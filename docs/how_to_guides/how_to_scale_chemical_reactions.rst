@@ -26,7 +26,7 @@ different scenarios will be discussed and demonstrated below.
 
     The scaling factor constants used in these demonstrations are the best found
     for these types of problems based on numerical testing of a variety of problems.
-    These values can and may need to change for your particular problem. 
+    These values can and may need to change for your particular problem.
 
 
 Types of Reactions
@@ -46,6 +46,9 @@ rather than the **GenericReactionParameterBlock**. As such, the scaling methods 
 must be applied to the **thermo_params** for this set of reactions. The code segment below
 shows a demonstration of scaling factors that generally work well for these types of reactions.
 
+
+Inherent Scaling Demonstration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block::
 
