@@ -1445,7 +1445,7 @@ class TestRemineralizationCSTR():
         solver.options['bound_push'] = 1e-20
         solver.options['mu_init'] = 1e-6
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        assert degrees_of_freedom(model) == 1
+        assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
     def test_solve_cstr_kin(self, remineralization_cstr_kin):
@@ -1465,8 +1465,8 @@ class TestRemineralizationCSTR():
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
 
-        assert pytest.approx(8.1628836, rel=1e-4) == pH
-        assert pytest.approx(5.8382856, rel=1e-4) == pOH
+        assert pytest.approx(8.1593619, rel=1e-4) == pH
+        assert pytest.approx(5.8412514, rel=1e-4) == pOH
 
         # Calculate total hardness
         TH = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'Ca_2+')])/1000
