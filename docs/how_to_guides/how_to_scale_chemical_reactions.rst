@@ -4,7 +4,7 @@ How to scale chemical reactions
 ===============================
 
 ..warning::
-    DO NOT use 'user-scaling' as a solver option when scaling any chemistry module. 
+    DO NOT use 'user-scaling' as a solver option when scaling any chemistry module.
 
 No model in ProteusLib can solve without proper scaling of the constraints
 and variables within that model. This can be a difficult task for aqueous
@@ -38,7 +38,8 @@ different scenarios will be discussed and demonstrated below.
 
     IMPORTANT: Scaling of just the chemical reactions is insufficient for solving
     a chemistry module. User's MUST also scale the chemical species in the system
-    due to the dilute nature of aqueous chemistry. See TBD.
+    due to the dilute nature of aqueous chemistry. See
+    :ref:`How to scale chemical species<how_to_scale_chemical_species>`.
 
 
 Types of Reactions
