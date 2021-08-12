@@ -52,7 +52,6 @@ def main():
     m = build()
     set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=solver)
     initialize_system(m, solver=solver)
-    m.fs.RO.recovery_mass_phase_comp.display()
 
     # simulate and display
     solve(m, solver=solver)
@@ -129,12 +128,24 @@ def build():
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scaling
+    # set default property values
     m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
     m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
+    # set unit model values
     iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.P2.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.PXR.low_pressure_side.work, 1e-3)
     iscale.set_scaling_factor(m.fs.PXR.high_pressure_side.work, 1e-3)
+    # touch properties used in specifying and initializing the model
+    m.fs.feed.properties[0].flow_vol_phase['Liq']
+    m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'NaCl']
+    m.fs.S1.mixed_state[0].mass_frac_phase_comp
+    m.fs.S1.PXR_state[0].flow_vol_phase['Liq']
+    # unused scaling factors needed by IDAES base costing module
+    # TODO: update IDAES so that scaling factors are calculated from financial package
+    iscale.set_scaling_factor(m.fs.P1.costing.purchase_cost, 1)
+    iscale.set_scaling_factor(m.fs.P2.costing.purchase_cost, 1)
+    # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
 
     return m
@@ -146,14 +157,15 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
 
     # ---specifications---
     # feed
-    feed_flow_mass = 1  # feed mass flow rate [kg/s]
-    feed_mass_frac_NaCl = 0.035  # feed NaCl mass fraction [-]
-    feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl # feed H20 mass fraction [-]
-
-    m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_flow_mass * feed_mass_frac_NaCl)
-    m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(feed_flow_mass * feed_mass_frac_H2O)
-    m.fs.feed.pressure.fix(101325)  # atmospheric pressure [Pa]
-    m.fs.feed.temperature.fix(273.15 + 25)  # room temperature [K]
+    # state variables
+    m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
+    m.fs.feed.properties[0].temperature.fix(273.15 + 25)  # feed temperature [K]
+    # properties (cannot be fixed for initialization routines, must calculate the state variables)
+    m.fs.feed.properties.calculate_state(
+        var_args={('flow_vol_phase', 'Liq'): 1e-3,  # feed volumetric flow rate [m3/s]
+                  ('mass_frac_phase_comp', ('Liq', 'NaCl')): 0.035},  # feed NaCl mass fraction [-]
+        hold_state=True,  # fixes the calculated component mass flow rates
+    )
 
     # separator, no degrees of freedom (i.e. equal flow rates in PXR determines split fraction)
 
@@ -181,7 +193,7 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=No
     m.fs.RO.channel_height.fix(1e-3)  # channel height in membrane stage [m]
     m.fs.RO.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
-    m.fs.RO.width.fix(5)  # membrane stage width [m]
+    m.fs.RO.width.fix(5)  # stage width [m]
     # initialize RO
     m.fs.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'] = \
         value(m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'H2O'])
@@ -283,31 +295,20 @@ def initialize_system(m, solver=None):
 
     # splitter inlet
     propagate_state(m.fs.s01)  # propagate to splitter inlet from feed
-    m.fs.S1.mixed_state[0].mass_frac_phase_comp  # touch property, so that it is built and can be solved for
-    m.fs.S1.mixed_state.initialize(optarg=optarg)
-
-    # splitter outlet to PXR, enforce same flow_vol as PXR high pressure inlet
-    m.fs.S1.PXR_state[0].pressure.fix(value(m.fs.S1.mixed_state[0].pressure))
-    m.fs.S1.PXR_state[0].temperature.fix(value(m.fs.S1.mixed_state[0].temperature))
-    m.fs.S1.PXR_state[0].flow_vol_phase['Liq'].fix(
-        value(m.fs.PXR.high_pressure_side.properties_in[0].flow_vol_phase['Liq']))
-    m.fs.S1.PXR_state[0].mass_frac_phase_comp['Liq', 'NaCl'].fix(
-        value(m.fs.S1.mixed_state[0].mass_frac_phase_comp['Liq', 'NaCl']))
-
-    check_dof(m.fs.S1.PXR_state[0])
-    results = solve_indexed_blocks(solver, [m.fs.S1.PXR_state])
-    check_solve(results)
-
-    # unfix PXR_state state variables and properties
-    m.fs.S1.PXR_state[0].pressure.unfix()
-    m.fs.S1.PXR_state[0].temperature.unfix()
-    m.fs.S1.PXR_state[0].flow_vol_phase['Liq'].unfix()
-    m.fs.S1.PXR_state[0].mass_frac_phase_comp['Liq', 'NaCl'].unfix()
-    m.fs.S1.PXR_state[0].flow_mass_phase_comp['Liq', 'NaCl'].fix()
-
+    m.fs.S1.mixed_state.initialize(optarg=optarg)  # initialize inlet state block to solve for mass fraction
+    # splitter outlet to PXR, enforce same volumetric flow as PXR high pressure inlet
+    m.fs.S1.PXR_state.calculate_state(
+        var_args={('flow_vol_phase', 'Liq'):  # same volumetric flow rate as PXR high pressure inlet
+                      value(m.fs.PXR.high_pressure_side.properties_in[0].flow_vol_phase['Liq']),
+                  ('mass_frac_phase_comp', ('Liq', 'NaCl')):
+                      value(m.fs.S1.mixed_state[0].mass_frac_phase_comp['Liq', 'NaCl']),  # same as splitter inlet
+                  ('pressure', None): value(m.fs.S1.mixed_state[0].pressure),  # same as splitter inlet
+                  ('temperature', None): value(m.fs.S1.mixed_state[0].temperature)},  # same as splitter inlet
+    )
     # splitter initialization
+    m.fs.S1.PXR_state[0].flow_mass_phase_comp['Liq', 'NaCl'].fix()  # fix the single degree of freedom for unit
     m.fs.S1.initialize(optarg=optarg)
-    m.fs.S1.PXR_state[0].flow_mass_phase_comp['Liq', 'NaCl'].unfix()
+    m.fs.S1.PXR_state[0].flow_mass_phase_comp['Liq', 'NaCl'].unfix()  # unfix for flowsheet simulation and optimization
 
     # pressure exchanger low pressure inlet
     propagate_state(m.fs.s08)
