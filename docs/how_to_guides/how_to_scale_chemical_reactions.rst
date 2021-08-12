@@ -3,7 +3,7 @@
 How to scale chemical reactions
 ===============================
 
-..warning::
+.. warning::
     DO NOT use 'user-scaling' as a solver option when scaling any chemistry module.
 
 No model in ProteusLib can solve without proper scaling of the constraints

@@ -3,7 +3,7 @@
 How to scale chemical species
 =============================
 
-..warning::
+.. warning::
     DO NOT use 'user-scaling' as a solver option when scaling any chemistry module.
 
 In :ref:`How to scale chemical reactions<how_to_scale_chemical_reactions>`, we
