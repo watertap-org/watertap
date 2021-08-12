@@ -20,7 +20,8 @@ from pyomo.environ import (Block,
                            NonNegativeReals,
                            Reference,
                            units as pyunits,
-                           value)
+                           value,
+                           exp)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -736,6 +737,7 @@ class NanoFiltrationData(UnitModelBlockData):
             elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
                 jw = self.flux_mass_io_phase_comp[t, x, 'Liq', 'H2O'] / self.dens_solvent
                 js = self.flux_mass_io_phase_comp[t, x, 'Liq', j]
+                # TODO: Currently using same relationship as for RO. Revisit this.
                 return (prop_interface_io.conc_mass_phase_comp['Liq', j] ==
                         prop_io.conc_mass_phase_comp['Liq', j] * exp(jw / self.Kf_io[t, x, j])
                         - js / jw * (exp(jw / self.Kf_io[t, x, j]) - 1))
