@@ -79,3 +79,41 @@ of that calculated **k_eq** value.
 Lastly, we perform a scaling transformation of the **inherent_equilibrium_constraint**. In our case,
 we scale this constraint down by a factor of 0.1 because the **log_power_law_equil** constraint
 form is already scaled up reasonably well.
+
+
+Equilibrium Reactions using log_power_law_equil form
+----------------------------------------------------
+
+Equilibrium reactions (see :ref:`How to setup simple chemistry<how_to_setup_simple_chemistry>`)
+are placed into the **GenericReactionParameterBlock**. As such, the scaling methods employed
+must be applied to the **rxn_params** for this set of reactions. The code segment below
+shows a demonstration of scaling factors that generally work well for these types of reactions.
+
+
+Equilibrium Scaling Demonstration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block::
+
+    # Equilibrium reactions have eps in the 'rxn_params'
+    factor = 1e-4
+    for rid in model.fs.rxn_params.equilibrium_reaction_idx:
+        scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
+        # Want to set eps in some fashion similar to this
+        if scale < 1e-16:
+            model.fs.rxn_params.component("reaction_"+rid).eps.value = scale*factor
+        else:
+            model.fs.rxn_params.component("reaction_"+rid).eps.value = 1e-16*factor
+
+    for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
+        scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
+        iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10/scale)
+        iscale.constraint_scaling_transform(model.fs.unit.control_volume.reactions[0.0].
+                equilibrium_constraint[i[1]], 0.1)
+
+
+.. note::
+
+    These scaling arguments are identical to the **Inherent Reaction** scaling methods,
+    however, because these reactions exist in a different location of the model, we
+    showed this here for completeness. All reactions, regardless of location, need scaling.
