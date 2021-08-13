@@ -726,7 +726,7 @@ class TestRemineralizationCSTR():
         assert hasattr(model.fs.unit.control_volume.properties_in[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
-        #iscale.constraint_autoscale_large_jac(model)
+        iscale.constraint_autoscale_large_jac(model)
         jac, nlp = iscale.get_jacobian(model, scaled=True)
         print("Extreme Jacobian entries:")
         for i in iscale.extreme_jacobian_entries(jac=jac, nlp=nlp, large=100):
@@ -742,30 +742,26 @@ class TestRemineralizationCSTR():
             print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}")
         print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
 
-        assert degrees_of_freedom(model) == 1
-
     @pytest.mark.component
     def test_initialize_solver_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
         solver.options['bound_push'] = 1e-20
         solver.options['mu_init'] = 1e-6
-        #solver.options["nlp_scaling_method"] = "user-scaling"
+        # Use gradient-based scaling for the initialization
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        assert degrees_of_freedom(model) == 1
+        assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
     def test_solve_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
         solver.options['bound_push'] = 1e-20
         solver.options['mu_init'] = 1e-6
-        #solver.options["halt_on_ampl_error"] = "yes"
+        # Use user scaling for the solve
         solver.options["nlp_scaling_method"] = "user-scaling"
         results = solver.solve(model, tee=True, symbolic_solver_labels=True)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
-
-        assert degrees_of_freedom(model) == 1
 
     @pytest.mark.component
     def test_solution_cstr_kin(self, remineralization_cstr_kin):
@@ -775,8 +771,8 @@ class TestRemineralizationCSTR():
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
 
-        assert pytest.approx(8.1628836, rel=1e-4) == pH
-        assert pytest.approx(5.8382856, rel=1e-4) == pOH
+        assert pytest.approx(8.1593604, rel=1e-4) == pH
+        assert pytest.approx(5.8412499, rel=1e-4) == pOH
 
         # Calculate total hardness
         TH = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'Ca_2+')])/1000
