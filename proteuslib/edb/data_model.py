@@ -279,7 +279,10 @@ class ConfigGenerator:
                 str_values = [d[key]]
                 is_list = False
             else:
-                str_values = list(d[key])
+                try:
+                    str_values = list(d[key])
+                except TypeError:
+                    str_values = [str(d[key])]
                 is_list = True
             # substitute all values in the list, with the result in `new_list`
             num_subst, new_list = 0, []

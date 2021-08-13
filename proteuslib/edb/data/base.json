@@ -2,7 +2,7 @@
   {
     "phases": {
       "Liq": {
-        "type": "LiquidPhase",
+        "type": "AqueousPhase",
         "equation_of_state": "Ideal"
       }
     },

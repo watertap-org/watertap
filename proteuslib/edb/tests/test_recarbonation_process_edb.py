@@ -233,7 +233,6 @@ def equilibrium_config(thermo_config, reaction_config):
     return model
 
 
-@pytest.mark.skip
 @pytest.mark.unit
 def test_build_model_equilibrium(equilibrium_config):
     model = equilibrium_config
