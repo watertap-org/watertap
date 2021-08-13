@@ -35,6 +35,8 @@ from idaes.core import (FlowsheetBlock,
                         EnergyBalanceType,
                         MomentumBalanceType)
 
+import idaes.logger as idaeslog
+
 from idaes.generic_models.unit_models.stoichiometric_reactor import \
     StoichiometricReactor
 
@@ -68,6 +70,8 @@ from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.reactions.rate_constant import arrhenius
 from idaes.generic_models.properties.core.reactions.rate_forms import power_law_rate
+
+from idaes.generic_models.unit_models.cstr import CSTR
 
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
 from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
@@ -289,7 +293,7 @@ reaction_config = {
     "rate_reactions": {
         "R1": {"stoichiometry": {("Liq", "Ca(OH)2"): -1,
                                  ("Liq", "Ca_2+"): 1,
-                                 ("Liq", "OH_-"): 1},
+                                 ("Liq", "OH_-"): 2},
                "heat_of_reaction": constant_dh_rxn,
                "rate_constant" : arrhenius,
                "rate_form" : power_law_rate,
@@ -320,28 +324,38 @@ class TestWaterStoich(object):
         m.fs.rxn_params = GenericReactionParameterBlock(
                 default={"property_package": m.fs.thermo_params, **reaction_config})
 
-        m.fs.unit = StoichiometricReactor(default={
-                "property_package": m.fs.thermo_params,
-                "reaction_package": m.fs.rxn_params,
-                "has_heat_transfer": False,
-                "has_heat_of_reaction": False,
-                "has_pressure_change": False})
+#        m.fs.unit = StoichiometricReactor(default={
+#                "property_package": m.fs.thermo_params,
+#                "reaction_package": m.fs.rxn_params,
+#                "has_heat_transfer": False,
+#                "has_heat_of_reaction": False,
+#                "energy_balance_type": EnergyBalanceType.none,
+#                "has_pressure_change": False})
 
-        m.fs.unit.inlet.temperature.fix(303.15)
-        m.fs.unit.inlet.pressure.fix(101325.0)
+        m.fs.unit = CSTR(default={"property_package": m.fs.thermo_params,
+                                          "reaction_package": m.fs.rxn_params,
+                                          "has_equilibrium_reactions": False,
+                                          "has_heat_transfer": False,
+                                          "has_heat_of_reaction": False,
+                                          "has_pressure_change": False,
+                                          "energy_balance_type": EnergyBalanceType.none
+                                          })
+
+        m.fs.unit.volume.fix(100)
 
         m.fs.unit.inlet.mole_frac_comp[0, "Ca_2+"].fix( 0. )
-        m.fs.unit.inlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.01 )
+        m.fs.unit.inlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.0000018 )
         m.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( 0. )
         m.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( 0. )
-        m.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 0.99 )
-
+        m.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 0.9999982 )
 
         m.fs.unit.inlet.pressure.fix(101325.0)
         m.fs.unit.inlet.temperature.fix(298.)
         m.fs.unit.inlet.flow_mol.fix(10)
 
-        m.fs.unit.outlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.005 )
+        m.fs.unit.outlet.temperature.fix(298.)
+        #m.fs.unit.outlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.0000018*0.95 )
+        #m.fs.unit.rate_reaction_extent[0, 'R1'].fix(0)
 
         return m
 
@@ -400,6 +414,11 @@ class TestWaterStoich(object):
             iscale.constraint_scaling_transform(m.fs.unit.control_volume.properties_out[0.0].
                     inherent_equilibrium_constraint[i[1]], 0.1)
 
+        # Scaling for kinetic reactions
+        for i in m.fs.rxn_params.rate_reaction_idx:
+            scale = value(m.fs.unit.control_volume.reactions[0.0].reaction_rate[i].expr)
+            iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_extent[0.0,i], 10/scale)
+
         # Next, try adding scaling for species
         min = 1e-6
         for i in m.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
@@ -415,7 +434,12 @@ class TestWaterStoich(object):
                 m.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
             iscale.constraint_scaling_transform(m.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
+        iscale.set_scaling_factor(m.fs.unit.control_volume.volume, 10/m.fs.unit.volume[0.0].value)
+        #iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_extent[0.0,'R1'], 1)
         iscale.calculate_scaling_factors(m.fs.unit)
+
+        m.fs.unit.control_volume.pprint()
+        assert False
 
         assert isinstance(m.fs.unit.control_volume.scaling_factor, Suffix)
 
@@ -426,18 +450,29 @@ class TestWaterStoich(object):
     @pytest.mark.component
     def test_initialize_inherent(self, water_stoich):
         m = water_stoich
-
+#        state_args = {'mole_frac_comp':
+#                        {   'Ca(OH)2': 0.0000018,
+#                            'Ca_2+': 0.0000018,
+#                            'H2O': 1,
+#                            'H_+': 10**-7/55.6,
+#                            'OH_-': 10**-7/55.6
+#                        },
+#                        'pressure': 101325,
+#                        'temperature': 298,
+#                        'flow_mol': 10
+#                    }
         orig_fixed_vars = fixed_variables_set(m)
         orig_act_consts = activated_constraints_set(m)
 
         solver.options['bound_push'] = 1e-10
         solver.options['mu_init'] = 1e-6
-        m.fs.unit.initialize(optarg=solver.options)
+        m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
         fin_fixed_vars = fixed_variables_set(m)
         fin_act_consts = activated_constraints_set(m)
 
-        assert degrees_of_freedom(m) == 0
+        print(value(m.fs.unit.outlet.temperature[0]))
+        assert degrees_of_freedom(m) == 1
 
         assert len(fin_act_consts) == len(orig_act_consts)
         assert len(fin_fixed_vars) == len(orig_fixed_vars)
@@ -445,7 +480,7 @@ class TestWaterStoich(object):
     @pytest.mark.component
     def test_solve_inherent(self, water_stoich):
         m = water_stoich
-        solver.options['max_iter'] = 2
+        solver.options['max_iter'] = 4000
         results = solver.solve(m)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
