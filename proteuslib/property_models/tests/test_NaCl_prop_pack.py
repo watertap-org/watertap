@@ -16,7 +16,7 @@ import proteuslib.property_models.NaCl_prop_pack as props
 from idaes.generic_models.properties.tests.test_harness import \
     PropertyTestHarness as PropertyTestHarness_idaes
 from proteuslib.property_models.tests.property_test_harness import \
-    (PropertyTestHarness, PropertyRegressionTest)
+    (PropertyTestHarness, PropertyRegressionTest, PropertyCalculateStateTest)
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
@@ -150,3 +150,60 @@ class TestNaClPropertySolution_3(PropertyRegressionTest):
                                     ('osm_coeff', None): 0.918,
                                     ('pressure_osm', None): 7.797e4,
                                     ('enth_mass_phase', 'Liq'): 1.048e5}
+
+
+@pytest.mark.component
+class TestNaClCalculateState_1(PropertyCalculateStateTest):
+    def configure(self):
+        self.prop_pack = props.NaClParameterBlock
+        self.param_args = {}
+
+        self.solver = 'ipopt'
+        self.optarg = {'nlp_scaling_method': 'user-scaling'}
+
+        self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e-1,
+                             ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e1}
+        self.var_args = {('flow_vol_phase', 'Liq'): 2e-2,
+                         ('mass_frac_phase_comp', ('Liq', 'NaCl')): 0.05,
+                         ('temperature', None): 273.15 + 25,
+                         ('pressure', None): 5e5}
+        self.state_solution = {('flow_mass_phase_comp', ('Liq', 'H2O')): 19.62,
+                               ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1.033}
+
+
+@pytest.mark.component
+class TestNaClCalculateState_2(PropertyCalculateStateTest):
+    def configure(self):
+        self.prop_pack = props.NaClParameterBlock
+        self.param_args = {}
+
+        self.solver = 'ipopt'
+        self.optarg = {'nlp_scaling_method': 'user-scaling'}
+
+        self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e1,
+                             ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e3}
+        self.var_args = {('flow_vol_phase', 'Liq'): 2e-4,
+                         ('mole_frac_phase_comp', ('Liq', 'NaCl')): 0.05,
+                         ('temperature', None): 273.15 + 25,
+                         ('pressure', None): 5e5}
+        self.state_solution = {('flow_mass_phase_comp', ('Liq', 'H2O')): 18.88e-2,
+                               ('flow_mass_phase_comp', ('Liq', 'NaCl')): 3.224e-2}
+
+
+@pytest.mark.component
+class TestNaClCalculateState_3(PropertyCalculateStateTest):
+    def configure(self):
+        self.prop_pack = props.NaClParameterBlock
+        self.param_args = {}
+
+        self.solver = 'ipopt'
+        self.optarg = {'nlp_scaling_method': 'user-scaling'}
+
+        self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1,
+                             ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e2}
+        self.var_args = {('flow_vol_phase', 'Liq'): 1e-3,
+                         ('pressure_osm', None): 100e5,
+                         ('temperature', None): 273.15 + 25,
+                         ('pressure', None): 5e5}
+        self.state_solution = {('flow_mass_phase_comp', ('Liq', 'H2O')): 0.9608,
+                               ('flow_mass_phase_comp', ('Liq', 'NaCl')): 0.1151}
