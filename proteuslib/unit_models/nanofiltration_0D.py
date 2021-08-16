@@ -630,7 +630,7 @@ class NanoFiltrationData(UnitModelBlockData):
             elif comp.is_solute():
                 return (b.flux_mass_io_phase_comp[t, x, p, j] == b.B_comp[t, j]
                         * (prop_feed_inter.conc_mass_phase_comp[p, j] - prop_perm.conc_mass_phase_comp[p, j])
-                        + ((1 - b.sigma[t]) * b.flux_mass_io_phase_comp[t, x, p, j]
+                        + ((1 - b.sigma[t]) * b.flux_mass_io_phase_comp[t, x, p, 'H2O']
                            * 1 / b.dens_solvent * b.avg_conc_mass_io_phase_comp[t, x, p, j]))
 
             # Average concentration
@@ -1073,6 +1073,7 @@ class NanoFiltrationData(UnitModelBlockData):
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
+        expr_dict = {}
         var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[time_point, 'Liq']
         var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[time_point, 'Liq', 'H2O']
         var_dict["Membrane Area"] = self.area
@@ -1117,6 +1118,12 @@ class NanoFiltrationData(UnitModelBlockData):
         if self.feed_side.properties_in[time_point].is_property_constructed('pressure_osm'):
             var_dict['Osmotic Pressure @Inlet,Bulk'] = (
                 self.feed_side.properties_in[time_point].pressure_osm)
+        if self.permeate_side.properties_in[time_point].is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Inlet,Bulk Permeate'] = (
+                self.permeate_side.properties_in[time_point].pressure_osm)
+        if self.permeate_side.properties_out[time_point].is_property_constructed('pressure_osm'):
+            var_dict['Osmotic Pressure @Outlet,Bulk Permeate'] = (
+                self.permeate_side.properties_out[time_point].pressure_osm)
         if self.feed_side.properties_in[time_point].is_property_constructed('flow_vol_phase'):
             var_dict['Volumetric Flowrate @Inlet'] = (
                 self.feed_side.properties_in[time_point].flow_vol_phase['Liq'])
@@ -1132,7 +1139,11 @@ class NanoFiltrationData(UnitModelBlockData):
         #  which the pyomo value() method is applied to. That is, a Pyomo Var object must be used; e.g., providing a
         #  list as output would yield an error.
 
-        return {"vars": var_dict}
+        expr_dict["Average Water Flux [LMH]"] = self.flux_mass_phase_comp_avg[time_point, 'Liq', 'H2O'] * 3.6e3
+        for j in self.config.property_package.solute_set:
+            expr_dict[f"Average {j} Flux [GMH]"] = self.flux_mass_phase_comp_avg[time_point, 'Liq', j] * 3.6e6
+
+        return {"vars": var_dict, "exprs": expr_dict}
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(

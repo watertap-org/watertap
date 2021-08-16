@@ -60,12 +60,12 @@ class TestNanoFiltration():
         # fully specify system
         feed_flow_mass = 1
         feed_mass_frac_NaCl = 0.035
-        feed_pressure = 6e5
+        feed_pressure = 5e5
         feed_temperature = 273.15 + 25
         membrane_pressure_drop = 1e5
         membrane_area = 50 * feed_flow_mass
         A = 3.77e-11
-        B = 4.724e-5
+        B = 4.724e-6
         sigma = 0.28
         pressure_atmospheric = 101325
 
@@ -253,11 +253,11 @@ class TestNanoFiltration():
     @pytest.mark.component
     def test_solution(self, NF_frame):
         m = NF_frame
-        assert (pytest.approx(1.055e-2, rel=1e-3) ==
+        assert (pytest.approx(6.042e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
-        assert (pytest.approx(3.563e-4, rel=1e-3) ==
+        assert (pytest.approx(1.944e-4, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl']))
-        assert (pytest.approx(0.5276, rel=1e-3) ==
+        assert (pytest.approx(0.3021, rel=1e-3) ==
                 value(m.fs.unit.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']))
-        assert (pytest.approx(1.782e-2, rel=1e-3) ==
+        assert (pytest.approx(9.720e-3, rel=1e-3) ==
                 value(m.fs.unit.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']))
