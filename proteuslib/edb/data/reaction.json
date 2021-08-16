@@ -513,7 +513,7 @@
         }
       ]
     },
-    "type": "equilibrium",
+    "type": "inherent",
     "name": "H2O_Kw",
     "components": [
       "H2O",
