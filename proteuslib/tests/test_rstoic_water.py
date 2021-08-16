@@ -324,24 +324,13 @@ class TestWaterStoich(object):
         m.fs.rxn_params = GenericReactionParameterBlock(
                 default={"property_package": m.fs.thermo_params, **reaction_config})
 
-#        m.fs.unit = StoichiometricReactor(default={
-#                "property_package": m.fs.thermo_params,
-#                "reaction_package": m.fs.rxn_params,
-#                "has_heat_transfer": False,
-#                "has_heat_of_reaction": False,
-#                "energy_balance_type": EnergyBalanceType.none,
-#                "has_pressure_change": False})
-
-        m.fs.unit = CSTR(default={"property_package": m.fs.thermo_params,
-                                          "reaction_package": m.fs.rxn_params,
-                                          "has_equilibrium_reactions": False,
-                                          "has_heat_transfer": False,
-                                          "has_heat_of_reaction": False,
-                                          "has_pressure_change": False,
-                                          "energy_balance_type": EnergyBalanceType.none
-                                          })
-
-        m.fs.unit.volume.fix(100)
+        m.fs.unit = StoichiometricReactor(default={
+                "property_package": m.fs.thermo_params,
+                "reaction_package": m.fs.rxn_params,
+                "has_heat_transfer": False,
+                "has_heat_of_reaction": False,
+                "energy_balance_type": EnergyBalanceType.none,
+                "has_pressure_change": False})
 
         m.fs.unit.inlet.mole_frac_comp[0, "Ca_2+"].fix( 0. )
         m.fs.unit.inlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.0000018 )
@@ -354,7 +343,7 @@ class TestWaterStoich(object):
         m.fs.unit.inlet.flow_mol.fix(10)
 
         m.fs.unit.outlet.temperature.fix(298.)
-        #m.fs.unit.outlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.0000018*0.95 )
+        m.fs.unit.outlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.0000018*0.95 )
         #m.fs.unit.rate_reaction_extent[0, 'R1'].fix(0)
 
         return m
@@ -391,8 +380,8 @@ class TestWaterStoich(object):
     def test_stats_stoich(self, water_stoich):
         m = water_stoich
         assert (number_variables(m) == 121)
-        assert (number_total_constraints(m) == 41)
-        assert (number_unused_variables(m) == 23)
+        assert (number_total_constraints(m) == 40)
+        assert (number_unused_variables(m) == 67)
 
     @pytest.mark.component
     def test_scaling_stoich(self, water_stoich):
@@ -434,8 +423,7 @@ class TestWaterStoich(object):
                 m.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
             iscale.constraint_scaling_transform(m.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
-        iscale.set_scaling_factor(m.fs.unit.control_volume.volume, 10/m.fs.unit.volume[0.0].value)
-        #iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_extent[0.0,'R1'], 1)
+        iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_extent[0.0,'R1'], 1)
         iscale.calculate_scaling_factors(m.fs.unit)
 
         m.fs.unit.control_volume.pprint()
@@ -450,29 +438,29 @@ class TestWaterStoich(object):
     @pytest.mark.component
     def test_initialize_inherent(self, water_stoich):
         m = water_stoich
-#        state_args = {'mole_frac_comp':
-#                        {   'Ca(OH)2': 0.0000018,
-#                            'Ca_2+': 0.0000018,
-#                            'H2O': 1,
-#                            'H_+': 10**-7/55.6,
-#                            'OH_-': 10**-7/55.6
-#                        },
-#                        'pressure': 101325,
-#                        'temperature': 298,
-#                        'flow_mol': 10
-#                    }
+        state_args = {'mole_frac_comp':
+                        {   'Ca(OH)2': 0.0000018,
+                            'Ca_2+': 0.0000018,
+                            'H2O': 1,
+                            'H_+': 10**-7/55.6,
+                            'OH_-': 10**-7/55.6
+                        },
+                        'pressure': 101325,
+                        'temperature': 298,
+                        'flow_mol': 10
+                    }
         orig_fixed_vars = fixed_variables_set(m)
         orig_act_consts = activated_constraints_set(m)
 
         solver.options['bound_push'] = 1e-10
         solver.options['mu_init'] = 1e-6
-        m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+        m.fs.unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
 
         fin_fixed_vars = fixed_variables_set(m)
         fin_act_consts = activated_constraints_set(m)
 
         print(value(m.fs.unit.outlet.temperature[0]))
-        assert degrees_of_freedom(m) == 1
+        assert degrees_of_freedom(m) == 0
 
         assert len(fin_act_consts) == len(orig_act_consts)
         assert len(fin_fixed_vars) == len(orig_fixed_vars)
@@ -489,7 +477,7 @@ class TestWaterStoich(object):
     def test_solution_inherent(self, water_stoich):
         m = water_stoich
 
-#        assert pytest.approx(10, rel=1e-5) == value(m.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(10, rel=1e-5) == value(m.fs.unit.outlet.flow_mol[0])
         print(value(m.fs.unit.outlet.flow_mol[0]))
         assert pytest.approx(101325, rel=1e-5) == value(m.fs.unit.outlet.pressure[0])
         print(value(m.fs.unit.outlet.pressure[0]))
@@ -497,7 +485,7 @@ class TestWaterStoich(object):
         total_molar_density = \
             value(m.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
         print(total_molar_density)
-#        assert pytest.approx(55.2336, rel=1e-5) == total_molar_density
+        assert pytest.approx(55.2336, rel=1e-5) == total_molar_density
         pH = -value(log10(m.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(m.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
         print(-value(log10(m.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density)))
