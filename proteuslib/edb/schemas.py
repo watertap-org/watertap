@@ -109,7 +109,7 @@ schemas = {
         "properties": {
             "type": {
                 "type": "string",
-                "enum": ["equilibrium"],
+                "enum": ["equilibrium", "inherent"],
                 "description": "Type of reaction",
             },
             "name": {"type": "string", "description": "Name of reaction"},
