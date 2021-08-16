@@ -46,6 +46,31 @@ class ElectrolyteDB:
         self._database_name = db
         self._server_url = url
 
+    @staticmethod
+    def drop_database(url, db):
+        """Drop a database.
+
+        Args:
+            url: MongoDB server URL
+            db: Database name
+
+        Returns:
+            None
+
+        Raises:
+            anything pymongo.MongoClient() can raise
+        """
+        client = MongoClient(host=url)
+        client.drop_database(db)
+
+    @staticmethod
+    def can_connect(url, **kwargs):
+        try:
+            _ = MongoClient(host=url, **kwargs)
+        except Exception:
+            return False
+        return True
+
     @property
     def database(self):
         return self._database_name
@@ -77,7 +102,8 @@ class ElectrolyteDB:
 
     def get_reactions(
         self, component_names: Optional[List] = None,
-            any_components: bool = False
+            any_components: bool = False,
+            reaction_names: Optional[List] = None
     ) -> Result:
         """Get reaction information.
 
@@ -87,6 +113,7 @@ class ElectrolyteDB:
                one side of the reaction has all components provided.
                If true, return the (potentially larger) set of reactions where
                any of the components listed are present.
+            reaction_names: List of reaction names instead of component names
 
         Returns:
             All reactions containing any of the names (or all reactions,
@@ -112,11 +139,15 @@ class ElectrolyteDB:
                     if item_comp.issubset(cnames):
                         found.append(item)
                 it = iter(found)
+        elif reaction_names:
+            query = {"name": {"$in": reaction_names}}
+            _log.debug(f"reaction query: {query}")
+            it = collection.find(filter=query)
         else:
             it = collection.find()
         return Result(iterator=it, item_class=Reaction)
 
-    def get_base(self, name: str = None):
+    def get_base(self, name: str = None) -> Result:
         """Get base information by name of its type.
         """
         if name:
@@ -126,6 +157,10 @@ class ElectrolyteDB:
         collection = self._db.base
         result = Result(iterator=collection.find(filter=query), item_class=Base)
         return result
+
+    def get_one_base(self, *args):
+        for result in self.get_base(*args):
+            return result
 
     def load(self, data: Union[Dict, List[Dict], DataWrapper, List[DataWrapper]], rec_type: str = "base") -> int:
         """Load a single record or list of records.
