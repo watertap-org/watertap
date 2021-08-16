@@ -163,7 +163,8 @@
       ]
     },
     "name": "CaOH +",
-    "type": "cation"
+    "type": "cation",
+    "charge": 1
   },
   {
     "valid_phase_types": [
@@ -246,7 +247,8 @@
       ]
     },
     "name": "Ca 2+",
-    "type": "cation"
+    "type": "cation",
+    "charge": 2
   },
   {
     "valid_phase_types": [
@@ -329,7 +331,8 @@
       ]
     },
     "name": "Cl -",
-    "type": "anion"
+    "type": "anion",
+    "charge": -1
   },
   {
     "valid_phase_types": [
@@ -578,7 +581,8 @@
       ]
     },
     "name": "H2PO4 -",
-    "type": "anion"
+    "type": "anion",
+    "charge": -1
   },
   {
     "valid_phase_types": [
@@ -827,7 +831,8 @@
       ]
     },
     "name": "HCO3 -",
-    "type": "anion"
+    "type": "anion",
+     "charge": -1
   },
   {
     "valid_phase_types": [
@@ -993,7 +998,8 @@
       ]
     },
     "name": "HPO4 2-",
-    "type": "anion"
+    "type": "anion",
+     "charge": -2
   },
   {
     "valid_phase_types": [
@@ -1076,7 +1082,8 @@
       ]
     },
     "name": "HSO4 -",
-    "type": "anion"
+    "type": "anion",
+    "charge": -1
   },
   {
     "valid_phase_types": [
@@ -1159,7 +1166,8 @@
       ]
     },
     "name": "H +",
-    "type": "cation"
+    "type": "cation",
+    "charge": 1
   },
   {
     "valid_phase_types": [
@@ -1325,7 +1333,8 @@
       ]
     },
     "name": "Na +",
-    "type": "cation"
+    "type": "cation",
+    "charge": 1
   },
   {
     "valid_phase_types": [
@@ -1574,7 +1583,8 @@
       ]
     },
     "name": "NH4 +",
-    "type": "cation"
+    "type": "cation",
+    "charge": 1
   },
   {
     "valid_phase_types": [
@@ -1740,7 +1750,8 @@
       ]
     },
     "name": "OCl -",
-    "type": "anion"
+    "type": "anion",
+    "charge": -1
   },
   {
     "valid_phase_types": [
@@ -1823,7 +1834,8 @@
       ]
     },
     "name": "OH -",
-    "type": "anion"
+    "type": "anion",
+    "charge": -1
   },
   {
     "valid_phase_types": [
@@ -1906,7 +1918,8 @@
       ]
     },
     "name": "PO4 3-",
-    "type": "anion"
+    "type": "anion",
+    "charge": -3
   },
   {
     "valid_phase_types": [
@@ -1989,7 +2002,8 @@
       ]
     },
     "name": "SO4 2-",
-    "type": "anion"
+    "type": "anion",
+    "charge": -2
   },
   {
     "dens_mol_liq_comp": "Perrys",
