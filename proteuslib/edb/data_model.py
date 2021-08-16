@@ -90,12 +90,16 @@ from idaes.core import phases as IPhases
 from idaes.core.phases import PhaseType
 from idaes.core import Component as IComponent
 from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
+from idaes.generic_models.properties.core.generic.generic_reaction import (
+    ConcentrationForm,
+)
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.generic_models.properties.core.pure import Perrys
 from idaes.generic_models.properties.core.pure.NIST import NIST
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+    van_t_hoff,
+)
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
     power_law_equil,
 )
@@ -103,7 +107,9 @@ from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.core.components import Solvent, Solute, Cation, Anion
 
 # package
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+    log_power_law_equil,
+)
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
     van_t_hoff,
 )
@@ -121,6 +127,7 @@ def field(f):
 
 class ConfigGenerator:
     """Interface for getting an IDAES 'idaes_config' dict."""
+
     merge_keys = ()
     substitute_values = {}
     SUBST_UNITS = "units"
@@ -340,7 +347,9 @@ class ConfigGenerator:
             #  if found, perform substitution(s)
             if dicty(data_section):
                 sv_key = key_list.pop()
-                _log.debug(f"perform substitutions in data={data_section} for key='{sv_key}'")
+                _log.debug(
+                    f"perform substitutions in data={data_section} for key='{sv_key}'"
+                )
                 # if it is a wildcard, allow multiple substitutions
                 if "*" in sv_key:
                     matches = [k for k in data_section if fnmatchcase(k, sv_key)]
@@ -376,10 +385,7 @@ class ThermoConfig(ConfigGenerator):
             "pt.vaporphase": PhaseType.vaporPhase,
             "pt.aqueousphase": PhaseType.aqueousPhase,
         },
-        "*_comp": {
-            "perrys": Perrys,
-            "nist": NIST
-        },
+        "*_comp": {"perrys": Perrys, "nist": NIST},
         "phase_equilibrium_form.*": {
             "fugacity": fugacity,
         },
@@ -389,7 +395,7 @@ class ThermoConfig(ConfigGenerator):
             "cation": Cation,
             "anion": Anion,
             "component": IComponent,
-        }
+        },
     }
 
     def __init__(self, data, name="unknown", validation=True):
@@ -406,6 +412,7 @@ class ThermoConfig(ConfigGenerator):
         super().__init__(data, name=name)
         if validation:
             from .validate import validate  # put here to avoid circular import
+
             if _log.isEnabledFor(logging.DEBUG):
                 _log.debug(f"Validating Component:\n{pformat(data)}")
             validate(data, obj_type="component")
@@ -429,9 +436,10 @@ class ReactionConfig(ConfigGenerator):
             "log_power_law": log_power_law_equil,
             "concentrationform.molarity": ConcentrationForm.molarity,
         },
-        "*_constant": {"van_t_hoff_aqueous": van_t_hoff,
-                       "van_t_hoff": van_t_hoff,
-       },
+        "*_constant": {
+            "van_t_hoff_aqueous": van_t_hoff,
+            "van_t_hoff": van_t_hoff,
+        },
     }
 
     def __init__(self, data, name="unknown", validation=True):
@@ -448,6 +456,7 @@ class ReactionConfig(ConfigGenerator):
         super().__init__(data, name=name)
         if validation:
             from .validate import validate  # put here to avoid circular import
+
             if _log.isEnabledFor(logging.DEBUG):
                 _log.debug(f"Validating Reaction:\n{pformat(data)}")
             validate(data, obj_type="reaction")
@@ -473,11 +482,15 @@ class ReactionConfig(ConfigGenerator):
         cls._substitute(data)
 
         reaction_type = data["type"]
+        reaction_section = f"{reaction_type}_reactions"
+        # The section should match a merge-key for the Reaction class
+        if reaction_section not in Reaction.merge_keys:
+            raise RuntimeError(
+                f"Unexpected reaction type while generating config: "
+                f"type={reaction_type} data={data}"
+            )
         del data["type"]  # remove from output
-        if reaction_type == "equilibrium":
-            cls._wrap_section("equilibrium_reactions", data)
-        else:
-            raise RuntimeError(f"Unexpected reaction type while generating config: type={reaction_type} data={data}")
+        cls._wrap_section(reaction_section, data)
 
 
 class BaseConfig(ConfigGenerator):
@@ -510,8 +523,12 @@ class DataWrapper:
     # i.e. merged, into the result when an instance is added to the base data wrapper.
     merge_keys = ()
 
-    def __init__(self, data: Dict, config_gen_class: Type[ConfigGenerator] = None,
-                 validate_as_type=None):
+    def __init__(
+        self,
+        data: Dict,
+        config_gen_class: Type[ConfigGenerator] = None,
+        validate_as_type=None,
+    ):
         """Ctor.
 
         Args:
@@ -525,6 +542,7 @@ class DataWrapper:
         self._preprocess()  # additional subclass-specific preprocessing
         if validate_as_type:
             from .validate import validate
+
             validate(self._data, obj_type=validate_as_type)
 
     def _preprocess(self):
@@ -608,7 +626,7 @@ class DataWrapper:
                     if param == "reaction_order":
                         pass  # skip, not something we need to store in EDB
                     else:
-                        pass # not implemented -- no other known values
+                        pass  # not implemented -- no other known values
                 else:
                     # process dict with scalar keys
                     param_list = []
@@ -618,15 +636,21 @@ class DataWrapper:
                         except ValueError:
                             pass
                         except TypeError as err:
-                            raise BadConfiguration(caller, src, why=f"Unexpected key type in parameter_data: "
-                                                                    f"key='{i}' param={value}")
-                        param_list.append(
-                            {"i": i, "v": value2[0], "u": str(value2[1])}
-                        )
+                            raise BadConfiguration(
+                                caller,
+                                src,
+                                why=f"Unexpected key type in parameter_data: "
+                                f"key='{i}' param={value}",
+                            )
+                        param_list.append({"i": i, "v": value2[0], "u": str(value2[1])})
                     data[param] = param_list
             else:
-                raise BadConfiguration(caller, src, why=f"Unexpected value type for 'parameter_data': key='{param}', "
-                                                        f"value='{value}'")
+                raise BadConfiguration(
+                    caller,
+                    src,
+                    why=f"Unexpected value type for 'parameter_data': key='{param}', "
+                    f"value='{value}'",
+                )
         tgt["parameter_data"] = data
 
 
@@ -710,7 +734,9 @@ class Component(DataWrapper):
                     for key, value in c[fld].items():
                         break
                     for phase in key:
-                        cls._method_to_str(phase, {phase: value}, d[fld], subst_strings, caller=whoami)
+                        cls._method_to_str(
+                            phase, {phase: value}, d[fld], subst_strings, caller=whoami
+                        )
             # extract elements from name
             d["elements"] = re.findall(r"[A-Z][a-z]?", name)
             cls._convert_parameter_data(c, d)
@@ -720,7 +746,7 @@ class Component(DataWrapper):
 
 class Reaction(DataWrapper):
 
-    merge_keys = ("equilibrium_reactions", "rate_reactions")
+    merge_keys = ("equilibrium_reactions", "rate_reactions", "inherent_reactions")
 
     def __init__(self, data: Dict, validation=True):
         """Constructor.
@@ -745,23 +771,30 @@ class Reaction(DataWrapper):
                 subst_strings[v] = k
 
         if "equilibrium_reactions" not in config:
-            raise BadConfiguration(config=config, whoami=whoami,
-                                   missing="equilibrium_reactions")
+            raise BadConfiguration(
+                config=config, whoami=whoami, missing="equilibrium_reactions"
+            )
         result = []
         # XXX: base units?
-        for name, r in config["equilibrium_reactions"].items():
-            d = {"name": name, "type": "equilibrium"}
-            # convert all non-dictionary-valued fields into equivalent string values
-            for fld, val in r.items():
-                if isinstance(val, str):  # leave string values as-is
-                    d[fld] = val
-                elif not isinstance(val, dict):  # convert all other non-dict values
-                    cls._method_to_str(fld, r, d, subst_strings, caller=whoami)
-            cls._convert_parameter_data(r, d)
-            with field("stoichiometry") as fld:
-                if fld in r:
-                    cls._convert_stoichiometry(r[fld], d)
-            result.append(Reaction(d))
+        for mk in cls.merge_keys:
+            if not mk.endswith("_reactions"):
+                continue
+            reaction_type = mk
+            if reaction_type not in config:
+                continue
+            for name, r in config[reaction_type].items():
+                d = {"name": name, "type": reaction_type}
+                # convert all non-dictionary-valued fields into equivalent string values
+                for fld, val in r.items():
+                    if isinstance(val, str):  # leave string values as-is
+                        d[fld] = val
+                    elif not isinstance(val, dict):  # convert all other non-dict values
+                        cls._method_to_str(fld, r, d, subst_strings, caller=whoami)
+                cls._convert_parameter_data(r, d)
+                with field("stoichiometry") as fld:
+                    if fld in r:
+                        cls._convert_stoichiometry(r[fld], d)
+                result.append(Reaction(d))
         return result
 
     @classmethod
@@ -816,6 +849,7 @@ class Base(DataWrapper):
         for key in src.merge_keys:
             if key not in src_config:
                 continue
+            print(f"@@ {type(src)}: merging key = {key}")
             if key in dst:
                 dst[key].update(src_config[key])
             else:
@@ -850,4 +884,3 @@ class Result:
         datum = next(self._it)
         obj = self._it_class(datum)
         return obj
-
