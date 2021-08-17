@@ -162,7 +162,7 @@
         }
       ]
     },
-    "name": "CaOH +",
+    "name": "CaOH_+",
     "type": "cation",
     "charge": 1
   },
@@ -246,7 +246,7 @@
         }
       ]
     },
-    "name": "Ca 2+",
+    "name": "Ca_2+",
     "type": "cation",
     "charge": 2
   },
@@ -330,7 +330,7 @@
         }
       ]
     },
-    "name": "Cl -",
+    "name": "Cl_-",
     "type": "anion",
     "charge": -1
   },
@@ -414,7 +414,7 @@
         }
       ]
     },
-    "name": "CO3 2-",
+    "name": "CO3_2-",
     "type": "anion"
   },
   {
@@ -580,7 +580,7 @@
         }
       ]
     },
-    "name": "H2PO4 -",
+    "name": "H2PO4_-",
     "type": "anion",
     "charge": -1
   },
@@ -830,7 +830,7 @@
         }
       ]
     },
-    "name": "HCO3 -",
+    "name": "HCO3_-",
     "type": "anion",
      "charge": -1
   },
@@ -997,7 +997,7 @@
         }
       ]
     },
-    "name": "HPO4 2-",
+    "name": "HPO4_2-",
     "type": "anion",
      "charge": -2
   },
@@ -1081,7 +1081,7 @@
         }
       ]
     },
-    "name": "HSO4 -",
+    "name": "HSO4_-",
     "type": "anion",
     "charge": -1
   },
@@ -1165,7 +1165,7 @@
         }
       ]
     },
-    "name": "H +",
+    "name": "H_+",
     "type": "cation",
     "charge": 1
   },
@@ -1332,7 +1332,7 @@
         }
       ]
     },
-    "name": "Na +",
+    "name": "Na_+",
     "type": "cation",
     "charge": 1
   },
@@ -1582,7 +1582,7 @@
         }
       ]
     },
-    "name": "NH4 +",
+    "name": "NH4_+",
     "type": "cation",
     "charge": 1
   },
@@ -1749,7 +1749,7 @@
         }
       ]
     },
-    "name": "OCl -",
+    "name": "OCl_-",
     "type": "anion",
     "charge": -1
   },
@@ -1833,7 +1833,7 @@
         }
       ]
     },
-    "name": "OH -",
+    "name": "OH_-",
     "type": "anion",
     "charge": -1
   },
@@ -1917,7 +1917,7 @@
         }
       ]
     },
-    "name": "PO4 3-",
+    "name": "PO4_3-",
     "type": "anion",
     "charge": -3
   },
@@ -2001,7 +2001,7 @@
         }
       ]
     },
-    "name": "SO4 2-",
+    "name": "SO4_2-",
     "type": "anion",
     "charge": -2
   },

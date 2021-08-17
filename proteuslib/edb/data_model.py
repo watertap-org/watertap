@@ -91,7 +91,7 @@ from idaes.core.phases import PhaseType
 from idaes.core import Component as IComponent
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.generic.generic_reaction import (
-    ConcentrationForm,
+    ConcentrationForm
 )
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.generic_models.properties.core.pure import Perrys
@@ -102,6 +102,7 @@ from idaes.generic_models.properties.core.reactions.equilibrium_constant import 
 )
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
     power_law_equil,
+    log_power_law_equil
 )
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.core.components import Solvent, Solute, Cation, Anion
@@ -152,7 +153,7 @@ class ConfigGenerator:
     @staticmethod
     def _build_units(x: str = None):
         if not x:
-            _log.warning("setting dimensionless unit")
+            _log.info("setting dimensionless unit")
             x = "dimensionless"
         s = re.sub(r"([A-Za-z]+)", r"U.\1", x).replace("U.None", "U.dimensionless")
         try:
@@ -182,7 +183,8 @@ class ConfigGenerator:
                 params[param_key] = reaction_order_table
             elif len(val) > 1:
                 # List of objects with 'v', 'u', and maybe 'i' keys
-                # -> transform into dict of tuples with key `i` and value (<value>, built(<units>))
+                # -> transform into dict of tuples with key `i` and
+                # value (<value>, built(<units>))
                 coeff_table = {}
                 if debugging:
                     _log.debug(f"start: transform parameter list key={param_key}")
@@ -192,7 +194,8 @@ class ConfigGenerator:
                         built_units = cls._build_units(item["u"])
                     except (AttributeError, TypeError, ValueError) as err:
                         raise ConfigGeneratorError(
-                            f"Cannot extract parameter. name='{comp_name}', item='{item}': {err}"
+                            f"Cannot extract parameter. name='{comp_name}', "
+                            f"item='{item}': {err}"
                         )
                     coeff_table[index] = (item["v"], built_units)
                 params[param_key] = coeff_table
@@ -211,7 +214,7 @@ class ConfigGenerator:
 
     @staticmethod
     def _iterate_dict_or_list(value):
-        # if the value is a dict, use dict keys as indexes, so really just do `.items()`
+        # if value is a dict, use dict keys as indexes, so really just do `.items()`
         if hasattr(value, "keys"):
             return value.items()
         # otherwise number from 1..N
@@ -224,7 +227,8 @@ class ConfigGenerator:
     def _wrap_section(cls, section: str, data: Dict):
         """Put all `data` inside {<section>: <name>: { /data/ }}.
         The `<name>` is taken from `data["name"]`.
-        Also removes keys 'name' and special keys starting with underscore like _id from the `data`.
+        Also removes keys 'name' and special keys starting with underscore
+        like _id from the `data`.
         Changes input argument.
         Section will be, e.g., "components" or "equilibrium_reactions"
         """
@@ -277,7 +281,8 @@ class ConfigGenerator:
             """
             if debugging:
                 _log.debug(f"substitute value: d={d} subst={subst} key={key}")
-            # make a scalar into a list of length 1, but remember whether it's a list or not
+            # make a scalar into a list of length 1, but remember whether
+            # it's a list or not
             if (
                 isinstance(d[key], str)
                 or isinstance(d[key], int)
@@ -435,6 +440,7 @@ class ReactionConfig(ConfigGenerator):
         "*_form": {
             "log_power_law": log_power_law_equil,
             "concentrationform.molarity": ConcentrationForm.molarity,
+            "concentrationform.molefraction": ConcentrationForm.moleFraction
         },
         "*_constant": {
             "van_t_hoff_aqueous": van_t_hoff,
@@ -554,6 +560,16 @@ class DataWrapper:
             from .validate import validate
 
             validate(self._data, obj_type=validate_as_type)
+
+    def remove(self, key):
+        if key in self.data:
+            del self.data[key]
+
+    def remove_parameter(self, key):
+        with field("parameter_data") as param:
+            if param in self.data:
+                if key in self.data[param]:
+                    del self.data[param][key]
 
     def _preprocess(self):
         pass  # define in subclasses
@@ -768,6 +784,10 @@ class Reaction(DataWrapper):
         """
         vtype = "reaction" if validation else None
         super().__init__(data, ReactionConfig, validate_as_type=vtype)
+
+    @property
+    def reaction_type(self):
+        return self.data.get("type", "")
 
     def set_reaction_order(
         self,
