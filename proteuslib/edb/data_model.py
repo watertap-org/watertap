@@ -86,7 +86,7 @@ from typing import Dict, Type, List
 from pyomo.environ import units as pyunits
 
 # IDAES methods and constants
-from idaes.core import phases as IPhases
+from idaes.core import AqueousPhase, LiquidPhase
 from idaes.core.phases import PhaseType
 from idaes.core import Component as IComponent
 from idaes.generic_models.properties.core.eos.ideal import Ideal
@@ -497,7 +497,7 @@ class BaseConfig(ConfigGenerator):
 
     substitute_values = {
         "state_definition": {"FTPx": FTPx},
-        "phases.Liq.type": {"LiquidPhase": IPhases.LiquidPhase},
+        "phases.Liq.type": {"LiquidPhase": LiquidPhase, "AqueousPhase": AqueousPhase},
         "phases.Liq.equation_of_state": {"Ideal": Ideal},
         "base_units.*": ConfigGenerator.SUBST_UNITS,
     }
@@ -506,6 +506,16 @@ class BaseConfig(ConfigGenerator):
     def _transform(cls, data):
         cls._substitute(data)
         cls._remove_special(data)
+        cls._list_to_tuple(data, "state_bounds")
+
+    @classmethod
+    def _list_to_tuple(cls, data, section):
+        """Change all list values in the given section to tuples."""
+        if section not in data:
+            return
+        for key in data[section]:
+            if isinstance(data[section][key], list):
+                data[section][key] = tuple(data[section][key])
 
 
 class DataWrapper:
@@ -624,7 +634,8 @@ class DataWrapper:
                 if isinstance(key0, tuple):
                     # process dict with tuple keys
                     if param == "reaction_order":
-                        pass  # skip, not something we need to store in EDB
+                        # skip, not something we need to store in EDB
+                        _log.debug(f"skip 'reaction_order' in parameters from {caller}")
                     else:
                         pass  # not implemented -- no other known values
                 else:
@@ -758,6 +769,43 @@ class Reaction(DataWrapper):
         vtype = "reaction" if validation else None
         super().__init__(data, ReactionConfig, validate_as_type=vtype)
 
+    def set_reaction_order(
+        self,
+        phase: str,
+        lhs: List[str],
+        rhs: List[str],
+    ) -> Dict:
+        """Set the reaction order (if it differs from stoichiometry).
+
+        Args:
+            phase: 'Liq' or 'Vap'
+            lhs: Left-hand side of equation components
+            rhs: Right-hand side of equation components
+
+        Returns:
+            Reaction order for all phases, which can be modified further in-place
+
+        Raises:
+            KeyError: something is missing in the data structure
+        """
+        with field("parameter_data") as param:
+            if param not in self.data:
+                raise KeyError(f"Reaction missing '{param}'")
+            with field("reaction_order") as ro:
+                # create a blank 'reaction_order' section if not present
+                if ro not in self.data[param]:
+                    self.data[param][ro] = {}
+                ro_section = self.data[param][ro]
+                # replace reaction_order value for key 'phase' with new value
+                reaction_order = {}
+                for comp in lhs:
+                    reaction_order[comp] = 0
+                for comp in rhs:
+                    reaction_order[comp] = 1
+                ro_section[phase] = reaction_order
+
+        return ro_section
+
     @classmethod
     def from_idaes_config(cls, config: Dict) -> List["Reaction"]:
         """See documentation on parent class."""
@@ -849,7 +897,6 @@ class Base(DataWrapper):
         for key in src.merge_keys:
             if key not in src_config:
                 continue
-            print(f"@@ {type(src)}: merging key = {key}")
             if key in dst:
                 dst[key].update(src_config[key])
             else:
