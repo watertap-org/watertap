@@ -2160,7 +2160,7 @@
       "pressure_sat_comp_coeff": [
         {
           "v": 6.81228,
-          "u": "dimensionless",
+          "u": "",
           "i": "A"
         },
         {
@@ -2326,7 +2326,7 @@
       "pressure_sat_comp_coeff": [
         {
           "v": 4.6543,
-          "u": "dimensionless",
+          "u": "",
           "i": "A"
         },
         {
@@ -2499,7 +2499,7 @@
       "pressure_sat_comp_coeff": [
         {
           "v": 4.86886,
-          "u": "dimensionless",
+          "u": "",
           "i": "A"
         },
         {
