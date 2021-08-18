@@ -496,12 +496,12 @@
     "heat_of_reaction": "constant_dh_rxn",
     "equilibrium_constant": "van_t_hoff_aqueous",
     "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
+    "concentration_form": "ConcentrationForm.moleFraction",
     "parameter_data": {
       "dh_rxn_ref": [
         {
           "v": 55.83,
-          "u": "kJ/mol",
+          "u": "J/mol",
           "i": 0
         }
       ],
@@ -514,7 +514,7 @@
       ],
       "k_eq_ref": [
         { "v":  3.281873555975635e-18,
-        "u": "",
+        "u": "dimensionless",
         "i": 0
         }
       ],
@@ -523,42 +523,6 @@
       ]
     },
     "type": "equilibrium",
-    "name": "H2O_Kw",
-    "components": [
-      "H2O"
-    ]
-  },
-  {
-    "stoichiometry": {
-      "Liq": {
-        "H2O": -1,
-        "H_+": 1,
-        "OH_-": 1
-      }
-    },
-    "heat_of_reaction": "constant_dh_rxn",
-    "equilibrium_constant": "van_t_hoff",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.moleFraction",
-    "parameter_data": {
-      "dh_rxn_ref": [
-        {
-          "v": 55.83,
-          "u": "kJ/mol",
-          "i": 0
-        }
-      ],
-      "k_eq_ref": [
-        { "v":  3.281873555975635e-18,
-        "u": "",
-        "i": 0
-        }
-      ],
-      "T_eq_ref": [
-        {"v": 298, "u": "K", "i": 0}
-      ]
-    },
-    "type": "inherent",
     "name": "H2O_Kw",
     "components": [
       "H2O"
