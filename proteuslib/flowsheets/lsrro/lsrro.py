@@ -20,7 +20,8 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.initialization import (solve_indexed_blocks,
                                             fix_state_vars,
-                                            revert_state_vars)
+                                            revert_state_vars,
+                                            propagate_state)
 from idaes.generic_models.unit_models import Feed, Product, Mixer, Separator
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -34,13 +35,11 @@ from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
                                                        MassTransferCoefficient,
                                                        PressureChangeType)
 from proteuslib.unit_models.pump_isothermal import Pump
-from proteuslib.util.initialization import propagate_state, assert_degrees_of_freedom, assert_no_degrees_of_freedom
+from proteuslib.util.initialization import assert_degrees_of_freedom, assert_no_degrees_of_freedom
 
 import proteuslib.flowsheets.lsrro.financials as financials
 
 import idaes.logger as idaeslogger
-idaeslogger.getLogger("idaes.core").setLevel(idaeslogger.CRITICAL)
-idaeslogger.getLogger("idaes.init").setLevel(idaeslogger.CRITICAL)
 
 
 def build(number_of_stages=2):
@@ -165,13 +164,13 @@ def build(number_of_stages=2):
     m.fs.erd_to_disposal = Arc(source=m.fs.EnergyRecoveryDevice.outlet,
             destination=m.fs.disposal.inlet)
 
-    TransformationFactory("network.expand_arcs").apply_to(m)
-
     # additional bounding
     for b in m.component_data_objects(Block, descend_into=True):
         # NaCl solubility limit
         if hasattr(b, 'mass_frac_phase_comp'):
             b.mass_frac_phase_comp['Liq', 'NaCl'].setub(0.26)
+
+    TransformationFactory("network.expand_arcs").apply_to(m)
 
     return m
 
@@ -245,16 +244,14 @@ def set_operating_conditions(m):
 
 
 def _lsrro_mixer_guess_initializer( mixer, solvent_multiplier, solute_multiplier, optarg ):
-    solute_set = mixer.config.property_package.solute_set
-    solvent_set = mixer.config.property_package.solvent_set
 
     for vname in mixer.upstream.vars:
         if vname == 'flow_mass_phase_comp':
             for time, phase, comp in mixer.upstream.vars[vname]:
-                if comp in solute_set:
+                if comp in mixer.config.property_package.solute_set:
                     mixer.downstream.vars[vname][time,phase,comp].value = \
                             solute_multiplier*mixer.upstream.vars[vname][time,phase,comp].value
-                elif comp in solvent_set:
+                elif comp in mixer.config.property_package.solvent_set:
                     mixer.downstream.vars[vname][time,phase,comp].value = \
                             solvent_multiplier*mixer.upstream.vars[vname][time,phase,comp].value
                 else:
@@ -545,12 +542,8 @@ def main(number_of_stages):
     m = build_model(number_of_stages)
     set_operating_conditions(m)
     solve(m)
-    # print('finished simulation')
     optimize_set_up(m, set_water_recovery=True)
     solve(m)
-
-    print('---Close to bounds---')
-    infeas.log_close_to_bounds(m)
 
     return m
 

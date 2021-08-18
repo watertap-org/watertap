@@ -42,7 +42,7 @@ from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
                                                        PressureChangeType)
 from proteuslib.unit_models.pressure_exchanger import PressureExchanger
 from proteuslib.unit_models.pump_isothermal import Pump
-from proteuslib.util.initialization import assert_degrees_of_freedom, assert_no_degrees_of_freedom
+from proteuslib.util.initialization import assert_degrees_of_freedom
 import proteuslib.flowsheets.RO_with_energy_recovery.financials as financials
 
 
