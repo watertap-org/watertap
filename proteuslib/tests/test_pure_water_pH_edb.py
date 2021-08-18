@@ -121,10 +121,6 @@ def get_thermo_config(edb):
         if r.reaction_type == "inherent":
             r.set_reaction_order('Liq', ('H2O',), ('H_+', 'OH_-'))
             base.add(r)
-    # this should be in the DB??
-    # base.data["phases"] = {"Liq": {"type": "AqueousPhase",
-    #                    "equation_of_state": "Ideal"},
-    #            }
     return base.idaes_config
 
 
@@ -345,34 +341,6 @@ solver = get_solver()
 class TestPureWater:
     @pytest.fixture(scope="class")
     def inherent_reactions_config(self):
-
-        comper = Compare()
-        thermo_diff = comper.check(thermo_config_orig, thermo_config)
-        if thermo_diff != NO_DIFF:
-            print("--- THERMO ---")
-            pprint(thermo_diff)
-        thermo_diff2 = comper.check(thermo_config, thermo_config_orig)
-        if thermo_diff2 != NO_DIFF:
-            print("--- THERMO/reverse ---")
-            pprint(thermo_diff2)
-            print("--- thermo_config ---")
-            pprint(thermo_config)
-
-        assert thermo_diff == NO_DIFF and thermo_diff2 == NO_DIFF
-
-        water_diff = comper.check(water_reaction_config_orig, water_reaction_config)
-        if water_diff != NO_DIFF:
-            print("--- WATER ---")
-            pprint(water_diff)
-        water_diff2 = comper.check(water_reaction_config, water_reaction_config_orig)
-        if water_diff2 != NO_DIFF:
-            print("--- WATER/reverse ---")
-            pprint(water_diff2)
-            print("--- water config / reverse ---")
-            pprint(water_reaction_config)
-
-        assert water_diff == NO_DIFF and water_diff2 == NO_DIFF
-
         model = ConcreteModel()
         model.fs = FlowsheetBlock(default={"dynamic": False})
         model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
@@ -452,246 +420,246 @@ class TestPureWater:
         assert len(model.fs.thermo_params.phase_list) == 1
         assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
 
-    # @pytest.mark.unit
-    # def test_build_model_equilibrium(self, equilibrium_reactions_config):
-    #     model = equilibrium_reactions_config
-    #
-    #     assert hasattr(model.fs.thermo_params, 'component_list')
-    #     assert len(model.fs.thermo_params.component_list) == 3
-    #     assert 'H2O' in model.fs.thermo_params.component_list
-    #     assert isinstance(model.fs.thermo_params.H2O, Solvent)
-    #     assert 'H_+' in model.fs.thermo_params.component_list
-    #     assert isinstance(model.fs.thermo_params.component('H_+'), Cation)
-    #     assert 'OH_-' in model.fs.thermo_params.component_list
-    #     assert isinstance(model.fs.thermo_params.component('OH_-'), Anion)
-    #
-    #     assert hasattr(model.fs.thermo_params, 'phase_list')
-    #     assert len(model.fs.thermo_params.phase_list) == 1
-    #     assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
-    #
-    # @pytest.mark.unit
-    # def test_units_inherent(self, inherent_reactions_config):
-    #     model = inherent_reactions_config
-    #     assert_units_consistent(model)
-    #
-    # @pytest.mark.unit
-    # def test_units_equilibrium(self, equilibrium_reactions_config):
-    #     model = equilibrium_reactions_config
-    #     assert_units_consistent(model)
-    #
-    # @pytest.mark.unit
-    # def test_dof_inherent(self, inherent_reactions_config):
-    #     model = inherent_reactions_config
-    #     assert (degrees_of_freedom(model) == 0)
-    #
-    # @pytest.mark.unit
-    # def test_dof_equilibrium(self, equilibrium_reactions_config):
-    #     model = equilibrium_reactions_config
-    #     assert (degrees_of_freedom(model) == 0)
-    #
-    # @pytest.mark.unit
-    # def test_stats_inherent(self, inherent_reactions_config):
-    #     model = inherent_reactions_config
-    #     assert (number_variables(model) == 77)
-    #     assert (number_total_constraints(model) == 24)
-    #     assert (number_unused_variables(model) == 12)
-    #
-    # @pytest.mark.unit
-    # def test_stats_equilibrium(self, equilibrium_reactions_config):
-    #     model = equilibrium_reactions_config
-    #     assert (number_variables(model) == 71)
-    #     assert (number_total_constraints(model) == 24)
-    #     assert (number_unused_variables(model) == 6)
-    #
-    # @pytest.mark.component
-    # def test_scaling_inherent(self, inherent_reactions_config):
-    #     model = inherent_reactions_config
-    #
-    #     # Iterate through the reactions to set appropriate eps values
-    #     factor = 1e-4
-    #     for rid in model.fs.thermo_params.inherent_reaction_idx:
-    #         scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
-    #         # Want to set eps in some fashion similar to this
-    #         if scale < 1e-16:
-    #             model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*factor
-    #         else:
-    #             model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
-    #
-    #     for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
-    #         scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
-    #         iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
-    #         iscale.constraint_scaling_transform(model.fs.unit.control_volume.properties_out[0.0].
-    #                 inherent_equilibrium_constraint[i[1]], 0.1)
-    #
-    #     # Next, try adding scaling for species
-    #     min = 1e-6
-    #     for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
-    #         # i[0] = phase, i[1] = species
-    #         if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
-    #             scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
-    #         else:
-    #             scale = min
-    #         iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-    #         iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-    #         iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-    #         iscale.constraint_scaling_transform(
-    #             model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-    #         iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
-    #
-    #     iscale.calculate_scaling_factors(model.fs.unit)
-    #
-    #     assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
-    #
-    #     assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
-    #
-    #     assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
-    #
-    # @pytest.mark.component
-    # def test_scaling_equilibrium(self, equilibrium_reactions_config):
-    #     model = equilibrium_reactions_config
-    #
-    #     # Equilibrium reactions have eps in the 'rxn_params'
-    #     factor = 1e-4
-    #     for rid in model.fs.rxn_params.equilibrium_reaction_idx:
-    #         scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
-    #         # Want to set eps in some fashion similar to this
-    #         if scale < 1e-16:
-    #             model.fs.rxn_params.component("reaction_"+rid).eps.value = scale*factor
-    #         else:
-    #             model.fs.rxn_params.component("reaction_"+rid).eps.value = 1e-16*factor
-    #
-    #     for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
-    #         scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
-    #         iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10/scale)
-    #         iscale.constraint_scaling_transform(model.fs.unit.control_volume.reactions[0.0].
-    #                 equilibrium_constraint[i[1]], 0.1)
-    #
-    #     # Next, try adding scaling for species
-    #     min = 1e-6
-    #     for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
-    #         # i[0] = phase, i[1] = species
-    #         if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
-    #             scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
-    #         else:
-    #             scale = min
-    #         iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-    #         iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-    #         iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-    #         iscale.constraint_scaling_transform(
-    #             model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-    #         iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
-    #
-    #     iscale.calculate_scaling_factors(model.fs.unit)
-    #
-    #     assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
-    #
-    #     assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
-    #
-    #     assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
-    #
-    #     # When using equilibrium reactions, there are another set of scaling factors calculated
-    #     assert isinstance(model.fs.unit.control_volume.reactions[0.0].scaling_factor, Suffix)
-    #
-    # @pytest.mark.component
-    # def test_initialize_inherent(self, inherent_reactions_config):
-    #     model = inherent_reactions_config
-    #     state_args = {'mole_frac_comp':
-    #                     {   'H2O': 1,
-    #                         'H_+': 10**-7/55.6,
-    #                         'OH_-': 10**-7/55.6
-    #                     },
-    #                     'pressure': 101325,
-    #                     'temperature': 298,
-    #                     'flow_mol': 10
-    #                 }
-    #     orig_fixed_vars = fixed_variables_set(model)
-    #     orig_act_consts = activated_constraints_set(model)
-    #
-    #     solver.options['bound_push'] = 1e-10
-    #     solver.options['mu_init'] = 1e-6
-    #     model.fs.unit.initialize(state_args=state_args, optarg=solver.options)
-    #
-    #     fin_fixed_vars = fixed_variables_set(model)
-    #     fin_act_consts = activated_constraints_set(model)
-    #
-    #     assert degrees_of_freedom(model) == 0
-    #
-    #     assert len(fin_act_consts) == len(orig_act_consts)
-    #     assert len(fin_fixed_vars) == len(orig_fixed_vars)
-    #
-    # @pytest.mark.component
-    # def test_initialize_equilibrium(self, equilibrium_reactions_config):
-    #     model = equilibrium_reactions_config
-    #     state_args = {'mole_frac_comp':
-    #                     {   'H2O': 1,
-    #                         'H_+': 10**-7/55.6,
-    #                         'OH_-': 10**-7/55.6
-    #                     },
-    #                     'pressure': 101325,
-    #                     'temperature': 298,
-    #                     'flow_mol': 10
-    #                 }
-    #     orig_fixed_vars = fixed_variables_set(model)
-    #     orig_act_consts = activated_constraints_set(model)
-    #
-    #     solver.options['bound_push'] = 1e-10
-    #     solver.options['mu_init'] = 1e-6
-    #     model.fs.unit.initialize(state_args=state_args, optarg=solver.options)
-    #
-    #     fin_fixed_vars = fixed_variables_set(model)
-    #     fin_act_consts = activated_constraints_set(model)
-    #
-    #     assert degrees_of_freedom(model) == 0
-    #
-    #     assert len(fin_act_consts) == len(orig_act_consts)
-    #     assert len(fin_fixed_vars) == len(orig_fixed_vars)
-    #
-    # @pytest.mark.component
-    # def test_solve_inherent(self, inherent_reactions_config):
-    #     model = inherent_reactions_config
-    #     solver.options['max_iter'] = 2
-    #     results = solver.solve(model)
-    #     assert results.solver.termination_condition == TerminationCondition.optimal
-    #     assert results.solver.status == SolverStatus.ok
-    #
-    # @pytest.mark.component
-    # def test_solve_equilibrium(self, equilibrium_reactions_config):
-    #     model = equilibrium_reactions_config
-    #     solver.options['max_iter'] = 2
-    #     results = solver.solve(model)
-    #     assert results.solver.termination_condition == TerminationCondition.optimal
-    #     assert results.solver.status == SolverStatus.ok
-    #
-    # @pytest.mark.component
-    # def test_solution_inherent(self, inherent_reactions_config):
-    #     model = inherent_reactions_config
-    #
-    #     assert pytest.approx(298, rel=1e-5) == value(model.fs.unit.outlet.temperature[0])
-    #     assert pytest.approx(10, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
-    #     assert pytest.approx(101325, rel=1e-5) == value(model.fs.unit.outlet.pressure[0])
-    #
-    #     total_molar_density = \
-    #         value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
-    #     assert pytest.approx(55.2336, rel=1e-5) == total_molar_density
-    #     pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
-    #     pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-    #     assert pytest.approx(6.9997414, rel=1e-5) == pH
-    #     assert pytest.approx(6.9997414, rel=1e-5) == pOH
-    #     assert pytest.approx(0.99999, rel=1e-5) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
-    #
-    # @pytest.mark.component
-    # def test_solution_equilibrium(self, equilibrium_reactions_config):
-    #     model = equilibrium_reactions_config
-    #
-    #     assert pytest.approx(298, rel=1e-5) == value(model.fs.unit.outlet.temperature[0])
-    #     assert pytest.approx(10, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
-    #     assert pytest.approx(101325, rel=1e-5) == value(model.fs.unit.outlet.pressure[0])
-    #
-    #     total_molar_density = \
-    #         value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
-    #     assert pytest.approx(55.2336, rel=1e-5) == total_molar_density
-    #     pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
-    #     pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-    #     assert pytest.approx(6.9997414, rel=1e-5) == pH
-    #     assert pytest.approx(6.9997414, rel=1e-5) == pOH
-    #     assert pytest.approx(0.99999, rel=1e-5) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
+    @pytest.mark.unit
+    def test_build_model_equilibrium(self, equilibrium_reactions_config):
+        model = equilibrium_reactions_config
+
+        assert hasattr(model.fs.thermo_params, 'component_list')
+        assert len(model.fs.thermo_params.component_list) == 3
+        assert 'H2O' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.H2O, Solvent)
+        assert 'H_+' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('H_+'), Cation)
+        assert 'OH_-' in model.fs.thermo_params.component_list
+        assert isinstance(model.fs.thermo_params.component('OH_-'), Anion)
+
+        assert hasattr(model.fs.thermo_params, 'phase_list')
+        assert len(model.fs.thermo_params.phase_list) == 1
+        assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
+
+    @pytest.mark.unit
+    def test_units_inherent(self, inherent_reactions_config):
+        model = inherent_reactions_config
+        assert_units_consistent(model)
+
+    @pytest.mark.unit
+    def test_units_equilibrium(self, equilibrium_reactions_config):
+        model = equilibrium_reactions_config
+        assert_units_consistent(model)
+
+    @pytest.mark.unit
+    def test_dof_inherent(self, inherent_reactions_config):
+        model = inherent_reactions_config
+        assert (degrees_of_freedom(model) == 0)
+
+    @pytest.mark.unit
+    def test_dof_equilibrium(self, equilibrium_reactions_config):
+        model = equilibrium_reactions_config
+        assert (degrees_of_freedom(model) == 0)
+
+    @pytest.mark.unit
+    def test_stats_inherent(self, inherent_reactions_config):
+        model = inherent_reactions_config
+        assert (number_variables(model) == 77)
+        assert (number_total_constraints(model) == 24)
+        assert (number_unused_variables(model) == 12)
+
+    @pytest.mark.unit
+    def test_stats_equilibrium(self, equilibrium_reactions_config):
+        model = equilibrium_reactions_config
+        assert (number_variables(model) == 71)
+        assert (number_total_constraints(model) == 24)
+        assert (number_unused_variables(model) == 6)
+
+    @pytest.mark.component
+    def test_scaling_inherent(self, inherent_reactions_config):
+        model = inherent_reactions_config
+
+        # Iterate through the reactions to set appropriate eps values
+        factor = 1e-4
+        for rid in model.fs.thermo_params.inherent_reaction_idx:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
+            # Want to set eps in some fashion similar to this
+            if scale < 1e-16:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*factor
+            else:
+                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
+
+        for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.properties_out[0.0].
+                    inherent_equilibrium_constraint[i[1]], 0.1)
+
+        # Next, try adding scaling for species
+        min = 1e-6
+        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+            # i[0] = phase, i[1] = species
+            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
+                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
+            else:
+                scale = min
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+            iscale.constraint_scaling_transform(
+                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
+
+        iscale.calculate_scaling_factors(model.fs.unit)
+
+        assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+
+        assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
+
+        assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
+
+    @pytest.mark.component
+    def test_scaling_equilibrium(self, equilibrium_reactions_config):
+        model = equilibrium_reactions_config
+
+        # Equilibrium reactions have eps in the 'rxn_params'
+        factor = 1e-4
+        for rid in model.fs.rxn_params.equilibrium_reaction_idx:
+            scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
+            # Want to set eps in some fashion similar to this
+            if scale < 1e-16:
+                model.fs.rxn_params.component("reaction_"+rid).eps.value = scale*factor
+            else:
+                model.fs.rxn_params.component("reaction_"+rid).eps.value = 1e-16*factor
+
+        for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
+            scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.reactions[0.0].
+                    equilibrium_constraint[i[1]], 0.1)
+
+        # Next, try adding scaling for species
+        min = 1e-6
+        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+            # i[0] = phase, i[1] = species
+            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
+                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
+            else:
+                scale = min
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+            iscale.constraint_scaling_transform(
+                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
+
+        iscale.calculate_scaling_factors(model.fs.unit)
+
+        assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+
+        assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
+
+        assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
+
+        # When using equilibrium reactions, there are another set of scaling factors calculated
+        assert isinstance(model.fs.unit.control_volume.reactions[0.0].scaling_factor, Suffix)
+
+    @pytest.mark.component
+    def test_initialize_inherent(self, inherent_reactions_config):
+        model = inherent_reactions_config
+        state_args = {'mole_frac_comp':
+                        {   'H2O': 1,
+                            'H_+': 10**-7/55.6,
+                            'OH_-': 10**-7/55.6
+                        },
+                        'pressure': 101325,
+                        'temperature': 298,
+                        'flow_mol': 10
+                    }
+        orig_fixed_vars = fixed_variables_set(model)
+        orig_act_consts = activated_constraints_set(model)
+
+        solver.options['bound_push'] = 1e-10
+        solver.options['mu_init'] = 1e-6
+        model.fs.unit.initialize(state_args=state_args, optarg=solver.options)
+
+        fin_fixed_vars = fixed_variables_set(model)
+        fin_act_consts = activated_constraints_set(model)
+
+        assert degrees_of_freedom(model) == 0
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+    @pytest.mark.component
+    def test_initialize_equilibrium(self, equilibrium_reactions_config):
+        model = equilibrium_reactions_config
+        state_args = {'mole_frac_comp':
+                        {   'H2O': 1,
+                            'H_+': 10**-7/55.6,
+                            'OH_-': 10**-7/55.6
+                        },
+                        'pressure': 101325,
+                        'temperature': 298,
+                        'flow_mol': 10
+                    }
+        orig_fixed_vars = fixed_variables_set(model)
+        orig_act_consts = activated_constraints_set(model)
+
+        solver.options['bound_push'] = 1e-10
+        solver.options['mu_init'] = 1e-6
+        model.fs.unit.initialize(state_args=state_args, optarg=solver.options)
+
+        fin_fixed_vars = fixed_variables_set(model)
+        fin_act_consts = activated_constraints_set(model)
+
+        assert degrees_of_freedom(model) == 0
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+    @pytest.mark.component
+    def test_solve_inherent(self, inherent_reactions_config):
+        model = inherent_reactions_config
+        solver.options['max_iter'] = 2
+        results = solver.solve(model)
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_solve_equilibrium(self, equilibrium_reactions_config):
+        model = equilibrium_reactions_config
+        solver.options['max_iter'] = 2
+        results = solver.solve(model)
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_solution_inherent(self, inherent_reactions_config):
+        model = inherent_reactions_config
+
+        assert pytest.approx(298, rel=1e-5) == value(model.fs.unit.outlet.temperature[0])
+        assert pytest.approx(10, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(101325, rel=1e-5) == value(model.fs.unit.outlet.pressure[0])
+
+        total_molar_density = \
+            value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
+        assert pytest.approx(55.2336, rel=1e-5) == total_molar_density
+        pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
+        pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
+        assert pytest.approx(6.9997414, rel=1e-5) == pH
+        assert pytest.approx(6.9997414, rel=1e-5) == pOH
+        assert pytest.approx(0.99999, rel=1e-5) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
+
+    @pytest.mark.component
+    def test_solution_equilibrium(self, equilibrium_reactions_config):
+        model = equilibrium_reactions_config
+
+        assert pytest.approx(298, rel=1e-5) == value(model.fs.unit.outlet.temperature[0])
+        assert pytest.approx(10, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(101325, rel=1e-5) == value(model.fs.unit.outlet.pressure[0])
+
+        total_molar_density = \
+            value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
+        assert pytest.approx(55.2336, rel=1e-5) == total_molar_density
+        pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
+        pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
+        assert pytest.approx(6.9997414, rel=1e-5) == pH
+        assert pytest.approx(6.9997414, rel=1e-5) == pOH
+        assert pytest.approx(0.99999, rel=1e-5) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
