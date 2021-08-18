@@ -130,14 +130,16 @@ class TestEnergyRecoverySystem:
 
         # check fixed variables
         # feed
-        assert m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'H2O'].is_fixed()
-        assert value(m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'H2O']) == 0.965
-        assert m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'].is_fixed()
-        assert value(m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == 0.035
         assert m.fs.feed.pressure[0].is_fixed()
         assert value(m.fs.feed.pressure[0]) == 101325
         assert m.fs.feed.temperature[0].is_fixed()
         assert value(m.fs.feed.temperature[0]) == 298.15
+        assert m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'H2O'].is_fixed()
+        assert value(m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'H2O']) \
+               == pytest.approx(0.9857, rel=1e-3)
+        assert m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'].is_fixed()
+        assert value(m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl']) \
+               == pytest.approx(3.575e-2, rel=1e-3)
         # pumps and pressure exchangers
         assert m.fs.P1.efficiency_pump[0].is_fixed()
         assert value(m.fs.P1.efficiency_pump[0]) == 0.8
@@ -175,16 +177,16 @@ class TestEnergyRecoverySystem:
         # check results across pressure exchanger, proxy for both upstream and downstream of RO
         # high pressure inlet
         assert value(m.fs.PXR.high_pressure_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) \
-               == pytest.approx(0.4825, rel=1e-3)
+               == pytest.approx(0.4928, rel=1e-3)
         assert value(m.fs.PXR.high_pressure_inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) \
-               == pytest.approx(3.486e-2, rel=1e-3)
+               == pytest.approx(3.561e-2, rel=1e-3)
         assert value(m.fs.PXR.high_pressure_inlet.temperature[0]) == pytest.approx(298.15, rel=1e-3)
         assert value(m.fs.PXR.high_pressure_inlet.pressure[0]) == pytest.approx(7.394e6, rel=1e-3)
         # low pressure inlet
         assert value(m.fs.PXR.low_pressure_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) \
-               == pytest.approx(0.4876, rel=1e-3)
+               == pytest.approx(0.4980, rel=1e-3)
         assert value(m.fs.PXR.low_pressure_inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl']) \
-               == pytest.approx(1.768e-2, rel=1e-3)
+               == pytest.approx(1.806e-2, rel=1e-3)
         assert value(m.fs.PXR.low_pressure_inlet.temperature[0]) == pytest.approx(298.15, rel=1e-3)
         assert value(m.fs.PXR.low_pressure_inlet.pressure[0]) == pytest.approx(101325, rel=1e-3)
         # low pressure outlet
@@ -218,8 +220,8 @@ class TestEnergyRecoverySystem:
 
         assert captured.out == \
 """---system metrics---
-Feed: 1.00 kg/s, 35000 ppm
-Product: 0.483 kg/s, 281 ppm
+Feed: 1.02 kg/s, 35000 ppm
+Product: 0.493 kg/s, 280 ppm
 Volumetric recovery: 49.5%
 Water recovery: 50.0%
 Energy Consumption: 2.7 kWh/m3
@@ -236,16 +238,16 @@ Levelized cost of water: 0.44 $/m3
         assert captured.out == \
 """---decision variables---
 Operating pressure 74.9 bar
-Membrane area 59.0 m2
+Membrane area 60.2 m2
 ---design variables---
 Separator
 Split fraction 50.53
 Pump 1
 outlet pressure: 74.9 bar
-power 4.48 kW
+power 4.57 kW
 Pump 2
 outlet pressure: 74.9 bar
-power 0.29 kW
+power 0.30 kW
 """
 
 
@@ -258,16 +260,16 @@ power 0.29 kW
 
         assert captured.out == \
 """---state---
-Feed      : 1.000 kg/s, 35000 ppm, 1.0 bar
-Split 1   : 0.495 kg/s, 35000 ppm, 1.0 bar
-P1 out    : 0.495 kg/s, 35000 ppm, 74.9 bar
-Split 2   : 0.505 kg/s, 35000 ppm, 1.0 bar
-PXR LP out: 0.505 kg/s, 35000 ppm, 70.3 bar
-P2 out    : 0.505 kg/s, 35000 ppm, 74.9 bar
-Mix out   : 1.000 kg/s, 35000 ppm, 74.9 bar
-RO perm   : 0.483 kg/s, 281 ppm, 1.0 bar
-RO reten  : 0.517 kg/s, 67389 ppm, 73.9 bar
-PXR HP out: 0.517 kg/s, 67389 ppm, 1.0 bar
+Feed      : 1.021 kg/s, 35000 ppm, 1.0 bar
+Split 1   : 0.505 kg/s, 35000 ppm, 1.0 bar
+P1 out    : 0.505 kg/s, 35000 ppm, 74.9 bar
+Split 2   : 0.516 kg/s, 35000 ppm, 1.0 bar
+PXR LP out: 0.516 kg/s, 35000 ppm, 70.3 bar
+P2 out    : 0.516 kg/s, 35000 ppm, 74.9 bar
+Mix out   : 1.021 kg/s, 35000 ppm, 74.9 bar
+RO perm   : 0.493 kg/s, 280 ppm, 1.0 bar
+RO reten  : 0.528 kg/s, 67389 ppm, 73.9 bar
+PXR HP out: 0.528 kg/s, 67389 ppm, 1.0 bar
 """
 
     @pytest.mark.component
@@ -279,8 +281,8 @@ PXR HP out: 0.517 kg/s, 67389 ppm, 1.0 bar
 
         # check decision variables
         assert value(m.fs.RO.inlet.pressure[0]) == pytest.approx(5.708e6, rel=1e-3)
-        assert value(m.fs.RO.area) == pytest.approx(112.8, rel=1e-3)
+        assert value(m.fs.RO.area) == pytest.approx(115, rel=1e-3)
         # check system metrics
         assert value(m.fs.RO.recovery_vol_phase[0, 'Liq']) == pytest.approx(0.4954, rel=1e-3)
-        assert value(m.fs.specific_energy_consumption) == pytest.approx(2.107, rel=1e-3)
-        assert value(m.fs.costing.LCOW) == pytest.approx(0.4109, rel=1e-3)
+        assert value(m.fs.specific_energy_consumption) == pytest.approx(2.110, rel=1e-3)
+        assert value(m.fs.costing.LCOW) == pytest.approx(0.4111, rel=1e-3)

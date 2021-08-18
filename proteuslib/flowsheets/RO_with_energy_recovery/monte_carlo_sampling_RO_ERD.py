@@ -54,4 +54,5 @@ def run_parameter_sweep(results_file, seed=None):
     return global_results
 
 if __name__ == '__main__':
+    # For testing this file, a seed needs to be provided as an additional argument, i.e. seed=1
     run_parameter_sweep('output/monte_carlo_results.csv')
