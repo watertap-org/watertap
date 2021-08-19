@@ -17,10 +17,16 @@ a simple water dissociation problem and return the correct pH value.
 
 Modified to use the Electrolyte Database -dang 08/2021
 """
+import pytest
 from proteuslib.edb import ElectrolyteDB
 from .test_pure_water_pH import TestPureWater
 
-g_edb = ElectrolyteDB()
+g_edb = None
+try:
+    raise RuntimeError()
+    g_edb = ElectrolyteDB()
+except Exception:
+    pass
 
 
 def get_thermo_config(edb):
@@ -61,11 +67,13 @@ def get_water_reaction_config(edb):
     return base.idaes_config
 
 
+@pytest.mark.skipif(g_edb is None, reason="Cannot connect to MongoDB")
 class TestPureWaterEdb(TestPureWater):
     """Run all tests in TestPureWater, but with different configs.
     """
-    thermo_config = get_thermo_config(g_edb)
-    wr_config = get_water_reaction_config(g_edb)
-    thermo_only_config = {}
-    thermo_only_config.update(thermo_config)
-    del thermo_only_config["inherent_reactions"]
+    if g_edb:
+        thermo_config = get_thermo_config(g_edb)
+        wr_config = get_water_reaction_config(g_edb)
+        thermo_only_config = {}
+        thermo_only_config.update(thermo_config)
+        del thermo_only_config["inherent_reactions"]
