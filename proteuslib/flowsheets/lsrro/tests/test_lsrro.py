@@ -63,8 +63,8 @@ class TestLSRRO_1Stage(_TestLSRRO):
     @pytest.fixture(scope="class")
     def build_data(self):
         data = {}
-        data['number_of_variables']   = 290
-        data['number_of_constraints'] = 189
+        data['number_of_variables']   = 291
+        data['number_of_constraints'] = 190
         data['number_of_objectives']  = 0
         return data
 
@@ -103,8 +103,8 @@ class TestLSRRO_2Stage(_TestLSRRO):
     @pytest.fixture(scope="class")
     def build_data(self):
         data = {}
-        data['number_of_variables']   = 535
-        data['number_of_constraints'] = 379
+        data['number_of_variables']   = 536
+        data['number_of_constraints'] = 380
         data['number_of_objectives']  = 0
         return data
 
@@ -143,8 +143,8 @@ class TestLSRRO_3Stage(_TestLSRRO):
     @pytest.fixture(scope="class")
     def build_data(self):
         data = {}
-        data['number_of_variables']   = 780 
-        data['number_of_constraints'] = 569 
+        data['number_of_variables']   = 781
+        data['number_of_constraints'] = 570
         data['number_of_objectives']  = 0 
         return data
 
@@ -183,8 +183,8 @@ class TestLSRRO_4Stage(_TestLSRRO):
     @pytest.fixture(scope="class")
     def build_data(self):
         data = {}
-        data['number_of_variables']   = 1025
-        data['number_of_constraints'] = 759
+        data['number_of_variables']   = 1026
+        data['number_of_constraints'] = 760
         data['number_of_objectives']  = 0
         return data
 
@@ -223,8 +223,8 @@ class TestLSRRO_5Stage(_TestLSRRO):
     @pytest.fixture(scope="class")
     def build_data(self):
         data = {}
-        data['number_of_variables']   = 1270
-        data['number_of_constraints'] = 949
+        data['number_of_variables']   = 1271
+        data['number_of_constraints'] = 950
         data['number_of_objectives']  = 0
         return data
 
