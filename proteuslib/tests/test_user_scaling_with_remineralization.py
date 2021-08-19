@@ -726,6 +726,33 @@ class TestRemineralizationCSTR():
         assert hasattr(model.fs.unit.control_volume.properties_in[0.0], 'scaling_factor')
         assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
+        # Before calling the 'constraint_autoscale_large_jac', we need to
+        #   set some 'state_args' for all system variables
+
+        # NOTE: This did not work
+        state_args = {'mole_frac_comp':
+                        {   'H2O': 1,
+                            'H_+': 10**-7/55.6,
+                            'OH_-': 10**-7/55.6,
+                            'NaHCO3': 4e-5,
+                            'Ca(OH)2': 1e-5,
+                            'CO3_2-': 1e-20,
+                            'H2CO3': 1e-20,
+                            'Na_+': 1e-20,
+                            'Ca_2+': 1e-20,
+                            'HCO3_-': 1e-20,
+                            'CO2': 0.0005
+                        },
+                        'pressure': 101325,
+                        'temperature': 300,
+                        'flow_mol': 10
+                    }
+        #flags = fix_state_vars(model.fs.unit.control_volume.properties_out, state_args)
+        #model.fs.unit.control_volume.properties_out.pprint()
+        #print()
+        #print(flags)
+        #revert_state_vars(model.fs.unit.control_volume.properties_out, flags)
+
         iscale.constraint_autoscale_large_jac(model)
         jac, nlp = iscale.get_jacobian(model, scaled=True)
         print("Extreme Jacobian entries:")
@@ -749,7 +776,7 @@ class TestRemineralizationCSTR():
         solver.options['mu_init'] = 1e-6
         # Use gradient-based scaling for the initialization
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        assert degrees_of_freedom(model) == 0
+        assert degrees_of_freedom(model) == 1
 
     @pytest.mark.component
     def test_solve_cstr_kin(self, remineralization_cstr_kin):
@@ -762,6 +789,8 @@ class TestRemineralizationCSTR():
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
+
+        assert degrees_of_freedom(model) == 1
 
     @pytest.mark.component
     def test_solution_cstr_kin(self, remineralization_cstr_kin):
