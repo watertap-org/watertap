@@ -726,7 +726,7 @@ class TestChlorination():
         # Before calling the 'constraint_autoscale_large_jac', we need to
         #   set some 'state_args' for all system variables
 
-        # NOTE: This did not work
+        # NOTE: Give an initial guess of pH 7 and inlet values or 1e-6 for others
         state_args = {'mole_frac_comp':
                         {   'H2O': 1,
                             'HOCl': 4e-6,
@@ -743,13 +743,8 @@ class TestChlorination():
                         'temperature': 300,
                         'flow_mol': 10
                     }
-        #flags = fix_state_vars(model.fs.unit.control_volume.properties_out, state_args)
-        #model.fs.unit.control_volume.properties_out.pprint()
-        #print()
-        #print(flags)
-        #revert_state_vars(model.fs.unit.control_volume.properties_out, flags)
-
-        #assert False
+        flags = fix_state_vars(model.fs.unit.control_volume.properties_out, state_args)
+        revert_state_vars(model.fs.unit.control_volume.properties_out, flags)
 
         iscale.constraint_autoscale_large_jac(model)
         jac, nlp = iscale.get_jacobian(model, scaled=True)
@@ -766,8 +761,6 @@ class TestChlorination():
         for v, sv in iscale.badly_scaled_var_generator(model, large=1e2, small=1e-2, zero=1e-12):
             print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}")
         print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
-
-        assert False
 
     @pytest.mark.component
     def test_initialize(self, chlorination_obj):
@@ -801,7 +794,7 @@ class TestChlorination():
         fin_fixed_vars = fixed_variables_set(model)
         fin_act_consts = activated_constraints_set(model)
 
-        assert degrees_of_freedom(model) == 1
+        assert degrees_of_freedom(model) == 0
 
         assert len(fin_act_consts) == len(orig_act_consts)
         assert len(fin_fixed_vars) == len(orig_fixed_vars)
@@ -811,12 +804,9 @@ class TestChlorination():
         model = chlorination_obj
         # Call auto scaling again before final solve (especially if still using 'user-scaling')
         iscale.constraint_autoscale_large_jac(model)
-        solver.options['max_iter'] = 200
         results = solver.solve(model, tee=True)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
-
-        assert False
 
     @pytest.mark.component
     def test_solution(self, chlorination_obj):
