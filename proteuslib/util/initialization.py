@@ -17,8 +17,7 @@ This module contains utility functions for initialization of ProteusLib models.
 
 __author__ = "Adam Atia"
 
-from pyomo.network.arc import _ArcData
-from pyomo.environ import check_optimal_termination, Var
+from pyomo.environ import check_optimal_termination
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 
