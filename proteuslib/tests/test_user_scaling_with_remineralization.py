@@ -731,12 +731,31 @@ class TestRemineralizationCSTR():
         #   set some 'state_args' for all system variables
 
         # NOTE: This did not work
+        '''
+        state_args = {'mole_frac_comp':
+                        {   'H2O': 1,
+                            'H_+': 1.2e-10,
+                            'OH_-': 2.6e-8,
+                            'NaHCO3': 3.3e-6,
+                            'Ca(OH)2': 9.8e-7,
+                            'CO3_2-': 3.5e-7,
+                            'H2CO3': 8.1e-7,
+                            'Na_+': 3.3e-5,
+                            'Ca_2+': 9.8e-6,
+                            'HCO3_-': 5.2e-5,
+                            'CO2': 0.0005
+                        },
+                        'pressure': 101325,
+                        'temperature': 300,
+                        'flow_mol': 10
+                    }
+        '''
         state_args = {'mole_frac_comp':
                         {   'H2O': 1,
                             'H_+': 10**-7/55.6,
                             'OH_-': 10**-7/55.6,
-                            'NaHCO3': 4e-5,
-                            'Ca(OH)2': 1e-5,
+                            'NaHCO3': 0.00206/55.6,
+                            'Ca(OH)2': 6e-4/55.6,
                             'CO3_2-': 1e-6,
                             'H2CO3': 1e-6,
                             'Na_+': 1e-6,
@@ -748,6 +767,23 @@ class TestRemineralizationCSTR():
                         'temperature': 300,
                         'flow_mol': 10
                     }
+        '''
+        mole_frac_comp : Mixture mole fractions
+                Size=11, Index=fs.thermo_params.true_species_set
+                Key     : Lower : Value                  : Upper : Fixed : Stale : Domain
+                    CO2 :     0 :  0.0004799290826865221 :  None : False : False :  Reals
+                 CO3_2- :     0 : 3.5459813589835157e-07 :  None : False : False :  Reals
+                Ca(OH)2 :     0 :  9.809834582266312e-07 :  None : False : False :  Reals
+                  Ca_2+ :     0 :   9.80950846255899e-06 :  None : False : False :  Reals
+                  H2CO3 :     0 :  8.158794405197074e-07 :  None : False : False :  Reals
+                    H2O :     0 :     0.9994184732079711 :  None : False : False :  Reals
+                 HCO3_- :     0 :  5.256313004533682e-05 :  None : False : False :  Reals
+                    H_+ :     0 : 1.2560464144827561e-10 :  None : False : False :  Reals
+                 NaHCO3 :     0 : 3.3680432065781004e-06 :  None : False : False :  Reals
+                   Na_+ :     0 :  3.367931238811918e-05 :  None : False : False :  Reals
+                   OH_- :     0 : 2.6128600745083992e-08 :  None : False : False :  Reals
+
+        '''
         flags = fix_state_vars(model.fs.unit.control_volume.properties_out, state_args)
         #model.fs.unit.control_volume.properties_out.pprint()
         #print()
@@ -778,8 +814,44 @@ class TestRemineralizationCSTR():
         solver.options['bound_push'] = 1e-20
         solver.options['mu_init'] = 1e-6
         # Use gradient-based scaling for the initialization
-        #solver.options["nlp_scaling_method"] = "user-scaling"
-        model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+        solver.options["nlp_scaling_method"] = "user-scaling"
+        '''
+        state_args = {'mole_frac_comp':
+                        {   'H2O': 1,
+                            'H_+': 1.2e-10,
+                            'OH_-': 2.6e-8,
+                            'NaHCO3': 3.3e-6,
+                            'Ca(OH)2': 9.8e-7,
+                            'CO3_2-': 3.5e-7,
+                            'H2CO3': 8.1e-7,
+                            'Na_+': 3.3e-5,
+                            'Ca_2+': 9.8e-6,
+                            'HCO3_-': 5.2e-5,
+                            'CO2': 0.0005
+                        },
+                        'pressure': 101325,
+                        'temperature': 300,
+                        'flow_mol': 10
+                    }
+        '''
+        state_args = {'mole_frac_comp':
+                        {   'H2O': 1,
+                            'H_+': 10**-7/55.6,
+                            'OH_-': 10**-7/55.6,
+                            'NaHCO3': 0.00206/55.6,
+                            'Ca(OH)2': 6e-4/55.6,
+                            'CO3_2-': 1e-6,
+                            'H2CO3': 1e-6,
+                            'Na_+': 1e-6,
+                            'Ca_2+': 1e-6,
+                            'HCO3_-': 1e-6,
+                            'CO2': 0.0005
+                        },
+                        'pressure': 101325,
+                        'temperature': 300,
+                        'flow_mol': 10
+                    }
+        model.fs.unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(model) == 1
 
     @pytest.mark.component
@@ -827,3 +899,6 @@ class TestRemineralizationCSTR():
             NCH = TH - CarbAlk
         CH = TH - NCH
         assert pytest.approx(TH, rel=1e-5) == CH
+
+        #model.fs.unit.control_volume.properties_out.pprint()
+        #assert False

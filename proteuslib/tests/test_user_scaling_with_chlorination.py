@@ -726,17 +726,17 @@ class TestChlorination():
         # Before calling the 'constraint_autoscale_large_jac', we need to
         #   set some 'state_args' for all system variables
 
-        # NOTE: This did not work 
+        # NOTE: This did not work
         state_args = {'mole_frac_comp':
                         {   'H2O': 1,
                             'HOCl': 4e-6,
                             'H_+': 10**-7/55.6,
-                            'NCl3': 1e-20,
-                            'NH2Cl': 1e-20,
+                            'NCl3': 1e-6,
+                            'NH2Cl': 1e-6,
                             'NH3': 1e-6,
-                            'NH4_+': 1e-20,
-                            'NHCl2': 1e-20,
-                            'OCl_-': 1e-20,
+                            'NH4_+': 1e-6,
+                            'NHCl2': 1e-6,
+                            'OCl_-': 1e-6,
                             'OH_-': 10**-7/55.6
                         },
                         'pressure': 101325,
@@ -779,7 +779,24 @@ class TestChlorination():
         solver.options['bound_push'] = 1e-10
         solver.options['mu_init'] = 1e-6
         solver.options["nlp_scaling_method"] = "user-scaling"
-        model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+
+        state_args = {'mole_frac_comp':
+                        {   'H2O': 1,
+                            'HOCl': 4e-6,
+                            'H_+': 10**-7/55.6,
+                            'NCl3': 1e-6,
+                            'NH2Cl': 1e-6,
+                            'NH3': 1e-6,
+                            'NH4_+': 1e-6,
+                            'NHCl2': 1e-6,
+                            'OCl_-': 1e-6,
+                            'OH_-': 10**-7/55.6
+                        },
+                        'pressure': 101325,
+                        'temperature': 300,
+                        'flow_mol': 10
+                    }
+        model.fs.unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
 
         fin_fixed_vars = fixed_variables_set(model)
         fin_act_consts = activated_constraints_set(model)
