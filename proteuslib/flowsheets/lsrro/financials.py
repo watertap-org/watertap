@@ -14,6 +14,7 @@
 from pyomo.environ import (
     Block, Constraint, Expression, Var, Param, NonNegativeReals, units as pyunits)
 from idaes.core.util.exceptions import ConfigurationError
+import idaes.core.util.scaling as iscale
 
 
 def add_costing_param_block(self):
@@ -145,6 +146,7 @@ def pressure_changer_costing(self,
 
     self.purchase_cost = Var()
     self.cp_cost_eq = Constraint(expr=self.purchase_cost == 0)
+    iscale.set_scaling_factor(self.purchase_cost, 1)
 
     if pump_type == 'High pressure':
         # capital cost

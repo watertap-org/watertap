@@ -205,12 +205,12 @@ def set_operating_conditions(m):
     height = 1e-3  # channel height in membrane stage [m]
     spacer_porosity = 0.97  # spacer porosity in membrane stage [-]
     width = 5 # membrane width factor [m]
-    area = 50 # membrane area [m^2]
+    area = 100 # membrane area [m^2]
     pressure_atm = 101325  # atmospheric pressure [Pa]
 
     # feed
     feed_flow_mass = 1*pyunits.kg/pyunits.s
-    feed_mass_frac_NaCl = 65.0/1000.0
+    feed_mass_frac_NaCl = 70.0/1000.0
     feed_temperature = 273.15 + 25
 
     # initialize feed
@@ -221,7 +221,7 @@ def set_operating_conditions(m):
 
     # initialize pumps
     for pump in m.fs.PrimaryPumps.values():
-        pump.control_volume.properties_out[0].pressure = 65e5  # pressure out of pump 1 [Pa]
+        pump.control_volume.properties_out[0].pressure = 75e5  # pressure out of pump 1 [Pa]
         pump.efficiency_pump.fix(pump_efi)
         pump.control_volume.properties_out[0].pressure.fix()  # value set in decision variables
         iscale.set_scaling_factor(pump.control_volume.work, 1e-3)
@@ -366,7 +366,7 @@ def initialize(m, verbose=False, solver=None):
     seq.run(m, func_initialize)
 
 
-def solve(m, solver=None, tee=False):
+def solve(m, solver=None, tee=False, raise_on_failure=False):
     # ---solving---
     if solver is None:
         solver = get_solver(options={'nlp_scaling_method':'user-scaling'})
@@ -374,8 +374,11 @@ def solve(m, solver=None, tee=False):
     results = solver.solve(m, tee=tee)
     if check_optimal_termination(results):
         return m
+    msg = "The current configuration is infeasible. Please adjust the decision variables."
+    if raise_on_failure:
+        raise RuntimeError(msg)
     else:
-        print("The current configuration is infeasible. Please adjust the decision variables.")
+        print(msg)
         return None
 
 
@@ -386,14 +389,14 @@ def optimize_set_up(m, water_recovery=None):
     for pump in m.fs.PrimaryPumps.values():
         pump.control_volume.properties_out[0].pressure.unfix()  # pressure out of pump 1 [Pa]
         pump.control_volume.properties_out[0].pressure.setlb(10e5)
-        pump.control_volume.properties_out[0].pressure.setub(80e5) #### SET FOR MAX ALLOW PRES Custom for loop
+        pump.control_volume.properties_out[0].pressure.setub(85e5) #### SET FOR MAX ALLOW PRES Custom for loop
         pump.deltaP.setlb(0)
 
     # unfix eq pumps
     for pump in m.fs.BoosterPumps.values():
         pump.control_volume.properties_out[0].pressure.unfix()  # pressure out of pump 1 [Pa]
         pump.control_volume.properties_out[0].pressure.setlb(10e5)
-        pump.control_volume.properties_out[0].pressure.setub(80e5) #### SET FOR MAX ALLOW PRES
+        pump.control_volume.properties_out[0].pressure.setub(85e5) #### SET FOR MAX ALLOW PRES
         pump.deltaP.setlb(0)
 
     # unfix stages
@@ -430,6 +433,7 @@ def display_design(m):
     for stage in m.fs.StageSet:
         print('Stage %d operating pressure %.1f bar' % (stage, m.fs.ROUnits[stage].inlet.pressure[0].value/1e5))
         print('Stage %d membrane area      %.1f m2 ' % (stage, m.fs.ROUnits[stage].area.value))
+        print('Stage %d salt perm. coeff.  %.1f LMH' % (stage, m.fs.ROUnits[stage].B_comp[0,'NaCl'].value*(1000.*3600.)))
 
 
 def display_state(m):
