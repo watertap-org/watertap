@@ -114,13 +114,19 @@ When either the ``proteuslib`` package or one of its dependencies are installed,
         cd /path/to/your/clone
         git pull
 
+#. Uninstall the version of ``proteuslib`` that's currently installed in the environment:
+
+    .. code-block:: shell
+
+        pip uninstall proteuslib
+
 #. Run the ``pip install`` command targeting the ``requirements-dev.txt`` file.
 
     .. code-block:: shell
 
-        pip --no-cache-dir install --force-reinstall -r requirements-dev.txt
+        pip --no-cache-dir install -r requirements-dev.txt
 
-    .. note:: The ``--no-cache-dir`` and ``--force-install`` pip flags are used to ensure that existing packages are not erroneously reused by pip,
+    .. note:: The ``--no-cache-dir`` flag is used to ensure that existing packages are not erroneously reused by pip,
         which would cause the wrong (outdated) version to be present in the environment after installation.
 
 
