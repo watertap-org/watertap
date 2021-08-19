@@ -4,7 +4,9 @@ How to scale chemical species
 =============================
 
 .. warning::
-    DO NOT use 'user-scaling' as a solver option when scaling any chemistry module.
+    This scaling methods are meant to be used with the 'gradient-based' scaling
+    functionality built into ipopt. It is not advised to use 'user-scaling' with
+    the chemical modules, as this tends to have poor convergence.
 
 In :ref:`How to scale chemical reactions<how_to_scale_chemical_reactions>`, we
 discussed at length how you need to apply scaling factors to variables and constraints
@@ -30,7 +32,7 @@ Scaling Chemical Species Example
     see :ref:`How to setup simple chemistry<how_to_setup_simple_chemistry>`.
 
 For this example, our **GenericParameterBlock** (named **thermo_params**) is using
-the "state_definition" of **FTPx**. This may change how what variables the scaling
+the "state_definition" of **FTPx**. This may change what variables the scaling
 is applied to. See :ref:`How to setup simple chemistry<how_to_setup_simple_chemistry>`
 for more information on "state_definition" options.
 

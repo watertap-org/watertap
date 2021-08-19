@@ -4,7 +4,9 @@ How to scale chemical reactions
 ===============================
 
 .. warning::
-    DO NOT use 'user-scaling' as a solver option when scaling any chemistry module.
+    This scaling methods are meant to be used with the 'gradient-based' scaling
+    functionality built into ipopt. It is not advised to use 'user-scaling' with
+    the chemical modules, as this tends to have poor convergence. 
 
 No model in ProteusLib can solve without proper scaling of the constraints
 and variables within that model. This can be a difficult task for aqueous
@@ -83,9 +85,11 @@ Inherent Scaling Demonstration
                 inherent_equilibrium_constraint[i[1]], 0.1)
 
 
-What this code segment is doing is to first assign an **eps** value for the **log_power_law_equil**
-function. The default value is generally insufficient, so we change that value to always be at least
-4 orders of magnitude less than the **k_eq** value calculated for each reaction.
+What this code segment is doing is to first assign an **eps** "smoothing" value for the **log_power_law_equil**
+function. While this value is not directly impactful to scaling, it is necessary to provide a reasonable
+estimate for the smoothing parameter, since a poor value will negatively impact convergence. The default value
+is generally insufficient, so we change that value to always be at least 4 orders of magnitude less than
+the **k_eq** value calculated for each reaction.
 
 Next, we create scaling factors for the **inherent_reaction_extent** variable based on the inverse
 of that calculated **k_eq** value.
@@ -139,7 +143,7 @@ Rate Reactions using power_law_rate form
 Rate reactions only exist in the **GenericReactionParameterBlock** and so these scaling
 arguments apply to **rxn_params** for these types of reactions. These are much simpler to
 scale than both the **Inherent** and **Equilibrium** reactions, but are just as important
-to apply scaling for. Below is a demonstration off applying scaling.
+to apply scaling for. Below is a demonstration of applying scaling.
 
 Rate Reaction Scaling Demonstration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -155,4 +159,6 @@ Rate Reaction Scaling Demonstration
 Stoichiometric Reactions
 ------------------------
 
-TBD
+.. note::
+
+    Documentation under development.
