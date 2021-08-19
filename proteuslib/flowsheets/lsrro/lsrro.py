@@ -221,9 +221,9 @@ def set_operating_conditions(m):
 
     # initialize pumps
     for pump in m.fs.PrimaryPumps.values():
-        pump.control_volume.properties_out[0].pressure = 75e5  # pressure out of pump 1 [Pa]
+        pump.control_volume.properties_out[0].pressure = 75e5
         pump.efficiency_pump.fix(pump_efi)
-        pump.control_volume.properties_out[0].pressure.fix()  # value set in decision variables
+        pump.control_volume.properties_out[0].pressure.fix()
         iscale.set_scaling_factor(pump.control_volume.work, 1e-3)
 
     # initialize eq pumps
@@ -241,7 +241,7 @@ def set_operating_conditions(m):
         stage.B_comp.fix(mem_B*B_scale)
         stage.channel_height.fix(height)
         stage.spacer_porosity.fix(spacer_porosity)
-        stage.area.fix(area)  # value set in decision variables
+        stage.area.fix(area)
         stage.width.fix(width)
         stage.permeate.pressure[0].fix(pressure_atm)
 
@@ -387,21 +387,21 @@ def optimize_set_up(m, water_recovery=None):
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
     for pump in m.fs.PrimaryPumps.values():
-        pump.control_volume.properties_out[0].pressure.unfix()  # pressure out of pump 1 [Pa]
+        pump.control_volume.properties_out[0].pressure.unfix()
         pump.control_volume.properties_out[0].pressure.setlb(10e5)
-        pump.control_volume.properties_out[0].pressure.setub(85e5) #### SET FOR MAX ALLOW PRES Custom for loop
+        pump.control_volume.properties_out[0].pressure.setub(85e5)
         pump.deltaP.setlb(0)
 
     # unfix eq pumps
     for pump in m.fs.BoosterPumps.values():
-        pump.control_volume.properties_out[0].pressure.unfix()  # pressure out of pump 1 [Pa]
+        pump.control_volume.properties_out[0].pressure.unfix()
         pump.control_volume.properties_out[0].pressure.setlb(10e5)
-        pump.control_volume.properties_out[0].pressure.setub(85e5) #### SET FOR MAX ALLOW PRES
+        pump.control_volume.properties_out[0].pressure.setub(85e5)
         pump.deltaP.setlb(0)
 
     # unfix stages
     for idx, stage in m.fs.ROUnits.items():
-        stage.area.unfix()  # area in membrane stage 1 [m2]
+        stage.area.unfix()
         stage.width.unfix()
         stage.area.setlb(1)
         stage.area.setub(1000)
