@@ -74,6 +74,8 @@ Class diagram::
 __author__ = "Dan Gunter"
 
 # stdlib
+import collections
+
 from contextlib import contextmanager
 import copy
 from fnmatch import fnmatchcase
@@ -91,7 +93,7 @@ from idaes.core.phases import PhaseType
 from idaes.core import Component as IComponent
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.generic.generic_reaction import (
-    ConcentrationForm
+    ConcentrationForm,
 )
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.generic_models.properties.core.pure import Perrys
@@ -102,7 +104,7 @@ from idaes.generic_models.properties.core.reactions.equilibrium_constant import 
 )
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
     power_law_equil,
-    log_power_law_equil
+    log_power_law_equil,
 )
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.core.components import Solvent, Solute, Cation, Anion
@@ -440,7 +442,7 @@ class ReactionConfig(ConfigGenerator):
         "*_form": {
             "log_power_law": log_power_law_equil,
             "concentrationform.molarity": ConcentrationForm.molarity,
-            "concentrationform.molefraction": ConcentrationForm.moleFraction
+            "concentrationform.molefraction": ConcentrationForm.moleFraction,
         },
         "*_constant": {
             "van_t_hoff_aqueous": van_t_hoff,
@@ -774,6 +776,18 @@ class Component(DataWrapper):
 class Reaction(DataWrapper):
 
     merge_keys = ("equilibrium_reactions", "rate_reactions", "inherent_reactions")
+
+    # Constants for field names, used in `schemas` and `db_api` modules
+    Fields = collections.namedtuple(
+        "Fields", ("stoich", "hor", "eq_const", "eq_form", "conc_form")
+    )
+    NAMES = Fields(
+        stoich="stoichiometry",
+        hor="heat_of_reaction",
+        eq_const="equilibrium_constant",
+        eq_form="equilibrium_form",
+        conc_form="concentration_form",
+    )
 
     def __init__(self, data: Dict, validation=True):
         """Constructor.

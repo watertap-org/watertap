@@ -22,6 +22,9 @@ JSON schema embedded as variables for:
   - reaction
 """
 
+from .data_model import Base, Component, Reaction
+
+
 _parameter_def = {
     "type": "array",
     "description": "List of parameter values",
@@ -121,9 +124,9 @@ schemas = {
                 "description": "Type of reaction",
             },
             "name": {"type": "string", "description": "Name of reaction"},
-            "stoichiometry": {
+            Reaction.NAMES.stoich: {
                 "type": "object",
-                "description": "Moles for the given species in the reaction. Negative for LHS, positive for RHS. "
+                "description": "Moles for the given species in the reaction. "
                 "Grouped by phase.",
                 "properties": {
                     "Liq": {"$ref": "#/definitions/stoichiometry"},
@@ -131,10 +134,10 @@ schemas = {
                 },
                 "additionalProperties": False,
             },
-            "heat_of_reaction": {"type": "string"},
-            "equilibrium_constant": {"type": "string"},
-            "equilibrium_form": {"type": "string"},
-            "concentration_form": {"type": "string"},
+            Reaction.NAMES.hor: {"type": "string"},
+            Reaction.NAMES.eq_const: {"type": "string"},
+            Reaction.NAMES.eq_form: {"type": "string"},
+            Reaction.NAMES.conc_form: {"type": "string"},
             "parameter_data": {
                 "type": "object",
                 "patternProperties": {

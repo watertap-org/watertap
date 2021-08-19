@@ -18,8 +18,10 @@ Database operations API
 import logging
 import re
 from typing import Dict, List, Optional, Union
+
 # third-party
 from pymongo import MongoClient
+
 # package
 from .data_model import Result, Component, Reaction, Base, DataWrapper
 
@@ -33,6 +35,7 @@ class ElectrolyteDB:
 
     This uses MongoDB as the underlying data store.
     """
+
     DEFAULT_URL = "mongodb://localhost:27017"
     DEFAULT_DB = "electrolytedb"
 
@@ -79,9 +82,7 @@ class ElectrolyteDB:
     def url(self):
         return self._server_url
 
-    def get_components(
-        self, component_names: Optional[List[str]] = None
-    ) -> Result:
+    def get_components(self, component_names: Optional[List[str]] = None) -> Result:
         """Get thermodynamic information for components of reactions.
 
         Args:
@@ -101,14 +102,18 @@ class ElectrolyteDB:
         return result
 
     def get_reactions(
-        self, component_names: Optional[List] = None,
-            any_components: bool = False,
-            reaction_names: Optional[List] = None
+        self,
+        component_names: Optional[List] = None,
+        phases: Union[List[str], str] = None,
+        any_components: bool = False,
+        reaction_names: Optional[List] = None,
     ) -> Result:
         """Get reaction information.
 
         Args:
             component_names: List of component names
+            phases: Phase(s) to include; if not given allow any. Currently implemented
+                    only when `any_components` is False.
             any_components: If False, the default, only return reactions where
                one side of the reaction has all components provided.
                If true, return the (potentially larger) set of reactions where
@@ -127,17 +132,34 @@ class ElectrolyteDB:
                 query = {"components": {"$in": cnames}}
                 it = collection.find(filter=query)
             else:
+                if phases is None:
+                    allow_phases = None
+                elif isinstance(phases, str):
+                    allow_phases = {phases}
+                else:
+                    allow_phases = set(phases)
                 # normalize component names, build a set
-                cnames = {c.replace("_", " ") for c in component_names}
+                cnames = {c.replace(" ", "_") for c in component_names}
                 # Brute force table scan: need to restructure DB for this to be
                 # easy to do with a MongoDB query, i.e. need to put all the
                 # *keys* for stoichiometry.Liq as *values* in an array, then do a:
                 # {$not: {$elemMatch: { $nin: [<components>] } } } on that array
-                found = []
+                found, stoich_field = [], Reaction.NAMES.stoich
                 for item in collection.find():
-                    item_comp = set(item["stoichiometry"]["Liq"].keys())
-                    if item_comp.issubset(cnames):
-                        found.append(item)
+                    for phase in item[stoich_field].keys():
+                        if allow_phases is not None and phase not in allow_phases:
+                            continue
+                        stoich = item[stoich_field][phase]
+                        # ok if it matches both sides
+                        if set(stoich.keys()) == cnames:
+                            found.append(item)
+                        # also ok if it matches everything on one side
+                        else:
+                            for side in -1, 1:
+                                side_keys = (k for k, v in stoich.items() if v == side)
+                                if set(side_keys) == cnames:
+                                    found.append(item)
+                                    break  # found; stop
                 it = iter(found)
         elif reaction_names:
             query = {"name": {"$in": reaction_names}}
@@ -148,8 +170,7 @@ class ElectrolyteDB:
         return Result(iterator=it, item_class=Reaction)
 
     def get_base(self, name: str = None) -> Result:
-        """Get base information by name of its type.
-        """
+        """Get base information by name of its type."""
         if name:
             query = {"name": name}
         else:
@@ -162,7 +183,11 @@ class ElectrolyteDB:
         for result in self.get_base(*args):
             return result
 
-    def load(self, data: Union[Dict, List[Dict], DataWrapper, List[DataWrapper]], rec_type: str = "base") -> int:
+    def load(
+        self,
+        data: Union[Dict, List[Dict], DataWrapper, List[DataWrapper]],
+        rec_type: str = "base",
+    ) -> int:
         """Load a single record or list of records.
 
         Args:
@@ -217,8 +242,7 @@ class ElectrolyteDB:
 
     @staticmethod
     def _process_species(s):
-        """Make species match https://jess.murdoch.edu.au/jess_spcdoc.shtml
-        """
+        """Make species match https://jess.murdoch.edu.au/jess_spcdoc.shtml"""
         m = re.match(r"([a-zA-Z0-9]+)\s*(\d*[\-+])?", s)
         if m is None:
             raise ValueError(f"Bad species: {s}")
@@ -241,7 +265,7 @@ def get_elements(components):
     for comp in components:
         # print(f"Get elements from: {comp}")
         for m in re.finditer(r"[A-Z][a-z]?", comp):
-            element = comp[m.start(): m.end()]
+            element = comp[m.start() : m.end()]
             if element[0] == "K" and len(element) > 1:
                 pass
             else:
