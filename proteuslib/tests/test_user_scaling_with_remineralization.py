@@ -87,6 +87,7 @@ from pyomo.environ import (ConcreteModel,
 
 # Import idaes methods to check the model during construction
 from idaes.core.util import scaling as iscale
+from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -736,22 +737,22 @@ class TestRemineralizationCSTR():
                             'OH_-': 10**-7/55.6,
                             'NaHCO3': 4e-5,
                             'Ca(OH)2': 1e-5,
-                            'CO3_2-': 1e-20,
-                            'H2CO3': 1e-20,
-                            'Na_+': 1e-20,
-                            'Ca_2+': 1e-20,
-                            'HCO3_-': 1e-20,
+                            'CO3_2-': 1e-6,
+                            'H2CO3': 1e-6,
+                            'Na_+': 1e-6,
+                            'Ca_2+': 1e-6,
+                            'HCO3_-': 1e-6,
                             'CO2': 0.0005
                         },
                         'pressure': 101325,
                         'temperature': 300,
                         'flow_mol': 10
                     }
-        #flags = fix_state_vars(model.fs.unit.control_volume.properties_out, state_args)
+        flags = fix_state_vars(model.fs.unit.control_volume.properties_out, state_args)
         #model.fs.unit.control_volume.properties_out.pprint()
         #print()
         #print(flags)
-        #revert_state_vars(model.fs.unit.control_volume.properties_out, flags)
+        revert_state_vars(model.fs.unit.control_volume.properties_out, flags)
 
         iscale.constraint_autoscale_large_jac(model)
         jac, nlp = iscale.get_jacobian(model, scaled=True)
@@ -769,12 +770,15 @@ class TestRemineralizationCSTR():
             print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}")
         print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
 
+        assert degrees_of_freedom(model) == 1
+
     @pytest.mark.component
     def test_initialize_solver_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
         solver.options['bound_push'] = 1e-20
         solver.options['mu_init'] = 1e-6
         # Use gradient-based scaling for the initialization
+        #solver.options["nlp_scaling_method"] = "user-scaling"
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(model) == 1
 
@@ -785,6 +789,8 @@ class TestRemineralizationCSTR():
         solver.options['mu_init'] = 1e-6
         # Use user scaling for the solve
         solver.options["nlp_scaling_method"] = "user-scaling"
+        iscale.constraint_autoscale_large_jac(model)
+
         results = solver.solve(model, tee=True, symbolic_solver_labels=True)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
