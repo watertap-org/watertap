@@ -12,8 +12,8 @@
 ###############################################################################
 
 """
-   Tests to check reactions with water dissociation and calcium hydroxide (CaOH2)
-   with equilibrium and stoichiometric reactor and return correct pH value.
+   Tests to check reactions of water softening by adding lime (CaOH2) to calcium
+   bicarbonate with stoichiometric reactor and return correct hardness value.
 """
 import pytest
 
@@ -135,57 +135,6 @@ thermo_config = {
                                 },
                     # End parameter_data
                     },
-        'H_+': {"type": Cation, "charge": 1,
-              # Define the methods used to calculate the following properties
-              "dens_mol_liq_comp": Perrys,
-              "enth_mol_liq_comp": Perrys,
-              "cp_mol_liq_comp": Perrys,
-              "entr_mol_liq_comp": Perrys,
-              # Parameter data is always associated with the methods defined above
-              "parameter_data": {
-                    "mw": (1.00784, pyunits.g/pyunits.mol),
-                    "dens_mol_liq_comp_coeff": {
-                        '1': (5.459, pyunits.kmol*pyunits.m**-3),
-                        '2': (0.30542, pyunits.dimensionless),
-                        '3': (647.13, pyunits.K),
-                        '4': (0.081, pyunits.dimensionless)},
-                    "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ/pyunits.mol),
-                    "cp_mol_liq_comp_coeff": {
-                        '1': (2.7637E5, pyunits.J/pyunits.kmol/pyunits.K),
-                        '2': (-2.0901E3, pyunits.J/pyunits.kmol/pyunits.K**2),
-                        '3': (8.125, pyunits.J/pyunits.kmol/pyunits.K**3),
-                        '4': (-1.4116E-2, pyunits.J/pyunits.kmol/pyunits.K**4),
-                        '5': (9.3701E-6, pyunits.J/pyunits.kmol/pyunits.K**5)},
-                    "entr_mol_form_liq_comp_ref": (-10.75, pyunits.J/pyunits.K/pyunits.mol)
-                                },
-                    # End parameter_data
-                    },
-        'OH_-': {"type": Anion,
-                "charge": -1,
-              # Define the methods used to calculate the following properties
-              "dens_mol_liq_comp": Perrys,
-              "enth_mol_liq_comp": Perrys,
-              "cp_mol_liq_comp": Perrys,
-              "entr_mol_liq_comp": Perrys,
-              # Parameter data is always associated with the methods defined above
-              "parameter_data": {
-                    "mw": (17.008, pyunits.g/pyunits.mol),
-                    "dens_mol_liq_comp_coeff": {
-                        '1': (5.459, pyunits.kmol*pyunits.m**-3),
-                        '2': (0.30542, pyunits.dimensionless),
-                        '3': (647.13, pyunits.K),
-                        '4': (0.081, pyunits.dimensionless)},
-                    "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ/pyunits.mol),
-                    "cp_mol_liq_comp_coeff": {
-                        '1': (2.7637E5, pyunits.J/pyunits.kmol/pyunits.K),
-                        '2': (-2.0901E3, pyunits.J/pyunits.kmol/pyunits.K**2),
-                        '3': (8.125, pyunits.J/pyunits.kmol/pyunits.K**3),
-                        '4': (-1.4116E-2, pyunits.J/pyunits.kmol/pyunits.K**4),
-                        '5': (9.3701E-6, pyunits.J/pyunits.kmol/pyunits.K**5)},
-                    "entr_mol_form_liq_comp_ref": (-10.75, pyunits.J/pyunits.K/pyunits.mol)
-                                },
-                    # End parameter_data
-                    },
         'Ca(OH)2': {  "type": Solute,  "valid_phase_types": PT.aqueousPhase,
                     # Define the methods used to calculate the following properties
                     "dens_mol_liq_comp": Constant,
@@ -202,31 +151,38 @@ thermo_config = {
                             },
                     # End parameter_data
                     },
-        'Ca_2+': {"type": Cation, "charge": 2,
-              # Define the methods used to calculate the following properties
-              "dens_mol_liq_comp": Perrys,
-              "enth_mol_liq_comp": Perrys,
-              "cp_mol_liq_comp": Perrys,
-              "entr_mol_liq_comp": Perrys,
-              # Parameter data is always associated with the methods defined above
-              "parameter_data": {
-                    "mw": (40.078, pyunits.g/pyunits.mol),
-                    "dens_mol_liq_comp_coeff": {
-                        '1': (13.5, pyunits.kmol*pyunits.m**-3),
-                        '2': (1, pyunits.dimensionless),
-                        '3': (1, pyunits.K),
-                        '4': (1, pyunits.dimensionless)},
-                    "enth_mol_form_liq_comp_ref": (-542.83, pyunits.J/pyunits.mol),
-                    "cp_mol_liq_comp_coeff": {
-                        '1': (2.7637E5, pyunits.J/pyunits.kmol/pyunits.K),
-                        '2': (-2.0901E3, pyunits.J/pyunits.kmol/pyunits.K**2),
-                        '3': (8.125, pyunits.J/pyunits.kmol/pyunits.K**3),
-                        '4': (-1.4116E-2, pyunits.J/pyunits.kmol/pyunits.K**4),
-                        '5': (9.3701E-6, pyunits.J/pyunits.kmol/pyunits.K**5)},
-                    "entr_mol_form_liq_comp_ref": (-53, pyunits.J/pyunits.K/pyunits.mol)
-                                },
+        'CaCO3': {  "type": Apparent,  "valid_phase_types": PT.aqueousPhase,
+                    "dissociation_species": {"Ca_2+":1, "CO3_2-":1},
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
+                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
+                            },
                     # End parameter_data
-                    }
+                    },
+        'Ca(HCO3)2': {  "type": Apparent,  "valid_phase_types": PT.aqueousPhase,
+                    "dissociation_species": {"Ca_2+":1, "HCO3_-":2},
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
+                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
+                            },
+                    # End parameter_data
+                    },
               },
               # End Component list
         "phases":  {'Liq': {"type": AqueousPhase,
