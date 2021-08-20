@@ -384,3 +384,4 @@ class TestWaterStoich(object):
         total_hardness = 50000*2* m.fs.unit.outlet.mole_frac_comp[0, "Ca(HCO3)2"].value*total_molar_density
         print(total_hardness)
         print(value((m.fs.unit.outlet.mole_frac_comp[0, "Ca(OH)2"])))
+        assert False

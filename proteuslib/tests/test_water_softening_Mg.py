@@ -405,7 +405,6 @@ class TestWaterStoich(object):
         solver.options['nlp_scaling_method'] = 'user-scaling'
         m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
-        assert False
 #        iscale.constraint_autoscale_large_jac(m)
 
         fin_fixed_vars = fixed_variables_set(m)
@@ -431,8 +430,9 @@ class TestWaterStoich(object):
 
         total_molar_density = \
             value(m.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
-        print(total_molar_density)
+        assert pytest.approx(55.2336, rel=1e-5) == total_molar_density
         total_hardness = 50000*2* m.fs.unit.outlet.mole_frac_comp[0, "Mg(HCO3)2"].value*total_molar_density
         print(total_hardness)
+        assert pytest.approx(110.4638, rel=1e-5) == total_hardness
         print(value((m.fs.unit.outlet.mole_frac_comp[0, "Ca(OH)2"])))
         assert False
