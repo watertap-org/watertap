@@ -54,7 +54,7 @@ from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      initialization_tester)
 
 from idaes.core import AqueousPhase, FlowsheetBlock, EnergyBalanceType
-from idaes.core.components import Solvent, Solute, Cation, Anion
+from idaes.core.components import Solvent, Solute, Cation, Anion, Apparent
 from idaes.core.phases import PhaseType as PT
 
 # Import the idaes objects for Generic Properties and Reactions
@@ -151,8 +151,7 @@ thermo_config = {
                             },
                     # End parameter_data
                     },
-        'CaCO3': {  "type": Apparent,  "valid_phase_types": PT.aqueousPhase,
-                    "dissociation_species": {"Ca_2+":1, "CO3_2-":1},
+        'CaCO3': {  "type": Solute,  "valid_phase_types": PT.aqueousPhase,
                     # Define the methods used to calculate the following properties
                     "dens_mol_liq_comp": Constant,
                     "enth_mol_liq_comp": Constant,
@@ -167,8 +166,7 @@ thermo_config = {
                             },
                     # End parameter_data
                     },
-        'Ca(HCO3)2': {  "type": Apparent,  "valid_phase_types": PT.aqueousPhase,
-                    "dissociation_species": {"Ca_2+":1, "HCO3_-":2},
+        'Ca(HCO3)2': {  "type": Solute,  "valid_phase_types": PT.aqueousPhase,
                     # Define the methods used to calculate the following properties
                     "dens_mol_liq_comp": Constant,
                     "enth_mol_liq_comp": Constant,
@@ -201,33 +199,6 @@ thermo_config = {
                        "mass": pyunits.kg,
                        "amount": pyunits.mol,
                        "temperature": pyunits.K},
-        # Inherent reactions
-        "inherent_reactions": {
-            "H2O_Kw": {
-                    "stoichiometry": {("Liq", "H2O"): -1,
-                                     ("Liq", "H_+"): 1,
-                                     ("Liq", "OH_-"): 1},
-                   "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": van_t_hoff,
-                   "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.moleFraction,
-                   "parameter_data": {
-                       "dh_rxn_ref": (55.830, pyunits.J/pyunits.mol),
-                       "k_eq_ref": (10**-14/55.2/55.2, pyunits.dimensionless),
-                       "T_eq_ref": (298, pyunits.K),
-
-                       # By default, reaction orders follow stoichiometry
-                       #    manually set reaction order here to override
-                       "reaction_order": {("Liq", "H2O"): 0,
-                                        ("Liq", "H_+"): 1,
-                                        ("Liq", "OH_-"): 1}
-                        }
-                        # End parameter_data
-                   }
-                   # End R1
-             }
-             # End equilibrium_reactions
-
 }
     # End thermo_config definition
 
@@ -247,9 +218,10 @@ reaction_config = {
          },
          # End equilibrium_reactions
     "rate_reactions": {
-        "R1": {"stoichiometry": {("Liq", "Ca(OH)2"): -1,
-                                 ("Liq", "Ca_2+"): 1,
-                                 ("Liq", "OH_-"): 2},
+        "R1": {"stoichiometry": {("Liq", "Ca(HCO3)2"): -1,
+                                 ("Liq", "Ca(OH)2"): -1,
+                                 ("Liq", "CaCO3"): 2,
+                                 ("Liq", "H2O"): 2},
                "heat_of_reaction": constant_dh_rxn,
                "rate_constant" : arrhenius,
                "rate_form" : power_law_rate,
@@ -288,18 +260,17 @@ class TestWaterStoich(object):
                 "energy_balance_type": EnergyBalanceType.none,
                 "has_pressure_change": False})
 
-        m.fs.unit.inlet.mole_frac_comp[0, "Ca_2+"].fix( 0. )
-        m.fs.unit.inlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.0000018 )
-        m.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix( 0. )
-        m.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix( 0. )
-        m.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 0.9999982 )
+        m.fs.unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"].fix( 0.00003 )
+        m.fs.unit.inlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.00003 )
+        m.fs.unit.inlet.mole_frac_comp[0, "CaCO3"].fix( 0. )
+        m.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 0.99994 )
 
         m.fs.unit.inlet.pressure.fix(101325.0)
         m.fs.unit.inlet.temperature.fix(298.)
         m.fs.unit.inlet.flow_mol.fix(10)
 
         m.fs.unit.outlet.temperature.fix(298.)
-        m.fs.unit.outlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.0000018*0.95 )
+        m.fs.unit.outlet.mole_frac_comp[0, "CaCO3"].fix( 0.00004 )
         #m.fs.unit.rate_reaction_extent[0, 'R1'].fix(0)
 
         return m
@@ -310,13 +281,15 @@ class TestWaterStoich(object):
 
         m = water_stoich 
         assert hasattr(m.fs.thermo_params, 'component_list')
-        assert len(m.fs.thermo_params.component_list) == 5
+        assert len(m.fs.thermo_params.component_list) == 4
         assert 'H2O' in m.fs.thermo_params.component_list
         assert isinstance(m.fs.thermo_params.H2O, Solvent)
-        assert 'H_+' in m.fs.thermo_params.component_list
-        assert isinstance(m.fs.thermo_params.component('H_+'), Cation)
-        assert 'OH_-' in m.fs.thermo_params.component_list
-        assert isinstance(m.fs.thermo_params.component('OH_-'), Anion)
+        assert 'Ca(HCO3)2' in m.fs.thermo_params.component_list
+        assert isinstance(m.fs.thermo_params.component('Ca(HCO3)2'), Solute)
+        assert 'Ca(OH)2' in m.fs.thermo_params.component_list
+        assert isinstance(m.fs.thermo_params.component('Ca(OH)2'), Solute)
+        assert 'CaCO3' in m.fs.thermo_params.component_list
+        assert isinstance(m.fs.thermo_params.component('CaCO3'), Solute)
 
         assert hasattr(m.fs.thermo_params, 'phase_list')
         assert len(m.fs.thermo_params.phase_list) == 1
@@ -335,34 +308,13 @@ class TestWaterStoich(object):
     @pytest.mark.unit
     def test_stats_stoich(self, water_stoich):
         m = water_stoich
-        assert (number_variables(m) == 121)
-        assert (number_total_constraints(m) == 40)
-        assert (number_unused_variables(m) == 67)
+        assert (number_variables(m) == 83)
+        assert (number_total_constraints(m) == 38)
+        assert (number_unused_variables(m) == 38)
 
     @pytest.mark.component
     def test_scaling_stoich(self, water_stoich):
         m = water_stoich
-
-        # Iterate through the reactions to set appropriate eps values
-        factor = 1e-4
-        for rid in m.fs.thermo_params.inherent_reaction_idx:
-            scale = value(m.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
-            # Want to set eps in some fashion similar to this
-            if scale < 1e-16:
-                m.fs.thermo_params.component("reaction_"+rid).eps.value = scale*factor
-            else:
-                m.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
-
-        for i in m.fs.unit.control_volume.inherent_reaction_extent_index:
-            scale = value(m.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
-            iscale.set_scaling_factor(m.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
-            iscale.constraint_scaling_transform(m.fs.unit.control_volume.properties_out[0.0].
-                    inherent_equilibrium_constraint[i[1]], 0.1)
-
-        # Scaling for kinetic reactions
-        for i in m.fs.rxn_params.rate_reaction_idx:
-            scale = value(m.fs.unit.control_volume.reactions[0.0].reaction_rate[i].expr)
-            iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_extent[0.0,i], 10/scale)
 
         # Next, try adding scaling for species
         min = 1e-6
@@ -381,9 +333,9 @@ class TestWaterStoich(object):
 
         iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_extent[0.0,'R1'], 1)
         iscale.calculate_scaling_factors(m.fs.unit)
+#        iscale.constraint_autoscale_large_jac(m)
 
-        m.fs.unit.control_volume.pprint()
-        assert False
+#        m.fs.unit.control_volume.pprint()
 
         assert isinstance(m.fs.unit.control_volume.scaling_factor, Suffix)
 
@@ -392,25 +344,18 @@ class TestWaterStoich(object):
         assert isinstance(m.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
     @pytest.mark.component
-    def test_initialize_inherent(self, water_stoich):
+    def test_stoich_inherent(self, water_stoich):
         m = water_stoich
-        state_args = {'mole_frac_comp':
-                        {   'Ca(OH)2': 0.0000018,
-                            'Ca_2+': 0.0000018,
-                            'H2O': 1,
-                            'H_+': 10**-7/55.6,
-                            'OH_-': 10**-7/55.6
-                        },
-                        'pressure': 101325,
-                        'temperature': 298,
-                        'flow_mol': 10
-                    }
+
         orig_fixed_vars = fixed_variables_set(m)
         orig_act_consts = activated_constraints_set(m)
 
         solver.options['bound_push'] = 1e-10
         solver.options['mu_init'] = 1e-6
-        m.fs.unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
+        solver.options['nlp_scaling_method'] = 'user-scaling'
+        m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+
+#        iscale.constraint_autoscale_large_jac(m)
 
         fin_fixed_vars = fixed_variables_set(m)
         fin_act_consts = activated_constraints_set(m)
@@ -433,23 +378,9 @@ class TestWaterStoich(object):
     def test_solution_inherent(self, water_stoich):
         m = water_stoich
 
-        assert pytest.approx(10, rel=1e-5) == value(m.fs.unit.outlet.flow_mol[0])
-        print(value(m.fs.unit.outlet.flow_mol[0]))
-        assert pytest.approx(101325, rel=1e-5) == value(m.fs.unit.outlet.pressure[0])
-        print(value(m.fs.unit.outlet.pressure[0]))
-
         total_molar_density = \
             value(m.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
         print(total_molar_density)
-        assert pytest.approx(55.2336, rel=1e-5) == total_molar_density
-        pH = -value(log10(m.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
-        pOH = -value(log10(m.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-        print(-value(log10(m.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density)))
-        print(-value(log10(m.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density)))
-#        assert pytest.approx(6.9997414, rel=1e-5) == pH
-#        assert pytest.approx(6.9997414, rel=1e-5) == pOH
-#        assert pytest.approx(0.989999996, rel=1e-5) == value(m.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
-      
+        total_hardness = 50000*2* m.fs.unit.outlet.mole_frac_comp[0, "Ca(HCO3)2"].value*total_molar_density
+        print(total_hardness)
         print(value((m.fs.unit.outlet.mole_frac_comp[0, "Ca(OH)2"])))
-        print(value((m.fs.unit.outlet.mole_frac_comp[0, "Ca_2+"])))
-        assert False
