@@ -56,9 +56,8 @@ def run_RO_example():
     build_RO_separator_example(m)
     solve_with_user_scaling(m)
 
-    m.fs.RO.inlet.display()
-    m.fs.RO.permeate.display()
-    m.fs.RO.retentate.display()
+    return m
+
 
 
 if __name__ == "__main__":

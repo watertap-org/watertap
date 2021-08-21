@@ -24,7 +24,7 @@ from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
-def build_simple_RO_example(m):
+def build_simple_example(m):
     # build unit
     m.fs.RO_properties = props.SeawaterParameterBlock()
     m.fs.RO = ReverseOsmosis0D(default={"property_package": m.fs.RO_properties})
@@ -53,7 +53,7 @@ def build_simple_RO_example(m):
     m.fs.RO.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
 
 
-def build_detailed_RO_example(m):
+def build_detailed_example(m):
     # build unit
     m.fs.RO_properties = props.SeawaterParameterBlock()
     m.fs.RO = ReverseOsmosis0D(default={
@@ -90,26 +90,30 @@ def build_detailed_RO_example(m):
     m.fs.RO.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
 
 
-def run_simple_RO_example():
+def run_simple_example():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    build_simple_RO_example(m)
+    build_simple_example(m)
     solve_with_user_scaling(m)
 
     m.fs.RO.report()
 
+    return m
 
-def run_detailed_RO_example():
+
+def run_detailed_example():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    build_detailed_RO_example(m)
+    build_detailed_example(m)
     solve_with_user_scaling(m)
 
     m.fs.RO.report()
+
+    return m
 
 
 if __name__ == "__main__":
-    run_simple_RO_example()
-    run_detailed_RO_example()
+    run_simple_example()
+    run_detailed_example()
