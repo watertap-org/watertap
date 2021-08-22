@@ -12,7 +12,7 @@
 ###############################################################################
 
 """
-Simple property package for Na-Ca-Mg-SO4-Cl solution represented with ions
+Simple property package for Na-Ca-Mg-SO4-Cl solution represented with salts
 """
 
 from pyomo.environ import (Constraint,
@@ -63,19 +63,17 @@ class PropParameterData(PhysicalParameterBlock):
 
         # components
         self.H2O = Solvent()
-        self.Na = Solute()
-        self.Ca = Solute()
-        self.Mg = Solute()
-        self.SO4 = Solute()
-        self.Cl = Solute()
+        self.NaCl = Solute()
+        self.CaSO4 = Solute()
+        self.MgSO4 = Solute()
+        self.MgCl2 = Solute()
 
         # molecular weight
         mw_comp_data = {'H2O': 18.015e-3,
-                        'Na': 22.990e-3,
-                        'Ca': 40.078e-3,
-                        'Mg': 24.305e-3,
-                        'SO4': 96.06e-3,
-                        'Cl': 35.453e-3}
+                        'NaCl': 58.44e-3,
+                        'CaSO4': 136.14e-3,
+                        'MgSO4': 120.37e-3,
+                        'MgCl2': 95.21e-3}
 
         self.mw_comp = Param(self.component_list,
                              mutable=False,
@@ -234,12 +232,11 @@ class PropStateBlockData(StateBlockData):
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
-        seawater_mass_frac_dict = {('Liq', 'Na'): 11122e-6,
-                                   ('Liq', 'Ca'): 382e-6,
-                                   ('Liq', 'Mg'): 1394e-6,
-                                   ('Liq', 'SO4'): 2136e-6,
-                                   ('Liq', 'Cl'): 20300e-6}
-        seawater_mass_frac_dict[('Liq', 'H2O')] = 1 - sum(x for x in seawater_mass_frac_dict.values())
+        seawater_mass_frac_dict = {('Liq', 'NaCl'): 2.827e-2,
+                                   ('Liq', 'CaSO4'): 1.298e-3,
+                                   ('Liq', 'MgSO4'): 1.529e-3,
+                                   ('Liq', 'MgCl2'): 4.251e-3,
+                                   ('Liq', 'H2O'): 0.9647}
 
         # Add state variables
         self.flow_mass_phase_comp = Var(
@@ -380,25 +377,21 @@ class PropStateBlockData(StateBlockData):
             sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'], default=1, warning=True)
             iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'], sf)
 
-        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'Na']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'Na'], default=1e2, warning=True)
-            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'Na'], sf)
-
-        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'Ca']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'Ca'], default=1e4, warning=True)
-            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'Ca'], sf)
-
-        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'Mg']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'Mg'], default=1e3, warning=True)
-            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'Mg'], sf)
-
-        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'SO4']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'SO4'], default=1e3, warning=True)
-            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'SO4'], sf)
-
-        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'Cl']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'Cl'], default=1e2, warning=True)
+        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'NaCl']) is None:
+            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'NaCl'], default=1e2, warning=True)
             iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'Cl'], sf)
+
+        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'CaSO4']) is None:
+            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'CaSO4'], default=1e3, warning=True)
+            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'CaSO4'], sf)
+
+        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'MgSO4']) is None:
+            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'MgSO4'], default=1e3, warning=True)
+            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'MgSO4'], sf)
+
+        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'MgCl2']) is None:
+            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'MgCl2'], default=1e3, warning=True)
+            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'MgCl2'], sf)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
