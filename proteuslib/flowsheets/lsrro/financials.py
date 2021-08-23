@@ -66,25 +66,30 @@ def get_system_costing(self):
     b = self.costing
 
     b.capital_cost_total = Var(
-        initialize=1e6,
+        initialize=1e5,
         domain=NonNegativeReals,
         doc='Total capital cost [$]')
     b.investment_cost_total = Var(
-        initialize=1e6,
+        initialize=1e5,
         domain=NonNegativeReals,
         doc='Total investment cost [$]')
     b.operating_cost_MLC = Var(
-        initialize=1e5,
+        initialize=1e4,
         domain=NonNegativeReals,
         doc='Maintenance-labor-chemical operating cost [$/year]')
     b.operating_cost_total = Var(
-        initialize=1e5,
+        initialize=1e4,
         domain=NonNegativeReals,
         doc='Total operating cost [$/year]')
     b.LCOW = Var(
-        initialize=1e5,
+        initialize=1.,
         domain=NonNegativeReals,
         doc='Levelized cost of water [$/m3]')
+
+    iscale.set_scaling_factor(b.capital_cost_total, 1e-5)
+    iscale.set_scaling_factor(b.investment_cost_total, 1e-5)
+    iscale.set_scaling_factor(b.operating_cost_MLC, 1e-2)
+    iscale.set_scaling_factor(b.operating_cost_total, 1e-2)
 
     capital_cost_var_lst = []
     operating_cost_var_lst = []
@@ -114,12 +119,14 @@ def _make_vars(self):
     # self.base_cost = Var(initialize=1e5,
     #                      domain=NonNegativeReals,
     #                      doc='Unit base cost [$]')
-    self.capital_cost = Var(initialize=1e5,
+    self.capital_cost = Var(initialize=1e3,
                             domain=NonNegativeReals,
                             doc='Unit capital cost [$]')
-    self.operating_cost = Var(initialize=1e5,
+    self.operating_cost = Var(initialize=1e3,
                               domain=NonNegativeReals,
                               doc='Operating cost [$/year]')
+    iscale.set_scaling_factor(self.capital_cost, 1e-3)
+    iscale.set_scaling_factor(self.operating_cost, 1e-1)
 
 
 def ReverseOsmosis_costing(self):
