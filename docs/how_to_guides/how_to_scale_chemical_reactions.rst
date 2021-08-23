@@ -4,7 +4,7 @@ How to scale chemical reactions
 ===============================
 
 .. warning::
-    This scaling methods are meant to be used with the 'gradient-based' scaling
+    These scaling methods are meant to be used with the 'gradient-based' scaling
     functionality built into ipopt. It is not advised to use 'user-scaling' with
     the chemical modules, as this tends to have poor convergence. 
 
