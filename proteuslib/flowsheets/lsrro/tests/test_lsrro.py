@@ -28,7 +28,7 @@ from proteuslib.unit_models.pump_isothermal import Pump
 from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 
 from proteuslib.flowsheets.lsrro.lsrro import (build, set_operating_conditions,
-        initialize, optimize_set_up, solve)
+        initialize, optimize_set_up, solve, display_system, display_design, display_state)
 
 class _TestLSRRO:
 
@@ -208,6 +208,24 @@ class _TestLSRRO:
         self._test_no_badly_scaled_vars(model)
 
     @pytest.mark.component
+    def test_display_system(self, model, capsys):
+        display_system(model)
+        captured = capsys.readouterr()
+        assert captured.out == self.display_system
+
+    @pytest.mark.component
+    def test_display_design(self, model, capsys):
+        display_design(model)
+        captured = capsys.readouterr()
+        assert captured.out == self.display_design
+
+    @pytest.mark.component
+    def test_display_state(self, model, capsys):
+        display_state(model)
+        captured = capsys.readouterr()
+        assert captured.out == self.display_state
+
+    @pytest.mark.component
     def test_optimize_set_up(self, model):
         optimize_set_up(model)
         fs = model.fs
@@ -237,8 +255,34 @@ class _TestLSRRO:
 class TestLSRRO_1Stage(_TestLSRRO):
 
     number_of_stages = 1
+
     number_of_variables = 291
     number_of_constraints = 190
+
+    display_system = \
+"""----system metrics----
+Feed: 1.00 kg/s, 70000 ppm
+Product: 0.180 kg/s, 1592 ppm
+Volumetric water recovery: 18.0%
+Energy Consumption: 3.8 kWh/m3
+Levelized cost of water: 2.48 $/m3
+"""
+    display_design = \
+"""--decision variables--
+Stage 1 operating pressure 75.0 bar
+Stage 1 membrane area      100.0 m2
+Stage 1 salt perm. coeff.  0.1 LMH
+"""
+    display_state = \
+"""--------state---------
+Feed                : 1.000 kg/s, 70000 ppm, 1.0 bar
+Primary Pump 1 out  : 1.000 kg/s, 70000 ppm, 75.0 bar
+RO 1 permeate       : 0.180 kg/s, 1592 ppm, 1.0 bar
+RO 1 retentate      : 0.820 kg/s, 84977 ppm, 72.9 bar
+Stage 1 Volumetric water recovery: 18.89%, Salt rejection: 97.84%
+Disposal            : 0.820 kg/s, 84977 ppm, 1.0 bar
+Product             : 0.180 kg/s, 1592 ppm, 1.0 bar
+"""
 
     @pytest.fixture(scope="class")
     def initialization_data(self, model):
@@ -286,8 +330,44 @@ class TestLSRRO_1Stage(_TestLSRRO):
 class TestLSRRO_2Stage(_TestLSRRO):
 
     number_of_stages = 2
+
     number_of_variables = 536
     number_of_constraints = 380
+
+    display_system = \
+"""----system metrics----
+Feed: 1.00 kg/s, 70000 ppm
+Product: 0.380 kg/s, 699 ppm
+Volumetric water recovery: 38.0%
+Energy Consumption: 7.7 kWh/m3
+Levelized cost of water: 1.89 $/m3
+"""
+    display_design = \
+"""--decision variables--
+Stage 1 operating pressure 75.0 bar
+Stage 1 membrane area      100.0 m2
+Stage 1 salt perm. coeff.  0.1 LMH
+Stage 2 operating pressure 75.0 bar
+Stage 2 membrane area      100.0 m2
+Stage 2 salt perm. coeff.  12.6 LMH
+"""
+    display_state = \
+"""--------state---------
+Feed                : 1.000 kg/s, 70000 ppm, 1.0 bar
+Primary Pump 1 out  : 1.000 kg/s, 70000 ppm, 75.0 bar
+Mixer 1 recycle     : 0.589 kg/s, 38805 ppm, 75.0 bar
+Mixer 1 out         : 1.589 kg/s, 58440 ppm, 75.0 bar
+RO 1 permeate       : 0.380 kg/s, 699 ppm, 1.0 bar
+RO 1 retentate      : 1.209 kg/s, 76588 ppm, 71.1 bar
+Stage 1 Volumetric water recovery: 24.96%, Salt rejection: 98.85%
+Primary Pump 2 out  : 1.209 kg/s, 76588 ppm, 75.0 bar
+RO 2 permeate       : 0.589 kg/s, 38805 ppm, 1.0 bar
+RO 2 retentate      : 0.620 kg/s, 112464 ppm, 72.8 bar
+Stage 2 Volumetric water recovery: 50.06%, Salt rejection: 50.71%
+Booster Pump 2 out  : 0.589 kg/s, 38805 ppm, 75.0 bar
+Disposal            : 0.620 kg/s, 112464 ppm, 1.0 bar
+Product             : 0.380 kg/s, 699 ppm, 1.0 bar
+"""
 
     @pytest.fixture(scope="class")
     def initialization_data(self, model):
@@ -335,8 +415,54 @@ class TestLSRRO_2Stage(_TestLSRRO):
 class TestLSRRO_3Stage(_TestLSRRO):
 
     number_of_stages = 3
+
     number_of_variables = 781
     number_of_constraints = 570
+
+    display_system = \
+"""----system metrics----
+Feed: 1.00 kg/s, 70000 ppm
+Product: 0.462 kg/s, 557 ppm
+Volumetric water recovery: 46.2%
+Energy Consumption: 10.0 kWh/m3
+Levelized cost of water: 2.08 $/m3
+"""
+    display_design = \
+"""--decision variables--
+Stage 1 operating pressure 75.0 bar
+Stage 1 membrane area      100.0 m2
+Stage 1 salt perm. coeff.  0.1 LMH
+Stage 2 operating pressure 75.0 bar
+Stage 2 membrane area      100.0 m2
+Stage 2 salt perm. coeff.  12.6 LMH
+Stage 3 operating pressure 75.0 bar
+Stage 3 membrane area      100.0 m2
+Stage 3 salt perm. coeff.  12.6 LMH
+"""
+    display_state = \
+"""--------state---------
+Feed                : 1.000 kg/s, 70000 ppm, 1.0 bar
+Primary Pump 1 out  : 1.000 kg/s, 70000 ppm, 75.0 bar
+Mixer 1 recycle     : 0.700 kg/s, 31688 ppm, 75.0 bar
+Mixer 1 out         : 1.700 kg/s, 54222 ppm, 75.0 bar
+RO 1 permeate       : 0.462 kg/s, 557 ppm, 1.0 bar
+RO 1 retentate      : 1.238 kg/s, 74259 ppm, 70.8 bar
+Stage 1 Volumetric water recovery: 28.29%, Salt rejection: 99.01%
+Primary Pump 2 out  : 1.238 kg/s, 74259 ppm, 75.0 bar
+Mixer 2 recycle     : 0.410 kg/s, 56986 ppm, 75.0 bar
+Mixer 2 out         : 1.648 kg/s, 69964 ppm, 75.0 bar
+RO 2 permeate       : 0.700 kg/s, 31688 ppm, 1.0 bar
+RO 2 retentate      : 0.947 kg/s, 98252 ppm, 71.4 bar
+Stage 2 Volumetric water recovery: 43.70%, Salt rejection: 55.96%
+Booster Pump 2 out  : 0.700 kg/s, 31688 ppm, 75.0 bar
+Primary Pump 3 out  : 0.947 kg/s, 98252 ppm, 75.0 bar
+RO 3 permeate       : 0.410 kg/s, 56986 ppm, 1.0 bar
+RO 3 retentate      : 0.538 kg/s, 129683 ppm, 73.3 bar
+Stage 3 Volumetric water recovery: 44.54%, Salt rejection: 43.69%
+Booster Pump 3 out  : 0.410 kg/s, 56986 ppm, 75.0 bar
+Disposal            : 0.538 kg/s, 129683 ppm, 1.0 bar
+Product             : 0.462 kg/s, 557 ppm, 1.0 bar
+"""
 
     @pytest.fixture(scope="class")
     def initialization_data(self, model):
@@ -385,8 +511,13 @@ class TestLSRRO_3Stage(_TestLSRRO):
 class TestLSRRO_NStage(_TestLSRRO):
 
     number_of_stages = 
+
     number_of_variables = 
     number_of_constraints = 
+
+    display_system = 
+    display_design = 
+    display_state = 
 
     @pytest.fixture(scope="class")
     def initialization_data(self, model):

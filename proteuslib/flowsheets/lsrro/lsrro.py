@@ -432,7 +432,7 @@ def display_design(m):
     print('--decision variables--')
     for stage in m.fs.StageSet:
         print('Stage %d operating pressure %.1f bar' % (stage, m.fs.ROUnits[stage].inlet.pressure[0].value/1e5))
-        print('Stage %d membrane area      %.1f m2 ' % (stage, m.fs.ROUnits[stage].area.value))
+        print('Stage %d membrane area      %.1f m2'  % (stage, m.fs.ROUnits[stage].area.value))
         print('Stage %d salt perm. coeff.  %.1f LMH' % (stage, m.fs.ROUnits[stage].B_comp[0,'NaCl'].value*(1000.*3600.)))
 
 
