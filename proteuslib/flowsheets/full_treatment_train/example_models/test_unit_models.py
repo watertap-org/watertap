@@ -26,6 +26,31 @@ def test_unit_separator_RO_example():
 
 
 @pytest.mark.component
+def test_unit_separator_NF_salt_example():
+    m = unit_separator.run_NF_salt_example()
+    assert value(m.fs.NF.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.8682, rel=1e-3)
+    assert value(m.fs.NF.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == pytest.approx(2.544e-2, rel=1e-3)
+    assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'CaSO4']) == pytest.approx(1.168e-3, rel=1e-3)
+    assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'MgSO4']) == pytest.approx(1.376e-3, rel=1e-3)
+    assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'MgCl2']) == pytest.approx(3.401e-3, rel=1e-3)
+    assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(9.645e-2, rel=1e-3)
+
+
+@pytest.mark.component
+def test_unit_separator_NF_ion_example():
+    m = unit_separator.run_NF_ion_example()
+    assert value(m.fs.NF.mixed_state[0].mass_frac_phase_comp['Liq', 'Na']) == pytest.approx(11122e-6, rel=1e-3)
+    assert value(m.fs.NF.mixed_state[0].mass_frac_phase_comp['Liq', 'Cl']) == pytest.approx(20317e-6, rel=1e-3)
+    assert value(m.fs.NF.split_fraction[0, 'permeate', 'Cl']) == pytest.approx(0.7753, rel=1e-3)
+    assert value(m.fs.NF.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.8682, rel=1e-3)
+    assert value(m.fs.NF.permeate.flow_mass_phase_comp[0, 'Liq', 'Na']) == pytest.approx(1.000e-2, rel=1e-3)
+    assert value(m.fs.NF.permeate.flow_mass_phase_comp[0, 'Liq', 'Cl']) == pytest.approx(1.575e-2, rel=1e-3)
+    assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'Ca']) == pytest.approx(3.438e-4, rel=1e-3)
+    assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'Mg']) == pytest.approx(1.255e-3, rel=1e-3)
+    assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'SO4']) == pytest.approx(1.922e-3, rel=1e-3)
+
+
+@pytest.mark.component
 def test_unit_0DRO_simple():
     m = unit_0DRO.run_simple_example()
     assert value(m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.3389, rel=1e-3)
