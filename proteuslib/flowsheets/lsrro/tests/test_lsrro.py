@@ -19,6 +19,7 @@ from pyomo.network import Arc, Port
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 
@@ -140,22 +141,95 @@ class _TestLSRRO:
 
         assert_units_consistent(fs)
 
+    @staticmethod
+    def _test_fixed_value(pyovar, val):
+        assert pyovar.fixed
+        assert pyovar.value == val
+
+    @staticmethod
+    def _test_no_badly_scaled_vars(m):
+        for v,_ in badly_scaled_var_generator(m):
+            raise Exception(f"Badly scaled variable {v.name}")
+
+    @pytest.mark.component
+    def test_set_operating_conditions(self, model):
+        set_operating_conditions(model)
+
+        fs = model.fs
+
+        # feed
+        self._test_fixed_value(fs.feed.pressure[0], 101325)
+        self._test_fixed_value(fs.feed.temperature[0], 298.15)
+        self._test_fixed_value(fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'], 70./1000.)
+        self._test_fixed_value(fs.feed.flow_mass_phase_comp[0, 'Liq', 'H2O'], (1. - 70./1000.))
+
+        # pumps
+        for pump in fs.PrimaryPumps.values():
+            self._test_fixed_value(pump.control_volume.properties_out[0].pressure, 75e5)
+            self._test_fixed_value(pump.efficiency_pump[0], 0.75)
+        for pump in fs.BoosterPumps.values():
+            assert not pump.control_volume.properties_out[0].pressure.fixed
+            self._test_fixed_value(pump.efficiency_pump[0], 0.75)
+        for pump in fs.EnergyRecoveryDevice.values():
+            self._test_fixed_value(pump.control_volume.properties_out[0].pressure, 101325)
+            self._test_fixed_value(pump.efficiency_pump[0], 0.80)
+
+        # RO units
+        for idx, ro in fs.ROUnits.items():
+            for acomp in ro.A_comp.values():
+                self._test_fixed_value(acomp, 4.2e-12)
+            for bcomp in ro.B_comp.values():
+                if idx > 1:
+                    self._test_fixed_value(bcomp, 3.5e-8*100.)
+                else:
+                    self._test_fixed_value(bcomp, 3.5e-8)
+
+            self._test_fixed_value(ro.channel_height, 1e-3)
+            self._test_fixed_value(ro.spacer_porosity, 0.97)
+            self._test_fixed_value(ro.area, 100)
+            self._test_fixed_value(ro.width, 5)
+            self._test_fixed_value(ro.permeate.pressure[0], 101325)
+
+        assert degrees_of_freedom(model) == 0
+        self._test_no_badly_scaled_vars(model)
+
+    @pytest.mark.component
+    def test_initialize(self, model, initialization_data):
+        initialize(model)
+        for var, val in initialization_data.items():
+            assert pyo.value(var) == pytest.approx(val, rel=1e-5)
+        self._test_no_badly_scaled_vars(model)
+
     @pytest.mark.component
     def test_simulation(self, model, simulation_data):
-        set_operating_conditions(model)
-        assert degrees_of_freedom(model) == 0
-
-        initialize(model)
         solve(model)
-
         for var, val in simulation_data.items():
             assert pyo.value(var) == pytest.approx(val, rel=1e-5)
+        self._test_no_badly_scaled_vars(model)
+
+    @pytest.mark.component
+    def test_optimize_set_up(self, model):
+        optimize_set_up(model)
+        fs = model.fs
+
+        for pump in fs.PrimaryPumps.values():
+            assert not pump.control_volume.properties_out[0].pressure.fixed
+        for pump in fs.BoosterPumps.values():
+            assert not pump.control_volume.properties_out[0].pressure.fixed
+        for idx, ro in fs.ROUnits.items():
+            assert not ro.area.fixed
+            assert not ro.width.fixed
+            assert not ro.N_Re_io[0, 'in'].fixed
+            if idx > 1:
+                for bcomp in ro.B_comp.values():
+                    assert not bcomp.fixed
+            else:
+                for bcomp in ro.B_comp.values():
+                    assert bcomp.fixed
 
     @pytest.mark.component
     def test_optimize(self, model, optimization_data):
-        optimize_set_up(model)
         solve(model)
-
         for var, val in optimization_data.items():
             assert pyo.value(var) == pytest.approx(val, rel=1e-5)
 
@@ -165,6 +239,20 @@ class TestLSRRO_1Stage(_TestLSRRO):
     number_of_stages = 1
     number_of_variables = 291
     number_of_constraints = 190
+
+    @pytest.fixture(scope="class")
+    def initialization_data(self, model):
+        data = pyo.ComponentMap()
+        fs = model.fs
+
+        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.179331
+        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.286037e-3
+        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.750668
+        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.697139e-1
+        data[fs.costing.LCOW]   = 1.0
+        data[fs.water_recovery] = 0.5
+
+        return data
 
     @pytest.fixture(scope="class")
     def simulation_data(self, model):
@@ -202,6 +290,20 @@ class TestLSRRO_2Stage(_TestLSRRO):
     number_of_constraints = 380
 
     @pytest.fixture(scope="class")
+    def initialization_data(self, model):
+        data = pyo.ComponentMap()
+        fs = model.fs
+
+        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.379673
+        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.265454e-3
+        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.550327
+        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.697345e-1
+        data[fs.costing.LCOW]   = 1.0
+        data[fs.water_recovery] = 0.5
+
+        return data
+
+    @pytest.fixture(scope="class")
     def simulation_data(self, model):
         data = pyo.ComponentMap()
         fs = model.fs
@@ -235,6 +337,20 @@ class TestLSRRO_3Stage(_TestLSRRO):
     number_of_stages = 3
     number_of_variables = 781
     number_of_constraints = 570
+
+    @pytest.fixture(scope="class")
+    def initialization_data(self, model):
+        data = pyo.ComponentMap()
+        fs = model.fs
+
+        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.461950
+        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.257311e-3
+        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.468049
+        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.697427e-1
+        data[fs.costing.LCOW]   = 1.0
+        data[fs.water_recovery] = 0.5
+
+        return data
 
     @pytest.fixture(scope="class")
     def simulation_data(self, model):
@@ -273,7 +389,7 @@ class TestLSRRO_NStage(_TestLSRRO):
     number_of_constraints = 
 
     @pytest.fixture(scope="class")
-    def simulation_data(self, m):
+    def initialization_data(self, model):
         data = pyo.ComponentMap()
         fs = model.fs
 
@@ -287,7 +403,21 @@ class TestLSRRO_NStage(_TestLSRRO):
         return data
 
     @pytest.fixture(scope="class")
-    def optimization_data(self, m):
+    def simulation_data(self, model):
+        data = pyo.ComponentMap()
+        fs = model.fs
+
+        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 
+        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 
+        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 
+        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 
+        data[fs.costing.LCOW]   = 
+        data[fs.water_recovery] = 
+
+        return data
+
+    @pytest.fixture(scope="class")
+    def optimization_data(self, model):
         data = pyo.ComponentMap()
         fs = model.fs
 
