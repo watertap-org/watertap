@@ -116,9 +116,6 @@ def get_system_costing(self):
 
 def _make_vars(self):
     # build generic costing variables (all costing models need these vars)
-    # self.base_cost = Var(initialize=1e5,
-    #                      domain=NonNegativeReals,
-    #                      doc='Unit base cost [$]')
     self.capital_cost = Var(initialize=1e3,
                             domain=NonNegativeReals,
                             doc='Unit capital cost [$]')
