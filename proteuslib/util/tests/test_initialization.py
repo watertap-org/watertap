@@ -39,7 +39,7 @@ class TestCheckDOF:
         return m
 
     @pytest.mark.unit
-    def test_excepcted(self, m):
+    def test_expected(self, m):
         check_dof(m, fail_flag=False, expected_dof=1)
         check_dof(m, fail_flag=True, expected_dof=1)
         assert_degrees_of_freedom(m, 1)
