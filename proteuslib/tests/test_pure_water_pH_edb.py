@@ -23,7 +23,6 @@ from .test_pure_water_pH import TestPureWater
 
 g_edb = None
 try:
-    raise RuntimeError()
     g_edb = ElectrolyteDB()
 except Exception:
     pass
@@ -31,15 +30,17 @@ except Exception:
 
 def get_thermo_config(edb):
     base = edb.get_one_base("water_reaction")
-    components = ["H2O", "H_+", "OH_-"]
+    elements = ["H", "O"]
+    components = []
     # Add the components
-    for c in edb.get_components(components):
+    for c in edb.get_components(element_names=elements):
         # Need to remove these to avoid errors when using the generated config
         c.remove("valid_phase_types")
         c.remove("enth_mol_ig_comp")
         c.remove("phase_equilibrium_form")
         c.remove("pressure_sat_comp")
         base.add(c)
+        components.append(c.name)
     # Add the reactions
     for r in edb.get_reactions(component_names=components):
         r.set_reaction_order('Liq', ('H2O',), ('H_+', 'OH_-'))
@@ -49,7 +50,8 @@ def get_thermo_config(edb):
 
 
 def get_water_reaction_config(edb):
-    components = ["H2O", "H_+", "OH_-"]
+    elements = ["H", "O"]
+    components = [c.name for c in edb.get_components(element_names=elements)]
     base = edb.get_one_base("water_reaction")
     # Need to remove these to avoid errors when using the generated config
     base.remove("phases")
