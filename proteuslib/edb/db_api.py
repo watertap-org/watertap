@@ -82,23 +82,33 @@ class ElectrolyteDB:
     def url(self):
         return self._server_url
 
-    def get_components(self, component_names: Optional[List[str]] = None) -> Result:
+    def get_components(self, component_names: Optional[List[str]] = None,
+                       element_names: Optional[List[str]] = None) -> Result:
         """Get thermodynamic information for components of reactions.
 
         Args:
             component_names: List of component names
+            element_names: List of element names (ignored if component_names is given)
 
         Returns:
-            All components matching the names (or all if not specified)
+            All components matching the criteria (or all if none specified)
         """
+        collection = self._db.component
         if component_names:
             query = {"$or": [{"name": n} for n in component_names]}
             _log.debug(f"get_components. components={component_names} query={query}")
+            it = collection.find(filter=query)
+        elif element_names:
+            elt_set, elt_list = set(element_names), list(element_names)
+            # Find all components with at least one of the specified elements,
+            # then filter results to include only components where the elements
+            # are a subset of the specified elements (i.e., no 'other' elements).
+            it = (doc for doc in collection.find({"elements": {"$in": elt_list}})
+                  if set(doc["elements"]) <= elt_set)
         else:
             _log.debug(f"get_components. get all components (empty query)")
-            query = {}
-        collection = self._db.component
-        result = Result(iterator=collection.find(filter=query), item_class=Component)
+            it = collection.find(filter={})
+        result = Result(iterator=it, item_class=Component)
         return result
 
     def get_reactions(
