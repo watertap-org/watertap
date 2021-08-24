@@ -118,7 +118,7 @@ class TestCheckSolve:
         m.acon.deactivate()
 
         results = solver.solve(m)
-        # check_solve should pass since fail_flag=False and only warning will be produced
+        # both check_solve's should pass
         check_solve(results, logger=_log, fail_flag=False)
         check_solve(results, logger=_log, fail_flag=True)
 
