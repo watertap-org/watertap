@@ -11,7 +11,7 @@
 #
 ###############################################################################
 
-""" Flowsheet built as Separator and Chlorination process """
+""" Simple NaOCl Chlorination process """
 
 # Importing the object for units from pyomo
 from pyomo.environ import units as pyunits
@@ -71,6 +71,11 @@ from idaes.core import FlowsheetBlock
 from pyomo.environ import log10
 
 import idaes.logger as idaeslog
+
+# Grab the scaling utilities
+from proteuslib.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
+    approximate_chemical_state_args,
+    calculate_chemical_scaling_factors)
 
 __author__ = "Austin Ladshaw"
 
@@ -293,7 +298,7 @@ simple_naocl_thermo_config = {
     # End simple_naocl_thermo_config definition
 
 # This config is REQUIRED to use EquilibriumReactor even if we have no equilibrium reactions
-reaction_config = {
+dummy_reaction_config = {
     "base_units": {"time": pyunits.s,
                    "length": pyunits.m,
                    "mass": pyunits.kg,
@@ -320,7 +325,7 @@ def build_simple_naocl_chlorination_unit(model,
                                 inlet_flow_mol_per_s = 10):
     model.fs.simple_naocl_thermo_params = GenericParameterBlock(default=simple_naocl_thermo_config)
     model.fs.simple_naocl_rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.simple_naocl_thermo_params, **reaction_config})
+            default={"property_package": model.fs.simple_naocl_thermo_params, **dummy_reaction_config})
     model.fs.simple_naocl_unit = EquilibriumReactor(default={
             "property_package": model.fs.simple_naocl_thermo_params,
             "reaction_package": model.fs.simple_naocl_rxn_params,
@@ -356,161 +361,6 @@ def build_simple_naocl_chlorination_unit(model,
     model.fs.simple_naocl_unit.inlet.pressure.fix(inlet_pressure_Pa)
     model.fs.simple_naocl_unit.inlet.temperature.fix(inlet_temperature_K)
     model.fs.simple_naocl_unit.inlet.flow_mol.fix(inlet_flow_mol_per_s)
-
-# # TODO: Move this to utils?
-def approximate_chemical_state_args(unit, rxn_params, reaction_config, contains_stoich_reactions=False):
-    state_args = {}
-    stoich_extents = {}
-
-    # Set bulk values to their inlets
-    state_args['pressure'] = unit.control_volume.properties_in[0.0].pressure.value
-    state_args['temperature'] = unit.control_volume.properties_in[0.0].temperature.value
-    state_args['flow_mol'] = unit.control_volume.properties_in[0.0].flow_mol.value
-
-    # Set species based on inlets (and outlets for stoich reaction)
-    state_args['mole_frac_comp'] = {}
-    min = 1e-6
-    for i in unit.control_volume.properties_in[0.0].mole_frac_comp:
-        # Set state args to inlets on first pass
-        if unit.inlet.mole_frac_comp[0, i].value > min:
-            state_args['mole_frac_comp'][i] = unit.inlet.mole_frac_comp[0, i].value
-        else:
-            state_args['mole_frac_comp'][i] = min
-
-    # Iterate through outlet mole fractions and note the fixed variables
-    fixed = {}
-    for i, species in unit.outlet.mole_frac_comp:
-        if unit.outlet.mole_frac_comp[i, species].is_fixed():
-            fixed[species] = True
-            state_args['mole_frac_comp'][species] = unit.outlet.mole_frac_comp[0, species].value
-
-    # Checking stoich reactions
-    was_OH_changed = False
-    was_H_changed = False
-    if contains_stoich_reactions == True:
-        for rid in rxn_params.rate_reaction_idx:
-            #First loop establishes reaction extent
-            extent = 0
-            for phase, species in reaction_config["rate_reactions"][rid]["stoichiometry"]:
-                # If a species here has its outlet fixed, then the difference between
-                #   that species outlet and inlet values should serve as the basis for
-                #   setting the values of the other species used in that reaction
-                if species in fixed:
-                    extent = unit.inlet.mole_frac_comp[0, species].value \
-                            - unit.outlet.mole_frac_comp[0, species].value
-                stoich_extents[rid] = extent
-
-            # Loop again to set values based on extent
-            for phase, species in reaction_config["rate_reactions"][rid]["stoichiometry"]:
-                state_args['mole_frac_comp'][species] = unit.inlet.mole_frac_comp[0, species].value \
-                        + extent*reaction_config["rate_reactions"][rid]["stoichiometry"][phase, species]
-                if species == "H_+" and extent != 0.0:
-                    was_H_changed = True
-                if species == "OH_-" and extent != 0.0:
-                    was_OH_changed = True
-
-    # Lastly, we need for correct OH and/or H if they are changed by a stoich reaction
-    if was_H_changed == False and was_OH_changed == False:
-        state_args['mole_frac_comp']['H_+'] = 10**-7/55.6
-        state_args['mole_frac_comp']['OH_-'] = 10**-7/55.6
-    elif was_H_changed == False and was_OH_changed == True:
-        state_args['mole_frac_comp']['H_+'] = 10**-14/(state_args['mole_frac_comp']['OH_-']*55.6)/55.6
-    elif was_H_changed == True and was_OH_changed == False:
-        state_args['mole_frac_comp']['OH_-'] = 10**-14/(state_args['mole_frac_comp']['H_+']*55.6)/55.6
-    else:
-        # Uncertain what to do at this point
-        pass
-
-    return state_args, stoich_extents
-
-# # TODO: Move this to utils?
-def calculate_chemical_scaling_factors_for_inherent_log_reactions(unit, thermo_params):
-    try:
-        # Iterate through the reactions to set appropriate eps values
-        factor = 1e-4
-        for rid in thermo_params.inherent_reaction_idx:
-            scale = value(unit.control_volume.properties_out[0.0].k_eq[rid].expr)
-            # Want to set eps in some fashion similar to this
-            if scale < 1e-16:
-                thermo_params.component("reaction_"+rid).eps.value = scale*factor
-            else:
-                thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
-
-        for i in unit.control_volume.inherent_reaction_extent_index:
-            scale = value(unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
-            iscale.set_scaling_factor(unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
-            iscale.constraint_scaling_transform(unit.control_volume.properties_out[0.0].
-                    inherent_equilibrium_constraint[i[1]], 0.1)
-    except:
-        pass
-
-# # TODO: Move this to utils?
-def calculate_chemical_scaling_factors_for_equilibrium_log_reactions(unit, rxn_params):
-    try:
-        # Equilibrium reactions have eps in the 'simple_naocl_rxn_params'
-        factor = 1e-4
-        for rid in rxn_params.equilibrium_reaction_idx:
-            if rid != "dummy":
-                scale = value(unit.control_volume.reactions[0.0].k_eq[rid].expr)
-                # Want to set eps in some fashion similar to this
-                if scale < 1e-16:
-                    rxn_params.component("reaction_"+rid).eps.value = scale*factor
-                else:
-                    rxn_params.component("reaction_"+rid).eps.value = 1e-16*factor
-
-        for i in unit.control_volume.equilibrium_reaction_extent_index:
-            if i[1] != "dummy":
-                scale = value(unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
-                iscale.set_scaling_factor(unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10/scale)
-                iscale.constraint_scaling_transform(unit.control_volume.reactions[0.0].
-                        equilibrium_constraint[i[1]], 0.1)
-    except:
-        pass
-
-# # TODO: Move this to utils?
-def calculate_chemical_scaling_factors_for_material_balances(unit):
-    # Next, try adding scaling for species
-    min = 1e-6
-    for i in unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
-        # i[0] = phase, i[1] = species
-        if unit.inlet.mole_frac_comp[0, i[1]].value > min:
-            scale = unit.inlet.mole_frac_comp[0, i[1]].value
-        else:
-            scale = min
-        iscale.set_scaling_factor(unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-        iscale.set_scaling_factor(unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-        iscale.set_scaling_factor(unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-        iscale.constraint_scaling_transform(
-            unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-        iscale.constraint_scaling_transform(unit.control_volume.material_balances[0.0,i[1]], 10/scale)
-
-# # TODO: Move this to utils?
-def calculate_chemical_scaling_factors(unit, thermo_params, rxn_params, state_args, output_jac=False):
-    calculate_chemical_scaling_factors_for_inherent_log_reactions(unit, thermo_params)
-    calculate_chemical_scaling_factors_for_equilibrium_log_reactions(unit, rxn_params)
-    calculate_chemical_scaling_factors_for_material_balances(unit)
-    iscale.calculate_scaling_factors(unit)
-
-    flags = fix_state_vars(unit.control_volume.properties_out, state_args)
-    revert_state_vars(unit.control_volume.properties_out, flags)
-
-    iscale.constraint_autoscale_large_jac(unit)
-
-    if output_jac == True:
-        jac, nlp = iscale.get_jacobian(unit, scaled=True)
-        print("Extreme Jacobian entries:")
-        for i in iscale.extreme_jacobian_entries(jac=jac, nlp=nlp, large=100):
-            print(f"    {i[0]:.2e}, [{i[1]}, {i[2]}]")
-        print("Unscaled constraints:")
-        for c in iscale.unscaled_constraints_generator(unit):
-            print(f"    {c}")
-        print("Scaled constraints by factor:")
-        for c, s in iscale.constraints_with_scale_factor_generator(unit):
-            print(f"    {c}, {s}")
-        print("Badly scaled variables:")
-        for v, sv in iscale.badly_scaled_var_generator(unit, large=1e2, small=1e-2, zero=1e-12):
-            print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}")
-        print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
 
 def initialize_chlorination_example(unit, state_args, user_scaling=True, debug_out=False):
     solver.options['bound_push'] = 1e-10
@@ -553,7 +403,7 @@ def run_chlorination_example():
 
     build_simple_naocl_chlorination_unit(model, mg_per_L_NaOCl_added = 2)
     state_args, stoich_extents = approximate_chemical_state_args(model.fs.simple_naocl_unit,
-                                model.fs.simple_naocl_rxn_params, reaction_config)
+                                model.fs.simple_naocl_rxn_params, dummy_reaction_config)
 
     calculate_chemical_scaling_factors(model.fs.simple_naocl_unit,
                                 model.fs.simple_naocl_thermo_params,
