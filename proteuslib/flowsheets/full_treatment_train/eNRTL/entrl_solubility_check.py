@@ -16,13 +16,16 @@ Demonstration flowsheet for using eNRTL model to check solubility index
 Author: Andrew Lee
 """
 
-from pyomo.environ import ConcreteModel, value
+from pyomo.environ import ConcreteModel, value, Constraint
 
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 
 from entrl_config import configuration
+
+from idaes.core.util import get_solver
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Artificial seawater composition
 # Na_+: 11122 mg/kg, 22.99 g/mol
@@ -37,56 +40,69 @@ def model():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.params = GenericParameterBlock(default=configuration)
 
-    m.fs.state = m.fs.params.build_state_block(m.fs.time)
+    m.fs.state = m.fs.params.build_state_block(
+        m.fs.time, default={"defined_state": True})
 
     # Set state
-    m.fs.state[0].temperature.set_value(298.15)
-    m.fs.state[0].pressure.set_value(100*1e5)
-    m.fs.state[0].flow_mol.set_value(100)
+    m.fs.state[0].temperature.fix(298.15)
+    m.fs.state[0].pressure.fix(100*1e5)
+    m.fs.state[0].flow_mol.fix(100)
 
     # Feed conditions
-    # m.fs.state[0].mole_frac_phase_comp["Liq", "Na_+"].set_value(0.008845)
-    # m.fs.state[0].mole_frac_phase_comp["Liq", "Ca_2+"].set_value(0.000174)
-    # m.fs.state[0].mole_frac_phase_comp["Liq", "Mg_2+"].set_value(0.001049)
-    # m.fs.state[0].mole_frac_phase_comp["Liq", "SO4_2-"].set_value(0.000407)
-    # m.fs.state[0].mole_frac_phase_comp["Liq", "Cl_-"].set_value(0.010479)
-    # m.fs.state[0].mole_frac_phase_comp["Liq", "H2O"].set_value(0.979046)
+    # m.fs.state[0].mole_frac_comp["Na_+"].fix(0.008845)
+    # m.fs.state[0].mole_frac_comp["Ca_2+"].fix(0.000174)
+    # m.fs.state[0].mole_frac_comp["Mg_2+"].fix(0.001049)
+    # m.fs.state[0].mole_frac_comp["SO4_2-"].fix(0.000407)
+    # m.fs.state[0].mole_frac_comp["Cl_-"].fix(0.010479)
+    # m.fs.state[0].mole_frac_comp["H2O"].fix(0.979046)
 
     # 50% water recovery
-    m.fs.state[0].mole_frac_phase_comp["Liq", "Na_+"].set_value(0.017327)
-    m.fs.state[0].mole_frac_phase_comp["Liq", "Ca_2+"].set_value(0.000341)
-    m.fs.state[0].mole_frac_phase_comp["Liq", "Mg_2+"].set_value(0.002054)
-    m.fs.state[0].mole_frac_phase_comp["Liq", "SO4_2-"].set_value(0.000796)
-    m.fs.state[0].mole_frac_phase_comp["Liq", "Cl_-"].set_value(0.020529)
-    m.fs.state[0].mole_frac_phase_comp["Liq", "H2O"].set_value(0.958952)
+    m.fs.state[0].mole_frac_comp["Na_+"].fix(0.017327)
+    m.fs.state[0].mole_frac_comp["Ca_2+"].fix(0.000341)
+    m.fs.state[0].mole_frac_comp["Mg_2+"].fix(0.002054)
+    m.fs.state[0].mole_frac_comp["SO4_2-"].fix(0.000796)
+    m.fs.state[0].mole_frac_comp["Cl_-"].fix(0.020529)
+    m.fs.state[0].mole_frac_comp["H2O"].fix(0.958952)
 
-    # Saturated gypsum (SI~3)
-    # m.fs.state[0].mole_frac_phase_comp["Liq", "Na_+"].set_value(1e-8)
-    # m.fs.state[0].mole_frac_phase_comp["Liq", "Ca_2+"].set_value(2.7e-4)
-    # m.fs.state[0].mole_frac_phase_comp["Liq", "Mg_2+"].set_value(1e-8)
-    # m.fs.state[0].mole_frac_phase_comp["Liq", "SO4_2-"].set_value(2.7e-4)
-    # m.fs.state[0].mole_frac_phase_comp["Liq", "Cl_-"].set_value(1e-8)
-    # m.fs.state[0].mole_frac_phase_comp["Liq", "H2O"].set_value(0.9998)
+    # Saturated gypsum
+    # m.fs.state[0].mole_frac_comp["Na_+"].fix(1e-8)
+    # m.fs.state[0].mole_frac_comp["Ca_2+"].fix(2.091848e-4)
+    # m.fs.state[0].mole_frac_comp["Mg_2+"].fix(1e-8)
+    # m.fs.state[0].mole_frac_comp["SO4_2-"].fix(2.091848e-4)
+    # m.fs.state[0].mole_frac_comp["Cl_-"].fix(1e-8)
+    # m.fs.state[0].mole_frac_comp["H2O"].fix(0.999582)
 
-    m.fs.params.display()
-    m.fs.state[0].act_coeff_phase_comp.display()
-    m.fs.state[0].act_phase_comp.display()
+    # Saturated gypsum w/ 1 mol/kg NaCl
+    # m.fs.state[0].mole_frac_comp["Na_+"].fix(1.736132e-2)
+    # m.fs.state[0].mole_frac_comp["Ca_2+"].fix(7.812595e-4)
+    # m.fs.state[0].mole_frac_comp["Mg_2+"].fix(1e-8)
+    # m.fs.state[0].mole_frac_comp["SO4_2-"].fix(7.812595e-4)
+    # m.fs.state[0].mole_frac_comp["Cl_-"].fix(1.736132e-2)
+    # m.fs.state[0].mole_frac_comp["H2O"].fix(0.963715)
 
-    # Ksp
-    # Gypsum (CaSO4.2H2O) = 4.2406e-05
-    # CaCL2 = -11.79
-    # MgCl2:6H2O (Bischofite) = -4.39
-    # Na2Ca(SO4)2 (Glauberite) = 5.47
-    # Na2SO4:10H2O (Mirabilite) = 1.11
-    # NaCl (Halite) = -1.58
+    # Saturated gypsum w/ 2 mol/kg NaCl
+    # m.fs.state[0].mole_frac_comp["Na_+"].fix(3.472265e-2)
+    # m.fs.state[0].mole_frac_comp["Ca_2+"].fix(9.375114e-4)
+    # m.fs.state[0].mole_frac_comp["Mg_2+"].fix(1e-8)
+    # m.fs.state[0].mole_frac_comp["SO4_2-"].fix(9.375114e-4)
+    # m.fs.state[0].mole_frac_comp["Cl_-"].fix(3.472265e-2)
+    # m.fs.state[0].mole_frac_comp["H2O"].fix(0.963715)
+
+    # Hand fitted binary interaction parameters (sat. gypsum w/ 1 mol/kg NaCl)
+    m.fs.params.Liq.tau['Na_+, SO4_2-', 'Na_+, Cl_-'].set_value(-4)
+    m.fs.params.Liq.tau['Na_+, Cl_-', 'Na_+, SO4_2-'].set_value(4)
+
+    # Solve model
+    m.fs.state.initialize()
+
+    solver = get_solver()
+    solver.solve(m, tee=True)
+
+    # Display some results
+    Ksp = {"CaSO4": 8.89912404553923e-09}
     act = m.fs.state[0].act_phase_comp
     print("Solubility Indices\n")
-    print("Gypsum:", value(act["Liq", "Ca_2+"]*act["Liq", "SO4_2-"]*act["Liq", "H2O"]**2/7.3e-8))
-    # print("MgCl2.6H2O:", value(act["Liq", "Mg_2+"]*act["Liq", "Cl_-"]**2*act["Liq", "H2O"]**6/8.53e-9))
-    # print("CaCl2:", value(act["Liq", "Ca_2+"]*act["Liq", "Cl_-"]**2/2.21e-1))
-    # print("Na2Ca(SO4)2:", value(act["Liq", "Na_+"]**2*act["Liq", "Ca_2+"]*act["Liq", "SO4_2-"]**2/8.53e-9))
-    # print("Na2SO4.10H2O:", value(act["Liq", "Na_+"]**2*act["Liq", "SO4_2-"]*act["Liq", "H2O"]**10/8.53e-9))
-    # print("NaCl:", value(act["Liq", "Na_+"]*act["Liq", "Cl_-"]/8.26e-3))
+    print("Gypsum:", value(act["Liq", "Ca_2+"]*act["Liq", "SO4_2-"]*act["Liq", "H2O"]**2/Ksp["CaSO4"]))
 
 
 if __name__ == '__main__':
