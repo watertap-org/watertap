@@ -150,6 +150,31 @@ simple_naocl_thermo_config = {
                                 },
                     # End parameter_data
                     },
+        'Na_+': {"type": Cation, "charge": 1,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Perrys,
+              "enth_mol_liq_comp": Perrys,
+              "cp_mol_liq_comp": Perrys,
+              "entr_mol_liq_comp": Perrys,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (22.989769, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": {
+                        '1': (5.252, pyunits.kmol*pyunits.m**-3),
+                        '2': (0.347, pyunits.dimensionless),
+                        '3': (1595.8, pyunits.K),
+                        '4': (0.6598, pyunits.dimensionless)},
+                    "enth_mol_form_liq_comp_ref": (-240.1, pyunits.J/pyunits.mol),
+                    "cp_mol_liq_comp_coeff": {
+                        '1': (167039, pyunits.J/pyunits.kmol/pyunits.K),
+                        '2': (0, pyunits.J/pyunits.kmol/pyunits.K**2),
+                        '3': (0, pyunits.J/pyunits.kmol/pyunits.K**3),
+                        '4': (0, pyunits.J/pyunits.kmol/pyunits.K**4),
+                        '5': (0, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                    "entr_mol_form_liq_comp_ref": (59, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
         'OH_-': {"type": Anion,
                 "charge": -1,
               # Define the methods used to calculate the following properties
@@ -342,12 +367,13 @@ def build_simple_naocl_chlorination_unit(model,
     total_molar_density = inlet_water_density_kg_per_L/18*1000 #mol/L
 
     # Free Chlorine (mg-Cl2/L) = total_chlorine_inlet (mol/L) * 70,900
-    #       Assumes chlorine is added as NaOCl (we don't track Na, because it doesn't matter)
+    #       Assumes chlorine is added as NaOCl
     free_chlorine_added = mg_per_L_NaOCl_added #mg/L as Cl2
     total_chlorine_inlet = free_chlorine_added/70900 # mol/L
     total_molar_density+=total_chlorine_inlet
 
     model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "OCl_-"].fix( total_chlorine_inlet/total_molar_density )
+    model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "Na_+"].fix( total_chlorine_inlet/total_molar_density )
 
     # Perform a summation of all non-H2O molefractions to find the H2O molefraction
     sum = 0
@@ -385,6 +411,9 @@ def display_results_of_chlorination(chlorination_unit):
         value(chlorination_unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
     pH = -value(log10(chlorination_unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
     print("pH at Outlet:        \t" + str(pH))
+    total_salt = value(chlorination_unit.outlet.mole_frac_comp[0, "Na_+"])*total_molar_density*23
+    psu = total_salt/(total_molar_density*18)*1000
+    print("Salinity (PSU):      \t" + str(psu))
     hypo_remaining = value(chlorination_unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"])/1000
     hypo_remaining += value(chlorination_unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"])/1000
     hypo_remaining = hypo_remaining*70900
