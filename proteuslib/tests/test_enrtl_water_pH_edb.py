@@ -1,0 +1,87 @@
+###############################################################################
+# ProteusLib Copyright (c) 2021, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory, Oak Ridge National
+# Laboratory, National Renewable Energy Laboratory, and National Energy
+# Technology Laboratory (subject to receipt of any required approvals from
+# the U.S. Dept. of Energy). All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
+# information, respectively. These files are also available online at the URL
+# "https://github.com/nawi-hub/proteuslib/"
+#
+###############################################################################
+
+"""
+This is the EDB version of test_enrtl_water_pH.py
+
+See that module for details on what the tests accomplish
+in terms of the IDAES chemistry packages.
+"""
+import pytest
+from proteuslib.edb import ElectrolyteDB
+from .test_enrtl_water_pH import TestENRTLwater, TestENRTLcarbonicAcid
+
+g_edb = None
+try:
+    g_edb = ElectrolyteDB()
+except Exception:
+    pass
+
+
+def get_thermo_config(edb):
+    from idaes.generic_models.properties.core.eos.enrtl import ENRTL
+    from idaes.generic_models.properties.core.eos.enrtl_reference_states import \
+        Unsymmetric
+
+    base = edb.get_one_base("water_reaction")
+    elements = ["H", "O"]
+    components = []
+    # Add the components
+    for c in edb.get_components(element_names=elements):
+        # Need to remove these to avoid errors when using the generated config
+        c.remove("valid_phase_types")
+        c.remove("enth_mol_ig_comp")
+        c.remove("phase_equilibrium_form")
+        c.remove("pressure_sat_comp")
+        base.add(c)
+        components.append(c.name)
+    # Add the reactions
+    for r in edb.get_reactions(component_names=components):
+        r.set_reaction_order("Liq", ("H2O",), ("H_+", "OH_-"))
+        r._data["type"] = "inherent"
+        base.add(r)
+    cfg = base.idaes_config.copy()
+    cfg["phases"]["Liq"]["equation_of_state"] = ENRTL
+    cfg["phases"]["Liq"]["equation_of_state_options"] = {"reference_state": Unsymmetric}
+    return cfg
+
+
+def get_water_reaction_config(edb):
+    from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+        log_power_law_equil,
+    )
+
+    elements = ["H", "O"]
+    components = [c.name for c in edb.get_components(element_names=elements)]
+    base = edb.get_one_base("water_reaction")
+    cfg = base.idaes_config.copy()
+    cfg.update(
+        {
+            "equilibrium_reactions": {
+                "dummy": {
+                    "stoichiometry": {},
+                    "equilibrium_form": log_power_law_equil,
+                }
+            }
+        }
+    )
+    return cfg
+
+
+@pytest.mark.skipif(g_edb is None, reason="Cannot connect to MongoDB")
+class TestENRTLWaterEdb(TestENRTLwater):
+    """Run all tests in superclass, but with different configs."""
+
+    if g_edb:
+        thermo_config = get_thermo_config(g_edb)
+        reaction_config = get_water_reaction_config(g_edb)
