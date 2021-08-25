@@ -21,6 +21,27 @@
                     v
                 retentate (i.e., waste)
 
+
+    NOTE: The 2 unit models use a different set of state_vars. Thus, this will need to be
+    resolved with some clever constraint formulation.
+
+    Both inlet and outlet streams use K for temperature and Pa for pressure (no change needed)
+
+    The flow from RO Separator uses kg/s for individual "species" [H2O and TDS]
+
+    The inlet for Chlorination uses a total molar flow rate in mol/s and mole fractions
+    of individual species. To make the appropriate conversions, we will have to start
+    by making some assumptions about the molecular weight of TDS.
+
+    MW H2O = 18e-3 kg/mol   MW TDS = ?? kg/mol (just assume all as NaCl? : MW Na = 23 g/mol MW Cl = 35.4 g/mol)
+
+    Total Molar Flow = [ m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']/(MW H2O) +
+                            m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'TDS']/(MW TDS) ]
+
+    Molefraction of Na --> Based on TDS
+                =  [m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'TDS']/(MW TDS)] / (Total Molar Flow)
+    Molefraction of H2O --> Whatever is remaining (after adding NaOCl)
+
     ---------- WORK IN PROGRESS ---------
 """
 
