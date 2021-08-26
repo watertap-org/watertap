@@ -447,6 +447,7 @@ class ReactionConfig(ConfigGenerator):
             "log_power_law": log_power_law_equil,
             "concentrationform.molarity": ConcentrationForm.molarity,
             "concentrationform.molefraction": ConcentrationForm.moleFraction,
+            "concentrationform.activity": ConcentrationForm.activity,
         },
         "*_constant": {
             "van_t_hoff_aqueous": van_t_hoff,

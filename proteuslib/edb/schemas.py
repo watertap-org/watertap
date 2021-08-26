@@ -103,7 +103,7 @@ schemas = {
                 "patternProperties": {
                     "^.*_coeff$": {"$ref": "#/definitions/parameter"},
                     "^.*_ref$": {"$ref": "#/definitions/parameter"},
-                    "^.*_comp$": {"$ref": "#/definitions/parameter"}
+                    "^.*_comp$": {"$ref": "#/definitions/parameter"},
                 },
                 "additionalProperties": False,
             },

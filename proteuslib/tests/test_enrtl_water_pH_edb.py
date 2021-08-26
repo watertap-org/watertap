@@ -53,10 +53,12 @@ def get_thermo_config(edb):
             c.set_parameter("relative_permittivity_liq_comp", 78.54)
         base.add(c)
         components.append(c.name)
-    # Add the reactions
-    for r in edb.get_reactions(component_names=components):
-        r.set_reaction_order("Liq", ("H2O",), ("H_+", "OH_-"))
-        base.add(r)
+
+    # Add the reaction
+    r = list(edb.get_reactions(reaction_names=["H2O_Kw_2"]))[0]
+    r.set_reaction_order("Liq", ("H2O",), ("H_+", "OH_-"))
+    base.add(r)
+
     cfg = base.idaes_config.copy()
     cfg["phases"]["Liq"]["equation_of_state"] = ENRTL
     cfg["phases"]["Liq"]["equation_of_state_options"] = {"reference_state": Unsymmetric}

@@ -539,7 +539,7 @@
     "heat_of_reaction": "constant_dh_rxn",
     "equilibrium_constant": "van_t_hoff_aqueous",
     "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.moleFraction",
+    "concentration_form": "ConcentrationForm.activity",
     "parameter_data": {
       "dh_rxn_ref": [
         {
@@ -550,7 +550,7 @@
       ],
       "k_eq_ref": [
         { "v":  3.2818735559756347e-24,
-        "u": "dimensionless",
+        "u": "mol**2/L**2",
         "i": 0
         }
       ],

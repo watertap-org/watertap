@@ -500,9 +500,16 @@ class TestENRTLwater(TestReactions):
 
     @pytest.mark.component
     def test_solve_water(self, water_model):
+        from idaes import logger as idaeslog
+        log = idaeslog.getSolveLogger("solver.water")
+        log.setLevel(idaeslog.DEBUG)
+
         model = water_model
         solver.options["max_iter"] = 2
-        results = solver.solve(model)
+
+        with idaeslog.solver_log(log, idaeslog.DEBUG) as slc:
+            results = solver.solve(model, tee=slc.tee)
+
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
