@@ -856,6 +856,8 @@ class Reaction(DataWrapper):
         phase: str,
         lhs: List[str],
         rhs: List[str],
+        lhs_value: int = 0,
+        rhs_value: int = 1
     ) -> Dict:
         """Set the reaction order (if it differs from stoichiometry).
 
@@ -863,6 +865,8 @@ class Reaction(DataWrapper):
             phase: 'Liq' or 'Vap'
             lhs: Left-hand side of equation components
             rhs: Right-hand side of equation components
+            lhs_value: Integer value for LHS components
+            rhs_value: Integer value for RHS components
 
         Returns:
             Reaction order for all phases, which can be modified further in-place
@@ -881,9 +885,9 @@ class Reaction(DataWrapper):
                 # replace reaction_order value for key 'phase' with new value
                 reaction_order = {}
                 for comp in lhs:
-                    reaction_order[comp] = 0
+                    reaction_order[comp] = lhs_value
                 for comp in rhs:
-                    reaction_order[comp] = 1
+                    reaction_order[comp] = rhs_value
                 ro_section[phase] = reaction_order
 
         return ro_section

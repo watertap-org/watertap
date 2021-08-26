@@ -33,9 +33,6 @@ def get_thermo_config(edb):
     from idaes.generic_models.properties.core.eos.enrtl_reference_states import (
         Unsymmetric,
     )
-    from idaes.generic_models.properties.core.pure.electrolyte import (
-        relative_permittivity_constant,
-    )
 
     base = edb.get_one_base("water_reaction")
     elements = ["H", "O"]
@@ -89,9 +86,60 @@ def get_water_reaction_config(edb):
 
 
 @pytest.mark.skipif(g_edb is None, reason="Cannot connect to MongoDB")
-class TestENRTLWaterEdb(TestENRTLwater):
+class TestENRTLWaterEDB(TestENRTLwater):
     """Run all tests in superclass, but with different configs."""
 
     if g_edb:
         thermo_config = get_thermo_config(g_edb)
         reaction_config = get_water_reaction_config(g_edb)
+
+# ====================================================================================
+
+
+def get_carbonic_thermo_config(edb):
+    from idaes.generic_models.properties.core.eos.enrtl import ENRTL
+    from idaes.generic_models.properties.core.eos.enrtl_reference_states import (
+        Unsymmetric,
+    )
+
+    base = edb.get_one_base("water_reaction")
+    # The 'right' way to fetch all components
+    # elements = ["H", "O", "C", "Na"]
+    components = []
+    # Add the components
+    component_names = ("Na_+", "CO3_2-",  "HCO3_-", "H2CO3", "OH_-", "H_+", "H2O")
+    for c in edb.get_components(component_names=component_names):
+        # Need to remove these to avoid errors when using the generated config
+        c.remove("valid_phase_types")
+        c.remove("enth_mol_ig_comp")
+        c.remove("phase_equilibrium_form")
+        c.remove("pressure_sat_comp")
+        # Add specific stuff not in the DB
+        if c.name == "H2O":
+            c.data["relative_permittivity_liq_comp"] = "relative_permittivity_constant"
+            c.set_parameter("relative_permittivity_liq_comp", 78.54)
+        base.add(c)
+        components.append(c.name)
+
+    # Add the reaction
+    for r in edb.get_reactions(reaction_names=["H2O_Kw_2", "H2CO3_Ka1", "H2CO3_Ka2"]):
+        if r.name == "H2O_Kw_2":
+            r.set_reaction_order("Liq", ("H2O",), ("H_+", "OH_-"))
+        elif r.name == "H2CO3_Ka1":
+            r.set_reaction_order("Liq", ("H2CO3",), ("H_+", "HCO3_-"), lhs_value=-1)
+        elif r.name == "H2CO3_Ka2":
+            r.set_reaction_order("Liq", ("HCO3_-",), ("H_+", "CO3_2-"), lhs_value=-1)
+        base.add(r)
+
+    cfg = base.idaes_config.copy()
+    cfg["phases"]["Liq"]["equation_of_state"] = ENRTL
+    cfg["phases"]["Liq"]["equation_of_state_options"] = {"reference_state": Unsymmetric}
+    cfg["inherent_reactions"] = cfg["equilibrium_reactions"]
+    del cfg["equilibrium_reactions"]
+    return cfg
+
+
+@pytest.mark.skipif(g_edb is None, reason="Cannot connect to MongoDB")
+class TestENRTLCarbonicAcidEdb(TestENRTLcarbonicAcid):
+    if g_edb:
+        thermo_config = get_carbonic_thermo_config(g_edb)
