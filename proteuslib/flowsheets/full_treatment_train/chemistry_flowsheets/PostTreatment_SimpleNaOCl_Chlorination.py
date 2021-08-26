@@ -326,7 +326,7 @@ simple_naocl_thermo_config = {
     # End simple_naocl_thermo_config definition
 
 # This config is REQUIRED to use EquilibriumReactor even if we have no equilibrium reactions
-reaction_config = {
+simple_naocl_reaction_config = {
     "base_units": {"time": pyunits.s,
                    "length": pyunits.m,
                    "mass": pyunits.kg,
@@ -371,7 +371,7 @@ def build_simple_naocl_chlorination_unit(model,
                                 inlet_flow_mol_per_s = 10):
     model.fs.simple_naocl_thermo_params = GenericParameterBlock(default=simple_naocl_thermo_config)
     model.fs.simple_naocl_rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.simple_naocl_thermo_params, **reaction_config})
+            default={"property_package": model.fs.simple_naocl_thermo_params, **simple_naocl_reaction_config})
     model.fs.simple_naocl_unit = EquilibriumReactor(default={
             "property_package": model.fs.simple_naocl_thermo_params,
             "reaction_package": model.fs.simple_naocl_rxn_params,
@@ -458,7 +458,7 @@ def run_chlorination_example():
 
     build_simple_naocl_chlorination_unit(model, mg_per_L_NaOCl_added = 2)
     state_args, stoich_extents = approximate_chemical_state_args(model.fs.simple_naocl_unit,
-                                model.fs.simple_naocl_rxn_params, reaction_config)
+                                model.fs.simple_naocl_rxn_params, simple_naocl_reaction_config)
 
     calculate_chemical_scaling_factors(model.fs.simple_naocl_unit,
                                 model.fs.simple_naocl_thermo_params,

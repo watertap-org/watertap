@@ -52,7 +52,8 @@ from proteuslib.flowsheets.full_treatment_train.example_models.unit_separator im
 from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.PostTreatment_SimpleNaOCl_Chlorination import (
     build_simple_naocl_chlorination_unit,
     initialize_chlorination_example,
-    display_results_of_chlorination, run_chlorination_example)
+    display_results_of_chlorination,
+    simple_naocl_reaction_config, run_chlorination_example)
 
 # Import specific pyomo objects
 from pyomo.environ import (ConcreteModel,
@@ -71,9 +72,17 @@ from pyomo.network import Arc
 
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
+from proteuslib.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
+    approximate_chemical_state_args,
+    calculate_chemical_scaling_factors)
+
+from idaes.core.util import scaling as iscale
+
 def build_SepRO_Chlorination_flowsheet(model):
     build_RO_separator_example(model)
-    build_simple_naocl_chlorination_unit(model)
+
+    # May need to change this build interface
+    build_simple_naocl_chlorination_unit(model, mg_per_L_NaOCl_added = 0)
 
     # Translator inlet from RO and outlet goes to chlorination
     model.fs.RO_to_Chlor = Translator(
@@ -113,10 +122,55 @@ def build_SepRO_Chlorination_flowsheet(model):
             sum(model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, j] for j in ["H_+", "OH_-",
                 "HOCl", "OCl_-", "Cl_-", "Na_+"]) )
 
+    # Add the connecting arcs
+    model.fs.S1 = Arc(source=model.fs.RO.permeate, destination=model.fs.RO_to_Chlor.inlet)
+    model.fs.S2 = Arc(source=model.fs.RO_to_Chlor.outlet, destination=model.fs.simple_naocl_unit.inlet)
+    TransformationFactory("network.expand_arcs").apply_to(model)
 
-    #check_dof(model.fs.RO_to_Chlor)
-    model.fs.RO_to_Chlor.pprint()
+    # Inlet conditions for RO unit already set from the build function
 
+    # Calculate scaling factors and setup each block
+    iscale.calculate_scaling_factors(model.fs.RO_to_Chlor)
+    state_args, stoich_extents = approximate_chemical_state_args(model.fs.simple_naocl_unit,
+                                model.fs.simple_naocl_rxn_params, simple_naocl_reaction_config)
+    calculate_chemical_scaling_factors(model.fs.simple_naocl_unit,
+                                model.fs.simple_naocl_thermo_params,
+                                model.fs.simple_naocl_rxn_params, state_args)
+
+    # initialize each block
+    solve_with_user_scaling(model.fs.RO)
+    model.fs.RO.inlet.display()
+    model.fs.RO.permeate.display()
+    model.fs.RO.retentate.display()
+
+    #solve_with_user_scaling(model.fs.RO_to_Chlor)
+    model.fs.RO_to_Chlor.inlet.display()
+    model.fs.RO_to_Chlor.outlet.display()
+
+    initialize_chlorination_example(model.fs.simple_naocl_unit, state_args)
+    display_results_of_chlorination(model.fs.simple_naocl_unit)
+
+    # unfix inlet conditions for chlorination
+    model.fs.simple_naocl_unit.inlet.pressure.unfix()
+    model.fs.simple_naocl_unit.inlet.temperature.unfix()
+    model.fs.simple_naocl_unit.inlet.flow_mol.unfix()
+
+    model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "H_+"].unfix()
+    model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "OH_-"].unfix()
+    model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "HOCl"].unfix()
+    model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "Cl_-"].unfix()
+
+    #   Here is where I would generally add NaOCl (not sure how best to handle it here)
+    #       May have to remove translator constraints? or put added chlorine in those
+    #       constraints? Or add a mixer block before the chlorination?
+    model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "OCl_-"].unfix()
+    model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "Na_+"].unfix()
+    model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "H2O"].unfix()
+
+    check_dof(model)
+
+    # Needs debugging 
+    solve_with_user_scaling(model, tee=True)
 
 
 def run_SepRO_Chlorination_flowsheet_example():
