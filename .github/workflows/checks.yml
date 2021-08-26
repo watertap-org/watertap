@@ -68,10 +68,10 @@ jobs:
     - name: Set up MongoDB server
       if: matrix.mongodb_server
       uses: supercharge/mongodb-github-action@3f91157600649d0002802978c8b6fb6ee659a2dd
-      with:
+      # with:
         # everything else being equal, we test against 4.03 since it's the latest available
         # through Conda, which makes installation significantly easier for users
-        mongodb-version: "4.03"
+        # mongodb-version: "4.03"
     - name: Test connection to MongoDB instance
       if: matrix.mongodb_server
       run: |
