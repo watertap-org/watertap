@@ -41,6 +41,9 @@ jobs:
           - python-version: '3.8'
             # limit uploading coverage report for a single Python version in the matrix
             cov_report: true
+          - python-version: '3.8'
+            os: linux
+            # supercharge/mongodb-github-action is a container action, that's only available for Linux
             mongodb_server: true
     steps:
     - uses: actions/checkout@v2
