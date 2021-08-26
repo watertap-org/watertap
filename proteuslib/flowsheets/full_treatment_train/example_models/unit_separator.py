@@ -42,6 +42,7 @@ def build_RO_example(m):
     check_dof(m)
 
     # scaling
+    feed_specification.set_default_scaling_TDS(m.fs.RO_properties)
     calculate_scaling_factors(m.fs.RO)
 
 
@@ -65,6 +66,7 @@ def build_NF_salt_example(m):
     check_dof(m)
 
     # scaling
+    feed_specification.set_default_scaling_salts(m.fs.NF_properties)
     calculate_scaling_factors(m.fs.NF)
 
 
@@ -96,32 +98,35 @@ def build_NF_ion_example(m):
     check_dof(m)
 
     # scaling
-    m.fs.NF_properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-    m.fs.NF_properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'Na'))
-    m.fs.NF_properties.set_default_scaling('flow_mass_phase_comp', 1e4, index=('Liq', 'Ca'))
-    m.fs.NF_properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'Mg'))
-    m.fs.NF_properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'SO4'))
-    m.fs.NF_properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'Cl'))
+    feed_specification.set_default_scaling_ions(m.fs.NF_properties)
     calculate_scaling_factors(m.fs.NF)
 
 
-def run_example(func, unit_str):
+def run_example(case):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    func(m)
+    if case == 'RO':
+        build_RO_example(m)
+        unit = m.fs.RO
+    elif case == 'NF_salt':
+        build_NF_salt_example(m)
+        unit = m.fs.NF
+    elif case == 'NF_ion':
+        build_NF_ion_example(m)
+        unit = m.fs.NF
+
     solve_with_user_scaling(m)
 
-    blk = getattr(m.fs, unit_str)
-    blk.inlet.display()
-    blk.permeate.display()
-    blk.retentate.display()
+    unit.inlet.display()
+    unit.permeate.display()
+    unit.retentate.display()
 
     return m
 
 
 if __name__ == "__main__":
-    run_example(build_RO_example, 'RO')
-    run_example(build_NF_salt_example, 'NF')
-    run_example(build_NF_ion_example, 'NF')
+    run_example('RO')
+    run_example('NF_salt')
+    run_example('NF_ion')
 

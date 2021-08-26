@@ -42,6 +42,7 @@ def build_simple_example(m):
     check_dof(m)
 
     # scale unit
+    feed_specification.set_default_scaling_TDS(m.fs.RO_properties)
     calculate_scaling_factors(m.fs.RO)
 
     # initialize
@@ -73,17 +74,22 @@ def build_detailed_example(m):
     check_dof(m)
 
     # scaling
+    feed_specification.set_default_scaling_TDS(m.fs.RO_properties)
     calculate_scaling_factors(m.fs.RO)
 
     # initialize
     m.fs.RO.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
 
 
-def run_example(func):
+def run_example(case):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    func(m)
+    if case == 'simple':
+        build_simple_example(m)
+    elif case == 'detailed':
+        build_detailed_example(m)
+
     solve_with_user_scaling(m)
 
     m.fs.RO.report()
@@ -92,5 +98,5 @@ def run_example(func):
 
 
 if __name__ == "__main__":
-    run_example(build_simple_example)
-    run_example(build_detailed_example)
+    run_example('simple')
+    run_example('detailed')

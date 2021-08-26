@@ -35,12 +35,10 @@ def specify_seawater_TDS(sb):
     sb.pressure.fix(101325)
     sb.temperature.fix(298.15)
 
-    # scaling
-    sb_indexed = sb.parent_component()
-    property_parameter_block = sb_indexed._get_parameter_block()
-    property_parameter_block.set_default_scaling('flow_mass_phase_comp', 1/feed_flow_mass, index=('Liq', 'H2O'))
-    property_parameter_block.set_default_scaling('flow_mass_phase_comp', 1/feed_flow_mass * 1e2, index=('Liq', 'TDS'))
 
+def set_default_scaling_TDS(property_parameter_block):
+    property_parameter_block.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
+    property_parameter_block.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TDS'))
 
 
 def specify_seawater_salts(sb):
@@ -60,15 +58,13 @@ def specify_seawater_salts(sb):
     sb.pressure.fix(101325)
     sb.temperature.fix(298.15)
 
-    # scaling
-    sb_indexed = sb.parent_component()
-    property_parameter_block = sb_indexed._get_parameter_block()
+
+def set_default_scaling_salts(property_parameter_block):
     property_parameter_block.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
     property_parameter_block.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
     property_parameter_block.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'CaSO4'))
     property_parameter_block.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'MgSO4'))
     property_parameter_block.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'MgCl2'))
-
 
 
 def specify_seawater_ions(sb):
@@ -90,9 +86,8 @@ def specify_seawater_ions(sb):
     sb.pressure.fix(101325)
     sb.temperature.fix(298.15)
 
-    # scaling
-    sb_indexed = sb.parent_component()
-    property_parameter_block = sb_indexed._get_parameter_block()
+
+def set_default_scaling_ions(property_parameter_block):
     property_parameter_block.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
     property_parameter_block.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'Na'))
     property_parameter_block.set_default_scaling('flow_mass_phase_comp', 1e4, index=('Liq', 'Ca'))
@@ -101,34 +96,37 @@ def specify_seawater_ions(sb):
     property_parameter_block.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'Cl'))
 
 
-def run_specify_seawater(specify_func, property_param_block):
+def run_specify_seawater(case):
     # build state block
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = property_param_block
-    m.fs.stream = m.fs.properties.build_state_block([0], default={})
-    m.fs.stream[0].mass_frac_phase_comp  # touch a variable to have a model with at least one constraint
+    if case == 'TDS':
+        m.fs.properties = seawater_prop_pack.SeawaterParameterBlock()
+        m.fs.stream = m.fs.properties.build_state_block([0], default={})
+        specify_seawater_TDS(m.fs.stream[0])
+        set_default_scaling_TDS(m.fs.properties)
+    elif case == 'salts':
+        m.fs.properties = property_seawater_salts.PropParameterBlock()
+        m.fs.stream = m.fs.properties.build_state_block([0], default={})
+        specify_seawater_salts(m.fs.stream[0])
+        set_default_scaling_salts(m.fs.properties)
+    elif case == 'ions':
+        m.fs.properties = property_seawater_ions.PropParameterBlock()
+        m.fs.stream = m.fs.properties.build_state_block([0], default={})
+        specify_seawater_ions(m.fs.stream[0])
+        set_default_scaling_ions(m.fs.properties)
 
-    # specify
-    specify_func(m.fs.stream[0])
+    m.fs.stream[0].mass_frac_phase_comp  # touch a variable to have a model with at least one constraint
 
     # scale
     calculate_scaling_factors(m.fs)
-
     # solve
     solve_with_user_scaling(m)
-
     # display
     m.fs.stream.display()
 
 
 if __name__ == "__main__":
-    print('Feed based on TDS')
-    run_specify_seawater(specify_seawater_TDS,
-                         seawater_prop_pack.SeawaterParameterBlock())
-    print('Feed based on salts')
-    run_specify_seawater(specify_seawater_salts,
-                         property_seawater_salts.PropParameterBlock())
-    print('Feed based on ions')
-    run_specify_seawater(specify_seawater_ions,
-                         property_seawater_ions.PropParameterBlock())
+    run_specify_seawater('TDS')
+    run_specify_seawater('salts')
+    run_specify_seawater('ions')
