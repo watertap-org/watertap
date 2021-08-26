@@ -33,14 +33,16 @@
     of individual species. To make the appropriate conversions, we will have to start
     by making some assumptions about the molecular weight of TDS.
 
-    MW H2O = 18e-3 kg/mol   MW TDS = ?? kg/mol (just assume all as NaCl? : MW Na = 23 g/mol MW Cl = 35.4 g/mol)
+    MW H2O = 18e-3 kg/mol   MW TDS = 58.4e-3 kg/mol
+                            (just assume all as NaCl? : MW Na = 23 g/mol MW Cl = 35.4 g/mol)
 
     Total Molar Flow = [ m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']/(MW H2O) +
                             m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'TDS']/(MW TDS) ]
 
     Molefraction of Na --> Based on TDS
                 =  [m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'TDS']/(MW TDS)] / (Total Molar Flow)
-    Molefraction of H2O --> Whatever is remaining (after adding NaOCl)
+    Molefraction of Cl = Molefraction of Na (1:1 ratio in the salt)
+    Molefraction of H2O --> Whatever is remaining
 
     ---------- WORK IN PROGRESS ---------
 """
@@ -67,6 +69,8 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models.translator import Translator
 from pyomo.network import Arc
 
+from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+
 def build_SepRO_Chlorination_flowsheet(model):
     build_RO_separator_example(model)
     build_simple_naocl_chlorination_unit(model)
@@ -76,7 +80,41 @@ def build_SepRO_Chlorination_flowsheet(model):
         default={"inlet_property_package": model.fs.RO_properties,
                  "outlet_property_package": model.fs.simple_naocl_thermo_params})
 
-    # Add constraints to define how the translator will function 
+    # Add constraints to define how the translator will function
+    model.fs.RO_to_Chlor.eq_equal_temperature = Constraint(
+        expr=model.fs.RO_to_Chlor.inlet.temperature[0]
+        == model.fs.RO_to_Chlor.outlet.temperature[0])
+    model.fs.RO_to_Chlor.eq_equal_pressure = Constraint(
+        expr=model.fs.RO_to_Chlor.inlet.pressure[0]
+        == model.fs.RO_to_Chlor.outlet.pressure[0])
+
+    model.fs.RO_to_Chlor.total_flow_cons = Constraint(
+        expr=model.fs.RO_to_Chlor.outlet.flow_mol[0] ==
+            (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']/18e-3) +
+            (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']/58.4e-3) )
+
+    model.fs.RO_to_Chlor.H_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "H_+"] == 0 )
+    model.fs.RO_to_Chlor.OH_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OH_-"] == 0 )
+    model.fs.RO_to_Chlor.HOCl_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "HOCl"] == 0 )
+    model.fs.RO_to_Chlor.OCl_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OCl_-"] == 0 )
+
+    model.fs.RO_to_Chlor.Cl_con = Constraint(
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "Cl_-"] ==
+            (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']/58.4e-3) /
+             model.fs.RO_to_Chlor.outlet.flow_mol[0] )
+
+    model.fs.RO_to_Chlor.Na_con = Constraint(
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "Na_+"] ==
+            (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']/58.4e-3) /
+             model.fs.RO_to_Chlor.outlet.flow_mol[0] )
+
+    model.fs.RO_to_Chlor.H2O_con = Constraint(
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "H2O"] == 1 -
+            sum(model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, j] for j in ["H_+", "OH_-",
+                "HOCl", "OCl_-", "Cl_-", "Na_+"]) )
+
+
+    #check_dof(model.fs.RO_to_Chlor)
     model.fs.RO_to_Chlor.pprint()
 
 
