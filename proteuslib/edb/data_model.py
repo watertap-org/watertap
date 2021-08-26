@@ -99,6 +99,9 @@ from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.generic_models.properties.core.pure import Perrys
 from idaes.generic_models.properties.core.pure.NIST import NIST
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+from idaes.generic_models.properties.core.pure.electrolyte import (
+    relative_permittivity_constant,
+)
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
     van_t_hoff,
 )
@@ -171,7 +174,7 @@ class ConfigGenerator:
     @classmethod
     def _transform_parameter_data(cls, comp):
         debugging, comp_name = _log.isEnabledFor(logging.DEBUG), comp.get("name", "?")
-        params = comp.get("parameter_data", None)
+        params = comp.get(DataWrapperNames.param, None)
         if not params:
             _log.warning(f"No parameter data found in data name={comp_name}")
             return
@@ -392,7 +395,8 @@ class ThermoConfig(ConfigGenerator):
             "pt.vaporphase": PhaseType.vaporPhase,
             "pt.aqueousphase": PhaseType.aqueousPhase,
         },
-        "*_comp": {"perrys": Perrys, "nist": NIST},
+        "*_comp": {"perrys": Perrys, "nist": NIST,
+                   "relative_permittivity_constant": relative_permittivity_constant},
         "phase_equilibrium_form.*": {
             "fugacity": fugacity,
         },
@@ -525,6 +529,8 @@ class BaseConfig(ConfigGenerator):
             if isinstance(data[section][key], list):
                 data[section][key] = tuple(data[section][key])
 
+class DataWrapperNames:
+    param = "parameter_data"
 
 class DataWrapper:
     """Interface to wrap data from DB in convenient ways for consumption by the rest of the library.
@@ -540,6 +546,8 @@ class DataWrapper:
     #: Subclasses should set this to the list of top-level keys that should be added,
     # i.e. merged, into the result when an instance is added to the base data wrapper.
     merge_keys = ()
+
+    NAMES = DataWrapperNames
 
     def __init__(
         self,
@@ -568,10 +576,48 @@ class DataWrapper:
             del self.data[key]
 
     def remove_parameter(self, key):
-        with field("parameter_data") as param:
-            if param in self.data:
-                if key in self.data[param]:
-                    del self.data[param][key]
+        param = self.NAMES.param  # alias
+        if param in self.data and key in self.data[param]:
+            del self.data[param][key]
+            self._config = None
+
+    def set_parameter(self, key: str, value, units: str = "dimensionless", index=0):
+        """Add to existing parameters or create a new parameter value.
+
+        Args:
+            key: Name of parameter
+            value: New value
+            units: Units for value
+            index: If parameter is a list of values, index to set. Otherwise.
+                   a list of length of 1 will be created with an index of 0.
+
+        Returns:
+            None
+
+        Raises:
+            KeyError: If the data structure doesn't have a spot for parameters.
+                This is likely a more basic problem with the current instance.
+        """
+        param = self.NAMES.param  # alias
+        if param not in self.data:
+            raise KeyError(f"Missing section {param}, so cannot set a parameter")
+        entry = {"v": value, "u": units, "i": index}
+        # check if there are alread value(s)
+        if key in self.data[param]:
+            # if existing values, replace matching index or add new
+            new_param, replaced = [], False
+            for item in self.data[param][key]:
+                if item["i"] == index:
+                    new_param.append(entry)
+                else:
+                    new_param.append(item)
+            if not replaced:
+                new_param.append(entry)
+        else:
+            # if no existing param, create new list of size 1
+            new_param = [entry]
+        self.data[param][key] = new_param
+        self._config = None  # force regeneration
 
     def _preprocess(self):
         pass  # define in subclasses
@@ -641,9 +687,9 @@ class DataWrapper:
 
     @classmethod
     def _convert_parameter_data(cls, src, tgt, caller="unknown"):
-        if "parameter_data" not in src:
-            raise BadConfiguration(caller, src, missing="parameter_data")
-        pd, data = src["parameter_data"], {}
+        if cls.NAMES.param not in src:
+            raise BadConfiguration(caller, src, missing=cls.NAMES.param)
+        pd, data = src[cls.NAMES.param], {}
         for param, value in pd.items():
             if isinstance(value, tuple):
                 data[param] = [{"v": value[0], "u": str(value[1])}]
@@ -677,15 +723,19 @@ class DataWrapper:
                 raise BadConfiguration(
                     caller,
                     src,
-                    why=f"Unexpected value type for 'parameter_data': key='{param}', "
+                    why=f"Unexpected value type for '{cls.NAMES.param}': key='{param}', "
                     f"value='{value}'",
                 )
-        tgt["parameter_data"] = data
+        tgt[cls.NAMES.param] = data
 
+class ComponentNames(DataWrapperNames):
+    pass
 
 class Component(DataWrapper):
 
     merge_keys = ("components",)
+
+    NAMES = ComponentNames
 
     def __init__(self, data: Dict, validation=True):
         """Constructor.
@@ -773,21 +823,18 @@ class Component(DataWrapper):
         return result
 
 
+class ReactionNames(DataWrapperNames):
+    stoich = "stoichiometry"
+    hor = "heat_of_reaction"
+    eq_const = "equilibrium_constant"
+    eq_form = "equilibrium_form"
+    conc_form = "concentration_form"
+
 class Reaction(DataWrapper):
 
     merge_keys = ("equilibrium_reactions", "rate_reactions", "inherent_reactions")
 
-    # Constants for field names, used in `schemas` and `db_api` modules
-    Fields = collections.namedtuple(
-        "Fields", ("stoich", "hor", "eq_const", "eq_form", "conc_form")
-    )
-    NAMES = Fields(
-        stoich="stoichiometry",
-        hor="heat_of_reaction",
-        eq_const="equilibrium_constant",
-        eq_form="equilibrium_form",
-        conc_form="concentration_form",
-    )
+    NAMES = ReactionNames
 
     def __init__(self, data: Dict, validation=True):
         """Constructor.
@@ -822,7 +869,7 @@ class Reaction(DataWrapper):
         Raises:
             KeyError: something is missing in the data structure
         """
-        with field("parameter_data") as param:
+        with field(self.NAMES.param) as param:
             if param not in self.data:
                 raise KeyError(f"Reaction missing '{param}'")
             with field("reaction_order") as ro:

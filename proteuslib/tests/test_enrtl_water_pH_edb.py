@@ -30,8 +30,12 @@ except Exception:
 
 def get_thermo_config(edb):
     from idaes.generic_models.properties.core.eos.enrtl import ENRTL
-    from idaes.generic_models.properties.core.eos.enrtl_reference_states import \
-        Unsymmetric
+    from idaes.generic_models.properties.core.eos.enrtl_reference_states import (
+        Unsymmetric,
+    )
+    from idaes.generic_models.properties.core.pure.electrolyte import (
+        relative_permittivity_constant,
+    )
 
     base = edb.get_one_base("water_reaction")
     elements = ["H", "O"]
@@ -43,16 +47,21 @@ def get_thermo_config(edb):
         c.remove("enth_mol_ig_comp")
         c.remove("phase_equilibrium_form")
         c.remove("pressure_sat_comp")
+        # Add specific stuff not in the DB
+        if c.name == "H2O":
+            c.data["relative_permittivity_liq_comp"] = "relative_permittivity_constant"
+            c.set_parameter("relative_permittivity_liq_comp", 78.54)
         base.add(c)
         components.append(c.name)
     # Add the reactions
     for r in edb.get_reactions(component_names=components):
         r.set_reaction_order("Liq", ("H2O",), ("H_+", "OH_-"))
-        r._data["type"] = "inherent"
         base.add(r)
     cfg = base.idaes_config.copy()
     cfg["phases"]["Liq"]["equation_of_state"] = ENRTL
     cfg["phases"]["Liq"]["equation_of_state_options"] = {"reference_state": Unsymmetric}
+    cfg["inherent_reactions"] = cfg["equilibrium_reactions"]
+    del cfg["equilibrium_reactions"]
     return cfg
 
 
@@ -64,17 +73,16 @@ def get_water_reaction_config(edb):
     elements = ["H", "O"]
     components = [c.name for c in edb.get_components(element_names=elements)]
     base = edb.get_one_base("water_reaction")
-    cfg = base.idaes_config.copy()
-    cfg.update(
-        {
-            "equilibrium_reactions": {
-                "dummy": {
-                    "stoichiometry": {},
-                    "equilibrium_form": log_power_law_equil,
-                }
+    # Just use base units, and add a dummy equilibrium reaction config
+    cfg = {
+        "base_units": base.idaes_config["base_units"],
+        "equilibrium_reactions": {
+            "dummy": {
+                "stoichiometry": {},
+                "equilibrium_form": log_power_law_equil,
             }
-        }
-    )
+        },
+    }
     return cfg
 
 
