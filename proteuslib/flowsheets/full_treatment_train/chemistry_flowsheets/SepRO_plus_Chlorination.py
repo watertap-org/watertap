@@ -52,6 +52,42 @@ from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.PostTreatme
     initialize_chlorination_example,
     display_results_of_chlorination, run_chlorination_example)
 
+# Import specific pyomo objects
+from pyomo.environ import (ConcreteModel,
+                           SolverStatus,
+                           TerminationCondition,
+                           Constraint,
+                           TransformationFactory,
+                           value,
+                           Suffix)
+
+# Import the core idaes objects for Flowsheets and types of balances
+from idaes.core import FlowsheetBlock
+
+from idaes.generic_models.unit_models.translator import Translator
+from pyomo.network import Arc
+
+def build_SepRO_Chlorination_flowsheet(model):
+    build_RO_separator_example(model)
+    build_simple_naocl_chlorination_unit(model)
+
+    # Translator inlet from RO and outlet goes to chlorination
+    model.fs.RO_to_Chlor = Translator(
+        default={"inlet_property_package": model.fs.RO_properties,
+                 "outlet_property_package": model.fs.simple_naocl_thermo_params})
+
+    # Add constraints to define how the translator will function 
+    model.fs.RO_to_Chlor.pprint()
+
+
+
+def run_SepRO_Chlorination_flowsheet_example():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    build_SepRO_Chlorination_flowsheet(m)
+
+    return m
 
 if __name__ == "__main__":
-    model = run_RO_example()
+    model = run_SepRO_Chlorination_flowsheet_example()
