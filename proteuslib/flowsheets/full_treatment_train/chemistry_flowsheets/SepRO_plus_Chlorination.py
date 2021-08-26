@@ -64,6 +64,8 @@ from pyomo.environ import (ConcreteModel,
                            value,
                            Suffix)
 
+from pyomo.network import SequentialDecomposition
+
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock
 
@@ -77,6 +79,12 @@ from proteuslib.flowsheets.full_treatment_train.electrolyte_scaling_utils import
     calculate_chemical_scaling_factors)
 
 from idaes.core.util import scaling as iscale
+
+from idaes.core.util import get_solver
+
+# Get default solver for testing
+solver = get_solver()
+
 
 def build_SepRO_Chlorination_flowsheet(model):
     build_RO_separator_example(model)
@@ -138,17 +146,18 @@ def build_SepRO_Chlorination_flowsheet(model):
                                 model.fs.simple_naocl_rxn_params, state_args)
 
     # initialize each block
-    solve_with_user_scaling(model.fs.RO)
-    model.fs.RO.inlet.display()
-    model.fs.RO.permeate.display()
-    model.fs.RO.retentate.display()
+
+    #solve_with_user_scaling(model.fs.RO)
+    #model.fs.RO.inlet.display()
+    #model.fs.RO.permeate.display()
+    #model.fs.RO.retentate.display()
 
     #solve_with_user_scaling(model.fs.RO_to_Chlor)
-    model.fs.RO_to_Chlor.inlet.display()
-    model.fs.RO_to_Chlor.outlet.display()
+    #model.fs.RO_to_Chlor.inlet.display()
+    #model.fs.RO_to_Chlor.outlet.display()
 
     initialize_chlorination_example(model.fs.simple_naocl_unit, state_args)
-    display_results_of_chlorination(model.fs.simple_naocl_unit)
+    #display_results_of_chlorination(model.fs.simple_naocl_unit)
 
     # unfix inlet conditions for chlorination
     model.fs.simple_naocl_unit.inlet.pressure.unfix()
@@ -169,8 +178,31 @@ def build_SepRO_Chlorination_flowsheet(model):
 
     check_dof(model)
 
-    # Needs debugging 
+    seq = SequentialDecomposition(tol=1.0E-3) # options can go to init
+    seq.options.select_tear_method = "heuristic" # or set them like so
+
+    def _temp_init(blk):
+        solver.options['bound_push'] = 1e-10
+        solver.options['mu_init'] = 1e-6
+        solver.options["nlp_scaling_method"] = "user-scaling"
+        results = solver.solve(blk, tee=True)
+
+        # You need this badly
+        iscale.constraint_autoscale_large_jac(blk)
+
+    seq.run(model, _temp_init)
+
+    # Needs debugging
     solve_with_user_scaling(model, tee=True)
+
+    model.fs.RO.inlet.display()
+    model.fs.RO.permeate.display()
+    model.fs.RO.retentate.display()
+
+    model.fs.RO_to_Chlor.inlet.display()
+    model.fs.RO_to_Chlor.outlet.display()
+
+    display_results_of_chlorination(model.fs.simple_naocl_unit)
 
 
 def run_SepRO_Chlorination_flowsheet_example():
