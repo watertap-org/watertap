@@ -195,6 +195,13 @@ def build_SepRO_Chlorination_flowsheet(model):
     # Needs debugging
     solve_with_user_scaling(model, tee=True)
 
+    model.fs.RO.inlet.display()
+    model.fs.RO.permeate.display()
+    model.fs.RO.retentate.display()
+
+    model.fs.RO_to_Chlor.inlet.display()
+    model.fs.RO_to_Chlor.outlet.display()
+
     display_results_of_chlorination(model.fs.simple_naocl_unit)
 
 
