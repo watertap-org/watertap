@@ -19,7 +19,6 @@ jobs:
   tests:
     name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
-    if: matrix.mongodb_server  # FIXME remove after debugging
     strategy:
       fail-fast: false
       matrix:
@@ -45,12 +44,15 @@ jobs:
             mongodb_server: true
     steps:
     - uses: actions/checkout@v2
+      if: matrix.mongodb_server  # FIXME remove after debugging
     - name: Set up Python ${{ matrix.python-version }}
       uses: conda-incubator/setup-miniconda@v2
+      if: matrix.mongodb_server  # FIXME remove after debugging
       with:
         activate-environment: proteuslib-dev
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
+      if: matrix.mongodb_server  # FIXME remove after debugging
       run: |
         echo '::group::Output of "conda install" commands'
         conda install --quiet --yes pip=21.1 wheel setuptools
@@ -82,17 +84,20 @@ jobs:
       if: matrix.cov_report
       run: echo 'PYTEST_ADDOPTS="--cov-report=xml"' >> $GITHUB_ENV
     - name: Test with pytest
+      if: matrix.mongodb_server  # FIXME remove after debugging
       run: |
         pytest
     - name: Upload coverage report to Codecov
       if: matrix.cov_report
       uses: codecov/codecov-action@v2
     - name: Test documentation code
+      if: "false"  # FIXME remove after debugging
       run: |
         make -C docs doctest -d
     # just run the linkcheck on one of the jobs
     # so we don't slam external sites
     - name: Test documentation links
-      if: matrix.python-version == 3.9 && matrix.os == 'linux'
+      if: "false"
+      # if: matrix.python-version == 3.9 && matrix.os == 'linux'
       run: |
         make -C docs linkcheck -d
