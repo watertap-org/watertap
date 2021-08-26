@@ -38,9 +38,10 @@ jobs:
             os-version: windows-2019
           # - os: macos
           #   os-version: macos-10.15
-          # limit uploading coverage report for a single Python version in the matrix
           - python-version: '3.8'
+            # limit uploading coverage report for a single Python version in the matrix
             cov_report: true
+            mongodb_server: true
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
@@ -64,6 +65,18 @@ jobs:
         echo '::group::Output of "idaes get-extensions" command'
         idaes get-extensions --verbose
         echo '::endgroup::'
+    - name: Set up MongoDB server
+      if: matrix.mongodb_server
+      uses: supercharge/mongodb-github-action@3f91157600649d0002802978c8b6fb6ee659a2dd
+      with:
+        # everything else being equal, we test against 4.03 since it's the latest available
+        # through Conda, which makes installation significantly easier for users
+        mongodb-version: "4.03"
+    - name: Test connection to MongoDB instance
+      if: matrix.mongodb_server
+      run: |
+        # TODO it would be better to use a command that fails if tests are skipped
+        pytest -k 'db_api' -v
     - name: Add coverage report options
       if: matrix.cov_report
       run: echo 'PYTEST_ADDOPTS="--cov-report=xml"' >> $GITHUB_ENV
