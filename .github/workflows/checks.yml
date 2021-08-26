@@ -19,6 +19,7 @@ jobs:
   tests:
     name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
+    if: matrix.mongodb_server  # FIXME remove after debugging
     strategy:
       fail-fast: false
       matrix:
