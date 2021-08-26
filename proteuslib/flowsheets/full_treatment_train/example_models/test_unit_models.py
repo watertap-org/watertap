@@ -18,7 +18,7 @@ import proteuslib.flowsheets.full_treatment_train.example_models.unit_0DRO as un
 
 @pytest.mark.component
 def test_unit_separator_RO_example():
-    m = unit_separator.run_RO_example()
+    m = unit_separator.run_example(unit_separator.build_RO_example, 'RO')
     assert value(m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.4825, rel=1e-3)
     assert value(m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(3.5e-4, rel=1e-3)
     assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.4825, rel=1e-3)
@@ -27,7 +27,7 @@ def test_unit_separator_RO_example():
 
 @pytest.mark.component
 def test_unit_separator_NF_salt_example():
-    m = unit_separator.run_NF_salt_example()
+    m = unit_separator.run_example(unit_separator.build_NF_salt_example, 'NF')
     assert value(m.fs.NF.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.8682, rel=1e-3)
     assert value(m.fs.NF.permeate.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == pytest.approx(2.544e-2, rel=1e-3)
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'CaSO4']) == pytest.approx(1.168e-3, rel=1e-3)
@@ -38,7 +38,7 @@ def test_unit_separator_NF_salt_example():
 
 @pytest.mark.component
 def test_unit_separator_NF_ion_example():
-    m = unit_separator.run_NF_ion_example()
+    m = unit_separator.run_example(unit_separator.build_NF_ion_example, 'NF')
     assert value(m.fs.NF.mixed_state[0].mass_frac_phase_comp['Liq', 'Na']) == pytest.approx(11122e-6, rel=1e-3)
     assert value(m.fs.NF.mixed_state[0].mass_frac_phase_comp['Liq', 'Cl']) == pytest.approx(20317e-6, rel=1e-3)
     assert value(m.fs.NF.split_fraction[0, 'permeate', 'Cl']) == pytest.approx(0.7753, rel=1e-3)
@@ -52,7 +52,7 @@ def test_unit_separator_NF_ion_example():
 
 @pytest.mark.component
 def test_unit_0DRO_simple():
-    m = unit_0DRO.run_simple_example()
+    m = unit_0DRO.run_example(unit_0DRO.build_simple_example)
     assert value(m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.3389, rel=1e-3)
     assert value(m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(7.875e-5, rel=1e-3)
     assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.6261, rel=1e-3)
@@ -61,7 +61,7 @@ def test_unit_0DRO_simple():
 
 @pytest.mark.component
 def test_unit_0DRO_detailed():
-    m = unit_0DRO.run_detailed_example()
+    m = unit_0DRO.run_example(unit_0DRO.build_detailed_example)
     m.fs.RO.report()
     assert value(m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.2653, rel=1e-3)
     assert value(m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(8.476e-5, rel=1e-3)

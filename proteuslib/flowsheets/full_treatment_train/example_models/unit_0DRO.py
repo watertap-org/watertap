@@ -17,6 +17,7 @@ from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 import proteuslib.property_models.seawater_prop_pack as props
+import proteuslib.flowsheets.full_treatment_train.example_models.feed_specification as feed_specification
 from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
                                                        ConcentrationPolarizationType,
                                                        MassTransferCoefficient,
@@ -31,22 +32,16 @@ def build_simple_example(m):
 
     # specify unit
     # feed
-    feed_flow_mass = 1
-    feed_mass_frac_TDS = 0.035
-    m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS'].fix(feed_flow_mass * feed_mass_frac_TDS)
-    m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(feed_flow_mass * (1 - feed_mass_frac_TDS))
-    m.fs.RO.inlet.pressure[0].fix(50e5)
-    m.fs.RO.inlet.temperature[0].fix(298.15)
+    feed_specification.specify_seawater_TDS(m.fs.RO.feed_side.properties_in[0])
+    m.fs.RO.feed_side.properties_in[0].pressure.fix(50e5)
     # RO
-    m.fs.RO.area.fix(50 * feed_flow_mass)
+    m.fs.RO.area.fix(50)
     m.fs.RO.A_comp.fix(4.2e-12)
     m.fs.RO.B_comp.fix(3.5e-8)
     m.fs.RO.permeate.pressure[0].fix(101325)
     check_dof(m)
 
     # scale unit
-    m.fs.RO_properties.set_default_scaling('flow_mass_phase_comp', 1 / feed_flow_mass, index=('Liq', 'H2O'))
-    m.fs.RO_properties.set_default_scaling('flow_mass_phase_comp', 1 / feed_flow_mass * 1e2, index=('Liq', 'TDS'))
     calculate_scaling_factors(m.fs.RO)
 
     # initialize
@@ -65,14 +60,10 @@ def build_detailed_example(m):
 
     # specify unit
     # feed
-    feed_flow_mass = 1
-    feed_mass_frac_TDS = 0.035
-    m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS'].fix(feed_flow_mass * feed_mass_frac_TDS)
-    m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(feed_flow_mass * (1 - feed_mass_frac_TDS))
-    m.fs.RO.inlet.pressure[0].fix(50e5)
-    m.fs.RO.inlet.temperature[0].fix(298.15)
+    feed_specification.specify_seawater_TDS(m.fs.RO.feed_side.properties_in[0])
+    m.fs.RO.feed_side.properties_in[0].pressure.fix(50e5)
     # RO
-    m.fs.RO.area.fix(50 * feed_flow_mass)
+    m.fs.RO.area.fix(50)
     m.fs.RO.A_comp.fix(4.2e-12)
     m.fs.RO.B_comp.fix(3.5e-8)
     m.fs.RO.permeate.pressure[0].fix(101325)
@@ -82,31 +73,17 @@ def build_detailed_example(m):
     check_dof(m)
 
     # scaling
-    m.fs.RO_properties.set_default_scaling('flow_mass_phase_comp', 1 / feed_flow_mass, index=('Liq', 'H2O'))
-    m.fs.RO_properties.set_default_scaling('flow_mass_phase_comp', 1 / feed_flow_mass * 1e2, index=('Liq', 'TDS'))
     calculate_scaling_factors(m.fs.RO)
 
     # initialize
     m.fs.RO.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
 
 
-def run_simple_example():
+def run_example(func):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    build_simple_example(m)
-    solve_with_user_scaling(m)
-
-    m.fs.RO.report()
-
-    return m
-
-
-def run_detailed_example():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-
-    build_detailed_example(m)
+    func(m)
     solve_with_user_scaling(m)
 
     m.fs.RO.report()
@@ -115,5 +92,5 @@ def run_detailed_example():
 
 
 if __name__ == "__main__":
-    run_simple_example()
-    run_detailed_example()
+    run_example(build_simple_example)
+    run_example(build_detailed_example)

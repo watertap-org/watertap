@@ -21,10 +21,11 @@ from idaes.core.util.scaling import calculate_scaling_factors
 import proteuslib.property_models.seawater_prop_pack as seawater_prop_pack
 import proteuslib.flowsheets.full_treatment_train.example_models.property_seawater_salts as property_seawater_salts
 import proteuslib.flowsheets.full_treatment_train.example_models.property_seawater_ions as property_seawater_ions
+import proteuslib.flowsheets.full_treatment_train.example_models.feed_specification as feed_specification
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
-def build_RO_separator_example(m):
+def build_RO_example(m):
     m.fs.RO_properties = seawater_prop_pack.SeawaterParameterBlock()
     m.fs.RO = Separator(default={
         "property_package": m.fs.RO_properties,
@@ -34,20 +35,13 @@ def build_RO_separator_example(m):
 
     # specifying
     # feed
-    feed_flow_mass = 1
-    feed_mass_frac_TDS = 0.035
-    m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS'].fix(feed_flow_mass * feed_mass_frac_TDS)
-    m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(feed_flow_mass * (1 - feed_mass_frac_TDS))
-    m.fs.RO.inlet.pressure[0].fix(101325)
-    m.fs.RO.inlet.temperature[0].fix(298.15)
+    feed_specification.specify_seawater_TDS(m.fs.RO.mixed_state[0])
     # separator
     m.fs.RO.split_fraction[0, 'permeate', 'H2O'].fix(0.5)
     m.fs.RO.split_fraction[0, 'permeate', 'TDS'].fix(0.01)
     check_dof(m)
 
     # scaling
-    m.fs.RO_properties.set_default_scaling('flow_mass_phase_comp', 1/feed_flow_mass, index=('Liq', 'H2O'))
-    m.fs.RO_properties.set_default_scaling('flow_mass_phase_comp', 1/feed_flow_mass * 1e2, index=('Liq', 'TDS'))
     calculate_scaling_factors(m.fs.RO)
 
 
@@ -65,7 +59,7 @@ def run_RO_example():
     return m
 
 
-def build_NF_salt_separator_example(m):
+def build_NF_salt_example(m):
     m.fs.NF_properties = property_seawater_salts.PropParameterBlock()
     m.fs.NF = Separator(default={
         "property_package": m.fs.NF_properties,
@@ -75,16 +69,7 @@ def build_NF_salt_separator_example(m):
 
     # specifying
     # feed
-    feed_flow_mass = 1
-    feed_mass_frac = {'NaCl': 2.827e-2,
-                      'CaSO4': 1.298e-3,
-                      'MgSO4': 1.529e-3,
-                      'MgCl2': 4.251e-3,
-                      'H2O': 0.9647}
-    for s in feed_mass_frac:
-        m.fs.NF.inlet.flow_mass_phase_comp[0, 'Liq', s].fix(feed_flow_mass * feed_mass_frac[s])
-    m.fs.NF.inlet.pressure[0].fix(101325)
-    m.fs.NF.inlet.temperature[0].fix(298.15)
+    feed_specification.specify_seawater_salts(m.fs.NF.mixed_state[0])
     # separator
     m.fs.NF.split_fraction[0, 'permeate', 'H2O'].fix(0.9)
     m.fs.NF.split_fraction[0, 'permeate', 'NaCl'].fix(0.9)
@@ -94,29 +79,11 @@ def build_NF_salt_separator_example(m):
     check_dof(m)
 
     # scaling
-    m.fs.NF_properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-    m.fs.NF_properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
-    m.fs.NF_properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'CaSO4'))
-    m.fs.NF_properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'MgSO4'))
-    m.fs.NF_properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'MgCl2'))
     calculate_scaling_factors(m.fs.NF)
 
 
-def run_NF_salt_example():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    build_NF_salt_separator_example(m)
-    solve_with_user_scaling(m)
-
-    m.fs.NF.inlet.display()
-    m.fs.NF.permeate.display()
-    m.fs.NF.retentate.display()
-
-    return m
-
-
-def build_NF_ion_separator_example(m):
+def build_NF_ion_example(m):
     m.fs.NF_properties = property_seawater_ions.PropParameterBlock()
     m.fs.NF = Separator(default={
         "property_package": m.fs.NF_properties,
@@ -126,18 +93,7 @@ def build_NF_ion_separator_example(m):
 
     # specifying
     # feed
-    feed_flow_mass = 1
-    feed_mass_frac = {'Na': 11122e-6,
-                      'Ca': 382e-6,
-                      'Mg': 1394e-6,
-                      'SO4': 2136e-6,
-                      'Cl': 20300e-6}
-    m.fs.NF.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
-        feed_flow_mass * (1 - sum(x for x in feed_mass_frac.values())))
-    for j in feed_mass_frac:
-        m.fs.NF.inlet.flow_mass_phase_comp[0, 'Liq', j].fix(feed_flow_mass * feed_mass_frac[j])
-    m.fs.NF.inlet.pressure[0].fix(101325)
-    m.fs.NF.inlet.temperature[0].fix(298.15)
+    feed_specification.specify_seawater_ions(m.fs.NF.mixed_state[0])
     m.fs.NF.mixed_state[0].mass_frac_phase_comp  # touching
     # separator
     m.fs.NF.split_fraction[0, 'permeate', 'H2O'].fix(0.9)
@@ -151,12 +107,6 @@ def build_NF_ion_separator_example(m):
         expr=0 ==
              sum(charge_dict[j] * m.fs.NF.retentate_state[0].flow_mol_phase_comp['Liq', j]
                  for j in charge_dict))
-    # enforce electro-neutrality for the inlet with Cl adjusting
-    m.fs.NF.inlet.flow_mass_phase_comp[0, 'Liq', 'Cl'].unfix()
-    m.fs.NF.EN_in = Constraint(
-        expr=0 ==
-             sum(charge_dict[j] * m.fs.NF.mixed_state[0].flow_mol_phase_comp['Liq', j]
-                 for j in charge_dict))
     check_dof(m)
 
     # scaling
@@ -169,23 +119,23 @@ def build_NF_ion_separator_example(m):
     calculate_scaling_factors(m.fs.NF)
 
 
-def run_NF_ion_example():
+def run_example(func, unit_str):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    build_NF_ion_separator_example(m)
+    func(m)
     solve_with_user_scaling(m)
 
-    m.fs.NF.inlet.display()
-    m.fs.NF.permeate.display()
-    m.fs.NF.retentate.display()
-    m.fs.NF.report()
+    blk = getattr(m.fs, unit_str)
+    blk.inlet.display()
+    blk.permeate.display()
+    blk.retentate.display()
 
     return m
 
 
 if __name__ == "__main__":
-    # run_RO_example()
-    # run_NF_salt_example()
-    run_NF_ion_example()
+    run_example(build_RO_example, 'RO')
+    run_example(build_NF_salt_example, 'NF')
+    run_example(build_NF_ion_example, 'NF')
 
