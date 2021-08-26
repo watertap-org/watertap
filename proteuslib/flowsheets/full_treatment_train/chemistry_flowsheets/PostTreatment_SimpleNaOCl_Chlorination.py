@@ -293,30 +293,8 @@ simple_naocl_thermo_config = {
                                         ("Liq", "OH_-"): 1}
                         }
                         # End parameter_data
-                   },
-                   # End R1
-            "HOCl_Ka": {
-                    "stoichiometry": {("Liq", "HOCl"): -1,
-                                     ("Liq", "H_+"): 1,
-                                     ("Liq", "OCl_-"): 1},
-                   "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": van_t_hoff,
-                   "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.moleFraction,
-                   "parameter_data": {
-                       "dh_rxn_ref": (13.8, pyunits.J/pyunits.mol),
-                       "k_eq_ref": (10**-7.6422/55.2, pyunits.dimensionless),
-                       "T_eq_ref": (298, pyunits.K),
-
-                       # By default, reaction orders follow stoichiometry
-                       #    manually set reaction order here to override
-                       "reaction_order": {("Liq", "HOCl"): -1,
-                                        ("Liq", "H_+"): 1,
-                                        ("Liq", "OCl_-"): 1}
-                        }
-                        # End parameter_data
                    }
-                   # End R4
+                   # End R1
              }
              # End equilibrium_reactions
     }
@@ -330,10 +308,28 @@ dummy_reaction_config = {
                    "amount": pyunits.mol,
                    "temperature": pyunits.K},
     "equilibrium_reactions": {
-        "dummy": {
-                "stoichiometry": {},
-                "equilibrium_form": log_power_law_equil,
+        "HOCl_Ka": {
+                "stoichiometry": {("Liq", "HOCl"): -1,
+                                 ("Liq", "H_+"): 1,
+                                 ("Liq", "OCl_-"): 1},
+               "heat_of_reaction": constant_dh_rxn,
+               "equilibrium_constant": van_t_hoff,
+               "equilibrium_form": log_power_law_equil,
+               "concentration_form": ConcentrationForm.moleFraction,
+               "parameter_data": {
+                   "dh_rxn_ref": (13.8, pyunits.J/pyunits.mol),
+                   "k_eq_ref": (10**-7.6422/55.2, pyunits.dimensionless),
+                   "T_eq_ref": (298, pyunits.K),
+
+                   # By default, reaction orders follow stoichiometry
+                   #    manually set reaction order here to override
+                   "reaction_order": {("Liq", "HOCl"): -1,
+                                    ("Liq", "H_+"): 1,
+                                    ("Liq", "OCl_-"): 1}
+                    }
+                    # End parameter_data
                }
+               # End R2
          }
          # End equilibrium_reactions
     }
@@ -355,7 +351,7 @@ def build_simple_naocl_chlorination_unit(model,
             "property_package": model.fs.simple_naocl_thermo_params,
             "reaction_package": model.fs.simple_naocl_rxn_params,
             "has_rate_reactions": False,
-            "has_equilibrium_reactions": False,
+            "has_equilibrium_reactions": True,
             "has_heat_transfer": False,
             "has_heat_of_reaction": False,
             "has_pressure_change": False})
