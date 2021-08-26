@@ -45,20 +45,6 @@ def build_RO_example(m):
     calculate_scaling_factors(m.fs.RO)
 
 
-def run_RO_example():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-
-    build_RO_separator_example(m)
-    solve_with_user_scaling(m)
-
-    m.fs.RO.inlet.display()
-    m.fs.RO.permeate.display()
-    m.fs.RO.retentate.display()
-
-    return m
-
-
 def build_NF_salt_example(m):
     m.fs.NF_properties = property_seawater_salts.PropParameterBlock()
     m.fs.NF = Separator(default={
@@ -67,7 +53,7 @@ def build_NF_salt_example(m):
         "split_basis": SplittingType.componentFlow,
         "energy_split_basis": EnergySplittingType.equal_temperature})
 
-    # specifying
+    # specify
     # feed
     feed_specification.specify_seawater_salts(m.fs.NF.mixed_state[0])
     # separator
@@ -91,7 +77,7 @@ def build_NF_ion_example(m):
         "split_basis": SplittingType.componentFlow,
         "energy_split_basis": EnergySplittingType.equal_temperature})
 
-    # specifying
+    # specify
     # feed
     feed_specification.specify_seawater_ions(m.fs.NF.mixed_state[0])
     m.fs.NF.mixed_state[0].mass_frac_phase_comp  # touching

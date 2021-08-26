@@ -82,20 +82,13 @@ def specify_seawater_ions(sb):
                       'Ca': 382e-6,
                       'Mg': 1394e-6,
                       'SO4': 2136e-6,
-                      'Cl': 20300e-6}
+                      'Cl': 20316.88e-6}
     sb.flow_mass_phase_comp['Liq', 'H2O'].fix(
         feed_flow_mass * (1 - sum(x for x in feed_mass_frac.values())))
     for j in feed_mass_frac:
         sb.flow_mass_phase_comp['Liq', j].fix(feed_flow_mass * feed_mass_frac[j])
     sb.pressure.fix(101325)
     sb.temperature.fix(298.15)
-
-    # include constraint for electro-neutrality and unfix Cl-
-    sb.flow_mass_phase_comp['Liq', 'Cl'].unfix()
-    charge_dict = {'Na': 1, 'Ca': 2, 'Mg': 2, 'SO4': -2, 'Cl': -1}
-    sb.eq_electroneutrality = Constraint(
-        expr=0 ==
-             sum(charge_dict[j] * sb.flow_mol_phase_comp['Liq', j] for j in charge_dict))
 
     # scaling
     sb_indexed = sb.parent_component()
