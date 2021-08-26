@@ -12,8 +12,13 @@
 ###############################################################################
 
 """
-   Tests to check reactions of water softening by adding lime (CaOH2) to Magnesium 
-   bicarbonate with stoichiometric reactor and return correct hardness value.
+   Tests to check reactions of water softening by adding lime (CaOH2) to calcium
+   bicarbonate and magnesium bicarbonate with stoichiometric reactor and return 
+   correct hardness value.
+
+   Kinetic Reactions:
+        Ca(HCO3)2 +   Ca(OH)2 --> 2 CaCO3 +  2 H2O 
+        Mg(HCO3)2 + 2 Ca(OH)2 --> 2 CaCO3 + Mg(OH)2 +  2 H2O 
 """
 import pytest
 
@@ -89,6 +94,8 @@ from idaes.generic_models.properties.core.reactions.equilibrium_constant import 
 
 # Import log10 function from pyomo
 from pyomo.environ import log10
+
+__author__ = "Srikanth Allu, Austin Ladshaw"
 
 thermo_config = {
     "components": {
@@ -166,6 +173,21 @@ thermo_config = {
                             },
                     # End parameter_data
                     },
+        'Ca(HCO3)2': {  "type": Solute,  "valid_phase_types": PT.aqueousPhase,
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
+                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
+                            },
+                    # End parameter_data
+                    },
         'Mg(OH)2': {  "type": Solute,  "valid_phase_types": PT.aqueousPhase,
                     # Define the methods used to calculate the following properties
                     "dens_mol_liq_comp": Constant,
@@ -182,22 +204,6 @@ thermo_config = {
                             },
                     # End parameter_data
                     },
-#        'MgCO3': {  "type": Solute,  "valid_phase_types": PT.aqueousPhase,
-#                    # Define the methods used to calculate the following properties
-#                    "dens_mol_liq_comp": Constant,
-#                    "enth_mol_liq_comp": Constant,
-#                    "cp_mol_liq_comp": Constant,
-#                    "entr_mol_liq_comp": Constant,
-#                    # Parameter data is always associated with the methods defined above
-#                    "parameter_data": {
-#                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-#                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
-#                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
-#                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
-#                            },
-#                    # End parameter_data
-#                    },
-
         'Mg(HCO3)2': {  "type": Solute,  "valid_phase_types": PT.aqueousPhase,
                     # Define the methods used to calculate the following properties
                     "dens_mol_liq_comp": Constant,
@@ -250,24 +256,23 @@ reaction_config = {
          },
          # End equilibrium_reactions
     "rate_reactions": {
-#        "R1": {"stoichiometry": {("Liq", "CaCO3"): 1,
-#                                 ("Liq", "Mg(OH)2"): 1,
-#                                 ("Liq", "Ca(OH)2"): -1,
-#                                 ("Liq", "MgCO3"): -1},
-#               "heat_of_reaction": constant_dh_rxn,
-#               "rate_constant" : arrhenius,
-#               "rate_form" : power_law_rate,
-#               "concentration_form" : ConcentrationForm.moleFraction,
-#               "parameter_data": {
-#                   "arrhenius_const" : (1, pyunits.mol/pyunits.m**3/pyunits.s),
-#                   "energy_activation" : (0, pyunits.J/pyunits.mol),
-#                   "dh_rxn_ref": (0, pyunits.J/pyunits.mol)
-#              }
-#         },
+        "R1": {"stoichiometry": {("Liq", "Ca(HCO3)2"): -1,
+                                 ("Liq", "Ca(OH)2"): -1,
+                                 ("Liq", "CaCO3"): 2,
+                                 ("Liq", "H2O"): 2},
+               "heat_of_reaction": constant_dh_rxn,
+               "rate_constant" : arrhenius,
+               "rate_form" : power_law_rate,
+               "concentration_form" : ConcentrationForm.moleFraction,
+               "parameter_data": {
+                   "arrhenius_const" : (1, pyunits.mol/pyunits.m**3/pyunits.s),
+                   "energy_activation" : (0, pyunits.J/pyunits.mol),
+                   "dh_rxn_ref": (0, pyunits.J/pyunits.mol)
+              }
+         },
         "R2": {"stoichiometry": {("Liq", "Mg(HCO3)2"): -1,
                                  ("Liq", "Ca(OH)2"): -2,
                                  ("Liq", "CaCO3"): 2,
-#                                 ("Liq", "MgCO3"): 1,
                                  ("Liq", "Mg(OH)2"): 1,
                                  ("Liq", "H2O"): 2},
                "heat_of_reaction": constant_dh_rxn,
@@ -309,17 +314,20 @@ class TestWaterStoich(object):
                 "has_pressure_change": False})
 
         m.fs.unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"].fix( 0.00003 )
-        m.fs.unit.inlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.00003 )
-        m.fs.unit.inlet.mole_frac_comp[0, "CaCO3"].fix( 0. )
         m.fs.unit.inlet.mole_frac_comp[0, "Mg(OH)2"].fix( 0. )
-        m.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 0.99994 )
+        m.fs.unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"].fix( 0.00003 )
+        m.fs.unit.inlet.mole_frac_comp[0, "CaCO3"].fix( 0. )
+        m.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 0.99991 )
 
         m.fs.unit.inlet.pressure.fix(101325.0)
         m.fs.unit.inlet.temperature.fix(298.)
         m.fs.unit.inlet.flow_mol.fix(10)
 
         m.fs.unit.outlet.temperature.fix(298.)
-        m.fs.unit.outlet.mole_frac_comp[0, "CaCO3"].fix( 0.00003 )
+
+        m.fs.unit.outlet.mole_frac_comp[0, "Ca(HCO3)2"].fix( 0.000015 )
+        m.fs.unit.outlet.mole_frac_comp[0, "Mg(HCO3)2"].fix( 0.000015 )
+        m.fs.unit.outlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.0000003 )
 
         return m
 
@@ -329,15 +337,17 @@ class TestWaterStoich(object):
 
         m = water_stoich 
         assert hasattr(m.fs.thermo_params, 'component_list')
-        assert len(m.fs.thermo_params.component_list) == 5
+        assert len(m.fs.thermo_params.component_list) == 6
         assert 'H2O' in m.fs.thermo_params.component_list
         assert isinstance(m.fs.thermo_params.H2O, Solvent)
-        assert 'Mg(HCO3)2' in m.fs.thermo_params.component_list
-        assert isinstance(m.fs.thermo_params.component('Mg(HCO3)2'), Solute)
+        assert 'Ca(HCO3)2' in m.fs.thermo_params.component_list
+        assert isinstance(m.fs.thermo_params.component('Ca(HCO3)2'), Solute)
         assert 'Ca(OH)2' in m.fs.thermo_params.component_list
         assert isinstance(m.fs.thermo_params.component('Ca(OH)2'), Solute)
         assert 'CaCO3' in m.fs.thermo_params.component_list
         assert isinstance(m.fs.thermo_params.component('CaCO3'), Solute)
+        assert 'Mg(HCO3)2' in m.fs.thermo_params.component_list
+        assert isinstance(m.fs.thermo_params.component('Mg(HCO3)2'), Solute)
 
         assert hasattr(m.fs.thermo_params, 'phase_list')
         assert len(m.fs.thermo_params.phase_list) == 1
@@ -356,9 +366,9 @@ class TestWaterStoich(object):
     @pytest.mark.unit
     def test_stats_stoich(self, water_stoich):
         m = water_stoich
-        assert (number_variables(m) == 98)
-        assert (number_total_constraints(m) == 46)
-        assert (number_unused_variables(m) == 44)
+        assert (number_variables(m) == 123)
+        assert (number_total_constraints(m) == 54)
+        assert (number_unused_variables(m) == 59)
 
     @pytest.mark.component
     def test_scaling_stoich(self, water_stoich):
@@ -379,7 +389,7 @@ class TestWaterStoich(object):
                 m.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
             iscale.constraint_scaling_transform(m.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
-        iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_extent[0.0,'R2'], 1)
+        iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_extent[0.0,'R1'], 1)
         iscale.calculate_scaling_factors(m.fs.unit)
 
         assert isinstance(m.fs.unit.control_volume.scaling_factor, Suffix)
@@ -413,22 +423,18 @@ class TestWaterStoich(object):
     def test_solve_inherent(self, water_stoich):
         m = water_stoich
         solver.options['max_iter'] = 4000
-        results = solver.solve(m,tee=True)
+        results = solver.solve(m)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
     @pytest.mark.component
     def test_solution_inherent(self, water_stoich):
         m = water_stoich
-
         total_molar_density = \
             value(m.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
-        assert pytest.approx(55.2336, rel=1e-5) == total_molar_density
-        total_hardness = 50000*2* m.fs.unit.outlet.mole_frac_comp[0, "Mg(HCO3)2"].value*total_molar_density
-
+        print(total_molar_density)
+        total_hardness1 = 50000*2* m.fs.unit.outlet.mole_frac_comp[0, "Ca(HCO3)2"].value*total_molar_density
+        total_hardness2 = 50000*2* m.fs.unit.outlet.mole_frac_comp[0, "Mg(HCO3)2"].value*total_molar_density
+        print(total_hardness1+total_hardness2)
         m.fs.unit.inlet.mole_frac_comp.pprint()
         m.fs.unit.outlet.mole_frac_comp.pprint()
-
-        print(total_hardness)
-        assert pytest.approx(82.84543, rel=1e-5) == total_hardness
-        print(value((m.fs.unit.outlet.mole_frac_comp[0, "Ca(OH)2"])))

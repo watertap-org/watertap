@@ -333,9 +333,6 @@ class TestWaterStoich(object):
 
         iscale.set_scaling_factor(m.fs.unit.control_volume.rate_reaction_extent[0.0,'R1'], 1)
         iscale.calculate_scaling_factors(m.fs.unit)
-#        iscale.constraint_autoscale_large_jac(m)
-
-#        m.fs.unit.control_volume.pprint()
 
         assert isinstance(m.fs.unit.control_volume.scaling_factor, Suffix)
 
@@ -354,8 +351,6 @@ class TestWaterStoich(object):
         solver.options['mu_init'] = 1e-6
         solver.options['nlp_scaling_method'] = 'user-scaling'
         m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-
-#        iscale.constraint_autoscale_large_jac(m)
 
         fin_fixed_vars = fixed_variables_set(m)
         fin_act_consts = activated_constraints_set(m)
@@ -384,4 +379,3 @@ class TestWaterStoich(object):
         total_hardness = 50000*2* m.fs.unit.outlet.mole_frac_comp[0, "Ca(HCO3)2"].value*total_molar_density
         print(total_hardness)
         print(value((m.fs.unit.outlet.mole_frac_comp[0, "Ca(OH)2"])))
-        assert False
