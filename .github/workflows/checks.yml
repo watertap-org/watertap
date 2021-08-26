@@ -82,7 +82,8 @@ jobs:
       if: matrix.mongodb_server
       run: |
         # TODO it would be better to use a command that fails if tests are skipped
-        pytest -k 'db_api' -v
+        pytest -k 'db_api' -sv
+        pytest -k 'edb' -sv
     - name: Add coverage report options
       if: matrix.cov_report
       run: echo 'PYTEST_ADDOPTS="--cov-report=xml"' >> $GITHUB_ENV
