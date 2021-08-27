@@ -110,7 +110,8 @@ def get_carbonic_thermo_config(edb):
     component_names = ("Na_+", "CO3_2-",  "HCO3_-", "H2CO3", "OH_-", "H_+", "H2O")
     for c in edb.get_components(component_names=component_names):
         # Need to remove these to avoid errors when using the generated config
-        c.remove("valid_phase_types")
+        if c.name != "H2CO3":
+            c.remove("valid_phase_types")
         c.remove("enth_mol_ig_comp")
         c.remove("phase_equilibrium_form")
         c.remove("pressure_sat_comp")
@@ -127,8 +128,12 @@ def get_carbonic_thermo_config(edb):
             r.set_reaction_order("Liq", ("H2O",), ("H_+", "OH_-"))
         elif r.name == "H2CO3_Ka1":
             r.set_reaction_order("Liq", ("H2CO3",), ("H_+", "HCO3_-"), lhs_value=-1)
+            r.remove_parameter("ds_rxn_ref")
+            r.set_parameter("dh_rxn_ref", 0, units="kJ/mol")
         elif r.name == "H2CO3_Ka2":
             r.set_reaction_order("Liq", ("HCO3_-",), ("H_+", "CO3_2-"), lhs_value=-1)
+            r.remove_parameter("ds_rxn_ref")
+            r.set_parameter("dh_rxn_ref", 0, units="kJ/mol")
         base.add(r)
 
     cfg = base.idaes_config.copy()

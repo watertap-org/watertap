@@ -609,8 +609,11 @@ class DataWrapper:
             new_param, replaced = [], False
             for item in self.data[param][key]:
                 if item["i"] == index:
+                    # replace entry at this index with the new entry
                     new_param.append(entry)
+                    replaced = True
                 else:
+                    # keep current entry for this index
                     new_param.append(item)
             if not replaced:
                 new_param.append(entry)
