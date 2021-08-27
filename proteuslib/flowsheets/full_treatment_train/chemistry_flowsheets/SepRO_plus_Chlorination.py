@@ -77,6 +77,8 @@ from proteuslib.flowsheets.full_treatment_train.electrolyte_scaling_utils import
     approximate_chemical_state_args,
     calculate_chemical_scaling_factors)
 
+from proteuslib.flowsheets.full_treatment_train.chemical_flowsheet_util import seq_decomp_initializer
+
 from idaes.core.util import scaling as iscale
 
 from idaes.core.util import get_solver
@@ -85,15 +87,23 @@ from idaes.core.util import get_solver
 solver = get_solver()
 
 
-def build_SepRO_Chlorination_flowsheet(model):
+def build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0):
     property_models.build_prop_TDS(model)
     unit_separator.build_RO_example(model)
     property_models.specify_feed_TDS(model.fs.RO.mixed_state[0])
 
+    total_molar_density = 1/18*1000 #mol/L
+    free_chlorine_added = mg_per_L_NaOCl_added/74.44/1000*70900 #mg/L as NaOCl
+    total_chlorine_inlet = free_chlorine_added/70900 # mol/L
+    total_molar_density+=total_chlorine_inlet
+
     # May need to change this build interface
-    build_simple_naocl_chlorination_unit(model, mg_per_L_NaOCl_added = 0)
+    build_simple_naocl_chlorination_unit(model, mg_per_L_NaOCl_added = mg_per_L_NaOCl_added)
 
     # Translator inlet from RO and outlet goes to chlorination
+    # NOTE: May need to come up with a way to set state_args for Translator for
+    #       better convergence behavior. This block seems to be the trouble maker
+    #       for the full solve.
     model.fs.RO_to_Chlor = Translator(
         default={"inlet_property_package": model.fs.prop_TDS,
                  "outlet_property_package": model.fs.simple_naocl_thermo_params})
@@ -114,7 +124,10 @@ def build_SepRO_Chlorination_flowsheet(model):
     model.fs.RO_to_Chlor.H_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "H_+"] == 0 )
     model.fs.RO_to_Chlor.OH_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OH_-"] == 0 )
     model.fs.RO_to_Chlor.HOCl_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "HOCl"] == 0 )
-    model.fs.RO_to_Chlor.OCl_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OCl_-"] == 0 )
+
+
+    model.fs.RO_to_Chlor.OCl_con = Constraint(
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OCl_-"] == total_chlorine_inlet/total_molar_density )
 
     model.fs.RO_to_Chlor.Cl_con = Constraint(
         expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "Cl_-"] ==
@@ -124,7 +137,7 @@ def build_SepRO_Chlorination_flowsheet(model):
     model.fs.RO_to_Chlor.Na_con = Constraint(
         expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "Na_+"] ==
             (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']/58.4e-3) /
-             model.fs.RO_to_Chlor.outlet.flow_mol[0] )
+             model.fs.RO_to_Chlor.outlet.flow_mol[0] + total_chlorine_inlet/total_molar_density)
 
     model.fs.RO_to_Chlor.H2O_con = Constraint(
         expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "H2O"] == 1 -
@@ -146,19 +159,8 @@ def build_SepRO_Chlorination_flowsheet(model):
                                 model.fs.simple_naocl_thermo_params,
                                 model.fs.simple_naocl_rxn_params, state_args)
 
-    # initialize each block
-
-    #solve_with_user_scaling(model.fs.RO)
-    #model.fs.RO.inlet.display()
-    #model.fs.RO.permeate.display()
-    #model.fs.RO.retentate.display()
-
-    #solve_with_user_scaling(model.fs.RO_to_Chlor)
-    #model.fs.RO_to_Chlor.inlet.display()
-    #model.fs.RO_to_Chlor.outlet.display()
-
+    # initialize each chemical block (REQUIRED)
     initialize_chlorination_example(model.fs.simple_naocl_unit, state_args)
-    #display_results_of_chlorination(model.fs.simple_naocl_unit)
 
     # unfix inlet conditions for chlorination
     model.fs.simple_naocl_unit.inlet.pressure.unfix()
@@ -179,21 +181,18 @@ def build_SepRO_Chlorination_flowsheet(model):
 
     check_dof(model)
 
-    seq = SequentialDecomposition(tol=1.0E-3) # options can go to init
-    seq.options.select_tear_method = "heuristic" # or set them like so
 
-    def _temp_init(blk):
-        solver.options['bound_push'] = 1e-10
-        solver.options['mu_init'] = 1e-6
-        solver.options["nlp_scaling_method"] = "user-scaling"
-        results = solver.solve(blk, tee=True)
+def run_SepRO_Chlorination_flowsheet_example():
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(default={"dynamic": False})
 
-        # You need this badly
-        iscale.constraint_autoscale_large_jac(blk)
+    # build the flow sheet
+    build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=2)
 
-    seq.run(model, _temp_init)
+    # Call the sequential decomposition initializer tool
+    seq_decomp_initializer(model)
 
-    # Needs debugging
+    # fun the full solve
     solve_with_user_scaling(model, tee=True)
 
     model.fs.RO.inlet.display()
@@ -205,14 +204,7 @@ def build_SepRO_Chlorination_flowsheet(model):
 
     display_results_of_chlorination(model.fs.simple_naocl_unit)
 
-
-def run_SepRO_Chlorination_flowsheet_example():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-
-    build_SepRO_Chlorination_flowsheet(m)
-
-    return m
+    return model
 
 if __name__ == "__main__":
     model = run_SepRO_Chlorination_flowsheet_example()
