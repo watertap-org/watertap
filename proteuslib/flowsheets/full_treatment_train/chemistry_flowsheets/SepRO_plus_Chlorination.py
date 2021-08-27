@@ -44,7 +44,7 @@
     Molefraction of Cl = Molefraction of Na (1:1 ratio in the salt)
     Molefraction of H2O --> Whatever is remaining
 
-    ---------- WORK IN PROGRESS ---------
+    ---------- NOTE: This is only an example ---------
 """
 
 from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator, property_models

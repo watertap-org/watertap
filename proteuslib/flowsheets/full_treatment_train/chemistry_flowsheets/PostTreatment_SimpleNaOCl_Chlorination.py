@@ -422,6 +422,8 @@ def initialize_chlorination_example(unit, state_args, user_scaling=True, debug_o
     else:
         unit.initialize(state_args=state_args, optarg=solver.options)
 
+    iscale.constraint_autoscale_large_jac(unit)
+
 def display_results_of_chlorination(chlorination_unit):
     print()
     print("=========== Chlorination Results ============")
@@ -465,6 +467,8 @@ def run_chlorination_example():
                                 model.fs.simple_naocl_rxn_params, state_args)
 
     initialize_chlorination_example(model.fs.simple_naocl_unit, state_args)
+
+    solve_with_user_scaling(model, tee=True)
 
     display_results_of_chlorination(model.fs.simple_naocl_unit)
 
