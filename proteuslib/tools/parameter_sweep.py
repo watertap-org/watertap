@@ -21,11 +21,14 @@ from enum import Enum, auto
 from abc import abstractmethod, ABC 
 from idaes.core.util import get_solver
 
+from idaes.surrogate.pysmo import sampling
+
 # ================================================================
 
 class SamplingType(Enum):
     FIXED = auto()
     RANDOM = auto()
+    RANDOM_LHS = auto()
 
 # ================================================================
 
@@ -95,6 +98,18 @@ class NormalSample(RandomSample):
 
 # ================================================================
 
+class LatinHypercubeSample(UniformSample):
+
+    def sample(self, num_samples): 
+        return [self.lower_limit, self.upper_limit]
+
+    def setup(self, lower_limit, upper_limit):
+        self.lower_limit = lower_limit
+        self.upper_limit = upper_limit
+        self.sampling_type = SamplingType.RANDOM_LHS
+
+# ================================================================
+
 def _init_mpi(mpi_comm=None):
 
     if mpi_comm is None:
@@ -111,7 +126,7 @@ def _init_mpi(mpi_comm=None):
 
 # ================================================================
 
-def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
+def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs, seed):
     num_var_params = len(d)
 
     if rank == 0:
@@ -131,6 +146,15 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
             sorting = np.argsort(param_values[0])
             global_combo_array = np.vstack(param_values).T
             global_combo_array = global_combo_array[sorting, :]
+
+        elif sampling_type == SamplingType.RANDOM_LHS:
+            lb = [val[0] for val in param_values]
+            ub = [val[1] for val in param_values]
+            lhs = sampling.LatinHypercubeSampling([lb, ub], number_of_samples=num_samples, sampling_type='creation', rng_seed=seed)
+            global_combo_array = lhs.sample_points()
+            sorting = np.argsort(global_combo_array[:, 0])
+            global_combo_array = global_combo_array[sorting, :]
+
         else:
             raise ValueError(f"Unknown sampling type: {sampling_type}")
 
@@ -144,7 +168,7 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
             nx = 1
             for k, v in d.items():
                 nx *= v.num_samples
-        elif sampling_type == SamplingType.RANDOM:
+        elif sampling_type == SamplingType.RANDOM or sampling_type == SamplingType.RANDOM_LHS:
             nx = num_samples
         else:
             raise ValueError(f"Unknown sampling type: {sampling_type}")
@@ -351,7 +375,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
     np.random.seed(seed)
 
     # Enumerate/Sample the parameter space
-    global_values = _build_combinations(sweep_params, sampling_type, num_samples, comm, rank, num_procs)
+    global_values = _build_combinations(sweep_params, sampling_type, num_samples, comm, rank, num_procs, seed)
 
     # divide the workload between processors
     local_values = _divide_combinations(global_values, rank, num_procs)
