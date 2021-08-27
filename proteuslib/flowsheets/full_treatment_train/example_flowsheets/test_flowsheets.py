@@ -18,7 +18,7 @@ import proteuslib.flowsheets.full_treatment_train.example_flowsheets.SepNF_SepRO
 
 @pytest.mark.component
 def test_SepNF_SepRO_NoBypass_NF_salt_basis_example():
-    m = SepNF_SepRO_NoBypass.run_flowsheet_NF_salt_basis_example()
+    m = SepNF_SepRO_NoBypass.run_flowsheet_example('salt')
     assert value(m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.8682, rel=1e-3)
     assert value(m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(2.658e-2, rel=1e-3)
     assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.4341, rel=1e-3)
@@ -26,7 +26,7 @@ def test_SepNF_SepRO_NoBypass_NF_salt_basis_example():
 
 @pytest.mark.component
 def test_SepNF_SepRO_NoBypass_NF_ion_basis_example():
-    m = SepNF_SepRO_NoBypass.run_flowsheet_NF_ion_basis_example()
+    m = SepNF_SepRO_NoBypass.run_flowsheet_example('ion')
     assert value(m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.8682, rel=1e-3)
     assert value(m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(2.615e-2, rel=1e-3)
     assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.4341, rel=1e-3)
@@ -34,7 +34,7 @@ def test_SepNF_SepRO_NoBypass_NF_ion_basis_example():
 
 @pytest.mark.component
 def test_SepNF_SepRO_NF_salt_basis_example():
-    m = SepNF_SepRO.run_flowsheet_NF_salt_basis_example()
+    m = SepNF_SepRO.run_flowsheet_example('salt')
     assert value(m.fs.mixer.pretreatment.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.6512, rel=1e-3)
     assert value(m.fs.mixer.pretreatment.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == pytest.approx(1.908e-2, rel=1e-3)
     assert value(m.fs.mixer.bypass.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.2412, rel=1e-3)
@@ -44,7 +44,7 @@ def test_SepNF_SepRO_NF_salt_basis_example():
 
 @pytest.mark.component
 def test_SepNF_SepRO_NF_ion_basis_example():
-    m = SepNF_SepRO.run_flowsheet_NF_ion_basis_example()
+    m = SepNF_SepRO.run_flowsheet_example('ion')
     assert value(m.fs.mixer.pretreatment.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.6512, rel=1e-3)
     assert value(m.fs.mixer.pretreatment.flow_mass_phase_comp[0, 'Liq', 'Na']) == pytest.approx(7.507e-3, rel=1e-3)
     assert value(m.fs.mixer.bypass.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.2412, rel=1e-3)
