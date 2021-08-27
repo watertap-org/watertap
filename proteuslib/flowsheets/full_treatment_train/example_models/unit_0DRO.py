@@ -33,7 +33,6 @@ def build_simple_example(m):
     m.fs.RO.A_comp.fix(4.2e-12)
     m.fs.RO.B_comp.fix(3.5e-8)
     m.fs.RO.permeate.pressure[0].fix(101325)
-    check_dof(m, dof_expected=4)
 
     # scale unit
     calculate_scaling_factors(m.fs.RO)
@@ -56,7 +55,6 @@ def build_detailed_example(m):
     m.fs.RO.channel_height.fix(1e-3)
     m.fs.RO.spacer_porosity.fix(0.97)
     m.fs.RO.N_Re_io[0, 'in'].fix(500)
-    check_dof(m, dof_expected=4)
 
     # scaling
     calculate_scaling_factors(m.fs.RO)

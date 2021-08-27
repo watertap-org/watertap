@@ -18,114 +18,73 @@ from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import Separator, Mixer
 from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
-from idaes.generic_models.unit_models.mixer import MixingType, MomentumMixingType
-from idaes.generic_models.unit_models.translator import Translator
 from idaes.core.util.initialization import propagate_state, fix_state_vars, revert_state_vars
-from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator, unit_0DRO
+from proteuslib.unit_models.pump_isothermal import Pump
+from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator, unit_0DRO, property_models
+from proteuslib.flowsheets.full_treatment_train.example_flowsheets import translator_block
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
-from idaes.core.util.scaling import calculate_scaling_factors
+from idaes.core.util.scaling import calculate_scaling_factors, set_scaling_factor
 
 
 def build_flowsheet_simple_example(m):
     """
-    Builds a flowsheet with NF and RO. The NF is modeled as a separator with
-    specified split fractions. The RO is modeled with the 0D RO proteuslib model
-    with default options. The flowsheet includes a translator block to convert
-    between the NF's multi-ion property package and the RO's seawater package.
+    Build a flowsheet with NF and RO including bypass. Both the NF and RO are
+    modeled as separators with specified split fractions. The NF uses prop_salt and
+    the RO uses prop_TDS.
     """
     # build flowsheet
-    unit_separator.build_NF_ion_separator_example(m)
+    property_models.build_prop_salt(m)
+    property_models.build_prop_TDS(m)
+    unit_separator.build_NF_salt_example(m)
     unit_0DRO.build_simple_example(m)
-    m.fs.tb_NF_to_RO = Translator(
-        default={"inlet_property_package": m.fs.NF_properties,
-                 "outlet_property_package": m.fs.RO_properties})
     m.fs.splitter = Separator(default={
-        "property_package": m.fs.NF_properties,
+        "property_package": m.fs.prop_salt,
         "outlet_list": ['pretreatment', 'bypass'],
         "split_basis": SplittingType.totalFlow,
         "energy_split_basis": EnergySplittingType.equal_temperature})
     m.fs.mixer = Mixer(default={
-        "property_package": m.fs.NF_properties,
+        "property_package": m.fs.prop_salt,
         "inlet_list": ['pretreatment', 'bypass']})
+    m.fs.pump = Pump(default={'property_package': m.fs.prop_TDS})
 
-    # add constraints for translator block (tb)
-    m.fs.tb_NF_to_RO.eq_H2O_balance = Constraint(
-        expr=m.fs.tb_NF_to_RO.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']
-        == m.fs.tb_NF_to_RO.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O'])
-    m.fs.tb_NF_to_RO.eq_TDS_balance = Constraint(
-        expr=sum(m.fs.tb_NF_to_RO.inlet.flow_mass_phase_comp[0, 'Liq', j] for j in ['Na', 'Ca', 'Mg', 'SO4', 'Cl'])
-        == m.fs.tb_NF_to_RO.outlet.flow_mass_phase_comp[0, 'Liq', 'TDS'])
-    m.fs.tb_NF_to_RO.eq_equal_temperature = Constraint(
-        expr=m.fs.tb_NF_to_RO.inlet.temperature[0]
-        == m.fs.tb_NF_to_RO.outlet.temperature[0])
-    m.fs.tb_NF_to_RO.eq_equal_pressure = Constraint(
-        expr=m.fs.tb_NF_to_RO.inlet.pressure[0]
-        == m.fs.tb_NF_to_RO.outlet.pressure[0])
+    translator_block.build_tb_salt_to_TDS(m)
 
     # connect models
-    m.fs.S1 = Arc(source=m.fs.splitter.bypass, destination=m.fs.mixer.bypass)
-    m.fs.S2 = Arc(source=m.fs.splitter.pretreatment, destination=m.fs.NF.inlet)
-    m.fs.S3 = Arc(source=m.fs.NF.permeate, destination=m.fs.mixer.pretreatment)
-    m.fs.S4 = Arc(source=m.fs.mixer.outlet, destination=m.fs.tb_NF_to_RO.inlet)
-    m.fs.S5 = Arc(source=m.fs.tb_NF_to_RO.outlet, destination=m.fs.RO.inlet)
-    TransformationFactory("network.expand_arcs").apply_to(m)
+    m.fs.s01 = Arc(source=m.fs.splitter.bypass, destination=m.fs.mixer.bypass)
+    m.fs.s02 = Arc(source=m.fs.splitter.pretreatment, destination=m.fs.NF.inlet)
+    m.fs.s03 = Arc(source=m.fs.NF.permeate, destination=m.fs.mixer.pretreatment)
+    m.fs.s04 = Arc(source=m.fs.mixer.outlet, destination=m.fs.tb_salt_to_TDS.inlet)
+    m.fs.s05 = Arc(source=m.fs.tb_salt_to_TDS.outlet, destination=m.fs.pump.inlet)
+    m.fs.s06 = Arc(source=m.fs.pump.outlet, destination=m.fs.RO.inlet)
 
-    # specify (NF and RO models are already specified, mixer has 0 DOF, splitter has 1 DOF)
-    # feed
-    feed_flow_mass = 1
-    feed_mass_frac = {'Na': 11122e-6,
-                      'Ca': 382e-6,
-                      'Mg': 1394e-6,
-                      'SO4': 2136e-6,
-                      'Cl': 20300e-6}
-    m.fs.splitter.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
-        feed_flow_mass * (1 - sum(x for x in feed_mass_frac.values())))
-    for j in feed_mass_frac:
-        m.fs.splitter.inlet.flow_mass_phase_comp[0, 'Liq', j].fix(feed_flow_mass * feed_mass_frac[j])
-    m.fs.splitter.inlet.pressure[0].fix(101325)
-    m.fs.splitter.inlet.temperature[0].fix(298.15)
+    # specify (NF and RO models are already specified, DOF: mixer 0, splitter 1, pump 2)
     # splitter
     m.fs.splitter.split_fraction[0, 'bypass'].fix(0.25)
+    # pump
+    m.fs.pump.efficiency_pump.fix(0.80)
+    m.fs.pump.control_volume.properties_out[0].pressure.fix(50e5)
 
-    # scaling (NF and RO models are already scaled)
+    # scaling (NF and RO models and translator are already scaled)
     calculate_scaling_factors(m.fs.splitter)
     calculate_scaling_factors(m.fs.mixer)
-    calculate_scaling_factors(m.fs.tb_NF_to_RO)
+    set_scaling_factor(m.fs.pump.control_volume.work, 1e-3)
+    calculate_scaling_factors(m.fs.pump)
 
     # initialize
     m.fs.splitter.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
-    propagate_state(m.fs.S1)  # propagate to mixer
-    m.fs.NF.display()
-    print('***************************\n')
-    propagate_state(m.fs.S2)  # propagate to NF
-    # m.fs.NF.initialize(optarg={'nlp_scaling_method': 'user-scaling'})  # this doesn't work because of a TypeError
-    m.fs.NF.display()
-    print('***************************\n')
-    flags = fix_state_vars(m.fs.NF.mixed_state)
-
-    check_dof(m.fs.NF)
-    solve_with_user_scaling(m.fs.NF)
-    m.fs.NF.display()
-    assert False
-
-
-    # enforce electro-neutrality for the inlet with Cl adjusting
-    m.fs.splitter.inlet.flow_mass_phase_comp[0, 'Liq', 'Cl'].unfix()
-    charge_dict = {'Na': 1, 'Ca': 2, 'Mg': 2, 'SO4': -2, 'Cl': -1}
-    m.fs.splitter.EN_in = Constraint(
-        expr=0 ==
-             sum(charge_dict[j] * m.fs.splitter.mixed_state[0].flow_mol_phase_comp['Liq', j]
-                 for j in charge_dict))
-
-    # unfix NF and RO inlet
-    m.fs.NF.inlet.flow_mass_phase_comp.unfix()
-    m.fs.NF.inlet.temperature.unfix()
-    m.fs.NF.inlet.pressure.unfix()
-    m.fs.NF.EN_in.deactivate()  # electro-neutrality already addressed in feed
-    m.fs.RO.inlet.flow_mass_phase_comp.unfix()
-    m.fs.RO.inlet.temperature.unfix()
-    m.fs.RO.inlet.pressure.unfix()
-    check_dof(m)
+    propagate_state(m.fs.s01)
+    propagate_state(m.fs.s02)
+    # m.fs.NF.initialize(optarg={'nlp_scaling_method': 'user-scaling'})  # IDAES error TODO: discuss with Andrew
+    propagate_state(m.fs.s03)
+    m.fs.mixer.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
+    propagate_state(m.fs.s04)
+    m.fs.tb_salt_to_TDS.properties_in[0].mass_frac_phase_comp  # touch a property to create constraint in stateblock
+    m.fs.tb_salt_to_TDS.properties_out[0].mass_frac_phase_comp  # touch a property to create constraint in stateblock
+    m.fs.tb_salt_to_TDS.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
+    propagate_state(m.fs.s05)
+    m.fs.pump.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
+    propagate_state(m.fs.s06)
+    m.fs.RO.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
 
     return m
 
@@ -135,6 +94,10 @@ def run_flowsheet_simple_example():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     build_flowsheet_simple_example(m)
+    property_models.specify_feed_salt(m.fs.splitter.mixed_state[0])
+
+    TransformationFactory("network.expand_arcs").apply_to(m)
+    check_dof(m)
     solve_with_user_scaling(m)
 
     m.fs.splitter.report()
