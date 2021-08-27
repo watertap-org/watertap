@@ -39,8 +39,11 @@ class ElectrolyteDB:
 
     DEFAULT_HOST = "localhost"
     DEFAULT_PORT = 27017
-    DEFAULT_URL = "mongodb://{DEFAULT_HOST}:{DEFAULT_PORT}"
+    DEFAULT_URL = f"mongodb://{DEFAULT_HOST}:{DEFAULT_PORT}"
     DEFAULT_DB = "electrolytedb"
+
+    # Default timeout, in ms, for sockets, connections, and server selection
+    timeout_ms = 5000
 
     # make sure these match lowercase names of the DataWrapper subclasses in
     # the `data_model` module
@@ -77,6 +80,14 @@ class ElectrolyteDB:
             host = cls.DEFAULT_HOST
         if port is None:
             port = cls.DEFAULT_PORT
+
+        # add timeouts (probably shorter than defaults)
+        timeout_args = {
+            "socketTimeoutMS": cls.timeout_ms,
+            "connectTimeoutMS": cls.timeout_ms,
+            "serverSelectionTimeoutMS": cls.timeout_ms,
+        }
+        kwargs.update(timeout_args)
 
         client = MongoClient(host=host, port=port, **kwargs)
 
