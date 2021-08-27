@@ -21,6 +21,7 @@ from typing import Dict, List, Optional, Union
 
 # third-party
 from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure
 
 # package
 from .data_model import Result, Component, Reaction, Base, DataWrapper
@@ -36,7 +37,9 @@ class ElectrolyteDB:
     This uses MongoDB as the underlying data store.
     """
 
-    DEFAULT_URL = "mongodb://localhost:27017"
+    DEFAULT_HOST = "localhost"
+    DEFAULT_PORT = 27017
+    DEFAULT_URL = "mongodb://{DEFAULT_HOST}:{DEFAULT_PORT}"
     DEFAULT_DB = "electrolytedb"
 
     # make sure these match lowercase names of the DataWrapper subclasses in
@@ -66,13 +69,27 @@ class ElectrolyteDB:
         client = MongoClient(host=url)
         client.drop_database(db)
 
-    @staticmethod
-    def can_connect(url, **kwargs):
+    @classmethod
+    def can_connect(cls, host=None, port=None, **kwargs):
+        result = True
+
+        if host is None:
+            host = cls.DEFAULT_HOST
+        if port is None:
+            port = cls.DEFAULT_PORT
+
+        client = MongoClient(host=host, port=port, **kwargs)
+
+        # This approach is taken directly from MongoClient docstring -dang
         try:
-            _ = MongoClient(host=url, **kwargs)
-        except Exception:
-            return False
-        return True
+            # The ismaster command is cheap and does not require auth.
+            client.admin.command("ismaster")
+            _log.debug(f"MongoDB server at {host}:{port} is available")
+        except ConnectionFailure:
+            _log.error(f"MongoDB server at {host}:{port} is NOT available")
+            result = False
+
+        return result
 
     @property
     def database(self):
@@ -82,8 +99,11 @@ class ElectrolyteDB:
     def url(self):
         return self._server_url
 
-    def get_components(self, component_names: Optional[List[str]] = None,
-                       element_names: Optional[List[str]] = None) -> Result:
+    def get_components(
+        self,
+        component_names: Optional[List[str]] = None,
+        element_names: Optional[List[str]] = None,
+    ) -> Result:
         """Get thermodynamic information for components of reactions.
 
         Args:
@@ -103,8 +123,11 @@ class ElectrolyteDB:
             # Find all components with at least one of the specified elements,
             # then filter results to include only components where the elements
             # are a subset of the specified elements (i.e., no 'other' elements).
-            it = (doc for doc in collection.find({"elements": {"$in": elt_list}})
-                  if set(doc["elements"]) <= elt_set)
+            it = (
+                doc
+                for doc in collection.find({"elements": {"$in": elt_list}})
+                if set(doc["elements"]) <= elt_set
+            )
         else:
             _log.debug(f"get_components. get all components (empty query)")
             it = collection.find(filter={})
