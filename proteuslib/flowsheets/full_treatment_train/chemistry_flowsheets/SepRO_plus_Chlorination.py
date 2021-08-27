@@ -47,8 +47,7 @@
     ---------- WORK IN PROGRESS ---------
 """
 
-from proteuslib.flowsheets.full_treatment_train.example_models.unit_separator import (
-    build_RO_separator_example, run_RO_example)
+from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator, property_models
 from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.PostTreatment_SimpleNaOCl_Chlorination import (
     build_simple_naocl_chlorination_unit,
     initialize_chlorination_example,
@@ -87,14 +86,16 @@ solver = get_solver()
 
 
 def build_SepRO_Chlorination_flowsheet(model):
-    build_RO_separator_example(model)
+    property_models.build_prop_TDS(model)
+    unit_separator.build_RO_example(model)
+    property_models.specify_feed_TDS(model.fs.RO.mixed_state[0])
 
     # May need to change this build interface
     build_simple_naocl_chlorination_unit(model, mg_per_L_NaOCl_added = 0)
 
     # Translator inlet from RO and outlet goes to chlorination
     model.fs.RO_to_Chlor = Translator(
-        default={"inlet_property_package": model.fs.RO_properties,
+        default={"inlet_property_package": model.fs.prop_TDS,
                  "outlet_property_package": model.fs.simple_naocl_thermo_params})
 
     # Add constraints to define how the translator will function
