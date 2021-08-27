@@ -22,7 +22,9 @@ from proteuslib.edb import ElectrolyteDB
 from .test_pure_water_pH import TestPureWater
 
 # Set global database object after checking that MongoDB server is up
-g_edb = ElectrolyteDB() if ElectrolyteDB.can_connect() else None
+g_edb = None
+if ElectrolyteDB.can_connect():
+    g_edb = ElectrolyteDB()
 
 
 def get_thermo_config(edb):
