@@ -16,8 +16,7 @@
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
-import proteuslib.property_models.seawater_prop_pack as props
-import proteuslib.flowsheets.full_treatment_train.example_models.feed_specification as feed_specification
+from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
                                                        ConcentrationPolarizationType,
                                                        MassTransferCoefficient,
@@ -27,43 +26,29 @@ from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scal
 
 def build_simple_example(m):
     # build unit
-    m.fs.RO_properties = props.SeawaterParameterBlock()
-    m.fs.RO = ReverseOsmosis0D(default={"property_package": m.fs.RO_properties})
+    m.fs.RO = ReverseOsmosis0D(default={"property_package": m.fs.prop_TDS})
 
     # specify unit
-    # feed
-    feed_specification.specify_seawater_TDS(m.fs.RO.feed_side.properties_in[0])
-    m.fs.RO.feed_side.properties_in[0].pressure.fix(50e5)
-    # RO
     m.fs.RO.area.fix(50)
     m.fs.RO.A_comp.fix(4.2e-12)
     m.fs.RO.B_comp.fix(3.5e-8)
     m.fs.RO.permeate.pressure[0].fix(101325)
-    check_dof(m)
+    check_dof(m, dof_expected=4)
 
     # scale unit
-    feed_specification.set_default_scaling_TDS(m.fs.RO_properties)
     calculate_scaling_factors(m.fs.RO)
-
-    # initialize
-    m.fs.RO.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
 
 
 def build_detailed_example(m):
     # build unit
-    m.fs.RO_properties = props.SeawaterParameterBlock()
     m.fs.RO = ReverseOsmosis0D(default={
-        "property_package": m.fs.RO_properties,
+        "property_package": m.fs.prop_TDS,
         "has_pressure_change": True,
         "pressure_change_type": PressureChangeType.calculated,
         "mass_transfer_coefficient": MassTransferCoefficient.calculated,
         "concentration_polarization_type": ConcentrationPolarizationType.calculated})
 
     # specify unit
-    # feed
-    feed_specification.specify_seawater_TDS(m.fs.RO.feed_side.properties_in[0])
-    m.fs.RO.feed_side.properties_in[0].pressure.fix(50e5)
-    # RO
     m.fs.RO.area.fix(50)
     m.fs.RO.A_comp.fix(4.2e-12)
     m.fs.RO.B_comp.fix(3.5e-8)
@@ -71,25 +56,30 @@ def build_detailed_example(m):
     m.fs.RO.channel_height.fix(1e-3)
     m.fs.RO.spacer_porosity.fix(0.97)
     m.fs.RO.N_Re_io[0, 'in'].fix(500)
-    check_dof(m)
+    check_dof(m, dof_expected=4)
 
     # scaling
-    feed_specification.set_default_scaling_TDS(m.fs.RO_properties)
     calculate_scaling_factors(m.fs.RO)
-
-    # initialize
-    m.fs.RO.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
 
 
 def run_example(case):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
+    property_models.build_prop_TDS(m)
 
     if case == 'simple':
         build_simple_example(m)
     elif case == 'detailed':
         build_detailed_example(m)
 
+    # specify feed
+    property_models.specify_feed_TDS(m.fs.RO.feed_side.properties_in[0])
+    m.fs.RO.feed_side.properties_in[0].pressure.fix(50e5)
+
+    # initialize
+    m.fs.RO.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
+
+    check_dof(m)
     solve_with_user_scaling(m)
 
     m.fs.RO.report()

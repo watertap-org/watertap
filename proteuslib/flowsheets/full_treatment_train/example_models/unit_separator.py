@@ -18,72 +18,51 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import Separator
 from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
 from idaes.core.util.scaling import calculate_scaling_factors
-import proteuslib.property_models.seawater_prop_pack as seawater_prop_pack
-import proteuslib.flowsheets.full_treatment_train.example_models.property_seawater_salts as property_seawater_salts
-import proteuslib.flowsheets.full_treatment_train.example_models.property_seawater_ions as property_seawater_ions
-import proteuslib.flowsheets.full_treatment_train.example_models.feed_specification as feed_specification
+from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
 def build_RO_example(m):
-    m.fs.RO_properties = seawater_prop_pack.SeawaterParameterBlock()
     m.fs.RO = Separator(default={
-        "property_package": m.fs.RO_properties,
-        "outlet_list": ['retentate', 'permeate'],
-        "split_basis": SplittingType.componentFlow,
-        "energy_split_basis": EnergySplittingType.equal_temperature})
-
-    # specifying
-    # feed
-    feed_specification.specify_seawater_TDS(m.fs.RO.mixed_state[0])
-    # separator
-    m.fs.RO.split_fraction[0, 'permeate', 'H2O'].fix(0.5)
-    m.fs.RO.split_fraction[0, 'permeate', 'TDS'].fix(0.01)
-    check_dof(m)
-
-    # scaling
-    feed_specification.set_default_scaling_TDS(m.fs.RO_properties)
-    calculate_scaling_factors(m.fs.RO)
-
-
-def build_NF_salt_example(m):
-    m.fs.NF_properties = property_seawater_salts.PropParameterBlock()
-    m.fs.NF = Separator(default={
-        "property_package": m.fs.NF_properties,
+        "property_package": m.fs.prop_TDS,
         "outlet_list": ['retentate', 'permeate'],
         "split_basis": SplittingType.componentFlow,
         "energy_split_basis": EnergySplittingType.equal_temperature})
 
     # specify
-    # feed
-    feed_specification.specify_seawater_salts(m.fs.NF.mixed_state[0])
-    # separator
+    m.fs.RO.split_fraction[0, 'permeate', 'H2O'].fix(0.5)
+    m.fs.RO.split_fraction[0, 'permeate', 'TDS'].fix(0.01)
+
+    # scaling
+    calculate_scaling_factors(m.fs.RO)
+
+
+def build_NF_salt_example(m):
+    m.fs.NF = Separator(default={
+        "property_package": m.fs.prop_salt,
+        "outlet_list": ['retentate', 'permeate'],
+        "split_basis": SplittingType.componentFlow,
+        "energy_split_basis": EnergySplittingType.equal_temperature})
+
+    # specify
     m.fs.NF.split_fraction[0, 'permeate', 'H2O'].fix(0.9)
     m.fs.NF.split_fraction[0, 'permeate', 'NaCl'].fix(0.9)
     m.fs.NF.split_fraction[0, 'permeate', 'CaSO4'].fix(0.1)
     m.fs.NF.split_fraction[0, 'permeate', 'MgSO4'].fix(0.1)
     m.fs.NF.split_fraction[0, 'permeate', 'MgCl2'].fix(0.2)
-    check_dof(m)
 
     # scaling
-    feed_specification.set_default_scaling_salts(m.fs.NF_properties)
     calculate_scaling_factors(m.fs.NF)
 
 
-
 def build_NF_ion_example(m):
-    m.fs.NF_properties = property_seawater_ions.PropParameterBlock()
     m.fs.NF = Separator(default={
-        "property_package": m.fs.NF_properties,
+        "property_package": m.fs.prop_ion,
         "outlet_list": ['retentate', 'permeate'],
         "split_basis": SplittingType.componentFlow,
         "energy_split_basis": EnergySplittingType.equal_temperature})
 
     # specify
-    # feed
-    feed_specification.specify_seawater_ions(m.fs.NF.mixed_state[0])
-    m.fs.NF.mixed_state[0].mass_frac_phase_comp  # touching
-    # separator
     m.fs.NF.split_fraction[0, 'permeate', 'H2O'].fix(0.9)
     m.fs.NF.split_fraction[0, 'permeate', 'Na'].fix(0.9)
     m.fs.NF.split_fraction[0, 'permeate', 'Ca'].fix(0.1)
@@ -95,10 +74,8 @@ def build_NF_ion_example(m):
         expr=0 ==
              sum(charge_dict[j] * m.fs.NF.retentate_state[0].flow_mol_phase_comp['Liq', j]
                  for j in charge_dict))
-    check_dof(m)
 
     # scaling
-    feed_specification.set_default_scaling_ions(m.fs.NF_properties)
     calculate_scaling_factors(m.fs.NF)
 
 
@@ -107,15 +84,26 @@ def run_example(case):
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     if case == 'RO':
+        property_models.build_prop_TDS(m)
         build_RO_example(m)
         unit = m.fs.RO
+        # specify feed
+        property_models.specify_feed_TDS(m.fs.RO.mixed_state[0])
     elif case == 'NF_salt':
+        property_models.build_prop_salt(m)
         build_NF_salt_example(m)
         unit = m.fs.NF
+        # specify feed
+        property_models.specify_feed_salt(m.fs.NF.mixed_state[0])
     elif case == 'NF_ion':
+        property_models.build_prop_ion(m)
         build_NF_ion_example(m)
         unit = m.fs.NF
+        # specify feed
+        property_models.specify_feed_ion(m.fs.NF.mixed_state[0])
+        m.fs.NF.mixed_state[0].mass_frac_phase_comp  # touching
 
+    check_dof(m)
     solve_with_user_scaling(m)
 
     unit.inlet.display()

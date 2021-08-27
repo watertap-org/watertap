@@ -18,17 +18,16 @@ from idaes.generic_models.unit_models.translator import Translator
 from idaes.core.util.scaling import calculate_scaling_factors
 
 
-def build_tb_salt_to_TDS(m, prop_salt=None, prop_TDS=None, name_str=None):
+def build_tb_salt_to_TDS(m, name_str=None):
     """
-    Build a translator block to convert between the properties_seawater_salts property package
-    and the seawater_prop_pack property package.
+    Build a translator block to convert between the prop_salt and prop_TDS.
     """
 
     if name_str is None:
         name_str = 'tb_salt_to_TDS'
 
-    setattr(m.fs, name_str, Translator(default={"inlet_property_package": prop_salt,
-                                                "outlet_property_package": prop_TDS}))
+    setattr(m.fs, name_str, Translator(default={"inlet_property_package": m.fs.prop_salt,
+                                                "outlet_property_package": m.fs.prop_TDS}))
     blk = getattr(m.fs, name_str)
 
     # add constraints for translator block
@@ -49,17 +48,16 @@ def build_tb_salt_to_TDS(m, prop_salt=None, prop_TDS=None, name_str=None):
     calculate_scaling_factors(blk)
 
 
-def build_tb_ion_to_TDS(m, prop_ion=None, prop_TDS=None, name_str=None):
+def build_tb_ion_to_TDS(m, name_str=None):
     """
-    Build a translator block to convert between the properties_seawater_ions property package
-    and the seawater_prop_pack property package.
+    Build a translator block to convert between the prop_ion and prop_TDS.
     """
 
     if name_str is None:
         name_str = 'tb_ion_to_TDS'
 
-    setattr(m.fs, name_str, Translator(default={"inlet_property_package": prop_ion,
-                                                "outlet_property_package": prop_TDS}))
+    setattr(m.fs, name_str, Translator(default={"inlet_property_package": m.fs.prop_ion,
+                                                "outlet_property_package": m.fs.prop_TDS}))
     blk = getattr(m.fs, name_str)
 
     # add constraints for translator block
