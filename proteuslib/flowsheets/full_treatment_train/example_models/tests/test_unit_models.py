@@ -12,8 +12,7 @@
 ###############################################################################
 import pytest
 from pyomo.environ import value
-from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator
-from proteuslib.flowsheets.full_treatment_train.example_models import unit_0DRO
+from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator, unit_0DRO, unit_ZONF
 
 
 @pytest.mark.component
@@ -62,8 +61,15 @@ def test_unit_0DRO_simple():
 @pytest.mark.component
 def test_unit_0DRO_detailed():
     m = unit_0DRO.run_example('detailed')
-    m.fs.RO.report()
     assert value(m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.2653, rel=1e-3)
     assert value(m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(8.476e-5, rel=1e-3)
     assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.6997, rel=1e-3)
     assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(3.492e-2, rel=1e-3)
+
+
+@pytest.mark.component
+def test_unit_ZONF():
+    m = unit_ZONF.run_example()
+    assert value(m.fs.NF.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.8350, rel=1e-3)
+    assert value(m.fs.NF.permeate.flow_mass_phase_comp[0, 'Liq', 'Ca']) == pytest.approx(6.897e-5, rel=1e-3)
+    assert value(m.fs.NF.permeate.flow_mass_phase_comp[0, 'Liq', 'Cl']) == pytest.approx(1.475e-2, rel=1e-3)
