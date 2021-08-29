@@ -22,7 +22,11 @@ from proteuslib.flowsheets.full_treatment_train.example_models import property_m
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
-def build_RO_example(m):
+def build_SepRO(m):
+    """
+    Builds RO model based on the IDAES separator.
+    Requires prop_TDS property package.
+    """
     m.fs.RO = Separator(default={
         "property_package": m.fs.prop_TDS,
         "outlet_list": ['retentate', 'permeate'],
@@ -37,84 +41,82 @@ def build_RO_example(m):
     calculate_scaling_factors(m.fs.RO)
 
 
-def build_NF_salt_example(m):
+def build_SepNF(m, base='ion'):
+    """
+    Builds NF model based on the IDAES separator for a specified property base.
+    Requires prop_ion or prop_salt property package.
+    """
+    if base == 'ion':
+        prop = m.fs.prop_ion
+    elif base == 'salt':
+        prop = m.fs.prop_salt
+
     m.fs.NF = Separator(default={
-        "property_package": m.fs.prop_salt,
+        "property_package": prop,
         "outlet_list": ['retentate', 'permeate'],
         "split_basis": SplittingType.componentFlow,
         "energy_split_basis": EnergySplittingType.equal_temperature})
 
     # specify
-    m.fs.NF.split_fraction[0, 'permeate', 'H2O'].fix(0.9)
-    m.fs.NF.split_fraction[0, 'permeate', 'NaCl'].fix(0.9)
-    m.fs.NF.split_fraction[0, 'permeate', 'CaSO4'].fix(0.1)
-    m.fs.NF.split_fraction[0, 'permeate', 'MgSO4'].fix(0.1)
-    m.fs.NF.split_fraction[0, 'permeate', 'MgCl2'].fix(0.2)
+    if base == 'ion':
+        m.fs.NF.split_fraction[0, 'permeate', 'H2O'].fix(0.9)
+        m.fs.NF.split_fraction[0, 'permeate', 'Na'].fix(0.9)
+        m.fs.NF.split_fraction[0, 'permeate', 'Ca'].fix(0.1)
+        m.fs.NF.split_fraction[0, 'permeate', 'Mg'].fix(0.1)
+        m.fs.NF.split_fraction[0, 'permeate', 'SO4'].fix(0.1)
+        # Cl split fraction determined through electro-neutrality for the retentate
+        charge_dict = {'Na': 1, 'Ca': 2, 'Mg': 2, 'SO4': -2, 'Cl': -1}
+        m.fs.NF.EN_out = Constraint(
+            expr=0 ==
+                 sum(charge_dict[j] * m.fs.NF.retentate_state[0].flow_mol_phase_comp['Liq', j]
+                     for j in charge_dict))
+    elif base == 'salt':
+        m.fs.NF.split_fraction[0, 'permeate', 'H2O'].fix(0.9)
+        m.fs.NF.split_fraction[0, 'permeate', 'NaCl'].fix(0.9)
+        m.fs.NF.split_fraction[0, 'permeate', 'CaSO4'].fix(0.1)
+        m.fs.NF.split_fraction[0, 'permeate', 'MgSO4'].fix(0.1)
+        m.fs.NF.split_fraction[0, 'permeate', 'MgCl2'].fix(0.2)
 
     # scaling
     calculate_scaling_factors(m.fs.NF)
 
 
-def build_NF_ion_example(m):
-    m.fs.NF = Separator(default={
-        "property_package": m.fs.prop_ion,
-        "outlet_list": ['retentate', 'permeate'],
-        "split_basis": SplittingType.componentFlow,
-        "energy_split_basis": EnergySplittingType.equal_temperature})
-
-    # specify
-    m.fs.NF.split_fraction[0, 'permeate', 'H2O'].fix(0.9)
-    m.fs.NF.split_fraction[0, 'permeate', 'Na'].fix(0.9)
-    m.fs.NF.split_fraction[0, 'permeate', 'Ca'].fix(0.1)
-    m.fs.NF.split_fraction[0, 'permeate', 'Mg'].fix(0.1)
-    m.fs.NF.split_fraction[0, 'permeate', 'SO4'].fix(0.1)
-    # Cl split fraction determined through electro-neutrality for the retentate
-    charge_dict = {'Na': 1, 'Ca': 2, 'Mg': 2, 'SO4': -2, 'Cl': -1}
-    m.fs.NF.EN_out = Constraint(
-        expr=0 ==
-             sum(charge_dict[j] * m.fs.NF.retentate_state[0].flow_mol_phase_comp['Liq', j]
-                 for j in charge_dict))
-
-    # scaling
-    calculate_scaling_factors(m.fs.NF)
-
-
-def run_example(case):
+def solve_build_SepRO():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-
-    if case == 'RO':
-        property_models.build_prop_TDS(m)
-        build_RO_example(m)
-        unit = m.fs.RO
-        # specify feed
-        property_models.specify_feed_TDS(m.fs.RO.mixed_state[0])
-    elif case == 'NF_salt':
-        property_models.build_prop_salt(m)
-        build_NF_salt_example(m)
-        unit = m.fs.NF
-        # specify feed
-        property_models.specify_feed_salt(m.fs.NF.mixed_state[0])
-    elif case == 'NF_ion':
-        property_models.build_prop_ion(m)
-        build_NF_ion_example(m)
-        unit = m.fs.NF
-        # specify feed
-        property_models.specify_feed_ion(m.fs.NF.mixed_state[0])
-        m.fs.NF.mixed_state[0].mass_frac_phase_comp  # touching
+    property_models.build_prop(m, base='TDS')
+    build_SepRO(m)
+    property_models.specify_feed(m.fs.RO.mixed_state[0], base='TDS')
 
     check_dof(m)
     solve_with_user_scaling(m)
 
-    unit.inlet.display()
-    unit.permeate.display()
-    unit.retentate.display()
+    m.fs.RO.inlet.display()
+    m.fs.RO.permeate.display()
+    m.fs.RO.retentate.display()
+
+    return m
+
+
+def solve_build_SepNF(base='ion'):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    property_models.build_prop(m, base=base)
+    build_SepNF(m, base=base)
+    property_models.specify_feed(m.fs.NF.mixed_state[0], base=base)
+
+    m.fs.NF.mixed_state[0].mass_frac_phase_comp  # touching for tests
+    check_dof(m)
+    solve_with_user_scaling(m)
+
+    m.fs.NF.inlet.display()
+    m.fs.NF.permeate.display()
+    m.fs.NF.retentate.display()
 
     return m
 
 
 if __name__ == "__main__":
-    run_example('RO')
-    run_example('NF_salt')
-    run_example('NF_ion')
-
+    solve_build_SepRO()
+    solve_build_SepNF(base='ion')
+    solve_build_SepNF(base='salt')
