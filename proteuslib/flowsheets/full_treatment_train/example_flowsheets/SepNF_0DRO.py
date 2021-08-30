@@ -47,7 +47,7 @@ def build_flowsheet_simple_example(m):
         "inlet_list": ['pretreatment', 'bypass']})
     m.fs.pump = Pump(default={'property_package': m.fs.prop_TDS})
 
-    translator_block.build_tb_salt_to_TDS(m)
+    translator_block.build_tb(m, base_inlet='salt', base_outlet='TDS')
 
     # connect models
     m.fs.s01 = Arc(source=m.fs.splitter.bypass, destination=m.fs.mixer.bypass)

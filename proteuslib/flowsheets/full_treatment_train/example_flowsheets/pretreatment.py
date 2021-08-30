@@ -24,8 +24,10 @@ from proteuslib.flowsheets.full_treatment_train.example_models import unit_separ
 
 def build_pretreatment_NF(m, has_bypass=True, NF_type='ZO', NF_base='ion'):
     """
-    Builds NF pretreatment with no bypass (i.e. just the NF model and feed).
+    Builds NF pretreatment including specified feed and auxiliary equipment.
+    The built components are initialized based on default values.
     Arguments:
+        has_bypass: True or False, default = True
         NF_type: 'Sep' or 'ZO', default = 'ZO'
         NF_base: 'ion' or 'salt', default = 'ion'
     """
