@@ -31,10 +31,10 @@ def build_flowsheet_NF_salt_basis_example(m):
     the RO uses prop_TDS.
     """
     # build flowsheet
-    property_models.build_prop_salt(m)
-    property_models.build_prop_TDS(m)
-    unit_separator.build_NF_salt_example(m)
-    unit_separator.build_RO_example(m)
+    property_models.build_prop(m, base='salt')
+    property_models.build_prop(m, base='TDS')
+    unit_separator.build_SepNF(m, base='salt')
+    unit_separator.build_SepRO(m)
     m.fs.splitter = Separator(default={
             "property_package": m.fs.prop_salt,
             "outlet_list": ['pretreatment', 'bypass'],
@@ -75,10 +75,10 @@ def build_flowsheet_NF_ion_basis_example(m):
     the RO uses prop_TDS.
     """
     # build flowsheet
-    property_models.build_prop_ion(m)
-    property_models.build_prop_TDS(m)
-    unit_separator.build_NF_ion_example(m)
-    unit_separator.build_RO_example(m)
+    property_models.build_prop(m, base='ion')
+    property_models.build_prop(m, base='TDS')
+    unit_separator.build_SepNF(m, base='ion')
+    unit_separator.build_SepRO(m)
     m.fs.splitter = Separator(default={
         "property_package": m.fs.prop_ion,
         "outlet_list": ['pretreatment', 'bypass'],
@@ -118,10 +118,10 @@ def run_flowsheet_example(case):
 
     if case == 'salt':
         build_flowsheet_NF_salt_basis_example(m)
-        property_models.specify_feed_salt(m.fs.splitter.mixed_state[0])
+        property_models.specify_feed(m.fs.splitter.mixed_state[0], base='salt')
     elif case == 'ion':
         build_flowsheet_NF_ion_basis_example(m)
-        property_models.specify_feed_ion(m.fs.splitter.mixed_state[0])
+        property_models.specify_feed(m.fs.splitter.mixed_state[0], base='ion')
 
     TransformationFactory("network.expand_arcs").apply_to(m)
     check_dof(m)
@@ -140,5 +140,5 @@ def run_flowsheet_example(case):
 
 
 if __name__ == "__main__":
-    # run_flowsheet_example('salt')
+    run_flowsheet_example('salt')
     run_flowsheet_example('ion')

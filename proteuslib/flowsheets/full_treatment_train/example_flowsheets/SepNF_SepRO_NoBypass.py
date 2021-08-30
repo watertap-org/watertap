@@ -28,10 +28,10 @@ def build_flowsheet_NF_salt_basis_example(m):
     the RO uses prop_TDS.
     """
     # build flowsheet
-    property_models.build_prop_salt(m)
-    property_models.build_prop_TDS(m)
-    unit_separator.build_NF_salt_example(m)
-    unit_separator.build_RO_example(m)
+    property_models.build_prop(m, base='salt')
+    property_models.build_prop(m, base='TDS')
+    unit_separator.build_SepNF(m, base='salt')
+    unit_separator.build_SepRO(m)
 
     translator_block.build_tb_salt_to_TDS(m)
 
@@ -55,10 +55,10 @@ def build_flowsheet_NF_ion_basis_example(m):
     block to convert between the NF's multi-ion property package and the RO's seawater package.
     """
     # build flowsheet
-    property_models.build_prop_ion(m)
-    property_models.build_prop_TDS(m)
-    unit_separator.build_NF_ion_example(m)
-    unit_separator.build_RO_example(m)
+    property_models.build_prop(m, base='ion')
+    property_models.build_prop(m, base='TDS')
+    unit_separator.build_SepNF(m, base='ion')
+    unit_separator.build_SepRO(m)
 
     translator_block.build_tb_ion_to_TDS(m)
 
@@ -81,10 +81,10 @@ def run_flowsheet_example(case):
 
     if case == 'salt':
         build_flowsheet_NF_salt_basis_example(m)
-        property_models.specify_feed_salt(m.fs.NF.mixed_state[0])
+        property_models.specify_feed(m.fs.NF.mixed_state[0], base='salt')
     elif case == 'ion':
         build_flowsheet_NF_ion_basis_example(m)
-        property_models.specify_feed_ion(m.fs.NF.mixed_state[0])
+        property_models.specify_feed(m.fs.NF.mixed_state[0], base='ion')
 
     TransformationFactory("network.expand_arcs").apply_to(m)
     check_dof(m)

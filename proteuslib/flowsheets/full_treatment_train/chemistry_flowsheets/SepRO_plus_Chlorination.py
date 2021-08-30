@@ -88,9 +88,9 @@ solver = get_solver()
 
 
 def build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0):
-    property_models.build_prop_TDS(model)
-    unit_separator.build_RO_example(model)
-    property_models.specify_feed_TDS(model.fs.RO.mixed_state[0])
+    property_models.build_prop(model, base='TDS')
+    unit_separator.build_SepRO(model)
+    property_models.specify_feed(model.fs.RO.mixed_state[0], base='TDS')
 
     total_molar_density = 1/18*1000 #mol/L
     free_chlorine_added = mg_per_L_NaOCl_added/74.44/1000*70900 #mg/L as NaOCl

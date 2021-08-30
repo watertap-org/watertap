@@ -33,10 +33,10 @@ def build_flowsheet_simple_example(m):
     the RO uses prop_TDS.
     """
     # build flowsheet
-    property_models.build_prop_salt(m)
-    property_models.build_prop_TDS(m)
-    unit_separator.build_NF_salt_example(m)
-    unit_0DRO.build_simple_example(m)
+    property_models.build_prop(m, base='salt')
+    property_models.build_prop(m, base='TDS')
+    unit_separator.build_SepNF(m, base='salt')
+    unit_0DRO.build_RO(m, level='simple')
     m.fs.splitter = Separator(default={
         "property_package": m.fs.prop_salt,
         "outlet_list": ['pretreatment', 'bypass'],
@@ -94,7 +94,7 @@ def run_flowsheet_simple_example():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     build_flowsheet_simple_example(m)
-    property_models.specify_feed_salt(m.fs.splitter.mixed_state[0])
+    property_models.specify_feed(m.fs.splitter.mixed_state[0], base='salt')
 
     TransformationFactory("network.expand_arcs").apply_to(m)
     check_dof(m)
