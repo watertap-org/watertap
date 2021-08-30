@@ -51,7 +51,7 @@ def test_unit_separator_SepNF_salt():
 
 @pytest.mark.component
 def test_unit_0DRO_simple():
-    m = unit_0DRO.solve_build_RO(level='simple')
+    m = unit_0DRO.solve_build_RO(base='TDS', level='simple')
     assert value(m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.3389, rel=1e-3)
     assert value(m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(7.875e-5, rel=1e-3)
     assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.6261, rel=1e-3)
@@ -60,7 +60,7 @@ def test_unit_0DRO_simple():
 
 @pytest.mark.component
 def test_unit_0DRO_detailed():
-    m = unit_0DRO.solve_build_RO(level='detailed')
+    m = unit_0DRO.solve_build_RO(base='TDS', level='detailed')
     assert value(m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.2653, rel=1e-3)
     assert value(m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(8.476e-5, rel=1e-3)
     assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.6997, rel=1e-3)
@@ -69,7 +69,7 @@ def test_unit_0DRO_detailed():
 
 @pytest.mark.component
 def test_unit_ZONF():
-    m = unit_ZONF.solve_build_ZONF()
+    m = unit_ZONF.solve_build_ZONF(base='ion')
     assert value(m.fs.NF.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.8350, rel=1e-3)
     assert value(m.fs.NF.permeate.flow_mass_phase_comp[0, 'Liq', 'Ca']) == pytest.approx(6.897e-5, rel=1e-3)
     assert value(m.fs.NF.permeate.flow_mass_phase_comp[0, 'Liq', 'Cl']) == pytest.approx(1.475e-2, rel=1e-3)

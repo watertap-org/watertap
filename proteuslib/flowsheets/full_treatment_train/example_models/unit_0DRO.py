@@ -24,14 +24,19 @@ from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
-def build_RO(m, level='simple'):
+def build_RO(m, base='TDS', level='simple'):
     """
     Builds a 0DRO model at a specified level (simple or detailed).
     Requires prop_TDS property package.
     """
+    if base not in ['TDS']:
+        raise ValueError('Unexpected property base {base} for build_RO'
+                         ''.format(base=base))
+    prop = property_models.get_prop(m, base=base)
+
     if level == 'simple':
         # build unit
-        m.fs.RO = ReverseOsmosis0D(default={"property_package": m.fs.prop_TDS})
+        m.fs.RO = ReverseOsmosis0D(default={"property_package": prop})
 
         # specify unit
         m.fs.RO.area.fix(50)
@@ -42,7 +47,7 @@ def build_RO(m, level='simple'):
     elif level == 'detailed':
         # build unit
         m.fs.RO = ReverseOsmosis0D(default={
-            "property_package": m.fs.prop_TDS,
+            "property_package": prop,
             "has_pressure_change": True,
             "pressure_change_type": PressureChangeType.calculated,
             "mass_transfer_coefficient": MassTransferCoefficient.calculated,
@@ -65,12 +70,12 @@ def build_RO(m, level='simple'):
     calculate_scaling_factors(m.fs.RO)
 
 
-def solve_build_RO(level='simple'):
+def solve_build_RO(base='TDS', level='simple'):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     property_models.build_prop(m, base='TDS')
 
-    build_RO(m, level=level)
+    build_RO(m, base=base, level=level)
 
     # specify feed
     property_models.specify_feed(m.fs.RO.feed_side.properties_in[0], base='TDS')
@@ -88,5 +93,5 @@ def solve_build_RO(level='simple'):
 
 
 if __name__ == "__main__":
-    solve_build_RO(level='simple')
-    solve_build_RO(level='detailed')
+    solve_build_RO(base='TDS', level='simple')
+    solve_build_RO(base='TDS', level='detailed')

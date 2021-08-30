@@ -46,10 +46,7 @@ def build_SepNF(m, base='ion'):
     Builds NF model based on the IDAES separator for a specified property base.
     Requires prop_ion or prop_salt property package.
     """
-    if base == 'ion':
-        prop = m.fs.prop_ion
-    elif base == 'salt':
-        prop = m.fs.prop_salt
+    prop = property_models.get_prop(m, base=base)
 
     m.fs.NF = Separator(default={
         "property_package": prop,

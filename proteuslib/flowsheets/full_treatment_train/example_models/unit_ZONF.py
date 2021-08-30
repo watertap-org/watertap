@@ -21,13 +21,19 @@ from proteuslib.flowsheets.full_treatment_train.example_models import property_m
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
-def build_ZONF(m):
+def build_ZONF(m, base='ion'):
     """
     Builds a ZONF model based on specified rejection and solvent flux.
     Requires prop_ion property package.
     """
+
+    if base not in ['ion']:
+        raise ValueError('Unexpected property base {base} for build_ZONF'
+                         ''.format(base=base))
+    prop = property_models.get_prop(m, base=base)
+
     m.fs.NF = NanofiltrationZO(default={
-        "property_package": m.fs.prop_ion,
+        "property_package": prop,
         "has_pressure_change": False})
 
     # specify
@@ -51,12 +57,12 @@ def build_ZONF(m):
     calculate_scaling_factors(m.fs.NF)
 
 
-def solve_build_ZONF():
+def solve_build_ZONF(base='ion'):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    property_models.build_prop(m, base='ion')
-    build_ZONF(m)
+    property_models.build_prop(m, base=base)
+    build_ZONF(m, base=base)
     property_models.specify_feed(m.fs.NF.feed_side.properties_in[0], base='ion')
 
     check_dof(m)
@@ -70,5 +76,5 @@ def solve_build_ZONF():
 
 
 if __name__ == "__main__":
-    solve_build_ZONF()
+    solve_build_ZONF(base='ion')
 

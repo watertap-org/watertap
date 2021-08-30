@@ -56,6 +56,20 @@ def build_prop(m, base='TDS'):
                          ''.format(base=base))
 
 
+def get_prop(m, base='TDS'):
+    if base == 'TDS':
+        prop = m.fs.prop_TDS
+    elif base == 'ion':
+        prop = m.fs.prop_ion
+    elif base == 'salt':
+        prop = m.fs.prop_salt
+    else:
+        raise ValueError('Unexpected property base {base} for get_prop'
+                         ''.format(base=base))
+    return prop
+
+
+
 def specify_feed(sb, base='TDS'):
     """
     Fixes the state variables on the stateblock to the base seawater composition for
