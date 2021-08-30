@@ -17,6 +17,7 @@ a simple water dissociation problem and return the correct pH value.
 
 Modified to use the Electrolyte Database -dang 08/2021
 """
+import os
 import pytest
 from proteuslib.edb import ElectrolyteDB
 from .test_pure_water_pH import TestPureWater
@@ -24,7 +25,9 @@ from .test_pure_water_pH import TestPureWater
 # Set global database object after checking that MongoDB server is up
 g_edb = None
 if ElectrolyteDB.can_connect():
-    g_edb = ElectrolyteDB()
+    # for now, skip using MongoDB in GitHub CI -dang 8/30/2021
+    if os.environ['GITHUB_ACTIONS'] != "true":
+        g_edb = ElectrolyteDB()
 
 
 def get_thermo_config(edb):
