@@ -12,50 +12,58 @@
 ###############################################################################
 import pytest
 from pyomo.environ import value
-from proteuslib.flowsheets.full_treatment_train.example_flowsheets import SepNF_SepRO_NoBypass, SepNF_SepRO, SepNF_0DRO
+from proteuslib.flowsheets.full_treatment_train.example_flowsheets import flowsheet_limited, SepNF_SepRO, SepNF_0DRO
 
 
 @pytest.mark.component
-def test_SepNF_SepRO_NoBypass_NF_salt_basis_example():
-    m = SepNF_SepRO_NoBypass.run_flowsheet_example('salt')
+def test_flowsheet_limited_NF_no_bypass_1():
+    m = flowsheet_limited.solve_build_flowsheet_NF_no_bypass(NF_type='ZO', NF_base='ion')
+    assert value(m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.8350, rel=1e-3)
+    assert value(m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(2.460e-2, rel=1e-3)
+    assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.4175, rel=1e-3)
+
+
+@pytest.mark.component
+def test_flowsheet_limited_NF_no_bypass_2():
+    m = flowsheet_limited.solve_build_flowsheet_NF_no_bypass(NF_type='Sep', NF_base='salt')
     assert value(m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.8682, rel=1e-3)
     assert value(m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(2.658e-2, rel=1e-3)
     assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.4341, rel=1e-3)
 
 
 @pytest.mark.component
-def test_SepNF_SepRO_NoBypass_NF_ion_basis_example():
-    m = SepNF_SepRO_NoBypass.run_flowsheet_example('ion')
+def test_flowsheet_limited_NF_no_bypass_3():
+    m = flowsheet_limited.solve_build_flowsheet_NF_no_bypass(NF_type='Sep', NF_base='ion')
     assert value(m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.8682, rel=1e-3)
     assert value(m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(2.615e-2, rel=1e-3)
     assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.4341, rel=1e-3)
 
-
-@pytest.mark.component
-def test_SepNF_SepRO_NF_salt_basis_example():
-    m = SepNF_SepRO.run_flowsheet_example('salt')
-    assert value(m.fs.mixer.pretreatment.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.6512, rel=1e-3)
-    assert value(m.fs.mixer.pretreatment.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == pytest.approx(1.908e-2, rel=1e-3)
-    assert value(m.fs.mixer.bypass.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.2412, rel=1e-3)
-    assert value(m.fs.mixer.bypass.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == pytest.approx(7.068e-3, rel=1e-3)
-    assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.4462, rel=1e-3)
-
-
-@pytest.mark.component
-def test_SepNF_SepRO_NF_ion_basis_example():
-    m = SepNF_SepRO.run_flowsheet_example('ion')
-    assert value(m.fs.mixer.pretreatment.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.6512, rel=1e-3)
-    assert value(m.fs.mixer.pretreatment.flow_mass_phase_comp[0, 'Liq', 'Na']) == pytest.approx(7.507e-3, rel=1e-3)
-    assert value(m.fs.mixer.bypass.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.2412, rel=1e-3)
-    assert value(m.fs.mixer.bypass.flow_mass_phase_comp[0, 'Liq', 'Cl']) == pytest.approx(5.079e-3, rel=1e-3)
-    assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.4462, rel=1e-3)
-
-
-@pytest.mark.component
-def test_SepNF_0DRO_simple_example():
-    m = SepNF_0DRO.run_flowsheet_simple_example()
-    assert value(m.fs.mixer.pretreatment.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.6512, rel=1e-3)
-    assert value(m.fs.mixer.pretreatment.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == pytest.approx(1.908e-2, rel=1e-3)
-    assert value(m.fs.mixer.bypass.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.2412, rel=1e-3)
-    assert value(m.fs.mixer.bypass.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == pytest.approx(7.068e-3, rel=1e-3)
-    assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.5192, rel=1e-3)
+#
+# @pytest.mark.component
+# def test_SepNF_SepRO_NF_salt_basis_example():
+#     m = SepNF_SepRO.run_flowsheet_example('salt')
+#     assert value(m.fs.mixer.pretreatment.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.6512, rel=1e-3)
+#     assert value(m.fs.mixer.pretreatment.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == pytest.approx(1.908e-2, rel=1e-3)
+#     assert value(m.fs.mixer.bypass.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.2412, rel=1e-3)
+#     assert value(m.fs.mixer.bypass.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == pytest.approx(7.068e-3, rel=1e-3)
+#     assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.4462, rel=1e-3)
+#
+#
+# @pytest.mark.component
+# def test_SepNF_SepRO_NF_ion_basis_example():
+#     m = SepNF_SepRO.run_flowsheet_example('ion')
+#     assert value(m.fs.mixer.pretreatment.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.6512, rel=1e-3)
+#     assert value(m.fs.mixer.pretreatment.flow_mass_phase_comp[0, 'Liq', 'Na']) == pytest.approx(7.507e-3, rel=1e-3)
+#     assert value(m.fs.mixer.bypass.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.2412, rel=1e-3)
+#     assert value(m.fs.mixer.bypass.flow_mass_phase_comp[0, 'Liq', 'Cl']) == pytest.approx(5.079e-3, rel=1e-3)
+#     assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.4462, rel=1e-3)
+#
+#
+# @pytest.mark.component
+# def test_SepNF_0DRO_simple_example():
+#     m = SepNF_0DRO.run_flowsheet_simple_example()
+#     assert value(m.fs.mixer.pretreatment.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.6512, rel=1e-3)
+#     assert value(m.fs.mixer.pretreatment.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == pytest.approx(1.908e-2, rel=1e-3)
+#     assert value(m.fs.mixer.bypass.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.2412, rel=1e-3)
+#     assert value(m.fs.mixer.bypass.flow_mass_phase_comp[0, 'Liq', 'NaCl']) == pytest.approx(7.068e-3, rel=1e-3)
+#     assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.5192, rel=1e-3)

@@ -18,62 +18,60 @@ from idaes.generic_models.unit_models.translator import Translator
 from idaes.core.util.scaling import calculate_scaling_factors
 
 
-def build_tb_salt_to_TDS(m, name_str=None):
+def build_tb(m, base_inlet='ion', base_outlet='TDS', name_str=None):
     """
-    Build a translator block to convert between the prop_salt and prop_TDS.
+    Build a translator block to convert for the specified base from inlet to outlet.
     """
 
     if name_str is None:
-        name_str = 'tb_salt_to_TDS'
+        name_str = 'tb_' + base_inlet + '_to_' + base_outlet
 
-    setattr(m.fs, name_str, Translator(default={"inlet_property_package": m.fs.prop_salt,
-                                                "outlet_property_package": m.fs.prop_TDS}))
+    if base_inlet == 'ion':
+        prop_inlet = m.fs.prop_ion
+    elif base_inlet == 'salt':
+        prop_inlet = m.fs.prop_salt
+    else:
+        raise ValueError('Unexpected property base inlet {base_inlet} for build_tb'
+                         ''.format(base_inlet=base_inlet))
+
+    if base_outlet == 'TDS':
+        prop_outlet = m.fs.prop_TDS
+    else:
+        raise ValueError('Unexpected property base outlet {base_outlet} for build_tb'
+                         ''.format(base_outlet=base_outlet))
+
+    # build translator block
+    setattr(m.fs, name_str, Translator(default={"inlet_property_package": prop_inlet,
+                                                "outlet_property_package": prop_outlet}))
     blk = getattr(m.fs, name_str)
 
-    # add constraints for translator block
-    blk.eq_H2O_balance = Constraint(
-        expr=blk.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']
-             == blk.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O'])
-    blk.eq_TDS_balance = Constraint(
-        expr=sum(
-            blk.inlet.flow_mass_phase_comp[0, 'Liq', j] for j in ['NaCl', 'CaSO4', 'MgSO4', 'MgCl2'])
-             == blk.outlet.flow_mass_phase_comp[0, 'Liq', 'TDS'])
+    # add translator block constraints
     blk.eq_equal_temperature = Constraint(
         expr=blk.inlet.temperature[0]
              == blk.outlet.temperature[0])
     blk.eq_equal_pressure = Constraint(
         expr=blk.inlet.pressure[0]
              == blk.outlet.pressure[0])
+    if base_inlet == 'ion' and base_outlet == 'TDS':
+        blk.eq_H2O_balance = Constraint(
+            expr=blk.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']
+                 == blk.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O'])
+        blk.eq_TDS_balance = Constraint(
+            expr=sum(
+                blk.inlet.flow_mass_phase_comp[0, 'Liq', j] for j in ['Na', 'Ca', 'Mg', 'SO4', 'Cl'])
+                 == blk.outlet.flow_mass_phase_comp[0, 'Liq', 'TDS'])
 
+    elif base_inlet == 'salt' and base_outlet == 'TDS':
+        blk.eq_H2O_balance = Constraint(
+            expr=blk.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']
+                 == blk.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O'])
+        blk.eq_TDS_balance = Constraint(
+            expr=sum(
+                blk.inlet.flow_mass_phase_comp[0, 'Liq', j] for j in ['NaCl', 'CaSO4', 'MgSO4', 'MgCl2'])
+                 == blk.outlet.flow_mass_phase_comp[0, 'Liq', 'TDS'])
+
+    else:
+        raise ValueError('Unexpected property base combination for build_tb')
+
+    # scale translator block
     calculate_scaling_factors(blk)
-
-
-def build_tb_ion_to_TDS(m, name_str=None):
-    """
-    Build a translator block to convert between the prop_ion and prop_TDS.
-    """
-
-    if name_str is None:
-        name_str = 'tb_ion_to_TDS'
-
-    setattr(m.fs, name_str, Translator(default={"inlet_property_package": m.fs.prop_ion,
-                                                "outlet_property_package": m.fs.prop_TDS}))
-    blk = getattr(m.fs, name_str)
-
-    # add constraints for translator block
-    blk.eq_H2O_balance = Constraint(
-        expr=blk.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']
-             == blk.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O'])
-    blk.eq_TDS_balance = Constraint(
-        expr=sum(blk.inlet.flow_mass_phase_comp[0, 'Liq', j] for j in ['Na', 'Ca', 'Mg', 'SO4', 'Cl'])
-             == blk.outlet.flow_mass_phase_comp[0, 'Liq', 'TDS'])
-    blk.eq_equal_temperature = Constraint(
-        expr=blk.inlet.temperature[0]
-             == blk.outlet.temperature[0])
-    blk.eq_equal_pressure = Constraint(
-        expr=blk.inlet.pressure[0]
-             == blk.outlet.pressure[0])
-
-    calculate_scaling_factors(blk)
-
-
