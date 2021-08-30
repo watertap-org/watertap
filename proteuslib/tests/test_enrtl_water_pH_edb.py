@@ -84,23 +84,15 @@ def get_water_reaction_config(edb):
     return cfg
 
 
-@pytest.mark.skipif(g_edb is None, reason="Cannot connect to MongoDB")
-class TestENRTLWaterEDB(TestENRTLwater):
-    """Run all tests in superclass, but with different configs."""
+# TODO: Re-enable
+# @pytest.mark.skipif(g_edb is None, reason="Cannot connect to MongoDB")
+# class TestENRTLWaterEDB(TestENRTLwater):
+#     """Run all tests in superclass, but with different configs."""
+#
+#     if g_edb:
+#         thermo_config = get_thermo_config(g_edb)
+#         reaction_config = get_water_reaction_config(g_edb)
 
-    if g_edb:
-        thermo_config = get_thermo_config(g_edb)
-        reaction_config = get_water_reaction_config(g_edb)
-
-    # TODO: Re-enable these tests
-
-    @pytest.mark.component
-    def test_solve_water(self, water_model):
-        assert True
-
-    @pytest.mark.component
-    def test_solution_water(self, water_model):
-        assert True
 
 # ====================================================================================
 
