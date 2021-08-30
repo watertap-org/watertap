@@ -26,12 +26,7 @@ def build_feed(m, base='TDS'):
     """
 
     # feed block
-    if base == 'TDS':
-        prop = m.fs.prop_TDS
-    elif base == 'ion':
-        prop = m.fs.prop_ion
-    elif base == 'salt':
-        prop = m.fs.prop_salt
+    prop = property_models.get_prop(m, base=base)
 
     # build
     m.fs.feed = Feed(default={'property_package': prop})

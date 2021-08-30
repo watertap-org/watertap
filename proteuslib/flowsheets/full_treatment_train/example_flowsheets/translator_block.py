@@ -16,6 +16,7 @@
 from pyomo.environ import Constraint
 from idaes.generic_models.unit_models.translator import Translator
 from idaes.core.util.scaling import calculate_scaling_factors
+from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 
 
 def build_tb(m, base_inlet='ion', base_outlet='TDS', name_str=None):
@@ -26,19 +27,15 @@ def build_tb(m, base_inlet='ion', base_outlet='TDS', name_str=None):
     if name_str is None:
         name_str = 'tb_' + base_inlet + '_to_' + base_outlet
 
-    if base_inlet == 'ion':
-        prop_inlet = m.fs.prop_ion
-    elif base_inlet == 'salt':
-        prop_inlet = m.fs.prop_salt
-    else:
+    if base_inlet not in ['ion', 'salt']:
         raise ValueError('Unexpected property base inlet {base_inlet} for build_tb'
                          ''.format(base_inlet=base_inlet))
+    prop_inlet = property_models.get_prop(m, base=base_inlet)
 
-    if base_outlet == 'TDS':
-        prop_outlet = m.fs.prop_TDS
-    else:
+    if base_outlet not in ['TDS']:
         raise ValueError('Unexpected property base outlet {base_outlet} for build_tb'
                          ''.format(base_outlet=base_outlet))
+    prop_outlet = property_models.get_prop(m, base=base_outlet)
 
     # build translator block
     setattr(m.fs, name_str, Translator(default={"inlet_property_package": prop_inlet,
@@ -52,6 +49,7 @@ def build_tb(m, base_inlet='ion', base_outlet='TDS', name_str=None):
     blk.eq_equal_pressure = Constraint(
         expr=blk.inlet.pressure[0]
              == blk.outlet.pressure[0])
+
     if base_inlet == 'ion' and base_outlet == 'TDS':
         blk.eq_H2O_balance = Constraint(
             expr=blk.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']
