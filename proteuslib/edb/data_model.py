@@ -395,8 +395,11 @@ class ThermoConfig(ConfigGenerator):
             "pt.vaporphase": PhaseType.vaporPhase,
             "pt.aqueousphase": PhaseType.aqueousPhase,
         },
-        "*_comp": {"perrys": Perrys, "nist": NIST,
-                   "relative_permittivity_constant": relative_permittivity_constant},
+        "*_comp": {
+            "perrys": Perrys,
+            "nist": NIST,
+            "relative_permittivity_constant": relative_permittivity_constant,
+        },
         "phase_equilibrium_form.*": {
             "fugacity": fugacity,
         },
@@ -530,8 +533,10 @@ class BaseConfig(ConfigGenerator):
             if isinstance(data[section][key], list):
                 data[section][key] = tuple(data[section][key])
 
+
 class DataWrapperNames:
     param = "parameter_data"
+
 
 class DataWrapper:
     """Interface to wrap data from DB in convenient ways for consumption by the rest of the library.
@@ -732,8 +737,10 @@ class DataWrapper:
                 )
         tgt[cls.NAMES.param] = data
 
+
 class ComponentNames(DataWrapperNames):
     pass
+
 
 class Component(DataWrapper):
 
@@ -834,6 +841,7 @@ class ReactionNames(DataWrapperNames):
     eq_form = "equilibrium_form"
     conc_form = "concentration_form"
 
+
 class Reaction(DataWrapper):
 
     merge_keys = ("equilibrium_reactions", "rate_reactions", "inherent_reactions")
@@ -860,7 +868,7 @@ class Reaction(DataWrapper):
         lhs: List[str],
         rhs: List[str],
         lhs_value: int = 0,
-        rhs_value: int = 1
+        rhs_value: int = 1,
     ) -> Dict:
         """Set the reaction order (if it differs from stoichiometry).
 
@@ -907,20 +915,13 @@ class Reaction(DataWrapper):
             for k, v in mapping.items():
                 subst_strings[v] = k
 
-        if "equilibrium_reactions" not in config:
-            raise BadConfiguration(
-                config=config, whoami=whoami, missing="equilibrium_reactions"
-            )
         result = []
         # XXX: base units?
-        for mk in cls.merge_keys:
-            if not mk.endswith("_reactions"):
-                continue
-            reaction_type = mk
-            if reaction_type not in config:
-                continue
+        for reaction_type in (
+            k for k in cls.merge_keys if (k.endswith("_reactions") and k in config)
+        ):
             for name, r in config[reaction_type].items():
-                d = {"name": name, "type": reaction_type}
+                d = {"name": name, "type": reaction_type.split("_reactions")[0]}
                 # convert all non-dictionary-valued fields into equivalent string values
                 for fld, val in r.items():
                     if isinstance(val, str):  # leave string values as-is

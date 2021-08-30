@@ -170,30 +170,32 @@ class ElectrolyteDB:
         """
         collection = self._db.reaction
         if component_names:
-            if any_components:
-                # if it has a space and a charge, take the formula part only
-                cnames = [c.split(" ", 1)[0] for c in component_names]
-                query = {"components": {"$in": cnames}}
-                it = collection.find(filter=query)
+            found = []
+            if phases is None:
+                allow_phases = None
+            elif isinstance(phases, str):
+                allow_phases = {phases}
             else:
-                if phases is None:
-                    allow_phases = None
-                elif isinstance(phases, str):
-                    allow_phases = {phases}
-                else:
-                    allow_phases = set(phases)
-                # normalize component names, build a set
-                cnames = {c.replace(" ", "_") for c in component_names}
-                # Brute force table scan: need to restructure DB for this to be
-                # easy to do with a MongoDB query, i.e. need to put all the
-                # *keys* for stoichiometry.Liq as *values* in an array, then do a:
-                # {$not: {$elemMatch: { $nin: [<components>] } } } on that array
-                found, stoich_field = [], Reaction.NAMES.stoich
-                for item in collection.find():
-                    for phase in item[stoich_field].keys():
-                        if allow_phases is not None and phase not in allow_phases:
-                            continue
-                        stoich = item[stoich_field][phase]
+                allow_phases = set(phases)
+            # build a set of normalized component names
+            cnames = {c.replace(" ", "_") for c in component_names}
+            _log.debug(f"Get reaction with {'any' if any_components else 'all'} "
+                       f"components {cnames}")
+            # Brute force table scan: need to restructure DB for this to be
+            # easy to do with a MongoDB query, i.e. need to put all the
+            # *keys* for stoichiometry.Liq as *values* in an array, then do a:
+            # {$not: {$elemMatch: { $nin: [<components>] } } } on that array
+            stoich_field = Reaction.NAMES.stoich
+            for item in collection.find():
+                for phase in item[stoich_field].keys():
+                    if allow_phases is not None and phase not in allow_phases:
+                        continue
+                    stoich = item[stoich_field][phase]
+                    if any_components:
+                        # look for non-empty intersection
+                        if set(stoich.keys()) & cnames:
+                            found.append(item)
+                    else:
                         # ok if it matches both sides
                         if set(stoich.keys()) == cnames:
                             found.append(item)
@@ -204,7 +206,7 @@ class ElectrolyteDB:
                                 if set(side_keys) == cnames:
                                     found.append(item)
                                     break  # found; stop
-                it = iter(found)
+            it = iter(found)
         elif reaction_names:
             query = {"name": {"$in": reaction_names}}
             _log.debug(f"reaction query: {query}")
