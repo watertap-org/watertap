@@ -16,6 +16,8 @@ This is the EDB version of test_enrtl_water_pH.py
 
 See that module for details on what the tests accomplish
 in terms of the IDAES chemistry packages.
+
+XXX: This test currently doesn't *do* anything
 """
 import pytest
 from proteuslib.edb import ElectrolyteDB
@@ -84,16 +86,6 @@ def get_water_reaction_config(edb):
     return cfg
 
 
-# TODO: Re-enable
-# @pytest.mark.skipif(g_edb is None, reason="Cannot connect to MongoDB")
-# class TestENRTLWaterEDB(TestENRTLwater):
-#     """Run all tests in superclass, but with different configs."""
-#
-#     if g_edb:
-#         thermo_config = get_thermo_config(g_edb)
-#         reaction_config = get_water_reaction_config(g_edb)
-
-
 # ====================================================================================
 
 
@@ -144,9 +136,3 @@ def get_carbonic_thermo_config(edb):
     del cfg["equilibrium_reactions"]
     return cfg
 
-
-# TODO: These tests are still failing!
-# @pytest.mark.skipif(g_edb is None, reason="Cannot connect to MongoDB")
-# class TestENRTLCarbonicAcidEdb(TestENRTLcarbonicAcid):
-#     if g_edb:
-#         thermo_config = get_carbonic_thermo_config(g_edb)
