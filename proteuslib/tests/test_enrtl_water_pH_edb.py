@@ -21,7 +21,6 @@ XXX: This test currently doesn't *do* anything
 """
 import pytest
 from proteuslib.edb import ElectrolyteDB
-from .test_enrtl_water_pH import TestENRTLwater, TestENRTLcarbonicAcid
 
 # Set global database object after checking that MongoDB server is up
 g_edb = None
