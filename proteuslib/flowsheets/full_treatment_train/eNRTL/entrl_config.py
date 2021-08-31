@@ -31,7 +31,7 @@ from idaes.core import (AqueousPhase,
                         Cation)
 from idaes.generic_models.properties.core.eos.enrtl import ENRTL
 from idaes.generic_models.properties.core.eos.enrtl_reference_states import \
-    Symmetric
+    Symmetric, Unsymmetric
 from idaes.generic_models.properties.core.generic.generic_property import (
         StateIndex)
 from idaes.generic_models.properties.core.state_definitions import FTPx
@@ -84,7 +84,7 @@ configuration = {
         "Liq": {"type": AqueousPhase,
                 "equation_of_state": ENRTL,
                 "equation_of_state_options": {
-                    "reference_state": Symmetric}}},
+                    "reference_state": Unsymmetric}}},
     "base_units": {"time": pyunits.s,
                    "length": pyunits.m,
                    "mass": pyunits.kg,

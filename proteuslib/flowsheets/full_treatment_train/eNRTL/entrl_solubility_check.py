@@ -56,6 +56,14 @@ def model():
     # m.fs.state[0].mole_frac_comp["Cl_-"].fix(0.010479)
     # m.fs.state[0].mole_frac_comp["H2O"].fix(0.979046)
 
+    # Feed conditions (AAA mod- remove Mg)
+    # m.fs.state[0].mole_frac_comp["Na_+"].fix(8.841987E-03)
+    # m.fs.state[0].mole_frac_comp["Ca_2+"].fix(1.742061E-04)
+    # m.fs.state[0].mole_frac_comp["Mg_2+"].fix(0)
+    # m.fs.state[0].mole_frac_comp["SO4_2-"].fix(4.064102E-04)
+    # m.fs.state[0].mole_frac_comp["Cl_-"].fix(1.046524E-02)
+    # m.fs.state[0].mole_frac_comp["H2O"].fix(9.801122E-01)
+
     # 50% water recovery
     m.fs.state[0].mole_frac_comp["Na_+"].fix(0.017327)
     m.fs.state[0].mole_frac_comp["Ca_2+"].fix(0.000341)
@@ -63,6 +71,29 @@ def model():
     m.fs.state[0].mole_frac_comp["SO4_2-"].fix(0.000796)
     m.fs.state[0].mole_frac_comp["Cl_-"].fix(0.020529)
     m.fs.state[0].mole_frac_comp["H2O"].fix(0.958952)
+
+    # 50% water recovery (AAA mods)
+    # m.fs.state[0].mole_frac_comp["Na_+"].fix(0.017327)
+    # m.fs.state[0].mole_frac_comp["Ca_2+"].fix(0.000341)
+    # m.fs.state[0].mole_frac_comp["Mg_2+"].fix(0)
+    # m.fs.state[0].mole_frac_comp["SO4_2-"].fix(0.000341)
+    # m.fs.state[0].mole_frac_comp["Cl_-"].fix(0.017327)
+    # m.fs.state[0].mole_frac_comp["H2O"].fix(0.964664)
+
+    # 50% water recovery (AAA mods)
+    # m.fs.state[0].mole_frac_comp["Na_+"].fix(0.008489715063938166)
+    # m.fs.state[0].mole_frac_comp["Ca_2+"].fix(0.00016802561064044287)
+    # m.fs.state[0].mole_frac_comp["Mg_2+"].fix(0)
+    # m.fs.state[0].mole_frac_comp["SO4_2-"].fix(0.00016802561064044287)
+    # m.fs.state[0].mole_frac_comp["Cl_-"].fix(0.008489715063938166)
+    # m.fs.state[0].mole_frac_comp["H2O"].fix(0.9826845186508428)
+    # m.fs.state[0].mole_frac_comp["NaCl"].fix(0.008563858732013666)
+    # m.fs.state[0].mole_frac_comp_["CaSO4"].fix(0.00016949303740443713)
+    # m.fs.state[0].mole_frac_comp["Na2SO4"].fix(0)
+    # m.fs.state[0].mole_frac_comp["MgSO4"].fix(0)
+    # m.fs.state[0].mole_frac_comp["CaCl2"].fix(0)
+    # m.fs.state[0].mole_frac_comp["MgCl2"].fix(0)
+    # m.fs.state[0].mole_frac_comp["H2O"].fix(0.9912666482305819)
 
     # Saturated gypsum
     # m.fs.state[0].mole_frac_comp["Na_+"].fix(1e-8)
@@ -88,6 +119,8 @@ def model():
     # m.fs.state[0].mole_frac_comp["Cl_-"].fix(3.472265e-2)
     # m.fs.state[0].mole_frac_comp["H2O"].fix(0.963715)
 
+    act = m.fs.state[0].act_phase_comp
+    act_coeff = m.fs.state[0].act_coeff_phase_comp
     # Solve model
     m.fs.state.initialize()
 
@@ -96,11 +129,19 @@ def model():
 
     # Display some results
     Ksp = {"CaSO4": 3.5e-5,
-           "Gypsum": 3.9e-8} # 8.89912404553923e-09
-    act = m.fs.state[0].act_phase_comp
-    print("Solubility Indices\n")
+           "Gypsum": 8.89912404553923e-09} # 8.89912404553923e-09
+
+    print("\nSolubility Indices\n")
     print("CaSO4:", value(act["Liq", "Ca_2+"]*act["Liq", "SO4_2-"]/Ksp["CaSO4"]))
     print("Gypsum:", value(act["Liq", "Ca_2+"]*act["Liq", "SO4_2-"]*act["Liq", "H2O"]**2/Ksp["Gypsum"]))
+    print("\nActivity Coefficients\n")
+    print("gamma_Ca:", value(act_coeff["Liq", "Ca_2+"]))
+    print("gamma_SO4:", value(act_coeff["Liq", "SO4_2-"]))
+    print("gamma_H2O:", value(act_coeff["Liq", "H2O"]))
+    print("gamma_CaSO4_average:",value((act_coeff["Liq", "Ca_2+"] * act_coeff["Liq", "Ca_2+"]) ** 2))
+
+
+
 
 
 if __name__ == '__main__':
