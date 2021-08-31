@@ -54,7 +54,7 @@ def set_up_optimization(m, has_bypass=True, NF_type='ZO', NF_base='ion',
     # unfix variables
     m.fs.splitter.split_fraction[0, 'bypass'].unfix()
     m.fs.splitter.split_fraction[0, 'bypass'].setlb(0.001)
-    m.fs.splitter.split_fraction[0, 'bypass'].setlb(0.9)
+    m.fs.splitter.split_fraction[0, 'bypass'].setub(0.9)
 
     m.fs.NF.area.unfix()
     m.fs.NF.area.setlb(50)
@@ -62,11 +62,11 @@ def set_up_optimization(m, has_bypass=True, NF_type='ZO', NF_base='ion',
 
     m.fs.pump_RO.control_volume.properties_out[0].pressure.unfix()
     m.fs.pump_RO.control_volume.properties_out[0].pressure.setlb(20e5)
-    m.fs.pump_RO.control_volume.properties_out[0].pressure.setlb(120e5)
+    m.fs.pump_RO.control_volume.properties_out[0].pressure.setub(120e5)
 
     m.fs.RO.area.unfix()
     m.fs.RO.area.setlb(10)
-    m.fs.RO.area.setlb(300)
+    m.fs.RO.area.setub(300)
 
     # add additional constraints
     # fixed system recovery
