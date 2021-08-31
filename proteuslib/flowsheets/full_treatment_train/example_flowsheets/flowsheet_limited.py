@@ -93,12 +93,6 @@ def set_up_optimization(m, has_bypass=True, NF_type='ZO', NF_base='ion',
              <= m.fs.feed.properties[0].conc_mol_phase_comp['Liq', 'Ca']
              * max_conc_factor)
 
-    # touched flow_vol lots of places, need to initialize it
-    m.fs.RO.permeate_side.properties_mixed.initialize()
-    m.fs.feed.properties.initialize()
-    m.fs.tb_pretrt_to_desal.properties_in.initialize()
-    m.fs.RO.feed_side.properties_out.initialize()
-
     check_dof(m, dof_expected=2)
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
@@ -112,7 +106,6 @@ def solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='ZO', NF_base='ion
 
     TransformationFactory("network.expand_arcs").apply_to(m)
     check_dof(m)
-    print('\n****** Simulation *****\n')
     solve_with_user_scaling(m, tee=False, fail_flag=False)
 
     # if has_bypass:
@@ -146,13 +139,12 @@ def solve_set_up_optimization(has_bypass=True, NF_type='ZO', NF_base='ion',
                         RO_type=RO_type, RO_base=RO_base, RO_level=RO_level,
                         system_recovery=system_recovery, max_conc_factor=max_conc_factor, RO_flux=RO_flux)
 
-    return m
 
 
 if __name__ == "__main__":
-    m = solve_set_up_optimization(has_bypass=True, NF_type='ZO', NF_base='ion',
+    solve_set_up_optimization(has_bypass=True, NF_type='ZO', NF_base='ion',
                               RO_type='0D', RO_base='TDS', RO_level='simple',
-                              system_recovery=0.50, max_conc_factor=3, RO_flux=10)
+                              system_recovery=0.65, max_conc_factor=3, RO_flux=10)
     # # no bypass, SepRO
     # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='Sep', NF_base='ion',
     #                                  RO_type='Sep', RO_base='TDS', RO_level='simple')
