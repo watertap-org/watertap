@@ -15,9 +15,9 @@ eNRTL property configuration dicts for synthetic hard water
 
 References:
 
-[1] Islam, R.I., et al., Molecular thermodynamics for scaling prediction: Case
-of membrane distillation, Separation and Purification Technology, 2021,
-Vol. 276.
+[1] Local Composition Model for Excess Gibbs Energy of Electrolyte Systems, Pt 1.
+Chen, C.-C., Britt, H.I., Boston, J.F., Evans, L.B.,
+AIChE Journal, 1982, Vol. 28(4), pgs. 588-596
 
 Author: Andrew Lee
 """
@@ -31,7 +31,7 @@ from idaes.core import (AqueousPhase,
                         Cation)
 from idaes.generic_models.properties.core.eos.enrtl import ENRTL
 from idaes.generic_models.properties.core.eos.enrtl_reference_states import \
-    Symmetric
+    Unsymmetric
 from idaes.generic_models.properties.core.generic.generic_property import (
         StateIndex)
 from idaes.generic_models.properties.core.state_definitions import FTPx
@@ -84,7 +84,7 @@ configuration = {
         "Liq": {"type": AqueousPhase,
                 "equation_of_state": ENRTL,
                 "equation_of_state_options": {
-                    "reference_state": Symmetric}}},
+                    "reference_state": Unsymmetric}}},
     "base_units": {"time": pyunits.s,
                    "length": pyunits.m,
                    "mass": pyunits.kg,
@@ -95,34 +95,14 @@ configuration = {
     "pressure_ref": 1e5,
     "temperature_ref": 298.15,
     "parameter_data": {
-        "Liq_tau": {  # Table 1 [1]
-            ('H2O', 'Na_+, Cl_-'): 8.866,
-            ('Na_+, Cl_-', 'H2O'): -4.451,
-            ('H2O', 'Ca_2+, Cl_-'): 10.478,
-            ('Ca_2+, Cl_-', 'H2O'): -5.231,
-            ('H2O', 'Mg_2+, Cl_-'): 10.854,
-            ('Mg_2+, Cl_-', 'H2O'): -5.409,
-            ('H2O', 'Na_+, SO4_2-'): 8.012,
-            ('Na_+, SO4_2-', 'H2O'): -3.903,
-            ('H2O', 'Ca_2+, SO4_2-'): 6.932,
-            ('Ca_2+, SO4_2-', 'H2O'): -3.466,
-            ('H2O', 'Mg_2+, SO4_2-'): 8.808,
-            ('Mg_2+, SO4_2-', 'H2O'): -4.383,
-            ('Na_+, Cl_-', 'Ca_2+, Cl_-'): -0.468,
-            ('Ca_2+, Cl_-', 'Na_+, Cl_-'): 0.41,
-            ('Na_+, Cl_-', 'Mg_2+, Cl_-'): -0.328,
-            ('Mg_2+, Cl_-', 'Na_+, Cl_-'): -0.981,
-            ('Ca_2+, Cl_-', 'Mg_2+, Cl_-'): 0.22,
-            ('Mg_2+, Cl_-', 'Ca_2+, Cl_-'): 0.322,
-            ('Na_+, SO4_2-', 'Ca_2+, SO4_2-'): -0.761,
-            ('Ca_2+, SO4_2-', 'Na_+, SO4_2-'): 0.368,
-            ('Na_+, SO4_2-', 'Mg_2+, SO4_2-'): -0.327,
-            ('Mg_2+, SO4_2-', 'Na_+, SO4_2-'): 0.799,
-            ('Ca_2+, SO4_2-', 'Mg_2+, SO4_2-'): 0,
-            ('Mg_2+, SO4_2-', 'Ca_2+, SO4_2-'): 0.383,
-            ('Na_+, Cl_-', 'Na_+, SO4_2-'): 0.803,
-            ('Na_+, SO4_2-', 'Na_+, Cl_-'): -0.634,
-            ('Ca_2+, Cl_-', 'Ca_2+, SO4_2-'): 0,
-            ('Ca_2+, SO4_2-', 'Ca_2+, Cl_-'): -0.264,
-            ('Mg_2+, Cl_-', 'Mg_2+, SO4_2-'): -0.707,
-            ('Mg_2+, SO4_2-', 'Mg_2+, Cl_-'): -0.841}}}
+        "Liq_tau": {  # Table 1 [1], no parameters for CaSO4
+            ("H2O", "Na_+, Cl_-"): 8.885,
+            ("Na_+, Cl_-", "H2O"): -4.549,
+            ("H2O", "Ca_2+, Cl_-"): 11.396,
+            ("Ca_2+, Cl_-", "H2O"): -6.218,
+            ("H2O", "Mg_2+, Cl_-"): 11.579,
+            ("Mg_2+, Cl_-", "H2O"): -6.338,
+            ("H2O", "Na_+, SO4_2-"): 8.389,
+            ("Na_+, SO4_2-", "H2O"): -4.539,
+            ("H2O", "Mg_2+, SO4_2-"): 11.346,
+            ("Mg_2+, SO4_2-", "H2O"): -6.862}}}
