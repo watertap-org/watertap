@@ -13,14 +13,16 @@
 
 """Pretreatment flowsheet components"""
 
+from pyomo.environ import ConcreteModel, TransformationFactory
 from pyomo.network import Arc
+from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import Feed, Separator, Mixer
 from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
 from idaes.core.util.scaling import calculate_scaling_factors
-from idaes.core.util.initialization import propagate_state, fix_state_vars, revert_state_vars
+from idaes.core.util.initialization import propagate_state
 from proteuslib.flowsheets.full_treatment_train.example_flowsheets import feed_block
 from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator, unit_ZONF, property_models
-
+from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 def build_pretreatment_NF(m, has_bypass=True, NF_type='ZO', NF_base='ion'):
     """
@@ -66,7 +68,7 @@ def build_pretreatment_NF(m, has_bypass=True, NF_type='ZO', NF_base='ion'):
 
         # specify (NF and feed is already specified, mixer has 0 DOF, splitter has 1 DOF)
         # splitter
-        m.fs.splitter.split_fraction[0, 'bypass'].fix(0.25)
+        m.fs.splitter.split_fraction[0, 'bypass'].fix(0.1)
 
         # scaling (NF and RO models and translator are already scaled)
         calculate_scaling_factors(m.fs.splitter)
@@ -108,3 +110,18 @@ def build_pretreatment_NF(m, has_bypass=True, NF_type='ZO', NF_base='ion'):
         pretrt_port['waste'] = m.fs.NF.retentate
 
     return pretrt_port
+
+
+def solve_build_pretreatment_NF(has_bypass=True, NF_type='ZO', NF_base='ion'):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    property_models.build_prop(m, base=NF_base)
+    build_pretreatment_NF(m, has_bypass=has_bypass, NF_type=NF_type, NF_base=NF_base)
+
+    TransformationFactory("network.expand_arcs").apply_to(m)
+    check_dof(m)
+    solve_with_user_scaling(m, tee=True, fail_flag=True)
+
+
+if __name__ == "__main__":
+    solve_build_pretreatment_NF(has_bypass=True, NF_type='ZO', NF_base='ion')

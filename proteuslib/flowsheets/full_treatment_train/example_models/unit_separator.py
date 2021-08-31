@@ -22,20 +22,26 @@ from proteuslib.flowsheets.full_treatment_train.example_models import property_m
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
-def build_SepRO(m):
+def build_SepRO(m, base='TDS'):
     """
     Builds RO model based on the IDAES separator.
     Requires prop_TDS property package.
     """
+    prop = property_models.get_prop(m, base=base)
+
     m.fs.RO = Separator(default={
-        "property_package": m.fs.prop_TDS,
+        "property_package": prop,
         "outlet_list": ['retentate', 'permeate'],
         "split_basis": SplittingType.componentFlow,
         "energy_split_basis": EnergySplittingType.equal_temperature})
 
     # specify
-    m.fs.RO.split_fraction[0, 'permeate', 'H2O'].fix(0.5)
-    m.fs.RO.split_fraction[0, 'permeate', 'TDS'].fix(0.01)
+    if base == 'TDS':
+        m.fs.RO.split_fraction[0, 'permeate', 'H2O'].fix(0.5)
+        m.fs.RO.split_fraction[0, 'permeate', 'TDS'].fix(0.01)
+    else:
+        raise ValueError('Unexpected property base {base} provided to build_SepRO'
+                         ''.format(base=base))
 
     # scaling
     calculate_scaling_factors(m.fs.RO)
@@ -78,12 +84,12 @@ def build_SepNF(m, base='ion'):
     calculate_scaling_factors(m.fs.NF)
 
 
-def solve_build_SepRO():
+def solve_build_SepRO(base='TDS'):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    property_models.build_prop(m, base='TDS')
-    build_SepRO(m)
-    property_models.specify_feed(m.fs.RO.mixed_state[0], base='TDS')
+    property_models.build_prop(m, base=base)
+    build_SepRO(m, base=base)
+    property_models.specify_feed(m.fs.RO.mixed_state[0], base=base)
 
     check_dof(m)
     solve_with_user_scaling(m)
@@ -114,6 +120,6 @@ def solve_build_SepNF(base='ion'):
 
 
 if __name__ == "__main__":
-    solve_build_SepRO()
+    solve_build_SepRO(base='TDS')
     solve_build_SepNF(base='ion')
     solve_build_SepNF(base='salt')

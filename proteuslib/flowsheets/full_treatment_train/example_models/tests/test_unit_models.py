@@ -17,7 +17,7 @@ from proteuslib.flowsheets.full_treatment_train.example_models import unit_separ
 
 @pytest.mark.component
 def test_unit_separator_SepRO():
-    m = unit_separator.solve_build_SepRO()
+    m = unit_separator.solve_build_SepRO(base='TDS')
     assert value(m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.4825, rel=1e-3)
     assert value(m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(3.5e-4, rel=1e-3)
     assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.4825, rel=1e-3)
