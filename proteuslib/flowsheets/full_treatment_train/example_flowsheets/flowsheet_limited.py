@@ -13,7 +13,7 @@
 
 """Flowsheet examples that are limited (i.e. do not satisfy minimum viable product requirements)"""
 
-from pyomo.environ import ConcreteModel, TransformationFactory
+from pyomo.environ import ConcreteModel, Objective, Expression, Constraint, TransformationFactory, value
 from pyomo.network import Arc
 from pyomo.util import infeasible
 from idaes.core import FlowsheetBlock
@@ -42,8 +42,59 @@ def build_flowsheet_limited_NF(m, has_bypass=True, NF_type='ZO', NF_base='ion',
     m.fs.s_pretrt_tb = Arc(source=pretrt_port['out'], destination=m.fs.tb_pretrt_to_desal.inlet)
     m.fs.s_tb_desal = Arc(source=m.fs.tb_pretrt_to_desal.outlet, destination=desal_port['in'])
 
-
     return m
+
+
+def set_up_optimization(m, has_bypass=True, NF_type='ZO', NF_base='ion',
+                        RO_type='0D', RO_base='TDS', RO_level='simple',
+                        system_recovery=0.75, max_conc_factor=3, RO_flux=20):
+    # set objective
+    m.fs.objective = Objective(expr=m.fs.NF.area)
+
+    # unfix variables
+    m.fs.splitter.split_fraction[0, 'bypass'].unfix()
+    m.fs.splitter.split_fraction[0, 'bypass'].setlb(0.001)
+    m.fs.splitter.split_fraction[0, 'bypass'].setlb(0.9)
+
+    m.fs.NF.area.unfix()
+    m.fs.NF.area.setlb(50)
+    m.fs.NF.area.setub(1000)
+
+    m.fs.pump_RO.control_volume.properties_out[0].pressure.unfix()
+    m.fs.pump_RO.control_volume.properties_out[0].pressure.setlb(20e5)
+    m.fs.pump_RO.control_volume.properties_out[0].pressure.setlb(120e5)
+
+    m.fs.RO.area.unfix()
+    m.fs.RO.area.setlb(10)
+    m.fs.RO.area.setlb(300)
+
+    # add additional constraints
+    # fixed system recovery
+    m.fs.system_recovery = Expression(
+        expr=m.fs.RO.permeate_side.properties_mixed[0].flow_vol
+             / m.fs.feed.properties[0].flow_vol)
+    m.fs.eq_system_recovery = Constraint(
+        expr=m.fs.system_recovery == system_recovery)
+
+    # fixed RO water flux
+    m.fs.RO_flux = Expression(
+        expr=m.fs.RO.permeate_side.properties_mixed[0].flow_vol
+             / m.fs.RO.area)
+    m.fs.eq_RO_flux = Constraint(
+        expr=m.fs.RO_flux == RO_flux / 1000 / 3600)
+
+    # scaling constraint (maximum Ca concentration)
+    m.fs.brine_conc_mol_Ca = Expression(
+        expr=m.fs.tb_pretrt_to_desal.properties_in[0].conc_mol_phase_comp['Liq', 'Ca']
+             * m.fs.tb_pretrt_to_desal.properties_in[0].flow_vol
+             / m.fs.RO.feed_side.properties_out[0].flow_vol)
+    m.fs.eq_max_conc_mol_Ca = Constraint(
+        expr=m.fs.brine_conc_mol_Ca
+             <= m.fs.feed.properties[0].conc_mol_phase_comp['Liq', 'Ca']
+             * max_conc_factor)
+
+    check_dof(m, dof_expected=2)
+    solve_with_user_scaling(m, tee=False, fail_flag=True)
 
 
 def solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='ZO', NF_base='ion',
@@ -57,26 +108,43 @@ def solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='ZO', NF_base='ion
     check_dof(m)
     solve_with_user_scaling(m, tee=False, fail_flag=False)
 
-    if has_bypass:
-        m.fs.feed.report()
-        m.fs.splitter.report()
-        m.fs.NF.inlet.display()
-        m.fs.NF.permeate.display()
-        m.fs.NF.retentate.display()
-        m.fs.mixer.report()
-        m.fs.RO.report()
-        m.fs.RO.permeate.display()
-    else:
-        m.fs.feed.report()
-        m.fs.NF.inlet.display()
-        m.fs.NF.permeate.display()
-        m.fs.NF.retentate.display()
-        m.fs.RO.report()
+    # if has_bypass:
+    #     m.fs.feed.report()
+    #     m.fs.splitter.report()
+    #     m.fs.NF.inlet.display()
+    #     m.fs.NF.permeate.display()
+    #     m.fs.NF.retentate.display()
+    #     m.fs.mixer.report()
+    #     m.fs.RO.report()
+    #     m.fs.RO.permeate.display()
+    # else:
+    #     m.fs.feed.report()
+    #     m.fs.NF.inlet.display()
+    #     m.fs.NF.permeate.display()
+    #     m.fs.NF.retentate.display()
+    #     m.fs.RO.report()
 
     return m
 
 
+def solve_set_up_optimization(has_bypass=True, NF_type='ZO', NF_base='ion',
+                              RO_type='OD', RO_base='TDS', RO_level='simple',
+                              system_recovery=0.75, max_conc_factor=3, RO_flux=10):
+
+    m = solve_build_flowsheet_limited_NF(has_bypass=has_bypass, NF_type=NF_type, NF_base=NF_base,
+                                         RO_type=RO_type, RO_base=RO_base, RO_level=RO_level)
+
+    print('\n****** Optimization *****\n')
+    set_up_optimization(m, has_bypass=has_bypass, NF_type=NF_type, NF_base=NF_base,
+                        RO_type=RO_type, RO_base=RO_base, RO_level=RO_level,
+                        system_recovery=system_recovery, max_conc_factor=max_conc_factor, RO_flux=RO_flux)
+
+
+
 if __name__ == "__main__":
+    solve_set_up_optimization(has_bypass=True, NF_type='ZO', NF_base='ion',
+                              RO_type='0D', RO_base='TDS', RO_level='simple',
+                              system_recovery=0.65, max_conc_factor=3, RO_flux=10)
     # # no bypass, SepRO
     # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='Sep', NF_base='ion',
     #                                  RO_type='Sep', RO_base='TDS', RO_level='simple')
