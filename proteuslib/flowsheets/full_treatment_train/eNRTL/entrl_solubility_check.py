@@ -88,10 +88,6 @@ def model():
     # m.fs.state[0].mole_frac_comp["Cl_-"].fix(3.472265e-2)
     # m.fs.state[0].mole_frac_comp["H2O"].fix(0.963715)
 
-    # Hand fitted binary interaction parameters (sat. gypsum w/ 1 mol/kg NaCl)
-    m.fs.params.Liq.tau['Na_+, SO4_2-', 'Na_+, Cl_-'].set_value(-4)
-    m.fs.params.Liq.tau['Na_+, Cl_-', 'Na_+, SO4_2-'].set_value(4)
-
     # Solve model
     m.fs.state.initialize()
 
@@ -99,10 +95,12 @@ def model():
     solver.solve(m, tee=True)
 
     # Display some results
-    Ksp = {"CaSO4": 8.89912404553923e-09}
+    Ksp = {"CaSO4": 3.5e-5,
+           "Gypsum": 3.9e-8} # 8.89912404553923e-09
     act = m.fs.state[0].act_phase_comp
     print("Solubility Indices\n")
-    print("Gypsum:", value(act["Liq", "Ca_2+"]*act["Liq", "SO4_2-"]*act["Liq", "H2O"]**2/Ksp["CaSO4"]))
+    print("CaSO4:", value(act["Liq", "Ca_2+"]*act["Liq", "SO4_2-"]/Ksp["CaSO4"]))
+    print("Gypsum:", value(act["Liq", "Ca_2+"]*act["Liq", "SO4_2-"]*act["Liq", "H2O"]**2/Ksp["Gypsum"]))
 
 
 if __name__ == '__main__':
