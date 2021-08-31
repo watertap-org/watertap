@@ -107,6 +107,7 @@ class PropParameterData(PhysicalParameterBlock):
              'mass_frac_phase_comp': {'method': '_mass_frac_phase_comp'},
              'flow_vol': {'method': '_flow_vol'},
              'flow_mol_phase_comp': {'method': '_flow_mol_phase_comp'},
+             'conc_mol_phase_comp': {'method': '_conc_mol_phase_comp'},
              'enth_flow': {'method': '_enth_flow'},
             })
 
@@ -309,6 +310,20 @@ class PropStateBlockData(StateBlockData):
                     b.flow_mass_phase_comp['Liq', j] / b.params.mw_comp[j])
         self.eq_flow_mol_phase_comp = Constraint(self.params.component_list, rule=rule_flow_mol_phase_comp)
 
+    def _conc_mol_phase_comp(self):
+        self.conc_mol_phase_comp = Var(
+            self.params.phase_list,
+            self.params.component_list,
+            initialize=1,
+            bounds=(1e-6, 1e6),
+            units=pyunits.mol/pyunits.m**3,
+            doc="Molarity")
+
+        def rule_conc_mol_phase_comp(b, j):
+            return (b.flow_vol * b.conc_mol_phase_comp['Liq', j] ==
+                    b.flow_mol_phase_comp['Liq', j])
+        self.eq_conc_mol_phase_comp = Constraint(self.params.component_list, rule=rule_conc_mol_phase_comp)
+
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method
         temperature_ref = 273.15 * pyunits.K
@@ -424,6 +439,13 @@ class PropStateBlockData(StateBlockData):
                           / iscale.get_scaling_factor(self.params.mw_comp[j]))
                     iscale.set_scaling_factor(self.flow_mol_phase_comp['Liq', j], sf)
 
+        if self.is_property_constructed('conc_mol_phase_comp'):
+            for j in self.params.component_list:
+                if iscale.get_scaling_factor(self.conc_mol_phase_comp['Liq', j]) is None:
+                    sf = (iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j])
+                          / iscale.get_scaling_factor(self.flow_vol))
+                    iscale.set_scaling_factor(self.conc_mol_phase_comp['Liq', j], sf)
+
         if self.is_property_constructed('enth_flow'):
             if iscale.get_scaling_factor(self.enth_flow) is None:
                 sf = (iscale.get_scaling_factor(self.params.cp)
@@ -461,7 +483,7 @@ class PropStateBlockData(StateBlockData):
                     iscale.constraint_scaling_transform(c, sf)
 
         # property relationships indexed by component and phase
-        v_str_lst_phase_comp = ['mass_frac_phase_comp', 'flow_mol_phase_comp']
+        v_str_lst_phase_comp = ['mass_frac_phase_comp', 'flow_mol_phase_comp', 'conc_mol_phase_comp']
         for v_str in v_str_lst_phase_comp:
             if self.is_property_constructed(v_str):
                 v_comp = getattr(self, v_str)

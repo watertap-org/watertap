@@ -16,7 +16,7 @@
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
-import proteuslib.property_models.seawater_prop_pack as props
+from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
                                                        ConcentrationPolarizationType,
                                                        MassTransferCoefficient,
@@ -24,89 +24,67 @@ from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
-def build_simple_example(m):
-    # build unit
-    m.fs.RO_properties = props.SeawaterParameterBlock()
-    m.fs.RO = ReverseOsmosis0D(default={"property_package": m.fs.RO_properties})
+def build_RO(m, base='TDS', level='simple'):
+    """
+    Builds a 0DRO model at a specified level (simple or detailed).
+    Requires prop_TDS property package.
+    """
+    if base not in ['TDS']:
+        raise ValueError('Unexpected property base {base} for build_RO'
+                         ''.format(base=base))
+    prop = property_models.get_prop(m, base=base)
 
-    # specify unit
-    # feed
-    feed_flow_mass = 1
-    feed_mass_frac_TDS = 0.035
-    m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS'].fix(feed_flow_mass * feed_mass_frac_TDS)
-    m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(feed_flow_mass * (1 - feed_mass_frac_TDS))
-    m.fs.RO.inlet.pressure[0].fix(50e5)
-    m.fs.RO.inlet.temperature[0].fix(298.15)
-    # RO
-    m.fs.RO.area.fix(50 * feed_flow_mass)
-    m.fs.RO.A_comp.fix(4.2e-12)
-    m.fs.RO.B_comp.fix(3.5e-8)
-    m.fs.RO.permeate.pressure[0].fix(101325)
-    check_dof(m)
+    if level == 'simple':
+        # build unit
+        m.fs.RO = ReverseOsmosis0D(default={"property_package": prop})
+
+        # specify unit
+        m.fs.RO.area.fix(50)
+        m.fs.RO.A_comp.fix(4.2e-12)
+        m.fs.RO.B_comp.fix(3.5e-8)
+        m.fs.RO.permeate.pressure[0].fix(101325)
+
+    elif level == 'detailed':
+        # build unit
+        m.fs.RO = ReverseOsmosis0D(default={
+            "property_package": prop,
+            "has_pressure_change": True,
+            "pressure_change_type": PressureChangeType.calculated,
+            "mass_transfer_coefficient": MassTransferCoefficient.calculated,
+            "concentration_polarization_type": ConcentrationPolarizationType.calculated})
+
+        # specify unit
+        m.fs.RO.area.fix(50)
+        m.fs.RO.A_comp.fix(4.2e-12)
+        m.fs.RO.B_comp.fix(3.5e-8)
+        m.fs.RO.permeate.pressure[0].fix(101325)
+        m.fs.RO.channel_height.fix(1e-3)
+        m.fs.RO.spacer_porosity.fix(0.97)
+        m.fs.RO.N_Re_io[0, 'in'].fix(500)
+
+    else:
+        raise ValueError('Unexpected argument {level} for level in build_RO'
+                         ''.format(level=level))
 
     # scale unit
-    m.fs.RO_properties.set_default_scaling('flow_mass_phase_comp', 1 / feed_flow_mass, index=('Liq', 'H2O'))
-    m.fs.RO_properties.set_default_scaling('flow_mass_phase_comp', 1 / feed_flow_mass * 1e2, index=('Liq', 'TDS'))
     calculate_scaling_factors(m.fs.RO)
+
+
+def solve_build_RO(base='TDS', level='simple'):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    property_models.build_prop(m, base='TDS')
+
+    build_RO(m, base=base, level=level)
+
+    # specify feed
+    property_models.specify_feed(m.fs.RO.feed_side.properties_in[0], base='TDS')
+    m.fs.RO.feed_side.properties_in[0].pressure.fix(50e5)
 
     # initialize
     m.fs.RO.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
 
-
-def build_detailed_example(m):
-    # build unit
-    m.fs.RO_properties = props.SeawaterParameterBlock()
-    m.fs.RO = ReverseOsmosis0D(default={
-        "property_package": m.fs.RO_properties,
-        "has_pressure_change": True,
-        "pressure_change_type": PressureChangeType.calculated,
-        "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-        "concentration_polarization_type": ConcentrationPolarizationType.calculated})
-
-    # specify unit
-    # feed
-    feed_flow_mass = 1
-    feed_mass_frac_TDS = 0.035
-    m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS'].fix(feed_flow_mass * feed_mass_frac_TDS)
-    m.fs.RO.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(feed_flow_mass * (1 - feed_mass_frac_TDS))
-    m.fs.RO.inlet.pressure[0].fix(50e5)
-    m.fs.RO.inlet.temperature[0].fix(298.15)
-    # RO
-    m.fs.RO.area.fix(50 * feed_flow_mass)
-    m.fs.RO.A_comp.fix(4.2e-12)
-    m.fs.RO.B_comp.fix(3.5e-8)
-    m.fs.RO.permeate.pressure[0].fix(101325)
-    m.fs.RO.channel_height.fix(1e-3)
-    m.fs.RO.spacer_porosity.fix(0.97)
-    m.fs.RO.N_Re_io[0, 'in'].fix(500)
     check_dof(m)
-
-    # scaling
-    m.fs.RO_properties.set_default_scaling('flow_mass_phase_comp', 1 / feed_flow_mass, index=('Liq', 'H2O'))
-    m.fs.RO_properties.set_default_scaling('flow_mass_phase_comp', 1 / feed_flow_mass * 1e2, index=('Liq', 'TDS'))
-    calculate_scaling_factors(m.fs.RO)
-
-    # initialize
-    m.fs.RO.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
-
-
-def run_simple_example():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-
-    build_simple_example(m)
-    solve_with_user_scaling(m)
-
-    m.fs.RO.report()
-
-    return m
-
-
-def run_detailed_example():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-
-    build_detailed_example(m)
     solve_with_user_scaling(m)
 
     m.fs.RO.report()
@@ -115,5 +93,5 @@ def run_detailed_example():
 
 
 if __name__ == "__main__":
-    run_simple_example()
-    run_detailed_example()
+    solve_build_RO(base='TDS', level='simple')
+    solve_build_RO(base='TDS', level='detailed')

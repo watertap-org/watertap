@@ -16,11 +16,12 @@ from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 
-def solve_with_user_scaling(blk, solver=None, tee=False):
+def solve_with_user_scaling(blk, solver=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
     results = solver.solve(blk, tee=tee)
-    check_solve(results)
+    if fail_flag:
+        check_solve(results)
 
 
 def check_dof(blk, dof_expected=0):

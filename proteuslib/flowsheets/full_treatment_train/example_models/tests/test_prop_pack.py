@@ -19,8 +19,8 @@ from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
 from pyomo.util.check_units import assert_units_consistent
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
-import proteuslib.flowsheets.full_treatment_train.example_models.property_seawater_ions as property_seawater_ions
-import proteuslib.flowsheets.full_treatment_train.example_models.property_seawater_salts as property_seawater_salts
+import proteuslib.flowsheets.full_treatment_train.example_models.seawater_ion_prop_pack as property_seawater_ions
+import proteuslib.flowsheets.full_treatment_train.example_models.seawater_salt_prop_pack as property_seawater_salts
 
 # -----------------------------------------------------------------------------
 @pytest.mark.component
@@ -82,8 +82,8 @@ class TestPropertySeawaterIons(PropertyTestHarness):
                              ('flow_mass_phase_comp', ('Liq', 'Mg')): 1e3,
                              ('flow_mass_phase_comp', ('Liq', 'SO4')): 1e3,
                              ('flow_mass_phase_comp', ('Liq', 'Cl')): 1e2}
-        self.stateblock_statistics = {'number_variables': 21,
-                                      'number_total_constraints': 13,
+        self.stateblock_statistics = {'number_variables': 27,
+                                      'number_total_constraints': 19,
                                       'number_unused_variables': 2,  # pressure and temperature are unused
                                       'default_degrees_of_freedom': 6}  # 8 state vars, pressure and temp are not active
         self.default_solution = {('mass_frac_phase_comp', ('Liq', 'H2O')): 0.9647,
