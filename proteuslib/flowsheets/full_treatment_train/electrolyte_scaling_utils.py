@@ -15,7 +15,9 @@
     Scaling utilities for flowsheets involving electrolyte chemistry
 
     NOTE: Some of these scaling methods will likely need to be updated or
-    changed after the new log form for electrolytes is added to IDAES. 
+    changed after the new log form for electrolytes is added to IDAES.
+
+    ALSO NOTE: These scaling methods assume you will be using the FTPx state definition. 
 """
 
 from idaes.core.util import scaling as iscale
@@ -158,11 +160,27 @@ def calculate_chemical_scaling_factors_for_material_balances(unit):
             unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
         iscale.constraint_scaling_transform(unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
+# # Perform scaling transformations for energy balances
+def calculate_chemical_scaling_factors_for_energy_balances(unit):
+    max = 1
+    min = 1
+    for phase in unit.control_volume.properties_in[0.0].enth_mol_phase:
+        val = abs(value(unit.control_volume.properties_in[0.0].enth_mol_phase[phase].expr))
+        if val >= max:
+            max = val
+        if val <= min:
+            val = min
+        iscale.set_scaling_factor(unit.control_volume.properties_in[0.0]._enthalpy_flow_term[phase], 10/val)
+        iscale.set_scaling_factor(unit.control_volume.properties_out[0.0]._enthalpy_flow_term[phase], 10/val)
+
+    iscale.constraint_scaling_transform(unit.control_volume.enthalpy_balances[0.0], 10/max)
+
 # Serially calculate all scaling factors needed
 # # TODO: Add more scaling calculations as needed for (i) stoich reactions, (ii) rate reactions, etc.
 def calculate_chemical_scaling_factors(unit, thermo_params, rxn_params, state_args, output_jac=False):
     calculate_chemical_scaling_factors_for_inherent_log_reactions(unit, thermo_params)
     calculate_chemical_scaling_factors_for_equilibrium_log_reactions(unit, rxn_params)
+    calculate_chemical_scaling_factors_for_energy_balances(unit)
     calculate_chemical_scaling_factors_for_material_balances(unit)
     iscale.calculate_scaling_factors(unit)
 

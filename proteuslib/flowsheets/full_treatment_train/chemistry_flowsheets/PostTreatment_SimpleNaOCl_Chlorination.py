@@ -472,7 +472,6 @@ def run_chlorination_example():
 
     display_results_of_chlorination(model.fs.simple_naocl_unit)
 
-
     return model
 
 
