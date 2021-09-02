@@ -129,7 +129,7 @@ def compute_gypsum_SI(Ksp=8.89912404553923e-09, feed_comp=None):
     m.fs.state.initialize()
 
     solver = get_solver()
-    solver.solve(m, tee=True)
+    solver.solve(m, tee=False)
 
     # Display some results
     # Ksp = {"CaSO4": 3.5e-5,
@@ -150,14 +150,7 @@ def compute_gypsum_SI(Ksp=8.89912404553923e-09, feed_comp=None):
     return SI, gamma_Ca, gamma_SO4, gamma_CaSO4_avg
 
 if __name__ == '__main__':
-    feed_comp = {
-        "Na_+": 0.008845,
-        "Cl_-": 0.010479,
-        "Ca_2+": 0.000174,
-        "Mg_2+": 0.001049,
-        "SO4_2-": 0.000407,
-        "H2O": 0.979046
-    }
+
     # concentration factor from 1 to 10
     cf = np.linspace(1, 10, 100)
     SI_mat = []
@@ -166,11 +159,20 @@ if __name__ == '__main__':
     gamma_CaSO4_avg_mat = []
 
     for concentration_factor in cf:
+        feed_comp = {
+            "Na_+": 0.008845,
+            "Cl_-": 0.010479,
+            "Ca_2+": 0.000174,
+            "Mg_2+": 0.001049,
+            "SO4_2-": 0.000407,
+            "H2O": 0.979046
+        }
         feed_comp.update((x, y * concentration_factor) for x, y in feed_comp.items())
-
+        print(feed_comp)
         SI, gamma_Ca, gamma_SO4, gamma_CaSO4_avg = compute_gypsum_SI(feed_comp=feed_comp)
+
         SI_mat.append(SI)
-        gamma_Ca_mat()
-        gamma_SO4_mat
-        gamma_CaSO4_avg_mat
+        gamma_Ca_mat.append(gamma_Ca)
+        gamma_SO4_mat.append(gamma_SO4)
+        gamma_CaSO4_avg_mat.append(gamma_CaSO4_avg)
 
