@@ -194,6 +194,7 @@ def run_SepRO_Chlorination_flowsheet_example():
     seq_decomp_initializer(model)
 
     # fun the full solve
+    # # TODO: Update this method with options for bound_push and mu_init
     solve_with_user_scaling(model, tee=True)
 
     model.fs.RO.inlet.display()
