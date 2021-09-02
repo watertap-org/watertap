@@ -19,7 +19,8 @@ from pyomo.environ import (ConcreteModel,
                            Objective,
                            Param,
                            TransformationFactory,
-                           units as pyunits)
+                           units as pyunits,
+                           assert_optimal_termination)
 from pyomo.network import Arc
 import pyomo.util.infeasible as infeas
 from idaes.core import FlowsheetBlock
@@ -41,6 +42,7 @@ from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
                                                        PressureChangeType)
 from proteuslib.unit_models.pressure_exchanger import PressureExchanger
 from proteuslib.unit_models.pump_isothermal import Pump
+from proteuslib.util.initialization import assert_degrees_of_freedom
 import proteuslib.flowsheets.RO_with_energy_recovery.financials as financials
 
 
@@ -251,7 +253,7 @@ def calculate_operating_pressure(feed_state_block=None, over_pressure=0.15,
     t.brine[0].pressure_osm
     # solve state block
     results = solve_indexed_blocks(solver, [t.brine])
-    check_solve(results)
+    assert_optimal_termination(results)
 
     return value(t.brine[0].pressure_osm) * (1 + over_pressure)
 
@@ -260,21 +262,7 @@ def solve(blk, solver=None, tee=False):
     if solver is None:
         solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
     results = solver.solve(blk, tee=tee)
-    check_solve(results)
-
-
-def check_dof(blk, dof_expected=0):
-    if degrees_of_freedom(blk) != dof_expected:
-        raise RuntimeError("The degrees of freedom on {blk} were {dof} but {dof_e} "
-                           "were expected, check the fixed variables on that block".format(
-            blk=blk, dof=degrees_of_freedom(blk), dof_e=dof_expected))
-
-
-def check_solve(results):
-    if results.solver.termination_condition != TerminationCondition.optimal:
-        raise RuntimeError("The solver failed to converge to an optimal solution. "
-                           "This suggests that the user provided infeasible inputs "
-                           "or that the model is poorly scaled.")
+    assert_optimal_termination(results)
 
 
 def initialize_system(m, solver=None):
@@ -362,7 +350,7 @@ def optimize_set_up(m):
         expr=m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'] >= m.fs.minimum_water_flux)
 
     # ---checking model---
-    check_dof(m, dof_expected=1)
+    assert_degrees_of_freedom(m, 1)
 
 def optimize(m, solver=None):
     # --solve---
