@@ -30,10 +30,11 @@ from idaes.core import (ControlVolume0DBlock,
                         MomentumBalanceType,
                         UnitModelBlockData,
                         useDefault)
-from idaes.core.util.initialization import revert_state_vars
+from idaes.core.util import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util import get_solver
+from idaes.core.util.initialization import revert_state_vars
+from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 
 _log = idaeslog.getLogger(__name__)
@@ -121,12 +122,11 @@ class PressureExchangerData(UnitModelBlockData):
         super().build()
 
         # Pressure exchanger supports only liquid phase
-        if (len(self.config.property_package.phase_list) > 1
-                or 'Liq' not in [p for p in self.config.property_package.phase_list]):
+        if self.config.property_package.phase_list != ['Liq']:
             raise ConfigurationError(
                 "Pressure exchanger model only supports one liquid phase ['Liq'],"
                 "the property package has specified the following phases {}"
-                    .format([p for p in self.config.property_package.phase_list]))
+                    .format(self.config.property_package.phase_list))
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
@@ -375,3 +375,28 @@ class PressureExchangerData(UnitModelBlockData):
         for t, c in self.eq_equal_low_pressure.items():
             sf = iscale.get_scaling_factor(self.low_pressure_side.properties_in[t].pressure)
             iscale.constraint_scaling_transform(c, sf)
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+                {
+                    "HP Side In" : self.high_pressure_inlet,
+                    "HP Side Out" : self.high_pressure_outlet,
+                    "LP Side In" : self.low_pressure_inlet,
+                    "LP Side Out" : self.low_pressure_outlet,
+                },
+                time_point=time_point)
+
+    def _get_performance_contents(self, time_point=0):
+        t = time_point
+        return { "vars" : { "Efficiency" : self.efficiency_pressure_exchanger[t],
+                            "HP Side Pressure Change" : self.high_pressure_side.deltaP[t],
+                            "LP Side Pressure Change" : self.low_pressure_side.deltaP[t],
+
+                          },
+                "exprs" : {
+                            "HP Side Mechanical Work" : self.high_pressure_side.work[t],
+                            "LP Side Mechanical Work" : self.low_pressure_side.work[t],
+                          },
+                "params" : {
+                           },
+               }
