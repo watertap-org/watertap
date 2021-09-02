@@ -40,6 +40,8 @@ from idaes.generic_models.properties.core.reactions.equilibrium_constant import 
 
 # Import specific pyomo objects
 from pyomo.environ import (ConcreteModel,
+                           Var,
+                           Constraint,
                            SolverStatus,
                            TerminationCondition,
                            value,
@@ -410,6 +412,29 @@ def build_simple_naocl_chlorination_unit(model,
     model.fs.simple_naocl_unit.inlet.temperature.fix(inlet_temperature_K)
     model.fs.simple_naocl_unit.inlet.flow_mol.fix(inlet_flow_mol_per_s)
 
+    dr = model.fs.simple_naocl_unit.inlet.flow_mol[0].value*model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "OCl_-"].value
+    dr = dr*74.44*1000
+    model.fs.simple_naocl_unit.dosing_rate = Var(initialize=dr)
+    model.fs.simple_naocl_unit.dosing_rate.fix()
+    model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "OCl_-"].unfix()
+
+    def _dosing_rate_cons(blk):
+        return blk.dosing_rate == blk.inlet.flow_mol[0]*blk.inlet.mole_frac_comp[0, "OCl_-"]*74.44*1000
+
+    model.fs.simple_naocl_unit.dosing_cons = Constraint( rule=_dosing_rate_cons )
+
+    fc = model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "HOCl"].value*total_molar_density
+    fc += model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "OCl_-"].value*total_molar_density
+    fc = fc*70900
+
+    model.fs.simple_naocl_unit.free_chlorine = Var(initialize=fc)
+
+    def _free_chlorine_cons(blk):
+        return blk.free_chlorine == ((blk.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"]/1000) \
+                                    + (blk.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"]/1000)) \
+                                    * 70900
+    model.fs.simple_naocl_unit.chlorine_cons = Constraint( rule=_free_chlorine_cons )
+
 def initialize_chlorination_example(unit, state_args, user_scaling=True, debug_out=False):
     solver.options['bound_push'] = 1e-10
     solver.options['mu_init'] = 1e-6
@@ -417,10 +442,20 @@ def initialize_chlorination_example(unit, state_args, user_scaling=True, debug_o
     if user_scaling == True:
         solver.options["nlp_scaling_method"] = "user-scaling"
 
+    unit.inlet.mole_frac_comp[0, "OCl_-"].fix()
+    unit.free_chlorine.fix()
+    unit.chlorine_cons.deactivate()
+    unit.dosing_cons.deactivate()
+
     if debug_out == True:
         unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
     else:
         unit.initialize(state_args=state_args, optarg=solver.options)
+
+    unit.inlet.mole_frac_comp[0, "OCl_-"].unfix()
+    unit.free_chlorine.unfix()
+    unit.chlorine_cons.activate()
+    unit.dosing_cons.activate()
 
     iscale.constraint_autoscale_large_jac(unit)
 
@@ -439,17 +474,12 @@ def display_results_of_chlorination(chlorination_unit):
     total_salt += value(chlorination_unit.outlet.mole_frac_comp[0, "Cl_-"])*total_molar_density*35.4
     psu = total_salt/(total_molar_density*18)*1000
     print("Salinity (PSU):           \t" + str(psu))
-    dosing_rate = chlorination_unit.inlet.flow_mol[0].value*chlorination_unit.inlet.mole_frac_comp[0, "OCl_-"].value
-    dosing_rate = dosing_rate*74.44*1000
-    print("NaOCl Dosing Rate (mg/s): \t" + str(dosing_rate))
-    hypo_remaining = value(chlorination_unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"])/1000
-    hypo_remaining += value(chlorination_unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"])/1000
-    hypo_remaining = hypo_remaining*70900
-    print("Free Chlorine (mg/L):     \t" + str(hypo_remaining))
+    print("NaOCl Dosing Rate (mg/s): \t" + str(chlorination_unit.dosing_rate.value))
+    print("Free Chlorine (mg/L):     \t" + str(chlorination_unit.free_chlorine.value))
     print("\tDistribution:")
-    hocl = (value(chlorination_unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"])/1000)/(hypo_remaining/70900)
+    hocl = (value(chlorination_unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"])/1000)/(chlorination_unit.free_chlorine.value/70900)
     print("\t % HOCl: \t" + str(hocl*100))
-    ocl = (value(chlorination_unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"])/1000)/(hypo_remaining/70900)
+    ocl = (value(chlorination_unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"])/1000)/(chlorination_unit.free_chlorine.value/70900)
     print("\t % OCl-: \t" + str(ocl*100))
     print("-------------------------------------------")
     print()

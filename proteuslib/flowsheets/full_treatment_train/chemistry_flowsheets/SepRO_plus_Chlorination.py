@@ -176,6 +176,7 @@ def build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0):
     #       May have to remove translator constraints? or put added chlorine in those
     #       constraints? Or add a mixer block before the chlorination?
     model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "OCl_-"].unfix()
+    model.fs.simple_naocl_unit.dosing_rate.unfix()
     model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "Na_+"].unfix()
     model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "H2O"].unfix()
 
