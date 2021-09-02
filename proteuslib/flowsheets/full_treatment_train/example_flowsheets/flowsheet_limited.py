@@ -17,6 +17,7 @@ from pyomo.environ import ConcreteModel, Objective, Expression, Constraint, Tran
 from pyomo.network import Arc
 from pyomo.util import infeasible
 from idaes.core import FlowsheetBlock
+import idaes.core.util.scaling as iscale
 from proteuslib.flowsheets.full_treatment_train.example_flowsheets import pretreatment, desalination, translator_block
 from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
@@ -41,6 +42,21 @@ def build_flowsheet_limited_NF(m, has_bypass=True, NF_type='ZO', NF_base='ion',
     # set up Arcs between pretreatment and desalination
     m.fs.s_pretrt_tb = Arc(source=pretrt_port['out'], destination=m.fs.tb_pretrt_to_desal.inlet)
     m.fs.s_tb_desal = Arc(source=m.fs.tb_pretrt_to_desal.outlet, destination=desal_port['in'])
+
+    # touch some properties used in optimization
+    m.fs.feed.properties[0].flow_vol
+    m.fs.feed.properties[0].conc_mol_phase_comp['Liq', 'Ca']
+
+    m.fs.tb_pretrt_to_desal.properties_in[0].flow_vol
+    m.fs.tb_pretrt_to_desal.properties_in[0].conc_mol_phase_comp['Liq', 'Ca']
+
+    m.fs.RO.feed_side.properties_out[0].flow_vol
+    m.fs.RO.permeate_side.properties_mixed[0].flow_vol
+
+    iscale.calculate_scaling_factors(m.fs.RO.feed_side)
+    iscale.calculate_scaling_factors(m.fs.RO.permeate_side)
+    iscale.calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
+    iscale.calculate_scaling_factors(m.fs.feed)
 
     return m
 
@@ -139,12 +155,13 @@ def solve_set_up_optimization(has_bypass=True, NF_type='ZO', NF_base='ion',
                         RO_type=RO_type, RO_base=RO_base, RO_level=RO_level,
                         system_recovery=system_recovery, max_conc_factor=max_conc_factor, RO_flux=RO_flux)
 
+    return m
 
 
 if __name__ == "__main__":
-    solve_set_up_optimization(has_bypass=True, NF_type='ZO', NF_base='ion',
+    m = solve_set_up_optimization(has_bypass=True, NF_type='ZO', NF_base='ion',
                               RO_type='0D', RO_base='TDS', RO_level='simple',
-                              system_recovery=0.65, max_conc_factor=3, RO_flux=10)
+                              system_recovery=0.50, max_conc_factor=3, RO_flux=10)
     # # no bypass, SepRO
     # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='Sep', NF_base='ion',
     #                                  RO_type='Sep', RO_base='TDS', RO_level='simple')

@@ -16,7 +16,7 @@ Demonstration flowsheet for using eNRTL model to check solubility index
 Author: Andrew Lee
 """
 
-from pyomo.environ import ConcreteModel, value, Constraint
+from pyomo.environ import ConcreteModel, value
 
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.generic.generic_property import (
@@ -25,7 +25,6 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 from entrl_config import configuration
 
 from idaes.core.util import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Artificial seawater composition
 # Na_+: 11122 mg/kg, 22.99 g/mol
@@ -129,19 +128,25 @@ def model():
 
     # Display some results
     Ksp = {"CaSO4": 3.5e-5,
-           "Gypsum": 8.89912404553923e-09} # 8.89912404553923e-09
+           "Gypsum": 3.9e-9}  # Gibbs energy gives 3.9e-8, but this fits expectations better
+    act = m.fs.state[0].act_phase_comp
+    m.fs.state[0].mole_frac_phase_comp.display()
+    m.fs.state[0].act_coeff_phase_comp.display()
+    act.display()
+    print("Solubility Indices\n")
+    print("CaSO4:", value(
+        act["Liq", "Ca_2+"]*act["Liq", "SO4_2-"]/Ksp["CaSO4"]))
+    print("Gypsum:", value(
+        act["Liq", "Ca_2+"]*act["Liq", "SO4_2-"]*act["Liq", "H2O"]**2 /
+        Ksp["Gypsum"]))
 
-    print("\nSolubility Indices\n")
-    print("CaSO4:", value(act["Liq", "Ca_2+"]*act["Liq", "SO4_2-"]/Ksp["CaSO4"]))
-    print("Gypsum:", value(act["Liq", "Ca_2+"]*act["Liq", "SO4_2-"]*act["Liq", "H2O"]**2/Ksp["Gypsum"]))
-    print("\nActivity Coefficients\n")
-    print("gamma_Ca:", value(act_coeff["Liq", "Ca_2+"]))
-    print("gamma_SO4:", value(act_coeff["Liq", "SO4_2-"]))
-    print("gamma_H2O:", value(act_coeff["Liq", "H2O"]))
-    print("gamma_CaSO4_average:",value((act_coeff["Liq", "Ca_2+"] * act_coeff["Liq", "Ca_2+"]) ** 2))
-
-
-
+    # Calculate molalities to back check
+    bCa = value(m.fs.state[0].mole_frac_phase_comp["Liq", "Ca_2+"] /
+                (m.fs.state[0].mole_frac_phase_comp["Liq", "H2O"]*18.015*1e-3))
+    bSO4 = value(m.fs.state[0].mole_frac_phase_comp["Liq", "SO4_2-"] /
+                 (m.fs.state[0].mole_frac_phase_comp["Liq", "H2O"] *
+                  18.015*1e-3))
+    print("Molalities: Ca:", bCa, "SO4:", bSO4)
 
 
 if __name__ == '__main__':
