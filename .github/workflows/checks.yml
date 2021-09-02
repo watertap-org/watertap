@@ -81,6 +81,8 @@ jobs:
     - name: Test connection to MongoDB instance
       if: matrix.mongodb_server
       run: |
+        # load EDB
+        edb load -b
         # TODO it would be better to use a command that fails if tests are skipped
         pytest -k 'db_api' -sv
         pytest -k 'edb' -sv
