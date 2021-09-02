@@ -298,32 +298,6 @@ simple_naocl_thermo_config = {
                        "amount": pyunits.mol,
                        "temperature": pyunits.K},
 
-        # Inherent reactions
-        "inherent_reactions": {
-            "H2O_Kw": {
-                    "stoichiometry": {("Liq", "H2O"): -1,
-                                     ("Liq", "H_+"): 1,
-                                     ("Liq", "OH_-"): 1},
-                   "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": van_t_hoff,
-                   "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.moleFraction,
-                   "parameter_data": {
-                       "dh_rxn_ref": (55.830, pyunits.J/pyunits.mol),
-                       "k_eq_ref": (10**-14/55.2/55.2, pyunits.dimensionless),
-                       "T_eq_ref": (298, pyunits.K),
-
-                       # By default, reaction orders follow stoichiometry
-                       #    manually set reaction order here to override
-                       "reaction_order": {("Liq", "H2O"): 0,
-                                        ("Liq", "H_+"): 1,
-                                        ("Liq", "OH_-"): 1}
-                        }
-                        # End parameter_data
-                   }
-                   # End R1
-             }
-             # End equilibrium_reactions
     }
     # End simple_naocl_thermo_config definition
 
@@ -335,6 +309,27 @@ simple_naocl_reaction_config = {
                    "amount": pyunits.mol,
                    "temperature": pyunits.K},
     "equilibrium_reactions": {
+        "H2O_Kw": {
+                "stoichiometry": {("Liq", "H2O"): -1,
+                                 ("Liq", "H_+"): 1,
+                                 ("Liq", "OH_-"): 1},
+               "heat_of_reaction": constant_dh_rxn,
+               "equilibrium_constant": van_t_hoff,
+               "equilibrium_form": log_power_law_equil,
+               "concentration_form": ConcentrationForm.moleFraction,
+               "parameter_data": {
+                   "dh_rxn_ref": (55.830, pyunits.J/pyunits.mol),
+                   "k_eq_ref": (10**-14/55.2/55.2, pyunits.dimensionless),
+                   "T_eq_ref": (298, pyunits.K),
+
+                   # By default, reaction orders follow stoichiometry
+                   #    manually set reaction order here to override
+                   "reaction_order": {("Liq", "H2O"): 0,
+                                    ("Liq", "H_+"): 1,
+                                    ("Liq", "OH_-"): 1}
+                    }
+                    # End parameter_data
+               },
         "HOCl_Ka": {
                 "stoichiometry": {("Liq", "HOCl"): -1,
                                  ("Liq", "H_+"): 1,
