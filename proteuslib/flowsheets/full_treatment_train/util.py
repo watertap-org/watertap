@@ -16,9 +16,15 @@ from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 
-def solve_with_user_scaling(blk, solver=None, tee=False, fail_flag=True):
+# NOTE: In a full flowsheet, you will want to leave the default values for
+#       bound_push and mu_init as is!!! However, if your flowsheet or block
+#       contains ONLY chemistry, then setting bound_push = 1e-10 and mu_init = 1e-6
+#       works ver well. 
+def solve_with_user_scaling(blk, solver=None, tee=False, fail_flag=True, bound_push=0.1, mu_init=1e-1):
     if solver is None:
-        solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
+        solver = get_solver(options={'nlp_scaling_method': 'user-scaling',
+                                     'bound_push': bound_push,
+                                     'mu_init': mu_init})
     results = solver.solve(blk, tee=tee)
     if fail_flag:
         check_solve(results)

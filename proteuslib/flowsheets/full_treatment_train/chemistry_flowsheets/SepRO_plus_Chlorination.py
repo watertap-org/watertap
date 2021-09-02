@@ -196,6 +196,7 @@ def run_SepRO_Chlorination_flowsheet_example():
     # fun the full solve
     # # TODO: Update this method with options for bound_push and mu_init
     solve_with_user_scaling(model, tee=True)
+    #solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
 
     model.fs.RO.inlet.display()
     model.fs.RO.permeate.display()
