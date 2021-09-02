@@ -425,10 +425,4 @@ class TestWaterStoich(object):
             value(m.fs.unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
         assert pytest.approx(55.2336, rel=1e-5) == total_molar_density
         total_hardness = 50000*2* m.fs.unit.outlet.mole_frac_comp[0, "Mg(HCO3)2"].value*total_molar_density
-
-        m.fs.unit.inlet.mole_frac_comp.pprint()
-        m.fs.unit.outlet.mole_frac_comp.pprint()
-
-        print(total_hardness)
         assert pytest.approx(82.84543, rel=1e-5) == total_hardness
-        print(value((m.fs.unit.outlet.mole_frac_comp[0, "Ca(OH)2"])))
