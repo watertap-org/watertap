@@ -24,16 +24,13 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            value,
-                           Var,
                            Suffix)
 
-from pyomo.util.check_units import (assert_units_consistent,
-                                    assert_units_equivalent)
+from pyomo.util.check_units import (assert_units_consistent)
 
 from idaes.core import (FlowsheetBlock,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType)
+                        AqueousPhase,
+                        EnergyBalanceType)
 
 import idaes.logger as idaeslog
 
@@ -49,12 +46,9 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
                                               number_unused_variables)
-from idaes.core.util.testing import (PhysicalParameterTestBlock,
-                                     ReactionParameterTestBlock,
-                                     initialization_tester)
 
-from idaes.core import AqueousPhase, FlowsheetBlock, EnergyBalanceType
-from idaes.core.components import Solvent, Solute, Cation, Anion, Apparent
+
+from idaes.core.components import Solvent, Solute
 from idaes.core.phases import PhaseType as PT
 
 # Import the idaes objects for Generic Properties and Reactions
@@ -71,8 +65,6 @@ from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.reactions.rate_constant import arrhenius
 from idaes.generic_models.properties.core.reactions.rate_forms import power_law_rate
 
-from idaes.generic_models.unit_models.cstr import CSTR
-
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
 from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
 
@@ -81,11 +73,6 @@ from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rx
 
 # Import safe log power law equation
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
-
-# Import k-value functions
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
-    gibbs_energy,
-    van_t_hoff)
 
 # Import log10 function from pyomo
 from pyomo.environ import log10
@@ -279,7 +266,7 @@ class TestWaterStoich(object):
     @pytest.mark.unit
     def test_build(self, water_stoich):
 
-        m = water_stoich 
+        m = water_stoich
         assert hasattr(m.fs.thermo_params, 'component_list')
         assert len(m.fs.thermo_params.component_list) == 4
         assert 'H2O' in m.fs.thermo_params.component_list
