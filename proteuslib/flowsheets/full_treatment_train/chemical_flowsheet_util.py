@@ -22,6 +22,8 @@ from pyomo.network import SequentialDecomposition
 from idaes.core.util import scaling as iscale
 from idaes.core.util import get_solver
 
+__author__ = "Austin Ladshaw"
+
 # Get default solver for testing
 solver = get_solver()
 
