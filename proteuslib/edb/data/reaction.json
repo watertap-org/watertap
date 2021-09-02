@@ -9,7 +9,7 @@
     "stoichiometry": {
       "Liq": {
         "NH4": -1,
-        "H +": 1,
+        "H_+": 1,
         "NH3": 1
       }
     },
@@ -37,9 +37,9 @@
   {
     "stoichiometry": {
       "Liq": {
-        "HCO3 -": -1,
-        "H +": 1,
-        "CO3 2-": 1
+        "HCO3_-": -1,
+        "H_+": 1,
+        "CO3_2-": 1
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
@@ -60,6 +60,19 @@
           "u": "J/mol/K",
           "i": 0
         }
+      ],
+      "k_eq_ref": [
+        {
+          "v": 8.09209406070586e-16,
+          "u": "mol/L",
+          "i": 0
+        }
+      ],
+      "T_eq_ref": [{
+          "v": 300,
+          "u": "K",
+          "i": 0
+        }
       ]
     },
     "type": "equilibrium",
@@ -73,8 +86,8 @@
     "stoichiometry": {
       "Liq": {
         "Ca[OH]2": -1,
-        "OH -": 1,
-        "CaOH +": 1
+        "OH_-": 1,
+        "CaOH_+": 1
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
@@ -107,9 +120,9 @@
   {
     "stoichiometry": {
       "Liq": {
-        "CaOH +": -1,
-        "OH -": 1,
-        "Ca 2+": 1
+        "CaOH_+": -1,
+        "OH_-": 1,
+        "Ca_2+": 1
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
@@ -185,8 +198,8 @@
     "stoichiometry": {
       "Liq": {
         "H2CO3": -1,
-        "H +": 1,
-        "HCO3 -": 1
+        "H_+": 1,
+        "HCO3_-": 1
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
@@ -207,7 +220,20 @@
           "u": "J/mol/K",
           "i": 0
         }
-      ]
+      ],
+      "k_eq_ref": [
+        {
+          "v": 8.473462704478226e-12,
+          "u": "mol/L",
+          "i": 0
+        }
+        ],
+        "T_eq_ref": [{
+          "v": 300,
+          "u": "K",
+          "i": 0
+        }
+        ]
     },
     "type": "equilibrium",
     "name": "H2CO3_Ka1",
@@ -219,9 +245,9 @@
   {
     "stoichiometry": {
       "Liq": {
-        "H2PO4 -": -1,
-        "H +": 1,
-        "HPO4 2-": 1
+        "H2PO4_-": -1,
+        "H_+": 1,
+        "HPO4_2-": 1
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
@@ -255,8 +281,8 @@
     "stoichiometry": {
       "Liq": {
         "H3PO4": -1,
-        "H +": 1,
-        "H2PO4 -": 1
+        "H_+": 1,
+        "H2PO4_-": 1
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
@@ -289,9 +315,9 @@
   {
     "stoichiometry": {
       "Liq": {
-        "HPO4 2-": -1,
-        "H +": 1,
-        "PO4 3-": 1
+        "HPO4_2-": -1,
+        "H_+": 1,
+        "PO4_3-": 1
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
@@ -325,8 +351,8 @@
     "stoichiometry": {
       "Liq": {
         "HOCl": -1,
-        "H +": 1,
-        "OCl -": 1
+        "H_+": 1,
+        "OCl_-": 1
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
@@ -489,19 +515,19 @@
     "stoichiometry": {
       "Liq": {
         "H2O": -1,
-        "H +": 1,
-        "OH -": 1
+        "H_+": 1,
+        "OH_-": 1
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
     "equilibrium_constant": "van_t_hoff_aqueous",
     "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
+    "concentration_form": "ConcentrationForm.moleFraction",
     "parameter_data": {
       "dh_rxn_ref": [
         {
           "v": 55.83,
-          "u": "kJ/mol",
+          "u": "J/mol",
           "i": 0
         }
       ],
@@ -511,13 +537,58 @@
           "u": "J/mol/K",
           "i": 0
         }
+      ],
+      "k_eq_ref": [
+        { "v":  3.281873555975635e-18,
+        "u": "dimensionless",
+        "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {"v": 298, "u": "K", "i": 0}
       ]
     },
     "type": "equilibrium",
     "name": "H2O_Kw",
     "components": [
-      "H2O",
-      "Kw"
+      "H2O"
+    ]
+  },
+    {
+    "stoichiometry": {
+      "Liq": {
+        "H2O": -1,
+        "H_+": 1,
+        "OH_-": 1
+      }
+    },
+    "heat_of_reaction": "constant_dh_rxn",
+    "equilibrium_constant": "van_t_hoff_aqueous",
+    "equilibrium_form": "log_power_law",
+    "concentration_form": "ConcentrationForm.activity",
+    "parameter_data": {
+      "dh_rxn_ref": [
+        {
+          "v": 0,
+          "u": "kJ/mol",
+          "i": 0
+        }
+      ],
+      "k_eq_ref": [
+        { "v":  3.2818735559756347e-24,
+        "u": "mol**2/L**2",
+        "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {"v": 298, "u": "K", "i": 0}
+      ]
+    },
+    "type": "equilibrium",
+    "name": "H2O_Kw_2",
+    "components": [
+      "H2O"
     ]
   }
+
 ]

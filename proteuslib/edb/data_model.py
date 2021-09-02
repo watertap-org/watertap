@@ -74,6 +74,8 @@ Class diagram::
 __author__ = "Dan Gunter"
 
 # stdlib
+import collections
+
 from contextlib import contextmanager
 import copy
 from fnmatch import fnmatchcase
@@ -86,24 +88,34 @@ from typing import Dict, Type, List
 from pyomo.environ import units as pyunits
 
 # IDAES methods and constants
-from idaes.core import phases as IPhases
+from idaes.core import AqueousPhase, LiquidPhase
 from idaes.core.phases import PhaseType
 from idaes.core import Component as IComponent
 from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
+from idaes.generic_models.properties.core.generic.generic_reaction import (
+    ConcentrationForm,
+)
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.generic_models.properties.core.pure import Perrys
 from idaes.generic_models.properties.core.pure.NIST import NIST
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
+from idaes.generic_models.properties.core.pure.electrolyte import (
+    relative_permittivity_constant,
+)
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+    van_t_hoff,
+)
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
     power_law_equil,
+    log_power_law_equil,
 )
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.core.components import Solvent, Solute, Cation, Anion
 
 # package
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+    log_power_law_equil,
+)
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
     van_t_hoff,
 )
@@ -121,6 +133,7 @@ def field(f):
 
 class ConfigGenerator:
     """Interface for getting an IDAES 'idaes_config' dict."""
+
     merge_keys = ()
     substitute_values = {}
     SUBST_UNITS = "units"
@@ -145,7 +158,7 @@ class ConfigGenerator:
     @staticmethod
     def _build_units(x: str = None):
         if not x:
-            _log.warning("setting dimensionless unit")
+            _log.info("setting dimensionless unit")
             x = "dimensionless"
         s = re.sub(r"([A-Za-z]+)", r"U.\1", x).replace("U.None", "U.dimensionless")
         try:
@@ -161,7 +174,7 @@ class ConfigGenerator:
     @classmethod
     def _transform_parameter_data(cls, comp):
         debugging, comp_name = _log.isEnabledFor(logging.DEBUG), comp.get("name", "?")
-        params = comp.get("parameter_data", None)
+        params = comp.get(DataWrapperNames.param, None)
         if not params:
             _log.warning(f"No parameter data found in data name={comp_name}")
             return
@@ -175,7 +188,8 @@ class ConfigGenerator:
                 params[param_key] = reaction_order_table
             elif len(val) > 1:
                 # List of objects with 'v', 'u', and maybe 'i' keys
-                # -> transform into dict of tuples with key `i` and value (<value>, built(<units>))
+                # -> transform into dict of tuples with key `i` and
+                # value (<value>, built(<units>))
                 coeff_table = {}
                 if debugging:
                     _log.debug(f"start: transform parameter list key={param_key}")
@@ -185,7 +199,8 @@ class ConfigGenerator:
                         built_units = cls._build_units(item["u"])
                     except (AttributeError, TypeError, ValueError) as err:
                         raise ConfigGeneratorError(
-                            f"Cannot extract parameter. name='{comp_name}', item='{item}': {err}"
+                            f"Cannot extract parameter. name='{comp_name}', "
+                            f"item='{item}': {err}"
                         )
                     coeff_table[index] = (item["v"], built_units)
                 params[param_key] = coeff_table
@@ -204,7 +219,7 @@ class ConfigGenerator:
 
     @staticmethod
     def _iterate_dict_or_list(value):
-        # if the value is a dict, use dict keys as indexes, so really just do `.items()`
+        # if value is a dict, use dict keys as indexes, so really just do `.items()`
         if hasattr(value, "keys"):
             return value.items()
         # otherwise number from 1..N
@@ -217,7 +232,8 @@ class ConfigGenerator:
     def _wrap_section(cls, section: str, data: Dict):
         """Put all `data` inside {<section>: <name>: { /data/ }}.
         The `<name>` is taken from `data["name"]`.
-        Also removes keys 'name' and special keys starting with underscore like _id from the `data`.
+        Also removes keys 'name' and special keys starting with underscore
+        like _id from the `data`.
         Changes input argument.
         Section will be, e.g., "components" or "equilibrium_reactions"
         """
@@ -270,7 +286,8 @@ class ConfigGenerator:
             """
             if debugging:
                 _log.debug(f"substitute value: d={d} subst={subst} key={key}")
-            # make a scalar into a list of length 1, but remember whether it's a list or not
+            # make a scalar into a list of length 1, but remember whether
+            # it's a list or not
             if (
                 isinstance(d[key], str)
                 or isinstance(d[key], int)
@@ -279,7 +296,10 @@ class ConfigGenerator:
                 str_values = [d[key]]
                 is_list = False
             else:
-                str_values = list(d[key])
+                try:
+                    str_values = list(d[key])
+                except TypeError:
+                    str_values = [str(d[key])]
                 is_list = True
             # substitute all values in the list, with the result in `new_list`
             num_subst, new_list = 0, []
@@ -337,7 +357,9 @@ class ConfigGenerator:
             #  if found, perform substitution(s)
             if dicty(data_section):
                 sv_key = key_list.pop()
-                _log.debug(f"perform substitutions in data={data_section} for key='{sv_key}'")
+                _log.debug(
+                    f"perform substitutions in data={data_section} for key='{sv_key}'"
+                )
                 # if it is a wildcard, allow multiple substitutions
                 if "*" in sv_key:
                     matches = [k for k in data_section if fnmatchcase(k, sv_key)]
@@ -375,7 +397,8 @@ class ThermoConfig(ConfigGenerator):
         },
         "*_comp": {
             "perrys": Perrys,
-            "nist": NIST
+            "nist": NIST,
+            "relative_permittivity_constant": relative_permittivity_constant,
         },
         "phase_equilibrium_form.*": {
             "fugacity": fugacity,
@@ -386,7 +409,7 @@ class ThermoConfig(ConfigGenerator):
             "cation": Cation,
             "anion": Anion,
             "component": IComponent,
-        }
+        },
     }
 
     def __init__(self, data, name="unknown", validation=True):
@@ -403,6 +426,7 @@ class ThermoConfig(ConfigGenerator):
         super().__init__(data, name=name)
         if validation:
             from .validate import validate  # put here to avoid circular import
+
             if _log.isEnabledFor(logging.DEBUG):
                 _log.debug(f"Validating Component:\n{pformat(data)}")
             validate(data, obj_type="component")
@@ -425,10 +449,13 @@ class ReactionConfig(ConfigGenerator):
         "*_form": {
             "log_power_law": log_power_law_equil,
             "concentrationform.molarity": ConcentrationForm.molarity,
+            "concentrationform.molefraction": ConcentrationForm.moleFraction,
+            "concentrationform.activity": ConcentrationForm.activity,
         },
-        "*_constant": {"van_t_hoff_aqueous": van_t_hoff,
-                       "van_t_hoff": van_t_hoff,
-       },
+        "*_constant": {
+            "van_t_hoff_aqueous": van_t_hoff,
+            "van_t_hoff": van_t_hoff,
+        },
     }
 
     def __init__(self, data, name="unknown", validation=True):
@@ -445,6 +472,7 @@ class ReactionConfig(ConfigGenerator):
         super().__init__(data, name=name)
         if validation:
             from .validate import validate  # put here to avoid circular import
+
             if _log.isEnabledFor(logging.DEBUG):
                 _log.debug(f"Validating Reaction:\n{pformat(data)}")
             validate(data, obj_type="reaction")
@@ -470,18 +498,22 @@ class ReactionConfig(ConfigGenerator):
         cls._substitute(data)
 
         reaction_type = data["type"]
+        reaction_section = f"{reaction_type}_reactions"
+        # The section should match a merge-key for the Reaction class
+        if reaction_section not in Reaction.merge_keys:
+            raise RuntimeError(
+                f"Unexpected reaction type while generating config: "
+                f"type={reaction_type} data={data}"
+            )
         del data["type"]  # remove from output
-        if reaction_type == "equilibrium":
-            cls._wrap_section("equilibrium_reactions", data)
-        else:
-            raise RuntimeError(f"Unexpected reaction type while generating config: type={reaction_type} data={data}")
+        cls._wrap_section(reaction_section, data)
 
 
 class BaseConfig(ConfigGenerator):
 
     substitute_values = {
         "state_definition": {"FTPx": FTPx},
-        "phases.Liq.type": {"LiquidPhase": IPhases.LiquidPhase},
+        "phases.Liq.type": {"LiquidPhase": LiquidPhase, "AqueousPhase": AqueousPhase},
         "phases.Liq.equation_of_state": {"Ideal": Ideal},
         "base_units.*": ConfigGenerator.SUBST_UNITS,
     }
@@ -490,6 +522,20 @@ class BaseConfig(ConfigGenerator):
     def _transform(cls, data):
         cls._substitute(data)
         cls._remove_special(data)
+        cls._list_to_tuple(data, "state_bounds")
+
+    @classmethod
+    def _list_to_tuple(cls, data, section):
+        """Change all list values in the given section to tuples."""
+        if section not in data:
+            return
+        for key in data[section]:
+            if isinstance(data[section][key], list):
+                data[section][key] = tuple(data[section][key])
+
+
+class DataWrapperNames:
+    param = "parameter_data"
 
 
 class DataWrapper:
@@ -507,8 +553,14 @@ class DataWrapper:
     # i.e. merged, into the result when an instance is added to the base data wrapper.
     merge_keys = ()
 
-    def __init__(self, data: Dict, config_gen_class: Type[ConfigGenerator] = None,
-                 validate_as_type=None):
+    NAMES = DataWrapperNames
+
+    def __init__(
+        self,
+        data: Dict,
+        config_gen_class: Type[ConfigGenerator] = None,
+        validate_as_type=None,
+    ):
         """Ctor.
 
         Args:
@@ -522,7 +574,59 @@ class DataWrapper:
         self._preprocess()  # additional subclass-specific preprocessing
         if validate_as_type:
             from .validate import validate
+
             validate(self._data, obj_type=validate_as_type)
+
+    def remove(self, key):
+        if key in self.data:
+            del self.data[key]
+
+    def remove_parameter(self, key):
+        param = self.NAMES.param  # alias
+        if param in self.data and key in self.data[param]:
+            del self.data[param][key]
+            self._config = None
+
+    def set_parameter(self, key: str, value, units: str = "dimensionless", index=0):
+        """Add to existing parameters or create a new parameter value.
+
+        Args:
+            key: Name of parameter
+            value: New value
+            units: Units for value
+            index: If parameter is a list of values, index to set. Otherwise.
+                   a list of length of 1 will be created with an index of 0.
+
+        Returns:
+            None
+
+        Raises:
+            KeyError: If the data structure doesn't have a spot for parameters.
+                This is likely a more basic problem with the current instance.
+        """
+        param = self.NAMES.param  # alias
+        if param not in self.data:
+            raise KeyError(f"Missing section {param}, so cannot set a parameter")
+        entry = {"v": value, "u": units, "i": index}
+        # check if there are alread value(s)
+        if key in self.data[param]:
+            # if existing values, replace matching index or add new
+            new_param, replaced = [], False
+            for item in self.data[param][key]:
+                if item["i"] == index:
+                    # replace entry at this index with the new entry
+                    new_param.append(entry)
+                    replaced = True
+                else:
+                    # keep current entry for this index
+                    new_param.append(item)
+            if not replaced:
+                new_param.append(entry)
+        else:
+            # if no existing param, create new list of size 1
+            new_param = [entry]
+        self.data[param][key] = new_param
+        self._config = None  # force regeneration
 
     def _preprocess(self):
         pass  # define in subclasses
@@ -592,9 +696,9 @@ class DataWrapper:
 
     @classmethod
     def _convert_parameter_data(cls, src, tgt, caller="unknown"):
-        if "parameter_data" not in src:
-            raise BadConfiguration(caller, src, missing="parameter_data")
-        pd, data = src["parameter_data"], {}
+        if cls.NAMES.param not in src:
+            raise BadConfiguration(caller, src, missing=cls.NAMES.param)
+        pd, data = src[cls.NAMES.param], {}
         for param, value in pd.items():
             if isinstance(value, tuple):
                 data[param] = [{"v": value[0], "u": str(value[1])}]
@@ -603,9 +707,10 @@ class DataWrapper:
                 if isinstance(key0, tuple):
                     # process dict with tuple keys
                     if param == "reaction_order":
-                        pass  # skip, not something we need to store in EDB
+                        # skip, not something we need to store in EDB
+                        _log.debug(f"skip 'reaction_order' in parameters from {caller}")
                     else:
-                        pass # not implemented -- no other known values
+                        pass  # not implemented -- no other known values
                 else:
                     # process dict with scalar keys
                     param_list = []
@@ -615,21 +720,33 @@ class DataWrapper:
                         except ValueError:
                             pass
                         except TypeError as err:
-                            raise BadConfiguration(caller, src, why=f"Unexpected key type in parameter_data: "
-                                                                    f"key='{i}' param={value}")
-                        param_list.append(
-                            {"i": i, "v": value2[0], "u": str(value2[1])}
-                        )
+                            raise BadConfiguration(
+                                caller,
+                                src,
+                                why=f"Unexpected key type in parameter_data: "
+                                f"key='{i}' param={value}",
+                            )
+                        param_list.append({"i": i, "v": value2[0], "u": str(value2[1])})
                     data[param] = param_list
             else:
-                raise BadConfiguration(caller, src, why=f"Unexpected value type for 'parameter_data': key='{param}', "
-                                                        f"value='{value}'")
-        tgt["parameter_data"] = data
+                raise BadConfiguration(
+                    caller,
+                    src,
+                    why=f"Unexpected value type for '{cls.NAMES.param}': key='{param}', "
+                    f"value='{value}'",
+                )
+        tgt[cls.NAMES.param] = data
+
+
+class ComponentNames(DataWrapperNames):
+    pass
 
 
 class Component(DataWrapper):
 
     merge_keys = ("components",)
+
+    NAMES = ComponentNames
 
     def __init__(self, data: Dict, validation=True):
         """Constructor.
@@ -707,7 +824,9 @@ class Component(DataWrapper):
                     for key, value in c[fld].items():
                         break
                     for phase in key:
-                        cls._method_to_str(phase, {phase: value}, d[fld], subst_strings, caller=whoami)
+                        cls._method_to_str(
+                            phase, {phase: value}, d[fld], subst_strings, caller=whoami
+                        )
             # extract elements from name
             d["elements"] = re.findall(r"[A-Z][a-z]?", name)
             cls._convert_parameter_data(c, d)
@@ -715,9 +834,19 @@ class Component(DataWrapper):
         return result
 
 
+class ReactionNames(DataWrapperNames):
+    stoich = "stoichiometry"
+    hor = "heat_of_reaction"
+    eq_const = "equilibrium_constant"
+    eq_form = "equilibrium_form"
+    conc_form = "concentration_form"
+
+
 class Reaction(DataWrapper):
 
-    merge_keys = ("equilibrium_reactions", "rate_reactions")
+    merge_keys = ("equilibrium_reactions", "rate_reactions", "inherent_reactions")
+
+    NAMES = ReactionNames
 
     def __init__(self, data: Dict, validation=True):
         """Constructor.
@@ -728,6 +857,51 @@ class Reaction(DataWrapper):
         """
         vtype = "reaction" if validation else None
         super().__init__(data, ReactionConfig, validate_as_type=vtype)
+
+    @property
+    def reaction_type(self):
+        return self.data.get("type", "")
+
+    def set_reaction_order(
+        self,
+        phase: str,
+        lhs: List[str],
+        rhs: List[str],
+        lhs_value: int = 0,
+        rhs_value: int = 1,
+    ) -> Dict:
+        """Set the reaction order (if it differs from stoichiometry).
+
+        Args:
+            phase: 'Liq' or 'Vap'
+            lhs: Left-hand side of equation components
+            rhs: Right-hand side of equation components
+            lhs_value: Integer value for LHS components
+            rhs_value: Integer value for RHS components
+
+        Returns:
+            Reaction order for all phases, which can be modified further in-place
+
+        Raises:
+            KeyError: something is missing in the data structure
+        """
+        with field(self.NAMES.param) as param:
+            if param not in self.data:
+                raise KeyError(f"Reaction missing '{param}'")
+            with field("reaction_order") as ro:
+                # create a blank 'reaction_order' section if not present
+                if ro not in self.data[param]:
+                    self.data[param][ro] = {}
+                ro_section = self.data[param][ro]
+                # replace reaction_order value for key 'phase' with new value
+                reaction_order = {}
+                for comp in lhs:
+                    reaction_order[comp] = lhs_value
+                for comp in rhs:
+                    reaction_order[comp] = rhs_value
+                ro_section[phase] = reaction_order
+
+        return ro_section
 
     @classmethod
     def from_idaes_config(cls, config: Dict) -> List["Reaction"]:
@@ -741,24 +915,24 @@ class Reaction(DataWrapper):
             for k, v in mapping.items():
                 subst_strings[v] = k
 
-        if "equilibrium_reactions" not in config:
-            raise BadConfiguration(config=config, whoami=whoami,
-                                   missing="equilibrium_reactions")
         result = []
         # XXX: base units?
-        for name, r in config["equilibrium_reactions"].items():
-            d = {"name": name, "type": "equilibrium"}
-            # convert all non-dictionary-valued fields into equivalent string values
-            for fld, val in r.items():
-                if isinstance(val, str):  # leave string values as-is
-                    d[fld] = val
-                elif not isinstance(val, dict):  # convert all other non-dict values
-                    cls._method_to_str(fld, r, d, subst_strings, caller=whoami)
-            cls._convert_parameter_data(r, d)
-            with field("stoichiometry") as fld:
-                if fld in r:
-                    cls._convert_stoichiometry(r[fld], d)
-            result.append(Reaction(d))
+        for reaction_type in (
+            k for k in cls.merge_keys if (k.endswith("_reactions") and k in config)
+        ):
+            for name, r in config[reaction_type].items():
+                d = {"name": name, "type": reaction_type.split("_reactions")[0]}
+                # convert all non-dictionary-valued fields into equivalent string values
+                for fld, val in r.items():
+                    if isinstance(val, str):  # leave string values as-is
+                        d[fld] = val
+                    elif not isinstance(val, dict):  # convert all other non-dict values
+                        cls._method_to_str(fld, r, d, subst_strings, caller=whoami)
+                cls._convert_parameter_data(r, d)
+                with field("stoichiometry") as fld:
+                    if fld in r:
+                        cls._convert_stoichiometry(r[fld], d)
+                result.append(Reaction(d))
         return result
 
     @classmethod
@@ -847,4 +1021,3 @@ class Result:
         datum = next(self._it)
         obj = self._it_class(datum)
         return obj
-
