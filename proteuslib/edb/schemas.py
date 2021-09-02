@@ -22,6 +22,9 @@ JSON schema embedded as variables for:
   - reaction
 """
 
+from .data_model import Base, Component, Reaction
+
+
 _parameter_def = {
     "type": "array",
     "description": "List of parameter values",
@@ -59,15 +62,23 @@ schemas = {
                 "type": "array",
                 "items": {
                     "type": "string",
-                    "description": "Name of an individual element"
-                }
+                    "description": "Name of an individual element",
+                },
             },
             "type": {
                 "description": "Component type",
                 "examples": ["Solvent", "solvent"],
                 "type": "string",
-                "enum": ["solvent", "solute", "anion", "cation",
-                         "Solvent", "Solute", "Anion", "Cation"]
+                "enum": [
+                    "solvent",
+                    "solute",
+                    "anion",
+                    "cation",
+                    "Solvent",
+                    "Solute",
+                    "Anion",
+                    "Cation",
+                ],
             },
             "valid_phase_types": {
                 "type": "array",
@@ -92,6 +103,7 @@ schemas = {
                 "patternProperties": {
                     "^.*_coeff$": {"$ref": "#/definitions/parameter"},
                     "^.*_ref$": {"$ref": "#/definitions/parameter"},
+                    "^.*_comp$": {"$ref": "#/definitions/parameter"},
                 },
                 "additionalProperties": False,
             },
@@ -109,13 +121,13 @@ schemas = {
         "properties": {
             "type": {
                 "type": "string",
-                "enum": ["equilibrium"],
+                "enum": ["equilibrium", "inherent"],
                 "description": "Type of reaction",
             },
             "name": {"type": "string", "description": "Name of reaction"},
-            "stoichiometry": {
+            Reaction.NAMES.stoich: {
                 "type": "object",
-                "description": "Moles for the given species in the reaction. Negative for LHS, positive for RHS. "
+                "description": "Moles for the given species in the reaction. "
                 "Grouped by phase.",
                 "properties": {
                     "Liq": {"$ref": "#/definitions/stoichiometry"},
@@ -123,14 +135,23 @@ schemas = {
                 },
                 "additionalProperties": False,
             },
-            "heat_of_reaction": {"type": "string"},
-            "equilibrium_constant": {"type": "string"},
-            "equilibrium_form": {"type": "string"},
-            "concentration_form": {"type": "string"},
+            Reaction.NAMES.hor: {"type": "string"},
+            Reaction.NAMES.eq_const: {"type": "string"},
+            Reaction.NAMES.eq_form: {"type": "string"},
+            Reaction.NAMES.conc_form: {"type": "string"},
             "parameter_data": {
                 "type": "object",
-                "patternProperties": {"_ref": {"$ref": "#/definitions/parameter"}},
-                "additionalProperties": False,
+                "patternProperties": {
+                    "_ref": {"$ref": "#/definitions/parameter"},
+                    "reaction_order": {
+                        "type": "object",
+                        "properties": {
+                            "Liq": {"$ref": "#/definitions/reaction_order"},
+                            "Vap": {"$ref": "#/definitions/reaction_order"},
+                        },
+                        "additionalProperties": False,
+                    },
+                },
             },
         },
         "required": ["name", "parameter_data", "type"],
@@ -144,6 +165,18 @@ schemas = {
                     "^[A-Z].*$": {
                         "type": "number",
                         "description": "Moles for the given species in the reaction. Negative for LHS, positive for RHS",
+                    }
+                },
+                "additionalProperties": False,
+            },
+            "reaction_order": {
+                "description": "Reaction order for a given phase",
+                "examples": ['{"H2O": 0, "H +": 1, "OH -": 1}'],
+                "type": "object",
+                "patternProperties": {
+                    "^[A-Z].*$": {
+                        "type": "number",
+                        "description": "Reaction side: 0 for LHS, 1 for RHS",
                     }
                 },
                 "additionalProperties": False,

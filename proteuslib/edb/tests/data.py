@@ -53,7 +53,7 @@ _reaction = {
     },
 }
 _component = {
-    "valid_phase_types": ["PT.liquidPhase"],
+    "valid_phase_types": ["PT.aqueousPhase"],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
@@ -89,7 +89,7 @@ Ca_thermo_config = {
         "Ca 2+": {
             "charge": 2,
             "type": "Component",
-            "valid_phase_types": PT.liquidPhase,
+            "valid_phase_types": PT.aqueousPhase,
             # Define the methods used to calculate the following properties
             "dens_mol_liq_comp": Perrys,
             "enth_mol_liq_comp": Perrys,
@@ -123,7 +123,7 @@ Ca_thermo_config = {
 
 Ca_thermo_data = {
     "_id": {"$oid": "6099cd12507b1e55f1707555"},
-    "valid_phase_types": ["PT.liquidPhase"],
+    "valid_phase_types": ["PT.aqueousPhase"],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
