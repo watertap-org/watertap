@@ -43,6 +43,13 @@ def build_flowsheet_limited_NF(m, has_bypass=True, NF_type='ZO', NF_base='ion',
     m.fs.s_pretrt_tb = Arc(source=pretrt_port['out'], destination=m.fs.tb_pretrt_to_desal.inlet)
     m.fs.s_tb_desal = Arc(source=m.fs.tb_pretrt_to_desal.outlet, destination=desal_port['in'])
 
+    return m
+
+
+def set_up_optimization(m, has_bypass=True, NF_type='ZO', NF_base='ion',
+                        RO_type='0D', RO_base='TDS', RO_level='simple',
+                        system_recovery=0.75, max_conc_factor=3, RO_flux=20):
+
     # touch some properties used in optimization
     m.fs.feed.properties[0].flow_vol
     m.fs.feed.properties[0].conc_mol_phase_comp['Liq', 'Ca']
@@ -58,12 +65,6 @@ def build_flowsheet_limited_NF(m, has_bypass=True, NF_type='ZO', NF_base='ion',
     iscale.calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
     iscale.calculate_scaling_factors(m.fs.feed)
 
-    return m
-
-
-def set_up_optimization(m, has_bypass=True, NF_type='ZO', NF_base='ion',
-                        RO_type='0D', RO_base='TDS', RO_level='simple',
-                        system_recovery=0.75, max_conc_factor=3, RO_flux=20):
     # set objective
     m.fs.objective = Objective(expr=m.fs.NF.area)
 
