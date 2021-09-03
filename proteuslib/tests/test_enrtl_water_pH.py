@@ -690,7 +690,8 @@ carbonic_thermo_config = {
                        #        HOWEVER, the typical Ka1 dissociation constant of
                        #        10**-10.35 is defined on a molar basis. Thus, we must
                        #        divide by the total (~55.2 M) concentration raised to the
-                       #        net reaction order (i.e., 1 in this case).                       "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
+                       #        net reaction order (i.e., 1 in this case).                       
+                       "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
                        "k_eq_ref": (10**-10.35/55.2,pyunits.dimensionless),
                        "T_eq_ref": (300, pyunits.K),
 
