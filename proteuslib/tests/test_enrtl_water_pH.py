@@ -631,12 +631,9 @@ carbonic_thermo_config = {
                        #        HOWEVER, the typical Kw dissociation constant of
                        #        1e-14 is defined on a molar basis. Thus, we must
                        #        divide by the total (~55.2 M) concentration raised to the
-                       #        net reaction order (i.e., 2 in this case). Furthermore,
-                       #        IDAES internally does molar basis as mol/m**3, thus,
-                       #        we divide here by 1000**2 to perform both necessary
-                       #        unit conversions in line.
+                       #        net reaction order (i.e., 2 in this case).
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                       "k_eq_ref": (10**-14/1000/1000/55.2/55.2,pyunits.dimensionless),
+                       "k_eq_ref": (10**-14/55.2**2, pyunits.dimensionless),
                        "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
