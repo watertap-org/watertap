@@ -851,7 +851,7 @@ class TestENRTLcarbonicAcid():
         pH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"])*55.2)
         pOH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","OH_-"])*55.2)
 
-        assert pytest.approx(8.27544, rel=1e-4) == pH
+        assert pytest.approx(8.29618, rel=1e-4) == pH
         assert pytest.approx(5.72455, rel=1e-4) == pOH
 
         gamma = {}
