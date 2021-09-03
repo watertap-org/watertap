@@ -233,7 +233,7 @@ water_thermo_config = {
                        #        we divide here by 1000**2 to perform both necessary
                        #        unit conversions in line.
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                       "k_eq_ref": (10**-14/1000**2/55.2**2,pyunits.mol**2/pyunits.L**2),
+                       "k_eq_ref": (10**-14/1000**2/55.2**2,pyunits.dimensionless),
                        "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
@@ -639,7 +639,7 @@ carbonic_thermo_config = {
                        #        we divide here by 1000**2 to perform both necessary
                        #        unit conversions in line.
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                       "k_eq_ref": (10**-14/1000/1000/55.2/55.2,pyunits.mol**2/pyunits.L**2),
+                       "k_eq_ref": (10**-14/1000/1000/55.2/55.2,pyunits.dimensionless),
                        "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
@@ -670,7 +670,7 @@ carbonic_thermo_config = {
                        #        we divide here by 1000 to perform both necessary
                        #        unit conversions in line.
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                       "k_eq_ref": (10**-6.33/1000/55.2,pyunits.mol/pyunits.L),
+                       "k_eq_ref": (10**-6.33/1000/55.2,pyunits.dimensionless),
                        "T_eq_ref": (300, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
@@ -701,7 +701,7 @@ carbonic_thermo_config = {
                        #        we divide here by 1000 to perform both necessary
                        #        unit conversions in line.
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                       "k_eq_ref": (10**-10.35/1000/55.2,pyunits.mol/pyunits.L),
+                       "k_eq_ref": (10**-10.35/1000/55.2,pyunits.dimensionless),
                        "T_eq_ref": (300, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
