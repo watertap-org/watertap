@@ -22,6 +22,8 @@ from pyomo.network import SequentialDecomposition
 from idaes.core.util import scaling as iscale
 from idaes.core.util import get_solver
 
+__author__ = "Austin Ladshaw"
+
 # Get default solver for testing
 solver = get_solver()
 
@@ -29,11 +31,23 @@ def block_initializer(blk, tee=False):
     solver.options['bound_push'] = 1e-10
     solver.options['mu_init'] = 1e-6
     solver.options["nlp_scaling_method"] = "user-scaling"
+    if tee==True:
+        print(blk)
     results = solver.solve(blk, tee=tee)
-    iscale.constraint_autoscale_large_jac(blk)
 
-def seq_decomp_initializer(model, tee=False):
+    # This is a temporary fix to get around some errors in RO with detailed level
+    try:
+        iscale.constraint_autoscale_large_jac(blk)
+    except:
+        pass
+
+def seq_decomp_initializer(model):
     seq = SequentialDecomposition(tol=1.0E-3)
     seq.options.select_tear_method = "heuristic"
     seq.run(model, block_initializer)
-    iscale.constraint_autoscale_large_jac(model)
+
+    # This is a temporary fix to get around some errors in RO with detailed level
+    try:
+        iscale.constraint_autoscale_large_jac(model)
+    except:
+        pass

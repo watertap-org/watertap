@@ -298,32 +298,6 @@ simple_naocl_thermo_config = {
                        "amount": pyunits.mol,
                        "temperature": pyunits.K},
 
-        # Inherent reactions
-        "inherent_reactions": {
-            "H2O_Kw": {
-                    "stoichiometry": {("Liq", "H2O"): -1,
-                                     ("Liq", "H_+"): 1,
-                                     ("Liq", "OH_-"): 1},
-                   "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": van_t_hoff,
-                   "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.moleFraction,
-                   "parameter_data": {
-                       "dh_rxn_ref": (55.830, pyunits.J/pyunits.mol),
-                       "k_eq_ref": (10**-14/55.2/55.2, pyunits.dimensionless),
-                       "T_eq_ref": (298, pyunits.K),
-
-                       # By default, reaction orders follow stoichiometry
-                       #    manually set reaction order here to override
-                       "reaction_order": {("Liq", "H2O"): 0,
-                                        ("Liq", "H_+"): 1,
-                                        ("Liq", "OH_-"): 1}
-                        }
-                        # End parameter_data
-                   }
-                   # End R1
-             }
-             # End equilibrium_reactions
     }
     # End simple_naocl_thermo_config definition
 
@@ -335,6 +309,27 @@ simple_naocl_reaction_config = {
                    "amount": pyunits.mol,
                    "temperature": pyunits.K},
     "equilibrium_reactions": {
+        "H2O_Kw": {
+                "stoichiometry": {("Liq", "H2O"): -1,
+                                 ("Liq", "H_+"): 1,
+                                 ("Liq", "OH_-"): 1},
+               "heat_of_reaction": constant_dh_rxn,
+               "equilibrium_constant": van_t_hoff,
+               "equilibrium_form": log_power_law_equil,
+               "concentration_form": ConcentrationForm.moleFraction,
+               "parameter_data": {
+                   "dh_rxn_ref": (55.830, pyunits.J/pyunits.mol),
+                   "k_eq_ref": (10**-14/55.2/55.2, pyunits.dimensionless),
+                   "T_eq_ref": (298, pyunits.K),
+
+                   # By default, reaction orders follow stoichiometry
+                   #    manually set reaction order here to override
+                   "reaction_order": {("Liq", "H2O"): 0,
+                                    ("Liq", "H_+"): 1,
+                                    ("Liq", "OH_-"): 1}
+                    }
+                    # End parameter_data
+               },
         "HOCl_Ka": {
                 "stoichiometry": {("Liq", "HOCl"): -1,
                                  ("Liq", "H_+"): 1,
@@ -498,12 +493,38 @@ def run_chlorination_example():
 
     initialize_chlorination_example(model.fs.simple_naocl_unit, state_args)
 
-    solve_with_user_scaling(model, tee=True)
+    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
 
     display_results_of_chlorination(model.fs.simple_naocl_unit)
 
     return model
 
+# This example will try to find the dosing rate needed to yield 2mg/L free chlorine
+def run_chlorination_constrained_outlet_example():
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(default={"dynamic": False})
+
+    # Give bad initial guess for the dosing rate
+    build_simple_naocl_chlorination_unit(model, mg_per_L_NaOCl_added = 1)
+    state_args, stoich_extents = approximate_chemical_state_args(model.fs.simple_naocl_unit,
+                                model.fs.simple_naocl_rxn_params, simple_naocl_reaction_config)
+
+    calculate_chemical_scaling_factors(model.fs.simple_naocl_unit,
+                                model.fs.simple_naocl_thermo_params,
+                                model.fs.simple_naocl_rxn_params, state_args)
+
+    initialize_chlorination_example(model.fs.simple_naocl_unit, state_args)
+
+    #Redefine the constraints and fixed vars here
+    model.fs.simple_naocl_unit.dosing_rate.unfix()
+    model.fs.simple_naocl_unit.free_chlorine.fix(2)
+
+    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+
+    display_results_of_chlorination(model.fs.simple_naocl_unit)
+
+    return model
 
 if __name__ == "__main__":
     model = run_chlorination_example()
+    model = run_chlorination_constrained_outlet_example()
