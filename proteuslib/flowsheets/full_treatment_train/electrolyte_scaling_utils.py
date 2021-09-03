@@ -17,7 +17,7 @@
     NOTE: Some of these scaling methods will likely need to be updated or
     changed after the new log form for electrolytes is added to IDAES.
 
-    ALSO NOTE: These scaling methods assume you will be using the FTPx state definition. 
+    ALSO NOTE: These scaling methods assume you will be using the FTPx state definition.
 """
 
 from idaes.core.util import scaling as iscale
@@ -38,9 +38,9 @@ def approximate_chemical_state_args(unit, rxn_params, reaction_config, contains_
     stoich_extents = {}
 
     # Set bulk values to their inlets
-    state_args['pressure'] = unit.control_volume.properties_in[0.0].pressure.value
-    state_args['temperature'] = unit.control_volume.properties_in[0.0].temperature.value
-    state_args['flow_mol'] = unit.control_volume.properties_in[0.0].flow_mol.value
+    state_args['pressure'] = unit.inlet.pressure[0].value
+    state_args['temperature'] = unit.inlet.temperature[0].value
+    state_args['flow_mol'] = unit.inlet.flow_mol[0].value
 
     # Set species based on inlets (and outlets for stoich reaction)
     state_args['mole_frac_comp'] = {}
@@ -182,7 +182,14 @@ def calculate_chemical_scaling_factors(unit, thermo_params, rxn_params, state_ar
     calculate_chemical_scaling_factors_for_equilibrium_log_reactions(unit, rxn_params)
     calculate_chemical_scaling_factors_for_energy_balances(unit)
     calculate_chemical_scaling_factors_for_material_balances(unit)
-    iscale.calculate_scaling_factors(unit)
+
+    # If calling multiple times, then this causes errors
+    #   Catch those errors here and move on (still need to
+    #       have the setting of suffixes and the auto_scale_jac function)
+    try:
+        iscale.calculate_scaling_factors(unit)
+    except:
+        pass
 
     flags = fix_state_vars(unit.control_volume.properties_out, state_args)
     revert_state_vars(unit.control_volume.properties_out, flags)

@@ -27,7 +27,7 @@ from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.SepRO_plus_
     run_SepRO_Chlorination_flowsheet_example, run_SepRO_Chlorination_flowsheet_with_outlet_constraint_example)
 
 from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.ZeroDRO_plus_Chlorination import (
-    run_0DRO_Chlorination_flowsheet_example)
+    run_0DRO_Chlorination_flowsheet_example, run_0DRO_Chlorination_flowsheet_optimization_example)
 
 __author__ = "Austin Ladshaw"
 
@@ -120,3 +120,12 @@ def test_0DRO_Chlorination_flowsheet_with_outlet_constraint_without_seq_decomp()
             pytest.approx(2.0, rel=1e-3)
     assert model.fs.simple_naocl_unit.dosing_rate.value == \
             pytest.approx(0.5604052608884579, rel=1e-3)
+
+
+@pytest.mark.component
+def test_0DRO_Chlorination_flowsheet_with_simple_optimization():
+    model = run_0DRO_Chlorination_flowsheet_optimization_example()
+    assert model.fs.simple_naocl_unit.free_chlorine.value == \
+            pytest.approx(2.000000454910428, rel=1e-3)
+    assert model.fs.simple_naocl_unit.dosing_rate.value == \
+            pytest.approx(0.4211328239720586, rel=1e-3)
