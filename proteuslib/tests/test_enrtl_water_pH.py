@@ -850,6 +850,7 @@ class TestENRTLcarbonicAcid():
 
         assert pytest.approx(8.29618, rel=1e-4) == pH
         assert pytest.approx(5.72455, rel=1e-4) == pOH
+        assert pytest.approx(14.00, rel=1e-2) == pH + pOH
 
         gamma = {}
         for index in model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp:
