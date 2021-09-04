@@ -249,3 +249,7 @@ class TestPressureExchanger():
                 value(m.fs.unit.high_pressure_side.deltaP[0]))
         assert (pytest.approx(-4.899e3, rel=1e-3) ==
                 value(m.fs.unit.high_pressure_side.work[0]))
+
+    @pytest.mark.unit
+    def test_report(self, unit_frame):
+        unit_frame.fs.unit.report()
