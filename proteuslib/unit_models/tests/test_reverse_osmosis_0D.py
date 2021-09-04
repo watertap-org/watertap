@@ -773,3 +773,7 @@ class TestReverseOsmosis():
                 value(m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
         assert (pytest.approx(49.94, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_interface_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
+
+    @pytest.mark.unit
+    def test_report(self, RO_frame):
+        RO_frame.fs.unit.report()
