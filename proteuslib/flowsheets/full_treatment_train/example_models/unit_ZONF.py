@@ -53,9 +53,6 @@ def build_ZONF(m, base='ion'):
                  * m.fs.NF.feed_side.properties_out[0].conc_mol_phase_comp['Liq', j]
                  for j in charge_comp))
 
-    # scaling
-    calculate_scaling_factors(m.fs.NF)
-
 
 def solve_build_ZONF(base='ion'):
     m = ConcreteModel()
@@ -66,6 +63,7 @@ def solve_build_ZONF(base='ion'):
     property_models.specify_feed(m.fs.NF.feed_side.properties_in[0], base='ion')
 
     check_dof(m)
+    calculate_scaling_factors(m)
     solve_with_user_scaling(m)
 
     m.fs.NF.inlet.display()

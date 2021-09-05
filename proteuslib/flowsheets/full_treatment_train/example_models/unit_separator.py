@@ -43,9 +43,6 @@ def build_SepRO(m, base='TDS'):
         raise ValueError('Unexpected property base {base} provided to build_SepRO'
                          ''.format(base=base))
 
-    # scaling
-    calculate_scaling_factors(m.fs.RO)
-
 
 def build_SepNF(m, base='ion'):
     """
@@ -80,8 +77,6 @@ def build_SepNF(m, base='ion'):
         m.fs.NF.split_fraction[0, 'permeate', 'MgSO4'].fix(0.1)
         m.fs.NF.split_fraction[0, 'permeate', 'MgCl2'].fix(0.2)
 
-    # scaling
-    calculate_scaling_factors(m.fs.NF)
 
 
 def solve_build_SepRO(base='TDS'):
@@ -92,6 +87,7 @@ def solve_build_SepRO(base='TDS'):
     property_models.specify_feed(m.fs.RO.mixed_state[0], base=base)
 
     check_dof(m)
+    calculate_scaling_factors(m)
     solve_with_user_scaling(m)
 
     m.fs.RO.inlet.display()
@@ -110,6 +106,7 @@ def solve_build_SepNF(base='ion'):
 
     m.fs.NF.mixed_state[0].mass_frac_phase_comp  # touching for tests
     check_dof(m)
+    calculate_scaling_factors(m)
     solve_with_user_scaling(m)
 
     m.fs.NF.inlet.display()
