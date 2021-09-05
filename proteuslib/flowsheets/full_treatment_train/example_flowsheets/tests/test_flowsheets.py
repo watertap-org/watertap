@@ -18,7 +18,8 @@ from proteuslib.flowsheets.full_treatment_train.example_flowsheets import flowsh
 @pytest.mark.component
 def test_flowsheet_limited_NF_no_bypass_1():
     m = flowsheet_limited.solve_build_flowsheet_limited_NF(
-        has_bypass=False, NF_type='Sep', NF_base='ion',
+        has_bypass=False, has_desal_feed=False, is_twostage=False,
+        NF_type='Sep', NF_base='ion',
         RO_type='Sep', RO_base='TDS', RO_level='simple')
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(9.646e-2, rel=1e-3)
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'Ca']) == pytest.approx(3.438e-4, rel=1e-3)
@@ -29,7 +30,8 @@ def test_flowsheet_limited_NF_no_bypass_1():
 @pytest.mark.component
 def test_flowsheet_limited_NF_no_bypass_2():
     m = flowsheet_limited.solve_build_flowsheet_limited_NF(
-        has_bypass=False, NF_type='Sep', NF_base='salt',
+        has_bypass=False, has_desal_feed=False, is_twostage=False,
+        NF_type='Sep', NF_base='salt',
         RO_type='Sep', RO_base='TDS', RO_level='simple')
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(9.646e-2, rel=1e-3)
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'CaSO4']) == pytest.approx(1.168e-3, rel=1e-3)
@@ -39,7 +41,8 @@ def test_flowsheet_limited_NF_no_bypass_2():
 
 def test_flowsheet_limited_NF_no_bypass_3():
     m = flowsheet_limited.solve_build_flowsheet_limited_NF(
-        has_bypass=False, NF_type='ZO', NF_base='ion',
+        has_bypass=False, has_desal_feed=False, is_twostage=False,
+        NF_type='ZO', NF_base='ion',
         RO_type='Sep', RO_base='TDS', RO_level='simple')
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.1296, rel=1e-3)
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'Ca']) == pytest.approx(3.130e-4, rel=1e-3)
@@ -49,7 +52,8 @@ def test_flowsheet_limited_NF_no_bypass_3():
 
 def test_flowsheet_limited_NF_bypass_1():
     m = flowsheet_limited.solve_build_flowsheet_limited_NF(
-        has_bypass=True, NF_type='Sep', NF_base='ion',
+        has_bypass=True, has_desal_feed=False, is_twostage=False,
+        NF_type='Sep', NF_base='ion',
         RO_type='Sep', RO_base='TDS', RO_level='simple')
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(8.682e-2, rel=1e-3)
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'Ca']) == pytest.approx(3.094e-4, rel=1e-3)
@@ -59,7 +63,8 @@ def test_flowsheet_limited_NF_bypass_1():
 
 def test_flowsheet_limited_NF_bypass_2():
     m = flowsheet_limited.solve_build_flowsheet_limited_NF(
-        has_bypass=True, NF_type='Sep', NF_base='ion',
+        has_bypass=True, has_desal_feed=False, is_twostage=False,
+        NF_type='Sep', NF_base='ion',
         RO_type='0D', RO_base='TDS', RO_level='simple')
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(8.682e-2, rel=1e-3)
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'Ca']) == pytest.approx(3.094e-4, rel=1e-3)
@@ -69,7 +74,8 @@ def test_flowsheet_limited_NF_bypass_2():
 
 def test_flowsheet_limited_NF_bypass_3():
     m = flowsheet_limited.solve_build_flowsheet_limited_NF(
-        has_bypass=True, NF_type='ZO', NF_base='ion',
+        has_bypass=True, has_desal_feed=False, is_twostage=False,
+        NF_type='ZO', NF_base='ion',
         RO_type='0D', RO_base='TDS', RO_level='detailed')
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(3.318e-2, rel=1e-3)
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'Ca']) == pytest.approx(2.748e-4, rel=1e-3)
@@ -79,9 +85,10 @@ def test_flowsheet_limited_NF_bypass_3():
 
 def test_flowsheet_limited_NF_bypass_twostage_1():
     m = flowsheet_limited.solve_build_flowsheet_limited_NF(
-        has_bypass=True, is_twostage=True, NF_type='ZO', NF_base='ion',
+        has_bypass=True, has_desal_feed=False, is_twostage=True,
+        NF_type='ZO', NF_base='ion',
         RO_type='0D', RO_base='TDS', RO_level='detailed')
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(3.318e-2, rel=1e-3)
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'Ca']) == pytest.approx(2.748e-4, rel=1e-3)
-    assert value(m.fs.RO2.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.3532, rel=1e-3)
+    assert value(m.fs.RO2.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.4229, rel=1e-3)
     assert value(m.fs.RO2.retentate.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(2.793e-2, rel=1e-3)

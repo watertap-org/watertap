@@ -97,8 +97,11 @@ def build_0DRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0, RO_level='d
     property_models.build_prop(model, base='TDS')
 
     # Here, we set 'has_feed' to True because RO is our first block in the flowsheet
-    desal_port = desalination.build_desalination_RO(
-        model, has_feed=True, RO_type='0D', RO_base='TDS', RO_level=RO_level)
+    kwargs_desal = {'has_desal_feed': True, 'is_twostage': False,
+                    'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': RO_level}
+    desal_port = desalination.build_desalination(model, **kwargs_desal)
+    desalination.scale_desalination(model, **kwargs_desal)
+    desalination.initialize_desalination(model, **kwargs_desal)
 
     # You can change some RO unit defaults here
     #model.fs.RO.area.set_value(100)
