@@ -158,11 +158,20 @@ class NanofiltrationData(UnitModelBlockData):
             initialize=1000,
             units=units_meta('mass')*units_meta('length')**-3,
             doc='Pure water density')
+
+        # Add unit variables
+        self.area = Var(
+            initialize=1,
+            bounds=(1e-8, 1e6),
+            domain=NonNegativeReals,
+            units=units_meta('length') ** 2,
+            doc='Membrane area')
+
         def recovery_mass_phase_comp_initialize(b, t, p, j):
             if j in self.config.property_package.solvent_set:
-                return 0.1
+                return 0.8
             elif j in self.config.property_package.solute_set:
-                return 0.01
+                return 0.1
 
         def recovery_mass_phase_comp_bounds(b, t, p, j):
             ub = 1 - 1e-6
@@ -171,6 +180,7 @@ class NanofiltrationData(UnitModelBlockData):
             elif j in self.config.property_package.solute_set:
                 lb = 1e-5
             return lb, ub
+
         self.recovery_mass_phase_comp = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
@@ -186,13 +196,6 @@ class NanofiltrationData(UnitModelBlockData):
             bounds=(1e-2, 1 - 1e-6),
             units=pyunits.dimensionless,
             doc='Volumetric-based recovery')
-        # Add unit variables
-        self.area = Var(
-            initialize=1,
-            bounds=(1e-8, 1e6),
-            domain=NonNegativeReals,
-            units=units_meta('length') ** 2,
-            doc='Membrane area')
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(default={
@@ -429,9 +432,10 @@ class NanofiltrationData(UnitModelBlockData):
             if j in self.config.property_package.solvent_set:
                 sf = 1
             elif j in self.config.property_package.solute_set:
-                sf = 100
+                sf = 10
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
+
         # transforming constraints
         for ind, c in self.feed_side.eq_isothermal.items():
             sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].temperature)
