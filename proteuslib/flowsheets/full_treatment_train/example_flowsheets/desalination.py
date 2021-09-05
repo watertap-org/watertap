@@ -17,7 +17,10 @@ from pyomo.environ import ConcreteModel, TransformationFactory
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import Mixer
-from idaes.core.util.scaling import calculate_scaling_factors, set_scaling_factor
+from idaes.core.util.scaling import (calculate_scaling_factors,
+                                     set_scaling_factor,
+                                     get_scaling_factor,
+                                     constraint_scaling_transform)
 from idaes.core.util.initialization import propagate_state
 from proteuslib.unit_models.pump_isothermal import Pump
 from proteuslib.flowsheets.full_treatment_train.example_flowsheets import feed_block
@@ -133,11 +136,21 @@ def scale_desalination(m, **kwargs):
     if kwargs['RO_type'] == '0D':
         set_scaling_factor(m.fs.pump_RO.control_volume.work, 1e-3)
         calculate_scaling_factors(m.fs.pump_RO)
+        set_scaling_factor(m.fs.pump_RO.ratioP, 1)  # TODO: IDAES should have a default and link to the constraint
 
         if kwargs['is_twostage']:
             set_scaling_factor(m.fs.pump_RO2.control_volume.work, 1e-3)
             calculate_scaling_factors(m.fs.pump_RO2)
+            set_scaling_factor(m.fs.pump_RO2.ratioP, 1)  # TODO: IDAES should have a default and link to the constraint
             calculate_scaling_factors(m.fs.mixer_permeate)
+            set_scaling_factor(m.fs.mixer_permeate.minimum_pressure,
+                               get_scaling_factor(m.fs.mixer_permeate.mixed_state[0].pressure)
+                               )  # TODO: IDAES should have a default and link to the constraint
+            for c in [m.fs.mixer_permeate.minimum_pressure_constraint[0, 1],
+                      m.fs.mixer_permeate.minimum_pressure_constraint[0, 2],
+                      m.fs.mixer_permeate.mixture_pressure[0.0]]:
+                constraint_scaling_transform(c, get_scaling_factor(m.fs.mixer_permeate.minimum_pressure))
+
 
 
 def initialize_desalination(m, **kwargs):

@@ -127,9 +127,9 @@ def solve_build_flowsheet_limited_NF(**kwargs):
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scale
-    # pretreatment.scale_pretreatment_NF(m, **kwargs)
-    # calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
-    # desalination.scale_desalination(m, **kwargs)
+    pretreatment.scale_pretreatment_NF(m, **kwargs)
+    calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
+    desalination.scale_desalination(m, **kwargs)
     calculate_scaling_factors(m)
 
     # check that all variables have scaling factors
@@ -142,6 +142,8 @@ def solve_build_flowsheet_limited_NF(**kwargs):
     unscaled_constraint_list = list(unscaled_constraints_generator(m))
     for c in unscaled_constraint_list:
         print(c)
+    assert len(unscaled_var_list) == 0
+    assert len(unscaled_constraint_list) == 0
 
     # initialize
     optarg = {'nlp_scaling_method': 'user-scaling'}
@@ -191,65 +193,7 @@ def solve_set_up_optimization(has_bypass=True, NF_type='ZO', NF_base='ion',
 
 
 if __name__ == "__main__":
-    # optimization
-    # m = solve_set_up_optimization(has_bypass=True, NF_type='ZO', NF_base='ion',
-    #                           RO_type='0D', RO_base='TDS', RO_level='simple',
-    #                           system_recovery=0.50, max_conc_factor=3, RO_flux=10)
-
-    # simulation
-    # # no bypass, SepRO
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='Sep', NF_base='ion',
-    #                                  RO_type='Sep', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='Sep', NF_base='salt',
-    #                                  RO_type='Sep', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='ZO', NF_base='ion',
-    #                                  RO_type='Sep', RO_base='TDS', RO_level='simple')
-
-    # # no bypass, 0DRO simple
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='Sep', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='Sep', NF_base='salt',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='ZO', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='simple')
-
-    # # no bypass, 0DRO detailed
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='Sep', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='detailed')
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='Sep', NF_base='salt',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='detailed')
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='ZO', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='detailed')
-
-    # # bypass, SepRO
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='Sep', NF_base='ion',
-    #                                  RO_type='Sep', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='Sep', NF_base='salt',
-    #                                  RO_type='Sep', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='ZO', NF_base='ion',
-    #                                  RO_type='Sep', RO_base='TDS', RO_level='simple')
-
-    # # bypass, 0DRO simple
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='Sep', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='Sep', NF_base='salt',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='ZO', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='simple')
-
-    # # bypass, 0DRO detailed
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='Sep', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='detailed')
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='Sep', NF_base='salt',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='detailed')
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='ZO', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='detailed')
-
-    # # bypass, 2 stage 0DRO simple
-    # solve_build_flowsheet_limited_NF(has_bypass=True, has_desal_feed=False, is_twostage=True,
-    #                                  NF_type='ZO', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='simple')
     solve_build_flowsheet_limited_NF(has_bypass=True,  has_desal_feed=False, is_twostage=True,
                                      NF_type='ZO', NF_base='ion',
-                                     RO_type='0D', RO_base='TDS', RO_level='simple')
-    pass
+                                     RO_type='0D', RO_base='TDS', RO_level='detailed')
+

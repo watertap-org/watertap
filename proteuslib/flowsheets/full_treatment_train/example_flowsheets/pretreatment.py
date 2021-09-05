@@ -18,7 +18,10 @@ from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import Feed, Separator, Mixer
 from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
-from idaes.core.util.scaling import calculate_scaling_factors
+from idaes.core.util.scaling import (calculate_scaling_factors,
+                                     set_scaling_factor,
+                                     get_scaling_factor,
+                                     constraint_scaling_transform)
 from idaes.core.util.initialization import propagate_state
 from proteuslib.flowsheets.full_treatment_train.example_flowsheets import feed_block
 from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator, unit_ZONF, property_models
@@ -94,7 +97,16 @@ def scale_pretreatment_NF(m, **kwargs):
 
     if kwargs['has_bypass']:
         calculate_scaling_factors(m.fs.splitter)
+        set_scaling_factor(m.fs.splitter.split_fraction, 1)  # TODO: should have an IDAES default
+        constraint_scaling_transform(m.fs.splitter.sum_split_frac[0], 1)  # TODO: should have an IDAES default
         calculate_scaling_factors(m.fs.mixer)
+        set_scaling_factor(m.fs.mixer.minimum_pressure,
+                           get_scaling_factor(m.fs.mixer.mixed_state[0].pressure)
+                           )  # TODO: IDAES should have a default and link to the constraint
+        for c in [m.fs.mixer.minimum_pressure_constraint[0, 1],
+                  m.fs.mixer.minimum_pressure_constraint[0, 2],
+                  m.fs.mixer.mixture_pressure[0.0]]:
+            constraint_scaling_transform(c, get_scaling_factor(m.fs.mixer.minimum_pressure))
 
 
 def initialize_pretreatment_NF(m, **kwargs):
