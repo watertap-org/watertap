@@ -25,22 +25,21 @@ from proteuslib.flowsheets.full_treatment_train.example_models import unit_separ
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
-def build_desalination_RO(m, has_feed=False, is_twostage=False,
-                          RO_type='0D', RO_base='TDS', RO_level='simple'):
+def build_desalination(m, has_desal_feed=False, is_twostage=False,
+                       RO_type='0D', RO_base='TDS', RO_level='simple'):
     """
     Builds RO desalination including specified feed and auxiliary equipment.
-    The built components are initialized based on default values.
     Arguments:
-        has_feed: True or False, default = False, if true a feed block is created and specified to the standard
+        has_desal_feed: True or False, default = False,
+            if True a feed block is created and specified to the standard feed
         RO_type: 'Sep' or '0D', default = '0D'
         RO_level: 'simple' or 'detailed', default = 'simple'
         RO_base: 'TDS' only, default = 'ion'
     """
     desal_port = {}
-    optarg = {'nlp_scaling_method': 'user-scaling'}
     prop = property_models.get_prop(m, base=RO_base)
 
-    if has_feed:
+    if has_desal_feed:
         # build feed
         feed_block.build_feed(m, base=RO_base)
 
@@ -50,36 +49,27 @@ def build_desalination_RO(m, has_feed=False, is_twostage=False,
     elif RO_type == '0D':
         unit_0DRO.build_RO(m, base='TDS', level=RO_level)
     else:
-        raise ValueError('Unexpected model type {RO_type} provided to build_desalination_RO'
+        raise ValueError('Unexpected model type {RO_type} provided to build_desalination'
                          ''.format(RO_type=RO_type))
     if is_twostage:
         if RO_type == '0D':
             unit_0DRO.build_RO(m, base='TDS', level=RO_level, name_str='RO2')
-
+        else:
+            raise ValueError('Unexpected model type {RO_type} provided to build_desalination when is_twostage is True'
+                             ''.format(RO_type=RO_type))
 
     # auxiliary units
     if RO_type == 'Sep':
         # build auxiliary units (none)
 
         # connect models
-        if has_feed:
+        if has_desal_feed:
             m.fs.s_desal_feed_RO = Arc(source=m.fs.feed.outlet, destination=m.fs.RO.inlet)
 
-        # specify (RO and feed already specified)
-
-        # scaling (RO and feed already scaled)
-
-        # initialize
-        if has_feed:
-            m.fs.feed.initialize(optarg=optarg)
-            propagate_state(m.fs.s_desal_feed_RO)
-        # m.fs.RO.mixed_state[0].mass_frac_phase_comp  # touch properties to have a constraint on stateblock
-        # m.fs.RO.permeate_state[0].mass_frac_phase_comp
-        # m.fs.RO.retentate_state[0].mass_frac_phase_comp
-        # m.fs.RO.initialize(optarg=optarg)  # IDAES error on initializing separators, simple enough to not need it
+        # specify (RO already specified)
 
         # inlet/outlet ports for pretreatment
-        if not has_feed:
+        if not has_desal_feed:
             desal_port['in'] = m.fs.RO.inlet
 
     elif RO_type == '0D':
@@ -92,7 +82,7 @@ def build_desalination_RO(m, has_feed=False, is_twostage=False,
                 "inlet_list": ['RO', 'RO2']})
 
         # connect models
-        if has_feed:
+        if has_desal_feed:
             m.fs.s_desal_feed_pumpRO = Arc(source=m.fs.feed.outlet, destination=m.fs.pump_RO.inlet)
 
         m.fs.s_desal_pumpRO_RO = Arc(source=m.fs.pump_RO.outlet, destination=m.fs.RO.inlet)
@@ -108,35 +98,10 @@ def build_desalination_RO(m, has_feed=False, is_twostage=False,
         m.fs.pump_RO.control_volume.properties_out[0].pressure.fix(50e5)
         if is_twostage:
             m.fs.pump_RO2.efficiency_pump.fix(0.80)
-            m.fs.pump_RO2.control_volume.properties_out[0].pressure.fix(65e5)
-
-        # scaling (RO already scaled)
-        set_scaling_factor(m.fs.pump_RO.control_volume.work, 1e-3)
-        calculate_scaling_factors(m.fs.pump_RO)
-        if is_twostage:
-            set_scaling_factor(m.fs.pump_RO2.control_volume.work, 1e-3)
-            calculate_scaling_factors(m.fs.pump_RO2)
-            calculate_scaling_factors(m.fs.mixer_permeate)
-
-        # initialize
-        if has_feed:
-            m.fs.feed.initialize(optarg=optarg)
-            propagate_state(m.fs.s_desal_feed_pumpRO)
-        m.fs.pump_RO.initialize(optarg=optarg)
-        propagate_state(m.fs.s_desal_pumpRO_RO)
-        m.fs.RO.initialize(optarg=optarg)
-
-        if is_twostage:
-            propagate_state(m.fs.s_desal_RO_pumpRO2)
-            m.fs.pump_RO2.initialize(optarg=optarg)
-            propagate_state(m.fs.s_desal_pumpRO2_RO2)
-            m.fs.RO2.initialize(optarg=optarg)
-            propagate_state(m.fs.s_desal_permeateRO_mixer)
-            propagate_state(m.fs.s_desal_permeateRO2_mixer)
-            m.fs.mixer_permeate.initialize(optarg=optarg)
+            m.fs.pump_RO2.control_volume.properties_out[0].pressure.fix(55e5)
 
         # inlet/outlet ports for pretreatment
-        if not has_feed:
+        if not has_desal_feed:
             desal_port['in'] = m.fs.pump_RO.inlet
 
     if is_twostage:
@@ -149,20 +114,85 @@ def build_desalination_RO(m, has_feed=False, is_twostage=False,
     return desal_port
 
 
-def solve_build_desalination_RO(has_feed=False, is_twostage=False,
-                          RO_type='0D', RO_base='TDS', RO_level='simple'):
+def scale_desalination(m, **kwargs):
+    """
+    Scales the model created by build_desalination.
+    Arguments:
+        m: pyomo concrete model with a built desalination train
+        **kwargs: same keywords as provided to the build_desalination function
+    """
+
+    if kwargs['has_desal_feed']:
+        calculate_scaling_factors(m.fs.feed)
+
+    calculate_scaling_factors(m.fs.RO)
+
+    if kwargs['is_twostage']:
+        calculate_scaling_factors(m.fs.RO2)
+
+    if kwargs['RO_type'] == '0D':
+        set_scaling_factor(m.fs.pump_RO.control_volume.work, 1e-3)
+        calculate_scaling_factors(m.fs.pump_RO)
+
+        if kwargs['is_twostage']:
+            set_scaling_factor(m.fs.pump_RO2.control_volume.work, 1e-3)
+            calculate_scaling_factors(m.fs.pump_RO2)
+            calculate_scaling_factors(m.fs.mixer_permeate)
+
+
+def initialize_desalination(m, **kwargs):
+    """
+    Initialized the model created by build_desalination.
+    Arguments:
+        m: pyomo concrete model with a built desalination train
+        **kwargs: same keywords as provided to the build_desalination function
+    """
+    optarg = {'nlp_scaling_method': 'user-scaling'}
+
+    if kwargs['has_desal_feed']:
+        m.fs.feed.initialize(optarg=optarg)
+
+    if kwargs['RO_type'] == 'Sep':
+        if kwargs['has_desal_feed']:
+            propagate_state(m.fs.s_desal_feed_RO)
+        m.fs.RO.mixed_state[0].mass_frac_phase_comp  # touch properties to have a constraint on stateblock
+        m.fs.RO.permeate_state[0].mass_frac_phase_comp
+        m.fs.RO.retentate_state[0].mass_frac_phase_comp
+        # m.fs.RO.initialize(optarg=optarg)  # IDAES error on initializing separators, simple enough to not need it
+
+    elif kwargs['RO_type'] == '0D':
+        if kwargs['has_desal_feed']:
+            propagate_state(m.fs.s_desal_feed_pumpRO)
+        m.fs.pump_RO.initialize(optarg=optarg)
+        propagate_state(m.fs.s_desal_pumpRO_RO)
+        m.fs.RO.initialize(optarg=optarg)
+
+        if kwargs['is_twostage']:
+            propagate_state(m.fs.s_desal_RO_pumpRO2)
+            m.fs.pump_RO2.initialize(optarg=optarg)
+            propagate_state(m.fs.s_desal_pumpRO2_RO2)
+            m.fs.RO2.initialize(optarg=optarg)
+            propagate_state(m.fs.s_desal_permeateRO_mixer)
+            propagate_state(m.fs.s_desal_permeateRO2_mixer)
+            m.fs.mixer_permeate.initialize(optarg=optarg)
+
+
+def solve_build_desalination(**kwargs):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     property_models.build_prop(m, base='TDS')
-    build_desalination_RO(m, has_feed=has_feed, is_twostage=is_twostage,
-                          RO_type=RO_type, RO_base=RO_base, RO_level=RO_level)
-
+    build_desalination(m, **kwargs)
     TransformationFactory("network.expand_arcs").apply_to(m)
+
+    scale_desalination(m, **kwargs)
+
+    initialize_desalination(m, **kwargs)
+
     check_dof(m)
     solve_with_user_scaling(m)
 
     return m
 
 if __name__ == "__main__":
-    solve_build_desalination_RO(has_feed=True, is_twostage=True,
-                                RO_type='0D', RO_base='TDS', RO_level='detailed')
+    solve_build_desalination(has_desal_feed=True, is_twostage=True,
+                             RO_type='0D', RO_base='TDS', RO_level='detailed')

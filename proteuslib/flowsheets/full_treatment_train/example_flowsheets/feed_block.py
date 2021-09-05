@@ -33,7 +33,6 @@ def build_feed(m, base='TDS'):
 
     # specify
     property_models.specify_feed(m.fs.feed.properties[0], base=base)
-    m.fs.feed.properties[0].mass_frac_phase_comp  # touch
+    m.fs.feed.properties[0].mass_frac_phase_comp  # touch so the block can be initialized
 
-    calculate_scaling_factors(m.fs.feed)
 

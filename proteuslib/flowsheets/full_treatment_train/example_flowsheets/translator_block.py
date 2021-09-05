@@ -71,5 +71,5 @@ def build_tb(m, base_inlet='ion', base_outlet='TDS', name_str=None):
     else:
         raise ValueError('Unexpected property base combination for build_tb')
 
-    # scale translator block
-    calculate_scaling_factors(blk)
+    blk.properties_in[0].mass_frac_phase_comp  # touch for initialization
+    blk.properties_out[0].mass_frac_phase_comp
