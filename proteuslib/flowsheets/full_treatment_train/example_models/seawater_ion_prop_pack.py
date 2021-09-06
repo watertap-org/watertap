@@ -285,7 +285,7 @@ class PropStateBlockData(StateBlockData):
 
     def _flow_vol(self):
         self.flow_vol = Var(
-            initialize=1,
+            initialize=1e-3,
             bounds=(1e-8, None),
             units=pyunits.m**3/pyunits.s,
             doc="Volumetric flow rate")
@@ -300,7 +300,7 @@ class PropStateBlockData(StateBlockData):
         self.flow_mol_phase_comp = Var(
             self.params.phase_list,
             self.params.component_list,
-            initialize=100,
+            initialize=1,
             bounds=(1e-8, None),
             units=pyunits.mol/pyunits.s,
             doc="Molar flowrate")
