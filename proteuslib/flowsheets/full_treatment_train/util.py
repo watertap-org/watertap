@@ -48,9 +48,9 @@ def check_solve(results):
                            "or that the model is poorly scaled.")
 
 
-def check_build(m, build_func, **kwargs):
-
-    build_func(m, **kwargs)
+def check_build(m, build_func=None, **kwargs):
+    if build_func is not None:
+        build_func(m, **kwargs)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     assert_units_consistent(m)
@@ -58,8 +58,9 @@ def check_build(m, build_func, **kwargs):
     check_dof(m)
 
 
-def check_scaling(m, scale_func, **kwargs):
-    scale_func(m, **kwargs)
+def check_scaling(m, scale_func=None, **kwargs):
+    if scale_func is not None:
+        scale_func(m, **kwargs)
     calculate_scaling_factors(m)  # scale arcs
 
     # check all variables have scaling factors

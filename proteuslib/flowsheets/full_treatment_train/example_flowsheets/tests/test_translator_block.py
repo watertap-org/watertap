@@ -13,25 +13,22 @@
 import pytest
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
-from proteuslib.flowsheets.full_treatment_train.example_flowsheets import pretreatment
+from proteuslib.flowsheets.full_treatment_train.example_flowsheets import translator_block
 from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from proteuslib.flowsheets.full_treatment_train.util import check_build, check_scaling
 
 
 @pytest.mark.unit
-def test_build_and_scale_pretreatment_NF():
-    for has_bypass in [True, False]:
-        for NF_type in ['Sep', 'ZO']:
-            for NF_base in ['ion', 'salt']:
-                kwargs = {'has_bypass': has_bypass, 'NF_type': NF_type, 'NF_base': NF_base}
+def test_build_and_scale_translator_block():
+    tb_kwargs_list = [{'base_inlet': 'ion', 'base_outlet': 'TDS', 'name_str': 'tb_pretrt_to_desal'},
+                      {'base_inlet': 'salt', 'base_outlet': 'TDS', 'name_str': 'tb_pretrt_to_desal'}]
+    for kwargs in tb_kwargs_list:
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        property_models.build_prop(m, base=kwargs['base_inlet'])
+        property_models.build_prop(m, base=kwargs['base_outlet'])
 
-                if NF_type == 'ZO' and NF_base == 'salt':
-                    continue  # not a valid combination
+        translator_block.build_tb(m, **kwargs)
+        assert hasattr(m.fs, kwargs['name_str'])
 
-                m = ConcreteModel()
-                m.fs = FlowsheetBlock(default={"dynamic": False})
-                property_models.build_prop(m, base=kwargs['NF_base'])
-
-                check_build(m, build_func=pretreatment.build_pretreatment_NF, **kwargs)
-                assert hasattr(m.fs, 'NF')
-                check_scaling(m, scale_func=pretreatment.scale_pretreatment_NF, **kwargs)
+        check_scaling(m, **kwargs)

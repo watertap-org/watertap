@@ -55,7 +55,7 @@ def build_ZONF(m, base='ion'):
     constraint_scaling_transform(m.fs.NF.eq_electroneutrality, 1)
 
 
-def solve_build_ZONF(base='ion'):
+def solve_ZONF(base='ion'):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
@@ -75,5 +75,5 @@ def solve_build_ZONF(base='ion'):
 
 
 if __name__ == "__main__":
-    solve_build_ZONF(base='ion')
+    solve_ZONF(base='ion')
 

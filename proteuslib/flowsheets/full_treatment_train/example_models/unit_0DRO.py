@@ -69,7 +69,7 @@ def build_RO(m, base='TDS', level='simple', name_str='RO'):
                          ''.format(level=level))
 
 
-def solve_build_RO(base='TDS', level='simple'):
+def solve_RO(base='TDS', level='simple'):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     property_models.build_prop(m, base='TDS')
@@ -95,5 +95,5 @@ def solve_build_RO(base='TDS', level='simple'):
 
 
 if __name__ == "__main__":
-    solve_build_RO(base='TDS', level='simple')
-    solve_build_RO(base='TDS', level='detailed')
+    solve_RO(base='TDS', level='simple')
+    solve_RO(base='TDS', level='detailed')

@@ -100,7 +100,7 @@ def build_SepNF(m, base='ion'):
         constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'MgCl2'], 1)
 
 
-def solve_build_SepRO(base='TDS'):
+def solve_SepRO(base='TDS'):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     property_models.build_prop(m, base=base)
@@ -118,7 +118,7 @@ def solve_build_SepRO(base='TDS'):
     return m
 
 
-def solve_build_SepNF(base='ion'):
+def solve_SepNF(base='ion'):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     property_models.build_prop(m, base=base)
@@ -138,6 +138,6 @@ def solve_build_SepNF(base='ion'):
 
 
 if __name__ == "__main__":
-    solve_build_SepRO(base='TDS')
-    solve_build_SepNF(base='ion')
-    solve_build_SepNF(base='salt')
+    solve_SepRO(base='TDS')
+    solve_SepNF(base='ion')
+    solve_SepNF(base='salt')

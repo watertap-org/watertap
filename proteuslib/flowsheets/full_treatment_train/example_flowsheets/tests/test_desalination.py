@@ -35,5 +35,6 @@ def test_build_and_scale_desalination():
                         m.fs = FlowsheetBlock(default={"dynamic": False})
                         property_models.build_prop(m, base=kwargs['RO_base'])
 
-                        check_build(m, desalination.build_desalination, **kwargs)
-                        check_scaling(m, desalination.scale_desalination, **kwargs)
+                        check_build(m, build_func=desalination.build_desalination, **kwargs)
+                        assert hasattr(m.fs, 'RO')
+                        check_scaling(m, scale_func=desalination.scale_desalination, **kwargs)
