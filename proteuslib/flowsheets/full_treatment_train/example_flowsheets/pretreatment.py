@@ -118,7 +118,7 @@ def initialize_pretreatment_NF(m, **kwargs):
         m.fs.splitter.initialize(optarg=optarg)
         propagate_state(m.fs.s_pretrt_splitter_mixer)
         propagate_state(m.fs.s_pretrt_splitter_NF)
-        if kwargs['NF_type'] != 'Sep':  # IDAES error when NF is a separator TODO: discuss with Andrew
+        if kwargs['NF_type'] != 'Sep':  # IDAES error when NF is a separator TODO: address in IDAES
             m.fs.NF.initialize(optarg=optarg)
         propagate_state(m.fs.s_pretrt_NF_mixer)
         m.fs.mixer.initialize(optarg=optarg)
@@ -126,11 +126,27 @@ def initialize_pretreatment_NF(m, **kwargs):
     else:  # no bypass
         m.fs.feed.initialize(optarg=optarg)
         propagate_state(m.fs.s_pretrt_feed_NF)
-        if kwargs['NF_type'] != 'Sep':  # IDAES error when NF is a separator TODO: discuss with Andrew
+        if kwargs['NF_type'] != 'Sep':  # IDAES error when NF is a separator TODO: address in IDAES
             m.fs.NF.initialize(optarg=optarg)
 
 
-def solve_build_pretreatment_NF(**kwargs):
+def display_pretreatment_NF(m, **kwargs):
+
+    m.fs.feed.report()
+
+    if kwargs['has_bypass']:
+        m.fs.splitter.report()
+        m.fs.NF.inlet.display()  # TODO: update once ZO model has a report
+        m.fs.NF.retentate.display()
+        m.fs.NF.permeate.display()
+        m.fs.mixer.report()
+    else:  # no bypass
+        m.fs.NF.inlet.display()  # TODO: update once ZO model has a report
+        m.fs.NF.retentate.display()
+        m.fs.NF.permeate.display()
+
+
+def solve_pretreatment_NF(**kwargs):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
@@ -145,6 +161,8 @@ def solve_build_pretreatment_NF(**kwargs):
     check_dof(m)
     solve_with_user_scaling(m, tee=True, fail_flag=True)
 
+    display_pretreatment_NF(m, **kwargs)
+
 
 if __name__ == "__main__":
-    solve_build_pretreatment_NF(has_bypass=True, NF_type='ZO', NF_base='ion')
+    solve_pretreatment_NF(has_bypass=True, NF_type='ZO', NF_base='ion')

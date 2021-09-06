@@ -35,3 +35,5 @@ def test_build_and_scale_pretreatment_NF():
                 check_build(m, build_func=pretreatment.build_pretreatment_NF, **kwargs)
                 assert hasattr(m.fs, 'NF')
                 check_scaling(m, scale_func=pretreatment.scale_pretreatment_NF, **kwargs)
+
+                pretreatment.display_pretreatment_NF(m, **kwargs)

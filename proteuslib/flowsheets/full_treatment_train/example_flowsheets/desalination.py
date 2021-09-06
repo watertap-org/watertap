@@ -152,7 +152,6 @@ def scale_desalination(m, **kwargs):
                 constraint_scaling_transform(c, get_scaling_factor(m.fs.mixer_permeate.minimum_pressure))
 
 
-
 def initialize_desalination(m, **kwargs):
     """
     Initialized the model created by build_desalination.
@@ -189,8 +188,22 @@ def initialize_desalination(m, **kwargs):
             propagate_state(m.fs.s_desal_permeateRO2_mixer)
             m.fs.mixer_permeate.initialize(optarg=optarg)
 
+def display_desalination(m, **kwargs):
+    if kwargs['has_desal_feed']:
+        m.fs.feed.report()
 
-def solve_build_desalination(**kwargs):
+    if kwargs['RO_type'] == 'Sep':
+        m.fs.RO.report()
+
+    elif kwargs['RO_type'] == '0D':
+        m.fs.pump_RO.report()
+        m.fs.RO.report()
+
+        if kwargs['is_twostage']:
+            m.fs.pump_RO2.report()
+            m.fs.RO2.report()
+
+def solve_desalination(**kwargs):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     property_models.build_prop(m, base='TDS')
@@ -204,8 +217,10 @@ def solve_build_desalination(**kwargs):
     check_dof(m)
     solve_with_user_scaling(m)
 
+    display_desalination(m, **kwargs)
+
     return m
 
 if __name__ == "__main__":
-    solve_build_desalination(has_desal_feed=True, is_twostage=True,
+    solve_desalination(has_desal_feed=True, is_twostage=True,
                              RO_type='0D', RO_base='TDS', RO_level='detailed')

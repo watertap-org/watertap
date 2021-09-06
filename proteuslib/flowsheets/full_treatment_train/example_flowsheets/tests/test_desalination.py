@@ -38,3 +38,5 @@ def test_build_and_scale_desalination():
                         check_build(m, build_func=desalination.build_desalination, **kwargs)
                         assert hasattr(m.fs, 'RO')
                         check_scaling(m, scale_func=desalination.scale_desalination, **kwargs)
+
+                        desalination.display_desalination(m, **kwargs)

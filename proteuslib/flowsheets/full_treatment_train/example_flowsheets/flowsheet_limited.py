@@ -120,7 +120,7 @@ def set_up_optimization(m, has_bypass=True, NF_type='ZO', NF_base='ion',
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
 
-def solve_build_flowsheet_limited_NF(**kwargs):
+def solve_flowsheet_limited_NF(**kwargs):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     build_flowsheet_limited_NF(m, **kwargs)
@@ -131,19 +131,6 @@ def solve_build_flowsheet_limited_NF(**kwargs):
     calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
     desalination.scale_desalination(m, **kwargs)
     calculate_scaling_factors(m)
-
-    # check that all variables have scaling factors
-    print('\nUnscaled Variables')
-    unscaled_var_list = list(unscaled_variables_generator(m))
-    for v in unscaled_var_list:
-        print(v)
-    # check that all constraints are transformed
-    print('\nUnscaled Constraints')
-    unscaled_constraint_list = list(unscaled_constraints_generator(m))
-    for c in unscaled_constraint_list:
-        print(c)
-    assert len(unscaled_var_list) == 0
-    assert len(unscaled_constraint_list) == 0
 
     # initialize
     optarg = {'nlp_scaling_method': 'user-scaling'}
@@ -156,23 +143,9 @@ def solve_build_flowsheet_limited_NF(**kwargs):
     check_dof(m)
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
-    # if has_bypass:
-    #     m.fs.feed.report()
-    #     m.fs.splitter.report()
-    #     m.fs.NF.inlet.display()
-    #     m.fs.NF.permeate.display()
-    #     m.fs.NF.retentate.display()
-    #     m.fs.mixer.report()
-    #     m.fs.RO.report()
-    #     m.fs.RO.permeate.display()
-    #     m.fs.RO2.report()
-    #     m.fs.mixer_permeate.report()
-    # else:
-    #     m.fs.feed.report()
-    #     m.fs.NF.inlet.display()
-    #     m.fs.NF.permeate.display()
-    #     m.fs.NF.retentate.display()
-    #     m.fs.RO.report()
+    pretreatment.display_pretreatment_NF(m, **kwargs)
+    m.fs.tb_pretrt_to_desal.report()
+    desalination.display_desalination(m, **kwargs)
 
     return m
 
@@ -181,7 +154,7 @@ def solve_set_up_optimization(has_bypass=True, NF_type='ZO', NF_base='ion',
                               RO_type='OD', RO_base='TDS', RO_level='simple',
                               system_recovery=0.75, max_conc_factor=3, RO_flux=10):
 
-    m = solve_build_flowsheet_limited_NF(has_bypass=has_bypass, NF_type=NF_type, NF_base=NF_base,
+    m = solve_flowsheet_limited_NF(has_bypass=has_bypass, NF_type=NF_type, NF_base=NF_base,
                                          RO_type=RO_type, RO_base=RO_base, RO_level=RO_level)
 
     print('\n****** Optimization *****\n')
@@ -193,7 +166,7 @@ def solve_set_up_optimization(has_bypass=True, NF_type='ZO', NF_base='ion',
 
 
 if __name__ == "__main__":
-    solve_build_flowsheet_limited_NF(has_bypass=True,  has_desal_feed=False, is_twostage=True,
+    solve_flowsheet_limited_NF(has_bypass=True,  has_desal_feed=False, is_twostage=True,
                                      NF_type='ZO', NF_base='ion',
                                      RO_type='0D', RO_base='TDS', RO_level='detailed')
 

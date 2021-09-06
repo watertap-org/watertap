@@ -15,7 +15,7 @@ from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 from proteuslib.flowsheets.full_treatment_train.example_flowsheets import translator_block
 from proteuslib.flowsheets.full_treatment_train.example_models import property_models
-from proteuslib.flowsheets.full_treatment_train.util import check_build, check_scaling
+from proteuslib.flowsheets.full_treatment_train.util import check_scaling
 
 
 @pytest.mark.unit
