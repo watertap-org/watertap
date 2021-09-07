@@ -113,6 +113,8 @@ If you plan to contribute to ProteusLib's codebase, choose this option.
 
 		pytest
 
+#. To view/change the generated documentation, see the :ref:`documentation-mini-guide` section
+
 Installing in existing development environments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -150,8 +152,63 @@ When either the ``proteuslib`` package or one of its dependencies are installed,
         which would cause the wrong (outdated) version to be present in the environment after installation.
 
 
+.. _documentation-mini-guide:
 
+Documentation for developers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+The project documentation is created and updated using the `Sphinx documentation tool <https://www.sphinx-doc.org>`_.
+This tool generates nice, indexed, HTML webpages --- like this one --- from text files in the "docs" directory.
+The documentation will include the docstrings you put on your modules, classes, methods, and functions as well
+as additional documentation in text files in the "docs" directory. The project is set up so that Sphinx documentation
+is generated automatically online for new releases. This section describes how to do this same documentation
+generation locally in your development environment so you can preview what will be shown to the users.
 
+Generating the documentation
+++++++++++++++++++++++++++++
 
+To generate a local copy of the documentation for the first time, follow these steps:
+
+#. Change directory to the "docs" subdirectory
+#. Generate the tree of API documentation with "sphinx-apidoc":
+   ``sphinx-apidoc ../proteuslib "../proteuslib/*tests" -o apidoc``
+#. Generate the HTML: ``./make html``. This uses the "Makefile" for UNIX/OSX and the "make.bat" file on Windows.
+
+After these steps complete, you should be able to preview the HTML documentation by opening the file
+located at "_build/html/index.html" in a web browser. To see the tree of API documentation that is generated
+automatically from the source code, browse to the "Technical Reference" page and click on the "Modules" link at the
+bottom.
+
+Updating the documentation
+++++++++++++++++++++++++++
+
+If you make changes in your code's docstrings that you want to see reflected in the generated documentation,
+you need to re-generate the API documentation using "sphinx-apidoc". To do this, simply re-run the command
+given earlier: ``sphinx-apidoc ../proteuslib "../proteuslib/*tests" -o apidoc``
+
+If you removed or moved around modules,
+it is probably best to remove the "apidoc" directory before running this command so there are no left-over files.
+
+If you edited some documentation directly, i.e. created or modified a text file with extension `.rst`, then you
+don't need to run the previous command. Regardless, you will next need to update the documentation with the
+Sphinx build command: ``./make html``.
+
+.. note::
+
+    If you see warnings of the type `/some/long/path/filename.py:docstring of module.path.to.filename:1:
+    WARNING: duplicate object description of BLABLA, other instance in apidoc/BLA, use :noindex: for one of them`,
+    this means that you (or someone) added a reference to a module or class (most likely using the
+    "automodule" directive) in their documentation,
+    and this duplicates the auto-generated version of this same documentation
+    that was created by ``sphinx-apidoc``. This is easily fixed by adding the ":noindex:" option to the reference.
+    For example, if you had::
+
+        .. automodule:: proteuslib.unit_models.reverse_osmosis_0D
+            :members:
+
+    You would simply change it to::
+
+        .. automodule:: proteuslib.unit_models.reverse_osmosis_0D
+            :noindex:
+            :members:
 
