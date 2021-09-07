@@ -86,8 +86,12 @@ jobs:
         # edb load -b
         # run subset of tests that should not be skipped if the MongoDB instance is accessible to the EDB
         pytest -k "$_tests_that_should_not_be_skipped" --verbose --capture=tee-sys | tee "$_pytest_output_to_inspect"
+        echo '::group::pytest output to be inspected for skipped files'
         cat "$_pytest_output_to_inspect"
+        echo '::endgroup::'
+        echo '::group::output of grep searching for skipped tests in pytest output'
         bash -c 'grep "SKIPPED" "$_pytest_output_to_inspect" ; test $? -eq 1'
+        echo '::endgroup::'
     - name: Add coverage report options
       if: matrix.cov_report
       run: echo 'PYTEST_ADDOPTS="--cov-report=xml"' >> $GITHUB_ENV
