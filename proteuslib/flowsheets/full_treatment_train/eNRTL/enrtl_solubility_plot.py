@@ -157,8 +157,8 @@ def compute_gypsum_SI(Ksp=8.89912404553923e-09, feed_comp=None):
 if __name__ == '__main__':
 
     # concentration factor from 1 to 10
-    cf = np.linspace(1, 5, 10)
-    yvar = 'gamma_CaSO4_avg_mat'
+    cf = np.linspace(1, 5, 100)
+    yvar = 'SI_mat'
 
     Ksp = np.linspace(3.8e-9, 3.8e-8, 5)
     for ksp in Ksp:
@@ -179,8 +179,15 @@ if __name__ == '__main__':
                 "SO4_2-": 0.000407,
                 "H2O": 0.979046
             }
-            feed_comp.update((x, y * concentration_factor) for x, y in feed_comp.items())
-            # print(feed_comp)
+            feed_comp.update((x, y * concentration_factor) for x, y in feed_comp.items()
+                             if x != 'H2O')
+            ion_mol_fraction = 0
+            for x, k in feed_comp.items():
+                if x!='H2O':
+                    ion_mol_fraction += k
+            new_h2o = {"H2O": 1-ion_mol_fraction}
+            feed_comp.update(new_h2o)
+            print(feed_comp)
             SI, gamma_Ca, gamma_SO4, gamma_CaSO4_avg = compute_gypsum_SI(Ksp=ksp, feed_comp=feed_comp)
 
             SI_mat.append(SI)
