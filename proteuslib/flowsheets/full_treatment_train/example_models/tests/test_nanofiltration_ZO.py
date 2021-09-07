@@ -133,8 +133,8 @@ class TestNanofiltration():
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(m) == 82
-        assert number_total_constraints(m) == 67
+        assert number_variables(m) == 89
+        assert number_total_constraints(m) == 74
         assert number_unused_variables(m) == 1
 
     @pytest.mark.unit
@@ -211,3 +211,7 @@ class TestNanofiltration():
                 value(m.fs.unit.properties_permeate[0].conc_mol_phase_comp['Liq', 'Na']))
         assert (pytest.approx(2.891, rel=1e-3) ==
                 value(m.fs.unit.properties_permeate[0].conc_mol_phase_comp['Liq', 'SO4']))
+
+    @pytest.mark.unit
+    def test_report(self, unit_frame):
+        unit_frame.fs.unit.report()

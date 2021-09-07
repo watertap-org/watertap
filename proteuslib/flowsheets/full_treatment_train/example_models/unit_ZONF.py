@@ -16,14 +16,24 @@
 from pyomo.environ import ConcreteModel, Constraint
 from idaes.core import FlowsheetBlock
 from proteuslib.flowsheets.full_treatment_train.example_models.nanofiltration_ZO import NanofiltrationZO
-from idaes.core.util.scaling import calculate_scaling_factors
+from idaes.core.util.scaling import calculate_scaling_factors, constraint_scaling_transform
 from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
-def build_NF(m):
+def build_ZONF(m, base='ion'):
+    """
+    Builds a ZONF model based on specified rejection and solvent flux.
+    Requires prop_ion property package.
+    """
+
+    if base not in ['ion']:
+        raise ValueError('Unexpected property base {base} for build_ZONF'
+                         ''.format(base=base))
+    prop = property_models.get_prop(m, base=base)
+
     m.fs.NF = NanofiltrationZO(default={
-        "property_package": m.fs.prop_ion,
+        "property_package": prop,
         "has_pressure_change": False})
 
     # specify
@@ -42,21 +52,19 @@ def build_NF(m):
              sum(charge_comp[j]
                  * m.fs.NF.feed_side.properties_out[0].conc_mol_phase_comp['Liq', j]
                  for j in charge_comp))
-
-    # scaling
-    calculate_scaling_factors(m.fs.NF)
+    constraint_scaling_transform(m.fs.NF.eq_electroneutrality, 1)
 
 
-def run_example():
+def solve_ZONF(base='ion'):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    property_models.build_prop_ion(m)
-    build_NF(m)
-    # specify feed
-    property_models.specify_feed_ion(m.fs.NF.feed_side.properties_in[0])
+    property_models.build_prop(m, base=base)
+    build_ZONF(m, base=base)
+    property_models.specify_feed(m.fs.NF.feed_side.properties_in[0], base='ion')
 
     check_dof(m)
+    calculate_scaling_factors(m)
     solve_with_user_scaling(m)
 
     m.fs.NF.inlet.display()
@@ -67,5 +75,5 @@ def run_example():
 
 
 if __name__ == "__main__":
-    run_example()
+    solve_ZONF(base='ion')
 

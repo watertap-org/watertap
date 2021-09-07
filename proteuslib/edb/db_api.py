@@ -18,8 +18,11 @@ Database operations API
 import logging
 import re
 from typing import Dict, List, Optional, Union
+
 # third-party
 from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure
+
 # package
 from .data_model import Result, Component, Reaction, Base, DataWrapper
 
@@ -33,8 +36,14 @@ class ElectrolyteDB:
 
     This uses MongoDB as the underlying data store.
     """
-    DEFAULT_URL = "mongodb://localhost:27017"
+
+    DEFAULT_HOST = "localhost"
+    DEFAULT_PORT = 27017
+    DEFAULT_URL = f"mongodb://{DEFAULT_HOST}:{DEFAULT_PORT}"
     DEFAULT_DB = "electrolytedb"
+
+    # Default timeout, in ms, for sockets, connections, and server selection
+    timeout_ms = 5000
 
     # make sure these match lowercase names of the DataWrapper subclasses in
     # the `data_model` module
@@ -46,6 +55,53 @@ class ElectrolyteDB:
         self._database_name = db
         self._server_url = url
 
+    @staticmethod
+    def drop_database(url, db):
+        """Drop a database.
+
+        Args:
+            url: MongoDB server URL
+            db: Database name
+
+        Returns:
+            None
+
+        Raises:
+            anything pymongo.MongoClient() can raise
+        """
+        client = MongoClient(host=url)
+        client.drop_database(db)
+
+    @classmethod
+    def can_connect(cls, host=None, port=None, **kwargs):
+        result = True
+
+        if host is None:
+            host = cls.DEFAULT_HOST
+        if port is None:
+            port = cls.DEFAULT_PORT
+
+        # add timeouts (probably shorter than defaults)
+        timeout_args = {
+            "socketTimeoutMS": cls.timeout_ms,
+            "connectTimeoutMS": cls.timeout_ms,
+            "serverSelectionTimeoutMS": cls.timeout_ms,
+        }
+        kwargs.update(timeout_args)
+
+        client = MongoClient(host=host, port=port, **kwargs)
+
+        # This approach is taken directly from MongoClient docstring -dang
+        try:
+            # The ismaster command is cheap and does not require auth.
+            client.admin.command("ismaster")
+            _log.debug(f"MongoDB server at {host}:{port} is available")
+        except ConnectionFailure:
+            _log.error(f"MongoDB server at {host}:{port} is NOT available")
+            result = False
+
+        return result
+
     @property
     def database(self):
         return self._database_name
@@ -55,38 +111,58 @@ class ElectrolyteDB:
         return self._server_url
 
     def get_components(
-        self, component_names: Optional[List[str]] = None
+        self,
+        component_names: Optional[List[str]] = None,
+        element_names: Optional[List[str]] = None,
     ) -> Result:
         """Get thermodynamic information for components of reactions.
 
         Args:
             component_names: List of component names
+            element_names: List of element names (ignored if component_names is given)
 
         Returns:
-            All components matching the names (or all if not specified)
+            All components matching the criteria (or all if none specified)
         """
+        collection = self._db.component
         if component_names:
             query = {"$or": [{"name": n} for n in component_names]}
             _log.debug(f"get_components. components={component_names} query={query}")
+            it = collection.find(filter=query)
+        elif element_names:
+            elt_set, elt_list = set(element_names), list(element_names)
+            # Find all components with at least one of the specified elements,
+            # then filter results to include only components where the elements
+            # are a subset of the specified elements (i.e., no 'other' elements).
+            it = (
+                doc
+                for doc in collection.find({"elements": {"$in": elt_list}})
+                if set(doc["elements"]) <= elt_set
+            )
         else:
             _log.debug(f"get_components. get all components (empty query)")
-            query = {}
-        collection = self._db.component
-        result = Result(iterator=collection.find(filter=query), item_class=Component)
+            it = collection.find(filter={})
+        result = Result(iterator=it, item_class=Component)
         return result
 
     def get_reactions(
-        self, component_names: Optional[List] = None,
-            any_components: bool = False
+        self,
+        component_names: Optional[List] = None,
+        phases: Union[List[str], str] = None,
+        any_components: bool = False,
+        reaction_names: Optional[List] = None,
     ) -> Result:
         """Get reaction information.
 
         Args:
             component_names: List of component names
+            phases: Phase(s) to include; if not given allow any. Currently implemented
+                    only when `any_components` is False.
             any_components: If False, the default, only return reactions where
                one side of the reaction has all components provided.
                If true, return the (potentially larger) set of reactions where
                any of the components listed are present.
+            reaction_names: List of reaction names instead of component names
 
         Returns:
             All reactions containing any of the names (or all reactions,
@@ -94,31 +170,53 @@ class ElectrolyteDB:
         """
         collection = self._db.reaction
         if component_names:
-            if any_components:
-                # if it has a space and a charge, take the formula part only
-                cnames = [c.split(" ", 1)[0] for c in component_names]
-                query = {"components": {"$in": cnames}}
-                it = collection.find(filter=query)
+            found = []
+            if phases is None:
+                allow_phases = None
+            elif isinstance(phases, str):
+                allow_phases = {phases}
             else:
-                # normalize component names, build a set
-                cnames = {c.replace("_", " ") for c in component_names}
-                # Brute force table scan: need to restructure DB for this to be
-                # easy to do with a MongoDB query, i.e. need to put all the
-                # *keys* for stoichiometry.Liq as *values* in an array, then do a:
-                # {$not: {$elemMatch: { $nin: [<components>] } } } on that array
-                found = []
-                for item in collection.find():
-                    item_comp = set(item["stoichiometry"]["Liq"].keys())
-                    if item_comp.issubset(cnames):
-                        found.append(item)
-                it = iter(found)
+                allow_phases = set(phases)
+            # build a set of normalized component names
+            cnames = {c.replace(" ", "_") for c in component_names}
+            _log.debug(f"Get reaction with {'any' if any_components else 'all'} "
+                       f"components {cnames}")
+            # Brute force table scan: need to restructure DB for this to be
+            # easy to do with a MongoDB query, i.e. need to put all the
+            # *keys* for stoichiometry.Liq as *values* in an array, then do a:
+            # {$not: {$elemMatch: { $nin: [<components>] } } } on that array
+            stoich_field = Reaction.NAMES.stoich
+            for item in collection.find():
+                for phase in item[stoich_field].keys():
+                    if allow_phases is not None and phase not in allow_phases:
+                        continue
+                    stoich = item[stoich_field][phase]
+                    if any_components:
+                        # look for non-empty intersection
+                        if set(stoich.keys()) & cnames:
+                            found.append(item)
+                    else:
+                        # ok if it matches both sides
+                        if set(stoich.keys()) == cnames:
+                            found.append(item)
+                        # also ok if it matches everything on one side
+                        else:
+                            for side in -1, 1:
+                                side_keys = (k for k, v in stoich.items() if v == side)
+                                if set(side_keys) == cnames:
+                                    found.append(item)
+                                    break  # found; stop
+            it = iter(found)
+        elif reaction_names:
+            query = {"name": {"$in": reaction_names}}
+            _log.debug(f"reaction query: {query}")
+            it = collection.find(filter=query)
         else:
             it = collection.find()
         return Result(iterator=it, item_class=Reaction)
 
-    def get_base(self, name: str = None):
-        """Get base information by name of its type.
-        """
+    def get_base(self, name: str = None) -> Result:
+        """Get base information by name of its type."""
         if name:
             query = {"name": name}
         else:
@@ -127,7 +225,15 @@ class ElectrolyteDB:
         result = Result(iterator=collection.find(filter=query), item_class=Base)
         return result
 
-    def load(self, data: Union[Dict, List[Dict], DataWrapper, List[DataWrapper]], rec_type: str = "base") -> int:
+    def get_one_base(self, *args):
+        for result in self.get_base(*args):
+            return result
+
+    def load(
+        self,
+        data: Union[Dict, List[Dict], DataWrapper, List[DataWrapper]],
+        rec_type: str = "base",
+    ) -> int:
         """Load a single record or list of records.
 
         Args:
@@ -182,8 +288,7 @@ class ElectrolyteDB:
 
     @staticmethod
     def _process_species(s):
-        """Make species match https://jess.murdoch.edu.au/jess_spcdoc.shtml
-        """
+        """Make species match https://jess.murdoch.edu.au/jess_spcdoc.shtml"""
         m = re.match(r"([a-zA-Z0-9]+)\s*(\d*[\-+])?", s)
         if m is None:
             raise ValueError(f"Bad species: {s}")
@@ -206,7 +311,7 @@ def get_elements(components):
     for comp in components:
         # print(f"Get elements from: {comp}")
         for m in re.finditer(r"[A-Z][a-z]?", comp):
-            element = comp[m.start(): m.end()]
+            element = comp[m.start() : m.end()]
             if element[0] == "K" and len(element) > 1:
                 pass
             else:

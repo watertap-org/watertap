@@ -60,6 +60,24 @@ If you are going to use ProteusLib's functionality, but *do not* plan to contrib
 		python
 		>>> from proteuslib.unit_models import *
 
+.. _install-idaes-ext:
+
+Installing solvers distributed through IDAES Extensions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+After installing ProteusLib, the ``idaes get-extensions`` command can be used to automatically install the solvers distributed as part of the IDAES Extensions.
+
+.. important:: Depending on your operating system, additional steps might be needed. For more information, refer to the `IDAES installation guide <https://idaes-pse.readthedocs.io/en/stable/getting_started/index.html>`_.
+
+From the same environment where ProteusLib was installed, run:
+
+    .. code-block:: shell
+
+        idaes get-extensions
+
+.. note:: Typically, the ``idaes get-extensions`` command only needs to be run once for each system, as it will install the required files into a common, system-wide location.
+
+
 For ProteusLib developers
 -------------------------
 
@@ -86,6 +104,8 @@ If you plan to contribute to ProteusLib's codebase, choose this option.
 	.. code-block:: shell
 
 		pip install -r requirements-dev.txt
+
+#. If needed, follow the steps described in the ":ref:`install-idaes-ext`" section above to install solvers distributed through IDAES Extensions.
 
 #. To verify that the installation was successful, try running the ProteusLib test suite using ``pytest``:
 
@@ -114,13 +134,19 @@ When either the ``proteuslib`` package or one of its dependencies are installed,
         cd /path/to/your/clone
         git pull
 
+#. Uninstall the version of ``proteuslib`` that's currently installed in the environment:
+
+    .. code-block:: shell
+
+        pip uninstall proteuslib
+
 #. Run the ``pip install`` command targeting the ``requirements-dev.txt`` file.
 
     .. code-block:: shell
 
-        pip --no-cache-dir install --force-reinstall -r requirements-dev.txt
+        pip --no-cache-dir install -r requirements-dev.txt
 
-    .. note:: The ``--no-cache-dir`` and ``--force-install`` pip flags are used to ensure that existing packages are not erroneously reused by pip,
+    .. note:: The ``--no-cache-dir`` flag is used to ensure that existing packages are not erroneously reused by pip,
         which would cause the wrong (outdated) version to be present in the environment after installation.
 
 
