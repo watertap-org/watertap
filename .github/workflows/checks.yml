@@ -41,6 +41,8 @@ jobs:
           - python-version: '3.8'
             # limit uploading coverage report for a single Python version in the matrix
             cov_report: true
+          - python-version: '3.9'
+            os: linux
             # same for link-checking in the HTML docs so we don't slam external sites
             check_docs_links: true
           - os: linux
