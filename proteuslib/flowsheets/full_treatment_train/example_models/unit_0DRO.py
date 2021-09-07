@@ -24,7 +24,7 @@ from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
-def build_RO(m, base='TDS', level='simple'):
+def build_RO(m, base='TDS', level='simple', name_str='RO'):
     """
     Builds a 0DRO model at a specified level (simple or detailed).
     Requires prop_TDS property package.
@@ -36,41 +36,40 @@ def build_RO(m, base='TDS', level='simple'):
 
     if level == 'simple':
         # build unit
-        m.fs.RO = ReverseOsmosis0D(default={"property_package": prop})
+        setattr(m.fs, name_str, ReverseOsmosis0D(default={"property_package": prop}))
+        blk = getattr(m.fs, name_str)
 
         # specify unit
-        m.fs.RO.area.fix(50)
-        m.fs.RO.A_comp.fix(4.2e-12)
-        m.fs.RO.B_comp.fix(3.5e-8)
-        m.fs.RO.permeate.pressure[0].fix(101325)
+        blk.area.fix(50)
+        blk.A_comp.fix(4.2e-12)
+        blk.B_comp.fix(3.5e-8)
+        blk.permeate.pressure[0].fix(101325)
 
     elif level == 'detailed':
         # build unit
-        m.fs.RO = ReverseOsmosis0D(default={
+        setattr(m.fs, name_str, ReverseOsmosis0D(default={
             "property_package": prop,
             "has_pressure_change": True,
             "pressure_change_type": PressureChangeType.calculated,
             "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-            "concentration_polarization_type": ConcentrationPolarizationType.calculated})
+            "concentration_polarization_type": ConcentrationPolarizationType.calculated}))
+        blk = getattr(m.fs, name_str)
 
         # specify unit
-        m.fs.RO.area.fix(50)
-        m.fs.RO.A_comp.fix(4.2e-12)
-        m.fs.RO.B_comp.fix(3.5e-8)
-        m.fs.RO.permeate.pressure[0].fix(101325)
-        m.fs.RO.channel_height.fix(1e-3)
-        m.fs.RO.spacer_porosity.fix(0.97)
-        m.fs.RO.N_Re_io[0, 'in'].fix(500)
+        blk.area.fix(50)
+        blk.A_comp.fix(4.2e-12)
+        blk.B_comp.fix(3.5e-8)
+        blk.permeate.pressure[0].fix(101325)
+        blk.channel_height.fix(1e-3)
+        blk.spacer_porosity.fix(0.97)
+        blk.N_Re_io[0, 'in'].fix(500)
 
     else:
         raise ValueError('Unexpected argument {level} for level in build_RO'
                          ''.format(level=level))
 
-    # scale unit
-    calculate_scaling_factors(m.fs.RO)
 
-
-def solve_build_RO(base='TDS', level='simple'):
+def solve_RO(base='TDS', level='simple'):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     property_models.build_prop(m, base='TDS')
@@ -80,6 +79,9 @@ def solve_build_RO(base='TDS', level='simple'):
     # specify feed
     property_models.specify_feed(m.fs.RO.feed_side.properties_in[0], base='TDS')
     m.fs.RO.feed_side.properties_in[0].pressure.fix(50e5)
+
+    # scaling
+    calculate_scaling_factors(m)
 
     # initialize
     m.fs.RO.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
@@ -93,5 +95,5 @@ def solve_build_RO(base='TDS', level='simple'):
 
 
 if __name__ == "__main__":
-    solve_build_RO(base='TDS', level='simple')
-    solve_build_RO(base='TDS', level='detailed')
+    solve_RO(base='TDS', level='simple')
+    solve_RO(base='TDS', level='detailed')

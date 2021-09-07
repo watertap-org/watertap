@@ -167,6 +167,36 @@ class NanofiltrationData(UnitModelBlockData):
             units=units_meta('length') ** 2,
             doc='Membrane area')
 
+        def recovery_mass_phase_comp_initialize(b, t, p, j):
+            if j in self.config.property_package.solvent_set:
+                return 0.8
+            elif j in self.config.property_package.solute_set:
+                return 0.1
+
+        def recovery_mass_phase_comp_bounds(b, t, p, j):
+            ub = 1 - 1e-6
+            if j in self.config.property_package.solvent_set:
+                lb = 1e-2
+            elif j in self.config.property_package.solute_set:
+                lb = 1e-5
+            return lb, ub
+
+        self.recovery_mass_phase_comp = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            initialize=recovery_mass_phase_comp_initialize,
+            bounds=recovery_mass_phase_comp_bounds,
+            units=pyunits.dimensionless,
+            doc='Mass-based component recovery')
+        self.recovery_vol_phase = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            initialize=0.1,
+            bounds=(1e-2, 1 - 1e-6),
+            units=pyunits.dimensionless,
+            doc='Volumetric-based recovery')
+
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(default={
             "dynamic": False,
@@ -260,6 +290,19 @@ class NanofiltrationData(UnitModelBlockData):
             return (b.properties_permeate[t].conc_mol_phase_comp['Liq', j]
                     == b.feed_side.properties_in[t].conc_mol_phase_comp['Liq', j]
                     * (1 - b.rejection_phase_comp[t, p, j]))
+
+        @self.Constraint(self.flowsheet().config.time)
+        def eq_recovery_vol_phase(b, t):
+            return (b.recovery_vol_phase[t, 'Liq'] ==
+                    b.properties_permeate[t].flow_vol /
+                    b.feed_side.properties_in[t].flow_vol)
+
+        @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.component_list)
+        def eq_recovery_mass_phase_comp(b, t, j):
+            return (b.recovery_mass_phase_comp[t, 'Liq', j] ==
+                    b.properties_permeate[t].flow_mass_phase_comp['Liq', j] /
+                    b.feed_side.properties_in[t].flow_mass_phase_comp['Liq', j])
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="Isothermal assumption for permeate")
@@ -382,6 +425,16 @@ class NanofiltrationData(UnitModelBlockData):
             if iscale.get_scaling_factor(v) is None:
                 sf = 10 * iscale.get_scaling_factor(self.feed_side.properties_in[t].get_material_flow_terms(p, j))
                 iscale.set_scaling_factor(v, sf)
+        if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
+            iscale.set_scaling_factor(self.recovery_vol_phase, 1)
+
+        for (t, p, j), v in self.recovery_mass_phase_comp.items():
+            if j in self.config.property_package.solvent_set:
+                sf = 1
+            elif j in self.config.property_package.solute_set:
+                sf = 10
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
 
         # transforming constraints
         for ind, c in self.feed_side.eq_isothermal.items():
@@ -406,4 +459,11 @@ class NanofiltrationData(UnitModelBlockData):
 
         for t, c in self.eq_permeate_isothermal.items():
             sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].temperature)
+            iscale.constraint_scaling_transform(c, sf)
+        for t, c in self.eq_recovery_vol_phase.items():
+            sf = iscale.get_scaling_factor(self.recovery_vol_phase[t, 'Liq'])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for (t, j), c in self.eq_recovery_mass_phase_comp.items():
+            sf = iscale.get_scaling_factor(self.recovery_mass_phase_comp[t, 'Liq', j])
             iscale.constraint_scaling_transform(c, sf)

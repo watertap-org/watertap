@@ -133,8 +133,8 @@ class TestNanofiltration():
             assert isinstance(port, Port)
 
         # test statistics
-        assert number_variables(m) == 82
-        assert number_total_constraints(m) == 67
+        assert number_variables(m) == 89
+        assert number_total_constraints(m) == 74
         assert number_unused_variables(m) == 1
 
     @pytest.mark.unit

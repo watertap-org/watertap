@@ -41,7 +41,7 @@ What you will need
     required for others. Additionally, certain reactions can actually be defined
     in the **thermo-properties** dictionary and would therefore NOT be included in
     the **reaction-properties** dictionary. The differences will be covered in another
-    how-to guide.
+    how-to guide (see :ref:`How to use inherent reactions<how_to_use_inherent_reactions>`)
 
 
 The **thermo-properties** configuration dictionary
@@ -243,8 +243,9 @@ options available. More information can be found in `StateDefinition`_.
 The **reaction-properties** configuration dictionary
 ----------------------------------------------------
 
-If you did not include reactions in the **thermo-properties** dictionary (a topic
-discussed later) and your system involves reactions, then you MUST also create and
+If you did not include reactions in the **thermo-properties** dictionary
+(see :ref:`How to use inherent reactions<how_to_use_inherent_reactions>`)
+and your system involves reactions, then you MUST also create and
 provide a **reaction-properties** configuration dictionary. Unlike the **thermo-properties**
 configuration dictionary, most of the keys within the **reaction-properties** dictionary
 are optional and depend on your system. The major keys to be aware of are as follows...
@@ -285,7 +286,7 @@ reaction, we will model it as an equilibrium reaction.
     from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
 
     # Import built-in Gibb's Energy function
-    from idaes.generic_models.properties.core.reactions.equilibrium_constant import gibbs_energy
+    from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
 
     # Import safe log power law equation
     from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
@@ -305,13 +306,13 @@ reaction, we will model it as an equilibrium reaction.
                                      ("Liq", "H_+"): 1,
                                      ("Liq", "OH_-"): 1},
                    "heat_of_reaction": constant_dh_rxn,
-                   "equilibrium_constant": gibbs_energy,
+                   "equilibrium_constant": van_t_hoff,
                    "equilibrium_form": log_power_law_equil,
-                   "concentration_form": ConcentrationForm.molarity,
+                   "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
                        "dh_rxn_ref": (55.830, pyunits.kJ/pyunits.mol),
-                       "ds_rxn_ref": (-80.7, pyunits.J/pyunits.mol/pyunits.K),
-                       "T_eq_ref": (300, pyunits.K),
+                       "k_eq_ref": (10**-14/55.2/55.2, pyunits.dimensionless),
+                       "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry, so
                        #    we manually set reaction order here to override.

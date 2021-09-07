@@ -83,6 +83,8 @@ from idaes.core.util import scaling as iscale
 
 from idaes.core.util import get_solver
 
+__author__ = "Austin Ladshaw"
+
 # Get default solver for testing
 solver = get_solver()
 
@@ -90,6 +92,7 @@ solver = get_solver()
 def build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0):
     property_models.build_prop(model, base='TDS')
     unit_separator.build_SepRO(model)
+    iscale.calculate_scaling_factors(model.fs.RO)
     property_models.specify_feed(model.fs.RO.mixed_state[0], base='TDS')
 
     total_molar_density = 1/18*1000 #mol/L
@@ -137,7 +140,7 @@ def build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0):
     model.fs.RO_to_Chlor.Na_con = Constraint(
         expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "Na_+"] ==
             (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']/58.4e-3) /
-             model.fs.RO_to_Chlor.outlet.flow_mol[0] + total_chlorine_inlet/total_molar_density)
+             model.fs.RO_to_Chlor.outlet.flow_mol[0] + model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OCl_-"])
 
     model.fs.RO_to_Chlor.H2O_con = Constraint(
         expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "H2O"] == 1 -
@@ -176,6 +179,7 @@ def build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0):
     #       May have to remove translator constraints? or put added chlorine in those
     #       constraints? Or add a mixer block before the chlorination?
     model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "OCl_-"].unfix()
+    model.fs.simple_naocl_unit.dosing_rate.unfix()
     model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "Na_+"].unfix()
     model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "H2O"].unfix()
 
@@ -192,7 +196,40 @@ def run_SepRO_Chlorination_flowsheet_example():
     # Call the sequential decomposition initializer tool
     seq_decomp_initializer(model)
 
-    # fun the full solve
+    # run the full solve
+    solve_with_user_scaling(model, tee=True)
+
+    model.fs.RO.inlet.display()
+    model.fs.RO.permeate.display()
+    model.fs.RO.retentate.display()
+
+    model.fs.RO_to_Chlor.inlet.display()
+    model.fs.RO_to_Chlor.outlet.display()
+
+    display_results_of_chlorination(model.fs.simple_naocl_unit)
+
+    return model
+
+def run_SepRO_Chlorination_flowsheet_with_outlet_constraint_example():
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(default={"dynamic": False})
+
+    # build the flow sheet (if constraining outlet, becareful of your initial guess for
+    #       the added NaOCl. Scaling is dependent on good guesses)
+    build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=3)
+
+    # Call the sequential decomposition initializer tool
+    seq_decomp_initializer(model)
+
+    #Redefine the constraints and fixed vars here
+    # Here we fix the exit free chlorine then remove the
+    #   constraint the defines the amount of OCl from the translator
+    #   block to the chlorination process. We are essentially using
+    #   the translator block as both a translator and a mixer.
+    model.fs.simple_naocl_unit.free_chlorine.fix(2)
+    model.fs.RO_to_Chlor.OCl_con.deactivate()
+
+    # run the full solve
     solve_with_user_scaling(model, tee=True)
 
     model.fs.RO.inlet.display()
@@ -208,3 +245,4 @@ def run_SepRO_Chlorination_flowsheet_example():
 
 if __name__ == "__main__":
     model = run_SepRO_Chlorination_flowsheet_example()
+    model = run_SepRO_Chlorination_flowsheet_with_outlet_constraint_example()
