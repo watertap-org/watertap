@@ -53,12 +53,10 @@ def build_flowsheet_limited_NF(m, has_bypass=True, has_desal_feed=False, is_twos
 
 
 def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flowsheet):
+    is_twostage = kwargs_flowsheet['is_twostage']
 
-    if kwargs_flowsheet['is_twostage']:
-        raise Exception('Two stage optimization is a work in progress, it currently does not converge.')
-
-    if kwargs_flowsheet['is_twostage']:
-        product_water_sb = m.fs.RO2.permeate_side.properties_mixed[0]
+    if is_twostage:
+        product_water_sb = m.fs.mixer_permeate.mixed_state[0]
         RO_waste_sb = m.fs.RO2.feed_side.properties_out[0]
     else:
         product_water_sb = m.fs.RO.permeate_side.properties_mixed[0]
@@ -79,7 +77,7 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
 
     # set objective
     m.fs.objective = Objective(expr=m.fs.NF.area/2.+m.fs.RO.area+m.fs.pump_RO.work_mechanical[0]/1e2+
-            (m.fs.RO2.area + m.fs.pump_RO2.work_mechanical[0]/1e2 if kwargs_flowsheet['is_twostage'] else 0.) )
+            (m.fs.RO2.area + m.fs.pump_RO2.work_mechanical[0]/1e2 if is_twostage else 0.) )
 
     # unfix variables
     m.fs.splitter.split_fraction[0, 'bypass'].unfix()
@@ -119,14 +117,12 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
     m.fs.RO_flux = Expression(
         expr=m.fs.RO.permeate_side.properties_mixed[0].flow_vol / m.fs.RO.area)
 
-    if kwargs_flowsheet['is_twostage']:
+    if is_twostage:
         m.fs.RO2_flux = Expression(
             expr=m.fs.RO2.permeate_side.properties_mixed[0].flow_vol / m.fs.RO2.area)
 
-    if kwargs_flowsheet['is_twostage']:
-        m.fs.equal_permeate_production = Constraint(
-            expr=m.fs.RO.permeate_side.properties_mixed[0].flow_vol
-                 == m.fs.RO2.permeate_side.properties_mixed[0].flow_vol)
+    m.fs.total_work = Expression(expr=m.fs.pump_RO.work_mechanical[0] +
+                                    (m.fs.pump_RO2.work_mechanical[0] if is_twostage else 0.))
 
     # scaling constraint (maximum Ca concentration)
     m.fs.brine_conc_mol_Ca = Expression(
@@ -138,7 +134,7 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
              <= m.fs.feed.properties[0].conc_mol_phase_comp['Liq', 'Ca']
              * max_conc_factor)
 
-    check_dof(m, dof_expected=4 if kwargs_flowsheet['is_twostage'] else 3)
+    check_dof(m, dof_expected=5 if is_twostage else 3)
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
 
@@ -193,4 +189,4 @@ if __name__ == "__main__":
         'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
     # solve_flowsheet_limited_NF(**kwargs_flowsheet)
-    m = solve_optimization(system_recovery=0.70, max_conc_factor=3, **kwargs_flowsheet)
+    m = solve_optimization(system_recovery=0.78, max_conc_factor=3, **kwargs_flowsheet)
