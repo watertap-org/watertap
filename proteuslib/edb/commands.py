@@ -36,6 +36,7 @@ def get_edb_data(filename: str) -> pathlib.Path:
         Path object for file.
     """
     from proteuslib import _ROOT
+
     return _ROOT / "edb" / "data" / filename
 
 
@@ -103,7 +104,7 @@ def command_base(verbose, quiet):
     "input_file",
     help="File to load",
     type=click.File("r"),
-    default=None
+    default=None,
 )
 @click.option(
     "-t",
@@ -120,11 +121,17 @@ def command_base(verbose, quiet):
     "-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB
 )
 @click.option(
-    "--validate/--no-validate", " /-n", help="Turn on or off validation of input", default=True
+    "--validate/--no-validate",
+    " /-n",
+    help="Turn on or off validation of input",
+    default=True,
 )
 @click.option(
-    "-b", "--bootstrap", help="Bootstrap a new database by loading in the standard base data", is_flag=True,
-    default=False
+    "-b",
+    "--bootstrap",
+    help="Bootstrap a new database by loading in the standard base data",
+    is_flag=True,
+    default=False,
 )
 def load_data(input_file, data_type, url, database, validate, bootstrap):
     if bootstrap:
@@ -132,8 +139,10 @@ def load_data(input_file, data_type, url, database, validate, bootstrap):
             edb = _connect(url, database)
             _load_bootstrap(edb, do_validate=validate)
         else:
-            click.echo(f"Cannot bootstrap: database {database} at {url} already exists "
-                       f"and has one or more of the EDB collections")
+            click.echo(
+                f"Cannot bootstrap: database {database} at {url} already exists "
+                f"and has one or more of the EDB collections"
+            )
             return -1
     else:
         if input_file is None:
@@ -192,8 +201,9 @@ def _db_is_empty(url, database):
     if not collections:
         return True
     if not {"base", "component", "reaction"}.intersection(collections):
-        _log.warning("Bootstrapping into non-empty database,"
-                     "but without any EDB collections")
+        _log.warning(
+            "Bootstrapping into non-empty database," "but without any EDB collections"
+        )
         return True
     return False
 
@@ -207,8 +217,10 @@ def _load_bootstrap(edb, **kwargs):
         _load(path.open("r"), t, edb, **kwargs)
     _log.info(f"End: Bootstrapping database {edb.database} at {edb.url}")
 
+
 #################################################################################
 # DUMP command
+# Save JSON records to a file
 #################################################################################
 
 
@@ -260,15 +272,57 @@ def dump_data(output_file, data_type, url, database):
     n = len(record_list)
     json.dump(record_list, output_file)
     if print_messages:
-        click.echo(f"Wrote {n} record(s) from collection '{data_type}' to file '{filename}'")
+        click.echo(
+            f"Wrote {n} record(s) from collection '{data_type}' to file '{filename}'"
+        )
 
+
+#################################################################################
+# DROP command
+# Drop a database
+#################################################################################
+
+
+def abort_drop_db(ctx, param, value):
+    if not value:
+        ctx.abort()
+
+
+@command_base.command(name="drop", help="Drop a database in the Electrolyte Database")
+@click.option(
+    "-u", "--url", help="Database connection URL", default=ElectrolyteDB.DEFAULT_URL
+)
+@click.option(
+    "-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB
+)
+@click.option(
+    "--yes",
+    is_flag=True,
+)
+def drop_database(url, database, yes):
+    print_messages = _log.isEnabledFor(logging.ERROR)
+
+    # attempt to connect
+    if not ElectrolyteDB.can_connect(url):
+        raise click.Abort()
+
+    if not yes:
+        confirm = click.prompt(
+            f"Are you sure you want to drop the database {database} at {url}",
+            type=click.Choice(("y", "N"), case_sensitive=False),
+            default="n",
+        )
+        if confirm.lower() != "y":
+            raise click.Abort()
+
+    click.echo(f"Dropping database {database} at {url} ...")
+    ElectrolyteDB.drop_database(url, database)
+    click.echo(f"Done")
 
 #################################################################################
 # SCHEMA command
 #################################################################################
-@command_base.command(
-    name="schema", help="Show JSON schemas, in raw or readable forms"
-)
+@command_base.command(name="schema", help="Show JSON schemas, in raw or readable forms")
 @click.option(
     "-f",
     "--file",
@@ -282,7 +336,9 @@ def dump_data(output_file, data_type, url, database):
     "output_format",
     help="Output format",
     default="markdown",
-    type=click.Choice(["json", "json-compact", "markdown", "html", "html-js"], case_sensitive=False)
+    type=click.Choice(
+        ["json", "json-compact", "markdown", "html", "html-js"], case_sensitive=False
+    ),
 )
 @click.option(
     "-t",

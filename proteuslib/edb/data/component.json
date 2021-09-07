@@ -1,7 +1,7 @@
 [
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -84,7 +84,7 @@
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -162,12 +162,13 @@
         }
       ]
     },
-    "name": "CaOH +",
-    "type": "cation"
+    "name": "CaOH_+",
+    "type": "cation",
+    "charge": 1
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -245,12 +246,13 @@
         }
       ]
     },
-    "name": "Ca 2+",
-    "type": "cation"
+    "name": "Ca_2+",
+    "type": "cation",
+    "charge": 2
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -328,12 +330,13 @@
         }
       ]
     },
-    "name": "Cl -",
-    "type": "anion"
+    "name": "Cl_-",
+    "type": "anion",
+    "charge": -1
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -411,12 +414,13 @@
         }
       ]
     },
-    "name": "CO3 2-",
+    "name": "CO3_2-",
+    "charge": -2,
     "type": "anion"
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -499,7 +503,7 @@
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -577,12 +581,13 @@
         }
       ]
     },
-    "name": "H2PO4 -",
-    "type": "anion"
+    "name": "H2PO4_-",
+    "type": "anion",
+    "charge": -1
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -665,7 +670,7 @@
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -748,7 +753,7 @@
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -826,12 +831,13 @@
         }
       ]
     },
-    "name": "HCO3 -",
-    "type": "anion"
+    "name": "HCO3_-",
+    "type": "anion",
+     "charge": -1
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -914,7 +920,7 @@
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -992,12 +998,13 @@
         }
       ]
     },
-    "name": "HPO4 2-",
-    "type": "anion"
+    "name": "HPO4_2-",
+    "type": "anion",
+     "charge": -2
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -1075,12 +1082,13 @@
         }
       ]
     },
-    "name": "HSO4 -",
-    "type": "anion"
+    "name": "HSO4_-",
+    "type": "anion",
+    "charge": -1
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -1158,12 +1166,13 @@
         }
       ]
     },
-    "name": "H +",
-    "type": "cation"
+    "name": "H_+",
+    "type": "cation",
+    "charge": 1
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -1246,7 +1255,7 @@
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -1324,12 +1333,13 @@
         }
       ]
     },
-    "name": "Na +",
-    "type": "cation"
+    "name": "Na_+",
+    "type": "cation",
+    "charge": 1
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -1412,7 +1422,7 @@
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -1495,7 +1505,7 @@
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -1573,12 +1583,13 @@
         }
       ]
     },
-    "name": "NH4 +",
-    "type": "cation"
+    "name": "NH4_+",
+    "type": "cation",
+    "charge": 1
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -1661,7 +1672,7 @@
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -1739,12 +1750,13 @@
         }
       ]
     },
-    "name": "OCl -",
-    "type": "anion"
+    "name": "OCl_-",
+    "type": "anion",
+    "charge": -1
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -1822,12 +1834,13 @@
         }
       ]
     },
-    "name": "OH -",
-    "type": "anion"
+    "name": "OH_-",
+    "type": "anion",
+    "charge": -1
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -1905,12 +1918,13 @@
         }
       ]
     },
-    "name": "PO4 3-",
-    "type": "anion"
+    "name": "PO4_3-",
+    "type": "anion",
+    "charge": -3
   },
   {
     "valid_phase_types": [
-      "PT.liquidPhase"
+      "PT.aqueousPhase"
     ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
@@ -1988,8 +2002,9 @@
         }
       ]
     },
-    "name": "SO4 2-",
-    "type": "anion"
+    "name": "SO4_2-",
+    "type": "anion",
+    "charge": -2
   },
   {
     "dens_mol_liq_comp": "Perrys",
@@ -2146,7 +2161,7 @@
       "pressure_sat_comp_coeff": [
         {
           "v": 6.81228,
-          "u": "dimensionless",
+          "u": "",
           "i": "A"
         },
         {
@@ -2312,7 +2327,7 @@
       "pressure_sat_comp_coeff": [
         {
           "v": 4.6543,
-          "u": "dimensionless",
+          "u": "",
           "i": "A"
         },
         {
@@ -2485,7 +2500,7 @@
       "pressure_sat_comp_coeff": [
         {
           "v": 4.86886,
-          "u": "dimensionless",
+          "u": "",
           "i": "A"
         },
         {

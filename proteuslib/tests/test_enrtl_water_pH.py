@@ -228,12 +228,9 @@ water_thermo_config = {
                        #        HOWEVER, the typical Kw dissociation constant of
                        #        1e-14 is defined on a molar basis. Thus, we must
                        #        divide by the total (~55.2 M) concentration raised to the
-                       #        net reaction order (i.e., 2 in this case). Furthermore,
-                       #        IDAES internally does molar basis as mol/m**3, thus,
-                       #        we divide here by 1000**2 to perform both necessary
-                       #        unit conversions in line.
+                       #        net reaction order (i.e., 2 in this case).
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                       "k_eq_ref": (10**-14/1000**2/55.2**2,pyunits.mol**2/pyunits.L**2),
+                       "k_eq_ref": (10**-14/55.2**2,pyunits.dimensionless),
                        "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
@@ -634,12 +631,9 @@ carbonic_thermo_config = {
                        #        HOWEVER, the typical Kw dissociation constant of
                        #        1e-14 is defined on a molar basis. Thus, we must
                        #        divide by the total (~55.2 M) concentration raised to the
-                       #        net reaction order (i.e., 2 in this case). Furthermore,
-                       #        IDAES internally does molar basis as mol/m**3, thus,
-                       #        we divide here by 1000**2 to perform both necessary
-                       #        unit conversions in line.
+                       #        net reaction order (i.e., 2 in this case).
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                       "k_eq_ref": (10**-14/1000/1000/55.2/55.2,pyunits.mol**2/pyunits.L**2),
+                       "k_eq_ref": (10**-14/55.2**2, pyunits.dimensionless),
                        "T_eq_ref": (298, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
@@ -665,12 +659,9 @@ carbonic_thermo_config = {
                        #        HOWEVER, the typical Ka1 dissociation constant of
                        #        10**-6.33 is defined on a molar basis. Thus, we must
                        #        divide by the total (~55.2 M) concentration raised to the
-                       #        net reaction order (i.e., 1 in this case). Furthermore,
-                       #        IDAES internally does molar basis as mol/m**3, thus,
-                       #        we divide here by 1000 to perform both necessary
-                       #        unit conversions in line.
+                       #        net reaction order (i.e., 1 in this case). 
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                       "k_eq_ref": (10**-6.33/1000/55.2,pyunits.mol/pyunits.L),
+                       "k_eq_ref": (10**-6.33/55.2,pyunits.dimensionless),
                        "T_eq_ref": (300, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
@@ -696,12 +687,9 @@ carbonic_thermo_config = {
                        #        HOWEVER, the typical Ka1 dissociation constant of
                        #        10**-10.35 is defined on a molar basis. Thus, we must
                        #        divide by the total (~55.2 M) concentration raised to the
-                       #        net reaction order (i.e., 1 in this case). Furthermore,
-                       #        IDAES internally does molar basis as mol/m**3, thus,
-                       #        we divide here by 1000 to perform both necessary
-                       #        unit conversions in line.
+                       #        net reaction order (i.e., 1 in this case).                       
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
-                       "k_eq_ref": (10**-10.35/1000/55.2,pyunits.mol/pyunits.L),
+                       "k_eq_ref": (10**-10.35/55.2,pyunits.dimensionless),
                        "T_eq_ref": (300, pyunits.K),
 
                        # By default, reaction orders follow stoichiometry
@@ -860,8 +848,9 @@ class TestENRTLcarbonicAcid():
         pH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"])*55.2)
         pOH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","OH_-"])*55.2)
 
-        assert pytest.approx(8.27544, rel=1e-4) == pH
-        assert pytest.approx(5.72455, rel=1e-4) == pOH
+        assert pytest.approx(8.28, rel=1e-2) == pH
+        assert pytest.approx(5.72, rel=1e-2) == pOH
+        assert pytest.approx(14.00, rel=1e-2) == pH + pOH
 
         gamma = {}
         for index in model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp:
