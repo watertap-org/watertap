@@ -52,9 +52,17 @@ def build_flowsheet_limited_NF(m, has_bypass=True, has_desal_feed=False, is_twos
     return m
 
 
-def set_up_optimization(m, has_bypass=True, NF_type='ZO', NF_base='ion',
-                        RO_type='0D', RO_base='TDS', RO_level='simple',
-                        system_recovery=0.75, max_conc_factor=3, RO_flux=20):
+def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, RO_flux=20, **kwargs_flowsheet):
+
+    if kwargs_flowsheet['is_twostage']:
+        raise Exception('Two stage optimization is a work in progress, it currently does not converge.')
+
+    if kwargs_flowsheet['is_twostage']:
+        product_water_sb = m.fs.RO2.permeate_side.properties_mixed[0]
+        RO_waste_sb = m.fs.RO2.feed_side.properties_out[0]
+    else:
+        product_water_sb = m.fs.RO.permeate_side.properties_mixed[0]
+        RO_waste_sb = m.fs.RO.feed_side.properties_out[0]
 
     # touch some properties used in optimization
     m.fs.feed.properties[0].flow_vol
@@ -63,13 +71,11 @@ def set_up_optimization(m, has_bypass=True, NF_type='ZO', NF_base='ion',
     m.fs.tb_pretrt_to_desal.properties_in[0].flow_vol
     m.fs.tb_pretrt_to_desal.properties_in[0].conc_mol_phase_comp['Liq', 'Ca']
 
-    m.fs.RO.feed_side.properties_out[0].flow_vol
-    m.fs.RO.permeate_side.properties_mixed[0].flow_vol
+    product_water_sb.flow_vol
+    RO_waste_sb.flow_vol
 
-    # iscale.calculate_scaling_factors(m.fs.RO.feed_side)
-    # iscale.calculate_scaling_factors(m.fs.RO.permeate_side)
-    # iscale.calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
-    # iscale.calculate_scaling_factors(m.fs.feed)
+    # scale
+    calculate_scaling_factors(m)
 
     # set objective
     m.fs.objective = Objective(expr=m.fs.NF.area)
@@ -77,10 +83,10 @@ def set_up_optimization(m, has_bypass=True, NF_type='ZO', NF_base='ion',
     # unfix variables
     m.fs.splitter.split_fraction[0, 'bypass'].unfix()
     m.fs.splitter.split_fraction[0, 'bypass'].setlb(0.001)
-    m.fs.splitter.split_fraction[0, 'bypass'].setub(0.9)
+    m.fs.splitter.split_fraction[0, 'bypass'].setub(0.99)
 
     m.fs.NF.area.unfix()
-    m.fs.NF.area.setlb(50)
+    m.fs.NF.area.setlb(10)
     m.fs.NF.area.setub(1000)
 
     m.fs.pump_RO.control_volume.properties_out[0].pressure.unfix()
@@ -91,26 +97,44 @@ def set_up_optimization(m, has_bypass=True, NF_type='ZO', NF_base='ion',
     m.fs.RO.area.setlb(10)
     m.fs.RO.area.setub(300)
 
+    if kwargs_flowsheet['is_twostage']:
+        m.fs.pump_RO2.control_volume.properties_out[0].pressure.unfix()
+        m.fs.pump_RO2.control_volume.properties_out[0].pressure.setlb(20e5)
+        m.fs.pump_RO2.control_volume.properties_out[0].pressure.setub(120e5)
+
+        m.fs.RO2.area.unfix()
+        m.fs.RO2.area.setlb(10)
+        m.fs.RO2.area.setub(300)
+
     # add additional constraints
     # fixed system recovery
     m.fs.system_recovery = Expression(
-        expr=m.fs.RO.permeate_side.properties_mixed[0].flow_vol
-             / m.fs.feed.properties[0].flow_vol)
+        expr=product_water_sb.flow_vol / m.fs.feed.properties[0].flow_vol)
     m.fs.eq_system_recovery = Constraint(
         expr=m.fs.system_recovery == system_recovery)
 
     # fixed RO water flux
     m.fs.RO_flux = Expression(
-        expr=m.fs.RO.permeate_side.properties_mixed[0].flow_vol
-             / m.fs.RO.area)
+        expr=m.fs.RO.permeate_side.properties_mixed[0].flow_vol / m.fs.RO.area)
     m.fs.eq_RO_flux = Constraint(
         expr=m.fs.RO_flux == RO_flux / 1000 / 3600)
+
+    if kwargs_flowsheet['is_twostage']:
+        m.fs.RO2_flux = Expression(
+            expr=m.fs.RO2.permeate_side.properties_mixed[0].flow_vol / m.fs.RO2.area)
+        m.fs.eq_RO2_flux = Constraint(
+            expr=m.fs.RO2_flux == RO_flux / 1000 / 3600)
+
+    if kwargs_flowsheet['is_twostage']:
+        m.fs.equal_permeate_production = Constraint(
+            expr=m.fs.RO.permeate_side.properties_mixed[0].flow_vol
+                 == m.fs.RO2.permeate_side.properties_mixed[0].flow_vol)
 
     # scaling constraint (maximum Ca concentration)
     m.fs.brine_conc_mol_Ca = Expression(
         expr=m.fs.tb_pretrt_to_desal.properties_in[0].conc_mol_phase_comp['Liq', 'Ca']
              * m.fs.tb_pretrt_to_desal.properties_in[0].flow_vol
-             / m.fs.RO.feed_side.properties_out[0].flow_vol)
+             / RO_waste_sb.flow_vol)
     m.fs.eq_max_conc_mol_Ca = Constraint(
         expr=m.fs.brine_conc_mol_Ca
              <= m.fs.feed.properties[0].conc_mol_phase_comp['Liq', 'Ca']
@@ -150,23 +174,25 @@ def solve_flowsheet_limited_NF(**kwargs):
     return m
 
 
-def solve_set_up_optimization(has_bypass=True, NF_type='ZO', NF_base='ion',
-                              RO_type='OD', RO_base='TDS', RO_level='simple',
-                              system_recovery=0.75, max_conc_factor=3, RO_flux=10):
+def solve_optimization(system_recovery=0.75, max_conc_factor=3, RO_flux=10, **kwargs_flowsheet):
 
-    m = solve_flowsheet_limited_NF(has_bypass=has_bypass, NF_type=NF_type, NF_base=NF_base,
-                                         RO_type=RO_type, RO_base=RO_base, RO_level=RO_level)
+    m = solve_flowsheet_limited_NF(**kwargs_flowsheet)
 
     print('\n****** Optimization *****\n')
-    set_up_optimization(m, has_bypass=has_bypass, NF_type=NF_type, NF_base=NF_base,
-                        RO_type=RO_type, RO_base=RO_base, RO_level=RO_level,
-                        system_recovery=system_recovery, max_conc_factor=max_conc_factor, RO_flux=RO_flux)
+    set_up_optimization(m, system_recovery=system_recovery, max_conc_factor=max_conc_factor,
+                        RO_flux=RO_flux, **kwargs_flowsheet)
+
+    pretreatment.display_pretreatment_NF(m, **kwargs_flowsheet)
+    m.fs.tb_pretrt_to_desal.report()
+    desalination.display_desalination(m, **kwargs_flowsheet)
 
     return m
 
 
 if __name__ == "__main__":
-    solve_flowsheet_limited_NF(has_bypass=True,  has_desal_feed=False, is_twostage=True,
-                                     NF_type='ZO', NF_base='ion',
-                                     RO_type='0D', RO_base='TDS', RO_level='detailed')
-
+    kwargs_flowsheet = {
+        'has_bypass': True, 'has_desal_feed': False, 'is_twostage': False,
+        'NF_type': 'ZO', 'NF_base': 'ion',
+        'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
+    # solve_flowsheet_limited_NF(**kwargs_flowsheet)
+    solve_optimization(system_recovery=0.78, max_conc_factor=3, RO_flux=50, **kwargs_flowsheet)
