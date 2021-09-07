@@ -97,5 +97,6 @@ Class Documentation
 -------------------
 
 .. automodule:: proteuslib.unit_models.pressure_exchanger
-   :members:
+    :noindex:
+    :members:
 
