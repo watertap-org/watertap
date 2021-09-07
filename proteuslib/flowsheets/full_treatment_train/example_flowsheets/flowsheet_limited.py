@@ -17,25 +17,31 @@ from pyomo.environ import ConcreteModel, Objective, Expression, Constraint, Tran
 from pyomo.network import Arc
 from pyomo.util import infeasible
 from idaes.core import FlowsheetBlock
-import idaes.core.util.scaling as iscale
+from idaes.core.util.scaling import (calculate_scaling_factors,
+                                     unscaled_constraints_generator,
+                                     unscaled_variables_generator)
+from idaes.core.util.initialization import propagate_state
 from proteuslib.flowsheets.full_treatment_train.example_flowsheets import pretreatment, desalination, translator_block
 from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
-def build_flowsheet_limited_NF(m, has_bypass=True, is_twostage=False, NF_type='ZO', NF_base='ion',
+def build_flowsheet_limited_NF(m, has_bypass=True, has_desal_feed=False, is_twostage=False,
+                               NF_type='ZO', NF_base='ion',
                                RO_type='Sep', RO_base='TDS', RO_level='simple'):
     """
     Build a flowsheet with NF pretreatment and RO.
     """
+    # set up keyword arguments for the sections of treatment train
+    kwargs_pretreatment = {'has_bypass': has_bypass, 'NF_type': NF_type, 'NF_base': NF_base}
+    kwargs_desalination = {'has_desal_feed': has_desal_feed, 'is_twostage': is_twostage,
+                           'RO_type': RO_type, 'RO_base': RO_base, 'RO_level': RO_level}
     # build flowsheet
     property_models.build_prop(m, base=NF_base)
-    pretrt_port = pretreatment.build_pretreatment_NF(
-        m, has_bypass=has_bypass, NF_type=NF_type, NF_base=NF_base)
+    pretrt_port = pretreatment.build_pretreatment_NF(m, **kwargs_pretreatment)
 
-    property_models.build_prop(m, base='TDS')
-    desal_port = desalination.build_desalination_RO(
-        m, has_feed=False, is_twostage=is_twostage, RO_type=RO_type, RO_base=RO_base, RO_level=RO_level)
+    property_models.build_prop(m, base=RO_base)
+    desal_port = desalination.build_desalination(m, **kwargs_desalination)
 
     translator_block.build_tb(m, base_inlet=NF_base, base_outlet=RO_base, name_str='tb_pretrt_to_desal')
 
@@ -60,10 +66,10 @@ def set_up_optimization(m, has_bypass=True, NF_type='ZO', NF_base='ion',
     m.fs.RO.feed_side.properties_out[0].flow_vol
     m.fs.RO.permeate_side.properties_mixed[0].flow_vol
 
-    iscale.calculate_scaling_factors(m.fs.RO.feed_side)
-    iscale.calculate_scaling_factors(m.fs.RO.permeate_side)
-    iscale.calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
-    iscale.calculate_scaling_factors(m.fs.feed)
+    # iscale.calculate_scaling_factors(m.fs.RO.feed_side)
+    # iscale.calculate_scaling_factors(m.fs.RO.permeate_side)
+    # iscale.calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
+    # iscale.calculate_scaling_factors(m.fs.feed)
 
     # set objective
     m.fs.objective = Objective(expr=m.fs.NF.area)
@@ -114,34 +120,32 @@ def set_up_optimization(m, has_bypass=True, NF_type='ZO', NF_base='ion',
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
 
-def solve_build_flowsheet_limited_NF(has_bypass=True, is_twostage=False, NF_type='ZO', NF_base='ion',
-                                     RO_type='0D', RO_base='TDS', RO_level='simple'):
+def solve_flowsheet_limited_NF(**kwargs):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    build_flowsheet_limited_NF(m, has_bypass=has_bypass, is_twostage=is_twostage, NF_type=NF_type, NF_base=NF_base,
-                               RO_type=RO_type, RO_base=RO_base, RO_level=RO_level)
-
+    build_flowsheet_limited_NF(m, **kwargs)
     TransformationFactory("network.expand_arcs").apply_to(m)
-    check_dof(m)
-    solve_with_user_scaling(m, tee=False, fail_flag=False)
 
-    # if has_bypass:
-    #     m.fs.feed.report()
-    #     m.fs.splitter.report()
-    #     m.fs.NF.inlet.display()
-    #     m.fs.NF.permeate.display()
-    #     m.fs.NF.retentate.display()
-    #     m.fs.mixer.report()
-    #     m.fs.RO.report()
-    #     m.fs.RO.permeate.display()
-    #     m.fs.RO2.report()
-    #     m.fs.mixer_permeate.report()
-    # else:
-    #     m.fs.feed.report()
-    #     m.fs.NF.inlet.display()
-    #     m.fs.NF.permeate.display()
-    #     m.fs.NF.retentate.display()
-    #     m.fs.RO.report()
+    # scale
+    pretreatment.scale_pretreatment_NF(m, **kwargs)
+    calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
+    desalination.scale_desalination(m, **kwargs)
+    calculate_scaling_factors(m)
+
+    # initialize
+    optarg = {'nlp_scaling_method': 'user-scaling'}
+    pretreatment.initialize_pretreatment_NF(m, **kwargs)
+    propagate_state(m.fs.s_pretrt_tb)
+    m.fs.tb_pretrt_to_desal.initialize(optarg=optarg)
+    propagate_state(m.fs.s_tb_desal)
+    desalination.initialize_desalination(m, **kwargs)
+
+    check_dof(m)
+    solve_with_user_scaling(m, tee=False, fail_flag=True)
+
+    pretreatment.display_pretreatment_NF(m, **kwargs)
+    m.fs.tb_pretrt_to_desal.report()
+    desalination.display_desalination(m, **kwargs)
 
     return m
 
@@ -150,7 +154,7 @@ def solve_set_up_optimization(has_bypass=True, NF_type='ZO', NF_base='ion',
                               RO_type='OD', RO_base='TDS', RO_level='simple',
                               system_recovery=0.75, max_conc_factor=3, RO_flux=10):
 
-    m = solve_build_flowsheet_limited_NF(has_bypass=has_bypass, NF_type=NF_type, NF_base=NF_base,
+    m = solve_flowsheet_limited_NF(has_bypass=has_bypass, NF_type=NF_type, NF_base=NF_base,
                                          RO_type=RO_type, RO_base=RO_base, RO_level=RO_level)
 
     print('\n****** Optimization *****\n')
@@ -162,63 +166,7 @@ def solve_set_up_optimization(has_bypass=True, NF_type='ZO', NF_base='ion',
 
 
 if __name__ == "__main__":
-    # optimization
-    # m = solve_set_up_optimization(has_bypass=True, NF_type='ZO', NF_base='ion',
-    #                           RO_type='0D', RO_base='TDS', RO_level='simple',
-    #                           system_recovery=0.50, max_conc_factor=3, RO_flux=10)
+    solve_flowsheet_limited_NF(has_bypass=True,  has_desal_feed=False, is_twostage=True,
+                                     NF_type='ZO', NF_base='ion',
+                                     RO_type='0D', RO_base='TDS', RO_level='detailed')
 
-    # simulation
-    # # no bypass, SepRO
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='Sep', NF_base='ion',
-    #                                  RO_type='Sep', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='Sep', NF_base='salt',
-    #                                  RO_type='Sep', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='ZO', NF_base='ion',
-    #                                  RO_type='Sep', RO_base='TDS', RO_level='simple')
-
-    # # no bypass, 0DRO simple
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='Sep', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='Sep', NF_base='salt',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='ZO', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='simple')
-
-    # # no bypass, 0DRO detailed
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='Sep', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='detailed')
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='Sep', NF_base='salt',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='detailed')
-    # solve_build_flowsheet_limited_NF(has_bypass=False, NF_type='ZO', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='detailed')
-
-    # # bypass, SepRO
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='Sep', NF_base='ion',
-    #                                  RO_type='Sep', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='Sep', NF_base='salt',
-    #                                  RO_type='Sep', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='ZO', NF_base='ion',
-    #                                  RO_type='Sep', RO_base='TDS', RO_level='simple')
-
-    # # bypass, 0DRO simple
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='Sep', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='Sep', NF_base='salt',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='ZO', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='simple')
-
-    # # bypass, 0DRO detailed
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='Sep', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='detailed')
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='Sep', NF_base='salt',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='detailed')
-    # solve_build_flowsheet_limited_NF(has_bypass=True, NF_type='ZO', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='detailed')
-
-    # # bypass, 2 stage 0DRO simple
-    # solve_build_flowsheet_limited_NF(has_bypass=True, is_twostage=True, NF_type='Sep', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='simple')
-    # solve_build_flowsheet_limited_NF(has_bypass=True, is_twostage=True, NF_type='ZO', NF_base='ion',
-    #                                  RO_type='0D', RO_base='TDS', RO_level='simple')
-    pass

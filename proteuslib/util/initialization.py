@@ -41,9 +41,6 @@ def check_solve(results, checkpoint=None, logger=_log, fail_flag=False):
         None
 
     """
-
-    if logger is None:
-        raise ValueError('Set logger. For example, logger=init_log')
     if check_optimal_termination(results):
         if checkpoint is None:
             logger.info(f'Solve successful.')
@@ -56,19 +53,17 @@ def check_solve(results, checkpoint=None, logger=_log, fail_flag=False):
         else:
             msg = f"{checkpoint} failed. The solver failed to converge to an optimal solution. " \
                   f"This suggests that the user provided infeasible inputs or that the model is poorly scaled."
-        if fail_flag is True:
+        if fail_flag:
             logger.error(msg)
             raise ValueError(msg)
-        elif fail_flag is False:
-            logger.warning(msg)
         else:
-            raise ValueError(f'The fail_on_warning argument in the initialize method was set to {fail_flag}. '
-                             f'fail_on_warning is a boolean argument. Set fail_on_warning to True or False.')
+            logger.warning(msg)
 
 
-def check_dof(blk, fail_flag, logger=_log):
+def check_dof(blk, fail_flag=False, logger=_log, expected_dof=0):
     """
-    Check that degrees of freedom are 0. If not 0, either throw a warning and continue or throw an error and stop.
+    Check that degrees of freedom are 0, or the expected amount ``expected_dof``.
+    If not 0 or ``expected_dof``, either throw a warning and continue or throw an error and stop.
 
     Keyword Arguments:
             blk : block to check
@@ -76,21 +71,55 @@ def check_dof(blk, fail_flag, logger=_log):
             (Default: fail_flag=False produces logger warning. Set fail_flag=True to raise an error and stop
              the initialization routine.)
             logger : Optional argument for loading idaes.getInitLogger object (e.g., logger=init_log)
+            expected_dof : Integer number of degrees of freedom ``blk`` should have
 
     Returns:
         None
 
     """
-    if degrees_of_freedom(blk) != 0:
-        if logger is None:
-            raise ValueError('Set logger. For example, logger=init_log')
-        msg = f"Non-zero degrees of freedom: Degrees of freedom on {blk} = {degrees_of_freedom(blk)}. " \
-              f"Fix {degrees_of_freedom(blk)} more variable(s) or set keyword arg to ignore_dof=True"
-        if fail_flag is True:
+    if degrees_of_freedom(blk) != expected_dof:
+        if expected_dof == 0:
+            msg = f"Non-zero degrees of freedom: Degrees of freedom on {blk} = {degrees_of_freedom(blk)}. " \
+                  f"Fix {degrees_of_freedom(blk)} more variable(s)"
+        elif degrees_of_freedom(blk) < expected_dof:
+            msg = f"Unexpected degrees of freedom: Degrees of freedom on {blk} = {degrees_of_freedom(blk)}. " \
+                  f"Expected {expected_dof}. Unfix {expected_dof - degrees_of_freedom(blk)} variable(s)"
+        elif degrees_of_freedom(blk) > expected_dof:
+            msg = f"Unexpected degrees of freedom: Degrees of freedom on {blk} = {degrees_of_freedom(blk)}. " \
+                  f"Expected {expected_dof}. Fix {degrees_of_freedom(blk) - expected_dof} variable(s)"
+        if fail_flag:
             logger.error(msg)
             raise ValueError(msg)
-        elif fail_flag is False:
-            logger.warning(msg)
         else:
-            raise ValueError(f'The fail_flag argument in the initialize method was set to {fail_flag}. '
-                             f'fail_flag is a boolean argument. Set fail_flag to True or False.')
+            logger.warning(msg)
+
+
+def assert_degrees_of_freedom(blk, expected_dof):
+    """
+    Assert that degrees of freedom are ``expected_dof``.
+    If not ``expected_dof``, throw an error and stop.
+
+    Keyword Arguments:
+            blk : block to check
+            expected_dof : Integer number of degrees of freedom ``blk`` should have
+
+    Returns:
+        None
+
+    """
+    check_dof(blk, True, expected_dof=expected_dof)
+
+
+def assert_no_degrees_of_freedom(blk):
+    """
+    Assert that degrees of freedom are 0.
+    If ``blk`` has non-zero degrees of freedom, throw an error and stop.
+
+    Keyword Arguments:
+            blk : block to check
+
+    Returns:
+        None
+
+    """
+    check_dof(blk, True)

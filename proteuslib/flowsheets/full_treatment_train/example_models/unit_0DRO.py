@@ -68,11 +68,8 @@ def build_RO(m, base='TDS', level='simple', name_str='RO'):
         raise ValueError('Unexpected argument {level} for level in build_RO'
                          ''.format(level=level))
 
-    # scale unit
-    calculate_scaling_factors(blk)
 
-
-def solve_build_RO(base='TDS', level='simple'):
+def solve_RO(base='TDS', level='simple'):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     property_models.build_prop(m, base='TDS')
@@ -82,6 +79,9 @@ def solve_build_RO(base='TDS', level='simple'):
     # specify feed
     property_models.specify_feed(m.fs.RO.feed_side.properties_in[0], base='TDS')
     m.fs.RO.feed_side.properties_in[0].pressure.fix(50e5)
+
+    # scaling
+    calculate_scaling_factors(m)
 
     # initialize
     m.fs.RO.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
@@ -95,5 +95,5 @@ def solve_build_RO(base='TDS', level='simple'):
 
 
 if __name__ == "__main__":
-    solve_build_RO(base='TDS', level='simple')
-    solve_build_RO(base='TDS', level='detailed')
+    solve_RO(base='TDS', level='simple')
+    solve_RO(base='TDS', level='detailed')

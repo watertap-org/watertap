@@ -1348,3 +1348,6 @@ class TestReverseOsmosis():
         assert (pytest.approx(5.792e-4, rel=1e-3) ==
                 value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'NaCl']))
 
+    @pytest.mark.unit
+    def test_report(self, RO_frame):
+        RO_frame.fs.unit.report()

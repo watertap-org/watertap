@@ -11,9 +11,13 @@
 #
 ###############################################################################
 
-from pyomo.environ import check_optimal_termination
+from pyomo.environ import check_optimal_termination, TransformationFactory
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.scaling import (unscaled_variables_generator,
+                                     unscaled_constraints_generator,
+                                     calculate_scaling_factors)
+from pyomo.util.check_units import assert_units_consistent
 
 
 # NOTE: In a full flowsheet, you will want to leave the default values for
@@ -42,3 +46,31 @@ def check_solve(results):
         raise RuntimeError("The solver failed to converge to an optimal solution. "
                            "This suggests that the user provided infeasible inputs "
                            "or that the model is poorly scaled.")
+
+
+def check_build(m, build_func=None, **kwargs):
+    if build_func is not None:
+        build_func(m, **kwargs)
+    TransformationFactory("network.expand_arcs").apply_to(m)
+
+    assert_units_consistent(m)
+
+    check_dof(m)
+
+
+def check_scaling(m, scale_func=None, **kwargs):
+    if scale_func is not None:
+        scale_func(m, **kwargs)
+    calculate_scaling_factors(m)  # scale arcs
+
+    # check all variables have scaling factors
+    unscaled_var_list = list(unscaled_variables_generator(m))
+    for v in unscaled_var_list:
+        print(v)
+    assert len(unscaled_var_list) == 0
+
+    # check that all constraints are transformed
+    unscaled_constraint_list = list(unscaled_constraints_generator(m))
+    for c in unscaled_constraint_list:
+        print(c)
+    assert len(unscaled_constraint_list) == 0

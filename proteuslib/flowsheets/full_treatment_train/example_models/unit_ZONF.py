@@ -16,7 +16,7 @@
 from pyomo.environ import ConcreteModel, Constraint
 from idaes.core import FlowsheetBlock
 from proteuslib.flowsheets.full_treatment_train.example_models.nanofiltration_ZO import NanofiltrationZO
-from idaes.core.util.scaling import calculate_scaling_factors
+from idaes.core.util.scaling import calculate_scaling_factors, constraint_scaling_transform
 from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
@@ -52,12 +52,10 @@ def build_ZONF(m, base='ion'):
              sum(charge_comp[j]
                  * m.fs.NF.feed_side.properties_out[0].conc_mol_phase_comp['Liq', j]
                  for j in charge_comp))
-
-    # scaling
-    calculate_scaling_factors(m.fs.NF)
+    constraint_scaling_transform(m.fs.NF.eq_electroneutrality, 1)
 
 
-def solve_build_ZONF(base='ion'):
+def solve_ZONF(base='ion'):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
@@ -66,6 +64,7 @@ def solve_build_ZONF(base='ion'):
     property_models.specify_feed(m.fs.NF.feed_side.properties_in[0], base='ion')
 
     check_dof(m)
+    calculate_scaling_factors(m)
     solve_with_user_scaling(m)
 
     m.fs.NF.inlet.display()
@@ -76,5 +75,5 @@ def solve_build_ZONF(base='ion'):
 
 
 if __name__ == "__main__":
-    solve_build_ZONF(base='ion')
+    solve_ZONF(base='ion')
 

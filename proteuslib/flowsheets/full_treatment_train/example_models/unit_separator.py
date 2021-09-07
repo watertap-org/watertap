@@ -17,7 +17,7 @@ from pyomo.environ import ConcreteModel, Constraint
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import Separator
 from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
-from idaes.core.util.scaling import calculate_scaling_factors
+from idaes.core.util.scaling import calculate_scaling_factors, set_scaling_factor, constraint_scaling_transform
 from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
@@ -43,8 +43,10 @@ def build_SepRO(m, base='TDS'):
         raise ValueError('Unexpected property base {base} provided to build_SepRO'
                          ''.format(base=base))
 
-    # scaling
-    calculate_scaling_factors(m.fs.RO)
+    # scale
+    set_scaling_factor(m.fs.RO.split_fraction, 1)  # TODO: IDAES should set these scaling factors by default
+    constraint_scaling_transform(m.fs.RO.sum_split_frac[0.0, 'H2O'], 1)
+    constraint_scaling_transform(m.fs.RO.sum_split_frac[0.0, 'TDS'], 1)
 
 
 def build_SepNF(m, base='ion'):
@@ -73,6 +75,7 @@ def build_SepNF(m, base='ion'):
             expr=0 ==
                  sum(charge_dict[j] * m.fs.NF.retentate_state[0].flow_mol_phase_comp['Liq', j]
                      for j in charge_dict))
+        constraint_scaling_transform(m.fs.NF.EN_out, 1)
     elif base == 'salt':
         m.fs.NF.split_fraction[0, 'permeate', 'H2O'].fix(0.9)
         m.fs.NF.split_fraction[0, 'permeate', 'NaCl'].fix(0.9)
@@ -80,11 +83,24 @@ def build_SepNF(m, base='ion'):
         m.fs.NF.split_fraction[0, 'permeate', 'MgSO4'].fix(0.1)
         m.fs.NF.split_fraction[0, 'permeate', 'MgCl2'].fix(0.2)
 
-    # scaling
-    calculate_scaling_factors(m.fs.NF)
+    # scale
+    set_scaling_factor(m.fs.NF.split_fraction, 1)  # TODO: IDAES should set these scaling factors by default
+    if base == 'ion':
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'H2O'], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'Na'], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'Ca'], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'Mg'], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'SO4'], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'Cl'], 1)
+    elif base == 'salt':
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'H2O'], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'NaCl'], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'CaSO4'], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'MgSO4'], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'MgCl2'], 1)
 
 
-def solve_build_SepRO(base='TDS'):
+def solve_SepRO(base='TDS'):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     property_models.build_prop(m, base=base)
@@ -92,6 +108,7 @@ def solve_build_SepRO(base='TDS'):
     property_models.specify_feed(m.fs.RO.mixed_state[0], base=base)
 
     check_dof(m)
+    calculate_scaling_factors(m)
     solve_with_user_scaling(m)
 
     m.fs.RO.inlet.display()
@@ -101,7 +118,7 @@ def solve_build_SepRO(base='TDS'):
     return m
 
 
-def solve_build_SepNF(base='ion'):
+def solve_SepNF(base='ion'):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     property_models.build_prop(m, base=base)
@@ -110,6 +127,7 @@ def solve_build_SepNF(base='ion'):
 
     m.fs.NF.mixed_state[0].mass_frac_phase_comp  # touching for tests
     check_dof(m)
+    calculate_scaling_factors(m)
     solve_with_user_scaling(m)
 
     m.fs.NF.inlet.display()
@@ -120,6 +138,6 @@ def solve_build_SepNF(base='ion'):
 
 
 if __name__ == "__main__":
-    solve_build_SepRO(base='TDS')
-    solve_build_SepNF(base='ion')
-    solve_build_SepNF(base='salt')
+    solve_SepRO(base='TDS')
+    solve_SepNF(base='ion')
+    solve_SepNF(base='salt')
