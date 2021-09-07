@@ -164,16 +164,19 @@ def calculate_chemical_scaling_factors_for_material_balances(unit):
 def calculate_chemical_scaling_factors_for_energy_balances(unit):
     max = 1
     min = 1
-    for phase in unit.control_volume.properties_in[0.0].enth_mol_phase:
-        val = abs(value(unit.control_volume.properties_in[0.0].enth_mol_phase[phase].expr))
-        if val >= max:
-            max = val
-        if val <= min:
-            val = min
-        iscale.set_scaling_factor(unit.control_volume.properties_in[0.0]._enthalpy_flow_term[phase], 10/val)
-        iscale.set_scaling_factor(unit.control_volume.properties_out[0.0]._enthalpy_flow_term[phase], 10/val)
+    try:
+        for phase in unit.control_volume.properties_in[0.0].enth_mol_phase:
+            val = abs(value(unit.control_volume.properties_in[0.0].enth_mol_phase[phase].expr))
+            if val >= max:
+                max = val
+            if val <= min:
+                val = min
+            iscale.set_scaling_factor(unit.control_volume.properties_in[0.0]._enthalpy_flow_term[phase], 10/val)
+            iscale.set_scaling_factor(unit.control_volume.properties_out[0.0]._enthalpy_flow_term[phase], 10/val)
 
-    iscale.constraint_scaling_transform(unit.control_volume.enthalpy_balances[0.0], 10/max)
+        iscale.constraint_scaling_transform(unit.control_volume.enthalpy_balances[0.0], 10/max)
+    except:
+        pass
 
 # Serially calculate all scaling factors needed
 # # TODO: Add more scaling calculations as needed for (i) stoich reactions, (ii) rate reactions, etc.
