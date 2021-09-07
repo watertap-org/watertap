@@ -9,6 +9,7 @@ Technical Reference
    tools/index
 
 .. toctree::
-   :maxdepth: 1
+    :maxdepth: 1
 
-   edb/index
+    edb/index
+    Modules <../apidoc/modules>
