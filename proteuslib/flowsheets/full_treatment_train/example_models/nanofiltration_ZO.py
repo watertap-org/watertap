@@ -31,6 +31,7 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util import get_solver
+from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
@@ -211,9 +212,6 @@ class NanofiltrationData(UnitModelBlockData):
             balance_type=self.config.material_balance_type,
             has_mass_transfer=True)
 
-        # self.feed_side.add_energy_balances(
-        #     balance_type=self.config.energy_balance_type,
-        #     has_enthalpy_transfer=True)
         @self.feed_side.Constraint(self.flowsheet().config.time,
                          doc='isothermal energy balance for feed_side')
         def eq_isothermal(b, t):
@@ -284,9 +282,6 @@ class NanofiltrationData(UnitModelBlockData):
                          self.config.property_package.solute_set,
                          doc="Solute rejection")
         def eq_rejection_phase_comp(b, t, p, j):
-            # return (b.rejection_phase_comp[t, p, j] ==
-            #         1 - (b.properties_permeate[t].conc_mol_phase_comp['Liq', j] /
-            #              b.feed_side.properties_in[t].conc_mol_phase_comp['Liq', j]))
             return (b.properties_permeate[t].conc_mol_phase_comp['Liq', j]
                     == b.feed_side.properties_in[t].conc_mol_phase_comp['Liq', j]
                     * (1 - b.rejection_phase_comp[t, p, j]))
@@ -384,12 +379,36 @@ class NanofiltrationData(UnitModelBlockData):
         )
 
     def _get_performance_contents(self, time_point=0):
-        # TODO: make a unit specific stream table
         var_dict = {}
+        var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[time_point, 'Liq']
+        var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[time_point, 'Liq', 'H2O']
+        var_dict["Membrane Area"] = self.area
         if hasattr(self, "deltaP"):
             var_dict["Pressure Change"] = self.deltaP[time_point]
+        if self.feed_side.properties_in[time_point].is_property_constructed('flow_vol'):
+            var_dict['Volumetric Flowrate @Inlet'] = (
+                self.feed_side.properties_in[time_point].flow_vol)
+        if self.feed_side.properties_out[time_point].is_property_constructed('flow_vol'):
+            var_dict['Volumetric Flowrate @Outlet'] = (
+                self.feed_side.properties_out[time_point].flow_vol)
+        var_dict['Solvent Volumetric Flux']= self.flux_vol_solvent[time_point, 'H2O']
+        for j in self.config.property_package.solute_set:
+          var_dict[f'{j} Rejection'] = self.rejection_phase_comp[time_point, 'Liq', j]
+          var_dict[f'{j} Molar Concentration @Inlet'] = self.feed_side.properties_in[time_point].conc_mol_phase_comp['Liq', j]
+          var_dict[f'{j} Molar Concentration @Outlet'] = self.feed_side.properties_out[time_point].conc_mol_phase_comp['Liq', j]
+          var_dict[f'{j} Molar Concentration @Permeate'] = self.properties_permeate[time_point].conc_mol_phase_comp['Liq', j]
 
         return {"vars": var_dict}
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {
+                "Feed Inlet": self.inlet,
+                "Feed Outlet": self.retentate,
+                "Permeate Outlet": self.permeate,
+            },
+            time_point=time_point,
+        )
 
     def get_costing(self, module=None, **kwargs):
         self.costing = Block()
