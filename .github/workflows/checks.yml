@@ -70,7 +70,7 @@ jobs:
         idaes get-extensions --verbose
         echo '::endgroup::'
     - name: Set up MongoDB server
-      if: 'false'
+      if: matrix.mongodb_server
       uses: supercharge/mongodb-github-action@3f91157600649d0002802978c8b6fb6ee659a2dd
       # with:
         # everything else being equal, we test against 4.03 since it's the latest available
@@ -83,7 +83,7 @@ jobs:
         _pytest_output_to_inspect: .pytest-edb-mongodb.log
       run: |
         # load EDB
-        # edb load -b
+        edb load -b
         # run subset of tests that should not be skipped if the MongoDB instance is accessible to the EDB
         pytest -k "$_tests_that_should_not_be_skipped" --verbose --capture=tee-sys | tee "$_pytest_output_to_inspect"
         echo '::group::pytest output to be inspected for skipped files'
