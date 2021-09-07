@@ -15,6 +15,12 @@ from pyomo.environ import (
 from idaes.core.util.exceptions import ConfigurationError
 
 
+# TODO: choose year --> 2018 probably (use CEPCI)
+# TODO: in example flowsheets --> build_costing and use **kwargs to build flowsheet
+# TODO: make kwargs dict
+# Todo: have options for PX types/pump types (for example) or use more generic approach with conditionals
+# mixers, splitters, pumps, erds, RO, NF, stoich reactor (lime softening), equilibrium reactor (chlorination)
+
 def add_costing_param_block(self):
     self.costing_param = Block()
     b = self.costing_param
@@ -49,6 +55,11 @@ def add_costing_param_block(self):
     b.pxr_cost = Var(
         initialize=535,
         doc='Pressure exchanger cost [$/(m3/h)]')
+    b.chemical_lime_cost = Var(
+        #TODO: add "real" value instead of dummy val for lime cost per kg
+        initialize=1,
+        doc='Lime cost [$/kg]'
+    )
 
     # traditional parameters are the only Vars on the block and should be fixed
     for v in b.component_objects(Var, descend_into=True):
@@ -162,16 +173,18 @@ def Chlorination_costing(self):
     b_fs = b_chlorination.parent_block()
 
     # capital cost
+    #TODO: WaterTAP cites a table from Texas Water Development Board for determining capex of a hypochlorite feed system;
+    # implement capex relationship here
+
     # self.eq_capital_cost = Constraint(
     #     expr=self.capital_cost == b_fs.costing_param.NF_mem_cost * b_NF.area/pyunits.m**2)
 
-
+#TODO: pull Stoichiometric reactor instead
 def LimeSoftener_costing(self):
     ''' This method is being added for the softening step in the pre-treatment section of the full treatment train
-    (two cost equations still undergoing verification by AAA):
+    (two cost equations still undergoing verification by AAA; "Lime Addition" seems like the better choice):
 
     (1) "Lime Softening" capex
-    #TODO: question: is capital cost based on
     https://industrialwatersoftener.com/water-treatment-equipment/industrial-water-softeners/analysis-ion-exchange-vs-lime-softening/
 
     C_lime=0.0704 * Qin ** 0.7306
@@ -184,7 +197,6 @@ def LimeSoftener_costing(self):
     S= volumetric flow rate (m3/hr)
     Clime = $
 
-
     '''
 
     _make_vars(self)
@@ -193,9 +205,14 @@ def LimeSoftener_costing(self):
     b_fs = b_lime.parent_block()
 
     # capital cost
+    #TODO: may need to touch flow_vol in softener sub-flowsheet; fill in the constraint as well once eqn verified
     self.eq_capital_cost = Constraint(
-        expr=self.capital_cost == b_lime.   )
+        expr=self.capital_cost == b_lime.control_volume.properties_in[0.0].flow_vol)
 
+    # TODO: add cost of chemical; touch flow_mass_phase_comp['Liq', "Ca(OH)2"] in softener flowsheet
+    self.eq_operating_cost = Constraint(
+        expr=self.operating_cost == b_lime.control_volume.properties_in[0.0].flow_mass_phase_comp['Liq', 'Ca(OH)2']
+             * b_fs.costing_param.chemical_lime_cost * 3600 * 8760)
 
 def PressureExchanger_costing(self):
     _make_vars(self)
