@@ -11,7 +11,7 @@
 #
 ###############################################################################
 
-""" Simple Softening process with Lime"""
+""" Simple Softening process with addition of Lime"""
 
 # Importing the object for units from pyomo
 from pyomo.environ import units as pyunits
@@ -23,8 +23,11 @@ from idaes.core.phases import PhaseType as PT
 
 # Imports from idaes generic models
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
+from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
+from idaes.generic_models.properties.core.reactions.rate_constant import arrhenius
+from idaes.generic_models.properties.core.reactions.rate_forms import power_law_rate
 
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
 from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
@@ -63,7 +66,9 @@ from idaes.generic_models.unit_models.stoichiometric_reactor import \
     StoichiometricReactor
 
 # Import the core idaes objects for Flowsheets and types of balances
-from idaes.core import FlowsheetBlock
+from idaes.core import (AqueousPhase,
+                        FlowsheetBlock,
+                        EnergyBalanceType)
 
 # Import log10 function from pyomo
 from pyomo.environ import log10
@@ -78,7 +83,7 @@ from proteuslib.flowsheets.full_treatment_train.electrolyte_scaling_utils import
 __author__ = "Srikanth Allu"
 
 # Configuration dictionary
-simple_softening_thermo_config = {
+softening_thermo_config = {
     "components": {
         'H2O': {"type": Solvent,
               # Define the methods used to calculate the following properties
@@ -220,63 +225,55 @@ simple_softening_thermo_config = {
                        "temperature": pyunits.K},
 
     }
-    # End simple_softening_thermo_config definition
+    # End softening_thermo_config definition
 
 # This config is REQUIRED to use StoichiometricReactor even if we have no equilibrium reactions
-simple_softening_reaction_config = {
+softening_reaction_config = {
     "base_units": {"time": pyunits.s,
                    "length": pyunits.m,
                    "mass": pyunits.kg,
                    "amount": pyunits.mol,
                    "temperature": pyunits.K},
     "equilibrium_reactions": {
-        "H2O_Kw": {
-                "stoichiometry": {("Liq", "H2O"): -1,
-                                 ("Liq", "H_+"): 1,
-                                 ("Liq", "OH_-"): 1},
-               "heat_of_reaction": constant_dh_rxn,
-               "equilibrium_constant": van_t_hoff,
-               "equilibrium_form": log_power_law_equil,
-               "concentration_form": ConcentrationForm.moleFraction,
-               "parameter_data": {
-                   "dh_rxn_ref": (55.830, pyunits.J/pyunits.mol),
-                   "k_eq_ref": (10**-14/55.2/55.2, pyunits.dimensionless),
-                   "T_eq_ref": (298, pyunits.K),
-
-                   # By default, reaction orders follow stoichiometry
-                   #    manually set reaction order here to override
-                   "reaction_order": {("Liq", "H2O"): 0,
-                                    ("Liq", "H_+"): 1,
-                                    ("Liq", "OH_-"): 1}
-                    }
-                    # End parameter_data
-               },
-        "HOCl_Ka": {
-                "stoichiometry": {("Liq", "HOCl"): -1,
-                                 ("Liq", "H_+"): 1,
-                                 ("Liq", "OCl_-"): 1},
-               "heat_of_reaction": constant_dh_rxn,
-               "equilibrium_constant": van_t_hoff,
-               "equilibrium_form": log_power_law_equil,
-               "concentration_form": ConcentrationForm.moleFraction,
-               "parameter_data": {
-                   "dh_rxn_ref": (13.8, pyunits.J/pyunits.mol),
-                   "k_eq_ref": (10**-7.6422/55.2, pyunits.dimensionless),
-                   "T_eq_ref": (298, pyunits.K),
-
-                   # By default, reaction orders follow stoichiometry
-                   #    manually set reaction order here to override
-                   "reaction_order": {("Liq", "HOCl"): -1,
-                                    ("Liq", "H_+"): 1,
-                                    ("Liq", "OCl_-"): 1}
-                    }
-                    # End parameter_data
+        "dummy": {
+                "stoichiometry": {},
+                "equilibrium_form": log_power_law_equil,
                }
-               # End R2
-         }
+         },
          # End equilibrium_reactions
+    "rate_reactions": {
+        "R1": {"stoichiometry": {("Liq", "Ca(HCO3)2"): -1,
+                                 ("Liq", "Ca(OH)2"): -1,
+                                 ("Liq", "CaCO3"): 2,
+                                 ("Liq", "H2O"): 2},
+               "heat_of_reaction": constant_dh_rxn,
+               "rate_constant" : arrhenius,
+               "rate_form" : power_law_rate,
+               "concentration_form" : ConcentrationForm.moleFraction,
+               "parameter_data": {
+                   "arrhenius_const" : (1, pyunits.mol/pyunits.m**3/pyunits.s),
+                   "energy_activation" : (0, pyunits.J/pyunits.mol),
+                   "dh_rxn_ref": (0, pyunits.J/pyunits.mol)
+              }
+         },
+        "R2": {"stoichiometry": {("Liq", "Mg(HCO3)2"): -1,
+                                 ("Liq", "Ca(OH)2"): -2,
+                                 ("Liq", "CaCO3"): 2,
+                                 ("Liq", "Mg(OH)2"): 1,
+                                 ("Liq", "H2O"): 2},
+               "heat_of_reaction": constant_dh_rxn,
+               "rate_constant" : arrhenius,
+               "rate_form" : power_law_rate,
+               "concentration_form" : ConcentrationForm.moleFraction,
+               "parameter_data": {
+                   "arrhenius_const" : (1, pyunits.mol/pyunits.m**3/pyunits.s),
+                   "energy_activation" : (0, pyunits.J/pyunits.mol),
+                   "dh_rxn_ref": (0, pyunits.J/pyunits.mol)
+              }
+         }
     }
-    # End reaction_config definition
+}
+# End reaction_config definition
 
 # Get default solver for testing
 solver = get_solver()
@@ -287,7 +284,7 @@ def build_simple_softening_unit(model,
                                 inlet_temperature_K = 298,
                                 inlet_pressure_Pa = 101325,
                                 inlet_flow_mol_per_s = 10):
-    model.fs.softening_thermo_params = GenericParameterBlock(default=simple_softening_thermo_config)
+    model.fs.softening_thermo_params = GenericParameterBlock(default=softening_thermo_config)
     model.fs.softening_rxn_params = GenericReactionParameterBlock(
             default={"property_package": model.fs.softening_thermo_params, **softening_reaction_config})
     model.fs.softening_unit = StoichiometricReactor(default={
@@ -298,122 +295,119 @@ def build_simple_softening_unit(model,
                 "energy_balance_type": EnergyBalanceType.none,
                 "has_pressure_change": False})
 
-    model.fs.unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"].fix( 0.00003 )
-    model.fs.unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"].fix( 0.00003 )
-    model.fs.unit.inlet.mole_frac_comp[0, "Mg(OH)2"].fix( 0. )
-    model.fs.unit.inlet.mole_frac_comp[0, "CaCO3"].fix( 0. )
+    model.fs.softening_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"].fix( 0.00003 )
+    model.fs.softening_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"].fix( 0.00003 )
+    model.fs.softening_unit.inlet.mole_frac_comp[0, "Mg(OH)2"].fix( 0. )
+    model.fs.softening_unit.inlet.mole_frac_comp[0, "CaCO3"].fix( 0. )
+    model.fs.softening_unit.inlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.) # temperory fix for initializing
 
     total_molar_density = inlet_water_density_kg_per_L/18*1000 #mol/L
 
-    model.fs.simple_softening_unit.inlet.mole_frac_comp[0, "OCl_-"].fix( total_chlorine_inlet/total_molar_density )
-    model.fs.simple_softening_unit.inlet.mole_frac_comp[0, "Na_+"].fix( total_chlorine_inlet/total_molar_density )
-
-    model.fs.unit.outlet.mole_frac_comp[0, "Ca(HCO3)2"].fix( 0.000015 )
-    model.fs.unit.outlet.mole_frac_comp[0, "Mg(HCO3)2"].fix( 0.000015 )
-    model.fs.unit.outlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.0000003 )
+    model.fs.softening_unit.outlet.mole_frac_comp[0, "Ca(HCO3)2"].fix( 0.000015 )
+    model.fs.softening_unit.outlet.mole_frac_comp[0, "Mg(HCO3)2"].fix( 0.000015 )
+    model.fs.softening_unit.outlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.0000003 )
 
     # Perform a summation of all non-H2O molefractions to find the H2O molefraction
     sum = 0
-    for i in model.fs.simple_softening_unit.inlet.mole_frac_comp:
+    for i in model.fs.softening_unit.inlet.mole_frac_comp:
         # NOTE: i will be a tuple with format (time, component)
         if i[1] != "H2O":
-            sum += value(model.fs.simple_softening_unit.inlet.mole_frac_comp[i[0], i[1]])
+            sum += value(model.fs.softening_unit.inlet.mole_frac_comp[i[0], i[1]])
 
-    model.fs.simple_softening_unit.inlet.mole_frac_comp[0, "H2O"].fix( 1-sum )
+    model.fs.softening_unit.inlet.mole_frac_comp[0, "H2O"].fix( 1-sum )
+    model.fs.softening_unit.inlet.mole_frac_comp[0, "Ca(OH)2"].unfix() # unfix for initializing
+    model.fs.softening_unit.inlet.mole_frac_comp.pprint()
 
-    model.fs.simple_softening_unit.inlet.pressure.fix(inlet_pressure_Pa)
-    model.fs.simple_softening_unit.inlet.temperature.fix(inlet_temperature_K)
-    model.fs.simple_softening_unit.inlet.flow_mol.fix(inlet_flow_mol_per_s)
+    #model.fs.softening_unit.inlet.mole_frac_comp[0, "H2O"].fix( 0.99991 )
 
-def initialize_chlorination_example(unit, state_args, user_scaling=True, debug_out=False):
+    model.fs.softening_unit.inlet.pressure.fix(inlet_pressure_Pa)
+    model.fs.softening_unit.inlet.temperature.fix(inlet_temperature_K)
+    model.fs.softening_unit.inlet.flow_mol.fix(inlet_flow_mol_per_s)
+
+    model.fs.softening_unit.outlet.temperature.fix(inlet_temperature_K)
+   
+    check_dof(model)
+
+def initialize_softening_example(unit, state_args, user_scaling=True, debug_out=True):
+    check_dof(unit)
     solver.options['bound_push'] = 1e-10
     solver.options['mu_init'] = 1e-6
 
     if user_scaling == True:
         solver.options["nlp_scaling_method"] = "user-scaling"
 
-    unit.inlet.mole_frac_comp[0, "Ca(OH)2"].fix()
+    #unit.inlet.mole_frac_comp[0, "Ca(OH)2"].fix()
 
     if debug_out == True:
-        unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
+        solve_with_user_scaling(unit, tee=True, bound_push=1e-10, mu_init=1e-6)
+    #    unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
     else:
-        unit.initialize(state_args=state_args, optarg=solver.options)
+        solve_with_user_scaling(unit, tee=False, bound_push=1e-10, mu_init=1e-6)
+    #    unit.initialize(state_args=state_args, optarg=solver.options)
 
-    unit.inlet.mole_frac_comp[0, "Ca(OH)2"].unfix()
+    #unit.inlet.mole_frac_comp[0, "Ca(OH)2"].unfix()
 
     iscale.constraint_autoscale_large_jac(unit)
+    check_dof(unit)
 
-def display_results_of_chlorination(softening_unit):
+def display_results_of_softening(softening_unit):
     print()
     print("=========== Softening Results ============")
     print("Outlet Temperature:       \t" + str(softening_unit.outlet.temperature[0].value))
     print("Outlet Pressure:          \t" + str(softening_unit.outlet.pressure[0].value))
     print("Outlet FlowMole:          \t" + str(softening_unit.outlet.flow_mol[0].value))
     print()
+    softening_unit.inlet.mole_frac_comp.pprint()
+    softening_unit.outlet.mole_frac_comp.pprint()
     total_molar_density = \
         value(softening_unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
-    pH = -value(log10(softening_unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
-    print("pH at Outlet:             \t" + str(pH))
-    total_salt = value(softening_unit.outlet.mole_frac_comp[0, "Na_+"])*total_molar_density*23
-    total_salt += value(softening_unit.outlet.mole_frac_comp[0, "Cl_-"])*total_molar_density*35.4
-    psu = total_salt/(total_molar_density*18)*1000
-    print("Salinity (PSU):           \t" + str(psu))
-    print("NaOCl Dosing Rate (mg/s): \t" + str(softening_unit.dosing_rate.value))
-    print("Free Chlorine (mg/L):     \t" + str(softening_unit.free_chlorine.value))
-    print("\tDistribution:")
-    hocl = (value(softening_unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"])/1000)/(chlorination_unit.free_chlorine.value/70900)
-    print("\t % HOCl: \t" + str(hocl*100))
-    ocl = (value(softening_unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"])/1000)/(chlorination_unit.free_chlorine.value/70900)
-    print("\t % OCl-: \t" + str(ocl*100))
+
+    total_hardness1 = 50000*2* softening_unit.outlet.mole_frac_comp[0, "Ca(HCO3)2"].value*total_molar_density
+    total_hardness2 = 50000*2* softening_unit.outlet.mole_frac_comp[0, "Mg(HCO3)2"].value*total_molar_density
+    print("hardness at Outlet:             \t" + str(total_hardness1+total_hardness2))
     print("-------------------------------------------")
     print()
 
-def run_chlorination_example():
+def run_softening_example():
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
 
     build_simple_softening_unit(model, mg_per_L_CaOH2_added = 2)
-    state_args, stoich_extents = approximate_chemical_state_args(model.fs.simple_softening_unit,
-                                model.fs.simple_softening_rxn_params, simple_softening_reaction_config)
+    state_args, stoich_extents = approximate_chemical_state_args(model.fs.softening_unit,
+                                model.fs.softening_rxn_params, softening_reaction_config)
 
-    calculate_chemical_scaling_factors(model.fs.simple_softening_unit,
-                                model.fs.simple_softening_thermo_params,
-                                model.fs.simple_softening_rxn_params, state_args)
+    calculate_chemical_scaling_factors(model.fs.softening_unit,
+                                model.fs.softening_thermo_params,
+                                model.fs.softening_rxn_params, state_args)
 
-    initialize_chlorination_example(model.fs.simple_softening_unit, state_args)
+    initialize_softening_example(model.fs.softening_unit, state_args)
 
     solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
 
-    display_results_of_chlorination(model.fs.simple_softening_unit)
+    display_results_of_softening(model.fs.softening_unit)
 
     return model
 
-# This example will try to find the dosing rate needed to yield 2mg/L free chlorine
 def run_softening_constrained_outlet_example():
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
 
-    # Give bad initial guess for the dosing rate
     build_simple_softening_unit(model, mg_per_L_CaOH2_added = 1)
-    state_args, stoich_extents = approximate_chemical_state_args(model.fs.simple_softening_unit,
-                                model.fs.simple_softening_rxn_params, simple_softening_reaction_config)
+    state_args, stoich_extents = approximate_chemical_state_args(model.fs.softening_unit,
+                                model.fs.softening_rxn_params, softening_reaction_config)
 
-    calculate_chemical_scaling_factors(model.fs.simple_softening_unit,
-                                model.fs.simple_softening_thermo_params,
-                                model.fs.simple_softening_rxn_params, state_args)
+    calculate_chemical_scaling_factors(model.fs.softening_unit,
+                                model.fs.softening_thermo_params,
+                                model.fs.softening_rxn_params, state_args)
 
-    initialize_chlorination_example(model.fs.simple_softening_unit, state_args)
-
-    #Redefine the constraints and fixed vars here
-    model.fs.simple_softening_unit.dosing_rate.unfix()
-    model.fs.simple_softening_unit.free_chlorine.fix(2)
+    initialize_softening_example(model.fs.softening_unit, state_args)
 
     solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
 
-    display_results_of_chlorination(model.fs.softening_unit)
+    display_results_of_softening(model.fs.softening_unit)
 
     return model
 
 if __name__ == "__main__":
-    model = run_chlorination_example()
-    model = run_chlorination_constrained_outlet_example()
+    model = run_softening_example()
+    #model = run_softening_constrained_outlet_example()

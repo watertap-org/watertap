@@ -20,6 +20,9 @@
 """
 import pytest
 
+from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.PreTreatment_Simple_Softening import (
+    run_softening_example)
+
 from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.PostTreatment_SimpleNaOCl_Chlorination import (
     run_chlorination_example, run_chlorination_constrained_outlet_example)
 
@@ -30,6 +33,14 @@ from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.ZeroDRO_plu
     run_0DRO_Chlorination_flowsheet_example, run_0DRO_Chlorination_flowsheet_optimization_example)
 
 __author__ = "Austin Ladshaw"
+
+@pytest.mark.component
+def test_Simple_Softening():
+    model = run_softening_example()
+    assert model.fs.softening_unit.outlet.mole_frac_comp[0,'CaCO3'].value == \
+            pytest.approx(5.99873e-05, rel=1e-3)
+    assert model.fs.softening_unit.outlet.flow_mol[0].value == \
+            pytest.approx(10.0, rel=1e-2)
 
 @pytest.mark.component
 def test_SimpleNaOCl_Chlorination():
