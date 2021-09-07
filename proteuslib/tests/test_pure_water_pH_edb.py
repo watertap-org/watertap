@@ -26,7 +26,7 @@ from .test_pure_water_pH import TestPureWater
 g_edb = None
 if ElectrolyteDB.can_connect():
     # for now, skip using MongoDB in GitHub CI -dang 8/30/2021
-    if os.environ['GITHUB_ACTIONS'] != "true":
+    if os.environ.get('GITHUB_ACTIONS') != "true":
         g_edb = ElectrolyteDB()
 
 
