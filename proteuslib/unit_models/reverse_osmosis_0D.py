@@ -27,6 +27,7 @@ from pyomo.environ import (Var,
                            exp,
                            value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.collections import ComponentSet
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
@@ -277,6 +278,8 @@ class ReverseOsmosisData(UnitModelBlockData):
         # Check configuration errors
         self._process_config()
 
+        # For permeate-specific scaling in calculate_scaling_factors
+        self._permeate_scaled_properties = ComponentSet()
 
         # Add unit parameters
         self.A_comp = Var(
@@ -1127,30 +1130,31 @@ class ReverseOsmosisData(UnitModelBlockData):
         self.costing = Block()
         module.ReverseOsmosis_costing(self.costing, **kwargs)
 
+    # permeate properties need to rescale solute values by 100
+    def _rescale_permeate_variable(self, var, factor=100):
+        if var not in self._permeate_scaled_properties:
+            sf = iscale.get_scaling_factor(var)
+            iscale.set_scaling_factor(var, sf * factor)
+            self._permeate_scaled_properties.add(var)
+
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        # permeate properties need to rescale solute values by 100
-        def rescale_variable(var, factor=100):
-            sf = iscale.get_scaling_factor(var)
-            iscale.set_scaling_factor(var, sf * factor)
-
-        blk = self.permeate_side
-        for sb_str in ['properties_in', 'properties_out', 'properties_mixed']:
-            sb = getattr(blk, sb_str)
+        for sb in (self.permeate_side.properties_in, self.permeate_side.properties_out,
+                self.permeate_side.properties_mixed):
             for t in self.flowsheet().config.time:
                 for j in self.config.property_package.solute_set:
-                    rescale_variable(sb[t].flow_mass_phase_comp['Liq', j])
+                    self._rescale_permeate_variable(sb[t].flow_mass_phase_comp['Liq', j])
                     if sb[t].is_property_constructed('mass_frac_phase_comp'):
-                        rescale_variable(sb[t].mass_frac_phase_comp['Liq', j])
+                        self._rescale_permeate_variable(sb[t].mass_frac_phase_comp['Liq', j])
                     if sb[t].is_property_constructed('conc_mass_phase_comp'):
-                        rescale_variable(sb[t].conc_mass_phase_comp['Liq', j])
+                        self._rescale_permeate_variable(sb[t].conc_mass_phase_comp['Liq', j])
                     if sb[t].is_property_constructed('mole_frac_phase_comp'):
-                        rescale_variable(sb[t].mole_frac_phase_comp[j])
+                        self._rescale_permeate_variable(sb[t].mole_frac_phase_comp[j])
                     if sb[t].is_property_constructed('molality_comp'):
-                        rescale_variable(sb[t].molality_comp[j])
+                        self._rescale_permeate_variable(sb[t].molality_comp[j])
                 if sb[t].is_property_constructed('pressure_osm'):
-                    rescale_variable(sb[t].pressure_osm)
+                    self._rescale_permeate_variable(sb[t].pressure_osm)
 
         # TODO: require users to set scaling factor for area or calculate it based on mass transfer and flux
         iscale.set_scaling_factor(self.area, 1e-1)
@@ -1278,8 +1282,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             # already scaled by control volume with the default based on properties_in flow
             # solute typically has mass transfer 2 orders magnitude less than flow
             if j in self.config.property_package.solute_set:
-                sf = iscale.get_scaling_factor(v) * 100
-                iscale.set_scaling_factor(v, sf)
+                self._rescale_permeate_variable(v)
 
         for (t, p, j), v in self.mass_transfer_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
