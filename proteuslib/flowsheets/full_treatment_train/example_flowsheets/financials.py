@@ -97,6 +97,10 @@ def get_system_costing(self):
         initialize=1,
         domain=NonNegativeReals,
         doc='Levelized cost of water [$/m3]')
+    b.annual_water_production = Var(
+        initialize=365,
+        domain=NonNegativeReals,
+        doc='Annual water production [m3/year]')
 
     capital_cost_var_lst = []
     operating_cost_var_lst = []
@@ -161,9 +165,11 @@ def Nanofiltration_costing(self):
         expr=self.capital_cost == b_fs.costing_param.NF_mem_cost * b_NF.area / pyunits.m ** 2)
 
     # operating cost
-    self.eq_operating_cost = Constraint(
-        expr=self.operating_cost == b_fs.costing_param.factor_membrane_replacement
-             * b_fs.costing_param.NF_mem_cost * b_NF.area / pyunits.m ** 2)
+    #TODO: add annual water production to flowsheet or create it here if it doesn't exist
+
+    # self.eq_operating_cost = Constraint(
+    #     expr=self.operating_cost == b_fs.costing_param.factor_membrane_replacement
+    #          * b_fs.costing_param.NF_mem_cost * b_NF.area / pyunits.m ** 2)
 
 def Chlorination_costing(self):
     ''' This method is being added for the chlorination step in the post-treatment section of the full treatment train'''
