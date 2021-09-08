@@ -220,6 +220,12 @@ def LimeSoftener_costing(self):
         expr=self.operating_cost == b_lime.control_volume.properties_in[0.0].flow_mass_phase_comp['Liq', 'Ca(OH)2']
              * b_fs.costing_param.chemical_lime_cost * 3600 * 8760)
 
+def Separator_costing(self):
+    pass
+
+def Mixer_costing(self):
+    pass
+
 def PressureExchanger_costing(self):
     _make_vars(self)
 
