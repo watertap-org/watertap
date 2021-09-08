@@ -15,4 +15,3 @@ Module contents
 .. automodule:: proteuslib.flowsheets
    :members:
    :show-inheritance:
-   :noindex:

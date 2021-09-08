@@ -18,4 +18,3 @@ Module contents
 .. automodule:: proteuslib
    :members:
    :show-inheritance:
-   :noindex:

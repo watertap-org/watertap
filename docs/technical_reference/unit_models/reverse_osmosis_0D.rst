@@ -171,4 +171,5 @@ Class Documentation
 
 .. automodule:: proteuslib.unit_models.reverse_osmosis_0D
     :members:
+    :noindex:
 

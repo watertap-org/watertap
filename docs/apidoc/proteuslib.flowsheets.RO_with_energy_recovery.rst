@@ -10,7 +10,6 @@ proteuslib.flowsheets.RO\_with\_energy\_recovery.RO\_with\_energy\_recovery modu
 .. automodule:: proteuslib.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery
    :members:
    :show-inheritance:
-   :noindex:
 
 proteuslib.flowsheets.RO\_with\_energy\_recovery.financials module
 ------------------------------------------------------------------
@@ -18,7 +17,6 @@ proteuslib.flowsheets.RO\_with\_energy\_recovery.financials module
 .. automodule:: proteuslib.flowsheets.RO_with_energy_recovery.financials
    :members:
    :show-inheritance:
-   :noindex:
 
 proteuslib.flowsheets.RO\_with\_energy\_recovery.monte\_carlo\_sampling\_RO\_ERD module
 ---------------------------------------------------------------------------------------
@@ -26,7 +24,6 @@ proteuslib.flowsheets.RO\_with\_energy\_recovery.monte\_carlo\_sampling\_RO\_ERD
 .. automodule:: proteuslib.flowsheets.RO_with_energy_recovery.monte_carlo_sampling_RO_ERD
    :members:
    :show-inheritance:
-   :noindex:
 
 Module contents
 ---------------
@@ -34,4 +31,3 @@ Module contents
 .. automodule:: proteuslib.flowsheets.RO_with_energy_recovery
    :members:
    :show-inheritance:
-   :noindex:

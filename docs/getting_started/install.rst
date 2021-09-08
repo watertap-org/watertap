@@ -200,9 +200,28 @@ If you make changes in your code's docstrings that you want to see reflected in 
 you need to re-generate the API documentation using "sphinx-apidoc". To do this, simply re-run the command
 given in step 2 of :ref:`documentation-mini-guide-gen`.
 
-If you removed or moved around modules,
-it is probably best to remove the "apidoc" directory before running this command so there are no left-over files.
-
 If you edited some documentation directly, i.e. created or modified a text file with extension `.rst`, then you
 don't need to run the previous command. Regardless, you will next need to update the documentation with the
 Sphinx build command given in step 3 of :ref:`documentation-mini-guide-gen`.
+
+.. note:: The files under "docs/apidoc" are tracked in Git, otherwise they would not be available to the
+ReadTheDocs builder (that doesn't know about sphinx-apidoc, strangely). Please remember to commit and push
+them along with the changes in the source code.
+
+Documenting your modules
+++++++++++++++++++++++++
+Full documentation for modules should be placed in the appropriate subfolder --- e.g., `property_models` or
+`unit_models` --- of the `docs/technical_reference` section (and folder). See `docs/technical_reference/unit_modles/reverse_osmosis_0D.rst`
+for an example.
+
+Note that at the bottom of the file you should add the ``.. automodule::`` directive that will insert the
+documentation for your module as generated from the source code (and docstrings). This generally looks like this:
+
+    .. autodoc:: proteuslib.<package_name>.<module_name>
+        :members:
+        :noindex:
+
+The ``:members:`` option says to include all the classes, functions, etc. in the module. It is important to add
+the ``:noindex:`` option, otherwise Sphinx will try to generate an index entry that conflicts with the
+entry that was created by the API docs (step 2 of :ref:`documentation-mini-guide-gen`), which would result
+in warnings and failed builds for ReadTheDocs and the tests.
