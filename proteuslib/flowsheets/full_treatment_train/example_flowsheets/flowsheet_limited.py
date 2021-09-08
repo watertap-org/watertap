@@ -22,7 +22,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_constraints_generator,
                                      unscaled_variables_generator)
 from idaes.core.util.initialization import propagate_state
-from proteuslib.flowsheets.full_treatment_train.example_flowsheets import pretreatment, desalination, translator_block
+from proteuslib.flowsheets.full_treatment_train.example_flowsheets import pretreatment, desalination, translator_block, costing, financials
 from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
@@ -37,6 +37,10 @@ def build_flowsheet_limited_NF(m, has_bypass=True, has_desal_feed=False, is_twos
     kwargs_pretreatment = {'has_bypass': has_bypass, 'NF_type': NF_type, 'NF_base': NF_base}
     kwargs_desalination = {'has_desal_feed': has_desal_feed, 'is_twostage': is_twostage,
                            'RO_type': RO_type, 'RO_base': RO_base, 'RO_level': RO_level}
+    # kwargs_flowsheet = kwargs_pretreatment.copy()
+    # kwargs_flowsheet.update(kwargs_desalination)
+
+
     # build flowsheet
     property_models.build_prop(m, base=NF_base)
     pretrt_port = pretreatment.build_pretreatment_NF(m, **kwargs_pretreatment)
@@ -75,10 +79,6 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
 
     # scale
     calculate_scaling_factors(m)
-
-    # set objective
-    m.fs.objective = Objective(expr=m.fs.NF.area/2.+m.fs.RO.area+m.fs.pump_RO.work_mechanical[0]/1e2+
-            (m.fs.RO2.area + m.fs.pump_RO2.work_mechanical[0]/1e2 if is_twostage else 0.) )
 
     # unfix variables
     m.fs.splitter.split_fraction[0, 'bypass'].unfix()
@@ -138,6 +138,17 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
              <= m.fs.feed.properties[0].conc_mol_phase_comp['Liq', 'Ca']
              * m.fs.max_conc_factor_target)
 
+    # need load factor from costing_param_block for annual_water_production
+    financials.add_costing_param_block(m.fs)
+    # annual water production
+    m.fs.annual_water_production = Expression(
+        expr=pyunits.convert(product_water_sb.flow_vol, to_units=pyunits.m ** 3 / pyunits.year)
+             * m.fs.costing_param.load_factor)
+    costing.build_costing(m, module=financials, **kwargs_flowsheet)
+
+    # set objective
+    m.fs.objective = Objective(expr=m.fs.costing.LCOW )
+
     check_dof(m, dof_expected=5 if is_twostage else 3)
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
@@ -186,13 +197,13 @@ def solve_optimization(system_recovery=0.75, max_conc_factor=3, **kwargs_flowshe
     pretreatment.display_pretreatment_NF(m, **kwargs_flowsheet)
     m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs_flowsheet)
-
+    costing.display_costing(m)
     return m
 
 
 if __name__ == "__main__":
     kwargs_flowsheet = {
-        'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True,
+        'has_bypass': True, 'has_desal_feed': False, 'is_twostage': False,
         'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
     # solve_flowsheet_limited_NF(**kwargs_flowsheet)
