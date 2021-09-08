@@ -21,10 +21,13 @@ from pyomo.environ import ConcreteModel, value
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
-
-from entrl_config import configuration
+from idaes.core.util.scaling import calculate_scaling_factors
 
 from idaes.core.util import get_solver
+from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_scaling
+from entrl_config import configuration
+
+
 
 # Artificial seawater composition
 # Na_+: 11122 mg/kg, 22.99 g/mol
@@ -87,11 +90,17 @@ def model():
     # m.fs.state[0].mole_frac_comp["Cl_-"].fix(3.472265e-2)
     # m.fs.state[0].mole_frac_comp["H2O"].fix(0.963715)
 
-    # Solve model
-    m.fs.state.initialize()
+    # scale model
+    calculate_scaling_factors(m)
 
+    # Regular solve
     solver = get_solver()
-    solver.solve(m, tee=True)
+    results = solver.solve(m)
+
+    # User scaling
+    # m.fs.state.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
+    # solve_with_user_scaling(m)
+    # check_scaling(m)
 
     # Display some results
     Ksp = {"CaSO4": 3.5e-5,

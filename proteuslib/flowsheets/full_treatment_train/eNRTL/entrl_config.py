@@ -126,4 +126,12 @@ configuration = {
             ('Ca_2+, SO4_2-', 'Ca_2+, Cl_-'): -0.264,
             ('Mg_2+, Cl_-', 'Mg_2+, SO4_2-'): -0.707,
             ('Mg_2+, SO4_2-', 'Mg_2+, Cl_-'): -0.841
-            }}}
+            }},
+    "default_scaling_factors": {("mole_frac_comp", "Na_+"): 1e2,
+                                ("mole_frac_comp", "Ca_2+"): 1e4,
+                                ("mole_frac_comp", "Mg_2+"): 1e3,
+                                ("mole_frac_comp", "SO4_2-"): 1e4,
+                                ("mole_frac_comp", "Cl_-"): 1e2,
+                                ("mole_frac_comp", "H2O"): 1,
+                                }
+}
