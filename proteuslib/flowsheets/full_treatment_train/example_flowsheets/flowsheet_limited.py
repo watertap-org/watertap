@@ -128,6 +128,7 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
                                     (m.fs.pump_RO2.work_mechanical[0] if is_twostage else 0.))
 
     # scaling constraint (maximum Ca concentration)
+    m.fs.max_conc_factor_target = Param(initialize=max_conc_factor, mutable=True)
     m.fs.brine_conc_mol_Ca = Expression(
         expr=m.fs.tb_pretrt_to_desal.properties_in[0].conc_mol_phase_comp['Liq', 'Ca']
              * m.fs.tb_pretrt_to_desal.properties_in[0].flow_vol
@@ -135,9 +136,12 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
     m.fs.eq_max_conc_mol_Ca = Constraint(
         expr=m.fs.brine_conc_mol_Ca
              <= m.fs.feed.properties[0].conc_mol_phase_comp['Liq', 'Ca']
-             * max_conc_factor)
+             * m.fs.max_conc_factor_target)
 
     check_dof(m, dof_expected=5 if is_twostage else 3)
+    solve_with_user_scaling(m, tee=False, fail_flag=True)
+
+def optimize(m):
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
 
