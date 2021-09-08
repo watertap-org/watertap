@@ -68,12 +68,13 @@ def build_costing(m, module=financials, **kwargs):
     #             # b_unit.get_costing(module=module)
 
 
-def display_costing(m):
+def display_costing(m, **kwargs):
     print(f'LCOW = ${round(m.fs.costing.LCOW.value,3)}/m3')
     pump_RO_spec_opex= m.fs.pump_RO.costing.operating_cost.value/m.fs.annual_water_production.expr()
     print(f'RO Pump 1 specific Opex = ${round(pump_RO_spec_opex,3)}/m3')
-    pump_RO2_spec_opex= m.fs.pump_RO2.costing.operating_cost.value/m.fs.annual_water_production.expr()
-    print(f'RO Pump 2 specific Opex = ${round(pump_RO2_spec_opex,3)}/m3')
+    if kwargs['is_twostage']:
+        pump_RO2_spec_opex= m.fs.pump_RO2.costing.operating_cost.value/m.fs.annual_water_production.expr()
+        print(f'RO Pump 2 specific Opex = ${round(pump_RO2_spec_opex,3)}/m3')
 
 
 if __name__ == "__main__":
