@@ -217,7 +217,7 @@ for an example.
 Note that at the bottom of the file you should add the ``.. automodule::`` directive that will insert the
 documentation for your module as generated from the source code (and docstrings). This generally looks like this:
 
-    .. autodoc:: proteuslib.<package_name>.<module_name>
+    .. automodule:: proteuslib.<package_name>.<module_name>
         :members:
         :noindex:
 
