@@ -13,7 +13,8 @@
 
 """Flowsheet examples that are limited (i.e. do not satisfy minimum viable product requirements)"""
 
-from pyomo.environ import ConcreteModel, Objective, Expression, Constraint, Param, TransformationFactory, value
+from pyomo.environ import (ConcreteModel, Objective, Expression, Constraint, Param,
+        TransformationFactory, value, units as pyunits)
 from pyomo.network import Arc
 from pyomo.util import infeasible
 from idaes.core import FlowsheetBlock
@@ -88,9 +89,11 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
     m.fs.NF.area.setlb(10)
     m.fs.NF.area.setub(1000)
 
+    m.fs.max_allowable_pressure = Param(initialize=120e5, mutable=True, units=pyunits.pascal)
+
     m.fs.pump_RO.control_volume.properties_out[0].pressure.unfix()
     m.fs.pump_RO.control_volume.properties_out[0].pressure.setlb(20e5)
-    m.fs.pump_RO.control_volume.properties_out[0].pressure.setub(120e5)
+    m.fs.pump_RO.control_volume.properties_out[0].pressure.setub(m.fs.max_allowable_pressure)
 
     m.fs.RO.area.unfix()
     m.fs.RO.area.setlb(10)
@@ -99,7 +102,7 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
     if kwargs_flowsheet['is_twostage']:
         m.fs.pump_RO2.control_volume.properties_out[0].pressure.unfix()
         m.fs.pump_RO2.control_volume.properties_out[0].pressure.setlb(20e5)
-        m.fs.pump_RO2.control_volume.properties_out[0].pressure.setub(120e5)
+        m.fs.pump_RO2.control_volume.properties_out[0].pressure.setub(m.fs.max_allowable_pressure)
 
         m.fs.RO2.area.unfix()
         m.fs.RO2.area.setlb(10)
