@@ -24,7 +24,6 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 from idaes.core.util.scaling import calculate_scaling_factors
 
 from idaes.core.util import get_solver
-from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_scaling
 from entrl_config import configuration
 
 
