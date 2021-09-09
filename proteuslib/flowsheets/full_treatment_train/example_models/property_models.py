@@ -54,7 +54,7 @@ def build_prop(m, base='TDS'):
         m.fs.prop_salt.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'MgCl2'))
 
     elif base == 'eNRTL':
-        m.fs.prop_eNRTL = GenericParameterBlock(default=entrl_config)
+        m.fs.prop_eNRTL = GenericParameterBlock(default=entrl_config.configuration)
 
         # default scaling in config file
 
@@ -70,6 +70,8 @@ def get_prop(m, base='TDS'):
         prop = m.fs.prop_ion
     elif base == 'salt':
         prop = m.fs.prop_salt
+    elif base == 'eNRTL':
+        prop = m.fs.prop_eNRTL
     else:
         raise ValueError('Unexpected property base {base} for get_prop'
                          ''.format(base=base))
