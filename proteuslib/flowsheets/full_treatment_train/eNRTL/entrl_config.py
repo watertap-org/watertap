@@ -84,7 +84,7 @@ configuration = {
         "Liq": {"type": AqueousPhase,
                 "equation_of_state": ENRTL,
                 "equation_of_state_options": {
-                    "reference_state": Unsymmetric}}},
+                    "reference_state": Symmetric}}},
     "base_units": {"time": pyunits.s,
                    "length": pyunits.m,
                    "mass": pyunits.kg,
