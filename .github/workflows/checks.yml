@@ -136,9 +136,11 @@ jobs:
         activate-environment: proteuslib
         python-version: ${{ matrix.python-version }}
     - name: Install proteuslib and testing dependencies
+      env:
+        _repo_full_name: ${{ github.pull_request.head.repo.full_name }}
       run: |
         echo '::group::Output of "pip install" commands'
-        pip install --progress-bar off "proteuslib[testing] @ https://github.com/nawi-hub/proteuslib/archive/refs/${{ github.sha }}.zip"
+        pip install --progress-bar off "proteuslib[testing] @ https://github.com/${_repo_full_name}/archive/refs/${{ github.sha }}.zip"
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
