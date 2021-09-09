@@ -78,6 +78,57 @@ From the same environment where ProteusLib was installed, run:
 .. note:: Typically, the ``idaes get-extensions`` command only needs to be run once for each system, as it will install the required files into a common, system-wide location.
 
 
+.. _install-edb:
+
+Installing the Electrolyte Database (EDB)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To install the EDB, follow these steps:
+
+1. **Install MongoDB**. The EDB uses `MongoDB <https://www.mongodb.com/>`_ as its storage engine. MongoDB is a third-party
+   application that must be installed separately. The "community edition" of MongoDB is free, and has all the
+   functionality needed for the EDB. To download and install it, go to the `MongoDB homepage <https://www.mongodb.com/>`_,
+   or directly to the
+   `MongoDB Community Server download page <https://www.mongodb.com/try/download/community>`_ (see
+   :ref:`screenshot <screenshot-mongodb-download>`). On that page,
+   select the correct operating system and follow the instructions to install the server.
+
+
+2. **Load data**. Some electrolyte data is distributed with ProteusLib to "bootstrap" the EDB.
+   To load it, use the ``edb load`` command --- part of the :ref:`EDB command-line tools <edb-cli>` ---
+   with the bootstrap option, from a shell or command window::
+
+    # Load the standard data into the default MongoDB database, running locally
+    edb load -b
+
+3. **Verify the installation**. If the above command works, the MongoDB server is running and the data should
+   be loaded. You can verify this in a couple of ways:
+
+    a. `Use the command-line program` to dump out the 'base' collection (which is small) to the console. In a
+       shell environment where the Python package has been installed, run the following command::
+
+           edb dump -f '-' -t base
+
+       The result should be a bunch of text that resembles the following::
+
+           Wrote 2 record(s) from collection 'base' to file '<stdout>'
+           [{"phases": {"Liq": {"type": "AqueousPhase", "equation_of_state": "Ideal"}}, "state_definition":
+           "FTPx", "state_bounds": {"flow_mol": [0, 50, 100], "temperature": [273.15, 300, 650], "pressure":
+           [50000, 100000, 1000000]}, "pressure_ref": 100000, "temperature_ref": 300, "base_units": {"time": "s",
+           "length": "m", "mass": "kg", "amount": "mol", "temperature": "K"}, "name": "thermo"}, {"base_units":
+           {"time": "s", "length": "m", "mass": "kg", "amount": "mol", "temperature": "K"}, "phases": {"Liq":
+           {"type": "AqueousPhase", "equation_of_state": "Ideal"}}, "state_definition": "FTPx", "state_bounds":
+           {"flow_mol": [0, 50, 100], "temperature": [273.15, 300, 650], "pressure": [50000.0, 100000.0, 1000000.0]},
+           "pressure_ref": 100000.0, "temperature_ref": 300, "name": "water_reaction"}]
+
+    b. `Use MongoDB's graphical user interface`, "MongoDB Compass", to browse the data. To do this, find and start
+       the application called "MongoDB Compass", which should have been installed when you installed the rest of the
+       MongoDB application. Run it, and choose to connect to the server at URL ``mongodb://localhost:27017`` (this
+       should be the default). You will get a screen like :ref:`this one <screenshot-mongodb-compass-initial>` (with the
+       database you are going to click on next circled).
+       Then, select the "electrolytedb" database. The result should show three collections with some records loaded in
+       each, as in :ref:`this screen <screenshot-mongodb-compass-edb>` .
+
 For ProteusLib developers
 -------------------------
 
@@ -148,6 +199,7 @@ When either the ``proteuslib`` package or one of its dependencies are installed,
 
     .. note:: The ``--no-cache-dir`` flag is used to ensure that existing packages are not erroneously reused by pip,
         which would cause the wrong (outdated) version to be present in the environment after installation.
+
 
 
 

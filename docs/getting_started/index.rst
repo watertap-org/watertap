@@ -2,4 +2,5 @@ Getting Started
 ===============
 
 .. toctree::
-	install
+    install
+    screenshots
