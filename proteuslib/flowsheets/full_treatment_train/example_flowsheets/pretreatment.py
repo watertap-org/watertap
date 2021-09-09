@@ -136,14 +136,10 @@ def display_pretreatment_NF(m, **kwargs):
 
     if kwargs['has_bypass']:
         m.fs.splitter.report()
-        m.fs.NF.inlet.display()  # TODO: update once ZO model has a report
-        m.fs.NF.retentate.display()
-        m.fs.NF.permeate.display()
+        m.fs.NF.report()
         m.fs.mixer.report()
     else:  # no bypass
-        m.fs.NF.inlet.display()  # TODO: update once ZO model has a report
-        m.fs.NF.retentate.display()
-        m.fs.NF.permeate.display()
+        m.fs.NF.report()
 
 
 def solve_pretreatment_NF(**kwargs):

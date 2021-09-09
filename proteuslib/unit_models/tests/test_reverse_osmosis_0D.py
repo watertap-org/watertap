@@ -313,6 +313,11 @@ class TestReverseOsmosis():
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
         assert len(unscaled_constraint_list) == 0
 
+        # check repeated scaling does not create badly scaled vars
+        calculate_scaling_factors(m)
+        for _ in badly_scaled_var_generator(m):
+            assert False
+
     @pytest.mark.component
     def test_initialize(self, RO_frame):
         initialization_tester(RO_frame)

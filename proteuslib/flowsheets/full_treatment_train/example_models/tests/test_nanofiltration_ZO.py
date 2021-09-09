@@ -211,3 +211,7 @@ class TestNanofiltration():
                 value(m.fs.unit.properties_permeate[0].conc_mol_phase_comp['Liq', 'Na']))
         assert (pytest.approx(2.891, rel=1e-3) ==
                 value(m.fs.unit.properties_permeate[0].conc_mol_phase_comp['Liq', 'SO4']))
+
+    @pytest.mark.unit
+    def test_report(self, unit_frame):
+        unit_frame.fs.unit.report()

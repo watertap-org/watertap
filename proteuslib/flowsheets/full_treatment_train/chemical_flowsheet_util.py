@@ -21,11 +21,31 @@
 from pyomo.network import SequentialDecomposition
 from idaes.core.util import scaling as iscale
 from idaes.core.util import get_solver
+from pyomo.environ import value
 
 __author__ = "Austin Ladshaw"
 
 # Get default solver for testing
 solver = get_solver()
+
+def set_H2O_molefraction(port):
+    # Perform a summation of all non-H2O molefractions to find the H2O molefraction
+    sum = 0
+    for i in port.mole_frac_comp:
+        # NOTE: i will be a tuple with format (time, component)
+        if i[1] != "H2O":
+            sum += value(port.mole_frac_comp[i[0], i[1]])
+
+    port.mole_frac_comp[0, "H2O"].set_value( 1-sum )
+
+def zero_out_non_H2O_molefractions(port):
+    for i in port.mole_frac_comp:
+        if i[1] != "H2O":
+            port.mole_frac_comp[i[0], i[1]].set_value(0)
+
+def fix_all_molefractions(port):
+    for i in port.mole_frac_comp:
+        port.mole_frac_comp[i[0], i[1]].fix()
 
 def block_initializer(blk, tee=False):
     solver.options['bound_push'] = 1e-10

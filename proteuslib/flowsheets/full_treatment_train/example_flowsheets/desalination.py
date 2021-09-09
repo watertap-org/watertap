@@ -202,6 +202,7 @@ def display_desalination(m, **kwargs):
         if kwargs['is_twostage']:
             m.fs.pump_RO2.report()
             m.fs.RO2.report()
+            m.fs.mixer_permeate.report()
 
 def solve_desalination(**kwargs):
     m = ConcreteModel()
