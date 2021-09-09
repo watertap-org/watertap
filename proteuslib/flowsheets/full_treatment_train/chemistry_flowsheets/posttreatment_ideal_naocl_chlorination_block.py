@@ -69,6 +69,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from idaes.core.util import get_solver
 
 # Import the idaes objects for Generic Properties and Reactions
@@ -82,6 +83,8 @@ from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReac
 
 # Import th idaes object for the Mixer unit model
 from idaes.generic_models.unit_models.mixer import Mixer
+
+from idaes.generic_models.unit_models.translator import Translator
 
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock
@@ -615,6 +618,51 @@ def build_ideal_naocl_chlorination_block(model, expand_arcs=False):
     if expand_arcs == True:
         TransformationFactory("network.expand_arcs").apply_to(model)
 
+# This method assumes that the flowsheet has a properties object named prop_TDS
+def build_translator_from_RO_to_chlorination_block(model):
+    # Translator inlet from RO and outlet goes to chlorination
+    # NOTE: May need to come up with a way to set state_args for Translator for
+    #       better convergence behavior. This block seems to be the trouble maker
+    #       for the full solve.
+    model.fs.RO_to_Chlor = Translator(
+        default={"inlet_property_package": model.fs.prop_TDS,
+                 "outlet_property_package": model.fs.ideal_naocl_thermo_params})
+
+    # Add constraints to define how the translator will function
+    model.fs.RO_to_Chlor.eq_equal_temperature = Constraint(
+        expr=model.fs.RO_to_Chlor.inlet.temperature[0]
+        == model.fs.RO_to_Chlor.outlet.temperature[0])
+    model.fs.RO_to_Chlor.eq_equal_pressure = Constraint(
+        expr=model.fs.RO_to_Chlor.inlet.pressure[0]
+        == model.fs.RO_to_Chlor.outlet.pressure[0])
+
+    model.fs.RO_to_Chlor.total_flow_cons = Constraint(
+        expr=model.fs.RO_to_Chlor.outlet.flow_mol[0] ==
+            (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']/18e-3) +
+            (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']/58.4e-3) )
+
+    model.fs.RO_to_Chlor.H_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "H_+"] == 0 )
+    model.fs.RO_to_Chlor.OH_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OH_-"] == 0 )
+    model.fs.RO_to_Chlor.HOCl_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "HOCl"] == 0 )
+    model.fs.RO_to_Chlor.OCl_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OCl_-"] == 0 )
+
+    model.fs.RO_to_Chlor.Cl_con = Constraint(
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "Cl_-"] ==
+            (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']/58.4e-3) /
+             model.fs.RO_to_Chlor.outlet.flow_mol[0] )
+
+    model.fs.RO_to_Chlor.Na_con = Constraint(
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "Na_+"] ==
+            (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']/58.4e-3) /
+             model.fs.RO_to_Chlor.outlet.flow_mol[0] + model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OCl_-"])
+
+    model.fs.RO_to_Chlor.H2O_con = Constraint(
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "H2O"] == 1 -
+            sum(model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, j] for j in ["H_+", "OH_-",
+                "HOCl", "OCl_-", "Cl_-", "Na_+"]) )
+
+    iscale.calculate_scaling_factors(model.fs.RO_to_Chlor)
+    iscale.constraint_autoscale_large_jac(model.fs.RO_to_Chlor)
 
 def run_ideal_naocl_mixer_example(fixed_dosage=False):
     model = ConcreteModel()
@@ -735,3 +783,5 @@ def run_chlorination_block_example(fix_free_chlorine=False):
 
 if __name__ == "__main__":
     model = run_chlorination_block_example(fix_free_chlorine=True)
+    property_models.build_prop(model, base='TDS')
+    build_translator_from_RO_to_chlorination_block(model)
