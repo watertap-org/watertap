@@ -141,7 +141,7 @@ jobs:
         _ref_to_install: ${{ github.event.pull_request.head.sha }}
       run: |
         echo '::group::Output of "pip install" commands'
-        _install_url="https://github.com/${_repo_full_name}/archive/refs/${_ref_to_install}.zip"
+        _install_url="https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip"
         pip install --progress-bar off "proteuslib[testing] @ ${_install_url}"
         echo '::endgroup::'
         echo '::group::Display installed packages'
