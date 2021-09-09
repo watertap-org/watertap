@@ -55,8 +55,11 @@ from pyomo.environ import (ConcreteModel,
                            Constraint,
                            SolverStatus,
                            TerminationCondition,
+                           TransformationFactory,
                            value,
                            Suffix)
+
+from pyomo.network import Arc
 
 from idaes.core.util import scaling as iscale
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
@@ -66,6 +69,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from idaes.core.util import get_solver
 
 # Import the idaes objects for Generic Properties and Reactions
@@ -79,6 +83,8 @@ from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReac
 
 # Import th idaes object for the Mixer unit model
 from idaes.generic_models.unit_models.mixer import Mixer
+
+from idaes.generic_models.unit_models.translator import Translator
 
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock
@@ -95,7 +101,8 @@ from proteuslib.flowsheets.full_treatment_train.electrolyte_scaling_utils import
     calculate_chemical_scaling_factors_for_energy_balances)
 
 from proteuslib.flowsheets.full_treatment_train.chemical_flowsheet_util import (
-    set_H2O_molefraction, zero_out_non_H2O_molefractions, fix_all_molefractions )
+    set_H2O_molefraction, zero_out_non_H2O_molefractions, fix_all_molefractions,
+    unfix_all_molefractions, seq_decomp_initializer )
 
 __author__ = "Austin Ladshaw"
 
@@ -399,6 +406,29 @@ def build_ideal_naocl_mixer_unit(model):
 
     model.fs.ideal_naocl_mixer_unit.dosing_cons = Constraint( rule=_dosing_rate_cons )
 
+def build_ideal_naocl_chlorination_unit(model):
+    model.fs.ideal_naocl_chlorination_unit = EquilibriumReactor(default={
+            "property_package": model.fs.ideal_naocl_thermo_params,
+            "reaction_package": model.fs.ideal_naocl_rxn_params,
+            "has_rate_reactions": False,
+            "has_equilibrium_reactions": True,
+            "has_heat_transfer": False,
+            "has_heat_of_reaction": False,
+            "has_pressure_change": False})
+
+    # new var includes an initial calculation (will be overwritten later)
+    fc = model.fs.ideal_naocl_chlorination_unit.inlet.mole_frac_comp[0, "HOCl"].value*55.6
+    fc += model.fs.ideal_naocl_chlorination_unit.inlet.mole_frac_comp[0, "OCl_-"].value*55.6
+    fc = fc*70900
+
+    model.fs.ideal_naocl_chlorination_unit.free_chlorine = Var(initialize=fc)
+
+    def _free_chlorine_cons(blk):
+        return blk.free_chlorine == ((blk.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"]/1000) \
+                                    + (blk.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"]/1000)) \
+                                    * 70900
+    model.fs.ideal_naocl_chlorination_unit.chlorine_cons = Constraint( rule=_free_chlorine_cons )
+
 def set_ideal_naocl_mixer_inlets(model, dosing_rate_of_NaOCl_mg_per_s = 0.4,
                                         inlet_water_density_kg_per_L = 1,
                                         inlet_temperature_K = 298,
@@ -428,6 +458,34 @@ def set_ideal_naocl_mixer_inlets(model, dosing_rate_of_NaOCl_mg_per_s = 0.4,
 
     model.fs.ideal_naocl_mixer_unit.dosing_rate.set_value(dosing_rate_of_NaOCl_mg_per_s)
 
+def set_ideal_naocl_chlorination_inlets(model, mg_per_L_NaOCl_added = 2,
+                                                inlet_water_density_kg_per_L = 1,
+                                                inlet_temperature_K = 298,
+                                                inlet_pressure_Pa = 101325,
+                                                inlet_flow_mol_per_s = 10):
+
+    zero_out_non_H2O_molefractions(model.fs.ideal_naocl_chlorination_unit.inlet)
+
+    total_molar_density = inlet_water_density_kg_per_L/18*1000 #mol/L
+
+    # Free Chlorine (mg-Cl2/L) = total_chlorine_inlet (mol/L) * 70,900
+    #       Assumes chlorine is added as NaOCl
+    free_chlorine_added = mg_per_L_NaOCl_added/74.44/1000*70900 #mg/L as NaOCl
+    total_chlorine_inlet = free_chlorine_added/70900 # mol/L
+    total_molar_density+=total_chlorine_inlet
+
+    model.fs.ideal_naocl_chlorination_unit.inlet.mole_frac_comp[0, "OCl_-"].set_value( total_chlorine_inlet/total_molar_density )
+    model.fs.ideal_naocl_chlorination_unit.inlet.mole_frac_comp[0, "Na_+"].set_value( total_chlorine_inlet/total_molar_density )
+
+    set_H2O_molefraction(model.fs.ideal_naocl_chlorination_unit.inlet)
+
+    model.fs.ideal_naocl_chlorination_unit.inlet.pressure[0].set_value(inlet_pressure_Pa)
+    model.fs.ideal_naocl_chlorination_unit.inlet.temperature[0].set_value(inlet_temperature_K)
+    model.fs.ideal_naocl_chlorination_unit.inlet.flow_mol[0].set_value(inlet_flow_mol_per_s)
+
+    model.fs.ideal_naocl_chlorination_unit.free_chlorine.set_value(mg_per_L_NaOCl_added)
+
+
 def fix_ideal_naocl_mixer_inlets(model):
     model.fs.ideal_naocl_mixer_unit.inlet_stream.flow_mol[0].fix()
     model.fs.ideal_naocl_mixer_unit.inlet_stream.pressure[0].fix()
@@ -439,9 +497,41 @@ def fix_ideal_naocl_mixer_inlets(model):
     model.fs.ideal_naocl_mixer_unit.naocl_stream.temperature[0].fix()
     fix_all_molefractions(model.fs.ideal_naocl_mixer_unit.naocl_stream)
 
+def unfix_ideal_naocl_mixer_inlet_stream(model):
+    model.fs.ideal_naocl_mixer_unit.inlet_stream.flow_mol[0].unfix()
+    model.fs.ideal_naocl_mixer_unit.inlet_stream.pressure[0].unfix()
+    model.fs.ideal_naocl_mixer_unit.inlet_stream.temperature[0].unfix()
+    unfix_all_molefractions(model.fs.ideal_naocl_mixer_unit.inlet_stream)
+
+def unfix_ideal_naocl_mixer_naocl_stream(model):
+    model.fs.ideal_naocl_mixer_unit.naocl_stream.flow_mol[0].unfix()
+    model.fs.ideal_naocl_mixer_unit.naocl_stream.pressure[0].unfix()
+    model.fs.ideal_naocl_mixer_unit.naocl_stream.temperature[0].unfix()
+    unfix_all_molefractions(model.fs.ideal_naocl_mixer_unit.naocl_stream)
+
+def fix_ideal_naocl_chlorination_inlets(model):
+    model.fs.ideal_naocl_chlorination_unit.inlet.flow_mol[0].fix()
+    model.fs.ideal_naocl_chlorination_unit.inlet.pressure[0].fix()
+    model.fs.ideal_naocl_chlorination_unit.inlet.temperature[0].fix()
+    fix_all_molefractions(model.fs.ideal_naocl_chlorination_unit.inlet)
+
+def unfix_ideal_naocl_chlorination_inlets(model):
+    model.fs.ideal_naocl_chlorination_unit.inlet.flow_mol[0].unfix()
+    model.fs.ideal_naocl_chlorination_unit.inlet.pressure[0].unfix()
+    model.fs.ideal_naocl_chlorination_unit.inlet.temperature[0].unfix()
+    unfix_all_molefractions(model.fs.ideal_naocl_chlorination_unit.inlet)
+
 # basic jacobian scaling for this unit
 def scale_ideal_naocl_mixer(unit):
     iscale.constraint_autoscale_large_jac(unit)
+
+def scale_ideal_naocl_chlorination(unit, rxn_params, thermo_params, rxn_config):
+    state_args, stoich_extents = approximate_chemical_state_args(unit,
+                                rxn_params, rxn_config)
+    calculate_chemical_scaling_factors(unit,
+                                        thermo_params,
+                                        rxn_params, state_args)
+    return state_args
 
 def initialize_ideal_naocl_mixer(unit, debug_out=False):
     solver.options['bound_push'] = 1e-10
@@ -458,6 +548,19 @@ def initialize_ideal_naocl_mixer(unit, debug_out=False):
     if was_fixed == True:
         unit.naocl_stream.flow_mol[0].unfix()
 
+def initialize_ideal_naocl_chlorination(unit, state_args, debug_out=False):
+    solver.options['bound_push'] = 1e-10
+    solver.options['mu_init'] = 1e-6
+    solver.options["nlp_scaling_method"] = "user-scaling"
+    if debug_out == True:
+        unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
+    else:
+        unit.initialize(state_args=state_args, optarg=solver.options)
+
+def setup_block_to_solve_dosing_rate(model, free_chlorine_mg_per_L = 2):
+    model.fs.ideal_naocl_chlorination_unit.free_chlorine.fix(free_chlorine_mg_per_L)
+    model.fs.ideal_naocl_mixer_unit.naocl_stream.flow_mol[0].unfix()
+
 def display_results_of_ideal_naocl_mixer(unit):
     print()
     print("=========== Ideal NaOCl Mixer Results ============")
@@ -471,12 +574,34 @@ def display_results_of_ideal_naocl_mixer(unit):
     psu = total_salt/(total_molar_density*18)*1000
     print("STP Salinity (PSU):           \t" + str(psu))
     print("NaOCl Dosing Rate (mg/s): \t" + str(unit.dosing_rate.value))
-    print()
-    unit.outlet.mole_frac_comp.pprint()
     print("-------------------------------------------------")
     print()
 
-def build_ideal_naocl_chlorination_block(model):
+def display_results_of_chlorination_unit(unit):
+    print()
+    print("=========== Chlorination Results ============")
+    print("Outlet Temperature:       \t" + str(unit.outlet.temperature[0].value))
+    print("Outlet Pressure:          \t" + str(unit.outlet.pressure[0].value))
+    print("Outlet FlowMole:          \t" + str(unit.outlet.flow_mol[0].value))
+    print()
+    total_molar_density = \
+        value(unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
+    pH = -value(log10(unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
+    print("pH at Outlet:             \t" + str(pH))
+    total_salt = value(unit.outlet.mole_frac_comp[0, "Na_+"])*total_molar_density*23
+    total_salt += value(unit.outlet.mole_frac_comp[0, "Cl_-"])*total_molar_density*35.4
+    psu = total_salt/(total_molar_density*18)*1000
+    print("Salinity (PSU):           \t" + str(psu))
+    print("Free Chlorine (mg/L):     \t" + str(unit.free_chlorine.value))
+    print("\tDistribution:")
+    hocl = (value(unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","HOCl"])/1000)/(unit.free_chlorine.value/70900)
+    print("\t % HOCl: \t" + str(hocl*100))
+    ocl = (value(unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","OCl_-"])/1000)/(unit.free_chlorine.value/70900)
+    print("\t % OCl-: \t" + str(ocl*100))
+    print("-------------------------------------------")
+    print()
+
+def build_ideal_naocl_chlorination_block(model, expand_arcs=False):
 
     # Add properties to model
     build_ideal_naocl_prop(model)
@@ -484,6 +609,60 @@ def build_ideal_naocl_chlorination_block(model):
     # Add mixer to the model
     build_ideal_naocl_mixer_unit(model)
 
+    # Add mixer to the model
+    build_ideal_naocl_chlorination_unit(model)
+
+    # Connect the mixer to the chlorination unit with arcs
+    model.fs.ideal_nacol_arc_mixer_to_chlor = Arc(source=model.fs.ideal_naocl_mixer_unit.outlet,
+                                                destination=model.fs.ideal_naocl_chlorination_unit.inlet)
+    if expand_arcs == True:
+        TransformationFactory("network.expand_arcs").apply_to(model)
+
+# This method assumes that the flowsheet has a properties object named prop_TDS
+def build_translator_from_RO_to_chlorination_block(model):
+    # Translator inlet from RO and outlet goes to chlorination
+    # NOTE: May need to come up with a way to set state_args for Translator for
+    #       better convergence behavior. This block seems to be the trouble maker
+    #       for the full solve.
+    model.fs.RO_to_Chlor = Translator(
+        default={"inlet_property_package": model.fs.prop_TDS,
+                 "outlet_property_package": model.fs.ideal_naocl_thermo_params})
+
+    # Add constraints to define how the translator will function
+    model.fs.RO_to_Chlor.eq_equal_temperature = Constraint(
+        expr=model.fs.RO_to_Chlor.inlet.temperature[0]
+        == model.fs.RO_to_Chlor.outlet.temperature[0])
+    model.fs.RO_to_Chlor.eq_equal_pressure = Constraint(
+        expr=model.fs.RO_to_Chlor.inlet.pressure[0]
+        == model.fs.RO_to_Chlor.outlet.pressure[0])
+
+    model.fs.RO_to_Chlor.total_flow_cons = Constraint(
+        expr=model.fs.RO_to_Chlor.outlet.flow_mol[0] ==
+            (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']/18e-3) +
+            (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']/58.4e-3) )
+
+    model.fs.RO_to_Chlor.H_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "H_+"] == 0 )
+    model.fs.RO_to_Chlor.OH_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OH_-"] == 0 )
+    model.fs.RO_to_Chlor.HOCl_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "HOCl"] == 0 )
+    model.fs.RO_to_Chlor.OCl_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OCl_-"] == 0 )
+
+    model.fs.RO_to_Chlor.Cl_con = Constraint(
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "Cl_-"] ==
+            (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']/58.4e-3) /
+             model.fs.RO_to_Chlor.outlet.flow_mol[0] )
+
+    model.fs.RO_to_Chlor.Na_con = Constraint(
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "Na_+"] ==
+            (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']/58.4e-3) /
+             model.fs.RO_to_Chlor.outlet.flow_mol[0] + model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OCl_-"])
+
+    model.fs.RO_to_Chlor.H2O_con = Constraint(
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "H2O"] == 1 -
+            sum(model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, j] for j in ["H_+", "OH_-",
+                "HOCl", "OCl_-", "Cl_-", "Na_+"]) )
+
+    iscale.calculate_scaling_factors(model.fs.RO_to_Chlor)
+    iscale.constraint_autoscale_large_jac(model.fs.RO_to_Chlor)
 
 def run_ideal_naocl_mixer_example(fixed_dosage=False):
     model = ConcreteModel()
@@ -519,16 +698,90 @@ def run_ideal_naocl_mixer_example(fixed_dosage=False):
 
     display_results_of_ideal_naocl_mixer(model.fs.ideal_naocl_mixer_unit)
 
-
     return model
 
-def run_chlorination_block_example():
+def run_ideal_naocl_chlorination_example():
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
 
-    build_ideal_naocl_chlorination_block(model)
+    # add properties to model
+    build_ideal_naocl_prop(model)
+
+    # add equilibrium unit
+    build_ideal_naocl_chlorination_unit(model)
+
+    # Set some inlet values
+    set_ideal_naocl_chlorination_inlets(model)
+
+    # fix the inlets
+    fix_ideal_naocl_chlorination_inlets(model)
+
+    check_dof(model)
+
+    # scale the chlorination unit
+    state_args = scale_ideal_naocl_chlorination(model.fs.ideal_naocl_chlorination_unit,
+                                    model.fs.ideal_naocl_rxn_params,
+                                    model.fs.ideal_naocl_thermo_params,
+                                    ideal_naocl_reaction_config)
+
+    # initialize the unit
+    initialize_ideal_naocl_chlorination(model.fs.ideal_naocl_chlorination_unit, state_args, debug_out=False)
+
+    # solve with user scaling
+    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+
+    display_results_of_chlorination_unit(model.fs.ideal_naocl_chlorination_unit)
+
+    return model
+
+def run_chlorination_block_example(fix_free_chlorine=False):
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(default={"dynamic": False})
+
+    # Build the partial flowsheet of a mixer and chlorination unit
+    build_ideal_naocl_chlorination_block(model, expand_arcs=True)
+
+    # set some values (using defaults for testing)
+    set_ideal_naocl_mixer_inlets(model, dosing_rate_of_NaOCl_mg_per_s = 0.4,
+                                            inlet_water_density_kg_per_L = 1,
+                                            inlet_temperature_K = 298,
+                                            inlet_pressure_Pa = 101325,
+                                            inlet_flow_mol_per_s = 25)
+    set_ideal_naocl_chlorination_inlets(model)
+
+    # fix only the inlets for the mixer
+    fix_ideal_naocl_mixer_inlets(model)
+    # scale and initialize the mixer
+    scale_ideal_naocl_mixer(model.fs.ideal_naocl_mixer_unit)
+    initialize_ideal_naocl_mixer(model.fs.ideal_naocl_mixer_unit)
+
+    # scale and initialize the chlorination unit
+    state_args = scale_ideal_naocl_chlorination(model.fs.ideal_naocl_chlorination_unit,
+                                    model.fs.ideal_naocl_rxn_params,
+                                    model.fs.ideal_naocl_thermo_params,
+                                    ideal_naocl_reaction_config)
+
+    # initialize the unit
+    initialize_ideal_naocl_chlorination(model.fs.ideal_naocl_chlorination_unit, state_args, debug_out=False)
+
+    check_dof(model)
+
+    # Scale the full model and call the seq_decomp_initializer
+    seq_decomp_initializer(model)
+
+    # solve with user scaling
+    iscale.constraint_autoscale_large_jac(model)
+
+    if fix_free_chlorine == True:
+        setup_block_to_solve_dosing_rate(model)
+    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+
+    display_results_of_ideal_naocl_mixer(model.fs.ideal_naocl_mixer_unit)
+    display_results_of_chlorination_unit(model.fs.ideal_naocl_chlorination_unit)
 
     return model
 
 if __name__ == "__main__":
-    model = run_ideal_naocl_mixer_example()
+    model = run_chlorination_block_example(fix_free_chlorine=True)
+    property_models.build_prop(model, base='TDS')
+    build_translator_from_RO_to_chlorination_block(model)

@@ -14,20 +14,24 @@
 Demonstration flowsheet for using eNRTL model to check solubility index
 
 Author: Andrew Lee
+
+Adaptation into plotting tool to visualize relationships between gypsum SI,
+activity coefficients, concentration factor, and Ksp
+Author: Adam Atia
 """
 
-from pyomo.environ import ConcreteModel, value
+from pyomo.environ import ConcreteModel, value, Constraint
 
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.generic.generic_property import (
-        GenericParameterBlock)
-from idaes.core.util.scaling import calculate_scaling_factors
+    GenericParameterBlock)
 
-from idaes.core.util import get_solver
-from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_scaling
 from entrl_config import configuration
 
-
+from idaes.core.util import get_solver
+from idaes.core.util.model_statistics import degrees_of_freedom
+import numpy as np
+import matplotlib.pyplot as plt
 
 # Artificial seawater composition
 # Na_+: 11122 mg/kg, 22.99 g/mol
@@ -37,7 +41,7 @@ from entrl_config import configuration
 # Cl_-: 20300 (rounding error?), 35.446
 
 
-def model():
+def compute_gypsum_SI(Ksp=8.89912404553923e-09, feed_comp=None):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.params = GenericParameterBlock(default=configuration)
@@ -47,9 +51,12 @@ def model():
 
     # Set state
     m.fs.state[0].temperature.fix(298.15)
-    m.fs.state[0].pressure.fix(100*1e5)
+    m.fs.state[0].pressure.fix(100 * 1e5)
     m.fs.state[0].flow_mol.fix(100)
 
+
+    for ion, mole_frac in feed_comp.items():
+        m.fs.state[0].mole_frac_comp[ion].fix(mole_frac)
     # Feed conditions
     # m.fs.state[0].mole_frac_comp["Na_+"].fix(0.008845)
     # m.fs.state[0].mole_frac_comp["Ca_2+"].fix(0.000174)
@@ -67,12 +74,12 @@ def model():
     # m.fs.state[0].mole_frac_comp["H2O"].fix(9.801122E-01)
 
     # 50% water recovery
-    m.fs.state[0].mole_frac_comp["Na_+"].fix(0.017327)
-    m.fs.state[0].mole_frac_comp["Ca_2+"].fix(0.000341)
-    m.fs.state[0].mole_frac_comp["Mg_2+"].fix(0.002054)
-    m.fs.state[0].mole_frac_comp["SO4_2-"].fix(0.000796)
-    m.fs.state[0].mole_frac_comp["Cl_-"].fix(0.020529)
-    m.fs.state[0].mole_frac_comp["H2O"].fix(0.958952)
+    # m.fs.state[0].mole_frac_comp["Na_+"].fix(0.017327)
+    # m.fs.state[0].mole_frac_comp["Ca_2+"].fix(0.000341)
+    # m.fs.state[0].mole_frac_comp["Mg_2+"].fix(0.002054)
+    # m.fs.state[0].mole_frac_comp["SO4_2-"].fix(0.000796)
+    # m.fs.state[0].mole_frac_comp["Cl_-"].fix(0.020529)
+    # m.fs.state[0].mole_frac_comp["H2O"].fix(0.958952)
 
     # 50% water recovery (AAA mods)
     # m.fs.state[0].mole_frac_comp["Na_+"].fix(0.017327)
@@ -121,40 +128,92 @@ def model():
     # m.fs.state[0].mole_frac_comp["Cl_-"].fix(3.472265e-2)
     # m.fs.state[0].mole_frac_comp["H2O"].fix(0.963715)
 
-    # scale model
-    calculate_scaling_factors(m)
+    act = m.fs.state[0].act_phase_comp
+    act_coeff = m.fs.state[0].act_coeff_phase_comp
+    # Solve model
+    m.fs.state.initialize()
 
-    # Regular solve
     solver = get_solver()
-    results = solver.solve(m)
-
-    # User scaling
-    # m.fs.state.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
-    # solve_with_user_scaling(m)
-    # check_scaling(m)
+    solver.solve(m, tee=False)
 
     # Display some results
-    Ksp = {"CaSO4": 3.5e-5,
-           "Gypsum": 3.9e-9}  # Gibbs energy gives 3.9e-8, but this fits expectations better
-    act = m.fs.state[0].act_phase_comp
-    m.fs.state[0].mole_frac_phase_comp.display()
-    m.fs.state[0].act_coeff_phase_comp.display()
-    act.display()
-    print("Solubility Indices\n")
-    print("CaSO4:", value(
-        act["Liq", "Ca_2+"]*act["Liq", "SO4_2-"]/Ksp["CaSO4"]))
-    print("Gypsum:", value(
-        act["Liq", "Ca_2+"]*act["Liq", "SO4_2-"]*act["Liq", "H2O"]**2 /
-        Ksp["Gypsum"]))
+    # Ksp = {"CaSO4": 3.5e-5,
+    #        "Gypsum": 8.89912404553923e-09}  # 8.89912404553923e-09
+    SI = value(act["Liq", "Ca_2+"] * act["Liq", "SO4_2-"] * act["Liq", "H2O"] ** 2 / Ksp)
+    gamma_Ca = value(act_coeff["Liq", "Ca_2+"])
+    gamma_SO4 = value(act_coeff["Liq", "SO4_2-"])
+    gamma_CaSO4_avg = value((act_coeff["Liq", "Ca_2+"] * act_coeff["Liq", "Ca_2+"]) ** 0.5)
+    # print("\nSolubility Indices\n")
+    # print("CaSO4:", value(act["Liq", "Ca_2+"] * act["Liq", "SO4_2-"] / Ksp["CaSO4"]))
+    # print("Gypsum:", value(act["Liq", "Ca_2+"] * act["Liq", "SO4_2-"] * act["Liq", "H2O"] ** 2 / Ksp["Gypsum"]))
+    # print("\nActivity Coefficients\n")
+    # print("gamma_Ca:", value(act_coeff["Liq", "Ca_2+"]))
+    # print("gamma_SO4:", value(act_coeff["Liq", "SO4_2-"]))
+    # print("gamma_H2O:", value(act_coeff["Liq", "H2O"]))
+    # print("gamma_CaSO4_average:", value((act_coeff["Liq", "Ca_2+"] * act_coeff["Liq", "Ca_2+"]) ** 2))
 
-    # Calculate molalities to back check
-    bCa = value(m.fs.state[0].mole_frac_phase_comp["Liq", "Ca_2+"] /
-                (m.fs.state[0].mole_frac_phase_comp["Liq", "H2O"]*18.015*1e-3))
-    bSO4 = value(m.fs.state[0].mole_frac_phase_comp["Liq", "SO4_2-"] /
-                 (m.fs.state[0].mole_frac_phase_comp["Liq", "H2O"] *
-                  18.015*1e-3))
-    print("Molalities: Ca:", bCa, "SO4:", bSO4)
+    return SI, gamma_Ca, gamma_SO4, gamma_CaSO4_avg
 
+def gypsum_SI_plot(Ksp, cf, yvar):
+    '''Plot the dependent variable, yvar, for either
+    1) saturation ratio
+    2) Ca activity coefficient
+    3) SO4 activity coefficient or
+    4) CaSO4 average activity coefficient
+    as a function of concentration factor, cf, and solubility product, Ksp
+    '''
+    for ksp in Ksp:
+        SI_mat = []
+        gamma_Ca_mat = []
+        gamma_SO4_mat = []
+        gamma_CaSO4_avg_mat = []
+        labels = {'SI_mat': 'Gypsum Saturation Ratio',
+                  'gamma_Ca_mat': 'Calcium Activity Coefficient',
+                  'gamma_SO4_mat': 'SO4 Activity Coefficient',
+                  'gamma_CaSO4_avg_mat': 'CaSO4 Average Activity Coefficient'}
+        for concentration_factor in cf:
+            feed_comp = {
+                "Na_+": 0.008845,
+                "Cl_-": 0.010479,
+                "Ca_2+": 0.000174,
+                "Mg_2+": 0.001049,
+                "SO4_2-": 0.000407,
+                "H2O": 0.979046
+            }
+            feed_comp.update((x, y * concentration_factor) for x, y in feed_comp.items()
+                             if x != 'H2O')
+            ion_mol_fraction = 0
+            for x, k in feed_comp.items():
+                if x!='H2O':
+                    ion_mol_fraction += k
+            new_h2o = {"H2O": 1-ion_mol_fraction}
+            feed_comp.update(new_h2o)
+            print(feed_comp)
+            SI, gamma_Ca, gamma_SO4, gamma_CaSO4_avg = compute_gypsum_SI(Ksp=ksp, feed_comp=feed_comp)
 
+            SI_mat.append(SI)
+            gamma_Ca_mat.append(gamma_Ca)
+            gamma_SO4_mat.append(gamma_SO4)
+            gamma_CaSO4_avg_mat.append(gamma_CaSO4_avg)
+            ksp_str = "Ksp=" + str(round(ksp,10))
+        plt.scatter(cf, eval(yvar), label=ksp_str)
+        if yvar == 'SI_mat':
+            saturation = plt.plot([0, 5], [1, 1], color='black')
+            plt.xlim(cf[0], 5)
+            plt.ylim(0, 5)
+    plt.xlabel("Concentration Factor")
+    plt.ylabel(labels[yvar])
+    plt.legend()
 if __name__ == '__main__':
-    model()
+
+    # concentration factor from 1 to 10
+    cf = np.linspace(1, 5, 20)
+    # For yvar, choose from 'SI_mat'
+#                 'gamma_Ca_mat'
+    #             'gamma_SO4_mat'
+    #             'gamma_CaSO4_avg_mat'
+    yvar = 'SI_mat'
+
+    Ksp = np.linspace(3.8e-9, 3.8e-8, 2)
+
+    gypsum_SI_plot(Ksp=Ksp, cf=cf, yvar=yvar)
