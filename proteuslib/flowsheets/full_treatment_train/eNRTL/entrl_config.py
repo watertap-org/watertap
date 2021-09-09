@@ -133,5 +133,6 @@ configuration = {
                                 ("mole_frac_comp", "SO4_2-"): 1e4,
                                 ("mole_frac_comp", "Cl_-"): 1e2,
                                 ("mole_frac_comp", "H2O"): 1,
+                                ("flow_mol", None): 1e-1,
                                 }
 }

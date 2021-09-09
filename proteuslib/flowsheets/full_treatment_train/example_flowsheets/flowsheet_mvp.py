@@ -56,7 +56,7 @@ def build_flowsheet_mvp_NF(m, has_bypass=True, has_desal_feed=False, is_twostage
     m.fs.s_pretrt_tb = Arc(source=pretrt_port['out'], destination=m.fs.tb_pretrt_to_desal.inlet)
     m.fs.s_tb_desal = Arc(source=m.fs.tb_pretrt_to_desal.outlet, destination=desal_port['in'])
 
-    gypsum_saturation_index.build_desalination_saturation(m)
+    gypsum_saturation_index.build_desalination_saturation(m, **kwargs_desalination)
 
     return m
 
@@ -86,14 +86,14 @@ def solve_flowsheet_mvp_NF(**kwargs):
     check_dof(m)
     # solve_without_user_scaling(m, tee=False, fail_flag=False)
     # solve_without_user_scaling(m, tee=False, fail_flag=True)
-    solve_with_user_scaling(m, tee=True, fail_flag=True)
+    solve_with_user_scaling(m, tee=False, fail_flag=True)
 
     # pretreatment.display_pretreatment_NF(m, **kwargs)
     m.fs.feed.report()
     m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs)
     # m.fs.desal_saturation.properties.display()
-    print('Solubility index:', value(m.fs.desal_saturation.properties[0].saturation_index))
+    print('Solubility index:', value(m.fs.desal_saturation.saturation_index))
     m.fs.desal_saturation.properties[0].flow_mol.display()
     m.fs.desal_saturation.properties[0].mole_frac_comp.display()
 
@@ -107,7 +107,7 @@ def solve_flowsheet_mvp_NF(**kwargs):
     desalination.display_desalination(m, **kwargs)
     # m.fs.desal_saturation.properties.display()
     print('Flux:', value(m.fs.RO.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']) * 3600)
-    print('Solubility index:', value(m.fs.desal_saturation.properties[0].saturation_index))
+    print('Solubility index:', value(m.fs.desal_saturation.saturation_index))
     m.fs.desal_saturation.properties[0].flow_mol.display()
     m.fs.desal_saturation.properties[0].mole_frac_comp.display()
 
@@ -115,12 +115,11 @@ def solve_flowsheet_mvp_NF(**kwargs):
     m.fs.pump_RO.control_volume.properties_out[0].pressure.unfix()
     m.fs.pump_RO.control_volume.properties_out[0].pressure.setlb(20e5)
     m.fs.pump_RO.control_volume.properties_out[0].pressure.setub(120e5)
-    m.fs.desal_saturation.saturation_limit = Constraint(
-        expr=m.fs.desal_saturation.properties[0].saturation_index == 1)
+    m.fs.desal_saturation.saturation_index.fix(1)
     solve_with_user_scaling(m, tee=False, fail_flag=True)
     desalination.display_desalination(m, **kwargs)
     print('Flux:', value(m.fs.RO.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']) * 3600)
-    print('Solubility index:', value(m.fs.desal_saturation.properties[0].saturation_index))
+    print('Solubility index:', value(m.fs.desal_saturation.saturation_index))
 
     # optimize LCOW and reach saturation
     # m.fs.pump_RO.display()
@@ -136,7 +135,7 @@ def solve_flowsheet_mvp_NF(**kwargs):
     m.fs.RO.area.display()
     m.fs.RO.inlet.display()
     print('Flux:', value(m.fs.RO.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']) * 3600)
-    print('Solubility index:', value(m.fs.desal_saturation.properties[0].saturation_index))
+    print('Solubility index:', value(m.fs.desal_saturation.saturation_index))
 
     print('Area costs', (value(m.fs.RO.area) * 30 * (0.1 + 0.2))*2)
     print('Pressure costs', value(m.fs.pump_RO.control_volume.work[0]) / 1000 * 24 * 365 * 0.07)
