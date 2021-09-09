@@ -204,9 +204,9 @@ If you edited some documentation directly, i.e. created or modified a text file 
 don't need to run the previous command. Regardless, you will next need to update the documentation with the
 Sphinx build command given in step 3 of :ref:`documentation-mini-guide-gen`.
 
-.. note:: The files under "docs/apidoc" are tracked in Git, otherwise they would not be available to the
-ReadTheDocs builder (that doesn't know about sphinx-apidoc, strangely). Please remember to commit and push
-them along with the changes in the source code.
+.. important:: The files under "docs/apidoc" are tracked in Git, otherwise they would not be available to the
+    ReadTheDocs builder (that doesn't know about sphinx-apidoc, strangely). Please remember to commit and push
+    them along with the changes in the source code.
 
 Documenting your modules
 ++++++++++++++++++++++++
