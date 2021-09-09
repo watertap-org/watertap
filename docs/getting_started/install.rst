@@ -200,7 +200,29 @@ When either the ``proteuslib`` package or one of its dependencies are installed,
     .. note:: The ``--no-cache-dir`` flag is used to ensure that existing packages are not erroneously reused by pip,
         which would cause the wrong (outdated) version to be present in the environment after installation.
 
+----
 
+.. rubric:: Screenshots
+
+.. _screenshot-mongodb-download:
+
+.. figure:: ../_static/mongodb-download-page.*
+
+    Download page for MongoDB community server (9/2021)
+
+
+.. _screenshot-mongodb-compass-initial:
+
+.. figure:: ../_static/mongodb-compass-initial.*
+
+    MongoDB Compass Initial Screen (9/2021)
+
+
+.. _screenshot-mongodb-compass-edb:
+
+.. figure:: ../_static/mongodb-compass-electrolytedb.*
+
+    MongoDB Compass electrolytedb Collections (9/2021)
 
 
 
