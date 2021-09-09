@@ -21,10 +21,10 @@ from idaes.core.util.initialization import propagate_state
 from proteuslib.flowsheets.full_treatment_train.example_flowsheets import (pretreatment,
                                                                            desalination,
                                                                            translator_block,
-                                                                           feed_block)
+                                                                           feed_block,
+                                                                           gypsum_saturation_index)
 from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from proteuslib.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
-                                                             solve_without_user_scaling,
                                                              check_dof)
 
 """Flowsheet examples that satisfy minimum viable product requirements"""
@@ -56,61 +56,9 @@ def build_flowsheet_mvp_NF(m, has_bypass=True, has_desal_feed=False, is_twostage
     m.fs.s_pretrt_tb = Arc(source=pretrt_port['out'], destination=m.fs.tb_pretrt_to_desal.inlet)
     m.fs.s_tb_desal = Arc(source=m.fs.tb_pretrt_to_desal.outlet, destination=desal_port['in'])
 
-    build_eNTRL_scaling(m)
+    gypsum_saturation_index.build_desalination_saturation(m)
 
     return m
-
-
-def build_eNTRL_scaling(m):
-    m.fs.eNRTL_scaling = Block()
-    m.fs.eNRTL_scaling.properties = m.fs.prop_eNRTL.build_state_block([0], default={})
-
-    # initial values
-    m.fs.eNRTL_scaling.properties[0].temperature = 298.15
-    m.fs.eNRTL_scaling.properties[0].pressure = 100 * 1e5
-    m.fs.eNRTL_scaling.properties[0].flow_mol = 100
-    # 2 times concentration factor
-    m.fs.eNRTL_scaling.properties[0].mole_frac_comp["Na_+"] = 0.017327
-    m.fs.eNRTL_scaling.properties[0].mole_frac_comp["Ca_2+"] = 0.000341
-    m.fs.eNRTL_scaling.properties[0].mole_frac_comp["Mg_2+"] = 0.002054
-    m.fs.eNRTL_scaling.properties[0].mole_frac_comp["SO4_2-"] = 0.000796
-    m.fs.eNRTL_scaling.properties[0].mole_frac_comp["Cl_-"] = 0.020529
-    m.fs.eNRTL_scaling.properties[0].mole_frac_comp["H2O"] = 0.958952
-
-    # constraints
-    blk = m.fs.eNRTL_scaling.properties[0]
-    sb_dilute = m.fs.tb_pretrt_to_desal.properties_in[0]
-    sb_conc = m.fs.RO.feed_side.properties_out[0]
-
-    m.fs.eNRTL_scaling.eq_temperature = Constraint(
-        expr=blk.temperature == sb_conc.temperature)
-    m.fs.eNRTL_scaling.eq_pressure = Constraint(
-        expr=blk.pressure == sb_conc.pressure)
-
-    @m.fs.eNRTL_scaling.Constraint(['Na_+', 'Ca_2+', 'Mg_2+', 'Cl_-', 'SO4_2-', 'H2O'])
-    def eq_flow_mol_balance(b, j):
-        if j == 'Cl_-':
-            return blk.flow_mol_phase_comp['Liq', j] == sb_dilute.flow_mol_phase_comp['Liq', 'Cl'] * 0.99
-        elif j == 'Na_+':
-            return blk.flow_mol_phase_comp['Liq', j] == sb_dilute.flow_mol_phase_comp['Liq', 'Na'] * 0.99
-        elif j == 'Ca_2+':
-            return blk.flow_mol_phase_comp['Liq', j] == sb_dilute.flow_mol_phase_comp['Liq', 'Ca']
-        elif j == 'Mg_2+':
-            return blk.flow_mol_phase_comp['Liq', j] == sb_dilute.flow_mol_phase_comp['Liq', 'Mg']
-        elif j == 'SO4_2-':
-            return blk.flow_mol_phase_comp['Liq', j] == sb_dilute.flow_mol_phase_comp['Liq', 'SO4']
-        elif j == 'H2O':
-            return (blk.flow_mol_phase_comp['Liq', j] ==
-                    sb_dilute.flow_mol_phase_comp['Liq', 'H2O']
-                    * sb_conc.flow_vol / sb_dilute.flow_vol)
-
-    Ksp = {"Gypsum": 3.9e-9}  # Gibbs energy gives 3.9e-8, but this fits expectations better
-
-    blk.solubility_index = Expression(
-        expr=blk.act_phase_comp["Liq", "Ca_2+"]
-             * blk.act_phase_comp["Liq", "SO4_2-"]
-             * blk.act_phase_comp["Liq", "H2O"] ** 2
-             / Ksp["Gypsum"])
 
 
 def solve_flowsheet_mvp_NF(**kwargs):
@@ -132,7 +80,7 @@ def solve_flowsheet_mvp_NF(**kwargs):
     m.fs.tb_pretrt_to_desal.initialize(optarg=optarg)
     propagate_state(m.fs.s_tb_desal)
     desalination.initialize_desalination(m, **kwargs)
-    m.fs.eNRTL_scaling.properties.initialize()
+    m.fs.desal_saturation.properties.initialize()
     # assert False
 
     check_dof(m)
@@ -144,10 +92,10 @@ def solve_flowsheet_mvp_NF(**kwargs):
     m.fs.feed.report()
     m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs)
-    # m.fs.eNRTL_scaling.properties.display()
-    print('Solubility index:', value(m.fs.eNRTL_scaling.properties[0].solubility_index))
-    m.fs.eNRTL_scaling.properties[0].flow_mol.display()
-    m.fs.eNRTL_scaling.properties[0].mole_frac_comp.display()
+    # m.fs.desal_saturation.properties.display()
+    print('Solubility index:', value(m.fs.desal_saturation.properties[0].saturation_index))
+    m.fs.desal_saturation.properties[0].flow_mol.display()
+    m.fs.desal_saturation.properties[0].mole_frac_comp.display()
 
     # solve #2
     m.fs.RO.area.fix(60)
@@ -157,24 +105,24 @@ def solve_flowsheet_mvp_NF(**kwargs):
     # m.fs.feed.report()
     # m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs)
-    # m.fs.eNRTL_scaling.properties.display()
+    # m.fs.desal_saturation.properties.display()
     print('Flux:', value(m.fs.RO.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']) * 3600)
-    print('Solubility index:', value(m.fs.eNRTL_scaling.properties[0].solubility_index))
-    m.fs.eNRTL_scaling.properties[0].flow_mol.display()
-    m.fs.eNRTL_scaling.properties[0].mole_frac_comp.display()
+    print('Solubility index:', value(m.fs.desal_saturation.properties[0].saturation_index))
+    m.fs.desal_saturation.properties[0].flow_mol.display()
+    m.fs.desal_saturation.properties[0].mole_frac_comp.display()
 
-    # solve for specific solubility
+    # solve for specific saturation
     m.fs.pump_RO.control_volume.properties_out[0].pressure.unfix()
     m.fs.pump_RO.control_volume.properties_out[0].pressure.setlb(20e5)
     m.fs.pump_RO.control_volume.properties_out[0].pressure.setub(120e5)
-    m.fs.eNRTL_scaling.solubility_limit = Constraint(
-        expr=m.fs.eNRTL_scaling.properties[0].solubility_index == 1)
+    m.fs.desal_saturation.saturation_limit = Constraint(
+        expr=m.fs.desal_saturation.properties[0].saturation_index == 1)
     solve_with_user_scaling(m, tee=False, fail_flag=True)
     desalination.display_desalination(m, **kwargs)
     print('Flux:', value(m.fs.RO.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']) * 3600)
-    print('Solubility index:', value(m.fs.eNRTL_scaling.properties[0].solubility_index))
+    print('Solubility index:', value(m.fs.desal_saturation.properties[0].saturation_index))
 
-    # optimize LCOW and reach solubility
+    # optimize LCOW and reach saturation
     # m.fs.pump_RO.display()
     m.fs.objective = Objective(
         expr=((m.fs.RO.area * 30) * 4 * (0.1 + 0.2) + m.fs.pump_RO.control_volume.work[0] / 1000 * 24 * 365 * 0.07))
@@ -188,7 +136,7 @@ def solve_flowsheet_mvp_NF(**kwargs):
     m.fs.RO.area.display()
     m.fs.RO.inlet.display()
     print('Flux:', value(m.fs.RO.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']) * 3600)
-    print('Solubility index:', value(m.fs.eNRTL_scaling.properties[0].solubility_index))
+    print('Solubility index:', value(m.fs.desal_saturation.properties[0].saturation_index))
 
     print('Area costs', (value(m.fs.RO.area) * 30 * (0.1 + 0.2))*2)
     print('Pressure costs', value(m.fs.pump_RO.control_volume.work[0]) / 1000 * 24 * 365 * 0.07)
