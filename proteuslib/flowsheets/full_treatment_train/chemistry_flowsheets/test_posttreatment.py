@@ -21,7 +21,9 @@
 import pytest
 
 from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.posttreatment_ideal_naocl_chlorination_block import (
-    run_ideal_naocl_mixer_example, run_ideal_naocl_chlorination_example, run_chlorination_block_example)
+    run_ideal_naocl_mixer_example, run_ideal_naocl_chlorination_example, run_chlorination_block_example,
+    build_translator_from_RO_to_chlorination_block)
+from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 
 __author__ = "Austin Ladshaw"
 
@@ -61,3 +63,10 @@ def test_ideal_naocl_chlorination_full_block():
             pytest.approx(4.508813505652909e-07, rel=1e-3)
     assert model.fs.ideal_naocl_chlorination_unit.outlet.mole_frac_comp[0,'H_+'].value == \
             pytest.approx(5.479684673084312e-11, rel=1e-3)
+
+@pytest.mark.component
+def test_addition_of_translator():
+    model = run_ideal_naocl_mixer_example()
+    property_models.build_prop(model, base='TDS')
+    build_translator_from_RO_to_chlorination_block(model)
+    assert hasattr(model.fs, 'RO_to_Chlor')
