@@ -47,6 +47,10 @@ def fix_all_molefractions(port):
     for i in port.mole_frac_comp:
         port.mole_frac_comp[i[0], i[1]].fix()
 
+def unfix_all_molefractions(port):
+    for i in port.mole_frac_comp:
+        port.mole_frac_comp[i[0], i[1]].unfix()
+
 def block_initializer(blk, tee=False):
     solver.options['bound_push'] = 1e-10
     solver.options['mu_init'] = 1e-6
