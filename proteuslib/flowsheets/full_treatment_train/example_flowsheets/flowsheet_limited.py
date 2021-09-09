@@ -99,6 +99,13 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
     m.fs.RO.area.setlb(10)
     m.fs.RO.area.setub(300)
 
+    # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
+    m.fs.RO.NDPmin = Param(initialize=1e3, mutable=True, units=pyunits.Pa)
+
+    m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO.A_comp[0, 'H2O']
+                                                                  * m.fs.RO.dens_solvent
+                                                                  * m.fs.RO.NDPmin)
+
     if kwargs_flowsheet['is_twostage']:
         m.fs.pump_RO2.control_volume.properties_out[0].pressure.unfix()
         m.fs.pump_RO2.control_volume.properties_out[0].pressure.setlb(20e5)
@@ -108,9 +115,15 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
         m.fs.RO2.area.setlb(10)
         m.fs.RO2.area.setub(300)
 
+        # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
+        m.fs.RO2.NDPmin = Param(initialize=1e3, mutable=True, units=pyunits.Pa)
+        m.fs.RO2.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO2.A_comp[0, 'H2O']
+                                                                       * m.fs.RO2.dens_solvent
+                                                                       * m.fs.RO2.NDPmin)
+
     # add additional constraints
     # fixed system recovery
-    m.fs.system_recovery_target = Param(initialize=system_recovery, mutable=True)
+    m.fs.system_recovery_target = Param(initialize=system_recovery, mutable=True, units=pyunits.Pa)
     m.fs.system_recovery = Expression(
         expr=product_water_sb.flow_vol / m.fs.feed.properties[0].flow_vol)
     m.fs.eq_system_recovery = Constraint(
