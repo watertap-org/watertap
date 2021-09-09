@@ -15,9 +15,11 @@
 
 from pyomo.environ import ConcreteModel, Constraint
 from idaes.core import FlowsheetBlock
+from idaes.generic_models.properties.core.generic.generic_property import GenericParameterBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 from proteuslib.property_models import seawater_prop_pack
 from proteuslib.flowsheets.full_treatment_train.example_models import seawater_salt_prop_pack, seawater_ion_prop_pack
+from proteuslib.flowsheets.full_treatment_train.eNRTL import entrl_config
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling
 
 
@@ -51,6 +53,11 @@ def build_prop(m, base='TDS'):
         m.fs.prop_salt.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'MgSO4'))
         m.fs.prop_salt.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'MgCl2'))
 
+    elif base == 'eNRTL':
+        m.fs.prop_eNRTL = GenericParameterBlock(default=entrl_config.configuration)
+
+        # default scaling in config file
+
     else:
         raise ValueError('Unexpected property base {base} provided to build_prop'
                          ''.format(base=base))
@@ -63,6 +70,8 @@ def get_prop(m, base='TDS'):
         prop = m.fs.prop_ion
     elif base == 'salt':
         prop = m.fs.prop_salt
+    elif base == 'eNRTL':
+        prop = m.fs.prop_eNRTL
     else:
         raise ValueError('Unexpected property base {base} for get_prop'
                          ''.format(base=base))
