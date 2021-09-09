@@ -154,13 +154,14 @@ def compute_gypsum_SI(Ksp=8.89912404553923e-09, feed_comp=None):
 
     return SI, gamma_Ca, gamma_SO4, gamma_CaSO4_avg
 
-if __name__ == '__main__':
-
-    # concentration factor from 1 to 10
-    cf = np.linspace(1, 5, 100)
-    yvar = 'SI_mat'
-
-    Ksp = np.linspace(3.8e-9, 3.8e-8, 5)
+def gypsum_SI_plot(Ksp, cf, yvar):
+    '''Plot the dependent variable, yvar, for either
+    1) saturation ratio
+    2) Ca activity coefficient
+    3) SO4 activity coefficient or
+    4) CaSO4 average activity coefficient
+    as a function of concentration factor, cf, and solubility product, Ksp
+    '''
     for ksp in Ksp:
         SI_mat = []
         gamma_Ca_mat = []
@@ -198,8 +199,21 @@ if __name__ == '__main__':
         plt.scatter(cf, eval(yvar), label=ksp_str)
         if yvar == 'SI_mat':
             saturation = plt.plot([0, 5], [1, 1], color='black')
-            plt.xlim(0, 5)
+            plt.xlim(cf[0], 5)
             plt.ylim(0, 5)
     plt.xlabel("Concentration Factor")
     plt.ylabel(labels[yvar])
     plt.legend()
+if __name__ == '__main__':
+
+    # concentration factor from 1 to 10
+    cf = np.linspace(1, 5, 20)
+    # For yvar, choose from 'SI_mat'
+#                 'gamma_Ca_mat'
+    #             'gamma_SO4_mat'
+    #             'gamma_CaSO4_avg_mat'
+    yvar = 'SI_mat'
+
+    Ksp = np.linspace(3.8e-9, 3.8e-8, 2)
+
+    gypsum_SI_plot(Ksp=Ksp, cf=cf, yvar=yvar)
