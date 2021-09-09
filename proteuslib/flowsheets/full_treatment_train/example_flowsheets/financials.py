@@ -164,7 +164,8 @@ def Nanofiltration_costing(self):
         expr=self.operating_cost == b_fs.costing_param.factor_membrane_replacement
              * b_fs.costing_param.NF_mem_cost * b_NF.area / pyunits.m ** 2)
 
-def Stoichiometric_costing(self):
+#TODO: could attach to equilibrium reactor in chlorination step, but eq reactor currently has no get_costing method
+def Chlorination_costing(self):
     ''' This method is being added for the chlorination step in the post-treatment section of the full treatment train'''
     _make_vars(self)
 
@@ -176,10 +177,14 @@ def Stoichiometric_costing(self):
     # implement capex relationship here
 
     # self.eq_capital_cost = Constraint(
-    #     expr=self.capital_cost == b_fs.costing_param.NF_mem_cost * b_NF.area/pyunits.m**2)
+    #     expr=self.capital_cost == )
 
-#TODO: pull Stoichiometric reactor instead
-def LimeSoftener_costing(self):
+    # self.eq_operating_cost = Constraint(
+    #     expr=self.operating_cost == )
+
+
+#TODO: fill in capex and opex for lime softening in stoichiometric reactor costing
+def rstoic_costing(self):
     ''' This method is being added for the softening step in the pre-treatment section of the full treatment train
     (two cost equations still undergoing verification by AAA; "Lime Addition" seems like the better choice):
 
@@ -204,14 +209,15 @@ def LimeSoftener_costing(self):
     b_fs = b_lime.parent_block()
 
     # capital cost
-    #TODO: may need to touch flow_vol in softener sub-flowsheet; fill in the constraint as well once eqn verified
-    self.eq_capital_cost = Constraint(
-        expr=self.capital_cost == b_lime.control_volume.properties_in[0.0].flow_vol)
+    #TODO: may need to touch flow_vol in softener sub-flowsheet; fill in the capex constraint as well once eqn verified
+
+    # self.eq_capital_cost = Constraint(
+    #     expr=self.capital_cost == b_lime.control_volume.properties_in[0.0].flow_vol)
 
     # TODO: add cost of chemical; touch flow_mass_phase_comp['Liq', "Ca(OH)2"] in softener flowsheet
-    self.eq_operating_cost = Constraint(
-        expr=self.operating_cost == b_lime.control_volume.properties_in[0.0].flow_mass_phase_comp['Liq', 'Ca(OH)2']
-             * b_fs.costing_param.chemical_lime_cost * 3600 * 8760)
+    # self.eq_operating_cost = Constraint(
+    #     expr=self.operating_cost == b_lime.control_volume.properties_in[0.0].flow_mass_phase_comp['Liq', 'Ca(OH)2']
+    #          * b_fs.costing_param.chemical_lime_cost * 3600 * 8760)
 
 def Separator_costing(self):
     pass

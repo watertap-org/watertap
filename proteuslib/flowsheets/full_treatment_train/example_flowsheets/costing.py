@@ -29,6 +29,8 @@ def build_costing(m, module=financials, **kwargs):
 
     # call get_costing for each unit model
     #get_costing_sweep(m.fs, module=financials)
+    #TODO: add in other components as they become available
+
     # Nanofiltration
     if kwargs['NF_type'] == 'ZO':
         m.fs.NF.get_costing(module=module)
