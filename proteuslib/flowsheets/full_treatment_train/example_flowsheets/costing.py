@@ -12,26 +12,20 @@
 ###############################################################################
 
 from pyomo.environ import (
-    Block, Constraint, Expression, Var, Param, Reals, NonNegativeReals, units as pyunits)
+    Block, Constraint, Expression, Var, Param, units as pyunits)
 from idaes.core.util.exceptions import ConfigurationError
-import proteuslib.flowsheets.RO_with_energy_recovery.financials as financials
 import proteuslib.flowsheets.full_treatment_train.example_flowsheets.financials as financials
-from proteuslib.unit_models.pump_isothermal import Pump, PumpData
 from proteuslib.flowsheets.full_treatment_train.example_flowsheets.flowsheet_limited import *
 
 def build_costing(m, module=financials, **kwargs):
     '''
     Add costing to a given flowsheet. This function will
-        1) add a block which contains cost parameters,
-        2) call the get_costing method for each unit model (note: unit model must have a get_costing method
+        1) call the get_costing method for each unit model (note: unit model must have a get_costing method
         to be detected), and
-        3) call get_system_costing which will tally up all capex and opex for each process
+        2) call get_system_costing which will tally up all capex and opex for each process
     m : model
     module : financials module
     '''
-
-    # Add the costing parameter block
-    # module.add_costing_param_block(m.fs)
 
     # call get_costing for each unit model
     #get_costing_sweep(m.fs, module=financials)
@@ -69,6 +63,7 @@ def build_costing(m, module=financials, **kwargs):
 
 
 def display_costing(m, **kwargs):
+    #TODO: add to this
     print(f'LCOW = ${round(m.fs.costing.LCOW.value,3)}/m3')
     pump_RO_spec_opex= m.fs.pump_RO.costing.operating_cost.value/m.fs.annual_water_production.expr()
     print(f'RO Pump 1 specific Opex = ${round(pump_RO_spec_opex,3)}/m3')
@@ -89,9 +84,4 @@ if __name__ == "__main__":
                        'RO_base': 'TDS',
                        'RO_level': 'simple'
                        }
-    # build_flowsheet_limited_NF(m, **kwargs_flowsheet)
-    # set_up_optimization(m, system_recovery=0.75, max_conc_factor=3,
-    #                     **kwargs_flowsheet)
-    # build_costing(m, module=financials, **kwargs_flowsheet)
-    # solve_flowsheet_limited_NF(**kwargs_flowsheet)
     m = solve_optimization(system_recovery=0.78, max_conc_factor=3, **kwargs_flowsheet)
