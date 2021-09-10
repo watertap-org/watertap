@@ -455,16 +455,17 @@ def set_stoich_softening_reactor_extents(model, frac_excess_lime=0.01,
         frac_used_for_Ca_removal = 0
 
     x_lime_in = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(OH)2"].value
+    flow = model.fs.stoich_softening_reactor_unit.inlet.flow_mol[0].value
     x_lime_out = frac_excess_lime*x_lime_in
-    extent =( x_lime_in - x_lime_out)*10
+    extent =( x_lime_in - x_lime_out)*flow
     extent_Ca = extent*frac_used_for_Ca_removal
     extent_Mg = extent*(1-frac_used_for_Ca_removal)/2
-    x_Ca_out = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"].value - extent_Ca/10
-    x_Mg_out = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"].value - extent_Mg/10
+    x_Ca_out = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"].value - extent_Ca/flow
+    x_Mg_out = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"].value - extent_Mg/flow
     if x_Ca_out < 0:
-        extent_Ca = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"].value*10
+        extent_Ca = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"].value*flow
     if x_Mg_out < 0:
-        extent_Mg = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"].value*10
+        extent_Mg = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"].value*flow
     model.fs.stoich_softening_reactor_unit.rate_reaction_extent[0, 'Ca_removal'].set_value(extent_Ca)
     model.fs.stoich_softening_reactor_unit.rate_reaction_extent[0, 'Mg_removal'].set_value(extent_Mg)
 
