@@ -222,8 +222,37 @@ def rstoic_costing(self):
 def Separator_costing(self):
     pass
 
-def Mixer_costing(self):
-    pass
+def Mixer_costing(self, mixer_type='default'):
+    _make_vars(self)
+
+    b_m = self.parent_block()
+    b_fs = b_m.parent_block()
+
+    if mixer_type == 'default':
+        #TODO: Get mixer cost from Tim's single stage MD paper
+        self.eq_capital_cost = Constraint()
+        self.operating_cost.fix(0)
+
+    elif mixer_type == 'naocl_mixer':
+        '''Cost estimation of chlorination step for disinfection in post-treatment
+        Digitized Fig. 4.19 in Voutchkov, 2008 using WebPlotDigitizer, https://apps.automeris.io/wpd/,
+         September 2021. Fig. 4.19 provides construction cost as a function of daily desalination plant capacity.
+         Curves for sodium hypochlorite and chlorine dioxide are provided, but only NaOCl data were extracted.
+         Data were converted to specific construction costs as a function of capacity to get the provided cost curve
+         for capex (of the form a*X**b).'''
+
+        # NaOCl specific capex ($/m3/day) = 479.87 * x ** (-0.396) ; x is plant capacity (m3/day)
+        # TODO: may need to touch flow_vol while building naocl_mixer_unit. Double-check. Alternative: use flow_vol of RO final permeate
+        # CEPCI_2008 =
+        # CEPCI_2018 =
+        self.eq_capital_cost = Constraint(expr=479.87
+                                               * (b_m.inlet_stream.flow_vol*3600*24) ** 0.604)
+        self.eq_operating_cost = Constraint()
+
+    elif mixer_type == 'lime_softening':
+        '''Cost estimation of lime addition for precipitation step in pretreatment'''
+        self.eq_capital_cost = Constraint()
+        self.eq_operating_cost = Constraint()
 
 def PressureExchanger_costing(self):
     _make_vars(self)
