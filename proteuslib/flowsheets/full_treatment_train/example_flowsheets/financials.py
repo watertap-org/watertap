@@ -243,14 +243,20 @@ def Mixer_costing(self, mixer_type='default'):
 
         # NaOCl specific capex ($/m3/day) = 479.87 * x ** (-0.396) ; x is plant capacity (m3/day)
         # TODO: may need to touch flow_vol while building naocl_mixer_unit. Double-check. Alternative: use flow_vol of RO final permeate
-        # CEPCI_2008 =
-        # CEPCI_2018 =
-        self.eq_capital_cost = Constraint(expr=479.87
-                                               * (b_m.inlet_stream.flow_vol*3600*24) ** 0.604)
+        CEPCI_2008 = 1
+        CEPCI_2018 = 1
+        self.eq_capital_cost = Constraint(expr=479.87 * (b_m.inlet_stream_state[0].flow_vol*3600*24) ** 0.604) \
+                               * CEPCI_2018 / CEPCI_2008
+
         self.eq_operating_cost = Constraint()
 
     elif mixer_type == 'lime_softening':
         '''Cost estimation of lime addition for precipitation step in pretreatment'''
+        # x is converts mol/s to lb/day
+        x=(2.205 * 3600 * 24 * 74.09e-3
+           * b_m.lime_stream.flow_mol[0].value
+           * b_m.lime_stream.mole_frac_comp[0, "Ca(OH)2"].value)
+
         self.eq_capital_cost = Constraint()
         self.eq_operating_cost = Constraint()
 
