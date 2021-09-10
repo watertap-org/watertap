@@ -289,7 +289,7 @@ stoich_softening_reaction_config = {
                    "amount": pyunits.mol,
                    "temperature": pyunits.K},
     "rate_reactions": {
-        "R1": {"stoichiometry": {("Liq", "Ca(HCO3)2"): -1,
+        "Ca_removal": {"stoichiometry": {("Liq", "Ca(HCO3)2"): -1,
                                  ("Liq", "Ca(OH)2"): -1,
                                  ("Liq", "CaCO3"): 2,
                                  ("Liq", "H2O"): 2},
@@ -303,7 +303,7 @@ stoich_softening_reaction_config = {
                    "dh_rxn_ref": (0, pyunits.J/pyunits.mol)
               }
          },
-        "R2": {"stoichiometry": {("Liq", "Mg(HCO3)2"): -1,
+        "Mg_removal": {"stoichiometry": {("Liq", "Mg(HCO3)2"): -1,
                                  ("Liq", "Ca(OH)2"): -2,
                                  ("Liq", "CaCO3"): 2,
                                  ("Liq", "Mg(OH)2"): 1,
@@ -346,7 +346,15 @@ def build_stoich_softening_mixer_unit(model):
 
     model.fs.stoich_softening_mixer_unit.dosing_cons = Constraint( rule=_dosing_rate_cons )
 
-def set_stoich_softening_mixer_inlets(model, dosing_rate_of_lime_mg_per_s = 1,
+def build_stoich_softening_reactor_unit(model):
+    model.fs.stoich_softening_reactor_unit = StoichiometricReactor(default={
+                "property_package": model.fs.stoich_softening_thermo_params,
+                "reaction_package": model.fs.stoich_softening_rxn_params,
+                "has_heat_transfer": False,
+                "has_heat_of_reaction": False,
+                "has_pressure_change": False})
+
+def set_stoich_softening_mixer_inlets(model, dosing_rate_of_lime_mg_per_s = 25,
                                         inlet_water_density_kg_per_L = 1,
                                         inlet_temperature_K = 298,
                                         inlet_pressure_Pa = 101325,
@@ -396,6 +404,71 @@ def set_stoich_softening_mixer_inlets(model, dosing_rate_of_lime_mg_per_s = 1,
 
     model.fs.stoich_softening_mixer_unit.dosing_rate.set_value(dosing_rate_of_lime_mg_per_s)
 
+def set_stoich_softening_reactor_inlets(model, dosage_of_lime_mg_per_L = 140,
+                                        inlet_water_density_kg_per_L = 1,
+                                        inlet_temperature_K = 298,
+                                        inlet_pressure_Pa = 101325,
+                                        inlet_flow_mol_per_s = 10,
+                                        inlet_total_hardness_mg_per_L=200,
+                                        hardness_fraction_to_Ca=0.5,
+                                        inlet_salinity_psu=35):
+
+    #inlet stream
+    model.fs.stoich_softening_reactor_unit.inlet.flow_mol[0].set_value(inlet_flow_mol_per_s)
+    model.fs.stoich_softening_reactor_unit.inlet.pressure[0].set_value(inlet_pressure_Pa)
+    model.fs.stoich_softening_reactor_unit.inlet.temperature[0].set_value(inlet_temperature_K)
+
+    zero_out_non_H2O_molefractions(model.fs.stoich_softening_reactor_unit.inlet)
+    # Calculate molefractions for Ca(HCO3)2 and Mg(HCO3)2
+    total_molar_density = inlet_water_density_kg_per_L/18*1000 #mol/L
+    if hardness_fraction_to_Ca > 1:
+        hardness_fraction_to_Ca = 1
+    if hardness_fraction_to_Ca < 0:
+        hardness_fraction_to_Ca = 0
+    x_Ca = (inlet_total_hardness_mg_per_L/50000/2/total_molar_density)*hardness_fraction_to_Ca
+    x_Mg = (inlet_total_hardness_mg_per_L/50000/2/total_molar_density)*(1-hardness_fraction_to_Ca)
+    model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"].set_value(x_Ca)
+    model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"].set_value(x_Mg)
+
+    total_salt = value(model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"])*total_molar_density*101
+    total_salt += value(model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"])*total_molar_density*85.31
+    psu_from_hardness = total_salt/(total_molar_density*18)*1000
+    if psu_from_hardness < inlet_salinity_psu:
+        psu_from_nacl = inlet_salinity_psu-psu_from_hardness
+        x_NaCl = psu_from_nacl*(total_molar_density*18)/1000/total_molar_density/58.44
+        model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "NaCl"].set_value(x_NaCl)
+
+    x_lime = dosage_of_lime_mg_per_L/1000/74.093/total_molar_density
+    model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(OH)2"].set_value(x_lime)
+
+    set_H2O_molefraction(model.fs.stoich_softening_reactor_unit.inlet)
+
+def set_stoich_softening_reactor_extents(model, frac_excess_lime=0.01,
+                                                frac_used_for_Ca_removal=0.5):
+    if frac_excess_lime > 1:
+        frac_excess_lime = 1
+    if frac_excess_lime < 0:
+        frac_excess_lime = 0
+    if frac_used_for_Ca_removal > 1:
+        frac_used_for_Ca_removal = 1
+    if frac_used_for_Ca_removal < 0:
+        frac_used_for_Ca_removal = 0
+
+    x_lime_in = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(OH)2"].value
+    flow = model.fs.stoich_softening_reactor_unit.inlet.flow_mol[0].value
+    x_lime_out = frac_excess_lime*x_lime_in
+    extent =( x_lime_in - x_lime_out)*flow
+    extent_Ca = extent*frac_used_for_Ca_removal
+    extent_Mg = extent*(1-frac_used_for_Ca_removal)/2
+    x_Ca_out = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"].value - extent_Ca/flow
+    x_Mg_out = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"].value - extent_Mg/flow
+    if x_Ca_out < 0:
+        extent_Ca = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"].value*flow
+    if x_Mg_out < 0:
+        extent_Mg = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"].value*flow
+    model.fs.stoich_softening_reactor_unit.rate_reaction_extent[0, 'Ca_removal'].set_value(extent_Ca)
+    model.fs.stoich_softening_reactor_unit.rate_reaction_extent[0, 'Mg_removal'].set_value(extent_Mg)
+
 def fix_stoich_softening_mixer_inlets(model):
     model.fs.stoich_softening_mixer_unit.inlet_stream.flow_mol[0].fix()
     model.fs.stoich_softening_mixer_unit.inlet_stream.pressure[0].fix()
@@ -419,7 +492,30 @@ def unfix_stoich_softening_mixer_lime_stream(model):
     model.fs.stoich_softening_mixer_unit.lime_stream.temperature[0].unfix()
     unfix_all_molefractions(model.fs.ideal_naocl_mixer_unit.lime_stream)
 
+def fix_stoich_softening_reactor_inlets(model):
+    model.fs.stoich_softening_reactor_unit.inlet.flow_mol[0].fix()
+    model.fs.stoich_softening_reactor_unit.inlet.pressure[0].fix()
+    model.fs.stoich_softening_reactor_unit.inlet.temperature[0].fix()
+    fix_all_molefractions(model.fs.stoich_softening_reactor_unit.inlet)
+
+def fix_stoich_softening_reactor_extents(model):
+    model.fs.stoich_softening_reactor_unit.rate_reaction_extent[0, 'Ca_removal'].fix()
+    model.fs.stoich_softening_reactor_unit.rate_reaction_extent[0, 'Mg_removal'].fix()
+
+def unfix_stoich_softening_reactor_inlets(model):
+    model.fs.stoich_softening_reactor_unit.inlet.flow_mol[0].unfix()
+    model.fs.stoich_softening_reactor_unit.inlet.pressure[0].unfix()
+    model.fs.stoich_softening_reactor_unit.inlet.temperature[0].unfix()
+    unfix_all_molefractions(model.fs.stoich_softening_reactor_unit.inlet)
+
+def unfix_stoich_softening_reactor_extents(model):
+    model.fs.stoich_softening_reactor_unit.rate_reaction_extent[0, 'Ca_removal'].unfix()
+    model.fs.stoich_softening_reactor_unit.rate_reaction_extent[0, 'Mg_removal'].unfix()
+
 def scale_stoich_softening_mixer(unit):
+    iscale.constraint_autoscale_large_jac(unit)
+
+def scale_stoich_softening_reactor(unit):
     iscale.constraint_autoscale_large_jac(unit)
 
 def initialize_stoich_softening_mixer(unit, debug_out=False):
@@ -437,6 +533,15 @@ def initialize_stoich_softening_mixer(unit, debug_out=False):
     if was_fixed == True:
         unit.lime_stream.flow_mol[0].unfix()
 
+def initialize_stoich_softening_reactor(unit, debug_out=False):
+    solver.options['bound_push'] = 1e-10
+    solver.options['mu_init'] = 1e-6
+    solver.options["nlp_scaling_method"] = "user-scaling"
+    if debug_out == True:
+        unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+    else:
+        unit.initialize(optarg=solver.options)
+
 def display_results_of_stoich_softening_mixer(unit):
     print()
     print("=========== Stoich Softening Mixer Results ============")
@@ -453,8 +558,45 @@ def display_results_of_stoich_softening_mixer(unit):
     total_salt += value(unit.outlet.mole_frac_comp[0, "NaCl"])*total_molar_density*58.44
     psu = total_salt/(total_molar_density*18)*1000
     print("STP Salinity (PSU):           \t" + str(psu))
+    total_hardness = 50000*2*value(unit.inlet_stream.mole_frac_comp[0, "Ca(OH)2"])*total_molar_density
+    total_hardness += 50000*2*value(unit.inlet_stream.mole_frac_comp[0, "Ca(HCO3)2"])*total_molar_density
+    total_hardness += 50000*2*value(unit.inlet_stream.mole_frac_comp[0, "Mg(HCO3)2"])*total_molar_density
+    total_hardness += 50000*2*value(unit.inlet_stream.mole_frac_comp[0, "CaCO3"])*total_molar_density
+    total_hardness += 50000*2*value(unit.inlet_stream.mole_frac_comp[0, "Mg(OH)2"])*total_molar_density
+    print("Inlet Hardness (mg/L):   \t" + str(total_hardness))
     print("Lime Dosing Rate (mg/s): \t" + str(unit.dosing_rate.value))
+    print("Lime Dosage (mg/L):      \t" + str(value(unit.outlet.mole_frac_comp[0, "Ca(OH)2"])*total_molar_density*74.093*1000))
     print("------------------------------------------------------")
+    print()
+
+def display_results_of_stoich_softening_reactor(unit):
+    print()
+    print("=========== Stoich Softening Reactor Results ============")
+    print("Outlet Temperature:       \t" + str(unit.outlet.temperature[0].value))
+    print("Outlet Pressure:          \t" + str(unit.outlet.pressure[0].value))
+    print("Outlet FlowMole:          \t" + str(unit.outlet.flow_mol[0].value))
+    print()
+    total_molar_density = 55.6
+    total_salt = value(unit.outlet.mole_frac_comp[0, "Ca(OH)2"])*total_molar_density*74.093
+    total_salt += value(unit.outlet.mole_frac_comp[0, "Ca(HCO3)2"])*total_molar_density*101
+    total_salt += value(unit.outlet.mole_frac_comp[0, "Mg(HCO3)2"])*total_molar_density*85.31
+    total_salt += value(unit.outlet.mole_frac_comp[0, "CaCO3"])*total_molar_density*100
+    total_salt += value(unit.outlet.mole_frac_comp[0, "Mg(OH)2"])*total_molar_density*58.32
+    total_salt += value(unit.outlet.mole_frac_comp[0, "NaCl"])*total_molar_density*58.44
+    psu = total_salt/(total_molar_density*18)*1000
+    print("STP Salinity (PSU):           \t" + str(psu))
+    #total_hardness = 50000*2*value(unit.inlet.mole_frac_comp[0, "Ca(OH)2"])*total_molar_density
+    total_hardness = 50000*2*value(unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"])*total_molar_density
+    total_hardness += 50000*2*value(unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"])*total_molar_density
+    total_hardness += 50000*2*value(unit.inlet.mole_frac_comp[0, "CaCO3"])*total_molar_density
+    total_hardness += 50000*2*value(unit.inlet.mole_frac_comp[0, "Mg(OH)2"])*total_molar_density
+    print("Inlet Hardness (mg/L):   \t" + str(total_hardness) + "\t(not including lime added)")
+    res_hardness = 50000*2*value(unit.outlet.mole_frac_comp[0, "Ca(HCO3)2"])*total_molar_density
+    res_hardness += 50000*2*value(unit.outlet.mole_frac_comp[0, "Mg(HCO3)2"])*total_molar_density
+    print("Residual Hardness(mg/L):\t" + str(res_hardness) + "\t(only includes bicarbonate species)")
+    print("Lime Dosage (mg/L):      \t" + str(value(unit.inlet.mole_frac_comp[0, "Ca(OH)2"])*total_molar_density*74.093*1000))
+    print("Lime Residual (mg/L):    \t" + str(value(unit.outlet.mole_frac_comp[0, "Ca(OH)2"])*total_molar_density*74.093*1000))
+    print("-------------------------------------------------------")
     print()
 
 def run_stoich_softening_mixer_example():
@@ -495,5 +637,42 @@ def run_stoich_softening_mixer_example():
 
     return model
 
+def run_stoich_softening_reactor_example():
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(default={"dynamic": False})
+
+    # Add properties to model
+    build_stoich_softening_prop(model)
+
+    # add the reactor
+    build_stoich_softening_reactor_unit(model)
+
+    # set some values
+    set_stoich_softening_reactor_inlets(model)
+
+    # fix inlets for testing
+    fix_stoich_softening_reactor_inlets(model)
+
+    # set and fix reactor extents
+    set_stoich_softening_reactor_extents(model)
+    fix_stoich_softening_reactor_extents(model)
+
+    check_dof(model)
+
+    # scale the reactor
+    scale_stoich_softening_reactor(model.fs.stoich_softening_reactor_unit)
+
+    # initializer mixer
+    initialize_stoich_softening_reactor(model.fs.stoich_softening_reactor_unit, debug_out=False)
+    #model.fs.stoich_softening_reactor_unit.rate_reaction_extent.pprint()
+
+    # solve with user scaling
+    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+
+    display_results_of_stoich_softening_reactor(model.fs.stoich_softening_reactor_unit)
+
+    return model
+
 if __name__ == "__main__":
-    model = run_stoich_softening_mixer_example()
+    model = run_stoich_softening_reactor_example()
+    #model = run_stoich_softening_mixer_example()
