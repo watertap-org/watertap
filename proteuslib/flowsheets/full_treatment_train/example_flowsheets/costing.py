@@ -46,6 +46,13 @@ def build_costing(m, module=financials, **kwargs):
     if kwargs['is_twostage']:
         m.fs.pump_RO2.get_costing(module=module, pump_type="High pressure")
         m.fs.RO2.get_costing(module=module)
+    # Pretreatment
+    if hasattr(m.fs,'stoich_softening_mixer_unit'): #TODO: check how pretreatment by lime softening was implemented on flowsheet (once added in)
+        print('FOUND LIME SOFTENER')
+        m.fs.stoich_softening_mixer_unit.get_costing(module=module, mixer_type="lime_softening")
+    if hasattr(m.fs,'ideal_naocl_mixer_unit'): #TODO: check how posttreatment (chlorination) was implemented on flowsheet (once added in)
+        print('FOUND CHLORINATION UNIT')
+        m.fs.ideal_naocl_mixer_unit.get_costing(module=module, mixer_type='naocl_mixer')
 
     # call get_system_costing for whole flowsheet
     module.get_system_costing(m.fs)
@@ -65,7 +72,7 @@ def build_costing(m, module=financials, **kwargs):
 
 
 def display_costing(m, **kwargs):
-    #TODO: add to this
+    #TODO: add expressions for all cost components that we may want in LCOW breakdown bar charts
     print(f'LCOW = ${round(m.fs.costing.LCOW.value,3)}/m3')
     pump_RO_spec_opex= m.fs.pump_RO.costing.operating_cost.value/m.fs.annual_water_production.expr()
     print(f'RO Pump 1 specific Opex = ${round(pump_RO_spec_opex,3)}/m3')
@@ -73,6 +80,11 @@ def display_costing(m, **kwargs):
         pump_RO2_spec_opex= m.fs.pump_RO2.costing.operating_cost.value/m.fs.annual_water_production.expr()
         print(f'RO Pump 2 specific Opex = ${round(pump_RO2_spec_opex,3)}/m3')
 
+    if hasattr(m.fs,'stoich_softening_mixer_unit'): #TODO: check if pretreatment by lime softening was implemented on flowsheet (once added in)
+        lime_softener_spec_capex= m.fs.stoich_softening_mixer_unit.costing.capital_cost.value/m.fs.annual_water_production.expr()
+        lime_softener_spec_opex= m.fs.stoich_softening_mixer_unit.costing.operating_cost.value/m.fs.annual_water_production.expr()
+
+        print(f'Lime Softening specific CAPEX = ${round(lime_softener_spec_capex,3)}/m3')
 
 if __name__ == "__main__":
     m = ConcreteModel()

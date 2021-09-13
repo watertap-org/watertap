@@ -235,30 +235,74 @@ def Mixer_costing(self, mixer_type='default'):
 
     elif mixer_type == 'naocl_mixer':
         '''Cost estimation of chlorination step for disinfection in post-treatment
-        Digitized Fig. 4.19 in Voutchkov, 2008 using WebPlotDigitizer, https://apps.automeris.io/wpd/,
+        Digitized Fig. 4.19 in Voutchkov, 2018 using WebPlotDigitizer, https://apps.automeris.io/wpd/,
          September 2021. Fig. 4.19 provides construction cost as a function of daily desalination plant capacity.
          Curves for sodium hypochlorite and chlorine dioxide are provided, but only NaOCl data were extracted.
          Data were converted to specific construction costs as a function of capacity to get the provided cost curve
-         for capex (of the form a*X**b).'''
+         for capex (of the form a*X**b).
+         Since cost figures are reported for the year 2018, the capex cost constraint is assumed to be in 2018 USD;the 
+         cost escalation factor, cost_esc, can be modified to account for changes over time.'''
 
         # NaOCl specific capex ($/m3/day) = 479.87 * x ** (-0.396) ; x is plant capacity (m3/day)
         # TODO: may need to touch flow_vol while building naocl_mixer_unit. Double-check. Alternative: use flow_vol of RO final permeate
-        CEPCI_2008 = 1
-        CEPCI_2018 = 1
-        self.eq_capital_cost = Constraint(expr=479.87 * (b_m.inlet_stream_state[0].flow_vol*3600*24) ** 0.604) \
-                               * CEPCI_2018 / CEPCI_2008
+        self.cost_esc = Param(initialize=1, mutable=True)
+        self.eq_capital_cost = Constraint(expr=self.capital_cost ==
+                                               479.87
+                                               * (b_m.inlet_stream_state[0].flow_vol*3600*24) ** 0.604
+                                               * self.cost_esc)
 
-        self.eq_operating_cost = Constraint()
+        # Sodium hypochlorite cost taken from WaterTAP (2020 USD) which assumes 15% purity
+        self.naocl_cost = Param(initialize=0.23, mutable=True, units=pyunits.kg**-1)
+        self.naocl_purity = Param(initialize=0.15, mutable=True, bounds=(1e-3, 1))
+        self.eq_operating_cost = Constraint(expr=self.operating_cost ==
+                                                 b_m.naocl_stream.flow_mol[0]
+                                                 * b_m.naocl_stream.mole_frac_comp[0, "OCl_-"]
+                                                 * 74.44e-3 * pyunits.kg / pyunits.mol
+                                                 * self.naocl_cost
+                                                 / self.naocl_purity
+                                                 * 3600 * 8760 * pyunits.s)
 
     elif mixer_type == 'lime_softening':
-        '''Cost estimation of lime addition for precipitation step in pretreatment'''
+        '''Cost estimation of lime addition for precipitation step in pretreatment
+        Digitized Fig. 5.59 in McGivney & Kawamura, 2008 using WebPlotDigitizer, https://apps.automeris.io/wpd/,
+         September 2021. WaterTAP provides a similar equation for cost capacity curve based on the same reference.
+         This is suspected to be due to digitization of the reference data although WaterTAP's documentation indicates that
+         cost indices were accounted for. The original reference cites an ENR CCI = 8889, representative of the construction cost index 
+         for Los Angeles in April 2007. Since recent year data for ENR's CCI are currently unknown, WaterTAP's equation will
+         be used; note that WT's documentation may need to correct reporting of units/methodology.
+         ------------------------------------------------------------------------------------------
+         Cost capacity equations to consider:
+         McGivney & Kawamura: 
+         12985*x**0.5901
+         =====================================================
+         WaterTAP:
+         16972*x**0.5435
+         =====================================================
+         Manual digitization and fitting relationships to original reference:
+         1) Power law fit (coefficient of determination = 0.9721)
+         13310*x**0.5855 
+         2) Polynomial fit (coefficient of determination = 1)
+         -1.4071*x**2 + 1661.9*x + 40782
+         Although the polynomial fit matches the data more closely than other relationships, going above ~ 700 lb/day would 
+         result in erroneous decrease in cost.
+         '''
         # x is converts mol/s to lb/day
-        x=(2.205 * 3600 * 24 * 74.09e-3
-           * b_m.lime_stream.flow_mol[0].value
-           * b_m.lime_stream.mole_frac_comp[0, "Ca(OH)2"].value)
+        x = (2.205 * 3600 * 24 * 74.09e-3
+            * b_m.lime_stream.flow_mol[0].value
+            * b_m.lime_stream.mole_frac_comp[0, "Ca(OH)2"].value / pyunits.mol / pyunits.s)
 
-        self.eq_capital_cost = Constraint()
-        self.eq_operating_cost = Constraint()
+        self.cost_esc = Param(initialize=1, mutable=True)
+        self.eq_capital_cost = Constraint(expr=self.capital_cost == 16972 * x ** 0.5435 * self.cost_esc)
+
+        # Calcium hydroxide (lime) cost taken from WaterTAP (2020 USD) which assumes 100% purity
+        self.caoh2_cost = Param(initialize=0.15, mutable=True, units=pyunits.kg**-1)
+        self.caoh2_purity = Param(initialize=1, mutable=True, bounds=(1e-3, 1))
+        self.eq_operating_cost = Constraint(expr=self.operating_cost == b_m.lime_stream.flow_mol[0]
+                                                 * b_m.lime_stream.mole_frac_comp[0, "Ca(OH)2"]
+                                                 * 74.093e-3 * pyunits.kg / pyunits.mol
+                                                 * self.caoh2_cost
+                                                 / self.caoh2_purity
+                                                 * 3600 * 8760 * pyunits.s)
 
 def PressureExchanger_costing(self):
     _make_vars(self)
