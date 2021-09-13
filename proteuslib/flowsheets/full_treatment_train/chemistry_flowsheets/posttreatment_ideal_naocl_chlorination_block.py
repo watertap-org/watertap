@@ -799,3 +799,4 @@ if __name__ == "__main__":
     model = run_chlorination_block_example(fix_free_chlorine=True)
     property_models.build_prop(model, base='TDS')
     build_translator_from_RO_to_chlorination_block(model)
+    # costing.display_costing(model)

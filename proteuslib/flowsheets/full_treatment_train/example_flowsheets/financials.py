@@ -287,12 +287,12 @@ def Mixer_costing(self, mixer_type='default'):
          result in erroneous decrease in cost.
          '''
         # x is converts mol/s to lb/day
-        x = (2.205 * 3600 * 24 * 74.09e-3
+        self.lime_lbs_per_day = Expression(expr=2.205 * 3600 * 24 * 74.09e-3
             * b_m.lime_stream.flow_mol[0].value
             * b_m.lime_stream.mole_frac_comp[0, "Ca(OH)2"].value / pyunits.mol / pyunits.s)
 
         self.cost_esc = Param(initialize=1, mutable=True)
-        self.eq_capital_cost = Constraint(expr=self.capital_cost == 16972 * x ** 0.5435 * self.cost_esc)
+        self.eq_capital_cost = Constraint(expr=self.capital_cost == 16972 * self.lime_lbs_per_day ** 0.5435 * self.cost_esc)
 
         # Calcium hydroxide (lime) cost taken from WaterTAP (2020 USD) which assumes 100% purity
         self.caoh2_cost = Param(initialize=0.15, mutable=True, units=pyunits.kg**-1)

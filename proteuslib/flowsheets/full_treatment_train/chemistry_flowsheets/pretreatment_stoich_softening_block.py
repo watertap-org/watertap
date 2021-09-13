@@ -34,7 +34,7 @@
 """
 
 # Importing the object for units from pyomo
-from pyomo.environ import units as pyunits
+from pyomo.environ import units as pyunits, Expression
 
 # Imports from idaes core
 from idaes.core import AqueousPhase
@@ -55,6 +55,9 @@ from idaes.generic_models.properties.core.generic.generic_reaction import Concen
 
 # Import the object/function for heat of reaction
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+
+# Import costing and financials to test
+from proteuslib.flowsheets.full_treatment_train.example_flowsheets import costing, financials
 
 # Import safe log power law equation
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
@@ -794,6 +797,15 @@ def run_stoich_softening_mixer_example():
     # add the mixer
     build_stoich_softening_mixer_unit(model)
 
+    # Commented section below was implemented for quick test of softening costing
+    # # need load factor from costing_param_block for annual_water_production
+    # financials.add_costing_param_block(model.fs)
+    # # annual water production
+    # model.fs.annual_water_production = Expression(
+    #     expr=pyunits.convert(0.85 * pyunits.m**3 / pyunits.s, to_units=pyunits.m ** 3 / pyunits.year)
+    #          * model.fs.costing_param.load_factor)
+    # costing.build_costing(model, module=financials)
+
     # set model values
     set_stoich_softening_mixer_inlets(model)
 
@@ -901,6 +913,7 @@ def run_stoich_softening_separator_example():
     return model
 
 if __name__ == "__main__":
-    #model = run_stoich_softening_mixer_example()
-    model = run_stoich_softening_reactor_example()
+    model = run_stoich_softening_mixer_example()
+    # model = run_stoich_softening_reactor_example()
     #model = run_stoich_softening_separator_example()
+    # costing.display_costing(model)
