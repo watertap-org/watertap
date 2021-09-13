@@ -522,7 +522,8 @@ def set_stoich_softening_reactor_extents(model, frac_excess_lime=0.01,
 
     def _mg_extent_cons(blk):
         a = blk.inlet.mole_frac_comp[0, "Ca(OH)2"]*(1-blk.frac_excess_lime)*blk.inlet.flow_mol[0]
-        return blk.rate_reaction_extent[0, 'Mg_removal'] == (a - blk.rate_reaction_extent[0, 'Ca_removal'])/2
+        b = blk.inlet.mole_frac_comp[0, "Mg(HCO3)2"]*blk.inlet.flow_mol[0]
+        return blk.rate_reaction_extent[0, 'Mg_removal'] == smooth_min( (a - blk.rate_reaction_extent[0, 'Ca_removal'])/2, b, eps=1e-20)
 
     model.fs.stoich_softening_reactor_unit.magnesium_extent_con = Constraint( rule=_mg_extent_cons )
 
@@ -831,13 +832,22 @@ def run_stoich_softening_reactor_example():
     build_stoich_softening_reactor_unit(model)
 
     # set some values
-    set_stoich_softening_reactor_inlets(model)
+    set_stoich_softening_reactor_inlets(model, dosage_of_lime_mg_per_L = 140,
+                                            inlet_water_density_kg_per_L = 1,
+                                            inlet_temperature_K = 298,
+                                            inlet_pressure_Pa = 101325,
+                                            inlet_flow_mol_per_s = 10,
+                                            inlet_total_hardness_mg_per_L=200,
+                                            hardness_fraction_to_Ca=0.5,
+                                            inlet_salinity_psu=35,
+                                            inlet_sulfate_ppm=2000)
 
     # fix inlets for testing
     fix_stoich_softening_reactor_inlets(model)
 
     # set and fix reactor extents
-    set_stoich_softening_reactor_extents(model, frac_used_for_Ca_removal=0.5)
+    set_stoich_softening_reactor_extents(model,
+                                            frac_used_for_Ca_removal=0.5)
 
     check_dof(model)
 
