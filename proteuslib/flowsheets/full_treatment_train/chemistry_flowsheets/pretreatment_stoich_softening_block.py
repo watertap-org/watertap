@@ -104,6 +104,7 @@ from idaes.generic_models.unit_models.translator import Translator
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock
 
+
 # Import log10 function from pyomo
 from pyomo.environ import log10
 

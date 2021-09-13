@@ -32,18 +32,19 @@ def build_costing(m, module=financials, **kwargs):
     #TODO: add in other components as they become available
 
     # Nanofiltration
-    if kwargs['NF_type'] == 'ZO':
+    if 'NF_type' in kwargs and kwargs['NF_type'] == 'ZO':
         m.fs.NF.get_costing(module=module)
-    elif kwargs['NF_type'] == 'Sep':
+    elif 'NF_type' in kwargs and kwargs['NF_type'] == 'Sep':
         raise NotImplementedError("get_costing is not implemented yet for the NF separator model.")
     # Reverse Osmosis
-    if kwargs['RO_type'] == '0D':
+    if 'RO_type' in kwargs and kwargs['RO_type'] == '0D':
         m.fs.RO.get_costing(module=module)
-    elif kwargs['RO_type'] == 'Sep':
+    elif 'RO_type' in kwargs and kwargs['RO_type'] == 'Sep':
         raise NotImplementedError
     # Pump
-    m.fs.pump_RO.get_costing(module=module, pump_type="High pressure")
-    if kwargs['is_twostage']:
+    if hasattr(m.fs,'pump_RO'):
+        m.fs.pump_RO.get_costing(module=module, pump_type="High pressure")
+    if 'is_twostage' in kwargs and kwargs['is_twostage']:
         m.fs.pump_RO2.get_costing(module=module, pump_type="High pressure")
         m.fs.RO2.get_costing(module=module)
     # Pretreatment

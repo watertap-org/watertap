@@ -253,7 +253,7 @@ def Mixer_costing(self, mixer_type='default'):
 
         # Sodium hypochlorite cost taken from WaterTAP (2020 USD) which assumes 15% purity
         self.naocl_cost = Param(initialize=0.23, mutable=True, units=pyunits.kg**-1)
-        self.naocl_purity = Param(initialize=0.15, mutable=True, bounds=(1e-3, 1))
+        self.naocl_purity = Param(initialize=0.15, mutable=True)
         self.eq_operating_cost = Constraint(expr=self.operating_cost ==
                                                  b_m.naocl_stream.flow_mol[0]
                                                  * b_m.naocl_stream.mole_frac_comp[0, "OCl_-"]
@@ -296,7 +296,7 @@ def Mixer_costing(self, mixer_type='default'):
 
         # Calcium hydroxide (lime) cost taken from WaterTAP (2020 USD) which assumes 100% purity
         self.caoh2_cost = Param(initialize=0.15, mutable=True, units=pyunits.kg**-1)
-        self.caoh2_purity = Param(initialize=1, mutable=True, bounds=(1e-3, 1))
+        self.caoh2_purity = Param(initialize=1, mutable=True)
         self.eq_operating_cost = Constraint(expr=self.operating_cost == b_m.lime_stream.flow_mol[0]
                                                  * b_m.lime_stream.mole_frac_comp[0, "Ca(OH)2"]
                                                  * 74.093e-3 * pyunits.kg / pyunits.mol

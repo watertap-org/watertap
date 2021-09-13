@@ -57,7 +57,8 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            TransformationFactory,
                            value,
-                           Suffix)
+                           Suffix,
+                           Expression)
 
 from pyomo.network import Arc
 
@@ -83,6 +84,9 @@ from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReac
 
 # Import the Proteuslib object inherited for the Mixer unit model
 from proteuslib.flowsheets.full_treatment_train.example_models import Mixer
+
+# Import costing and financials to test
+from proteuslib.flowsheets.full_treatment_train.example_flowsheets import costing, financials
 
 from idaes.generic_models.unit_models.translator import Translator
 
@@ -740,6 +744,16 @@ def run_chlorination_block_example(fix_free_chlorine=False):
 
     # Build the partial flowsheet of a mixer and chlorination unit
     build_ideal_naocl_chlorination_block(model, expand_arcs=True)
+
+    # Commented section below was implemented for quick test of chlorination costing
+    # # need load factor from costing_param_block for annual_water_production
+    # financials.add_costing_param_block(model.fs)
+    # # annual water production
+    # model.fs.annual_water_production = Expression(
+    #     expr=pyunits.convert(0.85 * pyunits.m**3 / pyunits.s, to_units=pyunits.m ** 3 / pyunits.year)
+    #          * model.fs.costing_param.load_factor)
+    # costing.build_costing(model, module=financials)
+
 
     # set some values (using defaults for testing)
     set_ideal_naocl_mixer_inlets(model, dosing_rate_of_NaOCl_mg_per_s = 0.4,
