@@ -177,9 +177,9 @@ stoich_softening_thermo_config = {
                     "parameter_data": {
                         "mw": (74.093, pyunits.g/pyunits.mol),
                         "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
-                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
-                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
+                        "enth_mol_form_liq_comp_ref": (-986, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (75348, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (83, pyunits.J/pyunits.K/pyunits.mol)
                             },
                     # End parameter_data
                     },
@@ -193,9 +193,9 @@ stoich_softening_thermo_config = {
                     "parameter_data": {
                         "mw": (58.44, pyunits.g/pyunits.mol),
                         "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
-                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
-                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
+                        "enth_mol_form_liq_comp_ref": (-407, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (75348, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (115, pyunits.J/pyunits.K/pyunits.mol)
                             },
                     # End parameter_data
                     },
@@ -208,9 +208,9 @@ stoich_softening_thermo_config = {
                     # Parameter data is always associated with the methods defined above
                     "parameter_data": {
                         "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
-                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
-                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
+                        "enth_mol_form_liq_comp_ref": (-1207, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (75348, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (92, pyunits.J/pyunits.K/pyunits.mol)
                             },
                     # End parameter_data
                     },
@@ -223,9 +223,9 @@ stoich_softening_thermo_config = {
                     # Parameter data is always associated with the methods defined above
                     "parameter_data": {
                         "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
-                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
-                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
+                        "enth_mol_form_liq_comp_ref": (-542, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (75348, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (-53, pyunits.J/pyunits.K/pyunits.mol)
                             },
                     # End parameter_data
                     },
@@ -239,9 +239,9 @@ stoich_softening_thermo_config = {
                     "parameter_data": {
                         "mw": (74.093, pyunits.g/pyunits.mol),
                         "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
-                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
-                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
+                        "enth_mol_form_liq_comp_ref": (-924, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (75348, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (63, pyunits.J/pyunits.K/pyunits.mol)
                             },
                     # End parameter_data
                     },
@@ -254,9 +254,24 @@ stoich_softening_thermo_config = {
                     # Parameter data is always associated with the methods defined above
                     "parameter_data": {
                         "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
-                        "enth_mol_form_liq_comp_ref": (-945.53, pyunits.kJ/pyunits.mol),
-                        "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
-                        "entr_mol_form_liq_comp_ref": (100, pyunits.J/pyunits.K/pyunits.mol)
+                        "enth_mol_form_liq_comp_ref": (-221, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (75348, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (-74, pyunits.J/pyunits.K/pyunits.mol)
+                            },
+                    # End parameter_data
+                    },
+        'SO4_2-': {  "type": Anion,  "charge": -2,
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
+                        "enth_mol_form_liq_comp_ref": (-909, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (75348, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (20, pyunits.J/pyunits.K/pyunits.mol)
                             },
                     # End parameter_data
                     },
@@ -358,10 +373,10 @@ def build_stoich_softening_separator_unit(model):
     total_molar_density = \
        value(model.fs.stoich_softening_separator_unit.mixed_state[0.0].dens_mol_phase['Liq'])/1000
 
-    # add new constraint for hardness 
+    # add new constraint for hardness
     hrd = model.fs.stoich_softening_separator_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"].value + \
             model.fs.stoich_softening_separator_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"].value
-    hrd = hrd*2*50000*total_molar_density 
+    hrd = hrd*2*50000*total_molar_density
     model.fs.stoich_softening_separator_unit.hardness = Var(initialize=hrd)
 
     def _hardness_cons(blk):
@@ -385,7 +400,8 @@ def set_stoich_softening_mixer_inlets(model, dosing_rate_of_lime_mg_per_s = 25,
                                         inlet_flow_mol_per_s = 10,
                                         inlet_total_hardness_mg_per_L=200,
                                         hardness_fraction_to_Ca=0.5,
-                                        inlet_salinity_psu=35):
+                                        inlet_salinity_psu=35,
+                                        inlet_sulfate_ppm=0):
 
     #inlet stream
     model.fs.stoich_softening_mixer_unit.inlet_stream.flow_mol[0].set_value(inlet_flow_mol_per_s)
@@ -403,6 +419,9 @@ def set_stoich_softening_mixer_inlets(model, dosing_rate_of_lime_mg_per_s = 25,
     x_Mg = (inlet_total_hardness_mg_per_L/50000/2/total_molar_density)*(1-hardness_fraction_to_Ca)
     model.fs.stoich_softening_mixer_unit.inlet_stream.mole_frac_comp[0, "Ca(HCO3)2"].set_value(x_Ca)
     model.fs.stoich_softening_mixer_unit.inlet_stream.mole_frac_comp[0, "Mg(HCO3)2"].set_value(x_Mg)
+
+    x_so4 = inlet_sulfate_ppm*inlet_water_density_kg_per_L/96060/total_molar_density
+    model.fs.stoich_softening_mixer_unit.inlet_stream.mole_frac_comp[0, "SO4_2-"].set_value(x_so4)
 
     total_salt = value(model.fs.stoich_softening_mixer_unit.inlet_stream.mole_frac_comp[0, "Ca(HCO3)2"])*total_molar_density*101
     total_salt += value(model.fs.stoich_softening_mixer_unit.inlet_stream.mole_frac_comp[0, "Mg(HCO3)2"])*total_molar_density*85.31
@@ -435,7 +454,8 @@ def set_stoich_softening_reactor_inlets(model, dosage_of_lime_mg_per_L = 140,
                                         inlet_flow_mol_per_s = 10,
                                         inlet_total_hardness_mg_per_L=200,
                                         hardness_fraction_to_Ca=0.5,
-                                        inlet_salinity_psu=35):
+                                        inlet_salinity_psu=35,
+                                        inlet_sulfate_ppm=0):
 
     #inlet stream
     model.fs.stoich_softening_reactor_unit.inlet.flow_mol[0].set_value(inlet_flow_mol_per_s)
@@ -453,6 +473,9 @@ def set_stoich_softening_reactor_inlets(model, dosage_of_lime_mg_per_L = 140,
     x_Mg = (inlet_total_hardness_mg_per_L/50000/2/total_molar_density)*(1-hardness_fraction_to_Ca)
     model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"].set_value(x_Ca)
     model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"].set_value(x_Mg)
+
+    x_so4 = inlet_sulfate_ppm*inlet_water_density_kg_per_L/96060/total_molar_density
+    model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "SO4_2-"].set_value(x_so4)
 
     total_salt = value(model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"])*total_molar_density*101
     total_salt += value(model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"])*total_molar_density*85.31
@@ -502,6 +525,7 @@ def set_stoich_softening_separator_split_frac(model):
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'Ca(HCO3)2'].fix(0.01)
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'Mg(HCO3)2'].fix(0.01)
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'CaCO3'].fix(0.01)
+    model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'SO4_2-'].fix(0.01)
 
 def fix_stoich_softening_separator_inlets(model):
     model.fs.stoich_softening_separator_unit.mixed_state[0].pressure.fix(101325)
@@ -515,6 +539,7 @@ def fix_stoich_softening_separator_inlets(model):
     model.fs.stoich_softening_separator_unit.mixed_state[0].mole_frac_comp['Ca(HCO3)2'].fix(0.001)
     model.fs.stoich_softening_separator_unit.mixed_state[0].mole_frac_comp['Mg(HCO3)2'].fix(0.001)
     model.fs.stoich_softening_separator_unit.mixed_state[0].mole_frac_comp['CaCO3'].fix(0.001)
+    model.fs.stoich_softening_separator_unit.mixed_state[0].mole_frac_comp['SO4_2-'].fix(0.001)
 
 def fix_stoich_softening_mixer_inlets(model):
     model.fs.stoich_softening_mixer_unit.inlet_stream.flow_mol[0].fix()
