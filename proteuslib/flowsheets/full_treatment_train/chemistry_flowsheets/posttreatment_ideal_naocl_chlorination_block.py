@@ -81,8 +81,8 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 # Import the idaes object for the EquilibriumReactor unit model
 from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
 
-# Import th idaes object for the Mixer unit model
-from idaes.generic_models.unit_models.mixer import Mixer
+# Import the Proteuslib object inherited for the Mixer unit model
+from proteuslib.flowsheets.full_treatment_train.example_models import Mixer
 
 from idaes.generic_models.unit_models.translator import Translator
 
