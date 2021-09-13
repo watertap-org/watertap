@@ -557,7 +557,7 @@ def initialize_ideal_naocl_chlorination(unit, state_args, debug_out=False):
     else:
         unit.initialize(state_args=state_args, optarg=solver.options)
 
-def setup_block_to_solve_dosing_rate(model, free_chlorine_mg_per_L = 2):
+def setup_block_to_solve_naocl_dosing_rate(model, free_chlorine_mg_per_L = 2):
     model.fs.ideal_naocl_chlorination_unit.free_chlorine.fix(free_chlorine_mg_per_L)
     model.fs.ideal_naocl_mixer_unit.naocl_stream.flow_mol[0].unfix()
 
@@ -609,7 +609,7 @@ def build_ideal_naocl_chlorination_block(model, expand_arcs=False):
     # Add mixer to the model
     build_ideal_naocl_mixer_unit(model)
 
-    # Add mixer to the model
+    # Add reactor to the model
     build_ideal_naocl_chlorination_unit(model)
 
     # Connect the mixer to the chlorination unit with arcs
@@ -773,7 +773,7 @@ def run_chlorination_block_example(fix_free_chlorine=False):
     iscale.constraint_autoscale_large_jac(model)
 
     if fix_free_chlorine == True:
-        setup_block_to_solve_dosing_rate(model)
+        setup_block_to_solve_naocl_dosing_rate(model)
     solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
 
     display_results_of_ideal_naocl_mixer(model.fs.ideal_naocl_mixer_unit)
