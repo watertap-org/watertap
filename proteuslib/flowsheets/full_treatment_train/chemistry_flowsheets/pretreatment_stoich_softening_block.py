@@ -76,6 +76,7 @@ from pyomo.environ import (ConcreteModel,
                            Suffix)
 
 from pyomo.network import Arc
+from idaes.core.util.initialization import propagate_state
 
 from idaes.core.util import scaling as iscale
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
@@ -368,16 +369,17 @@ def build_stoich_softening_mixer_unit(model):
     model.fs.stoich_softening_mixer_unit.dosing_cons = Constraint( rule=_dosing_rate_cons )
 
 
-def build_stoich_softening_reactor_unit(model):
+def build_stoich_softening_reactor_unit(model, frac_excess_lime=0.01,
+                                                frac_used_for_Ca_removal=0.99):
     model.fs.stoich_softening_reactor_unit = StoichiometricReactor(default={
                 "property_package": model.fs.stoich_softening_thermo_params,
                 "reaction_package": model.fs.stoich_softening_rxn_params,
                 "has_heat_transfer": False,
                 "has_heat_of_reaction": False,
                 "has_pressure_change": False})
+    set_stoich_softening_reactor_extents(model, frac_excess_lime, frac_used_for_Ca_removal)
 
-def build_stoich_softening_separator_unit(model):
-
+def build_stoich_softening_separator_unit(model, solids_removal_frac=0.99):
     model.fs.stoich_softening_separator_unit = Separator(default={
             "property_package": model.fs.stoich_softening_thermo_params,
         	"outlet_list": ['waste_stream', 'outlet_stream'],
@@ -402,6 +404,9 @@ def build_stoich_softening_separator_unit(model):
                       (blk.mixed_state[0.0].dens_mol_phase['Liq'])
 
     model.fs.stoich_softening_separator_unit.hardness_cons = Constraint( rule=_hardness_cons )
+
+    set_stoich_softening_separator_split_frac(model, solids_removal_frac=solids_removal_frac)
+    fix_stoich_softening_separator_split_frac(model)
 
 def set_stoich_softening_mixer_inlets(model, dosing_rate_of_lime_mg_per_s = 25,
                                         inlet_water_density_kg_per_L = 1,
@@ -588,12 +593,13 @@ def set_stoich_softening_separator_split_frac(model, solids_removal_frac=0.99):
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'CaCO3'].set_value((1-solids_removal_frac))
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'SO4_2-'].set_value(solids_removal_frac)
 
-def fix_stoich_softening_mixer_inlets(model):
+def fix_stoich_softening_mixer_inlet_stream(model):
     model.fs.stoich_softening_mixer_unit.inlet_stream.flow_mol[0].fix()
     model.fs.stoich_softening_mixer_unit.inlet_stream.pressure[0].fix()
     model.fs.stoich_softening_mixer_unit.inlet_stream.temperature[0].fix()
     fix_all_molefractions(model.fs.stoich_softening_mixer_unit.inlet_stream)
 
+def fix_stoich_softening_mixer_lime_stream(model):
     model.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0].fix()
     model.fs.stoich_softening_mixer_unit.lime_stream.pressure[0].fix()
     model.fs.stoich_softening_mixer_unit.lime_stream.temperature[0].fix()
@@ -703,6 +709,10 @@ def initialize_stoich_softening_separator(unit, debug_out=False):
     else:
         unit.initialize(optarg=solver.options)
 
+def setup_block_to_solve_lime_dosing_rate(model, target_hardness_mg_per_L = 50):
+    model.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0].unfix()
+    model.fs.stoich_softening_separator_unit.hardness.fix(target_hardness_mg_per_L)
+
 def display_results_of_stoich_softening_mixer(unit):
     print()
     print("=========== Stoich Softening Mixer Results ============")
@@ -787,6 +797,40 @@ def display_results_of_stoich_softening_separator(unit):
     print("-------------------------------------------------------")
     print()
 
+def build_stoich_softening_block(model, include_feed=False, expand_arcs=False):
+    # Add properties to model
+    build_stoich_softening_prop(model)
+
+    # Add mixer to the model
+    build_stoich_softening_mixer_unit(model)
+
+    # Add reactor to the model
+    build_stoich_softening_reactor_unit(model)
+
+    # Add separator to the model
+    build_stoich_softening_separator_unit(model)
+
+    if include_feed == True:
+        # add the feed to the model
+        # # TODO: build and test feed unit
+        raise RuntimeError("Feed not available yet...")
+
+    # Connect the mixer to the reactor unit with arcs
+    model.fs.stoich_softening_arc_mixer_to_reactor = Arc(source=model.fs.stoich_softening_mixer_unit.outlet,
+                                                destination=model.fs.stoich_softening_reactor_unit.inlet)
+
+    # Connect the mixer to the reactor unit with arcs
+    model.fs.stoich_softening_arc_reactor_to_separator = Arc(source=model.fs.stoich_softening_reactor_unit.outlet,
+                                                destination=model.fs.stoich_softening_separator_unit.inlet)
+
+    if include_feed == True:
+        # add Arc from feed to mixer
+        # # TODO: build and test feed unit
+        raise RuntimeError("Feed not available yet...")
+
+    if expand_arcs == True:
+        TransformationFactory("network.expand_arcs").apply_to(model)
+
 def run_stoich_softening_mixer_example():
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
@@ -797,24 +841,12 @@ def run_stoich_softening_mixer_example():
     # add the mixer
     build_stoich_softening_mixer_unit(model)
 
-    # Commented section below was implemented for quick test of softening costing
-    # # need load factor from costing_param_block for annual_water_production
-    # financials.add_costing_param_block(model.fs)
-    # # annual water production
-    # model.fs.annual_water_production = Expression(
-    #     expr=pyunits.convert(0.85 * pyunits.m**3 / pyunits.s, to_units=pyunits.m ** 3 / pyunits.year)
-    #          * model.fs.costing_param.load_factor)
-    # costing.build_costing(model, module=financials)
-
     # set model values
     set_stoich_softening_mixer_inlets(model)
 
-    model.fs.stoich_softening_mixer_unit.lime_stream.mole_frac_comp.pprint()
-    model.fs.stoich_softening_mixer_unit.inlet_stream.mole_frac_comp.pprint()
-    model.fs.stoich_softening_mixer_unit.dosing_rate.pprint()
-
     # fix inlets for testing
-    fix_stoich_softening_mixer_inlets(model)
+    fix_stoich_softening_mixer_inlet_stream(model)
+    fix_stoich_softening_mixer_lime_stream(model)
 
     check_dof(model)
 
@@ -842,7 +874,7 @@ def run_stoich_softening_reactor_example():
     build_stoich_softening_prop(model)
 
     # add the reactor
-    build_stoich_softening_reactor_unit(model)
+    build_stoich_softening_reactor_unit(model, frac_excess_lime=0.01, frac_used_for_Ca_removal=0.5)
 
     # set some values
     set_stoich_softening_reactor_inlets(model, dosage_of_lime_mg_per_L = 140,
@@ -858,18 +890,13 @@ def run_stoich_softening_reactor_example():
     # fix inlets for testing
     fix_stoich_softening_reactor_inlets(model)
 
-    # set and fix reactor extents
-    set_stoich_softening_reactor_extents(model,
-                                            frac_used_for_Ca_removal=0.5)
-
     check_dof(model)
 
     # scale the reactor
     scale_stoich_softening_reactor(model.fs.stoich_softening_reactor_unit)
 
-    # initializer mixer
+    # initializer reactor
     initialize_stoich_softening_reactor(model.fs.stoich_softening_reactor_unit, debug_out=False)
-    #model.fs.stoich_softening_reactor_unit.rate_reaction_extent.pprint()
 
     # solve with user scaling
     solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
@@ -891,18 +918,16 @@ def run_stoich_softening_separator_example():
 
     # set up values for separator
     set_stoich_softening_separator_inlets(model)
-    set_stoich_softening_separator_split_frac(model)
 
     # fix the values to close the system of equations
     fix_stoich_softening_separator_inlets(model)
-    fix_stoich_softening_separator_split_frac(model)
 
     check_dof(model)
 
-    # scale the mixer
+    # scale the separator
     scale_stoich_softening_separator(model.fs.stoich_softening_separator_unit)
 
-    # initializer mixer
+    # initializer separator
     initialize_stoich_softening_separator(model.fs.stoich_softening_separator_unit, debug_out=False)
 
     # solve with user scaling
@@ -912,8 +937,98 @@ def run_stoich_softening_separator_example():
 
     return model
 
+def run_softening_block_example(include_feed=False, fix_hardness=False):
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(default={"dynamic": False})
+
+    build_stoich_softening_block(model, include_feed=include_feed, expand_arcs=True)
+
+    if include_feed == True:
+        # set feed inlets
+        # # TODO: build and test feed unit
+        raise RuntimeError("Feed not available yet...")
+
+    # set mixer inlets values (mostly done for the lime dosage)
+    set_stoich_softening_mixer_inlets(model, dosing_rate_of_lime_mg_per_s = 25,
+                                                inlet_water_density_kg_per_L = 1,
+                                                inlet_temperature_K = 298,
+                                                inlet_pressure_Pa = 101325,
+                                                inlet_flow_mol_per_s = 10,
+                                                inlet_total_hardness_mg_per_L=200,
+                                                hardness_fraction_to_Ca=0.5,
+                                                inlet_salinity_psu=35,
+                                                inlet_sulfate_ppm=2000)
+
+    if include_feed == True:
+        # fix feed inlets
+        # # TODO: build and test feed unit
+        raise RuntimeError("Feed not available yet...")
+    else:
+        # fix inlets at the mixer for testing
+        fix_stoich_softening_mixer_inlet_stream(model)
+
+
+    # Commented section below was implemented for quick test of softening costing
+    # # need load factor from costing_param_block for annual_water_production
+    # financials.add_costing_param_block(model.fs)
+    # # annual water production
+    # model.fs.annual_water_production = Expression(
+    #     expr=pyunits.convert(0.85 * pyunits.m**3 / pyunits.s, to_units=pyunits.m ** 3 / pyunits.year)
+    #          * model.fs.costing_param.load_factor)
+    # costing.build_costing(model, module=financials)
+
+
+    # Fix the amount of lime added for simulation
+    fix_stoich_softening_mixer_lime_stream(model)
+
+    check_dof(model)
+
+    # ----------- Scale each block --------------
+    if include_feed == True:
+        # scale the feed and propogate the state
+        # # TODO: build and test feed unit
+        raise RuntimeError("Feed not available yet...")
+
+    # scale the mixer
+    scale_stoich_softening_mixer(model.fs.stoich_softening_mixer_unit)
+    # scale the reactor
+    scale_stoich_softening_reactor(model.fs.stoich_softening_reactor_unit)
+    # scale the separator
+    scale_stoich_softening_separator(model.fs.stoich_softening_separator_unit)
+
+    # --------- Initialize: Works best to manually initialize with state propogation
+    if include_feed == True:
+        # initialize the feed and propogate the state
+        # # TODO: build and test feed unit
+        raise RuntimeError("Feed not available yet...")
+
+    # initializer mixer
+    initialize_stoich_softening_mixer(model.fs.stoich_softening_mixer_unit, debug_out=False)
+    # initializer reactor
+    propagate_state(model.fs.stoich_softening_arc_mixer_to_reactor)
+    initialize_stoich_softening_reactor(model.fs.stoich_softening_reactor_unit, debug_out=False)
+    # initializer separator
+    propagate_state(model.fs.stoich_softening_arc_reactor_to_separator)
+    initialize_stoich_softening_separator(model.fs.stoich_softening_separator_unit, debug_out=False)
+
+    # Call scaling for full model (always after initialization)
+    iscale.constraint_autoscale_large_jac(model)
+
+    # Solve the flowsheet
+    if fix_hardness==True:
+        setup_block_to_solve_lime_dosing_rate(model, target_hardness_mg_per_L = 50)
+    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+
+    # display results
+    display_results_of_stoich_softening_mixer(model.fs.stoich_softening_mixer_unit)
+    display_results_of_stoich_softening_reactor(model.fs.stoich_softening_reactor_unit)
+    display_results_of_stoich_softening_separator(model.fs.stoich_softening_separator_unit)
+
+    return model
+
 if __name__ == "__main__":
-    model = run_stoich_softening_mixer_example()
-    # model = run_stoich_softening_reactor_example()
+    #model = run_stoich_softening_mixer_example()
+    #model = run_stoich_softening_reactor_example()
     #model = run_stoich_softening_separator_example()
+    model = run_softening_block_example()
     # costing.display_costing(model)
