@@ -40,6 +40,7 @@ from pyomo.environ import units as pyunits
 from idaes.core import AqueousPhase
 from idaes.core.components import Solvent, Solute, Cation, Anion
 from idaes.core.phases import PhaseType as PT
+from idaes.core.util.math import smooth_min
 
 # Imports from idaes generic models
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
@@ -496,7 +497,7 @@ def set_stoich_softening_reactor_inlets(model, dosage_of_lime_mg_per_L = 140,
     set_H2O_molefraction(model.fs.stoich_softening_reactor_unit.inlet)
 
 def set_stoich_softening_reactor_extents(model, frac_excess_lime=0.01,
-                                                frac_used_for_Ca_removal=0.5):
+                                                frac_used_for_Ca_removal=0.99):
     if frac_excess_lime > 1:
         frac_excess_lime = 1
     if frac_excess_lime < 0:
@@ -506,20 +507,24 @@ def set_stoich_softening_reactor_extents(model, frac_excess_lime=0.01,
     if frac_used_for_Ca_removal < 0:
         frac_used_for_Ca_removal = 0
 
-    x_lime_in = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(OH)2"].value
-    flow = model.fs.stoich_softening_reactor_unit.inlet.flow_mol[0].value
-    x_lime_out = frac_excess_lime*x_lime_in
-    extent =( x_lime_in - x_lime_out)*flow
-    extent_Ca = extent*frac_used_for_Ca_removal
-    extent_Mg = extent*(1-frac_used_for_Ca_removal)/2
-    x_Ca_out = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"].value - extent_Ca/flow
-    x_Mg_out = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"].value - extent_Mg/flow
-    if x_Ca_out < 0:
-        extent_Ca = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"].value*flow
-    if x_Mg_out < 0:
-        extent_Mg = model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"].value*flow
-    model.fs.stoich_softening_reactor_unit.rate_reaction_extent[0, 'Ca_removal'].set_value(extent_Ca)
-    model.fs.stoich_softening_reactor_unit.rate_reaction_extent[0, 'Mg_removal'].set_value(extent_Mg)
+    model.fs.stoich_softening_reactor_unit.frac_excess_lime = Var(initialize=frac_excess_lime)
+    model.fs.stoich_softening_reactor_unit.frac_excess_lime.fix()
+
+    model.fs.stoich_softening_reactor_unit.frac_used_for_Ca_removal = Var(initialize=frac_used_for_Ca_removal)
+    model.fs.stoich_softening_reactor_unit.frac_used_for_Ca_removal.fix()
+
+    def _ca_extent_cons(blk):
+        a = blk.inlet.mole_frac_comp[0, "Ca(OH)2"]*(1-blk.frac_excess_lime)*blk.inlet.flow_mol[0]*blk.frac_used_for_Ca_removal
+        b = blk.inlet.mole_frac_comp[0, "Ca(HCO3)2"]*blk.inlet.flow_mol[0]
+        return blk.rate_reaction_extent[0, 'Ca_removal'] == smooth_min(a, b, eps=1e-20)
+
+    model.fs.stoich_softening_reactor_unit.calcium_extent_con = Constraint( rule=_ca_extent_cons )
+
+    def _mg_extent_cons(blk):
+        a = blk.inlet.mole_frac_comp[0, "Ca(OH)2"]*(1-blk.frac_excess_lime)*blk.inlet.flow_mol[0]
+        return blk.rate_reaction_extent[0, 'Mg_removal'] == (a - blk.rate_reaction_extent[0, 'Ca_removal'])/2
+
+    model.fs.stoich_softening_reactor_unit.magnesium_extent_con = Constraint( rule=_mg_extent_cons )
 
 def set_stoich_softening_separator_inlets(model, residual_lime_mg_per_L = 2,
                                         inlet_water_density_kg_per_L = 1,
@@ -606,10 +611,6 @@ def fix_stoich_softening_reactor_inlets(model):
     model.fs.stoich_softening_reactor_unit.inlet.pressure[0].fix()
     model.fs.stoich_softening_reactor_unit.inlet.temperature[0].fix()
     fix_all_molefractions(model.fs.stoich_softening_reactor_unit.inlet)
-
-def fix_stoich_softening_reactor_extents(model):
-    model.fs.stoich_softening_reactor_unit.rate_reaction_extent[0, 'Ca_removal'].fix()
-    model.fs.stoich_softening_reactor_unit.rate_reaction_extent[0, 'Mg_removal'].fix()
 
 def unfix_stoich_softening_reactor_inlets(model):
     model.fs.stoich_softening_reactor_unit.inlet.flow_mol[0].unfix()
@@ -836,8 +837,7 @@ def run_stoich_softening_reactor_example():
     fix_stoich_softening_reactor_inlets(model)
 
     # set and fix reactor extents
-    set_stoich_softening_reactor_extents(model)
-    fix_stoich_softening_reactor_extents(model)
+    set_stoich_softening_reactor_extents(model, frac_used_for_Ca_removal=0.5)
 
     check_dof(model)
 
@@ -852,6 +852,7 @@ def run_stoich_softening_reactor_example():
     solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
 
     display_results_of_stoich_softening_reactor(model.fs.stoich_softening_reactor_unit)
+    model.fs.stoich_softening_reactor_unit.outlet.mole_frac_comp.pprint()
 
     return model
 
@@ -889,6 +890,6 @@ def run_stoich_softening_separator_example():
     return model
 
 if __name__ == "__main__":
-    #model = run_stoich_softening_reactor_example()
-    model = run_stoich_softening_separator_example()
     #model = run_stoich_softening_mixer_example()
+    model = run_stoich_softening_reactor_example()
+    #model = run_stoich_softening_separator_example()
