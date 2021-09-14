@@ -21,7 +21,8 @@
 import pytest
 
 from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.pretreatment_stoich_softening_block import (
-    run_stoich_softening_mixer_example, run_stoich_softening_reactor_example)
+    run_stoich_softening_mixer_example, run_stoich_softening_reactor_example, run_stoich_softening_separator_example,
+    run_softening_block_example)
 from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 
 __author__ = "Austin Ladshaw"
@@ -51,3 +52,31 @@ def test_stoich_softening_reactor():
             pytest.approx(1.1643426881998615e-06, rel=1e-3)
     assert model.fs.stoich_softening_reactor_unit.outlet.mole_frac_comp[0, "Mg(HCO3)2"].value == \
             pytest.approx(9.581716805897575e-06, rel=1e-3)
+
+@pytest.mark.component
+def test_stoich_softening_separator():
+    model = run_stoich_softening_separator_example()
+    assert model.fs.stoich_softening_separator_unit.outlet_stream.flow_mol[0].value == \
+            pytest.approx(9.899748278416585, rel=1e-3)
+    assert model.fs.stoich_softening_separator_unit.hardness.value == \
+            pytest.approx(61.084015403488046, rel=1e-3)
+    assert model.fs.stoich_softening_separator_unit.outlet_stream.mole_frac_comp[0, "NaCl"].value == \
+            pytest.approx(0.010763345644627161, rel=1e-3)
+    assert model.fs.stoich_softening_separator_unit.outlet_stream.mole_frac_comp[0, "Ca(OH)2"].value == \
+            pytest.approx(4.907961748657829e-09, rel=1e-3)
+    assert model.fs.stoich_softening_separator_unit.outlet_stream.mole_frac_comp[0, "Ca(HCO3)2"].value == \
+            pytest.approx(5.400137306173067e-06, rel=1e-3)
+    assert model.fs.stoich_softening_separator_unit.outlet_stream.mole_frac_comp[0, "Mg(HCO3)2"].value == \
+            pytest.approx(5.400137306173067e-06, rel=1e-3)
+
+@pytest.mark.component
+def test_stoich_softening_block():
+    model = run_softening_block_example()
+    assert model.fs.stoich_softening_mixer_unit.dosing_rate.value == \
+            pytest.approx(24.88346319183235, rel=1e-3)
+    assert model.fs.stoich_softening_reactor_unit.outlet.mole_frac_comp[0, "NaCl"].value == \
+            pytest.approx(0.01072288805932624, rel=1e-3)
+    assert model.fs.stoich_softening_reactor_unit.outlet.mole_frac_comp[0, "Ca(OH)2"].value == \
+            pytest.approx(3.3581245796873137e-07, rel=1e-3)
+    assert model.fs.stoich_softening_separator_unit.hardness.value == \
+            pytest.approx(60.600365040386336, rel=1e-3)

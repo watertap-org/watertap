@@ -32,20 +32,28 @@ def build_costing(m, module=financials, **kwargs):
     #TODO: add in other components as they become available
 
     # Nanofiltration
-    if kwargs['NF_type'] == 'ZO':
+    if 'NF_type' in kwargs and kwargs['NF_type'] == 'ZO':
         m.fs.NF.get_costing(module=module)
-    elif kwargs['NF_type'] == 'Sep':
+    elif 'NF_type' in kwargs and kwargs['NF_type'] == 'Sep':
         raise NotImplementedError("get_costing is not implemented yet for the NF separator model.")
     # Reverse Osmosis
-    if kwargs['RO_type'] == '0D':
+    if 'RO_type' in kwargs and kwargs['RO_type'] == '0D':
         m.fs.RO.get_costing(module=module)
-    elif kwargs['RO_type'] == 'Sep':
+    elif 'RO_type' in kwargs and kwargs['RO_type'] == 'Sep':
         raise NotImplementedError
     # Pump
-    m.fs.pump_RO.get_costing(module=module, pump_type="High pressure")
-    if kwargs['is_twostage']:
+    if hasattr(m.fs,'pump_RO'):
+        m.fs.pump_RO.get_costing(module=module, pump_type="High pressure")
+    if 'is_twostage' in kwargs and kwargs['is_twostage']:
         m.fs.pump_RO2.get_costing(module=module, pump_type="High pressure")
         m.fs.RO2.get_costing(module=module)
+    # Pretreatment
+    if hasattr(m.fs,'stoich_softening_mixer_unit'): #TODO: check how pretreatment by lime softening was implemented on flowsheet (once added in)
+        # print('FOUND LIME SOFTENER')
+        m.fs.stoich_softening_mixer_unit.get_costing(module=module, mixer_type="lime_softening")
+    if hasattr(m.fs,'ideal_naocl_mixer_unit'): #TODO: check how posttreatment (chlorination) was implemented on flowsheet (once added in)
+        # print('FOUND CHLORINATION UNIT')
+        m.fs.ideal_naocl_mixer_unit.get_costing(module=module, mixer_type='naocl_mixer')
 
     # call get_system_costing for whole flowsheet
     module.get_system_costing(m.fs)
@@ -65,14 +73,30 @@ def build_costing(m, module=financials, **kwargs):
 
 
 def display_costing(m, **kwargs):
-    #TODO: add to this
-    print(f'LCOW = ${round(m.fs.costing.LCOW.value,3)}/m3')
-    pump_RO_spec_opex= m.fs.pump_RO.costing.operating_cost.value/m.fs.annual_water_production.expr()
-    print(f'RO Pump 1 specific Opex = ${round(pump_RO_spec_opex,3)}/m3')
-    if kwargs['is_twostage']:
+    crf = m.fs.costing_param.factor_capital_annualization.value
+    #TODO: add expressions for all cost components that we may want in LCOW breakdown bar charts
+    print(f'LCOW = ${round(m.fs.costing.LCOW.value, 5)}/m3')
+
+    if hasattr(m.fs,'pump_RO'):
+        pump_RO_spec_opex= m.fs.pump_RO.costing.operating_cost.value/m.fs.annual_water_production.expr()
+        print(f'RO Pump 1 specific Opex = ${round(pump_RO_spec_opex,3)}/m3')
+    if 'is_twostage' in kwargs and kwargs['is_twostage']:
         pump_RO2_spec_opex= m.fs.pump_RO2.costing.operating_cost.value/m.fs.annual_water_production.expr()
         print(f'RO Pump 2 specific Opex = ${round(pump_RO2_spec_opex,3)}/m3')
 
+    if hasattr(m.fs,'stoich_softening_mixer_unit'): #TODO: check if pretreatment by lime softening was implemented on flowsheet (once added in)
+        lime_softener_spec_capex= m.fs.stoich_softening_mixer_unit.costing.capital_cost.value/m.fs.annual_water_production.expr() *crf
+        lime_softener_spec_opex= m.fs.stoich_softening_mixer_unit.costing.operating_cost.value/m.fs.annual_water_production.expr()
+
+        print(f'Lime Softening specific CAPEX = ${round(lime_softener_spec_capex,5)}/m3')
+        print(f'Lime Softening specific OPEX = ${round(lime_softener_spec_opex,5)}/m3')
+
+    if hasattr(m.fs,'ideal_naocl_mixer_unit'):
+        chlorination_spec_capex= m.fs.ideal_naocl_mixer_unit.costing.capital_cost.value/m.fs.annual_water_production.expr() *crf
+        chlorination_spec_opex= m.fs.ideal_naocl_mixer_unit.costing.operating_cost.value/m.fs.annual_water_production.expr()
+
+        print(f'Chlorination specific CAPEX = ${round(chlorination_spec_capex,5)}/m3')
+        print(f'Chlorination specific OPEX = ${round(chlorination_spec_opex,5)}/m3')
 
 if __name__ == "__main__":
     m = ConcreteModel()

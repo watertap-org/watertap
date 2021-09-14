@@ -57,7 +57,8 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            TransformationFactory,
                            value,
-                           Suffix)
+                           Suffix,
+                           Expression)
 
 from pyomo.network import Arc
 
@@ -81,8 +82,11 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 # Import the idaes object for the EquilibriumReactor unit model
 from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
 
-# Import th idaes object for the Mixer unit model
-from idaes.generic_models.unit_models.mixer import Mixer
+# Import the Proteuslib object inherited for the Mixer unit model
+from proteuslib.flowsheets.full_treatment_train.example_models import Mixer
+
+# Import costing and financials to test
+from proteuslib.flowsheets.full_treatment_train.example_flowsheets import costing, financials
 
 from idaes.generic_models.unit_models.translator import Translator
 
@@ -557,7 +561,7 @@ def initialize_ideal_naocl_chlorination(unit, state_args, debug_out=False):
     else:
         unit.initialize(state_args=state_args, optarg=solver.options)
 
-def setup_block_to_solve_dosing_rate(model, free_chlorine_mg_per_L = 2):
+def setup_block_to_solve_naocl_dosing_rate(model, free_chlorine_mg_per_L = 2):
     model.fs.ideal_naocl_chlorination_unit.free_chlorine.fix(free_chlorine_mg_per_L)
     model.fs.ideal_naocl_mixer_unit.naocl_stream.flow_mol[0].unfix()
 
@@ -609,7 +613,7 @@ def build_ideal_naocl_chlorination_block(model, expand_arcs=False):
     # Add mixer to the model
     build_ideal_naocl_mixer_unit(model)
 
-    # Add mixer to the model
+    # Add reactor to the model
     build_ideal_naocl_chlorination_unit(model)
 
     # Connect the mixer to the chlorination unit with arcs
@@ -741,6 +745,16 @@ def run_chlorination_block_example(fix_free_chlorine=False):
     # Build the partial flowsheet of a mixer and chlorination unit
     build_ideal_naocl_chlorination_block(model, expand_arcs=True)
 
+    # Commented section below was implemented for quick test of chlorination costing
+    # # need load factor from costing_param_block for annual_water_production
+    # financials.add_costing_param_block(model.fs)
+    # # annual water production
+    # model.fs.annual_water_production = Expression(
+    #     expr=pyunits.convert(0.85 * pyunits.m**3 / pyunits.s, to_units=pyunits.m ** 3 / pyunits.year)
+    #          * model.fs.costing_param.load_factor)
+    # costing.build_costing(model, module=financials)
+
+
     # set some values (using defaults for testing)
     set_ideal_naocl_mixer_inlets(model, dosing_rate_of_NaOCl_mg_per_s = 0.4,
                                             inlet_water_density_kg_per_L = 1,
@@ -773,7 +787,7 @@ def run_chlorination_block_example(fix_free_chlorine=False):
     iscale.constraint_autoscale_large_jac(model)
 
     if fix_free_chlorine == True:
-        setup_block_to_solve_dosing_rate(model)
+        setup_block_to_solve_naocl_dosing_rate(model)
     solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
 
     display_results_of_ideal_naocl_mixer(model.fs.ideal_naocl_mixer_unit)
@@ -785,3 +799,4 @@ if __name__ == "__main__":
     model = run_chlorination_block_example(fix_free_chlorine=True)
     property_models.build_prop(model, base='TDS')
     build_translator_from_RO_to_chlorination_block(model)
+    # costing.display_costing(model)
