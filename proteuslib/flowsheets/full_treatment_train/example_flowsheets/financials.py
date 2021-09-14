@@ -165,6 +165,8 @@ def Nanofiltration_costing(self):
              * b_fs.costing_param.NF_mem_cost * b_NF.area / pyunits.m ** 2)
 
 def Separator_costing(self):
+    # TODO: Get separator cost from Tim's single stage MD paper
+
     pass
 
 def Mixer_costing(self, mixer_type='default'):
@@ -300,3 +302,4 @@ def pressure_changer_costing(self, pump_type="centrifugal"):
             expr=self.operating_cost == (b_PC.work_mechanical[0] / pyunits.W
                                          * 3600 * 24 * 365 * b_fs.costing_param.load_factor)
                  * b_fs.costing_param.electricity_cost / 3600 / 1000)
+    #TODO: add cost relationship for low pressure pump, intended for NF pump
