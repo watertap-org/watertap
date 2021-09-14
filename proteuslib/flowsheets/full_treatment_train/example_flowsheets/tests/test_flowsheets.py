@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 from pyomo.environ import value
-from proteuslib.flowsheets.full_treatment_train.example_flowsheets import flowsheet_limited
+from proteuslib.flowsheets.full_treatment_train.example_flowsheets import flowsheet_limited, flowsheet_mvp
 
 
 @pytest.mark.component
@@ -58,3 +58,15 @@ def test_flowsheet_limited_NF_bypass_twostage_1():
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'Ca']) == pytest.approx(2.748e-4, rel=1e-3)
     assert value(m.fs.RO2.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.4229, rel=1e-3)
     assert value(m.fs.RO2.retentate.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(2.793e-2, rel=1e-3)
+
+
+def test_flowsheet_mvp_NF_bypass_twostage_1():
+    m = flowsheet_mvp.solve_flowsheet_mvp_NF(
+        has_bypass=True, has_desal_feed=False, is_twostage=True,
+        NF_type='ZO', NF_base='ion',
+        RO_type='0D', RO_base='TDS', RO_level='detailed')
+    assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(3.318e-2, rel=1e-3)
+    assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'Ca']) == pytest.approx(2.748e-4, rel=1e-3)
+    assert value(m.fs.RO2.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.4229, rel=1e-3)
+    assert value(m.fs.RO2.retentate.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(2.793e-2, rel=1e-3)
+    assert value(m.fs.desal_saturation.saturation_index) == pytest.approx(3.829e-2, rel=1e-3)
