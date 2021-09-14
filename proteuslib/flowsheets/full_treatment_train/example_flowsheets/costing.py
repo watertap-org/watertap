@@ -85,6 +85,16 @@ def display_costing(m, **kwargs):
         m.fs.pump_RO2 = Block()
         m.fs.pump_RO2.costing = Block()
         m.fs.pump_RO2.costing.operating_cost = Param(initialize=0)
+    if not hasattr(m.fs, 'NF'): # TODO: remove this temporary fix meant for adding to cost_dict without error
+        m.fs.NF = Block()
+        m.fs.NF.costing = Block()
+        m.fs.NF.costing.operating_cost = Param(initialize=0)
+    if not hasattr(m.fs, 'RO2'): # TODO: remove this temporary fix meant for adding to cost_dict without error
+        m.fs.RO2 = Block()
+        m.fs.RO2.costing = Block()
+        m.fs.RO2.costing.operating_cost = Param(initialize=0)
+
+
     # UNITS FOR ALL COST COMPONENTS [=] $/m3 of permeate water produced
     cost_dict={
         'LCOW': m.fs.costing.LCOW, # Total LCOW
@@ -97,7 +107,16 @@ def display_costing(m, **kwargs):
         'Total OPEX': m.fs.costing.operating_cost_total / m.fs.annual_water_production,  # Total OPEX
         'Maintenance/Labor/Chemical Costs': m.fs.costing.operating_cost_MLC,  # TODO: Presumably for RO Plant - may revise
         'Total Electricity Cost': (m.fs.pump_RO.costing.operating_cost
-                                  + m.fs.pump_RO2.costing.operating_cost) / m.fs.annual_water_production, # TODO: should other energy costs be accounted for, i.e., pretreatment? probably
+                                  + m.fs.pump_RO2.costing.operating_cost) / m.fs.annual_water_production,  # TODO: should other energy costs be accounted for, i.e., pretreatment? probably
+        'Stage 1 HP Pump Electricity Cost': m.fs.pump_RO.costing.operating_cost/m.fs.annual_water_production,
+        'Stage 2 HP Pump Electricity Cost': m.fs.pump_RO2.costing.operating_cost / m.fs.annual_water_production,
+        'Total Membrane Replacement Cost': (m.fs.NF.costing.operating_cost
+                                            + m.fs.RO.costing.operating_cost
+                                            + m.fs.RO2.costing.operating_cost) / m.fs.annual_water_production,
+        'NF Membrane Replacement Cost': m.fs.NF.costing.operating_cost / m.fs.annual_water_production,
+        'Stage 1 RO Membrane Replacement Cost': m.fs.RO.costing.operating_cost / m.fs.annual_water_production,
+        'Stage 2 RO Membrane Replacement Cost': m.fs.RO2.costing.operating_cost / m.fs.annual_water_production,
+
     }
     for item, val in cost_dict.items():
         print(f"{item} = {value(val)}")
