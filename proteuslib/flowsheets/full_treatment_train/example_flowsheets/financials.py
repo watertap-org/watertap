@@ -230,7 +230,8 @@ def Mixer_costing(self, mixer_type='default'):
 
     if mixer_type == 'default':
         #TODO: Get mixer cost from Tim's single stage MD paper
-        self.eq_capital_cost = Constraint()
+        # self.eq_capital_cost = Constraint()
+        self.capital_cost.fix(0)
         self.operating_cost.fix(0)
 
     elif mixer_type == 'naocl_mixer':
