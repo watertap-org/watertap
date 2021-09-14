@@ -973,7 +973,7 @@ def run_softening_block_example(include_feed=False, fix_hardness=False):
     # financials.add_costing_param_block(model.fs)
     # # annual water production
     # model.fs.annual_water_production = Expression(
-    #     expr=pyunits.convert(0.85 * pyunits.m**3 / pyunits.s, to_units=pyunits.m ** 3 / pyunits.year)
+    #     expr=pyunits.convert(0.0007 * pyunits.m**3 / pyunits.s, to_units=pyunits.m ** 3 / pyunits.year)
     #          * model.fs.costing_param.load_factor)
     # costing.build_costing(model, module=financials)
 

@@ -164,61 +164,6 @@ def Nanofiltration_costing(self):
         expr=self.operating_cost == b_fs.costing_param.factor_membrane_replacement
              * b_fs.costing_param.NF_mem_cost * b_NF.area / pyunits.m ** 2)
 
-#TODO: could attach to equilibrium reactor in chlorination step, but eq reactor currently has no get_costing method
-def Chlorination_costing(self):
-    ''' This method is being added for the chlorination step in the post-treatment section of the full treatment train'''
-    _make_vars(self)
-
-    b_chlorination = self.parent_block()
-    b_fs = b_chlorination.parent_block()
-
-    # capital cost
-    #TODO: WaterTAP cites a table from Texas Water Development Board for determining capex of a hypochlorite feed system;
-    # implement capex relationship here
-
-    # self.eq_capital_cost = Constraint(
-    #     expr=self.capital_cost == )
-
-    # self.eq_operating_cost = Constraint(
-    #     expr=self.operating_cost == )
-
-
-#TODO: fill in capex and opex for lime softening in stoichiometric reactor costing
-def rstoic_costing(self):
-    ''' This method is being added for the softening step in the pre-treatment section of the full treatment train
-    (two cost equations still undergoing verification by AAA; "Lime Addition" seems like the better choice):
-
-    (1) "Lime Softening" capex
-    https://industrialwatersoftener.com/water-treatment-equipment/industrial-water-softeners/analysis-ion-exchange-vs-lime-softening/
-
-    C_lime=0.0704 * Qin ** 0.7306
-    Qin= volumetric flowrate (m3/hr)
-    C_lime= $MM
-
-    (2) "Lime Addition" capex
-    Capital cost based on McGivney & Kawamura, 2008, and adopted from the WaterTAP conversion
-    C_lime = 16972 * S ** 0.5435
-    S= volumetric flow rate (m3/hr)
-    Clime = $
-
-    '''
-
-    _make_vars(self)
-
-    b_lime = self.parent_block()
-    b_fs = b_lime.parent_block()
-
-    # capital cost
-    #TODO: may need to touch flow_vol in softener sub-flowsheet; fill in the capex constraint as well once eqn verified
-
-    # self.eq_capital_cost = Constraint(
-    #     expr=self.capital_cost == b_lime.control_volume.properties_in[0.0].flow_vol)
-
-    # TODO: add cost of chemical; touch flow_mass_phase_comp['Liq', "Ca(OH)2"] in softener flowsheet
-    # self.eq_operating_cost = Constraint(
-    #     expr=self.operating_cost == b_lime.control_volume.properties_in[0.0].flow_mass_phase_comp['Liq', 'Ca(OH)2']
-    #          * b_fs.costing_param.chemical_lime_cost * 3600 * 8760)
-
 def Separator_costing(self):
     pass
 
