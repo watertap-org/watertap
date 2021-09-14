@@ -22,7 +22,11 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_constraints_generator,
                                      unscaled_variables_generator)
 from idaes.core.util.initialization import propagate_state
-from proteuslib.flowsheets.full_treatment_train.example_flowsheets import pretreatment, desalination, translator_block, costing, financials
+from proteuslib.flowsheets.full_treatment_train.example_flowsheets import (pretreatment,
+                                                                           desalination,
+                                                                           translator_block,
+                                                                           costing,
+                                                                           financials)
 from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 

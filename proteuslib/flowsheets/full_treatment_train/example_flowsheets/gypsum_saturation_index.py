@@ -36,7 +36,7 @@ def build_desalination_saturation(m, **kwargs):
     # constraints
     sb_dilute = m.fs.tb_pretrt_to_desal.properties_in[0]
     if kwargs['is_twostage']:
-        sb_perm = m.fs.RO2.permeate_side.properties_mixed[0]
+        sb_perm = m.fs.mixer_permeate.mixed_state[0]
         sb_conc = m.fs.RO2.feed_side.properties_out[0]
     else:
         sb_perm = m.fs.RO.permeate_side.properties_mixed[0]
