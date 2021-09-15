@@ -30,40 +30,42 @@ def build_costing(m, module=financials, **kwargs):
     # call get_costing for each unit model
     #get_costing_sweep(m.fs, module=financials)
     #TODO: add in other components as they become available
-
+    m.fs.costing = Block()
     # Nanofiltration
     if hasattr(m.fs, 'NF'):
         if kwargs['NF_type'] == 'ZO':
-            m.fs.NF.get_costing(module=module)
+            m.fs.NF.get_costing(module=module, section='pretreatment')
         elif kwargs['NF_type'] == 'Sep':
             raise NotImplementedError("get_costing will not be implemented for the NF separator model.")
     if hasattr(m.fs, 'pump_NF'):
-        m.fs.pump_NF.get_costing(module=module, pump_type="High pressure")  # TODO: update with low pressure pump
+        m.fs.pump_NF.get_costing(module=module, section='pretreatment', pump_type="High pressure")  # TODO: update with low pressure pump
     # Reverse Osmosis
     if hasattr(m.fs, 'RO'):
         if kwargs['RO_type'] == '0D':
-            m.fs.RO.get_costing(module=module)
+            m.fs.RO.get_costing(module=module, section='primary')
         elif kwargs['RO_type'] == 'Sep':
             raise NotImplementedError("get_costing will not be implemented for the RO separator model.")
     # Stage 2 RO
     if hasattr(m.fs, 'RO2'):
-        m.fs.RO2.get_costing(module=module)
+        m.fs.RO2.get_costing(module=module, section='primary')
+
     # Pump
     if hasattr(m.fs, 'pump_RO'):
-        m.fs.pump_RO.get_costing(module=module, pump_type="High pressure")
+        m.fs.pump_RO.get_costing(module=module, section='primary', pump_type="High pressure")
     # Stage 2 pump
     if hasattr(m.fs, 'pump_RO2'):
-        m.fs.pump_RO2.get_costing(module=module, pump_type="High pressure")
+        m.fs.pump_RO2.get_costing(module=module, section='primary', pump_type="High pressure")
     # ERD
     if hasattr(m.fs, 'ERD'):
-        m.fs.ERD.get_costing(module=module, pump_type='Pressure exchanger')
+        m.fs.ERD.get_costing(module=module, section='primary', pump_type='Pressure exchanger')
     # Pretreatment
     if hasattr(m.fs,'stoich_softening_mixer_unit'): #TODO: check how pretreatment by lime softening was implemented on flowsheet (once added in)
         # print('FOUND LIME SOFTENER')
-        m.fs.stoich_softening_mixer_unit.get_costing(module=module, mixer_type="lime_softening")
+        m.fs.stoich_softening_mixer_unit.get_costing(module=module, section='pretreatment', mixer_type="lime_softening")
+
     if hasattr(m.fs,'ideal_naocl_mixer_unit'): #TODO: check how posttreatment (chlorination) was implemented on flowsheet (once added in)
         # print('FOUND CHLORINATION UNIT')
-        m.fs.ideal_naocl_mixer_unit.get_costing(module=module, mixer_type='naocl_mixer')
+        m.fs.ideal_naocl_mixer_unit.get_costing(module=module, section='post_treatment', mixer_type='naocl_mixer')
 
     # call get_system_costing for whole flowsheet
     module.get_system_costing(m.fs)
@@ -109,19 +111,27 @@ def display_costing(m, **kwargs):
         'Indirect CAPEX': (m.fs.costing.investment_cost_total - m.fs.costing.capital_cost_total) * crf
                         / m.fs.annual_water_production,  # Indirect CAPEX for miscellaneous items
         'Total OPEX': m.fs.costing.operating_cost_total / m.fs.annual_water_production,  # Total OPEX
-        'Maintenance/Labor/Chemical Costs': m.fs.costing.operating_cost_MLC,  # TODO: Presumably for RO Plant - may revise
-        'Total Electricity Cost': (m.fs.pump_RO.costing.operating_cost
-                                  + m.fs.pump_RO2.costing.operating_cost) / m.fs.annual_water_production,  # TODO: should other energy costs be accounted for, i.e., pretreatment? probably
-        'Stage 1 HP Pump Electricity Cost': m.fs.pump_RO.costing.operating_cost/m.fs.annual_water_production,
-        'Stage 2 HP Pump Electricity Cost': m.fs.pump_RO2.costing.operating_cost / m.fs.annual_water_production,
+        'Labor & Maintenance Costs': m.fs.costing.operating_cost_labor_maintenance
+                                     / m.fs.annual_water_production,  # TODO: Presumably for RO Plant - may revise; separate chemical costs and add membrane cleaning
+        'Total Electricity Cost': m.fs.costing.electricity_cost_total / m.fs.annual_water_production,  # TODO: should other energy costs be accounted for, i.e., pretreatment? probably
         'Total Membrane Replacement Cost': (m.fs.NF.costing.operating_cost
                                             + m.fs.RO.costing.operating_cost
                                             + m.fs.RO2.costing.operating_cost) / m.fs.annual_water_production,
-        'NF Membrane Replacement Cost': m.fs.NF.costing.operating_cost / m.fs.annual_water_production,
-        'Stage 1 RO Membrane Replacement Cost': m.fs.RO.costing.operating_cost / m.fs.annual_water_production,
-        'Stage 2 RO Membrane Replacement Cost': m.fs.RO2.costing.operating_cost / m.fs.annual_water_production,
+        'Total Pretreatment Cost': m.fs.costing.pretreatment_cost_total / m.fs.annual_water_production,
+        'Total Primary Cost': m.fs.costing.primary_cost_total / m.fs.annual_water_production,
+        'Total Post-treatment Cost': m.fs.costing.post_treatment_cost_total / m.fs.annual_water_production
 
     }
+
+    # cost_dict_extras = {
+    #     'NF Pump Electricity Cost': m.fs.pump_NF.costing.operating_cost / m.fs.annual_water_production,
+    #     'Stage 1 HP Pump Electricity Cost': m.fs.pump_RO.costing.operating_cost / m.fs.annual_water_production,
+    #     'Stage 2 HP Pump Electricity Cost': m.fs.pump_RO2.costing.operating_cost / m.fs.annual_water_production,
+    #     'NF Membrane Replacement Cost': m.fs.NF.costing.operating_cost / m.fs.annual_water_production,
+    #     'Stage 1 RO Membrane Replacement Cost': m.fs.RO.costing.operating_cost / m.fs.annual_water_production,
+    #     'Stage 2 RO Membrane Replacement Cost': m.fs.RO2.costing.operating_cost / m.fs.annual_water_production,
+    #
+    # }
     for item, val in cost_dict.items():
         print(f"{item} = {value(val)}")
 

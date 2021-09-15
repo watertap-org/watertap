@@ -747,12 +747,12 @@ def run_chlorination_block_example(fix_free_chlorine=False):
 
     # Commented section below was implemented for quick test of chlorination costing
     # # need load factor from costing_param_block for annual_water_production
-    # financials.add_costing_param_block(model.fs)
-    # # annual water production
-    # model.fs.annual_water_production = Expression(
-    #     expr=pyunits.convert(0.85 * pyunits.m**3 / pyunits.s, to_units=pyunits.m ** 3 / pyunits.year)
-    #          * model.fs.costing_param.load_factor)
-    # costing.build_costing(model, module=financials)
+    financials.add_costing_param_block(model.fs)
+    # annual water production
+    model.fs.annual_water_production = Expression(
+        expr=pyunits.convert(0.85 * pyunits.m**3 / pyunits.s, to_units=pyunits.m ** 3 / pyunits.year)
+             * model.fs.costing_param.load_factor)
+    costing.build_costing(model, module=financials)
 
 
     # set some values (using defaults for testing)
@@ -799,4 +799,4 @@ if __name__ == "__main__":
     model = run_chlorination_block_example(fix_free_chlorine=True)
     property_models.build_prop(model, base='TDS')
     build_translator_from_RO_to_chlorination_block(model)
-    # costing.display_costing(model)
+    costing.display_costing(model)

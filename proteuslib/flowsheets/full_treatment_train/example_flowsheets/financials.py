@@ -15,6 +15,7 @@ from pyomo.environ import (
 from idaes.core.util.exceptions import ConfigurationError
 
 
+
 # TODO: choose year --> 2018 probably (use CEPCI)
 # TODO: in example flowsheets --> build_costing and use **kwargs to build flowsheet
 # TODO: make kwargs dict
@@ -31,9 +32,9 @@ def add_costing_param_block(self):
     b.factor_total_investment = Var(
         initialize=2,
         doc='Total investment factor [investment cost/equipment cost]')
-    b.factor_MLC = Var(
-        initialize=0.03,
-        doc='Maintenance-labor-chemical factor [fraction of investment cost/year]')
+    b.factor_labor_maintenance = Var(
+        initialize=0.02,
+        doc='Labor & maintenance factor [fraction of investment cost/year]')
     b.factor_capital_annualization = Var(
         initialize=0.1,
         doc='Capital annualization factor [fraction of investment cost/year]')
@@ -84,7 +85,7 @@ def get_system_costing(self):
         initialize=1e3,
         domain=NonNegativeReals,
         doc='Total investment cost [$]')
-    b.operating_cost_MLC = Var(
+    b.operating_cost_labor_maintenance = Var(
         initialize=1e3,
         domain=NonNegativeReals,
         doc='Maintenance-labor-chemical operating cost [$/year]')
@@ -92,6 +93,22 @@ def get_system_costing(self):
         initialize=1e3,
         domain=NonNegativeReals,
         doc='Total operating cost [$/year]')
+    b.electricity_cost_total = Var(
+        initialize=1e3,
+        domain=NonNegativeReals,
+        doc='Total electricity cost [$/year]')
+    b.pretreatment_cost_total = Var(
+        initialize=1e3,
+        domain=NonNegativeReals,
+        doc='Total pretreatment cost [$/year]')
+    b.primary_cost_total = Var(
+        initialize=1e3,
+        domain=NonNegativeReals,
+        doc='Total primary treatment cost [$/year]')
+    b.post_treatment_cost_total = Var(
+        initialize=1e3,
+        domain=NonNegativeReals,
+        doc='Total post-treatment cost [$/year]')
     b.LCOW = Var(
         initialize=1,
         domain=NonNegativeReals,
@@ -99,28 +116,48 @@ def get_system_costing(self):
 
     capital_cost_var_lst = []
     operating_cost_var_lst = []
+    electricity_cost_var_lst = []
+    pretreatment_cost_var_lst = []
+    primary_cost_var_lst = []
+    post_treatment_cost_var_lst = []
     for b_unit in self.component_objects(Block, descend_into=True):
         if hasattr(b_unit, 'costing'):
             capital_cost_var_lst.append(b_unit.costing.capital_cost)
             operating_cost_var_lst.append(b_unit.costing.operating_cost)
-    operating_cost_var_lst.append(b.operating_cost_MLC)
+            if hasattr(b_unit.costing, 'pretreatment'):
+                pretreatment_cost_var_lst.append(b_unit.costing.pretreatment)
+            if hasattr(b_unit.costing, 'primary'):
+                primary_cost_var_lst.append(b_unit.costing.primary)
+            if hasattr(b_unit.costing, 'post_treatment'):
+                post_treatment_cost_var_lst.append(b_unit.costing.post_treatment)
+            if 'electricity_cost' in str(b_unit.costing.eq_operating_cost.body):
+                electricity_cost_var_lst.append(b_unit.costing.operating_cost)
+    operating_cost_var_lst.append(b.operating_cost_labor_maintenance)
 
     b.eq_capital_cost_total = Constraint(
         expr=b.capital_cost_total == sum(capital_cost_var_lst))
     b.eq_investment_cost_total = Constraint(
         expr=(b.investment_cost_total ==
               b.capital_cost_total * self.costing_param.factor_total_investment))
-    b.eq_operating_cost_MLC = Constraint(
-        expr=(b.operating_cost_MLC ==
-              b.investment_cost_total * self.costing_param.factor_MLC))
+    b.eq_operating_cost_labor_maintenance = Constraint(
+        expr=(b.operating_cost_labor_maintenance ==
+              b.investment_cost_total * self.costing_param.factor_labor_maintenance))
     b.eq_operating_cost_total = Constraint(
         expr=b.operating_cost_total == sum(operating_cost_var_lst))
+    b.eq_electricity_cost_total = Constraint(
+        expr=b.electricity_cost_total == sum(electricity_cost_var_lst))
+    b.eq_pretreatment_cost_total = Constraint(
+        expr=b.pretreatment_cost_total == sum(pretreatment_cost_var_lst))
+    b.eq_primary_cost_total = Constraint(
+        expr=b.primary_cost_total == sum(primary_cost_var_lst))
+    b.eq_post_treatment_cost_total = Constraint(
+        expr=b.post_treatment_cost_total == sum(post_treatment_cost_var_lst))
     b.eq_LCOW = Constraint(
         expr=b.LCOW == (b.investment_cost_total * self.costing_param.factor_capital_annualization
                         + b.operating_cost_total) / (self.annual_water_production / (pyunits.m ** 3 / pyunits.year)))
 
 
-def _make_vars(self):
+def _make_vars(self, section=None):
     # build generic costing variables (all costing models need these vars)
     self.capital_cost = Var(initialize=1e5,
                             domain=NonNegativeReals,
@@ -129,13 +166,18 @@ def _make_vars(self):
                               domain=Reals,
                               bounds=(0, 1e6),
                               doc='Unit operating cost [$/year]')
+    if section not in ['pretreatment', 'primary', 'post_treatment']:
+        raise NotImplementedError
+    else:
+        setattr(self, section, Var(initialize=2e5, domain=NonNegativeReals, doc='Treatment section cost [$/year]'))
 
 
-def ReverseOsmosis_costing(self):
-    _make_vars(self)
+def ReverseOsmosis_costing(self, section='primary'):
+    _make_vars(self, section)
 
     b_RO = self.parent_block()
     b_fs = b_RO.parent_block()
+    b_section = getattr(self, section)
 
     # capital cost
     self.eq_capital_cost = Constraint(
@@ -146,14 +188,19 @@ def ReverseOsmosis_costing(self):
         expr=self.operating_cost == b_fs.costing_param.factor_membrane_replacement
              * b_fs.costing_param.RO_mem_cost * b_RO.area / pyunits.m ** 2)
 
+    # Treatment section cost
+    self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
 
-def Nanofiltration_costing(self):
+
+
+def Nanofiltration_costing(self, section='pretreatment'):
     ''' This method is being added for the nanofiltration step in the pre-treatment section of the full treatment train'''
 
-    _make_vars(self)
+    _make_vars(self, section)
 
     b_NF = self.parent_block()
     b_fs = b_NF.parent_block()
+    b_section = getattr(self, section)
 
     # capital cost
     self.eq_capital_cost = Constraint(
@@ -164,16 +211,20 @@ def Nanofiltration_costing(self):
         expr=self.operating_cost == b_fs.costing_param.factor_membrane_replacement
              * b_fs.costing_param.NF_mem_cost * b_NF.area / pyunits.m ** 2)
 
+    # Treatment section cost
+    self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
+
 def Separator_costing(self):
     # TODO: Get separator cost from Tim's single stage MD paper
 
     pass
 
-def Mixer_costing(self, mixer_type='default'):
-    _make_vars(self)
+def Mixer_costing(self, mixer_type='default', section=None): #TODO add fixed cost options vs economies_of_scale
+    _make_vars(self, section)
 
     b_m = self.parent_block()
     b_fs = b_m.parent_block()
+    b_section = getattr(self, section)
 
     if mixer_type == 'default':
         #TODO: Get mixer cost from Tim's single stage MD paper
@@ -254,12 +305,15 @@ def Mixer_costing(self, mixer_type='default'):
                                                  / self.caoh2_purity
                                                  * 3600 * 8760 * pyunits.s)
 
+    # Treatment section cost
+    self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
 
-def pressure_changer_costing(self, pump_type="centrifugal"):
-    _make_vars(self)
+def pressure_changer_costing(self, pump_type="centrifugal", section=None):
+    _make_vars(self, section)
 
     b_PC = self.parent_block()
     b_fs = b_PC.parent_block()
+    b_section = getattr(self, section)
 
     self.purchase_cost = Var()
     self.cp_cost_eq = Constraint(expr=self.purchase_cost == 0)
@@ -274,6 +328,8 @@ def pressure_changer_costing(self, pump_type="centrifugal"):
             expr=self.operating_cost == (b_PC.work_mechanical[0] / pyunits.W
                                          * 3600 * 24 * 365 * b_fs.costing_param.load_factor)
                  * b_fs.costing_param.electricity_cost / 3600 / 1000)
+    elif pump_type == 'Low pressure':
+        pass     # TODO: add cost relationship for low pressure pump, intended for NF pump
 
     elif pump_type == 'Pressure exchanger':
         # capital cost
@@ -288,4 +344,6 @@ def pressure_changer_costing(self, pump_type="centrifugal"):
             expr=self.operating_cost == (b_PC.work_mechanical[0] / pyunits.W
                                          * 3600 * 24 * 365 * b_fs.costing_param.load_factor)
                  * b_fs.costing_param.electricity_cost / 3600 / 1000)
-    #TODO: add cost relationship for low pressure pump, intended for NF pump
+
+    # Treatment section cost
+    self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
