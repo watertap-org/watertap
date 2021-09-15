@@ -40,7 +40,8 @@ import matplotlib.pyplot as plt
 # SO4_2-: 2136, 96.06
 # Cl_-: 20300 (rounding error?), 35.446
 
-
+# flag to superimpose data points from membrane manufacturer results
+superimpose_validation = True
 def compute_gypsum_SI(Ksp=8.89912404553923e-09, feed_comp=None):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -162,6 +163,9 @@ def gypsum_SI_plot(Ksp, cf, yvar):
     4) CaSO4 average activity coefficient
     as a function of concentration factor, cf, and solubility product, Ksp
     '''
+    if superimpose_validation:
+        plt.scatter(x=[1, 2, 3, 4, 5], y=[0.153, .365, .605, .867, 1.146], color='purple')
+        plt.legend('Calculated SI in IMSDesign')
     for ksp in Ksp:
         SI_mat = []
         gamma_Ca_mat = []
@@ -204,10 +208,11 @@ def gypsum_SI_plot(Ksp, cf, yvar):
     plt.xlabel("Concentration Factor")
     plt.ylabel(labels[yvar])
     plt.legend()
+
 if __name__ == '__main__':
 
     # concentration factor from 1 to 10
-    cf = np.linspace(1, 5, 20)
+    cf = np.linspace(1, 5, 100)
     # For yvar, choose from 'SI_mat'
 #                 'gamma_Ca_mat'
     #             'gamma_SO4_mat'

@@ -12,7 +12,7 @@
 ###############################################################################
 
 from pyomo.environ import (
-    Block, Constraint, Expression, Var, Param, units as pyunits)
+    Block, Constraint, Expression, Var, Param, units as pyunits, value)
 from idaes.core.util.exceptions import ConfigurationError
 import proteuslib.flowsheets.full_treatment_train.example_flowsheets.financials as financials
 from proteuslib.flowsheets.full_treatment_train.example_flowsheets.flowsheet_limited import *
@@ -36,20 +36,24 @@ def build_costing(m, module=financials, **kwargs):
         if kwargs['NF_type'] == 'ZO':
             m.fs.NF.get_costing(module=module)
         elif kwargs['NF_type'] == 'Sep':
-            raise NotImplementedError("get_costing is not implemented for the NF separator model.")
+            raise NotImplementedError("get_costing will not be implemented for the NF separator model.")
     # Reverse Osmosis
-    if 'RO_type' in kwargs and kwargs['RO_type'] == '0D':
-        m.fs.RO.get_costing(module=module)
-    elif 'RO_type' in kwargs and kwargs['RO_type'] == 'Sep':
-        raise NotImplementedError
+    if hasattr(m.fs, 'RO'):
+        if kwargs['RO_type'] == '0D':
+            m.fs.RO.get_costing(module=module)
+        elif kwargs['RO_type'] == 'Sep':
+            raise NotImplementedError("get_costing will not be implemented for the RO separator model.")
     # Pump
     if hasattr(m.fs, 'pump_RO'):
         m.fs.pump_RO.get_costing(module=module, pump_type="High pressure")
-    if 'is_twostage' in kwargs and kwargs['is_twostage']:
+    # Stage 2 pump
+    if hasattr(m.fs, 'pump_RO2'):
         m.fs.pump_RO2.get_costing(module=module, pump_type="High pressure")
+    # Stage 2 RO
+    if hasattr(m.fs, 'RO2'):
         m.fs.RO2.get_costing(module=module)
     # ERD
-    if kwargs['has_ERD']:
+    if hasattr(m.fs, 'ERD'):
         m.fs.ERD.get_costing(module=module, pump_type='Pressure exchanger')
     # Pretreatment
     if hasattr(m.fs,'stoich_softening_mixer_unit'): #TODO: check how pretreatment by lime softening was implemented on flowsheet (once added in)
@@ -82,25 +86,25 @@ def display_costing(m, **kwargs):
     print(f'LCOW = ${round(m.fs.costing.LCOW.value, 5)}/m3')
 
     if hasattr(m.fs,'pump_RO'):
-        pump_RO_spec_opex= m.fs.pump_RO.costing.operating_cost.value/m.fs.annual_water_production.expr()
+        pump_RO_spec_opex= m.fs.pump_RO.costing.operating_cost.value/value(m.fs.annual_water_production)
         print(f'RO Pump 1 specific Opex = ${round(pump_RO_spec_opex,3)}/m3')
-    if 'is_twostage' in kwargs and kwargs['is_twostage']:
-        pump_RO2_spec_opex= m.fs.pump_RO2.costing.operating_cost.value/m.fs.annual_water_production.expr()
+    if hasattr(m.fs,'pump_RO2'):
+        pump_RO2_spec_opex= m.fs.pump_RO2.costing.operating_cost.value/value(m.fs.annual_water_production)
         print(f'RO Pump 2 specific Opex = ${round(pump_RO2_spec_opex,3)}/m3')
     if 'has_ERD' in kwargs and kwargs['has_ERD']:
         pump_ERD_spec_opex= m.fs.ERD.costing.operating_cost.value/m.fs.annual_water_production.expr()
         print(f'ERD specific Opex = ${round(pump_ERD_spec_opex,3)}/m3')
 
     if hasattr(m.fs,'stoich_softening_mixer_unit'): #TODO: check if pretreatment by lime softening was implemented on flowsheet (once added in)
-        lime_softener_spec_capex= m.fs.stoich_softening_mixer_unit.costing.capital_cost.value/m.fs.annual_water_production.expr() *crf
-        lime_softener_spec_opex= m.fs.stoich_softening_mixer_unit.costing.operating_cost.value/m.fs.annual_water_production.expr()
+        lime_softener_spec_capex= m.fs.stoich_softening_mixer_unit.costing.capital_cost.value/value(m.fs.annual_water_production) *crf
+        lime_softener_spec_opex= m.fs.stoich_softening_mixer_unit.costing.operating_cost.value/value(m.fs.annual_water_production)
 
         print(f'Lime Softening specific CAPEX = ${round(lime_softener_spec_capex,5)}/m3')
         print(f'Lime Softening specific OPEX = ${round(lime_softener_spec_opex,5)}/m3')
 
     if hasattr(m.fs,'ideal_naocl_mixer_unit'):
-        chlorination_spec_capex= m.fs.ideal_naocl_mixer_unit.costing.capital_cost.value/m.fs.annual_water_production.expr() *crf
-        chlorination_spec_opex= m.fs.ideal_naocl_mixer_unit.costing.operating_cost.value/m.fs.annual_water_production.expr()
+        chlorination_spec_capex= m.fs.ideal_naocl_mixer_unit.costing.capital_cost.value/value(m.fs.annual_water_production) *crf
+        chlorination_spec_opex= m.fs.ideal_naocl_mixer_unit.costing.operating_cost.value/value(m.fs.annual_water_production)
 
         print(f'Chlorination specific CAPEX = ${round(chlorination_spec_capex,5)}/m3')
         print(f'Chlorination specific OPEX = ${round(chlorination_spec_opex,5)}/m3')
