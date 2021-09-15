@@ -121,28 +121,28 @@ def display_costing(m, **kwargs):
     for item, val in cost_dict.items():
         print(f"{item} = {value(val)}")
 
-    print(f'LCOW = ${round(m.fs.costing.LCOW.value, 5)}/m3')
-
-    if hasattr(m.fs,'pump_RO'):
-        pump_RO_spec_opex= m.fs.pump_RO.costing.operating_cost.value/value(m.fs.annual_water_production)
-        print(f'RO Pump 1 specific Opex = ${round(pump_RO_spec_opex,3)}/m3')
-    if hasattr(m.fs,'pump_RO2'):
-        pump_RO2_spec_opex= m.fs.pump_RO2.costing.operating_cost.value/value(m.fs.annual_water_production)
-        print(f'RO Pump 2 specific Opex = ${round(pump_RO2_spec_opex,3)}/m3')
-
-    if hasattr(m.fs,'stoich_softening_mixer_unit'): #TODO: check if pretreatment by lime softening was implemented on flowsheet (once added in)
-        lime_softener_spec_capex= m.fs.stoich_softening_mixer_unit.costing.capital_cost.value/value(m.fs.annual_water_production) *crf.value
-        lime_softener_spec_opex= m.fs.stoich_softening_mixer_unit.costing.operating_cost.value/value(m.fs.annual_water_production)
-
-        print(f'Lime Softening specific CAPEX = ${round(lime_softener_spec_capex,5)}/m3')
-        print(f'Lime Softening specific OPEX = ${round(lime_softener_spec_opex,5)}/m3')
-
-    if hasattr(m.fs,'ideal_naocl_mixer_unit'):
-        chlorination_spec_capex= m.fs.ideal_naocl_mixer_unit.costing.capital_cost.value/value(m.fs.annual_water_production) *crf.value
-        chlorination_spec_opex= m.fs.ideal_naocl_mixer_unit.costing.operating_cost.value/value(m.fs.annual_water_production)
-
-        print(f'Chlorination specific CAPEX = ${round(chlorination_spec_capex,5)}/m3')
-        print(f'Chlorination specific OPEX = ${round(chlorination_spec_opex,5)}/m3')
+    # print(f'LCOW = ${round(m.fs.costing.LCOW.value, 5)}/m3')
+    #
+    # if hasattr(m.fs,'pump_RO'):
+    #     pump_RO_spec_opex= m.fs.pump_RO.costing.operating_cost.value/value(m.fs.annual_water_production)
+    #     print(f'RO Pump 1 specific Opex = ${round(pump_RO_spec_opex,3)}/m3')
+    # if hasattr(m.fs,'pump_RO2'):
+    #     pump_RO2_spec_opex= m.fs.pump_RO2.costing.operating_cost.value/value(m.fs.annual_water_production)
+    #     print(f'RO Pump 2 specific Opex = ${round(pump_RO2_spec_opex,3)}/m3')
+    #
+    # if hasattr(m.fs,'stoich_softening_mixer_unit'): #TODO: check if pretreatment by lime softening was implemented on flowsheet (once added in)
+    #     lime_softener_spec_capex= m.fs.stoich_softening_mixer_unit.costing.capital_cost.value/value(m.fs.annual_water_production) *crf.value
+    #     lime_softener_spec_opex= m.fs.stoich_softening_mixer_unit.costing.operating_cost.value/value(m.fs.annual_water_production)
+    #
+    #     print(f'Lime Softening specific CAPEX = ${round(lime_softener_spec_capex,5)}/m3')
+    #     print(f'Lime Softening specific OPEX = ${round(lime_softener_spec_opex,5)}/m3')
+    #
+    # if hasattr(m.fs,'ideal_naocl_mixer_unit'):
+    #     chlorination_spec_capex= m.fs.ideal_naocl_mixer_unit.costing.capital_cost.value/value(m.fs.annual_water_production) *crf.value
+    #     chlorination_spec_opex= m.fs.ideal_naocl_mixer_unit.costing.operating_cost.value/value(m.fs.annual_water_production)
+    #
+    #     print(f'Chlorination specific CAPEX = ${round(chlorination_spec_capex,5)}/m3')
+    #     print(f'Chlorination specific OPEX = ${round(chlorination_spec_opex,5)}/m3')
 
 if __name__ == "__main__":
     m = ConcreteModel()
