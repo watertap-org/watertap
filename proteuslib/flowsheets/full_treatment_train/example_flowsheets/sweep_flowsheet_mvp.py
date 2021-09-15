@@ -1,13 +1,11 @@
 import numpy as np
 from scipy.interpolate import griddata
-from mpi4py import MPI
 from idaes.core.util import get_solver
 
-from proteuslib.tools.parameter_sweep import LinearSample, parameter_sweep
+from proteuslib.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
 from proteuslib.flowsheets.full_treatment_train.example_flowsheets.flowsheet_mvp import (solve_optimization, optimize, set_up_optimization)
 
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
+comm, rank, num_procs = _init_mpi()
 
 #================================
 # Set up the solver
