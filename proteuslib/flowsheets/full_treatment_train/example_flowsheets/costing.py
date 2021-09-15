@@ -32,21 +32,25 @@ def build_costing(m, module=financials, **kwargs):
     #TODO: add in other components as they become available
 
     # Nanofiltration
-    if 'NF_type' in kwargs and kwargs['NF_type'] == 'ZO':
-        m.fs.NF.get_costing(module=module)
-    elif 'NF_type' in kwargs and kwargs['NF_type'] == 'Sep':
-        raise NotImplementedError("get_costing is not implemented yet for the NF separator model.")
+    if hasattr(m.fs, 'NF'):
+        if kwargs['NF_type'] == 'ZO':
+            m.fs.NF.get_costing(module=module)
+        elif kwargs['NF_type'] == 'Sep':
+            raise NotImplementedError("get_costing is not implemented for the NF separator model.")
     # Reverse Osmosis
     if 'RO_type' in kwargs and kwargs['RO_type'] == '0D':
         m.fs.RO.get_costing(module=module)
     elif 'RO_type' in kwargs and kwargs['RO_type'] == 'Sep':
         raise NotImplementedError
     # Pump
-    if hasattr(m.fs,'pump_RO'):
+    if hasattr(m.fs, 'pump_RO'):
         m.fs.pump_RO.get_costing(module=module, pump_type="High pressure")
     if 'is_twostage' in kwargs and kwargs['is_twostage']:
         m.fs.pump_RO2.get_costing(module=module, pump_type="High pressure")
         m.fs.RO2.get_costing(module=module)
+    # ERD
+    if kwargs['has_ERD']:
+        m.fs.ERD.get_costing(module=module, pump_type='Pressure exchanger')
     # Pretreatment
     if hasattr(m.fs,'stoich_softening_mixer_unit'): #TODO: check how pretreatment by lime softening was implemented on flowsheet (once added in)
         # print('FOUND LIME SOFTENER')
@@ -83,6 +87,9 @@ def display_costing(m, **kwargs):
     if 'is_twostage' in kwargs and kwargs['is_twostage']:
         pump_RO2_spec_opex= m.fs.pump_RO2.costing.operating_cost.value/m.fs.annual_water_production.expr()
         print(f'RO Pump 2 specific Opex = ${round(pump_RO2_spec_opex,3)}/m3')
+    if 'has_ERD' in kwargs and kwargs['has_ERD']:
+        pump_ERD_spec_opex= m.fs.ERD.costing.operating_cost.value/m.fs.annual_water_production.expr()
+        print(f'ERD specific Opex = ${round(pump_ERD_spec_opex,3)}/m3')
 
     if hasattr(m.fs,'stoich_softening_mixer_unit'): #TODO: check if pretreatment by lime softening was implemented on flowsheet (once added in)
         lime_softener_spec_capex= m.fs.stoich_softening_mixer_unit.costing.capital_cost.value/m.fs.annual_water_production.expr() *crf

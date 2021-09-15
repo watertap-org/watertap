@@ -31,7 +31,7 @@ from proteuslib.flowsheets.full_treatment_train.example_models import property_m
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
-def build_flowsheet_limited_NF(m, has_bypass=True, has_desal_feed=False, is_twostage=False,
+def build_flowsheet_limited_NF(m, has_bypass=True, has_desal_feed=False, is_twostage=False, has_ERD=False,
                                NF_type='ZO', NF_base='ion',
                                RO_type='Sep', RO_base='TDS', RO_level='simple'):
     """
@@ -39,7 +39,7 @@ def build_flowsheet_limited_NF(m, has_bypass=True, has_desal_feed=False, is_twos
     """
     # set up keyword arguments for the sections of treatment train
     kwargs_pretreatment = {'has_bypass': has_bypass, 'NF_type': NF_type, 'NF_base': NF_base}
-    kwargs_desalination = {'has_desal_feed': has_desal_feed, 'is_twostage': is_twostage,
+    kwargs_desalination = {'has_desal_feed': has_desal_feed, 'is_twostage': is_twostage, 'has_ERD': has_ERD,
                            'RO_type': RO_type, 'RO_base': RO_base, 'RO_level': RO_level}
     # kwargs_flowsheet = kwargs_pretreatment.copy()
     # kwargs_flowsheet.update(kwargs_desalination)
