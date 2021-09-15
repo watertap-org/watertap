@@ -24,6 +24,7 @@ def test_build_and_scale_pretreatment_NF():
         for NF_type in ['Sep', 'ZO']:
             for NF_base in ['ion', 'salt']:
                 kwargs = {'has_bypass': has_bypass, 'NF_type': NF_type, 'NF_base': NF_base}
+                print('\n\n***kwargs****\n', kwargs)
 
                 if NF_type == 'ZO' and NF_base == 'salt':
                     continue  # not a valid combination

@@ -24,6 +24,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
                                      get_scaling_factor,
                                      constraint_scaling_transform)
 from idaes.core.util.initialization import propagate_state
+from proteuslib.unit_models.pump_isothermal import Pump
 from proteuslib.flowsheets.full_treatment_train.example_flowsheets import feed_block
 from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator, unit_ZONF, property_models
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
@@ -48,6 +49,7 @@ def build_pretreatment_NF(m, has_bypass=True, NF_type='ZO', NF_base='ion'):
         unit_separator.build_SepNF(m, base=NF_base)
     elif NF_type == 'ZO':
         unit_ZONF.build_ZONF(m, base=NF_base)
+        m.fs.pump_NF = Pump(default={'property_package': prop})
     else:
         raise ValueError('Unexpected model type {NF_type} provided to build_NF_no_bypass'
                          ''.format(NF_type=NF_type))
@@ -66,12 +68,19 @@ def build_pretreatment_NF(m, has_bypass=True, NF_type='ZO', NF_base='ion'):
         # connect models
         m.fs.s_pretrt_feed_splitter = Arc(source=m.fs.feed.outlet, destination=m.fs.splitter.inlet)
         m.fs.s_pretrt_splitter_mixer = Arc(source=m.fs.splitter.bypass, destination=m.fs.mixer.bypass)
-        m.fs.s_pretrt_splitter_NF = Arc(source=m.fs.splitter.pretreatment, destination=m.fs.NF.inlet)
+        if NF_type == 'ZO':
+            m.fs.s_pretrt_splitter_pumpNF = Arc(source=m.fs.splitter.pretreatment, destination=m.fs.pump_NF.inlet)
+            m.fs.s_pretrt_pumpNF_NF = Arc(source=m.fs.pump_NF.inlet, destination=m.fs.NF.inlet)
+        else:
+            m.fs.s_pretrt_splitter_NF = Arc(source=m.fs.splitter.pretreatment, destination=m.fs.NF.inlet)
         m.fs.s_pretrt_NF_mixer = Arc(source=m.fs.NF.permeate, destination=m.fs.mixer.pretreatment)
 
-        # specify (NF and feed is already specified, mixer has 0 DOF, splitter has 1 DOF)
+        # specify (NF and feed is already specified, mixer has 0 DOF, splitter has 1 DOF, NF pump has 2 DOF)
         # splitter
         m.fs.splitter.split_fraction[0, 'bypass'].fix(0.1)
+        if NF_type == 'ZO':
+            m.fs.pump_NF.efficiency_pump.fix(0.80)
+            m.fs.pump_NF.control_volume.properties_out[0].pressure.fix(4e5)
 
         # inlet/outlet ports for pretreatment
         pretrt_port['out'] = m.fs.mixer.outlet
@@ -81,9 +90,16 @@ def build_pretreatment_NF(m, has_bypass=True, NF_type='ZO', NF_base='ion'):
         # build auxiliary units (none)
 
         # connect models
-        m.fs.s_pretrt_feed_NF = Arc(source=m.fs.feed.outlet, destination=m.fs.NF.inlet)
+        if NF_type == 'ZO':
+            m.fs.s_pretrt_feed_pumpNF = Arc(source=m.fs.feed.outlet, destination=m.fs.pump_NF.inlet)
+            m.fs.s_pretrt_pumpNF_NF = Arc(source=m.fs.pump_NF.inlet, destination=m.fs.NF.inlet)
+        else:
+            m.fs.s_pretrt_feed_NF = Arc(source=m.fs.feed.outlet, destination=m.fs.NF.inlet)
 
-        # specify (NF and feed are already specified)
+        # specify (NF and feed are already specified, NF pump has 2 DOF)
+        if NF_type == 'ZO':
+            m.fs.pump_NF.efficiency_pump.fix(0.80)
+            m.fs.pump_NF.control_volume.properties_out[0].pressure.fix(4e5)
 
         # inlet/outlet ports for pretreatment
         pretrt_port['out'] = m.fs.NF.permeate
@@ -109,6 +125,10 @@ def scale_pretreatment_NF(m, **kwargs):
                   m.fs.mixer.mixture_pressure[0.0]]:
             constraint_scaling_transform(c, get_scaling_factor(m.fs.mixer.minimum_pressure))
 
+    if kwargs['NF_type'] == 'ZO':
+        set_scaling_factor(m.fs.pump_NF.control_volume.work, 1e-3)
+        calculate_scaling_factors(m.fs.pump_NF)
+        set_scaling_factor(m.fs.pump_NF.ratioP, 1)  # TODO: IDAES should have a default and link to the constraint
 
 def initialize_pretreatment_NF(m, **kwargs):
     optarg = {'nlp_scaling_method': 'user-scaling'}
@@ -118,17 +138,27 @@ def initialize_pretreatment_NF(m, **kwargs):
         propagate_state(m.fs.s_pretrt_feed_splitter)
         m.fs.splitter.initialize(optarg=optarg)
         propagate_state(m.fs.s_pretrt_splitter_mixer)
-        propagate_state(m.fs.s_pretrt_splitter_NF)
-        if kwargs['NF_type'] != 'Sep':  # IDAES error when NF is a separator TODO: address in IDAES
+        if kwargs['NF_type'] == 'ZO':
+            propagate_state(m.fs.s_pretrt_splitter_pumpNF)
+            m.fs.pump_NF.initialize(optarg=optarg)
+            propagate_state(m.fs.s_pretrt_pumpNF_NF)
             m.fs.NF.initialize(optarg=optarg)
+        else:  # NF_type == 'Sep'
+            propagate_state(m.fs.s_pretrt_splitter_NF)
+            # m.fs.NF.initialize(optarg=optarg)  # IDAES error when NF is a separator TODO: address in IDAES
         propagate_state(m.fs.s_pretrt_NF_mixer)
         m.fs.mixer.initialize(optarg=optarg)
 
     else:  # no bypass
         m.fs.feed.initialize(optarg=optarg)
-        propagate_state(m.fs.s_pretrt_feed_NF)
-        if kwargs['NF_type'] != 'Sep':  # IDAES error when NF is a separator TODO: address in IDAES
+        if kwargs['NF_type'] == 'ZO':
+            propagate_state(m.fs.s_pretrt_feed_pumpNF)
+            m.fs.pump_NF.initialize(optarg=optarg)
+            propagate_state(m.fs.s_pretrt_pumpNF_NF)
             m.fs.NF.initialize(optarg=optarg)
+        else:  # NF_type == 'Sep'
+            propagate_state(m.fs.s_pretrt_feed_NF)
+            # m.fs.NF.initialize(optarg=optarg)  # IDAES error when NF is a separator TODO: address in IDAES
 
 
 def display_pretreatment_NF(m, **kwargs):
@@ -137,9 +167,13 @@ def display_pretreatment_NF(m, **kwargs):
 
     if kwargs['has_bypass']:
         m.fs.splitter.report()
+        if kwargs['NF_type'] == 'ZO':
+            m.fs.pump_NF.report()
         m.fs.NF.report()
         m.fs.mixer.report()
     else:  # no bypass
+        if kwargs['NF_type'] == 'ZO':
+            m.fs.pump_NF.report()
         m.fs.NF.report()
 
 
