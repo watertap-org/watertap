@@ -254,20 +254,6 @@ def Mixer_costing(self, mixer_type='default'):
                                                  / self.caoh2_purity
                                                  * 3600 * 8760 * pyunits.s)
 
-def PressureExchanger_costing(self):
-    _make_vars(self)
-
-    b_PXR = self.parent_block()
-    b_fs = b_PXR.parent_block()
-
-    # capital cost
-    self.eq_capital_cost = Constraint(
-        expr=self.capital_cost == b_fs.costing_param.pxr_cost
-             * b_PXR.low_pressure_side.properties_in[0].flow_vol * 3600 / (pyunits.m ** 3 / pyunits.s))
-
-    # operating cost
-    self.operating_cost.fix(0)
-
 
 def pressure_changer_costing(self, pump_type="centrifugal"):
     _make_vars(self)
