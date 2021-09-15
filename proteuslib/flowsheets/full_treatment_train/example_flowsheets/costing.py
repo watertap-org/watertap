@@ -148,6 +148,7 @@ def display_costing(m, **kwargs):
     # if hasattr(m.fs,'ERD'):
     #     pump_ERD_spec_opex = m.fs.ERD.costing.operating_cost.value / value(m.fs.annual_water_production)
     #     print(f'ERD specific Opex = ${round(pump_ERD_spec_opex, 3)}/m3')
+    return cost_dict
 
 if __name__ == "__main__":
     m = ConcreteModel()
