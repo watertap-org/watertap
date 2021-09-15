@@ -102,6 +102,7 @@ def display_costing(m, **kwargs):
         m.fs.RO2.costing.operating_cost = Param(initialize=0)
 
     # UNITS FOR ALL COST COMPONENTS [=] $/m3 of permeate water produced
+    # TODO: still need to add separate chemical costs and other cost components
     cost_dict={
         'LCOW': m.fs.costing.LCOW, # Total LCOW
         'Total CAPEX': m.fs.costing.investment_cost_total * crf
