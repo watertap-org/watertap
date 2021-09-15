@@ -13,7 +13,7 @@
 
 """Desalination flowsheet components"""
 
-from pyomo.environ import ConcreteModel, TransformationFactory
+from pyomo.environ import ConcreteModel, TransformationFactory, Constraint
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import Mixer
@@ -28,7 +28,7 @@ from proteuslib.flowsheets.full_treatment_train.example_models import unit_separ
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
-def build_desalination(m, has_desal_feed=False, is_twostage=False,
+def build_desalination(m, has_desal_feed=False, is_twostage=False, has_ERD=False,
                        RO_type='0D', RO_base='TDS', RO_level='simple'):
     """
     Builds RO desalination including specified feed and auxiliary equipment.
@@ -60,6 +60,15 @@ def build_desalination(m, has_desal_feed=False, is_twostage=False,
         else:
             raise ValueError('Unexpected model type {RO_type} provided to build_desalination when is_twostage is True'
                              ''.format(RO_type=RO_type))
+
+    if has_ERD:
+        if RO_type == 'Sep':
+            raise ValueError('Unexpected model type {RO_type} provided to build_desalination when has_ERD is True'
+                             ''.format(RO_type=RO_type))
+        m.fs.ERD = Pump(default={'property_package': prop})
+        m.fs.ERD.actual_work.deactivate()  # this constraint is for pumps, not turbines
+        m.fs.ERD.turbine_work = Constraint(
+            expr=m.fs.ERD.work_fluid[0] * m.fs.ERD.efficiency_pump[0] == m.fs.ERD.control_volume.work[0])
 
     # auxiliary units
     if RO_type == 'Sep':
@@ -96,12 +105,22 @@ def build_desalination(m, has_desal_feed=False, is_twostage=False,
             m.fs.s_desal_permeateRO_mixer = Arc(source=m.fs.RO.permeate, destination=m.fs.mixer_permeate.RO)
             m.fs.s_desal_permeateRO2_mixer = Arc(source=m.fs.RO2.permeate, destination=m.fs.mixer_permeate.RO2)
 
-        # specify (RO already specified, Pump 2 DOF)
+        if has_ERD:
+            if is_twostage:
+                m.fs.s_desal_RO2_ERD = Arc(source=m.fs.RO2.retentate, destination=m.fs.ERD.inlet)
+            else:
+                m.fs.s_desal_RO_ERD = Arc(source=m.fs.RO.retentate, destination=m.fs.ERD.inlet)
+
+        # specify (RO already specified, Pump 2 DOF, ERD 2 DOF)
         m.fs.pump_RO.efficiency_pump.fix(0.80)
         m.fs.pump_RO.control_volume.properties_out[0].pressure.fix(50e5)
         if is_twostage:
             m.fs.pump_RO2.efficiency_pump.fix(0.80)
             m.fs.pump_RO2.control_volume.properties_out[0].pressure.fix(55e5)
+
+        if has_ERD:
+            m.fs.ERD.efficiency_pump.fix(0.95)
+            m.fs.ERD.outlet.pressure[0].fix(101325)
 
         # inlet/outlet ports for pretreatment
         if not has_desal_feed:
@@ -109,10 +128,16 @@ def build_desalination(m, has_desal_feed=False, is_twostage=False,
 
     if is_twostage:
         desal_port['out'] = m.fs.mixer_permeate.outlet
-        desal_port['waste'] = m.fs.RO2.retentate
+        if has_ERD:
+            desal_port['waste'] = m.fs.ERD.outlet
+        else:
+            desal_port['waste'] = m.fs.RO2.retentate
     else:
         desal_port['out'] = m.fs.RO.permeate
-        desal_port['waste'] = m.fs.RO.retentate
+        if has_ERD:
+            desal_port['waste'] = m.fs.ERD.outlet
+        else:
+            desal_port['waste'] = m.fs.RO.retentate
 
     return desal_port
 
@@ -151,6 +176,12 @@ def scale_desalination(m, **kwargs):
                       m.fs.mixer_permeate.mixture_pressure[0.0]]:
                 constraint_scaling_transform(c, get_scaling_factor(m.fs.mixer_permeate.minimum_pressure))
 
+    if kwargs['has_ERD']:
+        set_scaling_factor(m.fs.ERD.control_volume.work, 1e-3)
+        set_scaling_factor(m.fs.ERD.ratioP, 1)  # TODO: IDAES should have a default and link to the constraint
+        constraint_scaling_transform(m.fs.ERD.turbine_work, get_scaling_factor(m.fs.ERD.control_volume.work))
+        calculate_scaling_factors(m.fs.ERD)
+
 
 def initialize_desalination(m, **kwargs):
     """
@@ -188,6 +219,14 @@ def initialize_desalination(m, **kwargs):
             propagate_state(m.fs.s_desal_permeateRO2_mixer)
             m.fs.mixer_permeate.initialize(optarg=optarg)
 
+    if kwargs['has_ERD']:
+        if kwargs['is_twostage']:
+            propagate_state(m.fs.s_desal_RO2_ERD)
+        else:
+            propagate_state(m.fs.s_desal_RO_ERD)
+        m.fs.ERD.initialize(optarg=optarg)
+
+
 def display_desalination(m, **kwargs):
     if kwargs['has_desal_feed']:
         m.fs.feed.report()
@@ -203,6 +242,10 @@ def display_desalination(m, **kwargs):
             m.fs.pump_RO2.report()
             m.fs.RO2.report()
             m.fs.mixer_permeate.report()
+
+    if kwargs['has_ERD']:
+        m.fs.ERD.report()
+
 
 def solve_desalination(**kwargs):
     m = ConcreteModel()
@@ -223,5 +266,5 @@ def solve_desalination(**kwargs):
     return m
 
 if __name__ == "__main__":
-    solve_desalination(has_desal_feed=True, is_twostage=True,
+    solve_desalination(has_desal_feed=True, is_twostage=False, has_ERD=True,
                              RO_type='0D', RO_base='TDS', RO_level='detailed')

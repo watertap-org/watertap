@@ -44,7 +44,7 @@ def build_costing(m, module=financials, **kwargs):
         elif kwargs['RO_type'] == 'Sep':
             raise NotImplementedError("get_costing will not be implemented for the RO separator model.")
     # Pump
-    if hasattr(m.fs,'pump_RO'):
+    if hasattr(m.fs, 'pump_RO'):
         m.fs.pump_RO.get_costing(module=module, pump_type="High pressure")
     # Stage 2 pump
     if hasattr(m.fs, 'pump_RO2'):
@@ -52,6 +52,9 @@ def build_costing(m, module=financials, **kwargs):
     # Stage 2 RO
     if hasattr(m.fs, 'RO2'):
         m.fs.RO2.get_costing(module=module)
+    # ERD
+    if hasattr(m.fs, 'ERD'):
+        m.fs.ERD.get_costing(module=module, pump_type='Pressure exchanger')
     # Pretreatment
     if hasattr(m.fs,'stoich_softening_mixer_unit'): #TODO: check how pretreatment by lime softening was implemented on flowsheet (once added in)
         # print('FOUND LIME SOFTENER')
@@ -93,7 +96,6 @@ def display_costing(m, **kwargs):
         m.fs.RO2 = Block()
         m.fs.RO2.costing = Block()
         m.fs.RO2.costing.operating_cost = Param(initialize=0)
-
 
     # UNITS FOR ALL COST COMPONENTS [=] $/m3 of permeate water produced
     cost_dict={
@@ -143,6 +145,9 @@ def display_costing(m, **kwargs):
     #
     #     print(f'Chlorination specific CAPEX = ${round(chlorination_spec_capex,5)}/m3')
     #     print(f'Chlorination specific OPEX = ${round(chlorination_spec_opex,5)}/m3')
+    # if hasattr(m.fs,'ERD'):
+    #     pump_ERD_spec_opex = m.fs.ERD.costing.operating_cost.value / value(m.fs.annual_water_production)
+    #     print(f'ERD specific Opex = ${round(pump_ERD_spec_opex, 3)}/m3')
 
 if __name__ == "__main__":
     m = ConcreteModel()

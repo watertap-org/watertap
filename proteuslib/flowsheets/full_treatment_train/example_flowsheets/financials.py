@@ -293,10 +293,8 @@ def pressure_changer_costing(self, pump_type="centrifugal"):
         # capital cost
         b_cv_in = b_PC.control_volume.properties_in[0]
         self.eq_capital_cost = Constraint(
-            expr=(self.capital_cost == b_fs.costing_param.erd_cost['A']
-                  * (sum(b_cv_in.flow_mass_comp[j] / (pyunits.kg / pyunits.s)
-                         for j in b_PC.config.property_package.component_list)
-                     / (b_cv_in.dens_mass / (pyunits.kg / pyunits.m ** 3)) * 3600) ** 0.58))
+            expr=(self.capital_cost == b_fs.costing_param.pxr_cost
+                    * b_cv_in.flow_vol * 3600 / (pyunits.m ** 3 / pyunits.s)))
 
         # operating cost
         self.operating_cost.setlb(-1e6)
