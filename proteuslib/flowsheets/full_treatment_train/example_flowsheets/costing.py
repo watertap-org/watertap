@@ -37,21 +37,23 @@ def build_costing(m, module=financials, **kwargs):
             m.fs.NF.get_costing(module=module)
         elif kwargs['NF_type'] == 'Sep':
             raise NotImplementedError("get_costing will not be implemented for the NF separator model.")
+    if hasattr(m.fs, 'pump_NF'):
+        m.fs.pump_NF.get_costing(module=module, pump_type="High pressure")  # TODO: update with low pressure pump
     # Reverse Osmosis
     if hasattr(m.fs, 'RO'):
         if kwargs['RO_type'] == '0D':
             m.fs.RO.get_costing(module=module)
         elif kwargs['RO_type'] == 'Sep':
             raise NotImplementedError("get_costing will not be implemented for the RO separator model.")
+    # Stage 2 RO
+    if hasattr(m.fs, 'RO2'):
+        m.fs.RO2.get_costing(module=module)
     # Pump
     if hasattr(m.fs, 'pump_RO'):
         m.fs.pump_RO.get_costing(module=module, pump_type="High pressure")
     # Stage 2 pump
     if hasattr(m.fs, 'pump_RO2'):
         m.fs.pump_RO2.get_costing(module=module, pump_type="High pressure")
-    # Stage 2 RO
-    if hasattr(m.fs, 'RO2'):
-        m.fs.RO2.get_costing(module=module)
     # ERD
     if hasattr(m.fs, 'ERD'):
         m.fs.ERD.get_costing(module=module, pump_type='Pressure exchanger')
