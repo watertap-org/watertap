@@ -16,7 +16,7 @@ kwargs_flowsheet = {
     'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'simple'}
 # solve_flowsheet_limited_NF(**kwargs_flowsheet)
 # m, pass_fail = solve_optimization(system_recovery=0.78, max_conc_factor=3, **kwargs_flowsheet)
-m, pass_fail = solve_optimization(system_recovery=0.5, max_conc_factor=3, **kwargs_flowsheet)
+m = solve_optimization(system_recovery=0.5, max_conc_factor=3, **kwargs_flowsheet)
 
 # Define the sampling type and ranges for three different variables
 sweep_params = {}

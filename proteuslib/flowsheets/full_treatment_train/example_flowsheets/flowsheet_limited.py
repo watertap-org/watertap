@@ -208,7 +208,7 @@ def solve_optimization(system_recovery=0.75, max_conc_factor=3, **kwargs_flowshe
     m = solve_flowsheet_limited_NF(**kwargs_flowsheet)
 
     print('\n****** Optimization *****\n')
-    set_up_optimization(m, system_recovery=system_recovery, max_conc_factor=max_conc_factor,
+    m = set_up_optimization(m, system_recovery=system_recovery, max_conc_factor=max_conc_factor,
                         **kwargs_flowsheet)
 
     pretreatment.display_pretreatment_NF(m, **kwargs_flowsheet)

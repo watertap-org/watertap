@@ -93,22 +93,6 @@ def get_system_costing(self):
         initialize=1e3,
         domain=NonNegativeReals,
         doc='Total operating cost [$/year]')
-    b.electricity_cost_total = Var(
-        initialize=1e3,
-        domain=NonNegativeReals,
-        doc='Total electricity cost [$/year]')
-    # b.pretreatment_cost_total = Var(
-    #     initialize=1e3,
-    #     domain=NonNegativeReals,
-    #     doc='Total pretreatment cost [$/year]')
-    # b.primary_cost_total = Var(
-    #     initialize=1e3,
-    #     domain=NonNegativeReals,
-    #     doc='Total primary treatment cost [$/year]')
-    # b.post_treatment_cost_total = Var(
-    #     initialize=1e3,
-    #     domain=NonNegativeReals,
-    #     doc='Total post-treatment cost [$/year]')
     b.LCOW = Var(
         initialize=1,
         domain=NonNegativeReals,
@@ -144,8 +128,8 @@ def get_system_costing(self):
               b.investment_cost_total * self.costing_param.factor_labor_maintenance))
     b.eq_operating_cost_total = Constraint(
         expr=b.operating_cost_total == sum(operating_cost_var_lst))
-    b.eq_electricity_cost_total = Constraint(
-        expr=b.electricity_cost_total == sum(electricity_cost_var_lst))
+    b.electricity_cost_total = Expression(
+        expr=sum(electricity_cost_var_lst))
     b.pretreatment_cost_total = Expression(
         expr= sum(pretreatment_cost_var_lst))
     b.primary_cost_total = Expression(
@@ -177,7 +161,7 @@ def ReverseOsmosis_costing(self, section='primary'):
 
     b_RO = self.parent_block()
     b_fs = b_RO.parent_block()
-    b_section = getattr(self, section)
+    # b_section = getattr(self, section)
 
     # capital cost
     self.eq_capital_cost = Constraint(
@@ -200,7 +184,7 @@ def Nanofiltration_costing(self, section='pretreatment'):
 
     b_NF = self.parent_block()
     b_fs = b_NF.parent_block()
-    b_section = getattr(self, section)
+    # b_section = getattr(self, section)
 
     # capital cost
     self.eq_capital_cost = Constraint(
@@ -224,7 +208,7 @@ def Mixer_costing(self, mixer_type='default', section=None): #TODO add fixed cos
 
     b_m = self.parent_block()
     b_fs = b_m.parent_block()
-    b_section = getattr(self, section)
+    # b_section = getattr(self, section)
 
     if mixer_type == 'default':
         #TODO: Get mixer cost from Tim's single stage MD paper
@@ -313,7 +297,7 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None):
 
     b_PC = self.parent_block()
     b_fs = b_PC.parent_block()
-    b_section = getattr(self, section)
+    # b_section = getattr(self, section)
 
     self.purchase_cost = Var()
     self.cp_cost_eq = Constraint(expr=self.purchase_cost == 0)
