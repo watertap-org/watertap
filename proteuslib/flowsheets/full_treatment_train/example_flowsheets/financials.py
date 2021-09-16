@@ -97,18 +97,18 @@ def get_system_costing(self):
         initialize=1e3,
         domain=NonNegativeReals,
         doc='Total electricity cost [$/year]')
-    b.pretreatment_cost_total = Var(
-        initialize=1e3,
-        domain=NonNegativeReals,
-        doc='Total pretreatment cost [$/year]')
-    b.primary_cost_total = Var(
-        initialize=1e3,
-        domain=NonNegativeReals,
-        doc='Total primary treatment cost [$/year]')
-    b.post_treatment_cost_total = Var(
-        initialize=1e3,
-        domain=NonNegativeReals,
-        doc='Total post-treatment cost [$/year]')
+    # b.pretreatment_cost_total = Var(
+    #     initialize=1e3,
+    #     domain=NonNegativeReals,
+    #     doc='Total pretreatment cost [$/year]')
+    # b.primary_cost_total = Var(
+    #     initialize=1e3,
+    #     domain=NonNegativeReals,
+    #     doc='Total primary treatment cost [$/year]')
+    # b.post_treatment_cost_total = Var(
+    #     initialize=1e3,
+    #     domain=NonNegativeReals,
+    #     doc='Total post-treatment cost [$/year]')
     b.LCOW = Var(
         initialize=1,
         domain=NonNegativeReals,
@@ -146,12 +146,12 @@ def get_system_costing(self):
         expr=b.operating_cost_total == sum(operating_cost_var_lst))
     b.eq_electricity_cost_total = Constraint(
         expr=b.electricity_cost_total == sum(electricity_cost_var_lst))
-    b.eq_pretreatment_cost_total = Constraint(
-        expr=b.pretreatment_cost_total == sum(pretreatment_cost_var_lst))
-    b.eq_primary_cost_total = Constraint(
-        expr=b.primary_cost_total == sum(primary_cost_var_lst))
-    b.eq_post_treatment_cost_total = Constraint(
-        expr=b.post_treatment_cost_total == sum(post_treatment_cost_var_lst))
+    b.pretreatment_cost_total = Expression(
+        expr= sum(pretreatment_cost_var_lst))
+    b.primary_cost_total = Expression(
+        expr=sum(primary_cost_var_lst))
+    b.post_treatment_cost_total = Expression(
+        expr=sum(post_treatment_cost_var_lst))
     b.eq_LCOW = Constraint(
         expr=b.LCOW == (b.investment_cost_total * self.costing_param.factor_capital_annualization
                         + b.operating_cost_total) / (self.annual_water_production / (pyunits.m ** 3 / pyunits.year)))
@@ -169,7 +169,7 @@ def _make_vars(self, section=None):
     if section not in ['pretreatment', 'primary', 'post_treatment']:
         raise NotImplementedError
     else:
-        setattr(self, section, Var(initialize=2e5, domain=NonNegativeReals, doc='Treatment section cost [$/year]'))
+        setattr(self, section, Expression(expr=self.capital_cost + self.operating_cost))
 
 
 def ReverseOsmosis_costing(self, section='primary'):
@@ -188,8 +188,8 @@ def ReverseOsmosis_costing(self, section='primary'):
         expr=self.operating_cost == b_fs.costing_param.factor_membrane_replacement
              * b_fs.costing_param.RO_mem_cost * b_RO.area / pyunits.m ** 2)
 
-    # Treatment section cost
-    self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
+    # # Treatment section cost
+    # self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
 
 
 
@@ -211,8 +211,8 @@ def Nanofiltration_costing(self, section='pretreatment'):
         expr=self.operating_cost == b_fs.costing_param.factor_membrane_replacement
              * b_fs.costing_param.NF_mem_cost * b_NF.area / pyunits.m ** 2)
 
-    # Treatment section cost
-    self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
+    # # Treatment section cost
+    # self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
 
 def Separator_costing(self):
     # TODO: Get separator cost from Tim's single stage MD paper
@@ -305,8 +305,8 @@ def Mixer_costing(self, mixer_type='default', section=None): #TODO add fixed cos
                                                  / self.caoh2_purity
                                                  * 3600 * 8760 * pyunits.s)
 
-    # Treatment section cost
-    self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
+    # # Treatment section cost
+    # self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
 
 def pressure_changer_costing(self, pump_type="centrifugal", section=None):
     _make_vars(self, section)
@@ -345,5 +345,5 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None):
                                          * 3600 * 24 * 365 * b_fs.costing_param.load_factor)
                  * b_fs.costing_param.electricity_cost / 3600 / 1000)
 
-    # Treatment section cost
-    self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
+    # # Treatment section cost
+    # self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
