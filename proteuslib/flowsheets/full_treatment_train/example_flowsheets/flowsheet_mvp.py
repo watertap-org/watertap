@@ -150,6 +150,14 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
     # set objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
+    # set additional constraints to limit local minima
+    if is_twostage:
+        m.fs.inequality_RO_area = Constraint(expr=m.fs.RO.area >= m.fs.RO2.area)
+    min_pressure_increase = 1e5
+    m.fs.inequality_RO_pressure = Constraint(
+        expr=m.fs.pump_RO.control_volume.properties_out[0].pressure + min_pressure_increase
+             <= m.fs.pump_RO2.control_volume.properties_out[0].pressure)
+
     check_dof(m, dof_expected=5 if is_twostage else 3)
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
@@ -205,7 +213,7 @@ def solve_optimization(system_recovery=0.75, **kwargs_flowsheet):
 
 if __name__ == "__main__":
     kwargs_flowsheet = {
-        'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
+        'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True, 'has_ERD': False,
         'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
     # solve_flowsheet_mvp_NF(**kwargs_flowsheet)
