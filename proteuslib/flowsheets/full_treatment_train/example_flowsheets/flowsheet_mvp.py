@@ -153,10 +153,10 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
     # set additional constraints to limit local minima
     if is_twostage:
         m.fs.inequality_RO_area = Constraint(expr=m.fs.RO.area >= m.fs.RO2.area)
-    min_pressure_increase = 1e5
-    m.fs.inequality_RO_pressure = Constraint(
-        expr=m.fs.pump_RO.control_volume.properties_out[0].pressure + min_pressure_increase
-             <= m.fs.pump_RO2.control_volume.properties_out[0].pressure)
+        min_pressure_increase = 1e5
+        m.fs.inequality_RO_pressure = Constraint(
+            expr=m.fs.pump_RO.control_volume.properties_out[0].pressure + min_pressure_increase
+                 <= m.fs.pump_RO2.control_volume.properties_out[0].pressure)
 
     check_dof(m, dof_expected=5 if is_twostage else 3)
     solve_with_user_scaling(m, tee=False, fail_flag=True)
