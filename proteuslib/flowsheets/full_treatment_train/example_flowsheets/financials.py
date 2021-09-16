@@ -93,22 +93,6 @@ def get_system_costing(self):
         initialize=1e3,
         domain=NonNegativeReals,
         doc='Total operating cost [$/year]')
-    b.electricity_cost_total = Var(
-        initialize=1e3,
-        domain=NonNegativeReals,
-        doc='Total electricity cost [$/year]')
-    b.pretreatment_cost_total = Var(
-        initialize=1e3,
-        domain=NonNegativeReals,
-        doc='Total pretreatment cost [$/year]')
-    b.primary_cost_total = Var(
-        initialize=1e3,
-        domain=NonNegativeReals,
-        doc='Total primary treatment cost [$/year]')
-    b.post_treatment_cost_total = Var(
-        initialize=1e3,
-        domain=NonNegativeReals,
-        doc='Total post-treatment cost [$/year]')
     b.LCOW = Var(
         initialize=1,
         domain=NonNegativeReals,
@@ -124,14 +108,14 @@ def get_system_costing(self):
         if hasattr(b_unit, 'costing'):
             capital_cost_var_lst.append(b_unit.costing.capital_cost)
             operating_cost_var_lst.append(b_unit.costing.operating_cost)
-    #         if hasattr(b_unit.costing, 'pretreatment'):
-    #             pretreatment_cost_var_lst.append(b_unit.costing.pretreatment)
-    #         if hasattr(b_unit.costing, 'primary'):
-    #             primary_cost_var_lst.append(b_unit.costing.primary)
-    #         if hasattr(b_unit.costing, 'post_treatment'):
-    #             post_treatment_cost_var_lst.append(b_unit.costing.post_treatment)
-    #         if 'electricity_cost' in str(b_unit.costing.eq_operating_cost.body):
-    #             electricity_cost_var_lst.append(b_unit.costing.operating_cost)
+            if hasattr(b_unit.costing, 'pretreatment'):
+                pretreatment_cost_var_lst.append(b_unit.costing.pretreatment)
+            if hasattr(b_unit.costing, 'primary'):
+                primary_cost_var_lst.append(b_unit.costing.primary)
+            if hasattr(b_unit.costing, 'post_treatment'):
+                post_treatment_cost_var_lst.append(b_unit.costing.post_treatment)
+            if 'electricity_cost' in str(b_unit.costing.eq_operating_cost.body):
+                electricity_cost_var_lst.append(b_unit.costing.operating_cost)
     operating_cost_var_lst.append(b.operating_cost_labor_maintenance)
 
     b.eq_capital_cost_total = Constraint(
@@ -144,14 +128,14 @@ def get_system_costing(self):
               b.investment_cost_total * self.costing_param.factor_labor_maintenance))
     b.eq_operating_cost_total = Constraint(
         expr=b.operating_cost_total == sum(operating_cost_var_lst))
-    # b.eq_electricity_cost_total = Constraint(
-    #     expr=b.electricity_cost_total == sum(electricity_cost_var_lst))
-    # b.eq_pretreatment_cost_total = Constraint(
-    #     expr=b.pretreatment_cost_total == sum(pretreatment_cost_var_lst))
-    # b.eq_primary_cost_total = Constraint(
-    #     expr=b.primary_cost_total == sum(primary_cost_var_lst))
-    # b.eq_post_treatment_cost_total = Constraint(
-    #     expr=b.post_treatment_cost_total == sum(post_treatment_cost_var_lst))
+    b.electricity_cost_total = Expression(
+        expr=sum(electricity_cost_var_lst))
+    b.pretreatment_cost_total = Expression(
+        expr= sum(pretreatment_cost_var_lst))
+    b.primary_cost_total = Expression(
+        expr=sum(primary_cost_var_lst))
+    b.post_treatment_cost_total = Expression(
+        expr=sum(post_treatment_cost_var_lst))
     b.eq_LCOW = Constraint(
         expr=b.LCOW == (b.investment_cost_total * self.costing_param.factor_capital_annualization
                         + b.operating_cost_total) / (self.annual_water_production / (pyunits.m ** 3 / pyunits.year)))
@@ -166,10 +150,10 @@ def _make_vars(self, section=None):
                               domain=Reals,
                               bounds=(0, 1e6),
                               doc='Unit operating cost [$/year]')
-    # if section not in ['pretreatment', 'primary', 'post_treatment']:
-    #     raise NotImplementedError
-    # else:
-    #     setattr(self, section, Var(initialize=2e5, domain=NonNegativeReals, doc='Treatment section cost [$/year]'))
+    if section not in ['pretreatment', 'primary', 'post_treatment']:
+        raise NotImplementedError
+    else:
+        setattr(self, section, Expression(expr=self.capital_cost + self.operating_cost))
 
 
 def ReverseOsmosis_costing(self, section='primary'):

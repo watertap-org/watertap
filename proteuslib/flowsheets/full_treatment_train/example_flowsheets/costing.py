@@ -114,13 +114,13 @@ def display_costing(m, **kwargs):
         'Total OPEX': m.fs.costing.operating_cost_total / m.fs.annual_water_production,  # Total OPEX
         'Labor & Maintenance Costs': m.fs.costing.operating_cost_labor_maintenance
                                      / m.fs.annual_water_production,  # TODO: Presumably for RO Plant - may revise; separate chemical costs and add membrane cleaning
-        # 'Total Electricity Cost': m.fs.costing.electricity_cost_total / m.fs.annual_water_production,  # TODO: should other energy costs be accounted for, i.e., pretreatment? probably
-        # 'Total Membrane Replacement Cost': (m.fs.NF.costing.operating_cost
-        #                                     + m.fs.RO.costing.operating_cost
-        #                                     + m.fs.RO2.costing.operating_cost) / m.fs.annual_water_production,
-        # 'Total Pretreatment Cost': m.fs.costing.pretreatment_cost_total / m.fs.annual_water_production,
-        # 'Total Primary Cost': m.fs.costing.primary_cost_total / m.fs.annual_water_production,
-        # 'Total Post-treatment Cost': m.fs.costing.post_treatment_cost_total / m.fs.annual_water_production
+        'Total Electricity Cost': m.fs.costing.electricity_cost_total / m.fs.annual_water_production,  # TODO: should other energy costs be accounted for, i.e., pretreatment? probably
+        'Total Membrane Replacement Cost': (m.fs.NF.costing.operating_cost
+                                            + m.fs.RO.costing.operating_cost
+                                            + m.fs.RO2.costing.operating_cost) / m.fs.annual_water_production,
+        'Total Pretreatment Cost': m.fs.costing.pretreatment_cost_total / m.fs.annual_water_production,
+        'Total Primary Cost': m.fs.costing.primary_cost_total / m.fs.annual_water_production,
+        'Total Post-treatment Cost': m.fs.costing.post_treatment_cost_total / m.fs.annual_water_production
 
     }
 

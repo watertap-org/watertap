@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 from scipy.interpolate import griddata
 from idaes.core.util import get_solver
 
@@ -20,8 +21,19 @@ m = solve_optimization(system_recovery=0.80, **kwargs_flowsheet)
 # Define the sampling type and ranges for three different variables
 #================================
 sweep_params = {}
-sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.5, 0.95, 4)
-sweep_params['Max RO Pressure'] = LinearSample(m.fs.max_allowable_pressure, 300e5, 65e5, 4)
+
+if len(sys.argv) > 1:
+    nx = int(sys.argv[1])
+else:
+    nx = 4
+
+if len(sys.argv) > 2:
+    ny = int(sys.argv[2])
+else:
+    ny = 4
+
+sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.5, 0.95, nx)
+sweep_params['Max RO Pressure'] = LinearSample(m.fs.max_allowable_pressure, 300e5, 65e5, ny)
 
 #================================
 # Define the list of output variables
@@ -47,7 +59,7 @@ outputs['RO-2 Operating Pressure'] = m.fs.pump_RO2.control_volume.properties_out
 outputs['Bypass Fraction'] = m.fs.splitter.split_fraction[0, 'bypass']
 
 # Collect capital and operating-cost outputs
-for unit_name in ['NF', 'pump_NF', 'RO', 'RO2', 'pump_RO', 'pump_RO2', 'ERD']:
+for unit_name in ['NF', 'pump_NF', 'RO', 'pump_RO', 'RO2', 'pump_RO2', 'ERD']:
     unit = getattr(m.fs, unit_name)
     
     cap_cost = unit.costing.capital_cost.value
