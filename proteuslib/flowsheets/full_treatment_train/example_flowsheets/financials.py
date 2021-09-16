@@ -124,14 +124,14 @@ def get_system_costing(self):
         if hasattr(b_unit, 'costing'):
             capital_cost_var_lst.append(b_unit.costing.capital_cost)
             operating_cost_var_lst.append(b_unit.costing.operating_cost)
-            if hasattr(b_unit.costing, 'pretreatment'):
-                pretreatment_cost_var_lst.append(b_unit.costing.pretreatment)
-            if hasattr(b_unit.costing, 'primary'):
-                primary_cost_var_lst.append(b_unit.costing.primary)
-            if hasattr(b_unit.costing, 'post_treatment'):
-                post_treatment_cost_var_lst.append(b_unit.costing.post_treatment)
-            if 'electricity_cost' in str(b_unit.costing.eq_operating_cost.body):
-                electricity_cost_var_lst.append(b_unit.costing.operating_cost)
+    #         if hasattr(b_unit.costing, 'pretreatment'):
+    #             pretreatment_cost_var_lst.append(b_unit.costing.pretreatment)
+    #         if hasattr(b_unit.costing, 'primary'):
+    #             primary_cost_var_lst.append(b_unit.costing.primary)
+    #         if hasattr(b_unit.costing, 'post_treatment'):
+    #             post_treatment_cost_var_lst.append(b_unit.costing.post_treatment)
+    #         if 'electricity_cost' in str(b_unit.costing.eq_operating_cost.body):
+    #             electricity_cost_var_lst.append(b_unit.costing.operating_cost)
     operating_cost_var_lst.append(b.operating_cost_labor_maintenance)
 
     b.eq_capital_cost_total = Constraint(
@@ -144,14 +144,14 @@ def get_system_costing(self):
               b.investment_cost_total * self.costing_param.factor_labor_maintenance))
     b.eq_operating_cost_total = Constraint(
         expr=b.operating_cost_total == sum(operating_cost_var_lst))
-    b.eq_electricity_cost_total = Constraint(
-        expr=b.electricity_cost_total == sum(electricity_cost_var_lst))
-    b.eq_pretreatment_cost_total = Constraint(
-        expr=b.pretreatment_cost_total == sum(pretreatment_cost_var_lst))
-    b.eq_primary_cost_total = Constraint(
-        expr=b.primary_cost_total == sum(primary_cost_var_lst))
-    b.eq_post_treatment_cost_total = Constraint(
-        expr=b.post_treatment_cost_total == sum(post_treatment_cost_var_lst))
+    # b.eq_electricity_cost_total = Constraint(
+    #     expr=b.electricity_cost_total == sum(electricity_cost_var_lst))
+    # b.eq_pretreatment_cost_total = Constraint(
+    #     expr=b.pretreatment_cost_total == sum(pretreatment_cost_var_lst))
+    # b.eq_primary_cost_total = Constraint(
+    #     expr=b.primary_cost_total == sum(primary_cost_var_lst))
+    # b.eq_post_treatment_cost_total = Constraint(
+    #     expr=b.post_treatment_cost_total == sum(post_treatment_cost_var_lst))
     b.eq_LCOW = Constraint(
         expr=b.LCOW == (b.investment_cost_total * self.costing_param.factor_capital_annualization
                         + b.operating_cost_total) / (self.annual_water_production / (pyunits.m ** 3 / pyunits.year)))
@@ -166,10 +166,10 @@ def _make_vars(self, section=None):
                               domain=Reals,
                               bounds=(0, 1e6),
                               doc='Unit operating cost [$/year]')
-    if section not in ['pretreatment', 'primary', 'post_treatment']:
-        raise NotImplementedError
-    else:
-        setattr(self, section, Var(initialize=2e5, domain=NonNegativeReals, doc='Treatment section cost [$/year]'))
+    # if section not in ['pretreatment', 'primary', 'post_treatment']:
+    #     raise NotImplementedError
+    # else:
+    #     setattr(self, section, Var(initialize=2e5, domain=NonNegativeReals, doc='Treatment section cost [$/year]'))
 
 
 def ReverseOsmosis_costing(self, section='primary'):
@@ -177,7 +177,7 @@ def ReverseOsmosis_costing(self, section='primary'):
 
     b_RO = self.parent_block()
     b_fs = b_RO.parent_block()
-    b_section = getattr(self, section)
+    # b_section = getattr(self, section)
 
     # capital cost
     self.eq_capital_cost = Constraint(
@@ -188,8 +188,8 @@ def ReverseOsmosis_costing(self, section='primary'):
         expr=self.operating_cost == b_fs.costing_param.factor_membrane_replacement
              * b_fs.costing_param.RO_mem_cost * b_RO.area / pyunits.m ** 2)
 
-    # Treatment section cost
-    self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
+    # # Treatment section cost
+    # self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
 
 
 
@@ -200,7 +200,7 @@ def Nanofiltration_costing(self, section='pretreatment'):
 
     b_NF = self.parent_block()
     b_fs = b_NF.parent_block()
-    b_section = getattr(self, section)
+    # b_section = getattr(self, section)
 
     # capital cost
     self.eq_capital_cost = Constraint(
@@ -211,8 +211,8 @@ def Nanofiltration_costing(self, section='pretreatment'):
         expr=self.operating_cost == b_fs.costing_param.factor_membrane_replacement
              * b_fs.costing_param.NF_mem_cost * b_NF.area / pyunits.m ** 2)
 
-    # Treatment section cost
-    self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
+    # # Treatment section cost
+    # self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
 
 def Separator_costing(self):
     # TODO: Get separator cost from Tim's single stage MD paper
@@ -224,7 +224,7 @@ def Mixer_costing(self, mixer_type='default', section=None): #TODO add fixed cos
 
     b_m = self.parent_block()
     b_fs = b_m.parent_block()
-    b_section = getattr(self, section)
+    # b_section = getattr(self, section)
 
     if mixer_type == 'default':
         #TODO: Get mixer cost from Tim's single stage MD paper
@@ -305,15 +305,15 @@ def Mixer_costing(self, mixer_type='default', section=None): #TODO add fixed cos
                                                  / self.caoh2_purity
                                                  * 3600 * 8760 * pyunits.s)
 
-    # Treatment section cost
-    self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
+    # # Treatment section cost
+    # self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
 
 def pressure_changer_costing(self, pump_type="centrifugal", section=None):
     _make_vars(self, section)
 
     b_PC = self.parent_block()
     b_fs = b_PC.parent_block()
-    b_section = getattr(self, section)
+    # b_section = getattr(self, section)
 
     self.purchase_cost = Var()
     self.cp_cost_eq = Constraint(expr=self.purchase_cost == 0)
@@ -345,5 +345,5 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None):
                                          * 3600 * 24 * 365 * b_fs.costing_param.load_factor)
                  * b_fs.costing_param.electricity_cost / 3600 / 1000)
 
-    # Treatment section cost
-    self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
+    # # Treatment section cost
+    # self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
