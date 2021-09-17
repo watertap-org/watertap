@@ -35,8 +35,8 @@ def build_RO(m, base='TDS', level='simple', name_str='RO'):
     prop = property_models.get_prop(m, base=base)
 
     if level == 'simple':
-        raise ValueError('Unexpected property base {base} for build_RO'
-                         ''.format(base=base))
+        raise ValueError('Unexpected RO level {level} for build_RO'
+                         ''.format(level=level))
 
     elif level == 'detailed':
         # build unit
