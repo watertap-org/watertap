@@ -38,7 +38,7 @@ def build_costing(m, module=financials, **kwargs):
         elif kwargs['NF_type'] == 'Sep':
             raise NotImplementedError("get_costing will not be implemented for the NF separator model.")
     if hasattr(m.fs, 'pump_NF'):
-        m.fs.pump_NF.get_costing(module=module, section='pretreatment', pump_type="High pressure")  # TODO: update with low pressure pump
+        m.fs.pump_NF.get_costing(module=module, section='pretreatment', pump_type="Low pressure", cost_capacity=True)
     # Reverse Osmosis
     if hasattr(m.fs, 'RO'):
         if kwargs['RO_type'] == '0D':
@@ -61,7 +61,7 @@ def build_costing(m, module=financials, **kwargs):
     # Pretreatment
     if hasattr(m.fs,'stoich_softening_mixer_unit'): #TODO: check how pretreatment by lime softening was implemented on flowsheet (once added in)
         # print('FOUND LIME SOFTENER')
-        m.fs.stoich_softening_mixer_unit.get_costing(module=module, section='pretreatment', mixer_type="lime_softening")
+        m.fs.stoich_softening_mixer_unit.get_costing(module=module, section='pretreatment', mixer_type="lime_softening",cost_capacity=False)
 
     if hasattr(m.fs,'ideal_naocl_mixer_unit'): #TODO: check how posttreatment (chlorination) was implemented on flowsheet (once added in)
         # print('FOUND CHLORINATION UNIT')
