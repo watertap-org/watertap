@@ -104,7 +104,7 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
     m.fs.RO.area.setub(300)
 
     # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
-    m.fs.RO.NDPmin = Param(initialize=1e3, mutable=True, units=pyunits.Pa)
+    m.fs.RO.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
 
     m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO.A_comp[0, 'H2O']
                                                                   * m.fs.RO.dens_solvent
@@ -120,7 +120,7 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
         m.fs.RO2.area.setub(300)
 
         # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
-        m.fs.RO2.NDPmin = Param(initialize=1e3, mutable=True, units=pyunits.Pa)
+        m.fs.RO2.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
         m.fs.RO2.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO2.A_comp[0, 'H2O']
                                                                        * m.fs.RO2.dens_solvent
                                                                        * m.fs.RO2.NDPmin)
@@ -168,6 +168,9 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
 
     check_dof(m, dof_expected=5 if is_twostage else 3)
     solve_with_user_scaling(m, tee=False, fail_flag=True)
+
+    return m
+
 
 def optimize(m):
     solve_with_user_scaling(m, tee=False, fail_flag=True)
@@ -223,5 +226,5 @@ if __name__ == "__main__":
         'has_ERD': True, 'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
     # solve_flowsheet_limited_NF(**kwargs_flowsheet)
-    m = solve_optimization(system_recovery=0.8, max_conc_factor=3, **kwargs_flowsheet)
+    m = solve_optimization(system_recovery=0.75, max_conc_factor=3, **kwargs_flowsheet)
     cost_dict = costing.display_costing(m, **kwargs_flowsheet)

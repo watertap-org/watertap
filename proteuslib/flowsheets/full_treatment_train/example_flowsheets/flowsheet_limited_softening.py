@@ -55,117 +55,118 @@ def build_flowsheet_limited_softening(m, has_desal_feed=False, is_twostage=False
     return m
 
 
-# def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flowsheet):
-#     is_twostage = kwargs_flowsheet['is_twostage']
-#
-#     if is_twostage:
-#         product_water_sb = m.fs.mixer_permeate.mixed_state[0]
-#         RO_waste_sb = m.fs.RO2.feed_side.properties_out[0]
-#     else:
-#         product_water_sb = m.fs.RO.permeate_side.properties_mixed[0]
-#         RO_waste_sb = m.fs.RO.feed_side.properties_out[0]
-#
-#     # touch some properties used in optimization
-#     m.fs.feed.properties[0].flow_vol
-#     m.fs.feed.properties[0].conc_mol_phase_comp['Liq', 'Ca']
-#
-#     m.fs.tb_pretrt_to_desal.properties_in[0].flow_vol
-#     m.fs.tb_pretrt_to_desal.properties_in[0].conc_mol_phase_comp['Liq', 'Ca']
-#
-#     product_water_sb.flow_vol
-#     RO_waste_sb.flow_vol
-#
-#     # scale
-#     calculate_scaling_factors(m)
-#
-#     # unfix variables
-#     m.fs.splitter.split_fraction[0, 'bypass'].unfix()
-#     m.fs.splitter.split_fraction[0, 'bypass'].setlb(0.001)
-#     m.fs.splitter.split_fraction[0, 'bypass'].setub(0.99)
-#
-#     m.fs.NF.area.unfix()
-#     m.fs.NF.area.setlb(10)
-#     m.fs.NF.area.setub(1000)
-#
-#     m.fs.max_allowable_pressure = Param(initialize=120e5, mutable=True, units=pyunits.pascal)
-#
-#     m.fs.pump_RO.control_volume.properties_out[0].pressure.unfix()
-#     m.fs.pump_RO.control_volume.properties_out[0].pressure.setlb(20e5)
-#     m.fs.pump_RO.control_volume.properties_out[0].pressure.setub(m.fs.max_allowable_pressure)
-#
-#     m.fs.RO.area.unfix()
-#     m.fs.RO.area.setlb(10)
-#     m.fs.RO.area.setub(300)
-#
-#     # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
-#     m.fs.RO.NDPmin = Param(initialize=1e3, mutable=True, units=pyunits.Pa)
-#
-#     m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO.A_comp[0, 'H2O']
-#                                                                   * m.fs.RO.dens_solvent
-#                                                                   * m.fs.RO.NDPmin)
-#
-#     if kwargs_flowsheet['is_twostage']:
-#         m.fs.pump_RO2.control_volume.properties_out[0].pressure.unfix()
-#         m.fs.pump_RO2.control_volume.properties_out[0].pressure.setlb(20e5)
-#         m.fs.pump_RO2.control_volume.properties_out[0].pressure.setub(m.fs.max_allowable_pressure)
-#
-#         m.fs.RO2.area.unfix()
-#         m.fs.RO2.area.setlb(10)
-#         m.fs.RO2.area.setub(300)
-#
-#         # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
-#         m.fs.RO2.NDPmin = Param(initialize=1e3, mutable=True, units=pyunits.Pa)
-#         m.fs.RO2.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO2.A_comp[0, 'H2O']
-#                                                                        * m.fs.RO2.dens_solvent
-#                                                                        * m.fs.RO2.NDPmin)
-#
-#     # add additional constraints
-#     # fixed system recovery
-#     m.fs.system_recovery_target = Param(initialize=system_recovery, mutable=True, units=pyunits.Pa)
-#     m.fs.system_recovery = Expression(
-#         expr=product_water_sb.flow_vol / m.fs.feed.properties[0].flow_vol)
-#     m.fs.eq_system_recovery = Constraint(
-#         expr=m.fs.system_recovery == m.fs.system_recovery_target)
-#
-#     # fixed RO water flux
-#     m.fs.RO_flux = Expression(
-#         expr=m.fs.RO.permeate_side.properties_mixed[0].flow_vol / m.fs.RO.area)
-#
-#     if is_twostage:
-#         m.fs.RO2_flux = Expression(
-#             expr=m.fs.RO2.permeate_side.properties_mixed[0].flow_vol / m.fs.RO2.area)
-#
-#     m.fs.total_work = Expression(expr=m.fs.pump_RO.work_mechanical[0] +
-#                                     (m.fs.pump_RO2.work_mechanical[0] if is_twostage else 0.))
-#
-#     # scaling constraint (maximum Ca concentration)
-#     m.fs.max_conc_factor_target = Param(initialize=max_conc_factor, mutable=True)
-#     m.fs.brine_conc_mol_Ca = Expression(
-#         expr=m.fs.tb_pretrt_to_desal.properties_in[0].conc_mol_phase_comp['Liq', 'Ca']
-#              * m.fs.tb_pretrt_to_desal.properties_in[0].flow_vol
-#              / RO_waste_sb.flow_vol)
-#     m.fs.eq_max_conc_mol_Ca = Constraint(
-#         expr=m.fs.brine_conc_mol_Ca
-#              <= m.fs.feed.properties[0].conc_mol_phase_comp['Liq', 'Ca']
-#              * m.fs.max_conc_factor_target)
-#
-#     # need load factor from costing_param_block for annual_water_production
-#     financials.add_costing_param_block(m.fs)
-#     # annual water production
-#     m.fs.annual_water_production = Expression(
-#         expr=pyunits.convert(product_water_sb.flow_vol, to_units=pyunits.m ** 3 / pyunits.year)
-#              * m.fs.costing_param.load_factor)
-#     costing.build_costing(m, module=financials, **kwargs_flowsheet)
-#
-#     # set objective
-#     m.fs.objective = Objective(expr=m.fs.costing.LCOW )
-#
-#     check_dof(m, dof_expected=5 if is_twostage else 3)
-#     solve_with_user_scaling(m, tee=False, fail_flag=True)
+def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flowsheet):
+    is_twostage = kwargs_flowsheet['is_twostage']
 
-# def optimize(m):
-#     solve_with_user_scaling(m, tee=False, fail_flag=True)
+    if is_twostage:
+        product_water_sb = m.fs.mixer_permeate.mixed_state[0]
+        RO_waste_sb = m.fs.RO2.feed_side.properties_out[0]
+    else:
+        product_water_sb = m.fs.RO.permeate_side.properties_mixed[0]
+        RO_waste_sb = m.fs.RO.feed_side.properties_out[0]
 
+    # touch some properties used in optimization
+    m.fs.feed.properties[0].flow_vol
+    m.fs.feed.properties[0].mole_frac_comp['Ca(HCO3)2']
+
+    m.fs.tb_pretrt_to_desal.properties_in[0].flow_vol
+    m.fs.tb_pretrt_to_desal.properties_in[0].mole_frac_comp['Ca(HCO3)2']
+
+    product_water_sb.flow_vol
+    RO_waste_sb.flow_vol
+
+    # scale
+    calculate_scaling_factors(m)
+
+    # unfix variables
+    m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0].unfix()
+    m.fs.stoich_softening_mixer_unit.dosing_rate.setlb(1e-4)
+    m.fs.stoich_softening_mixer_unit.dosing_rate.setlb(1)
+
+    # previously unbounded variable TODO: bound in build
+    m.fs.stoich_softening_mixer_unit.dosing_rate.setlb(10)
+    m.fs.stoich_softening_mixer_unit.dosing_rate.setub(1e4)
+
+    m.fs.max_allowable_pressure = Param(initialize=120e5, mutable=True, units=pyunits.pascal)
+
+    m.fs.pump_RO.control_volume.properties_out[0].pressure.unfix()
+    m.fs.pump_RO.control_volume.properties_out[0].pressure.setlb(20e5)
+    m.fs.pump_RO.control_volume.properties_out[0].pressure.setub(m.fs.max_allowable_pressure)
+
+    m.fs.RO.area.unfix()
+    m.fs.RO.area.setlb(10)
+    m.fs.RO.area.setub(300)
+
+    # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
+    m.fs.RO.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
+
+    m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO.A_comp[0, 'H2O']
+                                                                  * m.fs.RO.dens_solvent
+                                                                  * m.fs.RO.NDPmin)
+
+    if kwargs_flowsheet['is_twostage']:
+        m.fs.pump_RO2.control_volume.properties_out[0].pressure.unfix()
+        m.fs.pump_RO2.control_volume.properties_out[0].pressure.setlb(20e5)
+        m.fs.pump_RO2.control_volume.properties_out[0].pressure.setub(m.fs.max_allowable_pressure)
+
+        m.fs.RO2.area.unfix()
+        m.fs.RO2.area.setlb(10)
+        m.fs.RO2.area.setub(300)
+
+        # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
+        m.fs.RO2.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
+        m.fs.RO2.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO2.A_comp[0, 'H2O']
+                                                                       * m.fs.RO2.dens_solvent
+                                                                       * m.fs.RO2.NDPmin)
+
+    # add additional constraints
+    # fixed system recovery
+    m.fs.system_recovery_target = Param(initialize=system_recovery, mutable=True, units=pyunits.Pa)
+    m.fs.system_recovery = Expression(
+        expr=product_water_sb.flow_vol / m.fs.feed.properties[0].flow_vol)
+    m.fs.eq_system_recovery = Constraint(
+        expr=m.fs.system_recovery == m.fs.system_recovery_target)
+
+    # fixed RO water flux
+    m.fs.RO_flux = Expression(
+        expr=m.fs.RO.permeate_side.properties_mixed[0].flow_vol / m.fs.RO.area)
+
+    if is_twostage:
+        m.fs.RO2_flux = Expression(
+            expr=m.fs.RO2.permeate_side.properties_mixed[0].flow_vol / m.fs.RO2.area)
+
+    m.fs.total_work = Expression(expr=m.fs.pump_RO.work_mechanical[0] +
+                                    (m.fs.pump_RO2.work_mechanical[0] if is_twostage else 0.))
+
+    # scaling constraint (maximum Ca concentration)
+    m.fs.max_conc_factor_target = Param(initialize=max_conc_factor, mutable=True)
+    m.fs.brine_conc_mol_Ca = Expression(
+        expr=m.fs.tb_pretrt_to_desal.properties_in[0].mole_frac_comp['Ca(HCO3)2']
+             * m.fs.tb_pretrt_to_desal.properties_in[0].flow_vol
+             / RO_waste_sb.flow_vol)
+    m.fs.eq_max_conc_mol_Ca = Constraint(
+        expr=m.fs.brine_conc_mol_Ca
+             <= m.fs.feed.properties[0].mole_frac_comp['Ca(HCO3)2']
+             * m.fs.max_conc_factor_target)
+
+    # need load factor from costing_param_block for annual_water_production
+    financials.add_costing_param_block(m.fs)
+    # annual water production
+    m.fs.annual_water_production = Expression(
+        expr=pyunits.convert(product_water_sb.flow_vol, to_units=pyunits.m ** 3 / pyunits.year)
+             * m.fs.costing_param.load_factor)
+    costing.build_costing(m, module=financials, **kwargs_flowsheet)
+
+    # set objective
+    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
+
+    check_dof(m, dof_expected=4 if is_twostage else 2)
+    solve_with_user_scaling(m, tee=False, fail_flag=True)
+
+    return m
+
+def optimize(m):
+    solve_with_user_scaling(m, tee=False, fail_flag=True)
 
 def solve_flowsheet_limited_softening(**kwargs):
     m = ConcreteModel()
@@ -197,24 +198,25 @@ def solve_flowsheet_limited_softening(**kwargs):
     return m
 
 
-# def solve_optimization(system_recovery=0.75, max_conc_factor=3, **kwargs_flowsheet):
-#
-#     m = solve_flowsheet_limited_NF(**kwargs_flowsheet)
-#
-#     print('\n****** Optimization *****\n')
-#     m = set_up_optimization(m, system_recovery=system_recovery, max_conc_factor=max_conc_factor,
-#                         **kwargs_flowsheet)
-#
-#     pretreatment.display_pretreatment_NF(m, **kwargs_flowsheet)
-#     m.fs.tb_pretrt_to_desal.report()
-#     desalination.display_desalination(m, **kwargs_flowsheet)
-#     return m
+def solve_optimization(system_recovery=0.75, max_conc_factor=3, **kwargs_flowsheet):
+
+    m = solve_flowsheet_limited_softening(**kwargs_flowsheet)
+
+    print('\n****** Optimization *****\n')
+    m = set_up_optimization(m, system_recovery=system_recovery, max_conc_factor=max_conc_factor,
+                        **kwargs_flowsheet)
+
+    pretreatment_softening.display_pretreatment_softening(m)
+    m.fs.tb_pretrt_to_desal.report()
+    desalination.display_desalination(m, **kwargs_flowsheet)
+
+    return m
 
 
 if __name__ == "__main__":
     kwargs_flowsheet = {
         'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
-    solve_flowsheet_limited_softening(**kwargs_flowsheet)
-    # m = solve_optimization(system_recovery=0.8, max_conc_factor=3, **kwargs_flowsheet)
+    # solve_flowsheet_limited_softening(**kwargs_flowsheet)
+    m = solve_optimization(system_recovery=0.5, max_conc_factor=3, **kwargs_flowsheet)
     # cost_dict = costing.display_costing(m, **kwargs_flowsheet)
