@@ -43,10 +43,10 @@ def add_costing_param_block(self):
         initialize=0.07,
         doc='Electricity cost [$/kWh]')
     b.RO_mem_cost = Var(
-        initialize=30,
+        initialize=30*2.5, #todo: increase to cost representative of ultra-high pressure ro membrane
         doc='Membrane cost [$/m2]')
     b.NF_mem_cost = Var(
-        initialize=15,
+        initialize=15,  # assumed as half that of conventional SWRO membrane
         doc='Membrane cost [$/m2]')
     b.hp_pump_cost = Var(
         initialize=53 / 1e5 * 3600,
@@ -194,10 +194,34 @@ def Nanofiltration_costing(self, section='pretreatment'):
     # # Treatment section cost
     # self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
 
-def Separator_costing(self):
-    # TODO: Get separator cost from Tim's single stage MD paper
+def Separator_costing(self, section=None, cost_capacity=False):
+    _make_vars(self, section)
 
-    pass
+    b_m = self.parent_block()
+
+    if cost_capacity:
+        self.a = Param(initialize=645, mutable=True, units=pyunits.dimensionless)
+        self.b = Param(initialize=1324, mutable=True, units=pyunits.dimensionless)
+        self.n = Param(initialize=0.4, mutable=True, units=pyunits.dimensionless)
+        # TODO: reconsider material factor=9 for converting cost of carbon steel to titanium
+        self.Fm = Param(initialize=9, mutable=True, units=pyunits.dimensionless)
+
+        # capital cost
+        self.eq_capital_cost = Constraint(
+            expr=self.capital_cost == (self.a
+                                       + self.b
+                                       * (b_m.outlet_state[0].flow_vol * 1000) ** self.n) * self.Fm
+                 * self.cost_esc / (pyunits.m ** 3 / pyunits.s))
+    elif not cost_capacity:
+        # assume fixed cost per L/s based on average of cost capacity curve data
+        self.mixer_unit_capex = Param(initialize=2165.3, mutable=True, units=pyunits.dimensionless,
+                                      doc="Capex per daily plant capacity")
+        self.eq_capital_cost = Constraint(expr=self.capital_cost == self.mixer_unit_capex
+                                               * b_m.outlet_state[0].flow_vol * 1000 * self.cost_esc
+                                               * pyunits.s * pyunits.m ** -3)
+
+    self.operating_cost.fix(0)
+
 
 def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False): #TODO add fixed cost options vs economies_of_scale
     _make_vars(self, section)
@@ -207,9 +231,26 @@ def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False)
     # b_section = getattr(self, section)
 
     if mixer_type == 'default':
-        #TODO: Get mixer cost from Tim's single stage MD paper
-        # self.eq_capital_cost = Constraint()
-        self.capital_cost.fix(0)
+        if cost_capacity:
+            self.a = Param(initialize=645, mutable=True, units=pyunits.dimensionless)
+            self.b = Param(initialize=1324, mutable=True, units=pyunits.dimensionless)
+            self.n = Param(initialize=0.4, mutable=True, units=pyunits.dimensionless)
+            # TODO: reconsider material factor=9 for converting cost of carbon steel to titanium
+            self.Fm = Param(initialize=9, mutable=True, units=pyunits.dimensionless)
+
+            # capital cost
+            self.eq_capital_cost = Constraint(
+                expr=self.capital_cost == (self.a
+                                           + self.b
+                                           * (b_m.outlet_state[0].flow_vol*1000) ** self.n) * self.Fm
+                                           * self.cost_esc / (pyunits.m**3/pyunits.s))
+        elif not cost_capacity:
+            # assume fixed cost per L/s based on average of cost capacity curve data
+            self.mixer_unit_capex = Param(initialize=2165.3, mutable=True, units=pyunits.dimensionless, doc="Capex per daily plant capacity")
+            self.eq_capital_cost = Constraint(expr=self.capital_cost == self.mixer_unit_capex
+                                              * b_m.outlet_state[0].flow_vol*1000 * self.cost_esc
+                                                   * pyunits.s * pyunits.m**-3)
+
         self.operating_cost.fix(0)
 
     elif mixer_type == 'naocl_mixer':
@@ -335,8 +376,7 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None, cost_c
             self.b = Param(initialize=231, mutable=True, units=pyunits.dimensionless)
             self.n = Param(initialize=0.9, mutable=True, units=pyunits.dimensionless)
             #TODO: reconsider material factor=9 for converting cost of carbon steel to titanium
-            self.Fm = Param(initialize=9, mutable=True, units=pyunits.dimensionless)
-            # TODO: scale this constraint to achieve convergence
+            self.Fm = Param(initialize=1, mutable=True, units=pyunits.dimensionless)
             # capital cost
             self.eq_capital_cost = Constraint(
                 expr=self.capital_cost == (self.a
@@ -346,6 +386,7 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None, cost_c
 
         elif not cost_capacity:
             # assume fixed cost per L/s based on average of cost-capacity curve
+            #TODO: adjust pump_unit_capex accordingly with material factor (convert from titanium to stainless steel)
             self.pump_unit_capex = Param(initialize=8110, mutable=True, units=pyunits.dimensionless, doc="Capex per liter/s")
             self.eq_capital_cost = Constraint(expr=self.capital_cost == self.pump_unit_capex
                                                    * b_PC.control_volume.properties_in[0].flow_vol * 1000 * self.cost_esc
