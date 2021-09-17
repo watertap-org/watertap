@@ -99,7 +99,7 @@ class NormalSample(RandomSample):
 # ================================================================
 
 class LatinHypercubeSample(_Sample):
-    self.sampling_type = SamplingType.RANDOM_LHS
+    sampling_type = SamplingType.RANDOM_LHS
 
     def sample(self, num_samples): 
         return [self.lower_limit, self.upper_limit]
