@@ -93,5 +93,5 @@ def solve_RO(base='TDS', level='simple'):
 
 
 if __name__ == "__main__":
-    solve_RO(base='TDS', level='simple')
-    # solve_RO(base='TDS', level='detailed')
+    # solve_RO(base='TDS', level='simple')
+    solve_RO(base='TDS', level='detailed')
