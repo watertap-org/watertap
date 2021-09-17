@@ -46,18 +46,12 @@ def build_pretreatment_softening(m):
     """
     pretrt_port = {}
 
-    property_models.build_prop(m, base='TDS')
-    pssb.build_stoich_softening_prop(m)
-
-    build_feed_block(m)
-    # build_tb(m)
     pssb.build_stoich_softening_block(m)
+    build_feed_block(m)
 
     # connect feed block
     m.fs.s_prtrt_feed_mixer = Arc(
         source=m.fs.feed.outlet, destination=m.fs.stoich_softening_mixer_unit.inlet_stream)
-    # m.fs.s_prtrt_sep_tb = Arc(
-    #     source=m.fs.stoich_softening_separator_unit.outlet_stream, destination=m.fs.tb_soft_to_TDS.inlet)
 
     # set model values
     pssb.set_stoich_softening_mixer_inlets(m, dosing_rate_of_lime_mg_per_s=500)
@@ -68,8 +62,6 @@ def build_pretreatment_softening(m):
     pretrt_port['waste'] = m.fs.stoich_softening_separator_unit.waste_stream
 
     return pretrt_port
-
-
 
 
 def build_feed_block(m):
@@ -117,9 +109,10 @@ def build_feed_block(m):
 
 def build_tb(m):
     # build translator block
-    m.fs.tb_soft_to_TDS = Translator(default={"inlet_property_package": m.fs.stoich_softening_thermo_params,
-                                                "outlet_property_package": m.fs.prop_TDS})
-    blk = m.fs.tb_soft_to_TDS
+    m.fs.tb_pretrt_to_desal = Translator(
+        default={"inlet_property_package": m.fs.stoich_softening_thermo_params,
+                 "outlet_property_package": m.fs.prop_TDS})
+    blk = m.fs.tb_pretrt_to_desal
 
     # add translator block constraints
     blk.eq_equal_temperature = Constraint(
@@ -150,7 +143,7 @@ def build_tb(m):
         )
 
     # scale translator block to get scaling factors
-    calculate_scaling_factors(m)
+    calculate_scaling_factors(blk)
     constraint_scaling_transform(blk.eq_equal_temperature, get_scaling_factor(blk.properties_out[0].temperature))
     constraint_scaling_transform(blk.eq_equal_pressure, get_scaling_factor(blk.properties_out[0].pressure))
     constraint_scaling_transform(blk.eq_H2O_balance,
@@ -159,7 +152,7 @@ def build_tb(m):
         get_scaling_factor(blk.properties_out[0].flow_mass_phase_comp['Liq', 'TDS']))
 
     # touch variables
-    m.fs.tb_soft_to_TDS.properties_out[0].mass_frac_phase_comp
+    blk.properties_out[0].mass_frac_phase_comp
 
 
 def scale_pretreatment_softening(m):
@@ -178,9 +171,6 @@ def initialize_pretreatment_softening(m):
     # initializer separator
     propagate_state(m.fs.stoich_softening_arc_reactor_to_separator)
     pssb.initialize_stoich_softening_separator(m.fs.stoich_softening_separator_unit, debug_out=False)
-    # # initialize translator block
-    # propagate_state(m.fs.s_prtrt_sep_tb)
-    # m.fs.tb_soft_to_TDS.initialize()
 
 
 def display_pretreatment_softening(m):
