@@ -13,9 +13,8 @@
 
 from pyomo.environ import (
     Block, Constraint, Expression, Var, Param, units as pyunits, value)
-from idaes.core.util.exceptions import ConfigurationError
 import proteuslib.flowsheets.full_treatment_train.example_flowsheets.financials as financials
-from proteuslib.flowsheets.full_treatment_train.example_flowsheets.flowsheet_limited import *
+import idaes.core.util.scaling as iscale
 
 def build_costing(m, module=financials, **kwargs):
     '''
@@ -38,7 +37,7 @@ def build_costing(m, module=financials, **kwargs):
         elif kwargs['NF_type'] == 'Sep':
             raise NotImplementedError("get_costing will not be implemented for the NF separator model.")
     if hasattr(m.fs, 'pump_NF'):
-        m.fs.pump_NF.get_costing(module=module, section='pretreatment', pump_type="Low pressure", cost_capacity=True)
+        m.fs.pump_NF.get_costing(module=module, section='pretreatment', pump_type="Low pressure", cost_capacity=False)
     # Reverse Osmosis
     if hasattr(m.fs, 'RO'):
         if kwargs['RO_type'] == '0D':
@@ -67,8 +66,12 @@ def build_costing(m, module=financials, **kwargs):
         # print('FOUND CHLORINATION UNIT')
         m.fs.ideal_naocl_mixer_unit.get_costing(module=module, section='post_treatment', mixer_type='naocl_mixer')
 
+    scale_costing(m.fs)
+
     # call get_system_costing for whole flowsheet
     module.get_system_costing(m.fs)
+
+
 
 #def get_costing_sweep(self, **kwargs):
     ## Initial attempt to do a general sweep across unit models and call get_costing
@@ -83,23 +86,34 @@ def build_costing(m, module=financials, **kwargs):
     #             print(f"We got ourselves a {name}!")
     #             # b_unit.get_costing(module=module)
 
+def scale_costing(self):
+    for b_unit in self.component_objects(Block, descend_into=True):
+        # print(b_unit)
+        if hasattr(b_unit, 'costing'):
+            base = b_unit.costing
+            for var in base.component_objects(Var):
+                if iscale.get_scaling_factor(var) is None:
+                    iscale.set_scaling_factor(var, 1e-3)
+                for con in base.component_objects(Constraint):
+                    sf = iscale.get_scaling_factor(var)
+                    iscale.constraint_scaling_transform(con, sf)
 
 def display_costing(m, **kwargs):
     crf = m.fs.costing_param.factor_capital_annualization
-    #TODO: add expressions for all cost components that we may want in LCOW breakdown bar charts
-    dummy_val=1
-    if not hasattr(m.fs, 'pump_RO2'): # TODO: remove this temporary fix meant for adding to cost_dict without error
-        m.fs.pump_RO2 = Block()
-        m.fs.pump_RO2.costing = Block()
-        m.fs.pump_RO2.costing.operating_cost = Param(initialize=0)
-    if not hasattr(m.fs, 'NF'): # TODO: remove this temporary fix meant for adding to cost_dict without error
-        m.fs.NF = Block()
-        m.fs.NF.costing = Block()
-        m.fs.NF.costing.operating_cost = Param(initialize=0)
-    if not hasattr(m.fs, 'RO2'): # TODO: remove this temporary fix meant for adding to cost_dict without error
-        m.fs.RO2 = Block()
-        m.fs.RO2.costing = Block()
-        m.fs.RO2.costing.operating_cost = Param(initialize=0)
+    # #TODO: add expressions for all cost components that we may want in LCOW breakdown bar charts
+    dummy_val=0.05
+    # if not hasattr(m.fs, 'pump_RO2'): # TODO: remove this temporary fix meant for adding to cost_dict without error
+    #     m.fs.pump_RO2 = Block()
+    #     m.fs.pump_RO2.costing = Block()
+    #     m.fs.pump_RO2.costing.operating_cost = Param(initialize=0)
+    # if not hasattr(m.fs, 'NF'): # TODO: remove this temporary fix meant for adding to cost_dict without error
+    #     m.fs.NF = Block()
+    #     m.fs.NF.costing = Block()
+    #     m.fs.NF.costing.operating_cost = Param(initialize=0)
+    # if not hasattr(m.fs, 'RO2'): # TODO: remove this temporary fix meant for adding to cost_dict without error
+    #     m.fs.RO2 = Block()
+    #     m.fs.RO2.costing = Block()
+    #     m.fs.RO2.costing.operating_cost = Param(initialize=0)
 
     # UNITS FOR ALL COST COMPONENTS [=] $/m3 of permeate water produced
     # TODO: still need to add separate chemical costs and other cost components
@@ -114,6 +128,7 @@ def display_costing(m, **kwargs):
         'Total OPEX': m.fs.costing.operating_cost_total / m.fs.annual_water_production,  # Total OPEX
         'Labor & Maintenance Costs': m.fs.costing.operating_cost_labor_maintenance
                                      / m.fs.annual_water_production,  # TODO: Presumably for RO Plant - may revise; separate chemical costs and add membrane cleaning
+        'Total Chemical Costs': dummy_val,
         'Total Electricity Cost': m.fs.costing.electricity_cost_total / m.fs.annual_water_production,  # TODO: should other energy costs be accounted for, i.e., pretreatment? probably
         'Total Membrane Replacement Cost': (m.fs.NF.costing.operating_cost
                                             + m.fs.RO.costing.operating_cost
