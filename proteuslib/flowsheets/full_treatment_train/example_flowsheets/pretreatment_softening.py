@@ -64,8 +64,10 @@ def build_pretreatment_softening(m):
     pssb.fix_stoich_softening_mixer_lime_stream(m)
 
     # set ports
-    # pretrt_port['out'] = m.fs.mixer.outlet
-    # pretrt_port['waste'] = m.fs.NF.retentate
+    pretrt_port['out'] = m.fs.stoich_softening_separator_unit.outlet_stream
+    pretrt_port['waste'] = m.fs.stoich_softening_separator_unit.waste_stream
+
+    return pretrt_port
 
 
 
@@ -79,8 +81,8 @@ def build_feed_block(m):
                            'Ca': 382e-6,
                            'Mg': 1394e-6,
                            'SO4': 2136e-6,
-                           'Cl': 20316.88e-6,
-                           'H2O': 1 - sum(x for x in comp_list)}
+                           'Cl': 20316.88e-6}
+    feed_mass_frac_comp['H2O'] = 1 - sum(x for x in feed_mass_frac_comp.values())
 
     mw_comp = {'H2O': 18.015e-3,
                'Na': 22.990e-3,
