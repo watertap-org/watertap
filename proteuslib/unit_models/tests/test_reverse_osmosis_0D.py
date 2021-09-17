@@ -313,6 +313,11 @@ class TestReverseOsmosis():
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
         assert len(unscaled_constraint_list) == 0
 
+        # check repeated scaling does not create badly scaled vars
+        calculate_scaling_factors(m)
+        for _ in badly_scaled_var_generator(m):
+            assert False
+
     @pytest.mark.component
     def test_initialize(self, RO_frame):
         initialization_tester(RO_frame)
@@ -773,3 +778,7 @@ class TestReverseOsmosis():
                 value(m.fs.unit.feed_side.properties_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
         assert (pytest.approx(49.94, rel=1e-3) ==
                 value(m.fs.unit.feed_side.properties_interface_out[0].conc_mass_phase_comp['Liq', 'NaCl']))
+
+    @pytest.mark.unit
+    def test_report(self, RO_frame):
+        RO_frame.fs.unit.report()

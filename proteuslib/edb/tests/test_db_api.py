@@ -103,7 +103,7 @@ data1 = [{
     "components": ["CO2", "H2CO3"],
     "reactant_elements": ["C", "O", "H"],
 }, {
-    "stoichiometry": {"Liq": {"H2O": -1, "H +": 1, "OH -": 1}},
+    "stoichiometry": {"Liq": {"H2O": -1, "H_+": 1, "OH_-": 1}},
     "heat_of_reaction": "constant_dh_rxn",
     "equilibrium_constant": "van_t_hoff_aqueous",
     "equilibrium_form": "log_power_law",
@@ -123,8 +123,8 @@ data2 = data1.copy() + [{
     "stoichiometry": {
         "Liq": {
             "H2CO3": -1,
-            "H +": 1,
-            "HCO3 -": 1
+            "H_+": 1,
+            "HCO3_-": 1
         }
     },
     "heat_of_reaction": "constant_dh_rxn",
@@ -157,11 +157,12 @@ data2 = data1.copy() + [{
 @pytest.mark.unit
 @pytest.mark.parametrize("components,data,any_num,all_num", [
     (["H2O", "CO2", "H2CO3"], data1, 2, 1),
-    (["H2O", "H +", "OH -", "H2CO3", "HCO3 -"], data2, 3, 2)
+    (["H2O", "H +", "OH -", "H2CO3", "HCO3 -"], data2, 3, 0),
+    (["H2CO3"], data2, 2, 2),
 ])
 def test_get_reactions(mockdb, components, data, any_num, all_num):
     insert_reactions(mockdb._db.reaction, data)
     reactions = mockdb.get_reactions(components, any_components=True)
     assert len(list(reactions)) == any_num
-    reactions = mockdb.get_reactions(components)
+    reactions = mockdb.get_reactions(components, any_components=False)
     assert len(list(reactions)) == all_num
