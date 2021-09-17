@@ -13,14 +13,12 @@
 from pyomo.environ import (
     Block, Constraint, Expression, Var, Param, Reals, NonNegativeReals, units as pyunits)
 from idaes.core.util.exceptions import ConfigurationError
-
+pyunits.load_definitions_from_strings(['USD = [currency]'])
+pyunits.USD # dollars
 
 
 # TODO: choose year --> 2018 probably (use CEPCI)
-# TODO: in example flowsheets --> build_costing and use **kwargs to build flowsheet
-# TODO: make kwargs dict
-# Todo: have options for PX types/pump types (for example) or use more generic approach with conditionals
-# mixers, splitters, pumps, erds, RO, NF, stoich reactor (lime softening), equilibrium reactor (chlorination)
+#  mixers, splitters, pumps, erds, RO, NF, stoich reactor (lime softening), equilibrium reactor (chlorination)
 
 def add_costing_param_block(self):
     self.costing_param = Block()
@@ -56,10 +54,6 @@ def add_costing_param_block(self):
     b.pxr_cost = Var(
         initialize=535,
         doc='Pressure exchanger cost [$/(m3/h)]')
-    b.chemical_lime_cost = Var(
-        #TODO: add "real" value instead of dummy val for lime cost per kg
-        initialize=1,
-        doc='Lime cost [$/kg]')
 
     # traditional parameters are the only Vars on the block and should be fixed
     for v in b.component_objects(Var, descend_into=True):
@@ -155,6 +149,8 @@ def _make_vars(self, section=None):
     else:
         setattr(self, section, Expression(expr=self.capital_cost + self.operating_cost))
 
+    self.cost_esc = Param(initialize=1, mutable=True, units=pyunits.dimensionless)
+
 
 def ReverseOsmosis_costing(self, section='primary'):
     _make_vars(self, section)
@@ -203,7 +199,7 @@ def Separator_costing(self):
 
     pass
 
-def Mixer_costing(self, mixer_type='default', section=None): #TODO add fixed cost options vs economies_of_scale
+def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False): #TODO add fixed cost options vs economies_of_scale
     _make_vars(self, section)
 
     b_m = self.parent_block()
@@ -217,22 +213,29 @@ def Mixer_costing(self, mixer_type='default', section=None): #TODO add fixed cos
         self.operating_cost.fix(0)
 
     elif mixer_type == 'naocl_mixer':
-        '''Cost estimation of chlorination step for disinfection in post-treatment
-        Digitized Fig. 4.19 in Voutchkov, 2018 using WebPlotDigitizer, https://apps.automeris.io/wpd/,
-         September 2021. Fig. 4.19 provides construction cost as a function of daily desalination plant capacity.
-         Curves for sodium hypochlorite and chlorine dioxide are provided, but only NaOCl data were extracted.
-         Data were converted to specific construction costs as a function of capacity to get the provided cost curve
-         for capex (of the form a*X**b).
-         Since cost figures are reported for the year 2018, the capex cost constraint is assumed to be in 2018 USD;the 
-         cost escalation factor, cost_esc, can be modified to account for changes over time.'''
+        if cost_capacity:
+            '''Cost estimation of chlorination step for disinfection in post-treatment
+            Digitized Fig. 4.19 in Voutchkov, 2018 using WebPlotDigitizer, https://apps.automeris.io/wpd/,
+             September 2021. Fig. 4.19 provides construction cost as a function of daily desalination plant capacity.
+             Curves for sodium hypochlorite and chlorine dioxide are provided, but only NaOCl data were extracted.
+             Data were converted to specific construction costs as a function of capacity to get the provided cost curve
+             for capex (of the form a*X**b).
+             Since cost figures are reported for the year 2018, the capex cost constraint is assumed to be in 2018 USD;the 
+             cost escalation factor, cost_esc, can be modified to account for changes over time.'''
 
-        # NaOCl specific capex ($/m3/day) = 479.87 * x ** (-0.396) ; x is plant capacity (m3/day)
-        # TODO: may need to touch flow_vol while building naocl_mixer_unit. Double-check. Alternative: use flow_vol of RO final permeate
-        self.cost_esc = Param(initialize=1, mutable=True)
-        self.eq_capital_cost = Constraint(expr=self.capital_cost ==
-                                               479.87
-                                               * (b_m.inlet_stream_state[0].flow_vol*3600*24) ** 0.604
-                                               * self.cost_esc)
+            # NaOCl specific capex ($/m3/day) = 479.87 * x ** (-0.396) ; x is plant capacity (m3/day)
+            # TODO: may need to touch flow_vol while building naocl_mixer_unit. Double-check. Alternative: use flow_vol of RO final permeate
+            self.eq_capital_cost = Constraint(expr=self.capital_cost ==
+                                                   479.87
+                                                   * (b_m.inlet_stream_state[0].flow_vol
+                                                      * 3600 * 24 / (pyunits.m**3 / pyunits.s)) ** 0.604
+                                                   * self.cost_esc)
+        elif not cost_capacity:
+            # assume fixed cost per daily capacity based on average of digitized data cited above
+            self.naocl_unit_capex = Param(initialize=7.08, mutable=True, units=pyunits.day * pyunits.m**-3, doc="Capex per daily plant capacity")
+            self.eq_capital_cost = Constraint(expr=self.capital_cost == self.naocl_unit_capex
+                                              * b_m.inlet_stream_state[0].flow_vol*3600*24 * self.cost_esc
+                                                   * pyunits.s * pyunits.day**-1)
 
         # Sodium hypochlorite cost taken from WaterTAP (2020 USD) which assumes 15% purity
         self.naocl_cost = Param(initialize=0.23, mutable=True, units=pyunits.kg**-1)
@@ -272,12 +275,16 @@ def Mixer_costing(self, mixer_type='default', section=None): #TODO add fixed cos
          '''
         # x is converts mol/s to lb/day
         self.lime_lbs_per_day = Expression(expr=2.205 * 3600 * 24 * 74.09e-3
-            * b_m.lime_stream.flow_mol[0].value
-            * b_m.lime_stream.mole_frac_comp[0, "Ca(OH)2"].value / pyunits.mol / pyunits.s)
-
-        self.cost_esc = Param(initialize=1, mutable=True)
-        self.eq_capital_cost = Constraint(expr=self.capital_cost == 16972 * self.lime_lbs_per_day ** 0.5435 * self.cost_esc)
-
+                                                * b_m.lime_stream.flow_mol[0].value
+                                                * b_m.lime_stream.mole_frac_comp[
+                                                    0, "Ca(OH)2"].value / pyunits.mol * pyunits.s)
+        if cost_capacity:
+            self.eq_capital_cost = Constraint(expr=self.capital_cost == 16972 * self.lime_lbs_per_day ** 0.5435 * self.cost_esc)
+        elif not cost_capacity:
+            # assume fixed cost per lb feed per day based on average of digitized data cited above
+            self.caoh2_unit_capex = Param(initialize=2133.5, mutable=True, units=pyunits.dimensionless, doc="Capex per lb feed per day")
+            self.eq_capital_cost = Constraint(expr=self.capital_cost == self.caoh2_unit_capex
+                                                   * self.lime_lbs_per_day * self.cost_esc)
         # Calcium hydroxide (lime) cost taken from WaterTAP (2020 USD) which assumes 100% purity
         self.caoh2_cost = Param(initialize=0.15, mutable=True, units=pyunits.kg**-1)
         self.caoh2_purity = Param(initialize=1, mutable=True)
@@ -289,10 +296,11 @@ def Mixer_costing(self, mixer_type='default', section=None): #TODO add fixed cos
                                                  / self.caoh2_purity
                                                  * 3600 * 8760 * pyunits.s)
 
+
     # # Treatment section cost
     # self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
 
-def pressure_changer_costing(self, pump_type="centrifugal", section=None):
+def pressure_changer_costing(self, pump_type="centrifugal", section=None, cost_capacity=False):
     _make_vars(self, section)
 
     b_PC = self.parent_block()
@@ -303,6 +311,8 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None):
     self.cp_cost_eq = Constraint(expr=self.purchase_cost == 0)
 
     if pump_type == 'High pressure':
+        #TODO: add cost_capacity relationship
+
         # capital cost
         self.eq_capital_cost = Constraint(
             expr=self.capital_cost == b_fs.costing_param.hp_pump_cost * b_PC.work_mechanical[0] / pyunits.W)
@@ -313,7 +323,40 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None):
                                          * 3600 * 24 * 365 * b_fs.costing_param.load_factor)
                  * b_fs.costing_param.electricity_cost / 3600 / 1000)
     elif pump_type == 'Low pressure':
-        pass     # TODO: add cost relationship for low pressure pump, intended for NF pump
+        if cost_capacity:
+            '''Ref: Bartholomew et al. (2020)-Cost optimization of high recovery single stage gap membrane distillation
+            Capex=(a + b*S**n)*Fm
+            S: flowrate in L/s
+            a,b,n are fit params from Table S2 -- primary reference: Towler, G.; Sinnott, R. Chemical Engineering Design: Principles, Practice and 
+                                                      Economics of Plant and Process Design; Elsevier, 2012.
+            Fm : material factor
+            '''
+            self.a = Param(initialize=9052, mutable=True, units=pyunits.dimensionless)
+            self.b = Param(initialize=231, mutable=True, units=pyunits.dimensionless)
+            self.n = Param(initialize=0.9, mutable=True, units=pyunits.dimensionless)
+            #TODO: reconsider material factor=9 for converting cost of carbon steel to titanium
+            self.Fm = Param(initialize=9, mutable=True, units=pyunits.dimensionless)
+            # TODO: scale this constraint to achieve convergence
+            # capital cost
+            self.eq_capital_cost = Constraint(
+                expr=self.capital_cost == (self.a
+                                           + self.b
+                                           * (b_PC.control_volume.properties_in[0].flow_vol*1000) ** self.n) * self.Fm
+                                           * self.cost_esc / (pyunits.m**3/pyunits.s))
+
+        elif not cost_capacity:
+            # assume fixed cost per L/s based on average of cost-capacity curve
+            self.pump_unit_capex = Param(initialize=8110, mutable=True, units=pyunits.dimensionless, doc="Capex per liter/s")
+            self.eq_capital_cost = Constraint(expr=self.capital_cost == self.pump_unit_capex
+                                                   * b_PC.control_volume.properties_in[0].flow_vol * 1000 * self.cost_esc
+                                                   / (pyunits.m**3/pyunits.s))
+
+        # operating cost
+        self.eq_operating_cost = Constraint(
+            expr=self.operating_cost == (b_PC.work_mechanical[0] / pyunits.W
+                                         * 3600 * 24 * 365 * b_fs.costing_param.load_factor)
+                 * b_fs.costing_param.electricity_cost / 3600 / 1000)
+
 
     elif pump_type == 'Pressure exchanger':
         # capital cost
