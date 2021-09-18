@@ -66,11 +66,11 @@ def build_costing(m, module=financials, **kwargs):
         # print('FOUND CHLORINATION UNIT')
         m.fs.ideal_naocl_mixer_unit.get_costing(module=module, section='post_treatment', mixer_type='naocl_mixer')
 
-    scale_costing(m.fs)
 
     # call get_system_costing for whole flowsheet
     module.get_system_costing(m.fs)
 
+    scale_costing(m)
 
 
 #def get_costing_sweep(self, **kwargs):
@@ -102,18 +102,18 @@ def display_costing(m, **kwargs):
     crf = m.fs.costing_param.factor_capital_annualization
     # #TODO: add expressions for all cost components that we may want in LCOW breakdown bar charts
     dummy_val=0.05
-    # if not hasattr(m.fs, 'pump_RO2'): # TODO: remove this temporary fix meant for adding to cost_dict without error
-    #     m.fs.pump_RO2 = Block()
-    #     m.fs.pump_RO2.costing = Block()
-    #     m.fs.pump_RO2.costing.operating_cost = Param(initialize=0)
-    # if not hasattr(m.fs, 'NF'): # TODO: remove this temporary fix meant for adding to cost_dict without error
-    #     m.fs.NF = Block()
-    #     m.fs.NF.costing = Block()
-    #     m.fs.NF.costing.operating_cost = Param(initialize=0)
-    # if not hasattr(m.fs, 'RO2'): # TODO: remove this temporary fix meant for adding to cost_dict without error
-    #     m.fs.RO2 = Block()
-    #     m.fs.RO2.costing = Block()
-    #     m.fs.RO2.costing.operating_cost = Param(initialize=0)
+    if not hasattr(m.fs, 'pump_RO2'): # TODO: remove this temporary fix meant for adding to cost_dict without error
+        m.fs.pump_RO2 = Block()
+        m.fs.pump_RO2.costing = Block()
+        m.fs.pump_RO2.costing.operating_cost = Param(initialize=0)
+    if not hasattr(m.fs, 'NF'): # TODO: remove this temporary fix meant for adding to cost_dict without error
+        m.fs.NF = Block()
+        m.fs.NF.costing = Block()
+        m.fs.NF.costing.operating_cost = Param(initialize=0)
+    if not hasattr(m.fs, 'RO2'): # TODO: remove this temporary fix meant for adding to cost_dict without error
+        m.fs.RO2 = Block()
+        m.fs.RO2.costing = Block()
+        m.fs.RO2.costing.operating_cost = Param(initialize=0)
 
     # UNITS FOR ALL COST COMPONENTS [=] $/m3 of permeate water produced
     # TODO: still need to add separate chemical costs and other cost components

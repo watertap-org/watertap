@@ -43,7 +43,7 @@ def add_costing_param_block(self):
         initialize=0.07,
         doc='Electricity cost [$/kWh]')
     b.RO_mem_cost = Var(
-        initialize=30*2.5, #todo: increase to cost representative of ultra-high pressure ro membrane
+        initialize=30*3, #increase to cost representative of ultra-high pressure ro membrane
         doc='Membrane cost [$/m2]')
     b.NF_mem_cost = Var(
         initialize=15,  # assumed as half that of conventional SWRO membrane

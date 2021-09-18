@@ -219,4 +219,4 @@ if __name__ == "__main__":
         'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
     # solve_flowsheet_mvp_NF(**kwargs_flowsheet)
-    m = solve_optimization(system_recovery=0.80, **kwargs_flowsheet)
+    m = solve_optimization(system_recovery=0.8, **kwargs_flowsheet)
