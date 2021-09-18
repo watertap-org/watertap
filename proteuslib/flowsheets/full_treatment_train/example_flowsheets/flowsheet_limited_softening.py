@@ -41,7 +41,7 @@ def build_flowsheet_limited_softening(m, has_desal_feed=False, is_twostage=False
                            'RO_type': RO_type, 'RO_base': RO_base, 'RO_level': RO_level}
 
     # build flowsheet
-    pretrt_port = pretreatment_softening.build_pretreatment_softening(m)
+    pretrt_port = pretreatment_softening.build(m)
 
     property_models.build_prop(m, base=RO_base)
     desal_port = desalination.build_desalination(m, **kwargs_desalination)
@@ -175,14 +175,14 @@ def solve_flowsheet_limited_softening(**kwargs):
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scale
-    pretreatment_softening.scale_pretreatment_softening(m)
+    pretreatment_softening.scale(m)
     calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
     desalination.scale_desalination(m, **kwargs)
     calculate_scaling_factors(m)
 
     # initialize
     optarg = {'nlp_scaling_method': 'user-scaling'}
-    pretreatment_softening.initialize_pretreatment_softening(m)
+    pretreatment_softening.initialize(m)
     propagate_state(m.fs.s_pretrt_tb)
     m.fs.tb_pretrt_to_desal.initialize(optarg=optarg)
     propagate_state(m.fs.s_tb_desal)
@@ -191,7 +191,7 @@ def solve_flowsheet_limited_softening(**kwargs):
     check_dof(m)
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
-    pretreatment_softening.display_pretreatment_softening(m)
+    pretreatment_softening.display(m)
     m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs)
 
@@ -206,7 +206,7 @@ def solve_optimization(system_recovery=0.75, max_conc_factor=3, **kwargs_flowshe
     m = set_up_optimization(m, system_recovery=system_recovery, max_conc_factor=max_conc_factor,
                         **kwargs_flowsheet)
 
-    pretreatment_softening.display_pretreatment_softening(m)
+    pretreatment_softening.display(m)
     m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs_flowsheet)
 
@@ -217,6 +217,6 @@ if __name__ == "__main__":
     kwargs_flowsheet = {
         'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
-    # solve_flowsheet_limited_softening(**kwargs_flowsheet)
-    m = solve_optimization(system_recovery=0.5, max_conc_factor=3, **kwargs_flowsheet)
+    solve_flowsheet_limited_softening(**kwargs_flowsheet)
+    # m = solve_optimization(system_recovery=0.5, max_conc_factor=3, **kwargs_flowsheet)
     # cost_dict = costing.display_costing(m, **kwargs_flowsheet)

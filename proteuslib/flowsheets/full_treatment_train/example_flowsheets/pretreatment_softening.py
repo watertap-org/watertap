@@ -13,22 +13,6 @@
 
 """Pretreatment flowsheet components"""
 
-from pyomo.environ import ConcreteModel, TransformationFactory
-from pyomo.network import Arc
-from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models import Feed
-from proteuslib.flowsheets.full_treatment_train.example_models import Separator, Mixer
-from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
-from idaes.core.util.scaling import (calculate_scaling_factors,
-                                     set_scaling_factor,
-                                     get_scaling_factor,
-                                     constraint_scaling_transform)
-from idaes.core.util.initialization import propagate_state
-from proteuslib.unit_models.pump_isothermal import Pump
-from proteuslib.flowsheets.full_treatment_train.example_flowsheets import feed_block
-from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator, unit_ZONF, property_models
-from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
-
 from pyomo.environ import ConcreteModel, TransformationFactory, Constraint
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
@@ -37,10 +21,9 @@ from idaes.core.util.scaling import calculate_scaling_factors, constraint_scalin
 from idaes.core.util.initialization import propagate_state
 from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets import pretreatment_stoich_softening_block as pssb
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
-from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 
 
-def build_pretreatment_softening(m):
+def build(m):
     """
     Builds softening pretreatment including specified feed and auxiliary equipment.
     """
@@ -155,11 +138,15 @@ def build_tb(m):
     blk.properties_out[0].mass_frac_phase_comp
 
 
-def scale_pretreatment_softening(m):
+def scale(m):
+    # mixer
+
     calculate_scaling_factors(m)
+    # m.fs.feed.properties[0].scaling_factor.display()
+    # assert False
 
 
-def initialize_pretreatment_softening(m):
+def initialize(m):
     # initialize feed
     m.fs.feed.initialize()
     propagate_state(m.fs.s_prtrt_feed_mixer)
@@ -173,22 +160,22 @@ def initialize_pretreatment_softening(m):
     pssb.initialize_stoich_softening_separator(m.fs.stoich_softening_separator_unit, debug_out=False)
 
 
-def display_pretreatment_softening(m):
+def display(m):
     m.fs.feed.report()
     pssb.display_results_of_stoich_softening_mixer(m.fs.stoich_softening_mixer_unit)
     pssb.display_results_of_stoich_softening_reactor(m.fs.stoich_softening_reactor_unit)
     pssb.display_results_of_stoich_softening_separator(m.fs.stoich_softening_separator_unit)
 
 
-def solve_pretreatment_softening():
+def solve():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    build_pretreatment_softening(m)
+    build(m)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
-    scale_pretreatment_softening(m)
+    scale(m)
 
-    initialize_pretreatment_softening(m)
+    initialize(m)
 
     check_dof(m)
 
@@ -196,8 +183,10 @@ def solve_pretreatment_softening():
     solve_with_user_scaling(m)
 
     # display
-    display_pretreatment_softening(m)
+    display(m)
+
+    return m
 
 
 if __name__ == "__main__":
-    solve_pretreatment_softening()
+    solve()
