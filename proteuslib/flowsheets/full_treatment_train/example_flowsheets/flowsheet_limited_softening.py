@@ -20,7 +20,9 @@ from pyomo.util import infeasible
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_constraints_generator,
-                                     unscaled_variables_generator)
+                                     unscaled_variables_generator,
+                                     badly_scaled_var_generator,
+                                     constraint_autoscale_large_jac)
 from idaes.core.util.initialization import propagate_state
 from proteuslib.flowsheets.full_treatment_train.example_flowsheets import (pretreatment_softening,
                                                                            desalination,
@@ -165,8 +167,10 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
 
     return m
 
+
 def optimize(m):
     solve_with_user_scaling(m, tee=False, fail_flag=True)
+
 
 def solve_flowsheet_limited_softening(**kwargs):
     m = ConcreteModel()
@@ -179,6 +183,7 @@ def solve_flowsheet_limited_softening(**kwargs):
     calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
     desalination.scale_desalination(m, **kwargs)
     calculate_scaling_factors(m)
+    # constraint_autoscale_large_jac(m.fs)
 
     # initialize
     optarg = {'nlp_scaling_method': 'user-scaling'}
@@ -187,6 +192,11 @@ def solve_flowsheet_limited_softening(**kwargs):
     m.fs.tb_pretrt_to_desal.initialize(optarg=optarg)
     propagate_state(m.fs.s_tb_desal)
     desalination.initialize_desalination(m, **kwargs)
+
+    var_gen = badly_scaled_var_generator(m)
+    for (v, val) in var_gen:
+        print(v.name, val)
+    assert False
 
     check_dof(m)
     solve_with_user_scaling(m, tee=False, fail_flag=True)

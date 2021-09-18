@@ -310,14 +310,23 @@ stoich_softening_thermo_config = {
                                 ("flow_mol", None): 1e-1,
                                 ("temperature", None): 1e-2,
                                 ("pressure", None): 1e-6,
-                                ("flow_mole_phase_comp", ("Liq", "Ca(HCO3)2")): 1e4 * 1e-1,
-                                ("flow_mole_phase_comp", ("Liq", "Ca(OH)2")): 1e4 * 1e-1,
-                                ("flow_mole_phase_comp", ("Liq", "CaCO3")): 1e4 * 1e-1,
-                                ("flow_mole_phase_comp", ("Liq", "H2O")): 1 * 1e-1,
-                                ("flow_mole_phase_comp", ("Liq", "Mg(HCO3)2")): 1e3 * 1e-1,
-                                ("flow_mole_phase_comp", ("Liq", "Mg(OH)2")): 1e3 * 1e-1,
-                                ("flow_mole_phase_comp", ("Liq", "NaCl")): 1e3 * 1e-1,
-                                ("flow_mole_phase_comp", ("Liq", "SO4_2-")): 1e3 * 1e-1,
+                                ("flow_mol_phase_comp", ("Liq", "Ca(HCO3)2")): 1e4 * 1e-1,
+                                ("flow_mol_phase_comp", ("Liq", "Ca(OH)2")): 1e4 * 1e-1,
+                                ("flow_mol_phase_comp", ("Liq", "CaCO3")): 1e4 * 1e-1,
+                                ("flow_mol_phase_comp", ("Liq", "H2O")): 1 * 1e-1,
+                                ("flow_mol_phase_comp", ("Liq", "Mg(HCO3)2")): 1e3 * 1e-1,
+                                ("flow_mol_phase_comp", ("Liq", "Mg(OH)2")): 1e3 * 1e-1,
+                                ("flow_mol_phase_comp", ("Liq", "NaCl")): 1e3 * 1e-1,
+                                ("flow_mol_phase_comp", ("Liq", "SO4_2-")): 1e3 * 1e-1,
+                                ("flow_mol_phase", "Liq"): 1e-1,
+                                # ("mole_frac_phase_comp", ("Liq", "Ca(HCO3)2")): 1e4,
+                                # ("mole_frac_phase_comp", ("Liq", "Ca(OH)2")): 1e4,
+                                # ("mole_frac_phase_comp", ("Liq", "CaCO3")): 1e4,
+                                # ("mole_frac_phase_comp", ("Liq", "H2O")): 1,
+                                # ("mole_frac_phase_comp", ("Liq", "Mg(HCO3)2")): 1e3,
+                                # ("mole_frac_phase_comp", ("Liq", "Mg(OH)2")): 1e3,
+                                # ("mole_frac_phase_comp", ("Liq", "NaCl")): 1e2,
+                                # ("mole_frac_phase_comp", ("Liq", "SO4_2-")): 1e3,
                                 }
 
     }
@@ -367,10 +376,12 @@ stoich_softening_reaction_config = {
 # Get default solver for testing
 solver = get_solver()
 
+
 def build_stoich_softening_prop(model):
     model.fs.stoich_softening_thermo_params = GenericParameterBlock(default=stoich_softening_thermo_config)
     model.fs.stoich_softening_rxn_params = GenericReactionParameterBlock(
             default={"property_package": model.fs.stoich_softening_thermo_params, **stoich_softening_reaction_config})
+
 
 def build_stoich_softening_mixer_unit(model):
     model.fs.stoich_softening_mixer_unit = Mixer(default={
@@ -401,6 +412,7 @@ def build_stoich_softening_reactor_unit(model, frac_excess_lime=0.01, frac_used_
                 "has_heat_of_reaction": False,
                 "has_pressure_change": False})
     set_stoich_softening_reactor_extents(model, frac_excess_lime, frac_used_for_Ca_removal)
+
 
 def build_stoich_softening_separator_unit(model, solids_removal_frac=0.99):
     model.fs.stoich_softening_separator_unit = Separator(default={
@@ -434,6 +446,7 @@ def build_stoich_softening_separator_unit(model, solids_removal_frac=0.99):
 
     set_stoich_softening_separator_split_frac(model, solids_removal_frac=solids_removal_frac)
     fix_stoich_softening_separator_split_frac(model)
+
 
 def set_stoich_softening_mixer_inlets(model, dosing_rate_of_lime_mg_per_s = 25,
                                         inlet_water_density_kg_per_L = 1,
@@ -489,6 +502,7 @@ def set_stoich_softening_mixer_inlets(model, dosing_rate_of_lime_mg_per_s = 25,
 
     model.fs.stoich_softening_mixer_unit.dosing_rate.set_value(dosing_rate_of_lime_mg_per_s * 1e6)
 
+
 def set_stoich_softening_reactor_inlets(model, dosage_of_lime_mg_per_L = 140,
                                         inlet_water_density_kg_per_L = 1,
                                         inlet_temperature_K = 298,
@@ -532,6 +546,7 @@ def set_stoich_softening_reactor_inlets(model, dosage_of_lime_mg_per_L = 140,
 
     set_H2O_molefraction(model.fs.stoich_softening_reactor_unit.inlet)
 
+
 def set_stoich_softening_reactor_extents(model, frac_excess_lime=0.01,
                                                 frac_used_for_Ca_removal=0.99):
     if frac_excess_lime > 1:
@@ -562,6 +577,7 @@ def set_stoich_softening_reactor_extents(model, frac_excess_lime=0.01,
         return blk.rate_reaction_extent[0, 'Mg_removal'] == smooth_min( (a - blk.rate_reaction_extent[0, 'Ca_removal'])/2, b, eps=1e-20)
 
     model.fs.stoich_softening_reactor_unit.magnesium_extent_con = Constraint( rule=_mg_extent_cons )
+
 
 def set_stoich_softening_separator_inlets(model, residual_lime_mg_per_L = 2,
                                         inlet_water_density_kg_per_L = 1,
@@ -610,6 +626,7 @@ def set_stoich_softening_separator_inlets(model, residual_lime_mg_per_L = 2,
 
     set_H2O_molefraction(model.fs.stoich_softening_separator_unit.inlet)
 
+
 def set_stoich_softening_separator_split_frac(model, solids_removal_frac=0.99):
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'H2O'].set_value(solids_removal_frac)
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'NaCl'].set_value(solids_removal_frac)
@@ -620,17 +637,20 @@ def set_stoich_softening_separator_split_frac(model, solids_removal_frac=0.99):
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'CaCO3'].set_value((1-solids_removal_frac))
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'SO4_2-'].set_value(solids_removal_frac)
 
+
 def fix_stoich_softening_mixer_inlet_stream(model):
     model.fs.stoich_softening_mixer_unit.inlet_stream.flow_mol[0].fix()
     model.fs.stoich_softening_mixer_unit.inlet_stream.pressure[0].fix()
     model.fs.stoich_softening_mixer_unit.inlet_stream.temperature[0].fix()
     fix_all_molefractions(model.fs.stoich_softening_mixer_unit.inlet_stream)
 
+
 def fix_stoich_softening_mixer_lime_stream(model):
     model.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0].fix()
     model.fs.stoich_softening_mixer_unit.lime_stream.pressure[0].fix()
     model.fs.stoich_softening_mixer_unit.lime_stream.temperature[0].fix()
     fix_all_molefractions(model.fs.stoich_softening_mixer_unit.lime_stream)
+
 
 def unfix_stoich_softening_mixer_inlet_stream(model):
     model.fs.stoich_softening_mixer_unit.inlet_stream.flow_mol[0].unfix()
@@ -644,11 +664,13 @@ def unfix_stoich_softening_mixer_lime_stream(model):
     model.fs.stoich_softening_mixer_unit.lime_stream.temperature[0].unfix()
     unfix_all_molefractions(model.fs.ideal_naocl_mixer_unit.lime_stream)
 
+
 def fix_stoich_softening_reactor_inlets(model):
     model.fs.stoich_softening_reactor_unit.inlet.flow_mol[0].fix()
     model.fs.stoich_softening_reactor_unit.inlet.pressure[0].fix()
     model.fs.stoich_softening_reactor_unit.inlet.temperature[0].fix()
     fix_all_molefractions(model.fs.stoich_softening_reactor_unit.inlet)
+
 
 def unfix_stoich_softening_reactor_inlets(model):
     model.fs.stoich_softening_reactor_unit.inlet.flow_mol[0].unfix()
@@ -656,9 +678,11 @@ def unfix_stoich_softening_reactor_inlets(model):
     model.fs.stoich_softening_reactor_unit.inlet.temperature[0].unfix()
     unfix_all_molefractions(model.fs.stoich_softening_reactor_unit.inlet)
 
+
 def unfix_stoich_softening_reactor_extents(model):
     model.fs.stoich_softening_reactor_unit.rate_reaction_extent[0, 'Ca_removal'].unfix()
     model.fs.stoich_softening_reactor_unit.rate_reaction_extent[0, 'Mg_removal'].unfix()
+
 
 def fix_stoich_softening_separator_split_frac(model):
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'H2O'].fix()
@@ -670,12 +694,14 @@ def fix_stoich_softening_separator_split_frac(model):
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'CaCO3'].fix()
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'SO4_2-'].fix()
 
+
 def fix_stoich_softening_separator_inlets(model):
     model.fs.stoich_softening_separator_unit.inlet.pressure.fix()
     model.fs.stoich_softening_separator_unit.inlet.temperature.fix()
     model.fs.stoich_softening_separator_unit.inlet.flow_mol.fix()
 
     fix_all_molefractions(model.fs.stoich_softening_separator_unit.inlet)
+
 
 def unfix_stoich_softening_separator_split_frac(model):
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'H2O'].unfix()
@@ -687,6 +713,7 @@ def unfix_stoich_softening_separator_split_frac(model):
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'CaCO3'].unfix()
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'SO4_2-'].unfix()
 
+
 def unfix_stoich_softening_separator_inlets(model):
     model.fs.stoich_softening_separator_unit.inlet.pressure.fix()
     model.fs.stoich_softening_separator_unit.inlet.temperature.fix()
@@ -694,14 +721,18 @@ def unfix_stoich_softening_separator_inlets(model):
 
     unfix_all_molefractions(model.fs.stoich_softening_separator_unit.inlet)
 
+
 def scale_stoich_softening_mixer(unit):
     iscale.constraint_autoscale_large_jac(unit)
+
 
 def scale_stoich_softening_reactor(unit):
     iscale.constraint_autoscale_large_jac(unit)
 
+
 def scale_stoich_softening_separator(unit):
     iscale.constraint_autoscale_large_jac(unit)
+
 
 def initialize_stoich_softening_mixer(unit, debug_out=False):
     solver.options['bound_push'] = 1e-10
@@ -718,6 +749,7 @@ def initialize_stoich_softening_mixer(unit, debug_out=False):
     if was_fixed == True:
         unit.lime_stream.flow_mol[0].unfix()
 
+
 def initialize_stoich_softening_reactor(unit, debug_out=False):
     solver.options['bound_push'] = 1e-10
     solver.options['mu_init'] = 1e-6
@@ -726,6 +758,7 @@ def initialize_stoich_softening_reactor(unit, debug_out=False):
         unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
     else:
         unit.initialize(optarg=solver.options)
+
 
 def initialize_stoich_softening_separator(unit, debug_out=False):
     solver.options['bound_push'] = 1e-10
@@ -736,9 +769,11 @@ def initialize_stoich_softening_separator(unit, debug_out=False):
     else:
         unit.initialize(optarg=solver.options)
 
+
 def setup_block_to_solve_lime_dosing_rate(model, target_hardness_mg_per_L = 50):
     model.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0].unfix()
     model.fs.stoich_softening_separator_unit.hardness.fix(target_hardness_mg_per_L)
+
 
 def display_results_of_stoich_softening_mixer(unit):
     print()
@@ -766,6 +801,7 @@ def display_results_of_stoich_softening_mixer(unit):
     print("Lime Dosage (mg/L):      \t" + str(value(unit.outlet.mole_frac_comp[0, "Ca(OH)2"])*total_molar_density*74.093*1000))
     print("------------------------------------------------------")
     print()
+
 
 def display_results_of_stoich_softening_reactor(unit):
     print()
@@ -797,6 +833,7 @@ def display_results_of_stoich_softening_reactor(unit):
     print("-------------------------------------------------------")
     print()
 
+
 def display_results_of_stoich_softening_separator(unit):
     print()
     print("=========== Stoich Softening Separator Results ============")
@@ -823,6 +860,7 @@ def display_results_of_stoich_softening_separator(unit):
     print("Residual Hardness(mg/L):\t" + str(unit.hardness.value))
     print("-------------------------------------------------------")
     print()
+
 
 def build_stoich_softening_block(model, include_feed=False, expand_arcs=False):
     # Add properties to model
@@ -858,6 +896,7 @@ def build_stoich_softening_block(model, include_feed=False, expand_arcs=False):
     if expand_arcs == True:
         TransformationFactory("network.expand_arcs").apply_to(model)
 
+
 def run_stoich_softening_mixer_example():
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
@@ -892,6 +931,7 @@ def run_stoich_softening_mixer_example():
     display_results_of_stoich_softening_mixer(model.fs.stoich_softening_mixer_unit)
 
     return model
+
 
 def run_stoich_softening_reactor_example():
     model = ConcreteModel()
@@ -933,6 +973,7 @@ def run_stoich_softening_reactor_example():
 
     return model
 
+
 def run_stoich_softening_separator_example():
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
@@ -963,6 +1004,7 @@ def run_stoich_softening_separator_example():
     display_results_of_stoich_softening_separator(model.fs.stoich_softening_separator_unit)
 
     return model
+
 
 def run_softening_block_example(include_feed=False, fix_hardness=False):
     model = ConcreteModel()
