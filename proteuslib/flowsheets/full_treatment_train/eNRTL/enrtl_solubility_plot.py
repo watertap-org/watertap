@@ -26,7 +26,7 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.generic.generic_property import (
     GenericParameterBlock)
 
-from entrl_config import configuration
+from entrl_config_FTPx import configuration
 
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom

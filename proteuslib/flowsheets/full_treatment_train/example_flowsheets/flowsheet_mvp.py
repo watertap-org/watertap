@@ -28,7 +28,9 @@ from proteuslib.flowsheets.full_treatment_train.example_flowsheets import (pretr
                                                                            financials)
 from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from proteuslib.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
-                                                             check_dof)
+                                                             check_dof,
+                                                             check_build,
+                                                             check_scaling)
 
 """Flowsheet examples that satisfy minimum viable product requirements"""
 def build_flowsheet_mvp_NF(m, has_bypass=True, has_desal_feed=False, is_twostage=False, has_ERD=False,
@@ -189,6 +191,9 @@ def solve_flowsheet_mvp_NF(**kwargs):
     desalination.initialize_desalination(m, **kwargs)
     m.fs.desal_saturation.properties.initialize()
 
+    # check_build(m)
+    # check_scaling(m)
+
     check_dof(m)
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
@@ -218,5 +223,5 @@ if __name__ == "__main__":
         'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
-    # solve_flowsheet_mvp_NF(**kwargs_flowsheet)
-    m = solve_optimization(system_recovery=0.80, **kwargs_flowsheet)
+    solve_flowsheet_mvp_NF(**kwargs_flowsheet)
+    # m = solve_optimization(system_recovery=0.80, **kwargs_flowsheet)
