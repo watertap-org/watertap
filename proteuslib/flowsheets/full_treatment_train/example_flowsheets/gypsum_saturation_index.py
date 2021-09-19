@@ -13,7 +13,7 @@
 
 """eNRTL property blocks to calculate and constrain gypsum saturation index"""
 
-from pyomo.environ import Block, Var, Expression, Constraint, value
+from pyomo.environ import Block, Var, Expression, Constraint, value, units as pyunits
 from pyomo.environ import units as pyunits
 
 def build_desalination_saturation(m, **kwargs):
@@ -60,7 +60,7 @@ def build_desalination_saturation(m, **kwargs):
         if j in ['Cl_-', 'Na_+']:
             return (sb_eNRTL.flow_mol_phase_comp['Liq', j]
                     == sb_dilute.flow_mol_phase_comp['Liq', comp_match_dict[j]]
-                    - sb_perm.flow_mass_phase_comp['Liq', 'TDS'] / 58.44e-3)
+                    - sb_perm.flow_mass_phase_comp['Liq', 'TDS'] / (58.44e-3 * pyunits.kg/pyunits.mol))
         elif j in ['Ca_2+', 'Mg_2+', 'SO4_2-']:
             return (sb_eNRTL.flow_mol_phase_comp['Liq', j]
                     == sb_dilute.flow_mol_phase_comp['Liq', comp_match_dict[j]])
