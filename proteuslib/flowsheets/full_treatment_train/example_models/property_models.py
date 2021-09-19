@@ -19,7 +19,7 @@ from idaes.generic_models.properties.core.generic.generic_property import Generi
 from idaes.core.util.scaling import calculate_scaling_factors
 from proteuslib.property_models import seawater_prop_pack
 from proteuslib.flowsheets.full_treatment_train.example_models import seawater_salt_prop_pack, seawater_ion_prop_pack
-from proteuslib.flowsheets.full_treatment_train.eNRTL import entrl_config_FTPx
+from proteuslib.flowsheets.full_treatment_train.eNRTL import entrl_config_FTPx, entrl_config_FpcTP
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling
 
 
@@ -54,7 +54,7 @@ def build_prop(m, base='TDS'):
         m.fs.prop_salt.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'MgCl2'))
 
     elif base == 'eNRTL':
-        m.fs.prop_eNRTL = GenericParameterBlock(default=entrl_config_FTPx.configuration)
+        m.fs.prop_eNRTL = GenericParameterBlock(default=entrl_config_FpcTP.configuration)
 
         # default scaling in config file
 

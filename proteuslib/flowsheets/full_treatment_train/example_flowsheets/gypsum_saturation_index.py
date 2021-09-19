@@ -22,16 +22,7 @@ def build_desalination_saturation(m, **kwargs):
     sb_eNRTL = m.fs.desal_saturation.properties[0]
 
     # populate initial values
-    sb_eNRTL.temperature = 298
-    sb_eNRTL.pressure = 101325
-    sb_eNRTL.flow_mol = 50
-    # 2 times concentration factor
-    sb_eNRTL.mole_frac_comp["Na_+"] = 0.017327
-    sb_eNRTL.mole_frac_comp["Ca_2+"] = 0.000341
-    sb_eNRTL.mole_frac_comp["Mg_2+"] = 0.002054
-    sb_eNRTL.mole_frac_comp["SO4_2-"] = 0.000796
-    sb_eNRTL.mole_frac_comp["Cl_-"] = 0.020529
-    sb_eNRTL.mole_frac_comp["H2O"] = 0.958952
+    populate_eNRTL_state_vars(sb_eNRTL, base='FpcTP')
 
     # constraints
     sb_dilute = m.fs.tb_pretrt_to_desal.properties_in[0]
@@ -83,3 +74,36 @@ def build_desalination_saturation(m, **kwargs):
              * sb_eNRTL.act_phase_comp["Liq", "SO4_2-"]
              * sb_eNRTL.act_phase_comp["Liq", "H2O"] ** 2
              / ksp)
+
+
+def populate_eNRTL_state_vars(blk, base='FpcTP'):
+    blk.temperature = 298
+    blk.pressure = 101325
+
+    if base == 'FpcTP':
+        feed_flow_mass = 1  # kg/s
+        feed_mass_frac_comp = {'Na_+': 11122e-6,
+                               'Ca_2+': 382e-6,
+                               'Mg_2+': 1394e-6,
+                               'SO4_2-': 2136e-6,
+                               'Cl_-': 20316.88e-6}
+        feed_mass_frac_comp['H2O'] = 1 - sum(x for x in feed_mass_frac_comp.values())
+
+        mw_comp = {'H2O': 18.015e-3,
+                   'Na_+': 22.990e-3,
+                   'Ca_2+': 40.078e-3,
+                   'Mg_2+': 24.305e-3,
+                   'SO4_2-': 96.06e-3,
+                   'Cl_-': 35.453e-3}
+
+        for j in feed_mass_frac_comp:
+            blk.flow_mol_phase_comp['Liq', j] = feed_flow_mass * feed_mass_frac_comp[j] / mw_comp[j]
+            if j == 'H2O':
+                blk.flow_mol_phase_comp['Liq', j] /= 2
+    elif base == 'FTPx':
+        blk.mole_frac_comp["Na_+"] = 0.017327
+        blk.mole_frac_comp["Ca_2+"] = 0.000341
+        blk.mole_frac_comp["Mg_2+"] = 0.002054
+        blk.mole_frac_comp["SO4_2-"] = 0.000796
+        blk.mole_frac_comp["Cl_-"] = 0.020529
+        blk.mole_frac_comp["H2O"] = 0.958952
