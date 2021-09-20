@@ -205,6 +205,22 @@ stoich_softening_thermo_config = {
                             },
                     # End parameter_data
                     },
+        'Cl_-': {  "type": Anion,  "charge": -1,
+                    # Define the methods used to calculate the following properties
+                    "dens_mol_liq_comp": Constant,
+                    "enth_mol_liq_comp": Constant,
+                    "cp_mol_liq_comp": Constant,
+                    "entr_mol_liq_comp": Constant,
+                    # Parameter data is always associated with the methods defined above
+                    "parameter_data": {
+                        "mw": (35.453, pyunits.g/pyunits.mol),
+                        "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
+                        "enth_mol_form_liq_comp_ref": (-407, pyunits.kJ/pyunits.mol),
+                        "cp_mol_liq_comp_coeff": (75348, pyunits.J/pyunits.kmol/pyunits.K),
+                        "entr_mol_form_liq_comp_ref": (115, pyunits.J/pyunits.K/pyunits.mol)
+                            },
+                    # End parameter_data
+                    },
         'CaCO3': {  "type": Solute,  "valid_phase_types": PT.aqueousPhase,
                     # Define the methods used to calculate the following properties
                     "dens_mol_liq_comp": Constant,
@@ -307,6 +323,7 @@ stoich_softening_thermo_config = {
                                 ("mole_frac_comp", "Mg(OH)2"): 1e3,
                                 ("mole_frac_comp", "NaCl"): 1e2,
                                 ("mole_frac_comp", "SO4_2-"): 1e3,
+                                ("mole_frac_comp", "Cl_-"): 1e3,
                                 ("flow_mol", None): 1e-1,
                                 ("temperature", None): 1e-2,
                                 ("pressure", None): 1e-6,
@@ -318,6 +335,7 @@ stoich_softening_thermo_config = {
                                 ("flow_mol_phase_comp", ("Liq", "Mg(OH)2")): 1e3 * 1e-1,
                                 ("flow_mol_phase_comp", ("Liq", "NaCl")): 1e3 * 1e-1,
                                 ("flow_mol_phase_comp", ("Liq", "SO4_2-")): 1e3 * 1e-1,
+                                ("flow_mol_phase_comp", ("Liq", "Cl_-")): 1e3 * 1e-1,
                                 ("flow_mol_phase", "Liq"): 1e-1,
                                 # ("mole_frac_phase_comp", ("Liq", "Ca(HCO3)2")): 1e4,
                                 # ("mole_frac_phase_comp", ("Liq", "Ca(OH)2")): 1e4,
@@ -456,6 +474,7 @@ def set_stoich_softening_mixer_inlets(model, dosing_rate_of_lime_mg_per_s = 25,
                                         inlet_total_hardness_mg_per_L=200,
                                         hardness_fraction_to_Ca=0.5,
                                         inlet_salinity_psu=35,
+                                        inlet_excess_chlorine_ppm=35,
                                         inlet_sulfate_ppm=2000):
 
     #inlet stream
@@ -477,6 +496,9 @@ def set_stoich_softening_mixer_inlets(model, dosing_rate_of_lime_mg_per_s = 25,
 
     x_so4 = inlet_sulfate_ppm*inlet_water_density_kg_per_L/96060/total_molar_density
     model.fs.stoich_softening_mixer_unit.inlet_stream.mole_frac_comp[0, "SO4_2-"].set_value(x_so4)
+
+    x_cl = inlet_excess_chlorine_ppm*inlet_water_density_kg_per_L/96060/total_molar_density
+    model.fs.stoich_softening_mixer_unit.inlet_stream.mole_frac_comp[0, "Cl_-"].set_value(x_cl)
 
     total_salt = value(model.fs.stoich_softening_mixer_unit.inlet_stream.mole_frac_comp[0, "Ca(HCO3)2"])*total_molar_density*101
     total_salt += value(model.fs.stoich_softening_mixer_unit.inlet_stream.mole_frac_comp[0, "Mg(HCO3)2"])*total_molar_density*85.31
@@ -511,6 +533,7 @@ def set_stoich_softening_reactor_inlets(model, dosage_of_lime_mg_per_L = 140,
                                         inlet_total_hardness_mg_per_L=200,
                                         hardness_fraction_to_Ca=0.5,
                                         inlet_salinity_psu=35,
+                                        inlet_excess_chlorine_ppm=35,
                                         inlet_sulfate_ppm=2000):
 
     #inlet stream
@@ -532,6 +555,9 @@ def set_stoich_softening_reactor_inlets(model, dosage_of_lime_mg_per_L = 140,
 
     x_so4 = inlet_sulfate_ppm*inlet_water_density_kg_per_L/96060/total_molar_density
     model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "SO4_2-"].set_value(x_so4)
+
+    x_cl = inlet_excess_chlorine_ppm*inlet_water_density_kg_per_L/96060/total_molar_density
+    model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Cl_-"].set_value(x_cl)
 
     total_salt = value(model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"])*total_molar_density*101
     total_salt += value(model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"])*total_molar_density*85.31
@@ -587,6 +613,7 @@ def set_stoich_softening_separator_inlets(model, residual_lime_mg_per_L = 2,
                                         inlet_carbonate_hardness_mg_per_L=60,
                                         hardness_fraction_to_Ca=0.5,
                                         inlet_salinity_psu=35,
+                                        inlet_excess_chlorine_ppm=35,
                                         inlet_sulfate_ppm=2000,
                                         inlet_solids_mg_per_L=140):
     model.fs.stoich_softening_separator_unit.inlet.pressure[0].set_value(inlet_pressure_Pa)
@@ -607,6 +634,9 @@ def set_stoich_softening_separator_inlets(model, residual_lime_mg_per_L = 2,
 
     x_so4 = inlet_sulfate_ppm*inlet_water_density_kg_per_L/96060/total_molar_density
     model.fs.stoich_softening_separator_unit.inlet.mole_frac_comp[0, "SO4_2-"].set_value(x_so4)
+
+    x_cl = inlet_excess_chlorine_ppm*inlet_water_density_kg_per_L/96060/total_molar_density
+    model.fs.stoich_softening_separator_unit.inlet.mole_frac_comp[0, "Cl_-"].set_value(x_cl)
 
     total_salt = value(model.fs.stoich_softening_separator_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"])*total_molar_density*101
     total_salt += value(model.fs.stoich_softening_separator_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"])*total_molar_density*85.31
@@ -636,6 +666,7 @@ def set_stoich_softening_separator_split_frac(model, solids_removal_frac=0.99):
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'Mg(HCO3)2'].set_value(solids_removal_frac)
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'CaCO3'].set_value((1-solids_removal_frac))
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'SO4_2-'].set_value(solids_removal_frac)
+    model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'Cl_-'].set_value(solids_removal_frac)
 
 
 def fix_stoich_softening_mixer_inlet_stream(model):
@@ -693,6 +724,7 @@ def fix_stoich_softening_separator_split_frac(model):
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'Mg(HCO3)2'].fix()
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'CaCO3'].fix()
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'SO4_2-'].fix()
+    model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'Cl_-'].fix()
 
 
 def fix_stoich_softening_separator_inlets(model):
@@ -712,6 +744,7 @@ def unfix_stoich_softening_separator_split_frac(model):
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'Mg(HCO3)2'].unfix()
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'CaCO3'].unfix()
     model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'SO4_2-'].unfix()
+    model.fs.stoich_softening_separator_unit.split_fraction[0, 'outlet_stream', 'Cl_-'].unfix()
 
 
 def unfix_stoich_softening_separator_inlets(model):
@@ -1029,6 +1062,7 @@ def run_softening_block_example(include_feed=False, fix_hardness=False):
                                                 inlet_total_hardness_mg_per_L=200,
                                                 hardness_fraction_to_Ca=0.5,
                                                 inlet_salinity_psu=35,
+                                                inlet_excess_chlorine_ppm=35,
                                                 inlet_sulfate_ppm=2000)
 
     if include_feed == True:
