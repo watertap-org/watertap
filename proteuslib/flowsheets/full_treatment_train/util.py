@@ -65,12 +65,12 @@ def check_scaling(m, scale_func=None, **kwargs):
 
     # check all variables have scaling factors
     unscaled_var_list = list(unscaled_variables_generator(m))
-    for v in unscaled_var_list:
-        print(v.name)
+    # for v in unscaled_var_list:
+    #     print(v.name)
     assert len(unscaled_var_list) == 0
 
     # check that all constraints are transformed
     unscaled_constraint_list = list(unscaled_constraints_generator(m))
-    for c in unscaled_constraint_list:
-        print(c.name)
+    # for c in unscaled_constraint_list:
+    #     print(c.name)
     assert len(unscaled_constraint_list) == 0

@@ -31,7 +31,7 @@ __author__ = "Austin Ladshaw"
 def test_stoich_softening_mixer():
     model = run_stoich_softening_mixer_example()
     assert model.fs.stoich_softening_mixer_unit.dosing_rate.value == \
-            pytest.approx(24.88346319183235, rel=1e-3)
+            pytest.approx(2.488346319183235e-5, rel=1e-3)
     assert model.fs.stoich_softening_mixer_unit.outlet.flow_mol[0].value == \
             pytest.approx(10.000013433637829, rel=1e-3)
     assert model.fs.stoich_softening_mixer_unit.outlet.mole_frac_comp[0, "NaCl"].value == \
@@ -73,7 +73,7 @@ def test_stoich_softening_separator():
 def test_stoich_softening_block():
     model = run_softening_block_example()
     assert model.fs.stoich_softening_mixer_unit.dosing_rate.value == \
-            pytest.approx(24.88346319183235, rel=1e-3)
+            pytest.approx(2.488346319183235e-5, rel=1e-3)
     assert model.fs.stoich_softening_reactor_unit.outlet.mole_frac_comp[0, "NaCl"].value == \
             pytest.approx(0.01072288805932624, rel=1e-3)
     assert model.fs.stoich_softening_reactor_unit.outlet.mole_frac_comp[0, "Ca(OH)2"].value == \

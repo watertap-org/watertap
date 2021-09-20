@@ -75,9 +75,9 @@ def test_flowsheet_mvp_NF_bypass_twostage_1():
 @pytest.mark.component
 def test_flowsheet_mvp_cost_optimization():
     kwargs_flowsheet = {
-        'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True, 'has_ERD': False,
+        'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
-    m = flowsheet_mvp.solve_optimization(system_recovery=0.80, **kwargs_flowsheet)
-    assert value(m.fs.mixer_permeate.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.7974, rel=1e-3)
-    assert value(m.fs.costing.LCOW) == pytest.approx(0.8724, rel=1e-3)
+    m = flowsheet_mvp.solve_optimization(system_recovery=0.76, **kwargs_flowsheet)
+    assert value(m.fs.mixer_permeate.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.7576, rel=1e-3)
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.7794, rel=1e-3)

@@ -20,9 +20,11 @@ from pyomo.util import infeasible
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_constraints_generator,
-                                     unscaled_variables_generator)
+                                     unscaled_variables_generator,
+                                     badly_scaled_var_generator,
+                                     constraint_autoscale_large_jac)
 from idaes.core.util.initialization import propagate_state
-from proteuslib.flowsheets.full_treatment_train.example_flowsheets import (pretreatment,
+from proteuslib.flowsheets.full_treatment_train.example_flowsheets import (pretreatment_softening,
                                                                            desalination,
                                                                            translator_block,
                                                                            costing,
@@ -31,28 +33,22 @@ from proteuslib.flowsheets.full_treatment_train.example_models import property_m
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
-def build_flowsheet_limited_NF(m, has_bypass=True, has_desal_feed=False, is_twostage=False, has_ERD=False,
-                               NF_type='ZO', NF_base='ion',
-                               RO_type='Sep', RO_base='TDS', RO_level='simple'):
+def build_flowsheet_limited_softening(m, has_desal_feed=False, is_twostage=False, has_ERD=False,
+                                      RO_type='Sep', RO_base='TDS', RO_level='simple'):
     """
     Build a flowsheet with NF pretreatment and RO.
     """
     # set up keyword arguments for the sections of treatment train
-    kwargs_pretreatment = {'has_bypass': has_bypass, 'NF_type': NF_type, 'NF_base': NF_base}
     kwargs_desalination = {'has_desal_feed': has_desal_feed, 'is_twostage': is_twostage, 'has_ERD': has_ERD,
                            'RO_type': RO_type, 'RO_base': RO_base, 'RO_level': RO_level}
-    # kwargs_flowsheet = kwargs_pretreatment.copy()
-    # kwargs_flowsheet.update(kwargs_desalination)
-
 
     # build flowsheet
-    property_models.build_prop(m, base=NF_base)
-    pretrt_port = pretreatment.build_pretreatment_NF(m, **kwargs_pretreatment)
+    pretrt_port = pretreatment_softening.build(m)
 
     property_models.build_prop(m, base=RO_base)
     desal_port = desalination.build_desalination(m, **kwargs_desalination)
 
-    translator_block.build_tb(m, base_inlet=NF_base, base_outlet=RO_base, name_str='tb_pretrt_to_desal')
+    pretreatment_softening.build_tb(m)
 
     # set up Arcs between pretreatment and desalination
     m.fs.s_pretrt_tb = Arc(source=pretrt_port['out'], destination=m.fs.tb_pretrt_to_desal.inlet)
@@ -73,10 +69,10 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
 
     # touch some properties used in optimization
     m.fs.feed.properties[0].flow_vol
-    m.fs.feed.properties[0].conc_mol_phase_comp['Liq', 'Ca']
+    m.fs.feed.properties[0].mole_frac_comp['Ca(HCO3)2']
 
     m.fs.tb_pretrt_to_desal.properties_in[0].flow_vol
-    m.fs.tb_pretrt_to_desal.properties_in[0].conc_mol_phase_comp['Liq', 'Ca']
+    m.fs.tb_pretrt_to_desal.properties_in[0].mole_frac_comp['Ca(HCO3)2']
 
     product_water_sb.flow_vol
     RO_waste_sb.flow_vol
@@ -85,13 +81,13 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
     calculate_scaling_factors(m)
 
     # unfix variables
-    m.fs.splitter.split_fraction[0, 'bypass'].unfix()
-    m.fs.splitter.split_fraction[0, 'bypass'].setlb(0.001)
-    m.fs.splitter.split_fraction[0, 'bypass'].setub(0.99)
+    m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0].unfix()
+    m.fs.stoich_softening_mixer_unit.dosing_rate.setlb(1e-4)
+    m.fs.stoich_softening_mixer_unit.dosing_rate.setlb(1)
 
-    m.fs.NF.area.unfix()
-    m.fs.NF.area.setlb(10)
-    m.fs.NF.area.setub(1000)
+    # previously unbounded variable TODO: bound in build
+    m.fs.stoich_softening_mixer_unit.dosing_rate.setlb(10)
+    m.fs.stoich_softening_mixer_unit.dosing_rate.setub(1e4)
 
     m.fs.max_allowable_pressure = Param(initialize=120e5, mutable=True, units=pyunits.pascal)
 
@@ -147,12 +143,12 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
     # scaling constraint (maximum Ca concentration)
     m.fs.max_conc_factor_target = Param(initialize=max_conc_factor, mutable=True)
     m.fs.brine_conc_mol_Ca = Expression(
-        expr=m.fs.tb_pretrt_to_desal.properties_in[0].conc_mol_phase_comp['Liq', 'Ca']
+        expr=m.fs.tb_pretrt_to_desal.properties_in[0].mole_frac_comp['Ca(HCO3)2']
              * m.fs.tb_pretrt_to_desal.properties_in[0].flow_vol
              / RO_waste_sb.flow_vol)
     m.fs.eq_max_conc_mol_Ca = Constraint(
         expr=m.fs.brine_conc_mol_Ca
-             <= m.fs.feed.properties[0].conc_mol_phase_comp['Liq', 'Ca']
+             <= m.fs.feed.properties[0].mole_frac_comp['Ca(HCO3)2']
              * m.fs.max_conc_factor_target)
 
     # need load factor from costing_param_block for annual_water_production
@@ -164,9 +160,9 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
     costing.build_costing(m, module=financials, **kwargs_flowsheet)
 
     # set objective
-    m.fs.objective = Objective(expr=m.fs.costing.LCOW )
+    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
-    check_dof(m, dof_expected=5 if is_twostage else 3)
+    check_dof(m, dof_expected=4 if is_twostage else 2)
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
     return m
@@ -176,30 +172,36 @@ def optimize(m):
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
 
-def solve_flowsheet_limited_NF(**kwargs):
+def solve_flowsheet_limited_softening(**kwargs):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    build_flowsheet_limited_NF(m, **kwargs)
+    build_flowsheet_limited_softening(m, **kwargs)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scale
-    pretreatment.scale_pretreatment_NF(m, **kwargs)
+    pretreatment_softening.scale(m)
     calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
     desalination.scale_desalination(m, **kwargs)
     calculate_scaling_factors(m)
+    # constraint_autoscale_large_jac(m.fs)
 
     # initialize
     optarg = {'nlp_scaling_method': 'user-scaling'}
-    pretreatment.initialize_pretreatment_NF(m, **kwargs)
+    pretreatment_softening.initialize(m)
     propagate_state(m.fs.s_pretrt_tb)
     m.fs.tb_pretrt_to_desal.initialize(optarg=optarg)
     propagate_state(m.fs.s_tb_desal)
     desalination.initialize_desalination(m, **kwargs)
 
+    var_gen = badly_scaled_var_generator(m)
+    for (v, val) in var_gen:
+        print(v.name, val)
+    assert False
+
     check_dof(m)
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
-    pretreatment.display_pretreatment_NF(m, **kwargs)
+    pretreatment_softening.display(m)
     m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs)
 
@@ -208,23 +210,23 @@ def solve_flowsheet_limited_NF(**kwargs):
 
 def solve_optimization(system_recovery=0.75, max_conc_factor=3, **kwargs_flowsheet):
 
-    m = solve_flowsheet_limited_NF(**kwargs_flowsheet)
+    m = solve_flowsheet_limited_softening(**kwargs_flowsheet)
 
     print('\n****** Optimization *****\n')
     m = set_up_optimization(m, system_recovery=system_recovery, max_conc_factor=max_conc_factor,
                         **kwargs_flowsheet)
 
-    pretreatment.display_pretreatment_NF(m, **kwargs_flowsheet)
+    pretreatment_softening.display(m)
     m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs_flowsheet)
+
     return m
 
 
 if __name__ == "__main__":
     kwargs_flowsheet = {
-        'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True,
-        'has_ERD': True, 'NF_type': 'ZO', 'NF_base': 'ion',
+        'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
-    # solve_flowsheet_limited_NF(**kwargs_flowsheet)
-    m = solve_optimization(system_recovery=0.75, max_conc_factor=3, **kwargs_flowsheet)
-    cost_dict = costing.display_costing(m, **kwargs_flowsheet)
+    solve_flowsheet_limited_softening(**kwargs_flowsheet)
+    # m = solve_optimization(system_recovery=0.5, max_conc_factor=3, **kwargs_flowsheet)
+    # cost_dict = costing.display_costing(m, **kwargs_flowsheet)

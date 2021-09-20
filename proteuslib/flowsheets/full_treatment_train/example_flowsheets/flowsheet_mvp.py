@@ -28,7 +28,9 @@ from proteuslib.flowsheets.full_treatment_train.example_flowsheets import (pretr
                                                                            financials)
 from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from proteuslib.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
-                                                             check_dof)
+                                                             check_dof,
+                                                             check_build,
+                                                             check_scaling)
 
 """Flowsheet examples that satisfy minimum viable product requirements"""
 def build_flowsheet_mvp_NF(m, has_bypass=True, has_desal_feed=False, is_twostage=False, has_ERD=False,
@@ -60,7 +62,8 @@ def build_flowsheet_mvp_NF(m, has_bypass=True, has_desal_feed=False, is_twostage
     m.fs.s_tb_desal = Arc(source=m.fs.tb_pretrt_to_desal.outlet, destination=desal_port['in'])
 
     # add gypsum saturation index calculations
-    gypsum_saturation_index.build_desalination_saturation(m, **kwargs_desalination)
+    gypsum_saturation_index.build(m, section='desalination', **kwargs_desalination)
+    # gypsum_saturation_index.build(m, section='pretreatment', **kwargs_desalination)
 
     return m
 
@@ -96,17 +99,22 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
     m.fs.NF.area.setlb(10)
     m.fs.NF.area.setub(1000)
 
-    m.fs.max_allowable_pressure = Param(initialize=120e5, mutable=True, units=pyunits.pascal)
-
     m.fs.pump_RO.control_volume.properties_out[0].pressure.unfix()
     m.fs.pump_RO.control_volume.properties_out[0].pressure.setlb(20e5)
-    m.fs.pump_RO.control_volume.properties_out[0].pressure.setub(m.fs.max_allowable_pressure)
+    m.fs.pump_RO.control_volume.properties_out[0].pressure.setub(75e5)
 
     m.fs.RO.area.unfix()
     m.fs.RO.area.setlb(10)
     m.fs.RO.area.setub(300)
 
+    # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
+    m.fs.RO.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
+    m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO.A_comp[0, 'H2O']
+                                                                  * m.fs.RO.dens_solvent
+                                                                  * m.fs.RO.NDPmin)
+
     if kwargs_flowsheet['is_twostage']:
+        m.fs.max_allowable_pressure = Param(initialize=120e5, mutable=True, units=pyunits.pascal)
         m.fs.pump_RO2.control_volume.properties_out[0].pressure.unfix()
         m.fs.pump_RO2.control_volume.properties_out[0].pressure.setlb(20e5)
         m.fs.pump_RO2.control_volume.properties_out[0].pressure.setub(m.fs.max_allowable_pressure)
@@ -114,6 +122,12 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
         m.fs.RO2.area.unfix()
         m.fs.RO2.area.setlb(10)
         m.fs.RO2.area.setub(300)
+
+        # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
+        m.fs.RO2.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
+        m.fs.RO2.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO2.A_comp[0, 'H2O']
+                                                                       * m.fs.RO2.dens_solvent
+                                                                       * m.fs.RO2.NDPmin)
 
     # add additional constraints
     # fixed system recovery
@@ -123,21 +137,21 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
     m.fs.eq_system_recovery = Constraint(
         expr=m.fs.system_recovery == m.fs.system_recovery_target)
 
-    # fixed RO water flux
-    m.fs.RO_flux = Expression(
-        expr=m.fs.RO.permeate_side.properties_mixed[0].flow_vol / m.fs.RO.area)
-
-    if is_twostage:
-        m.fs.RO2_flux = Expression(
-            expr=m.fs.RO2.permeate_side.properties_mixed[0].flow_vol / m.fs.RO2.area)
 
     m.fs.total_work = Expression(expr=m.fs.pump_RO.work_mechanical[0] +
                                     (m.fs.pump_RO2.work_mechanical[0] if is_twostage else 0.))
 
     # saturation index
     m.fs.max_saturation_index = Param(initialize=1, mutable=True)
-    m.fs.eq_max_saturation_index = Constraint(
+    m.fs.eq_max_saturation_index_desal = Constraint(
         expr=m.fs.desal_saturation.saturation_index <= m.fs.max_saturation_index)
+    # m.fs.eq_max_saturation_index_pretrt = Constraint(
+    #     expr=m.fs.pretrt_saturation.saturation_index <= m.fs.max_saturation_index)
+
+    # m.fs.max_conc_factor_target = Param(initialize=3.5, mutable=True)
+    # m.fs.eq_max_conc_NF = Constraint(
+    #     expr=m.fs.NF.feed_side.properties_out[0].mass_frac_phase_comp['Liq', 'Ca']
+    #     <= m.fs.max_conc_factor_target * m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'Ca'])
 
     # need load factor from costing_param_block for annual_water_production
     financials.add_costing_param_block(m.fs)
@@ -162,10 +176,11 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
             >= m.fs.RO2.permeate_side.properties_mixed[0].flow_vol_phase['Liq'])
 
     check_dof(m, dof_expected=5 if is_twostage else 3)
-    solve_with_user_scaling(m, tee=False, fail_flag=True)
+    # solve_with_user_scaling(m, tee=False, fail_flag=True)
+
 
 def optimize(m):
-    solve_with_user_scaling(m, tee=False, fail_flag=True)
+    solve_with_user_scaling(m, tee=True, fail_flag=True)
 
 
 def solve_flowsheet_mvp_NF(**kwargs):
@@ -183,11 +198,15 @@ def solve_flowsheet_mvp_NF(**kwargs):
     # initialize
     optarg = {'nlp_scaling_method': 'user-scaling'}
     pretreatment.initialize_pretreatment_NF(m, **kwargs)
+    # m.fs.pretrt_saturation.properties.initialize()
     propagate_state(m.fs.s_pretrt_tb)
     m.fs.tb_pretrt_to_desal.initialize(optarg=optarg)
     propagate_state(m.fs.s_tb_desal)
     desalination.initialize_desalination(m, **kwargs)
     m.fs.desal_saturation.properties.initialize()
+
+    # check_build(m)
+    # check_scaling(m)
 
     check_dof(m)
     solve_with_user_scaling(m, tee=False, fail_flag=True)
@@ -195,7 +214,8 @@ def solve_flowsheet_mvp_NF(**kwargs):
     pretreatment.display_pretreatment_NF(m, **kwargs)
     m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs)
-    print('Solubility index:', value(m.fs.desal_saturation.saturation_index))
+    print('desalination solubility index:', value(m.fs.desal_saturation.saturation_index))
+    # print('pretreatment solubility index:', value(m.fs.pretrt_saturation.saturation_index))
 
     return m
 
@@ -205,11 +225,14 @@ def solve_optimization(system_recovery=0.75, **kwargs_flowsheet):
 
     print('\n****** Optimization *****\n')
     set_up_optimization(m, system_recovery=system_recovery, **kwargs_flowsheet)
+    optimize(m)
 
     pretreatment.display_pretreatment_NF(m, **kwargs_flowsheet)
     m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs_flowsheet)
     costing.display_costing(m, **kwargs_flowsheet)
+    print('desalination saturation index:', value(m.fs.desal_saturation.saturation_index))
+    # print('pretreatment saturation index:', value(m.fs.pretrt_saturation.saturation_index))
     return m
 
 
@@ -219,4 +242,4 @@ if __name__ == "__main__":
         'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
     # solve_flowsheet_mvp_NF(**kwargs_flowsheet)
-    m = solve_optimization(system_recovery=0.8, **kwargs_flowsheet)
+    m = solve_optimization(system_recovery=0.75, **kwargs_flowsheet)

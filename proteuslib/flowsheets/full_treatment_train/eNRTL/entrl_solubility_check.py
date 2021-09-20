@@ -24,7 +24,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 from idaes.core.util.scaling import calculate_scaling_factors
 
 from idaes.core.util import get_solver
-from entrl_config import configuration
+from entrl_config_FTPx import configuration
 
 
 
