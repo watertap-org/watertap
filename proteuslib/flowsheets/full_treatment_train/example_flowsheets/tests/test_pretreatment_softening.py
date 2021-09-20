@@ -23,9 +23,9 @@ def test_solve():
     m = pretreatment_softening.solve()
     m.fs.display()
     assert value(m.fs.stoich_softening_separator_unit.waste_stream_state[0].flow_mol) \
-           == pytest.approx(0.5630, rel=1e-3)
+           == pytest.approx(0.5639516, rel=1e-3)
     assert value(m.fs.stoich_softening_separator_unit.outlet_stream_state[0].flow_mol) \
-           == pytest.approx(54.435, rel=1e-3)
+           == pytest.approx(54.52455, rel=1e-3)
 
 
 @pytest.mark.unit
