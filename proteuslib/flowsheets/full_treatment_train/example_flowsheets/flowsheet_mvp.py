@@ -45,9 +45,6 @@ def build_flowsheet_mvp_NF(m, has_bypass=True, has_desal_feed=False, is_twostage
                            'RO_type': RO_type, 'RO_base': RO_base, 'RO_level': RO_level}
     # build flowsheet
     property_models.build_prop(m, base='ion')
-    # feed_block.build_feed(m, base='ion')
-    # m.fs.feed.properties[0].flow_mol_phase_comp
-    # pretrt_port = {'out': m.fs.feed.outlet}
     pretrt_port = pretreatment.build_pretreatment_NF(m, **kwargs_pretreatment)
 
     property_models.build_prop(m, base=RO_base)
@@ -63,12 +60,7 @@ def build_flowsheet_mvp_NF(m, has_bypass=True, has_desal_feed=False, is_twostage
 
     # add gypsum saturation index calculations
     gypsum_saturation_index.build(m, section='desalination', **kwargs_desalination)
-    # gypsum_saturation_index.build(m, section='pretreatment', **kwargs_desalination)
-
-    return m
-
-def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
-    is_twostage = kwargs_flowsheet['is_twostage']
+    gypsum_saturation_index.build(m, section='pretreatment', **kwargs_desalination)
 
     if is_twostage:
         product_water_sb = m.fs.mixer_permeate.mixed_state[0]
@@ -78,6 +70,9 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
         RO_waste_sb = m.fs.RO.feed_side.properties_out[0]
 
     # touch some properties used in optimization
+    # NOTE: Building the costing here means it gets
+    #       initialized during the simulation phase.
+    #       This helps model stability.
     m.fs.feed.properties[0].flow_vol
     m.fs.feed.properties[0].conc_mol_phase_comp['Liq', 'Ca']
 
@@ -86,6 +81,24 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
 
     product_water_sb.flow_vol
     RO_waste_sb.flow_vol
+
+    m.fs.system_recovery = Expression(
+        expr=product_water_sb.flow_vol / m.fs.feed.properties[0].flow_vol)
+    m.fs.total_work = Expression(expr=m.fs.pump_RO.work_mechanical[0] +
+                                    (m.fs.pump_RO2.work_mechanical[0] if is_twostage else 0.))
+
+    # need load factor from costing_param_block for annual_water_production
+    financials.add_costing_param_block(m.fs)
+    # annual water production
+    m.fs.annual_water_production = Expression(
+        expr=pyunits.convert(product_water_sb.flow_vol, to_units=pyunits.m ** 3 / pyunits.year)
+             * m.fs.costing_param.load_factor)
+    costing.build_costing(m, module=financials, **kwargs_flowsheet)
+
+    return m
+
+def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
+    is_twostage = kwargs_flowsheet['is_twostage']
 
     # scale
     calculate_scaling_factors(m)
@@ -113,7 +126,7 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
                                                                   * m.fs.RO.dens_solvent
                                                                   * m.fs.RO.NDPmin)
 
-    if kwargs_flowsheet['is_twostage']:
+    if is_twostage:
         m.fs.max_allowable_pressure = Param(initialize=120e5, mutable=True, units=pyunits.pascal)
         m.fs.pump_RO2.control_volume.properties_out[0].pressure.unfix()
         m.fs.pump_RO2.control_volume.properties_out[0].pressure.setlb(20e5)
@@ -132,34 +145,20 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
     # add additional constraints
     # fixed system recovery
     m.fs.system_recovery_target = Param(initialize=system_recovery, mutable=True)
-    m.fs.system_recovery = Expression(
-        expr=product_water_sb.flow_vol / m.fs.feed.properties[0].flow_vol)
     m.fs.eq_system_recovery = Constraint(
         expr=m.fs.system_recovery == m.fs.system_recovery_target)
-
-
-    m.fs.total_work = Expression(expr=m.fs.pump_RO.work_mechanical[0] +
-                                    (m.fs.pump_RO2.work_mechanical[0] if is_twostage else 0.))
 
     # saturation index
     m.fs.max_saturation_index = Param(initialize=1, mutable=True)
     m.fs.eq_max_saturation_index_desal = Constraint(
         expr=m.fs.desal_saturation.saturation_index <= m.fs.max_saturation_index)
-    # m.fs.eq_max_saturation_index_pretrt = Constraint(
-    #     expr=m.fs.pretrt_saturation.saturation_index <= m.fs.max_saturation_index)
+    m.fs.eq_max_saturation_index_pretrt = Constraint(
+        expr=m.fs.pretrt_saturation.saturation_index <= m.fs.max_saturation_index)
 
     # m.fs.max_conc_factor_target = Param(initialize=3.5, mutable=True)
     # m.fs.eq_max_conc_NF = Constraint(
     #     expr=m.fs.NF.feed_side.properties_out[0].mass_frac_phase_comp['Liq', 'Ca']
     #     <= m.fs.max_conc_factor_target * m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'Ca'])
-
-    # need load factor from costing_param_block for annual_water_production
-    financials.add_costing_param_block(m.fs)
-    # annual water production
-    m.fs.annual_water_production = Expression(
-        expr=pyunits.convert(product_water_sb.flow_vol, to_units=pyunits.m ** 3 / pyunits.year)
-             * m.fs.costing_param.load_factor)
-    costing.build_costing(m, module=financials, **kwargs_flowsheet)
 
     # set objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
@@ -198,7 +197,7 @@ def solve_flowsheet_mvp_NF(**kwargs):
     # initialize
     optarg = {'nlp_scaling_method': 'user-scaling'}
     pretreatment.initialize_pretreatment_NF(m, **kwargs)
-    # m.fs.pretrt_saturation.properties.initialize()
+    m.fs.pretrt_saturation.properties.initialize(optarg=optarg)
     propagate_state(m.fs.s_pretrt_tb)
     m.fs.tb_pretrt_to_desal.initialize(optarg=optarg)
     propagate_state(m.fs.s_tb_desal)
@@ -215,7 +214,7 @@ def solve_flowsheet_mvp_NF(**kwargs):
     m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs)
     print('desalination solubility index:', value(m.fs.desal_saturation.saturation_index))
-    # print('pretreatment solubility index:', value(m.fs.pretrt_saturation.saturation_index))
+    print('pretreatment solubility index:', value(m.fs.pretrt_saturation.saturation_index))
 
     return m
 
@@ -232,14 +231,16 @@ def solve_optimization(system_recovery=0.75, **kwargs_flowsheet):
     desalination.display_desalination(m, **kwargs_flowsheet)
     costing.display_costing(m, **kwargs_flowsheet)
     print('desalination saturation index:', value(m.fs.desal_saturation.saturation_index))
-    # print('pretreatment saturation index:', value(m.fs.pretrt_saturation.saturation_index))
+    print('pretreatment saturation index:', value(m.fs.pretrt_saturation.saturation_index))
     return m
 
 
 if __name__ == "__main__":
+    import sys
+    recovery = float(sys.argv[1])
     kwargs_flowsheet = {
         'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
     # solve_flowsheet_mvp_NF(**kwargs_flowsheet)
-    m = solve_optimization(system_recovery=0.75, **kwargs_flowsheet)
+    m = solve_optimization(system_recovery=recovery, **kwargs_flowsheet)
