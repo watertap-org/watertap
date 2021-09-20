@@ -33,26 +33,24 @@ from proteuslib.flowsheets.full_treatment_train.util import (solve_with_user_sca
                                                              check_scaling)
 
 """Flowsheet examples that satisfy minimum viable product requirements"""
-def build_flowsheet_mvp_NF(m, has_bypass=True, has_desal_feed=False, is_twostage=False, has_ERD=False,
-                               NF_type='ZO', NF_base='ion',
-                               RO_type='Sep', RO_base='TDS', RO_level='simple'):
+def build_flowsheet_mvp_NF(m, **kwargs):
     """
     Build a flowsheet with NF pretreatment and RO.
     """
     # set up keyword arguments for the sections of treatment train
-    kwargs_pretreatment = {'has_bypass': has_bypass, 'NF_type': NF_type, 'NF_base': NF_base}
-    kwargs_desalination = {'has_desal_feed': has_desal_feed, 'is_twostage': is_twostage, 'has_ERD': has_ERD,
-                           'RO_type': RO_type, 'RO_base': RO_base, 'RO_level': RO_level}
+    kwargs_pretreatment = { k : kwargs[k] for k in ('has_bypass', 'NF_type', 'NF_base',)}
+    kwargs_desalination = { k : kwargs[k] for k in ('has_desal_feed', 'is_twostage', 'has_ERD',
+            'RO_type', 'RO_base', 'RO_level',)}
     # build flowsheet
     property_models.build_prop(m, base='ion')
     pretrt_port = pretreatment.build_pretreatment_NF(m, **kwargs_pretreatment)
 
-    property_models.build_prop(m, base=RO_base)
+    property_models.build_prop(m, base=kwargs['RO_base'])
     desal_port = desalination.build_desalination(m, **kwargs_desalination)
 
     property_models.build_prop(m, base='eNRTL')
 
-    translator_block.build_tb(m, base_inlet=NF_base, base_outlet=RO_base, name_str='tb_pretrt_to_desal')
+    translator_block.build_tb(m, base_inlet=kwargs['NF_base'], base_outlet=kwargs['RO_base'], name_str='tb_pretrt_to_desal')
 
     # set up Arcs between pretreatment and desalination
     m.fs.s_pretrt_tb = Arc(source=pretrt_port['out'], destination=m.fs.tb_pretrt_to_desal.inlet)
@@ -65,12 +63,12 @@ def build_flowsheet_mvp_NF(m, has_bypass=True, has_desal_feed=False, is_twostage
     # new initialization
     m.fs.RO.area.fix(80)
     m.fs.pump_RO.control_volume.properties_out[0].pressure.fix(60e5)
-    if is_twostage:
+    if kwargs['is_twostage']:
         m.fs.RO2.area.fix(20)
         m.fs.pump_RO2.control_volume.properties_out[0].pressure.fix(90e5)
 
     # touch some properties used in optimization
-    if is_twostage:
+    if kwargs['is_twostage']:
         product_water_sb = m.fs.mixer_permeate.mixed_state[0]
         RO_waste_sb = m.fs.RO2.feed_side.properties_out[0]
     else:
@@ -92,7 +90,7 @@ def build_flowsheet_mvp_NF(m, has_bypass=True, has_desal_feed=False, is_twostage
     m.fs.system_recovery = Expression(
         expr=product_water_sb.flow_vol / m.fs.feed.properties[0].flow_vol)
     m.fs.total_work = Expression(expr=m.fs.pump_RO.work_mechanical[0] +
-                                    (m.fs.pump_RO2.work_mechanical[0] if is_twostage else 0.))
+                                    (m.fs.pump_RO2.work_mechanical[0] if kwargs['is_twostage'] else 0.))
 
     # need load factor from costing_param_block for annual_water_production
     financials.add_costing_param_block(m.fs)
@@ -100,7 +98,7 @@ def build_flowsheet_mvp_NF(m, has_bypass=True, has_desal_feed=False, is_twostage
     m.fs.annual_water_production = Expression(
         expr=pyunits.convert(product_water_sb.flow_vol, to_units=pyunits.m ** 3 / pyunits.year)
              * m.fs.costing_param.load_factor)
-    costing.build_costing(m, module=financials, **kwargs_flowsheet)
+    costing.build_costing(m, module=financials, **kwargs)
 
     return m
 
@@ -186,7 +184,7 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
 
 
 def optimize(m):
-    solve_with_user_scaling(m, tee=True, fail_flag=True)
+    solve_with_user_scaling(m, tee=False, fail_flag=True)
 
 
 def solve_flowsheet_mvp_NF(**kwargs):
@@ -251,5 +249,7 @@ if __name__ == "__main__":
         'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
-    #m = solve_flowsheet_mvp_NF(**kwargs_flowsheet)
-    m = solve_optimization(system_recovery=0.719879, **kwargs_flowsheet)
+    if len(sys.argv) == 1:
+        m = solve_flowsheet_mvp_NF(**kwargs_flowsheet)
+    else:
+        m = solve_optimization(system_recovery=float(sys.argv[1]), **kwargs_flowsheet)
