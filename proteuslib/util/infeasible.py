@@ -16,11 +16,10 @@ This module contains utility functions for infeasibility diagnostics of ProteusL
 from math import isclose
 from pyomo.environ import Var, Constraint, value
 
-def print_close_to_bounds(m, rel_tol=1e-04, abs_tol=1e-12):
+def print_variables_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-12):
     """
-    Print variables and constraints which are near their bounds
+    print variables close to their bounds
     """
-
     for var in m.component_data_objects(ctype=Var, descend_into=True):
         if var.fixed:
             continue
@@ -29,6 +28,10 @@ def print_close_to_bounds(m, rel_tol=1e-04, abs_tol=1e-12):
             print(f"No value for Var {var.name}")
         _eval_close(var, val, rel_tol, abs_tol)
 
+def print_constraints_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-5):
+    """
+    print constraints close to their bounds
+    """
     for con in m.component_data_objects(ctype=Constraint,
             descend_into=True, active=True):
         if con.equality:
@@ -37,6 +40,13 @@ def print_close_to_bounds(m, rel_tol=1e-04, abs_tol=1e-12):
         if val is None:
             print(f"Cannot evaluate Constraint {con.name}: missing variable value")
         _eval_close(con, val, rel_tol, abs_tol)
+
+def print_close_to_bounds(m, rel_tol=1e-04, abs_tol=1e-12):
+    """
+    Print variables and constraints which are near their bounds
+    """
+    print_variables_close_to_bounds(m, rel_tol=rel_tol, abs_tol=abs_tol)
+    print_constraints_close_to_bounds(m, rel_tol=rel_tol, abs_tol=abs_tol)
 
 
 def _eval_close(obj, val, rel_tol, abs_tol):
