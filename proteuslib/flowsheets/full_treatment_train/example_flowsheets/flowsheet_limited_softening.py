@@ -245,8 +245,8 @@ def solve_optimization(system_recovery=0.75, max_conc_factor=3, **kwargs_flowshe
 
 if __name__ == "__main__":
     kwargs_flowsheet = {
-        'has_desal_feed': False, 'is_twostage': False, 'has_ERD': False,
+        'has_desal_feed': False, 'is_twostage': False, 'has_ERD': True,
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
     #solve_flowsheet_limited_softening(**kwargs_flowsheet)
-    m = solve_optimization(system_recovery=0.5, max_conc_factor=3, **kwargs_flowsheet)
+    m = solve_optimization(system_recovery=0.5, max_conc_factor=5, **kwargs_flowsheet)
     cost_dict = costing.display_costing(m, **kwargs_flowsheet)

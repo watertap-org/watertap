@@ -342,10 +342,12 @@ def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False)
             self.eq_capital_cost = Constraint(expr=self.capital_cost == 16972 * self.lime_lbs_per_day ** 0.5435 * self.cost_esc)
         elif not cost_capacity:
             # assume fixed cost per lb feed per day based on average of digitized data cited above
-            self.caoh2_unit_capex = Param(initialize=2133.5, mutable=True, units=pyunits.dimensionless, doc="Capex per lb feed per day")
+            #TODO: (DONE) changed from avg fixed cost to minimum fixed cost based on data since unit costs are impractically high for pretreatment
+            self.caoh2_unit_capex = Param(initialize=792.8, mutable=True, units=pyunits.dimensionless, doc="Capex per lb feed per day")
             self.eq_capital_cost = Constraint(expr=self.capital_cost == self.caoh2_unit_capex
                                                    * self.lime_lbs_per_day * self.cost_esc)
         # Calcium hydroxide (lime) cost taken from WaterTAP (2020 USD) which assumes 100% purity
+        # TODO: $/kg cost of lime from WaterTAP seems too high--> consider reducing by ~10x or more
         self.caoh2_cost = Param(initialize=0.15, mutable=True, units=pyunits.kg**-1)
         self.caoh2_purity = Param(initialize=1, mutable=True)
         #TODO: no electricity cost included -- would be based on pump work, expected to be negligible for the time being
