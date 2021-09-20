@@ -93,6 +93,16 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
     #           should be able to unfix m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0]
     #           then add bounds to that var (so you don't exceed a certain flow of lime)
     setup_block_to_solve_lime_dosing_rate(m, target_hardness_mg_per_L = 5000)
+    # TODO: just adding upper and lower bounds as recommended in comment above; may want to revise bound values or comment out all together if not impactful
+    m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol.setlb(1e-6/74.09e-3)
+    m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol.setub(1/74.09e-3)
+
+    # TODO: setup_block_to_solve_lime_dosing_rate fixes hardness which seems potentially problematic;
+    #  here, I am unfixing hardness (or could use set_value() instead of fix()) and applying
+    #  bounds; change back or revise if not impactful
+    m.fs.stoich_softening_separator_unit.hardness.unfix()
+    m.fs.stoich_softening_separator_unit.hardness.setlb(1000)
+    m.fs.stoich_softening_separator_unit.hardness.setub(6000)
 
     m.fs.max_allowable_pressure = Param(initialize=120e5, mutable=True, units=pyunits.pascal)
 
@@ -184,7 +194,9 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
     #
     # Best to use bound_push=1e-10 and mu_init=1e-4
     #       Not doing so will likely result in convergence failures.
-    solve_with_user_scaling(m, tee=True, fail_flag=True, bound_push=1e-10, mu_init=1e-4)
+    # TODO: adjusted mu_init to 1e-6 to match what was in pretreatment_stoich_softening_block.py since I noticed convergence issues,
+    #  contrary to the comment above; consider changing mu_init back to 1e-4 (or another value) if impactful
+    solve_with_user_scaling(m, tee=True, fail_flag=True, bound_push=1e-10, mu_init=1e-6)
 
     return m
 
@@ -207,7 +219,7 @@ def solve_flowsheet_limited_softening(**kwargs):
     # constraint_autoscale_large_jac(m.fs)
 
     # initialize
-    optarg = {'nlp_scaling_method': 'user-scaling'}
+    optarg = {'nlp_scaling_method': 'user-scaling', 'halt_on_ampl_error': 'yes'}
     pretreatment_softening.initialize(m)
     propagate_state(m.fs.s_pretrt_tb)
     m.fs.tb_pretrt_to_desal.initialize(optarg=optarg)
@@ -245,8 +257,9 @@ def solve_optimization(system_recovery=0.75, max_conc_factor=3, **kwargs_flowshe
 
 if __name__ == "__main__":
     kwargs_flowsheet = {
-        'has_desal_feed': False, 'is_twostage': False, 'has_ERD': True,
+        'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
     #solve_flowsheet_limited_softening(**kwargs_flowsheet)
-    m = solve_optimization(system_recovery=0.5, max_conc_factor=5, **kwargs_flowsheet)
+
+    m = solve_optimization(system_recovery=0.8, max_conc_factor=3, **kwargs_flowsheet)
     cost_dict = costing.display_costing(m, **kwargs_flowsheet)
