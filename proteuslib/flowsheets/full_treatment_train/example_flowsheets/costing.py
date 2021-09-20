@@ -25,6 +25,7 @@ def build_costing(m, module=financials, **kwargs):
     m : model
     module : financials module
     '''
+    crf = m.fs.costing_param.factor_capital_annualization
 
     # call get_costing for each unit model
     #get_costing_sweep(m.fs, module=financials)
@@ -58,15 +59,26 @@ def build_costing(m, module=financials, **kwargs):
     if hasattr(m.fs, 'ERD'):
         m.fs.ERD.get_costing(module=module, section='primary', pump_type='pressure exchanger')
     # Pretreatment
-    if hasattr(m.fs,'stoich_softening_mixer_unit'): #TODO: check how pretreatment by lime softening was implemented on flowsheet (once added in)
+    if hasattr(m.fs,'stoich_softening_mixer_unit'):
         print('FOUND LIME SOFTENER')
         m.fs.stoich_softening_mixer_unit.get_costing(module=module, section='pretreatment', mixer_type="lime_softening",cost_capacity=False)
-
+        m.fs.lime_softening_unit_capex = Expression(expr=m.fs.stoich_softening_mixer_unit.costing.capital_cost/m.fs.annual_water_production *crf)
+        m.fs.lime_softening_unit_opex = Expression(expr=m.fs.stoich_softening_mixer_unit.costing.operating_cost / m.fs.annual_water_production)
+    else:
+        m.fs.lime_softening_unit_capex = Expression(expr=0)
+        m.fs.lime_softening_unit_opex = Expression(expr=0)
     if hasattr(m.fs,'ideal_naocl_mixer_unit'): #TODO: check how posttreatment (chlorination) was implemented on flowsheet (once added in)
         # print('FOUND CHLORINATION UNIT')
         m.fs.ideal_naocl_mixer_unit.get_costing(module=module, section='post_treatment', mixer_type='naocl_mixer')
+        m.fs.chlorination_unit_capex = Expression(expr=m.fs.ideal_naocl_mixer_unit.costing.capital_cost/m.fs.annual_water_production *crf)
+        m.fs.chlorination_unit_opex = Expression(expr=m.fs.ideal_naocl_mixer_unit.costing.operating_cost / m.fs.annual_water_production)
+    else:
+        m.fs.chlorination_unit_capex = Expression(expr=0)
+        m.fs.chlorination_unit_opex = Expression(expr=0)
 
-
+    # TODO: Solver currently fails to converge when trying to account for permeate mixer costing (two-stage not converging)
+    if hasattr(m.fs,'mixer_permeate'):
+        m.fs.mixer_permeate.get_costing(module=module, section='primary')
     # call get_system_costing for whole flowsheet
     module.get_system_costing(m.fs)
 
@@ -128,14 +140,18 @@ def display_costing(m, **kwargs):
         'Total OPEX': m.fs.costing.operating_cost_total / m.fs.annual_water_production,  # Total OPEX
         'Labor & Maintenance Costs': m.fs.costing.operating_cost_labor_maintenance
                                      / m.fs.annual_water_production,  # TODO: Presumably for RO Plant - may revise; separate chemical costs and add membrane cleaning
-        'Total Chemical Costs': dummy_val,
+        # 'Total Chemical Costs': dummy_val,
         'Total Electricity Cost': m.fs.costing.electricity_cost_total / m.fs.annual_water_production,  # TODO: should other energy costs be accounted for, i.e., pretreatment? probably
         'Total Membrane Replacement Cost': (m.fs.NF.costing.operating_cost
                                             + m.fs.RO.costing.operating_cost
                                             + m.fs.RO2.costing.operating_cost) / m.fs.annual_water_production,
         'Total Pretreatment Cost': m.fs.costing.pretreatment_cost_total / m.fs.annual_water_production,
         'Total Primary Cost': m.fs.costing.primary_cost_total / m.fs.annual_water_production,
-        'Total Post-treatment Cost': m.fs.costing.post_treatment_cost_total / m.fs.annual_water_production
+        'Total Post-treatment Cost': m.fs.costing.post_treatment_cost_total / m.fs.annual_water_production,
+        'Lime softener CAPEX': m.fs.lime_softening_unit_capex,
+        'Lime softener OPEX': m.fs.lime_softening_unit_opex,
+        'Chlorination CAPEX': m.fs.chlorination_unit_capex,
+        'Chlorination OPEX': m.fs.chlorination_unit_opex,
 
     }
 

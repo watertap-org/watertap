@@ -17,8 +17,6 @@ pyunits.load_definitions_from_strings(['USD = [currency]'])
 pyunits.USD # dollars
 
 
-# TODO: choose year --> 2018 probably (use CEPCI)
-#  mixers, splitters, pumps, erds, RO, NF, stoich reactor (lime softening), equilibrium reactor (chlorination)
 
 def add_costing_param_block(self):
     self.costing_param = Block()
@@ -111,8 +109,11 @@ def get_system_costing(self):
                 primary_cost_var_lst.append(b_unit.costing.primary)
             if hasattr(b_unit.costing, 'post_treatment'):
                 post_treatment_cost_var_lst.append(b_unit.costing.post_treatment)
-            if 'electricity_cost' in str(b_unit.costing.eq_operating_cost.body):
-                electricity_cost_var_lst.append(b_unit.costing.operating_cost)
+            if hasattr(b_unit.costing,'eq_operating_cost') and hasattr(b_unit.costing.eq_operating_cost,'body'):
+                if 'electricity_cost' in str(b_unit.costing.eq_operating_cost.body):
+                    electricity_cost_var_lst.append(b_unit.costing.operating_cost)
+            else:
+                print(b_unit)
     operating_cost_var_lst.append(b.operating_cost_labor_maintenance)
 
     b.eq_capital_cost_total = Constraint(
@@ -231,12 +232,12 @@ def Separator_costing(self, section=None, cost_capacity=False):
                  * self.cost_esc / (pyunits.m ** 3 / pyunits.s))
     elif not cost_capacity:
         # assume fixed cost per L/s based on average of cost capacity curve data
-        self.mixer_unit_capex = Param(initialize=2165.3, mutable=True, units=pyunits.dimensionless,
+        self.separator_unit_capex = Param(initialize=2165.3, mutable=True, units=pyunits.dimensionless,
                                       doc="Capex per daily plant capacity")
-        self.eq_capital_cost = Constraint(expr=self.capital_cost == self.mixer_unit_capex
+        self.eq_capital_cost = Constraint(expr=self.capital_cost == self.separator_unit_capex
                                                * b_m.outlet_state[0].flow_vol * 1000 * self.cost_esc
                                                * pyunits.s * pyunits.m ** -3)
-
+    self.eq_operating_cost = Constraint()
     self.operating_cost.fix(0)
 
 
@@ -259,15 +260,15 @@ def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False)
             self.eq_capital_cost = Constraint(
                 expr=self.capital_cost == (self.a
                                            + self.b
-                                           * (b_m.outlet_state[0].flow_vol*1000) ** self.n) * self.Fm
+                                           * (b_m.mixed_state[0].flow_vol*1000) ** self.n) * self.Fm
                                            * self.cost_esc / (pyunits.m**3/pyunits.s))
         elif not cost_capacity:
             # assume fixed cost per L/s based on average of cost capacity curve data
             self.mixer_unit_capex = Param(initialize=2165.3, mutable=True, units=pyunits.dimensionless, doc="Capex per daily plant capacity")
             self.eq_capital_cost = Constraint(expr=self.capital_cost == self.mixer_unit_capex
-                                              * b_m.outlet_state[0].flow_vol*1000 * self.cost_esc
+                                              * b_m.mixed_state[0].flow_vol*1000 * self.cost_esc
                                                    * pyunits.s * pyunits.m**-3)
-
+        self.eq_operating_cost = Expression(expr=self.operating_cost)
         self.operating_cost.fix(0)
 
     elif mixer_type == 'naocl_mixer':
@@ -305,7 +306,8 @@ def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False)
                                                  * 74.44e-3 * pyunits.kg / pyunits.mol
                                                  * self.naocl_cost
                                                  / self.naocl_purity
-                                                 * 3600 * 8760 * pyunits.s)
+                                                 * 3600 * 8760 * pyunits.s
+                                                 * b_fs.costing_param.load_factor)
 
     elif mixer_type == 'lime_softening':
         '''Cost estimation of lime addition for precipitation step in pretreatment
@@ -352,7 +354,8 @@ def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False)
                                                  * 74.093e-3 * pyunits.kg / pyunits.mol
                                                  * self.caoh2_cost
                                                  / self.caoh2_purity
-                                                 * 3600 * 8760 * pyunits.s)
+                                                 * 3600 * 8760 * pyunits.s
+                                                 * b_fs.costing_param.load_factor)
     else:
         raise NotImplementedError("mixer_type of {mixer_type} is not implemented in the financials file"
                                   "".format(mixer_type=mixer_type))
