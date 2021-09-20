@@ -62,6 +62,10 @@ def build_flowsheet_mvp_NF(m, has_bypass=True, has_desal_feed=False, is_twostage
     gypsum_saturation_index.build(m, section='desalination', **kwargs_desalination)
     gypsum_saturation_index.build(m, section='pretreatment', **kwargs_desalination)
 
+    # new initialization
+    m.fs.NF.area.fix(325)
+
+    # touch some properties used in optimization
     if is_twostage:
         product_water_sb = m.fs.mixer_permeate.mixed_state[0]
         RO_waste_sb = m.fs.RO2.feed_side.properties_out[0]
@@ -69,7 +73,6 @@ def build_flowsheet_mvp_NF(m, has_bypass=True, has_desal_feed=False, is_twostage
         product_water_sb = m.fs.RO.permeate_side.properties_mixed[0]
         RO_waste_sb = m.fs.RO.feed_side.properties_out[0]
 
-    # touch some properties used in optimization
     # NOTE: Building the costing here means it gets
     #       initialized during the simulation phase.
     #       This helps model stability.
@@ -237,10 +240,10 @@ def solve_optimization(system_recovery=0.75, **kwargs_flowsheet):
 
 if __name__ == "__main__":
     import sys
-    recovery = float(sys.argv[1])
     kwargs_flowsheet = {
         'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
-    # solve_flowsheet_mvp_NF(**kwargs_flowsheet)
+    #solve_flowsheet_mvp_NF(**kwargs_flowsheet)
+    recovery = float(sys.argv[1])
     m = solve_optimization(system_recovery=recovery, **kwargs_flowsheet)
