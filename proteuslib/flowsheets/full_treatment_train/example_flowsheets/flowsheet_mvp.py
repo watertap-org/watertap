@@ -63,7 +63,11 @@ def build_flowsheet_mvp_NF(m, has_bypass=True, has_desal_feed=False, is_twostage
     gypsum_saturation_index.build(m, section='pretreatment', **kwargs_desalination)
 
     # new initialization
-    m.fs.NF.area.fix(325)
+    m.fs.RO.area.fix(80)
+    m.fs.pump_RO.control_volume.properties_out[0].pressure.fix(60e5)
+    if is_twostage:
+        m.fs.RO2.area.fix(20)
+        m.fs.pump_RO2.control_volume.properties_out[0].pressure.fix(90e5)
 
     # touch some properties used in optimization
     if is_twostage:
@@ -152,16 +156,16 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
         expr=m.fs.system_recovery == m.fs.system_recovery_target)
 
     # saturation index
-    m.fs.max_saturation_index = Param(initialize=1, mutable=True)
-    m.fs.eq_max_saturation_index_desal = Constraint(
-        expr=m.fs.desal_saturation.saturation_index <= m.fs.max_saturation_index)
-    m.fs.eq_max_saturation_index_pretrt = Constraint(
-        expr=m.fs.pretrt_saturation.saturation_index <= m.fs.max_saturation_index)
+    #m.fs.max_saturation_index = Param(initialize=1.0, mutable=True)
+    #m.fs.eq_max_saturation_index_desal = Constraint(
+    #    expr=m.fs.desal_saturation.saturation_index <= m.fs.max_saturation_index)
+    #m.fs.eq_max_saturation_index_pretrt = Constraint(
+    #    expr=m.fs.pretrt_saturation.saturation_index <= m.fs.max_saturation_index)
 
-    # m.fs.max_conc_factor_target = Param(initialize=3.5, mutable=True)
-    # m.fs.eq_max_conc_NF = Constraint(
-    #     expr=m.fs.NF.feed_side.properties_out[0].mass_frac_phase_comp['Liq', 'Ca']
-    #     <= m.fs.max_conc_factor_target * m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'Ca'])
+    m.fs.max_conc_factor_target = Param(initialize=3.5, mutable=True)
+    m.fs.eq_max_conc_NF = Constraint(
+        expr=m.fs.NF.feed_side.properties_out[0].mass_frac_phase_comp['Liq', 'Ca']
+        <= m.fs.max_conc_factor_target * m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'Ca'])
 
     # set objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
@@ -218,6 +222,8 @@ def solve_flowsheet_mvp_NF(**kwargs):
     desalination.display_desalination(m, **kwargs)
     print('desalination solubility index:', value(m.fs.desal_saturation.saturation_index))
     print('pretreatment solubility index:', value(m.fs.pretrt_saturation.saturation_index))
+    print('water recovery:', value(m.fs.system_recovery))
+    print('LCOW:', value(m.fs.costing.LCOW))
 
     return m
 
@@ -235,6 +241,7 @@ def solve_optimization(system_recovery=0.75, **kwargs_flowsheet):
     costing.display_costing(m, **kwargs_flowsheet)
     print('desalination saturation index:', value(m.fs.desal_saturation.saturation_index))
     print('pretreatment saturation index:', value(m.fs.pretrt_saturation.saturation_index))
+    print('water recovery:', value(m.fs.system_recovery))
     return m
 
 
@@ -244,6 +251,5 @@ if __name__ == "__main__":
         'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
-    #solve_flowsheet_mvp_NF(**kwargs_flowsheet)
-    recovery = float(sys.argv[1])
-    m = solve_optimization(system_recovery=recovery, **kwargs_flowsheet)
+    #m = solve_flowsheet_mvp_NF(**kwargs_flowsheet)
+    m = solve_optimization(system_recovery=0.719879, **kwargs_flowsheet)
