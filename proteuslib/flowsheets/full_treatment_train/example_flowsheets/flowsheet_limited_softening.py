@@ -32,6 +32,11 @@ from proteuslib.flowsheets.full_treatment_train.example_flowsheets import (pretr
 from proteuslib.flowsheets.full_treatment_train.example_models import property_models
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
+# Added import statements for testing.
+#       Need the pretreatment_stoich_softening_block functions to setup
+#       flowsheet to solve for lime dosage
+from idaes.core.util import scaling as iscale
+from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.pretreatment_stoich_softening_block import *
 
 def build_flowsheet_limited_softening(m, has_desal_feed=False, is_twostage=False, has_ERD=False,
                                       RO_type='Sep', RO_base='TDS', RO_level='simple'):
@@ -58,6 +63,7 @@ def build_flowsheet_limited_softening(m, has_desal_feed=False, is_twostage=False
 
 
 def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flowsheet):
+
     is_twostage = kwargs_flowsheet['is_twostage']
 
     if is_twostage:
@@ -80,14 +86,13 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
     # scale
     calculate_scaling_factors(m)
 
-    # unfix variables
-    m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0].unfix()
-    m.fs.stoich_softening_mixer_unit.dosing_rate.setlb(1e-4)
-    m.fs.stoich_softening_mixer_unit.dosing_rate.setlb(1)
-
-    # previously unbounded variable TODO: bound in build
-    m.fs.stoich_softening_mixer_unit.dosing_rate.setlb(10)
-    m.fs.stoich_softening_mixer_unit.dosing_rate.setub(1e4)
+    # Call a function to unfix m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0]
+    #       and fix m.fs.stoich_softening_separator_unit.hardness to a specified level
+    #
+    #   NOTE: Once a costing function is in place for dosing_rate of lime, you
+    #           should be able to unfix m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0]
+    #           then add bounds to that var (so you don't exceed a certain flow of lime)
+    setup_block_to_solve_lime_dosing_rate(m, target_hardness_mg_per_L = 5000)
 
     m.fs.max_allowable_pressure = Param(initialize=120e5, mutable=True, units=pyunits.pascal)
 
@@ -162,8 +167,24 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
     # set objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
-    check_dof(m, dof_expected=4 if is_twostage else 2)
-    solve_with_user_scaling(m, tee=False, fail_flag=True)
+    # NOTE: You will want to reset this after changing the costing function
+    #check_dof(m, dof_expected=4 if is_twostage else 2)
+
+    # NOTE: Rescaling may help (it helps with the chem stuff at least)
+    #iscale.constraint_autoscale_large_jac(m.fs.stoich_softening_mixer_unit)
+    #iscale.constraint_autoscale_large_jac(m.fs.stoich_softening_reactor_unit)
+    #iscale.constraint_autoscale_large_jac(m.fs.stoich_softening_separator_unit)
+    #iscale.constraint_autoscale_large_jac(m.fs.tb_pretrt_to_desal)
+    #iscale.constraint_autoscale_large_jac(m)
+
+    # YOU MUST add bound_push and mu_init args to the solver when
+    #       using Chemistry in your flowsheets. This is because
+    #       ipopt will throw out you initialized small values
+    #       when they are close to the bounds.
+    #
+    # Best to use bound_push=1e-10 and mu_init=1e-4
+    #       Not doing so will likely result in convergence failures.
+    solve_with_user_scaling(m, tee=True, fail_flag=True, bound_push=1e-10, mu_init=1e-4)
 
     return m
 
@@ -196,10 +217,9 @@ def solve_flowsheet_limited_softening(**kwargs):
     var_gen = badly_scaled_var_generator(m)
     for (v, val) in var_gen:
         print(v.name, val)
-    assert False
 
     check_dof(m)
-    solve_with_user_scaling(m, tee=False, fail_flag=True)
+    solve_with_user_scaling(m, tee=True, fail_flag=True)
 
     pretreatment_softening.display(m)
     m.fs.tb_pretrt_to_desal.report()
@@ -225,8 +245,8 @@ def solve_optimization(system_recovery=0.75, max_conc_factor=3, **kwargs_flowshe
 
 if __name__ == "__main__":
     kwargs_flowsheet = {
-        'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
+        'has_desal_feed': False, 'is_twostage': False, 'has_ERD': False,
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
-    solve_flowsheet_limited_softening(**kwargs_flowsheet)
-    # m = solve_optimization(system_recovery=0.5, max_conc_factor=3, **kwargs_flowsheet)
+    #solve_flowsheet_limited_softening(**kwargs_flowsheet)
+    m = solve_optimization(system_recovery=0.5, max_conc_factor=3, **kwargs_flowsheet)
     # cost_dict = costing.display_costing(m, **kwargs_flowsheet)
