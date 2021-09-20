@@ -557,7 +557,7 @@ def set_stoich_softening_reactor_inlets(model, dosage_of_lime_mg_per_L = 140,
     model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "SO4_2-"].set_value(x_so4)
 
     x_cl = inlet_excess_chlorine_ppm*inlet_water_density_kg_per_L/96060/total_molar_density
-    model.fs.stoich_softening_mixer_unit.inlet_stream.mole_frac_comp[0, "Cl_-"].set_value(x_cl)
+    model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Cl_-"].set_value(x_cl)
 
     total_salt = value(model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"])*total_molar_density*101
     total_salt += value(model.fs.stoich_softening_reactor_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"])*total_molar_density*85.31
@@ -636,7 +636,7 @@ def set_stoich_softening_separator_inlets(model, residual_lime_mg_per_L = 2,
     model.fs.stoich_softening_separator_unit.inlet.mole_frac_comp[0, "SO4_2-"].set_value(x_so4)
 
     x_cl = inlet_excess_chlorine_ppm*inlet_water_density_kg_per_L/96060/total_molar_density
-    model.fs.stoich_softening_mixer_unit.inlet_stream.mole_frac_comp[0, "Cl_-"].set_value(x_cl)
+    model.fs.stoich_softening_separator_unit.inlet.mole_frac_comp[0, "Cl_-"].set_value(x_cl)
 
     total_salt = value(model.fs.stoich_softening_separator_unit.inlet.mole_frac_comp[0, "Ca(HCO3)2"])*total_molar_density*101
     total_salt += value(model.fs.stoich_softening_separator_unit.inlet.mole_frac_comp[0, "Mg(HCO3)2"])*total_molar_density*85.31
