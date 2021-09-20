@@ -63,7 +63,7 @@ def build_flowsheet_mvp_NF(m, has_bypass=True, has_desal_feed=False, is_twostage
 
     # add gypsum saturation index calculations
     gypsum_saturation_index.build(m, section='desalination', **kwargs_desalination)
-    gypsum_saturation_index.build(m, section='pretreatment', **kwargs_desalination)
+    # gypsum_saturation_index.build(m, section='pretreatment', **kwargs_desalination)
 
     return m
 
@@ -198,7 +198,7 @@ def solve_flowsheet_mvp_NF(**kwargs):
     # initialize
     optarg = {'nlp_scaling_method': 'user-scaling'}
     pretreatment.initialize_pretreatment_NF(m, **kwargs)
-    m.fs.pretrt_saturation.properties.initialize()
+    # m.fs.pretrt_saturation.properties.initialize()
     propagate_state(m.fs.s_pretrt_tb)
     m.fs.tb_pretrt_to_desal.initialize(optarg=optarg)
     propagate_state(m.fs.s_tb_desal)
@@ -215,7 +215,7 @@ def solve_flowsheet_mvp_NF(**kwargs):
     m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs)
     print('desalination solubility index:', value(m.fs.desal_saturation.saturation_index))
-    print('pretreatment solubility index:', value(m.fs.pretrt_saturation.saturation_index))
+    # print('pretreatment solubility index:', value(m.fs.pretrt_saturation.saturation_index))
 
     return m
 
@@ -231,8 +231,8 @@ def solve_optimization(system_recovery=0.75, **kwargs_flowsheet):
     m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs_flowsheet)
     costing.display_costing(m, **kwargs_flowsheet)
-    print('desalination solubility index:', value(m.fs.desal_saturation.saturation_index))
-    # print('pretreatment solubility index:', value(m.fs.pretrt_saturation.saturation_index))
+    print('desalination saturation index:', value(m.fs.desal_saturation.saturation_index))
+    # print('pretreatment saturation index:', value(m.fs.pretrt_saturation.saturation_index))
     return m
 
 
@@ -242,4 +242,4 @@ if __name__ == "__main__":
         'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
     # solve_flowsheet_mvp_NF(**kwargs_flowsheet)
-    m = solve_optimization(system_recovery=0.70, **kwargs_flowsheet)
+    m = solve_optimization(system_recovery=0.75, **kwargs_flowsheet)
