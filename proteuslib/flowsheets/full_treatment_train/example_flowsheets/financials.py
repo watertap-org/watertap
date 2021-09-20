@@ -45,6 +45,9 @@ def add_costing_param_block(self):
     b.RO_mem_cost = Var(
         initialize=30,
         doc='Membrane cost [$/m2]')
+    b.RO_high_pressure_mem_cost = Var(
+        initialize=75,
+        doc='Membrane cost [$/m2]')
     b.NF_mem_cost = Var(
         initialize=15,
         doc='Membrane cost [$/m2]')
@@ -152,7 +155,7 @@ def _make_vars(self, section=None):
     self.cost_esc = Param(initialize=1, mutable=True, units=pyunits.dimensionless)
 
 
-def ReverseOsmosis_costing(self, section='primary'):
+def ReverseOsmosis_costing(self, RO_type='standard', section='primary'):
     _make_vars(self, section)
 
     b_RO = self.parent_block()
@@ -160,8 +163,15 @@ def ReverseOsmosis_costing(self, section='primary'):
     # b_section = getattr(self, section)
 
     # capital cost
-    self.eq_capital_cost = Constraint(
-        expr=self.capital_cost == b_fs.costing_param.RO_mem_cost * b_RO.area / pyunits.m ** 2)
+    if RO_type == 'standard':
+        self.eq_capital_cost = Constraint(
+            expr=self.capital_cost == b_fs.costing_param.RO_mem_cost * b_RO.area / pyunits.m ** 2)
+    elif RO_type == 'high pressure':
+        self.eq_capital_cost = Constraint(
+            expr=self.capital_cost == b_fs.costing_param.RO_high_pressure_mem_cost * b_RO.area / pyunits.m ** 2)
+    else:
+        raise NotImplementedError("RO type of {RO_type} is not implemented in the financials file"
+                                  "".format(RO_type=RO_type))
 
     # operating cost
     self.eq_operating_cost = Constraint(
@@ -295,10 +305,13 @@ def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False)
                                                  * self.caoh2_cost
                                                  / self.caoh2_purity
                                                  * 3600 * 8760 * pyunits.s)
-
+    else:
+        raise NotImplementedError("mixer_type of {mixer_type} is not implemented in the financials file"
+                                  "".format(mixer_type=mixer_type))
 
     # # Treatment section cost
     # self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
+
 
 def pressure_changer_costing(self, pump_type="centrifugal", section=None, cost_capacity=False):
     _make_vars(self, section)
@@ -310,7 +323,7 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None, cost_c
     self.purchase_cost = Var()
     self.cp_cost_eq = Constraint(expr=self.purchase_cost == 0)
 
-    if pump_type == 'High pressure':
+    if pump_type == 'high pressure':
         #TODO: add cost_capacity relationship
 
         # capital cost
@@ -322,7 +335,7 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None, cost_c
             expr=self.operating_cost == (b_PC.work_mechanical[0] / pyunits.W
                                          * 3600 * 24 * 365 * b_fs.costing_param.load_factor)
                  * b_fs.costing_param.electricity_cost / 3600 / 1000)
-    elif pump_type == 'Low pressure':
+    elif pump_type == 'low pressure':
         if cost_capacity:
             '''Ref: Bartholomew et al. (2020)-Cost optimization of high recovery single stage gap membrane distillation
             Capex=(a + b*S**n)*Fm
@@ -358,7 +371,7 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None, cost_c
                  * b_fs.costing_param.electricity_cost / 3600 / 1000)
 
 
-    elif pump_type == 'Pressure exchanger':
+    elif pump_type == 'pressure exchanger':
         # capital cost
         b_cv_in = b_PC.control_volume.properties_in[0]
         self.eq_capital_cost = Constraint(
@@ -371,6 +384,10 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None, cost_c
             expr=self.operating_cost == (b_PC.work_mechanical[0] / pyunits.W
                                          * 3600 * 24 * 365 * b_fs.costing_param.load_factor)
                  * b_fs.costing_param.electricity_cost / 3600 / 1000)
+
+    else:
+        raise NotImplementedError("pump type of {pump_type} is not implemented in the financials file"
+                                  "".format(pump_type=pump_type))
 
     # # Treatment section cost
     # self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)

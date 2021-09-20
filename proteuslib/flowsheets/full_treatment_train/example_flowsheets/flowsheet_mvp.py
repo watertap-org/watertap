@@ -98,11 +98,9 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
     m.fs.NF.area.setlb(10)
     m.fs.NF.area.setub(1000)
 
-    m.fs.max_allowable_pressure = Param(initialize=120e5, mutable=True, units=pyunits.pascal)
-
     m.fs.pump_RO.control_volume.properties_out[0].pressure.unfix()
     m.fs.pump_RO.control_volume.properties_out[0].pressure.setlb(20e5)
-    m.fs.pump_RO.control_volume.properties_out[0].pressure.setub(m.fs.max_allowable_pressure)
+    m.fs.pump_RO.control_volume.properties_out[0].pressure.setub(75e5)
 
     m.fs.RO.area.unfix()
     m.fs.RO.area.setlb(10)
@@ -115,6 +113,7 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
                                                                   * m.fs.RO.NDPmin)
 
     if kwargs_flowsheet['is_twostage']:
+        m.fs.max_allowable_pressure = Param(initialize=120e5, mutable=True, units=pyunits.pascal)
         m.fs.pump_RO2.control_volume.properties_out[0].pressure.unfix()
         m.fs.pump_RO2.control_volume.properties_out[0].pressure.setlb(20e5)
         m.fs.pump_RO2.control_volume.properties_out[0].pressure.setub(m.fs.max_allowable_pressure)
@@ -169,7 +168,7 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
             >= m.fs.RO2.permeate_side.properties_mixed[0].flow_vol_phase['Liq'])
 
     check_dof(m, dof_expected=5 if is_twostage else 3)
-    solve_with_user_scaling(m, tee=False, fail_flag=True)
+    # solve_with_user_scaling(m, tee=False, fail_flag=True)
 
 def optimize(m):
     solve_with_user_scaling(m, tee=False, fail_flag=True)
@@ -215,6 +214,7 @@ def solve_optimization(system_recovery=0.75, **kwargs_flowsheet):
 
     print('\n****** Optimization *****\n')
     set_up_optimization(m, system_recovery=system_recovery, **kwargs_flowsheet)
+    optimize(m)
 
     pretreatment.display_pretreatment_NF(m, **kwargs_flowsheet)
     m.fs.tb_pretrt_to_desal.report()
@@ -229,4 +229,4 @@ if __name__ == "__main__":
         'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
     # solve_flowsheet_mvp_NF(**kwargs_flowsheet)
-    m = solve_optimization(system_recovery=0.76, **kwargs_flowsheet)
+    m = solve_optimization(system_recovery=0.75, **kwargs_flowsheet)

@@ -37,7 +37,7 @@ def build_costing(m, module=financials, **kwargs):
         elif kwargs['NF_type'] == 'Sep':
             raise NotImplementedError("get_costing will not be implemented for the NF separator model.")
     if hasattr(m.fs, 'pump_NF'):
-        m.fs.pump_NF.get_costing(module=module, section='pretreatment', pump_type="Low pressure", cost_capacity=False)
+        m.fs.pump_NF.get_costing(module=module, section='pretreatment', pump_type="low pressure", cost_capacity=False)
     # Reverse Osmosis
     if hasattr(m.fs, 'RO'):
         if kwargs['RO_type'] == '0D':
@@ -46,17 +46,17 @@ def build_costing(m, module=financials, **kwargs):
             raise NotImplementedError("get_costing will not be implemented for the RO separator model.")
     # Stage 2 RO
     if hasattr(m.fs, 'RO2'):
-        m.fs.RO2.get_costing(module=module, section='primary')
+        m.fs.RO2.get_costing(module=module, RO_type='high pressure', section='primary')
 
     # Pump
     if hasattr(m.fs, 'pump_RO'):
-        m.fs.pump_RO.get_costing(module=module, section='primary', pump_type="High pressure")
+        m.fs.pump_RO.get_costing(module=module, section='primary', pump_type="high pressure")
     # Stage 2 pump
     if hasattr(m.fs, 'pump_RO2'):
-        m.fs.pump_RO2.get_costing(module=module, section='primary', pump_type="High pressure")
+        m.fs.pump_RO2.get_costing(module=module, section='primary', pump_type="high pressure")
     # ERD
     if hasattr(m.fs, 'ERD'):
-        m.fs.ERD.get_costing(module=module, section='primary', pump_type='Pressure exchanger')
+        m.fs.ERD.get_costing(module=module, section='primary', pump_type='pressure exchanger')
     # Pretreatment
     if hasattr(m.fs,'stoich_softening_mixer_unit'): #TODO: check how pretreatment by lime softening was implemented on flowsheet (once added in)
         # print('FOUND LIME SOFTENER')

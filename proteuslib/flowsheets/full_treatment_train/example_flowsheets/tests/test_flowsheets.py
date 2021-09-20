@@ -80,4 +80,4 @@ def test_flowsheet_mvp_cost_optimization():
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
     m = flowsheet_mvp.solve_optimization(system_recovery=0.76, **kwargs_flowsheet)
     assert value(m.fs.mixer_permeate.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.7576, rel=1e-3)
-    assert value(m.fs.costing.LCOW) == pytest.approx(0.6582, rel=1e-3)
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.6716, rel=1e-3)
