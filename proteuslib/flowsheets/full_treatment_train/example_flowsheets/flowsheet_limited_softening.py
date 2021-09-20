@@ -249,4 +249,4 @@ if __name__ == "__main__":
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
     #solve_flowsheet_limited_softening(**kwargs_flowsheet)
     m = solve_optimization(system_recovery=0.5, max_conc_factor=3, **kwargs_flowsheet)
-    # cost_dict = costing.display_costing(m, **kwargs_flowsheet)
+    cost_dict = costing.display_costing(m, **kwargs_flowsheet)

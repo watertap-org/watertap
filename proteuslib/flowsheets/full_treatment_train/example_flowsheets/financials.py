@@ -150,7 +150,10 @@ def _make_vars(self, section=None):
     if section not in ['pretreatment', 'primary', 'post_treatment']:
         raise NotImplementedError
     else:
-        setattr(self, section, Expression(expr=self.capital_cost + self.operating_cost))
+        b = self.parent_block()
+        b_fs = b.parent_block()
+        crf = b_fs.costing_param.factor_capital_annualization
+        setattr(self, section, Expression(expr=self.capital_cost * crf + self.operating_cost))
 
     self.cost_esc = Param(initialize=1, mutable=True, units=pyunits.dimensionless)
 
