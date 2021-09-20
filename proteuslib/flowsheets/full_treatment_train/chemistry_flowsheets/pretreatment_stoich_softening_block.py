@@ -862,7 +862,9 @@ def display_results_of_stoich_softening_separator(unit):
     print()
 
 
-def build_stoich_softening_block(model, include_feed=False, expand_arcs=False):
+def build_stoich_softening_block(model, include_feed=False, expand_arcs=False,
+                                frac_excess_lime=0.01, frac_used_for_Ca_removal=0.99,
+                                solids_removal_frac=0.99):
     # Add properties to model
     build_stoich_softening_prop(model)
 
@@ -870,10 +872,11 @@ def build_stoich_softening_block(model, include_feed=False, expand_arcs=False):
     build_stoich_softening_mixer_unit(model)
 
     # Add reactor to the model
-    build_stoich_softening_reactor_unit(model)
+    build_stoich_softening_reactor_unit(model, frac_excess_lime=frac_excess_lime,
+                                        frac_used_for_Ca_removal=frac_used_for_Ca_removal)
 
     # Add separator to the model
-    build_stoich_softening_separator_unit(model)
+    build_stoich_softening_separator_unit(model, solids_removal_frac=solids_removal_frac)
 
     if include_feed == True:
         # add the feed to the model
