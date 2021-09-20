@@ -70,7 +70,7 @@ def build_pretreatment_NF(m, has_bypass=True, NF_type='ZO', NF_base='ion'):
         m.fs.s_pretrt_splitter_mixer = Arc(source=m.fs.splitter.bypass, destination=m.fs.mixer.bypass)
         if NF_type == 'ZO':
             m.fs.s_pretrt_splitter_pumpNF = Arc(source=m.fs.splitter.pretreatment, destination=m.fs.pump_NF.inlet)
-            m.fs.s_pretrt_pumpNF_NF = Arc(source=m.fs.pump_NF.inlet, destination=m.fs.NF.inlet)
+            m.fs.s_pretrt_pumpNF_NF = Arc(source=m.fs.pump_NF.outlet, destination=m.fs.NF.inlet)
         else:
             m.fs.s_pretrt_splitter_NF = Arc(source=m.fs.splitter.pretreatment, destination=m.fs.NF.inlet)
         m.fs.s_pretrt_NF_mixer = Arc(source=m.fs.NF.permeate, destination=m.fs.mixer.pretreatment)
