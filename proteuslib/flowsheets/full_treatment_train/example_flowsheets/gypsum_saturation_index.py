@@ -16,22 +16,21 @@
 from pyomo.environ import Block, Var, Expression, Constraint, value, units as pyunits
 from pyomo.environ import units as pyunits
 
-def build_desalination_saturation(m, **kwargs):
-    m.fs.desal_saturation = Block()
-    m.fs.desal_saturation.properties = m.fs.prop_eNRTL.build_state_block([0], default={})
-    sb_eNRTL = m.fs.desal_saturation.properties[0]
+def build(m, section='desalination', **kwargs):
+    if section == 'desalination':
+        m.fs.desal_saturation = Block()
+        m.fs.desal_saturation.properties = m.fs.prop_eNRTL.build_state_block([0], default={})
+        sb_eNRTL = m.fs.desal_saturation.properties[0]
+    elif section == 'pretreatment':
+        m.fs.pretrt_saturation = Block()
+        m.fs.pretrt_saturation.properties = m.fs.prop_eNRTL.build_state_block([0], default={})
+        sb_eNRTL = m.fs.pretrt_saturation.properties[0]
+    else:
+        raise ValueError('{section} is not an expected section for building the saturation index'
+                         ''.format(section=section))
 
     # populate initial values
     populate_eNRTL_state_vars(sb_eNRTL, base='FpcTP')
-
-    # constraints
-    sb_dilute = m.fs.tb_pretrt_to_desal.properties_in[0]
-    if kwargs['is_twostage']:
-        sb_perm = m.fs.mixer_permeate.mixed_state[0]
-        sb_conc = m.fs.RO2.feed_side.properties_out[0]
-    else:
-        sb_perm = m.fs.RO.permeate_side.properties_mixed[0]
-        sb_conc = m.fs.RO.feed_side.properties_out[0]
 
     # assumes pretreatment uses the ion property basis
     comp_match_dict = {'Na_+': 'Na',
@@ -41,39 +40,75 @@ def build_desalination_saturation(m, **kwargs):
                        'Cl_-': 'Cl',
                        'H2O': 'H2O'}
 
-    m.fs.desal_saturation.eq_temperature = Constraint(
-        expr=sb_eNRTL.temperature == sb_conc.temperature)
-    m.fs.desal_saturation.eq_pressure = Constraint(
-        expr=sb_eNRTL.pressure == sb_conc.pressure)
-
-    @m.fs.desal_saturation.Constraint(comp_match_dict.keys())
-    def eq_flow_mol_balance(b, j):
-        if j in ['Cl_-', 'Na_+']:
-            return (sb_eNRTL.flow_mol_phase_comp['Liq', j]
-                    == sb_dilute.flow_mol_phase_comp['Liq', comp_match_dict[j]]
-                    - sb_perm.flow_mass_phase_comp['Liq', 'TDS'] / (58.44e-3 * pyunits.kg/pyunits.mol))
-        elif j in ['Ca_2+', 'Mg_2+', 'SO4_2-']:
-            return (sb_eNRTL.flow_mol_phase_comp['Liq', j]
-                    == sb_dilute.flow_mol_phase_comp['Liq', comp_match_dict[j]])
-        elif j == 'H2O':
-            return (sb_eNRTL.flow_mol_phase_comp['Liq', j] ==
-                    sb_conc.flow_mol_phase_comp['Liq', 'H2O'])
-
     # ksp = 3.9e-9  # Gibbs energy gives 3.9e-8, but this fits expectations better
     ksp = 3.2e-9  # This fits expectations even better
 
-    m.fs.desal_saturation.saturation_index = Var(
-        initialize=0.5,
-        bounds=(1e-8, 10),
-        units=pyunits.dimensionless,
-        doc="Gypsum saturation index")
+    # constraints
+    if section == 'desalination':
+        sb_dilute = m.fs.tb_pretrt_to_desal.properties_in[0]
+        if kwargs['is_twostage']:
+            sb_perm = m.fs.mixer_permeate.mixed_state[0]
+            sb_conc = m.fs.RO2.feed_side.properties_out[0]
+        else:
+            sb_perm = m.fs.RO.permeate_side.properties_mixed[0]
+            sb_conc = m.fs.RO.feed_side.properties_out[0]
 
-    m.fs.desal_saturation.eq_saturation_index = Constraint(
-        expr=m.fs.desal_saturation.saturation_index
-             == sb_eNRTL.act_phase_comp["Liq", "Ca_2+"]
-             * sb_eNRTL.act_phase_comp["Liq", "SO4_2-"]
-             * sb_eNRTL.act_phase_comp["Liq", "H2O"] ** 2
-             / ksp)
+        m.fs.desal_saturation.eq_temperature = Constraint(
+            expr=sb_eNRTL.temperature == sb_conc.temperature)
+        m.fs.desal_saturation.eq_pressure = Constraint(
+            expr=sb_eNRTL.pressure == sb_conc.pressure)
+
+        @m.fs.desal_saturation.Constraint(comp_match_dict.keys())
+        def eq_flow_mol_balance(b, j):
+            if j in ['Cl_-', 'Na_+']:
+                return (sb_eNRTL.flow_mol_phase_comp['Liq', j]
+                        == sb_dilute.flow_mol_phase_comp['Liq', comp_match_dict[j]]
+                        - sb_perm.flow_mass_phase_comp['Liq', 'TDS'] / (58.44e-3 * pyunits.kg/pyunits.mol))
+            elif j in ['Ca_2+', 'Mg_2+', 'SO4_2-']:
+                return (sb_eNRTL.flow_mol_phase_comp['Liq', j]
+                        == sb_dilute.flow_mol_phase_comp['Liq', comp_match_dict[j]])
+            elif j == 'H2O':
+                return (sb_eNRTL.flow_mol_phase_comp['Liq', j] ==
+                        sb_conc.flow_mol_phase_comp['Liq', 'H2O'])
+
+        m.fs.desal_saturation.saturation_index = Var(
+            initialize=0.5,
+            bounds=(1e-8, 10),
+            units=pyunits.dimensionless,
+            doc="Gypsum saturation index")
+
+        m.fs.desal_saturation.eq_saturation_index = Constraint(
+            expr=m.fs.desal_saturation.saturation_index
+                 == sb_eNRTL.act_phase_comp["Liq", "Ca_2+"]
+                 * sb_eNRTL.act_phase_comp["Liq", "SO4_2-"]
+                 * sb_eNRTL.act_phase_comp["Liq", "H2O"] ** 2
+                 / ksp)
+
+    elif section == 'pretreatment':
+        sb_conc = m.fs.NF.feed_side.properties_out[0]
+
+        m.fs.pretrt_saturation.eq_temperature = Constraint(
+            expr=sb_eNRTL.temperature == sb_conc.temperature)
+        m.fs.pretrt_saturation.eq_pressure = Constraint(
+            expr=sb_eNRTL.pressure == sb_conc.pressure)
+
+        @m.fs.pretrt_saturation.Constraint(comp_match_dict.keys())
+        def eq_flow_mol_balance(b, j):
+                return (sb_eNRTL.flow_mol_phase_comp['Liq', j] ==
+                        sb_conc.flow_mol_phase_comp['Liq', comp_match_dict[j]])
+
+        m.fs.pretrt_saturation.saturation_index = Var(
+            initialize=0.5,
+            bounds=(1e-8, 1e6),
+            units=pyunits.dimensionless,
+            doc="Gypsum saturation index")
+
+        m.fs.pretrt_saturation.eq_saturation_index = Constraint(
+            expr=m.fs.pretrt_saturation.saturation_index
+                 == sb_eNRTL.act_phase_comp["Liq", "Ca_2+"]
+                 * sb_eNRTL.act_phase_comp["Liq", "SO4_2-"]
+                 * sb_eNRTL.act_phase_comp["Liq", "H2O"] ** 2
+                 / ksp)
 
 
 def populate_eNRTL_state_vars(blk, base='FpcTP'):
