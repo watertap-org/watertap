@@ -161,11 +161,9 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
                 m.fs.system_recovery_target+m.fs.system_recovery_tol))
 
     # saturation index
-    #m.fs.max_saturation_index = Param(initialize=1.0, mutable=True)
-    #m.fs.eq_max_saturation_index_desal = Constraint(
-    #    expr=m.fs.desal_saturation.saturation_index <= m.fs.max_saturation_index)
-    #m.fs.eq_max_saturation_index_pretrt = Constraint(
-    #    expr=m.fs.pretrt_saturation.saturation_index <= m.fs.max_saturation_index)
+    m.fs.max_saturation_index = Param(initialize=1.0, mutable=True)
+    m.fs.eq_max_saturation_index_desal = Constraint(
+        expr=m.fs.desal_saturation.saturation_index <= m.fs.max_saturation_index)
 
     m.fs.max_conc_factor_target = Param(initialize=3.5, mutable=True)
     m.fs.eq_max_conc_NF = Constraint(
