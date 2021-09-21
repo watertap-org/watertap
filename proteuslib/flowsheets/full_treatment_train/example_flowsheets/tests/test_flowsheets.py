@@ -66,11 +66,11 @@ def test_flowsheet_mvp_NF_bypass_twostage_1():
         has_bypass=True, has_desal_feed=False, is_twostage=True, has_ERD=False,
         NF_type='ZO', NF_base='ion',
         RO_type='0D', RO_base='TDS', RO_level='detailed')
-    assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(3.318e-2, rel=1e-3)
-    assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'Ca']) == pytest.approx(2.748e-4, rel=1e-3)
-    assert value(m.fs.RO2.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.2775, rel=1e-3)
-    assert value(m.fs.RO2.retentate.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(2.791e-2, rel=1e-3)
-    assert value(m.fs.desal_saturation.saturation_index) == pytest.approx(5.859e-2, rel=1e-3)
+    assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.1901, rel=1e-3)
+    assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'Ca']) == pytest.approx(1.669e-4, rel=1e-3)
+    assert value(m.fs.RO2.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.2408, rel=1e-3)
+    assert value(m.fs.RO2.retentate.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(2.605e-2, rel=1e-3)
+    assert value(m.fs.desal_saturation.saturation_index) == pytest.approx(0.3886, rel=1e-3)
 
 @pytest.mark.component
 def test_flowsheet_mvp_cost_optimization():
@@ -78,6 +78,6 @@ def test_flowsheet_mvp_cost_optimization():
         'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
-    m = flowsheet_mvp.solve_optimization(system_recovery=0.709449, **kwargs_flowsheet)
-    assert value(m.fs.mixer_permeate.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.7072, rel=1e-3)
-    assert value(m.fs.costing.LCOW) == pytest.approx(0.5777, rel=1e-3)
+    m = flowsheet_mvp.solve_optimization(system_recovery=0.7320, **kwargs_flowsheet)
+    assert value(m.fs.mixer_permeate.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.7296, rel=1e-3)
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.6554, rel=1e-3)
