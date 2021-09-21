@@ -245,6 +245,9 @@ def solve_optimization(system_recovery=0.75, **kwargs_flowsheet):
     costing.display_costing(m, **kwargs_flowsheet)
     print('desalination saturation index:', value(m.fs.desal_saturation.saturation_index))
     print('pretreatment saturation index:', value(m.fs.pretrt_saturation.saturation_index))
+    print('pretreatment Ca concentration factor:', value(
+        m.fs.NF.feed_side.properties_out[0].mass_frac_phase_comp['Liq', 'Ca'] /
+        m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'Ca']))
     print('water recovery:', value(m.fs.system_recovery))
     return m
 
