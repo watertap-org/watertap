@@ -61,8 +61,10 @@ def build_flowsheet_mvp_NF(m, **kwargs):
     gypsum_saturation_index.build(m, section='pretreatment', **kwargs_desalination)
 
     # new initialization
-    m.fs.NF.area.fix(175)
-    m.fs.splitter.split_fraction[0, 'bypass'].fix(0.50)
+    if kwargs['NF_type'] == 'ZO':
+        m.fs.NF.area.fix(175)
+    if kwargs['has_bypass']:
+        m.fs.splitter.split_fraction[0, 'bypass'].fix(0.50)
     m.fs.RO.area.fix(80)
     m.fs.pump_RO.control_volume.properties_out[0].pressure.fix(60e5)
     if kwargs['is_twostage']:
