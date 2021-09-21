@@ -92,7 +92,7 @@ def build_pretreatment_NF(m, has_bypass=True, NF_type='ZO', NF_base='ion'):
         # connect models
         if NF_type == 'ZO':
             m.fs.s_pretrt_feed_pumpNF = Arc(source=m.fs.feed.outlet, destination=m.fs.pump_NF.inlet)
-            m.fs.s_pretrt_pumpNF_NF = Arc(source=m.fs.pump_NF.inlet, destination=m.fs.NF.inlet)
+            m.fs.s_pretrt_pumpNF_NF = Arc(source=m.fs.pump_NF.outlet, destination=m.fs.NF.inlet)
             #TODO: should source be m.fs.pump_NF.outlet? Double-check here and other arcs with pump_NF
         else:
             m.fs.s_pretrt_feed_NF = Arc(source=m.fs.feed.outlet, destination=m.fs.NF.inlet)

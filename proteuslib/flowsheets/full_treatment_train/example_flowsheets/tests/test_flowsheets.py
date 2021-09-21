@@ -78,6 +78,6 @@ def test_flowsheet_mvp_cost_optimization():
         'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
-    m = flowsheet_mvp.solve_optimization(system_recovery=0.7320, **kwargs_flowsheet)
-    assert value(m.fs.mixer_permeate.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.7296, rel=1e-3)
-    assert value(m.fs.costing.LCOW) == pytest.approx(0.6554, rel=1e-3)
+    m = flowsheet_mvp.solve_optimization(system_recovery=0.7051, **kwargs_flowsheet)
+    assert value(m.fs.mixer_permeate.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.7028, rel=1e-3)
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.6243, rel=1e-3)

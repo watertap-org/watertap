@@ -61,8 +61,10 @@ def build_flowsheet_mvp_NF(m, **kwargs):
     gypsum_saturation_index.build(m, section='pretreatment', **kwargs_desalination)
 
     # new initialization
-    m.fs.NF.area.fix(175)
-    m.fs.splitter.split_fraction[0, 'bypass'].fix(0.50)
+    if kwargs['NF_type'] == 'ZO':
+        m.fs.NF.area.fix(175)
+    if kwargs['has_bypass']:
+        m.fs.splitter.split_fraction[0, 'bypass'].fix(0.50)
     m.fs.RO.area.fix(80)
     m.fs.pump_RO.control_volume.properties_out[0].pressure.fix(60e5)
     if kwargs['is_twostage']:
@@ -159,11 +161,9 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
                 m.fs.system_recovery_target+m.fs.system_recovery_tol))
 
     # saturation index
-    #m.fs.max_saturation_index = Param(initialize=1.0, mutable=True)
-    #m.fs.eq_max_saturation_index_desal = Constraint(
-    #    expr=m.fs.desal_saturation.saturation_index <= m.fs.max_saturation_index)
-    #m.fs.eq_max_saturation_index_pretrt = Constraint(
-    #    expr=m.fs.pretrt_saturation.saturation_index <= m.fs.max_saturation_index)
+    m.fs.max_saturation_index = Param(initialize=1.0, mutable=True)
+    m.fs.eq_max_saturation_index_desal = Constraint(
+        expr=m.fs.desal_saturation.saturation_index <= m.fs.max_saturation_index)
 
     m.fs.max_conc_factor_target = Param(initialize=3.5, mutable=True)
     m.fs.eq_max_conc_NF = Constraint(
@@ -245,6 +245,9 @@ def solve_optimization(system_recovery=0.75, **kwargs_flowsheet):
     costing.display_costing(m, **kwargs_flowsheet)
     print('desalination saturation index:', value(m.fs.desal_saturation.saturation_index))
     print('pretreatment saturation index:', value(m.fs.pretrt_saturation.saturation_index))
+    print('pretreatment Ca concentration factor:', value(
+        m.fs.NF.feed_side.properties_out[0].mass_frac_phase_comp['Liq', 'Ca'] /
+        m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'Ca']))
     print('water recovery:', value(m.fs.system_recovery))
     return m
 
