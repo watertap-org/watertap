@@ -57,9 +57,12 @@ def build_components(m, pretrt_type='NF', **kwargs):
 
     # touch some properties used in optimization
     if kwargs['is_twostage']:
-        product_water_sb = m.fs.mixer_permeate.mixed_state[0]
+            product_water_sb = m.fs.mixer_permeate.mixed_state[0]
     else:
-        product_water_sb = m.fs.RO.permeate_side.properties_mixed[0]
+        if kwargs['RO_type'] == '0D':
+            product_water_sb = m.fs.RO.permeate_side.properties_mixed[0]
+        elif kwargs['RO_type'] == '1D':
+            product_water_sb = m.fs.RO.mixed_permeate[0]
 
     m.fs.system_recovery = Expression(
         expr=product_water_sb.flow_vol / m.fs.feed.properties[0].flow_vol)
