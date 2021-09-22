@@ -102,7 +102,7 @@ def set_up_optimization(m, system_recovery=0.7, max_conc_factor=3, **kwargs_flow
     #  bounds; change back or revise if not impactful
     m.fs.stoich_softening_separator_unit.hardness.unfix()
     m.fs.stoich_softening_separator_unit.hardness.setlb(1000)
-    m.fs.stoich_softening_separator_unit.hardness.setub(6000)
+    m.fs.stoich_softening_separator_unit.hardness.setub(10000)
 
     m.fs.max_allowable_pressure = Param(initialize=120e5, mutable=True, units=pyunits.pascal)
 
@@ -259,7 +259,7 @@ if __name__ == "__main__":
     kwargs_flowsheet = {
         'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
-    solve_flowsheet_limited_softening(**kwargs_flowsheet)
+    # solve_flowsheet_limited_softening(**kwargs_flowsheet)
 
-    m = solve_optimization(system_recovery=0.72, max_conc_factor=3, **kwargs_flowsheet)
+    m = solve_optimization(system_recovery=0.7, max_conc_factor=3, **kwargs_flowsheet)
     cost_dict = costing.display_costing(m, **kwargs_flowsheet)
