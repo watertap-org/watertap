@@ -38,9 +38,9 @@ def build_flowsheet_mvp_NF(m, **kwargs):
     Build a flowsheet with NF pretreatment and RO.
     """
     # set up keyword arguments for the sections of treatment train
-    kwargs_pretreatment = { k : kwargs[k] for k in ('has_bypass', 'NF_type', 'NF_base',)}
-    kwargs_desalination = { k : kwargs[k] for k in ('has_desal_feed', 'is_twostage', 'has_ERD',
-            'RO_type', 'RO_base', 'RO_level',)}
+    kwargs_pretreatment = {k: kwargs[k] for k in ('has_bypass', 'NF_type', 'NF_base',)}
+    kwargs_desalination = {k: kwargs[k] for k in ('has_desal_feed', 'is_twostage', 'has_ERD',
+                                                  'RO_type', 'RO_base', 'RO_level',)}
     # build flowsheet
     property_models.build_prop(m, base='ion')
     pretrt_port = pretreatment.build_pretreatment_NF(m, **kwargs_pretreatment)
@@ -50,7 +50,9 @@ def build_flowsheet_mvp_NF(m, **kwargs):
 
     property_models.build_prop(m, base='eNRTL')
 
-    translator_block.build_tb(m, base_inlet=kwargs['NF_base'], base_outlet=kwargs['RO_base'], name_str='tb_pretrt_to_desal')
+    translator_block.build_tb(m, base_inlet=kwargs['NF_base'],
+                              base_outlet=kwargs['RO_base'],
+                              name_str='tb_pretrt_to_desal')
 
     # set up Arcs between pretreatment and desalination
     m.fs.s_pretrt_tb = Arc(source=pretrt_port['out'], destination=m.fs.tb_pretrt_to_desal.inlet)
