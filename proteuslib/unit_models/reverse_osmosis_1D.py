@@ -1061,7 +1061,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         check_solve(res, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 3: final solve')
-
+        # Release Inlet state
+        blk.feed_side.release_state(flags_feed_side, outlvl)
 
     def _get_performance_contents(self, time_point=0):
         x_in = self.feed_side.length_domain.first()

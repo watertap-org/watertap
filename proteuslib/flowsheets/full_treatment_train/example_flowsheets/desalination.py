@@ -26,7 +26,7 @@ from proteuslib.unit_models.pump_isothermal import Pump
 from proteuslib.flowsheets.full_treatment_train.example_flowsheets import feed_block
 from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator, unit_0DRO, unit_1DRO, property_models
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
-
+from idaes.core.util.model_statistics import fixed_variables_generator
 
 def build_desalination(m, has_desal_feed=False, is_twostage=False, has_ERD=False,
                        RO_type='0D', RO_base='TDS', RO_level='simple'):
@@ -162,7 +162,7 @@ def scale_desalination(m, **kwargs):
     if kwargs['is_twostage']:
         calculate_scaling_factors(m.fs.RO2)
 
-    if kwargs['RO_type'] == '0D':
+    if kwargs['RO_type'] == '0D' or kwargs['RO_type'] == '1D':
         set_scaling_factor(m.fs.pump_RO.control_volume.work, 1e-3)
         calculate_scaling_factors(m.fs.pump_RO)
         set_scaling_factor(m.fs.pump_RO.ratioP, 1)  # TODO: IDAES should have a default and link to the constraint
@@ -207,13 +207,12 @@ def initialize_desalination(m, **kwargs):
         m.fs.RO.retentate_state[0].mass_frac_phase_comp
         # m.fs.RO.initialize(optarg=optarg)  # IDAES error on initializing separators, simple enough to not need it
 
-    elif kwargs['RO_type'] == '0D':
+    elif kwargs['RO_type'] == '0D' or kwargs['RO_type'] == '1D':
         if kwargs['has_desal_feed']:
             propagate_state(m.fs.s_desal_feed_pumpRO)
         m.fs.pump_RO.initialize(optarg=optarg)
         propagate_state(m.fs.s_desal_pumpRO_RO)
         m.fs.RO.initialize(optarg=optarg)
-
         if kwargs['is_twostage']:
             propagate_state(m.fs.s_desal_RO_pumpRO2)
             m.fs.pump_RO2.initialize(optarg=optarg)
@@ -238,7 +237,7 @@ def display_desalination(m, **kwargs):
     if kwargs['RO_type'] == 'Sep':
         m.fs.RO.report()
 
-    elif kwargs['RO_type'] == '0D':
+    elif kwargs['RO_type'] == '0D' or kwargs['RO_type'] == '1D':
         m.fs.pump_RO.report()
         m.fs.RO.report()
 
@@ -263,6 +262,7 @@ def solve_desalination(**kwargs):
     initialize_desalination(m, **kwargs)
 
     check_dof(m)
+
     solve_with_user_scaling(m)
 
     display_desalination(m, **kwargs)
@@ -270,5 +270,5 @@ def solve_desalination(**kwargs):
     return m
 
 if __name__ == "__main__":
-    solve_desalination(has_desal_feed=True, is_twostage=False, has_ERD=True,
-                             RO_type='0D', RO_base='TDS', RO_level='detailed')
+    solve_desalination(has_desal_feed=True, is_twostage=True, has_ERD=True,
+                             RO_type='1D', RO_base='TDS', RO_level='detailed')
