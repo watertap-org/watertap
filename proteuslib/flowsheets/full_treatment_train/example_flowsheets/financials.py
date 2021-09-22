@@ -221,8 +221,8 @@ def Separator_costing(self, section=None, cost_capacity=False):
         self.a = Param(initialize=645, mutable=True, units=pyunits.dimensionless)
         self.b = Param(initialize=1324, mutable=True, units=pyunits.dimensionless)
         self.n = Param(initialize=0.4, mutable=True, units=pyunits.dimensionless)
-        # TODO: reconsider material factor=9 for converting cost of carbon steel to titanium
-        self.Fm = Param(initialize=9, mutable=True, units=pyunits.dimensionless)
+        # TODO: reconsider material factor=9 for converting cost of carbon steel to titanium- change to 3
+        self.Fm = Param(initialize=3, mutable=True, units=pyunits.dimensionless)
 
         # capital cost
         self.eq_capital_cost = Constraint(
@@ -231,8 +231,8 @@ def Separator_costing(self, section=None, cost_capacity=False):
                                        * (b_m.outlet_state[0].flow_vol * 1000) ** self.n) * self.Fm
                  * self.cost_esc / (pyunits.m ** 3 / pyunits.s))
     elif not cost_capacity:
-        # assume fixed cost per L/s based on average of cost capacity curve data
-        self.separator_unit_capex = Param(initialize=2165.3, mutable=True, units=pyunits.dimensionless,
+        # assume linear cost per L/s based on average of cost capacity curve data
+        self.separator_unit_capex = Param(initialize=361, mutable=True, units=pyunits.dimensionless,
                                       doc="Capex per daily plant capacity")
         self.eq_capital_cost = Constraint(expr=self.capital_cost == self.separator_unit_capex
                                                * b_m.outlet_state[0].flow_vol * 1000 * self.cost_esc
@@ -253,8 +253,8 @@ def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False)
             self.a = Param(initialize=645, mutable=True, units=pyunits.dimensionless)
             self.b = Param(initialize=1324, mutable=True, units=pyunits.dimensionless)
             self.n = Param(initialize=0.4, mutable=True, units=pyunits.dimensionless)
-            # TODO: reconsider material factor=9 for converting cost of carbon steel to titanium
-            self.Fm = Param(initialize=9, mutable=True, units=pyunits.dimensionless)
+            # TODO: reconsider material factor=9 for converting cost of carbon steel to titanium - change to 3
+            self.Fm = Param(initialize=3, mutable=True, units=pyunits.dimensionless)
 
             # capital cost
             self.eq_capital_cost = Constraint(
@@ -263,8 +263,8 @@ def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False)
                                            * (b_m.mixed_state[0].flow_vol*1000) ** self.n) * self.Fm
                                            * self.cost_esc / (pyunits.m**3/pyunits.s))
         elif not cost_capacity:
-            # assume fixed cost per L/s based on average of cost capacity curve data
-            self.mixer_unit_capex = Param(initialize=2165.3, mutable=True, units=pyunits.dimensionless, doc="Capex per daily plant capacity")
+            # assume linear cost per L/s based on average of cost capacity curve data
+            self.mixer_unit_capex = Param(initialize=361, mutable=True, units=pyunits.dimensionless, doc="Capex per daily plant capacity")
             self.eq_capital_cost = Constraint(expr=self.capital_cost == self.mixer_unit_capex
                                               * b_m.mixed_state[0].flow_vol*1000 * self.cost_esc
                                                    * pyunits.s * pyunits.m**-3)
@@ -290,8 +290,8 @@ def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False)
                                                       * 3600 * 24 / (pyunits.m**3 / pyunits.s)) ** 0.604
                                                    * self.cost_esc)
         elif not cost_capacity:
-            # assume fixed cost per daily capacity based on average of digitized data cited above
-            self.naocl_unit_capex = Param(initialize=7.08, mutable=True, units=pyunits.day * pyunits.m**-3, doc="Capex per daily plant capacity")
+            # assume linear cost per daily capacity based on median of digitized data cited above
+            self.naocl_unit_capex = Param(initialize=5.08, mutable=True, units=pyunits.day * pyunits.m**-3, doc="Capex per daily plant capacity")
             self.eq_capital_cost = Constraint(expr=self.capital_cost == self.naocl_unit_capex
                                               * b_m.inlet_stream_state[0].flow_vol*3600*24 * self.cost_esc
                                                    * pyunits.s * pyunits.day**-1)
@@ -341,14 +341,16 @@ def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False)
         if cost_capacity:
             self.eq_capital_cost = Constraint(expr=self.capital_cost == 16972 * self.lime_lbs_per_day ** 0.5435 * self.cost_esc)
         elif not cost_capacity:
-            # assume fixed cost per lb feed per day based on average of digitized data cited above
-            #TODO: (DONE) changed from avg fixed cost to minimum fixed cost based on data since unit costs are impractically high for pretreatment
+            # assume linear cost per lb feed per day based on minimum of digitized data cited above
             self.caoh2_unit_capex = Param(initialize=792.8, mutable=True, units=pyunits.dimensionless, doc="Capex per lb feed per day")
             self.eq_capital_cost = Constraint(expr=self.capital_cost == self.caoh2_unit_capex
-                                                   * self.lime_lbs_per_day * self.cost_esc)
+                                                   * self.lime_lbs_per_day * self.cost_esc
+                                                   / b_fs.costing_param.factor_total_investment)
         # Calcium hydroxide (lime) cost taken from WaterTAP (2020 USD) which assumes 100% purity
-        # TODO: $/kg cost of lime from WaterTAP seems too high--> consider reducing by ~10x or more
-        self.caoh2_cost = Param(initialize=0.15, mutable=True, units=pyunits.kg**-1)
+        # TODO: $0.15/kg cost of lime from WaterTAP seems too high--> consider reducing by ~10x or more
+        # Alternative price source: https://www.indexmundi.com/en/commodities/minerals/lime/lime_t5.html
+        # ~12 cents/kg average based on alternative price source.
+        self.caoh2_cost = Param(initialize=0.12, mutable=True, units=pyunits.kg**-1)
         self.caoh2_purity = Param(initialize=1, mutable=True)
         #TODO: no electricity cost included -- would be based on pump work, expected to be negligible for the time being
         self.eq_operating_cost = Constraint(expr=self.operating_cost == b_m.lime_stream.flow_mol[0]
@@ -401,7 +403,8 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None, cost_c
             self.b = Param(initialize=231, mutable=True, units=pyunits.dimensionless)
             self.n = Param(initialize=0.9, mutable=True, units=pyunits.dimensionless)
             #TODO: reconsider material factor=9 for converting cost of carbon steel to titanium
-            self.Fm = Param(initialize=1, mutable=True, units=pyunits.dimensionless)
+            # changing to Fm=3
+            self.Fm = Param(initialize=3, mutable=True, units=pyunits.dimensionless)
             # capital cost
             self.eq_capital_cost = Constraint(
                 expr=self.capital_cost == (self.a
@@ -410,9 +413,9 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None, cost_c
                                            * self.cost_esc / (pyunits.m**3/pyunits.s))
 
         elif not cost_capacity:
-            # assume fixed cost per L/s based on average of cost-capacity curve
+            # assume linear cost per L/s based on median of cost-capacity curve
             #TODO: adjust pump_unit_capex accordingly with material factor (convert from titanium to stainless steel)
-            self.pump_unit_capex = Param(initialize=8110, mutable=True, units=pyunits.dimensionless, doc="Capex per liter/s")
+            self.pump_unit_capex = Param(initialize=889, mutable=True, units=pyunits.dimensionless, doc="Capex per liter/s")
             self.eq_capital_cost = Constraint(expr=self.capital_cost == self.pump_unit_capex
                                                    * b_PC.control_volume.properties_in[0].flow_vol * 1000 * self.cost_esc
                                                    / (pyunits.m**3/pyunits.s))
