@@ -10,6 +10,12 @@
 # "https://github.com/nawi-hub/proteuslib/"
 #
 ###############################################################################
+'''
+mutable parameters for optimization:
+    m.fs.max_saturation_index
+    m.fs.system_recovery_target
+    m.fs.max_allowable_pressure
+'''
 from pyomo.environ import ConcreteModel, TransformationFactory, Param
 from pyomo.environ import units as pyunits
 
@@ -38,7 +44,7 @@ def set_optimization_components(m, system_recovery):
     m.fs.pump_RO2.control_volume.properties_out[0].pressure.setub(m.fs.max_allowable_pressure)
 
     m.fs.RO2.area.unfix()
-    m.fs.RO2.area.setlb(10)
+    m.fs.RO2.area.setlb(1)
     m.fs.RO2.area.setub(300)
 
     # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin

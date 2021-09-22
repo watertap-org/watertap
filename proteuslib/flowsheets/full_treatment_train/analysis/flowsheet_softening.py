@@ -36,21 +36,21 @@ from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scal
 from idaes.core.util import scaling as iscale
 from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.pretreatment_stoich_softening_block import *
 
+def build_components(m):
+    # build flowsheet
+    pretrt_port = pretreatment_softening.build(m)
+    property_models.build_prop(m, base='TDS')
+    pretreatment_softening.build_tb(m)
+
+    # Arc to translator block
+    m.fs.s_pretrt_tb = Arc(source=pretrt_port['out'], destination=m.fs.tb_pretrt_to_desal.inlet)
+
 
 def build(m):
     """
     Build a flowsheet with lime softening as the pretreatment process.
     """
-
-    # build flowsheet
-    pretrt_port = pretreatment_softening.build(m)
-
-    property_models.build_prop(m, base='TDS')
-
-    pretreatment_softening.build_tb(m)
-
-    # Arc to translator block
-    m.fs.s_pretrt_tb = Arc(source=pretrt_port['out'], destination=m.fs.tb_pretrt_to_desal.inlet)
+    build_components(m)
 
     # set up costing
     financials.add_costing_param_block(m.fs)
@@ -65,6 +65,23 @@ def build(m):
     return m
 
 
+def scale(m):
+    pretreatment_softening.scale(m)
+    calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
+
+
+def initialize(m):
+    optarg = {'nlp_scaling_method': 'user-scaling', 'halt_on_ampl_error': 'yes'}
+    pretreatment_softening.initialize(m)
+    propagate_state(m.fs.s_pretrt_tb)
+    m.fs.tb_pretrt_to_desal.initialize(optarg=optarg)
+
+
+def report(m):
+    pretreatment_softening.display(m)
+    m.fs.tb_pretrt_to_desal.report()
+
+
 def solve():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -72,21 +89,17 @@ def solve():
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scale
-    pretreatment_softening.scale(m)
-    calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
+    scale(m)
     calculate_scaling_factors(m)
 
     # initialize
-    optarg = {'nlp_scaling_method': 'user-scaling', 'halt_on_ampl_error': 'yes'}
-    pretreatment_softening.initialize(m)
-    propagate_state(m.fs.s_pretrt_tb)
-    m.fs.tb_pretrt_to_desal.initialize(optarg=optarg)
+    initialize(m)
 
     check_dof(m)
     solve_with_user_scaling(m, tee=True, fail_flag=True, bound_push=1e-10, mu_init=1e-6)
 
-    pretreatment_softening.display(m)
-    m.fs.tb_pretrt_to_desal.report()
+    # report
+    report(m)
 
     return m
 

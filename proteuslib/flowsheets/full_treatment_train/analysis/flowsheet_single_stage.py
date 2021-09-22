@@ -10,7 +10,11 @@
 # "https://github.com/nawi-hub/proteuslib/"
 #
 ###############################################################################
-
+'''
+mutable parameters for optimization:
+    m.fs.max_saturation_index
+    m.fs.system_recovery_target
+'''
 from pyomo.environ import ConcreteModel, Objective, Expression, Constraint, TransformationFactory, value, Param
 from pyomo.environ import units as pyunits
 from pyomo.network import Arc
@@ -34,19 +38,15 @@ desal_kwargs = {'has_desal_feed': False, 'is_twostage': False, 'has_ERD': True,
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
 
 
-def build_components(m, **kwargs):
+def build_components(m, pretrt_type='NF', **kwargs):
     kwargs_desalination = {k: kwargs[k] for k in ('has_desal_feed', 'is_twostage', 'has_ERD',
                                                   'RO_type', 'RO_base', 'RO_level',)}
 
-    property_models.build_prop(m, base=kwargs['RO_base'])
     desal_port = desalination.build_desalination(m, **kwargs_desalination)
-
-    translator_block.build_tb(m, base_inlet='ion',
-                              base_outlet=kwargs['RO_base'],
-                              name_str='tb_pretrt_to_desal')
+    m.fs.s_tb_desal = Arc(source=m.fs.tb_pretrt_to_desal.outlet, destination=desal_port['in'])
 
     property_models.build_prop(m, base='eNRTL')
-    gypsum_saturation_index.build(m, section='desalination', **kwargs)
+    gypsum_saturation_index.build(m, section='desalination', pretrt_type=pretrt_type,  **kwargs)
 
     m.fs.RO.area.fix(80)
     m.fs.pump_RO.control_volume.properties_out[0].pressure.fix(60e5)
@@ -54,22 +54,6 @@ def build_components(m, **kwargs):
     if kwargs['is_twostage']:
         m.fs.RO2.area.fix(20)
         m.fs.pump_RO2.control_volume.properties_out[0].pressure.fix(90e5)
-
-    return desal_port
-
-
-def build(m, **kwargs):
-    """
-    build an RO
-    """
-    assert not kwargs['has_desal_feed']
-    property_models.build_prop(m, base='ion')
-    feed_block.build_feed(m, base='ion')
-
-    desal_port = build_components(m, **kwargs)
-
-    m.fs.s_pretrt_tb = Arc(source=m.fs.feed.outlet, destination=m.fs.tb_pretrt_to_desal.inlet)
-    m.fs.s_tb_desal = Arc(source=m.fs.tb_pretrt_to_desal.outlet, destination=desal_port['in'])
 
     # touch some properties used in optimization
     if kwargs['is_twostage']:
@@ -90,15 +74,32 @@ def build(m, **kwargs):
              * m.fs.costing_param.load_factor)
     costing.build_costing(m, module=financials, **kwargs)
 
+    return desal_port
+
+
+def build(m, **kwargs):
+    """
+    build an RO
+    """
+    assert not kwargs['has_desal_feed']
+    property_models.build_prop(m, base='ion')
+    feed_block.build_feed(m, base='ion')
+
+    property_models.build_prop(m, base=kwargs['RO_base'])
+    translator_block.build_tb(m, base_inlet='ion',
+                              base_outlet=kwargs['RO_base'],
+                              name_str='tb_pretrt_to_desal')
+    m.fs.s_pretrt_tb = Arc(source=m.fs.feed.outlet, destination=m.fs.tb_pretrt_to_desal.inlet)
+
+    desal_port = build_components(m, **kwargs)
+
 
 def scale(m, **kwargs):
-    calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
+    calculate_scaling_factors(m.fs.s_tb_desal)
     desalination.scale_desalination(m, **kwargs)
 
 
 def initialize(m, **kwargs):
-    optarg = {'nlp_scaling_method': 'user-scaling'}
-    m.fs.tb_pretrt_to_desal.initialize(optarg=optarg)
     propagate_state(m.fs.s_tb_desal)
     desalination.initialize_desalination(m, **kwargs)
     m.fs.desal_saturation.properties.initialize()
@@ -162,12 +163,15 @@ def solve_flowsheet():
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scale
+    calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
     scale(m, **desal_kwargs)
     calculate_scaling_factors(m)
 
     # initialize
     m.fs.feed.initialize()
     propagate_state(m.fs.s_pretrt_tb)
+    optarg = {'nlp_scaling_method': 'user-scaling'}
+    m.fs.tb_pretrt_to_desal.initialize(optarg=optarg)
     initialize(m, **desal_kwargs)
 
     check_dof(m)
