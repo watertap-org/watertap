@@ -76,10 +76,17 @@ def build_flowsheet_mvp_NF(m, **kwargs):
     # touch some properties used in optimization
     if kwargs['is_twostage']:
         product_water_sb = m.fs.mixer_permeate.mixed_state[0]
-        RO_waste_sb = m.fs.RO2.feed_side.properties_out[0]
+        if kwargs['RO_type'] == '0D':
+            RO_waste_sb = m.fs.RO2.feed_side.properties_out[0]
+        elif kwargs['RO_type'] == '1D':
+            RO_waste_sb = m.fs.RO2.feed_side.properties[0, 1]
     else:
-        product_water_sb = m.fs.RO.permeate_side.properties_mixed[0]
-        RO_waste_sb = m.fs.RO.feed_side.properties_out[0]
+        if kwargs['RO_type'] == '0D':
+            product_water_sb = m.fs.RO.permeate_side.properties_mixed[0]
+            RO_waste_sb = m.fs.RO.feed_side.properties_out[0]
+        elif kwargs['RO_type'] == '1D':
+            product_water_sb = m.fs.RO.mixed_permeate[0]
+            RO_waste_sb = m.fs.RO.feed_side.properties[0, 1]
 
     # NOTE: Building the costing here means it gets
     #       initialized during the simulation phase.
@@ -259,7 +266,7 @@ if __name__ == "__main__":
     kwargs_flowsheet = {
         'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'NF_type': 'ZO', 'NF_base': 'ion',
-        'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
+        'RO_type': '1D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
     if len(sys.argv) == 1:
         m = solve_flowsheet_mvp_NF(**kwargs_flowsheet)
     else:
