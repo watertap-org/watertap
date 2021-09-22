@@ -24,7 +24,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
 from idaes.core.util.initialization import propagate_state
 from proteuslib.unit_models.pump_isothermal import Pump
 from proteuslib.flowsheets.full_treatment_train.example_flowsheets import feed_block
-from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator, unit_0DRO, property_models
+from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator, unit_0DRO, unit_1DRO, property_models
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
@@ -35,7 +35,7 @@ def build_desalination(m, has_desal_feed=False, is_twostage=False, has_ERD=False
     Arguments:
         has_desal_feed: True or False, default = False,
             if True a feed block is created and specified to the standard feed
-        RO_type: 'Sep' or '0D', default = '0D'
+        RO_type: 'Sep', '0D', or 1D, default = '0D'
         RO_level: 'simple' or 'detailed', default = 'simple'
         RO_base: 'TDS' only, default = 'ion'
     """
@@ -51,12 +51,16 @@ def build_desalination(m, has_desal_feed=False, is_twostage=False, has_ERD=False
         unit_separator.build_SepRO(m, base=RO_base)
     elif RO_type == '0D':
         unit_0DRO.build_RO(m, base='TDS', level=RO_level)
+    elif RO_type == '1D':
+        unit_1DRO.build_RO(m, base='TDS', level=RO_level)
     else:
         raise ValueError('Unexpected model type {RO_type} provided to build_desalination'
                          ''.format(RO_type=RO_type))
     if is_twostage:
         if RO_type == '0D':
             unit_0DRO.build_RO(m, base='TDS', level=RO_level, name_str='RO2')
+        elif RO_type == '1D':
+            unit_1DRO.build_RO(m, base='TDS', level=RO_level, name_str='RO2')
         else:
             raise ValueError('Unexpected model type {RO_type} provided to build_desalination when is_twostage is True'
                              ''.format(RO_type=RO_type))
@@ -84,7 +88,7 @@ def build_desalination(m, has_desal_feed=False, is_twostage=False, has_ERD=False
         if not has_desal_feed:
             desal_port['in'] = m.fs.RO.inlet
 
-    elif RO_type == '0D':
+    elif RO_type == '0D' or RO_type == '1D':
         # build auxiliary units
         m.fs.pump_RO = Pump(default={'property_package': prop})
         if is_twostage:

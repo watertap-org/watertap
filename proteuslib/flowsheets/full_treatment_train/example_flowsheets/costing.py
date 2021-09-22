@@ -60,7 +60,6 @@ def build_costing(m, module=financials, **kwargs):
         m.fs.ERD.get_costing(module=module, section='primary', pump_type='pressure exchanger')
     # Pretreatment
     if hasattr(m.fs,'stoich_softening_mixer_unit'):
-        print('FOUND LIME SOFTENER')
         m.fs.stoich_softening_mixer_unit.get_costing(module=module, section='pretreatment', mixer_type="lime_softening",cost_capacity=False)
         m.fs.lime_softening_unit_capex = Expression(expr=m.fs.stoich_softening_mixer_unit.costing.capital_cost/m.fs.annual_water_production *crf)
         m.fs.lime_softening_unit_opex = Expression(expr=m.fs.stoich_softening_mixer_unit.costing.operating_cost / m.fs.annual_water_production)

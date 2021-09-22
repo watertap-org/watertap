@@ -12,7 +12,7 @@
 ###############################################################################
 
 from pyomo.environ import (ConcreteModel, Objective, Expression, Constraint, Param,
-        TransformationFactory, value, units as pyunits)
+                           TransformationFactory, value, units as pyunits)
 from pyomo.network import Arc
 from pyomo.util import infeasible
 from idaes.core import FlowsheetBlock
@@ -39,7 +39,7 @@ from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.pretreatmen
 
 def build(m):
     """
-    Build a flowsheet with NF pretreatment and RO.
+    Build a flowsheet with lime softening as the pretreatment process.
     """
 
     # build flowsheet
@@ -61,7 +61,6 @@ def build(m):
     costing.build_costing(m, module=financials)
 
     # create useful expressions
-
 
     return m
 
@@ -98,14 +97,45 @@ def simulate(m):
 
 if __name__ == "__main__":
     m = solve()
+    import sys
+
+    lime_cost = m.fs.stoich_softening_mixer_unit.costing.caoh2_cost.value
+    lime_purity = m.fs.stoich_softening_mixer_unit.costing.caoh2_purity.value
 
     for x in [0, 0.002, 0.004, 0.006, 0.008, 0.010, 0.012, 0.014, 0.02, 0.03, 0.04, 0.05, 0.1]:
         m.fs.stoich_softening_mixer_unit.lime_stream_state[0].flow_mol.fix(x)
         simulate(m)
-        print('Lime flow: %.3f, Hardness: %.0f, Ca: %.2f, Mg: %.2f, LCOW: %.2f' %
-              (value(m.fs.stoich_softening_mixer_unit.lime_stream_state[0].flow_mol),
+
+        # Calcium in:
+        Ca_in = m.fs.stoich_softening_mixer_unit.inlet_stream_state[0.0].flow_mol_comp['Ca(HCO3)2']
+        # Calcium out:
+        Ca_out = m.fs.stoich_softening_separator_unit.outlet_stream_state[0.0].flow_mol_comp['Ca(HCO3)2']
+        # Calcium percent removal:
+        Ca_pct_removal = (Ca_in - Ca_out)/Ca_in * 100
+
+        lime_kg_year = value(m.fs.stoich_softening_mixer_unit.lime_stream_state[0].flow_mol) * 74.093e-3 * 3600 * 8760
+        lime_opex = lime_kg_year / value(m.fs.annual_water_production) * lime_cost / lime_purity * 0.9
+        if len(sys.argv) == 1:
+            recovery = 0.5
+            lime_opex_w_recovery = lime_opex / recovery
+        else:
+            recovery = float(sys.argv[1])
+            lime_opex_w_recovery = lime_opex / recovery
+
+        # To display the calculations of lime opex as a double-check, enter a 3rd arg in command line (could be anything)
+        #e.g.: python analysis/flowsheet_softening.py 0.6 go
+        # first arg is the file, second is recovery rate, and third arg just instructs to print lime opex calcs
+        if len(sys.argv) <= 2:
+            check_opex = ''
+        else:
+            check_opex = (f'Lime opex, 100% recovery: {lime_opex:.2f}, '
+            f'Lime Opex with {recovery * 100}% recovery= {lime_opex_w_recovery:.2f}, '
+            f'LCOW (lime opex from model) = {value(m.fs.lime_softening_unit_opex):.2f}')
+
+        print('Calcium percent removal: %.2f, Lime flow: %.3f, Hardness: %.0f, Ca: %.2f, Mg: %.2f, LCOW: %.2f' %
+              (value(Ca_pct_removal),
+               value(m.fs.stoich_softening_mixer_unit.lime_stream_state[0].flow_mol),
                value(m.fs.stoich_softening_separator_unit.hardness),
-               value(m.fs.stoich_softening_separator_unit.outlet_stream_state[0.0].mole_frac_comp['Ca(HCO3)2']*1e6),
-               value(m.fs.stoich_softening_separator_unit.outlet_stream_state[0.0].mole_frac_comp['Mg(HCO3)2']*1e6),
-               value(m.fs.costing.LCOW))
-              )
+               value(m.fs.stoich_softening_separator_unit.outlet_stream_state[0.0].mole_frac_comp['Ca(HCO3)2'] * 1e6),
+               value(m.fs.stoich_softening_separator_unit.outlet_stream_state[0.0].mole_frac_comp['Mg(HCO3)2'] * 1e6),
+               value(m.fs.costing.LCOW)), check_opex)
