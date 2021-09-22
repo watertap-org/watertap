@@ -335,9 +335,9 @@ def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False)
          '''
         # x is converts mol/s to lb/day
         self.lime_lbs_per_day = Expression(expr=2.205 * 3600 * 24 * 74.09e-3
-                                                * b_m.lime_stream.flow_mol[0].value
-                                                * b_m.lime_stream.mole_frac_comp[
-                                                    0, "Ca(OH)2"].value / pyunits.mol * pyunits.s)
+                                                * b_m.lime_stream.flow_mol[0]
+                                                * b_m.lime_stream.mole_frac_comp[0, "Ca(OH)2"]
+                                                / pyunits.mol * pyunits.s)
         if cost_capacity:
             self.eq_capital_cost = Constraint(expr=self.capital_cost == 16972 * self.lime_lbs_per_day ** 0.5435 * self.cost_esc)
         elif not cost_capacity:
