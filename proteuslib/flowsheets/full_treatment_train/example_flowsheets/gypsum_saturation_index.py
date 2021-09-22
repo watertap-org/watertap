@@ -112,6 +112,13 @@ def build(m, section='desalination', pretrt_type='NF', **kwargs):
                  / ksp)
 
     elif section == 'pretreatment':
+        comp_match_dict = {'Na_+': 'Na',
+                           'Ca_2+': 'Ca',
+                           'Mg_2+': 'Mg',
+                           'SO4_2-': 'SO4',
+                           'Cl_-': 'Cl',
+                           'H2O': 'H2O'}
+
         sb_conc = m.fs.NF.feed_side.properties_out[0]
 
         m.fs.pretrt_saturation.eq_temperature = Constraint(
