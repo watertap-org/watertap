@@ -12,7 +12,6 @@
 ###############################################################################
 '''
 mutable parameters for optimization:
-    m.fs.max_saturation_index
     m.fs.system_recovery_target
     m.fs.max_allowable_pressure
 '''

@@ -12,7 +12,6 @@
 ###############################################################################
 '''
 mutable parameters for optimization:
-    m.fs.max_saturation_index
     m.fs.system_recovery_target
 '''
 from pyomo.environ import ConcreteModel, Objective, Expression, Constraint, TransformationFactory, value, Param
