@@ -86,8 +86,6 @@ def build_feed_block(m):
     m.fs.feed.properties[0].mole_frac_comp['NaCl'].fix(feed_mole_frac_comp['Na'])
     m.fs.feed.properties[0].mole_frac_comp['SO4_2-'].fix(feed_mole_frac_comp['SO4'])
     m.fs.feed.properties[0].mole_frac_comp['Cl_-'].fix(feed_mole_frac_comp['Cl'] - feed_mole_frac_comp['Na'])
-    # this defined feed doesn't have all of the Cl because the apparent species could be broken down as:
-    # NaCl, CaSO4, MgSO4, MgCl2, and H2O. So there is more moles of Cl than Na. This can be determined later.
 
     m.fs.feed.properties[0].flow_mol.fix(55.56)
     m.fs.feed.properties[0].pressure.fix(101325)
@@ -125,7 +123,7 @@ def build_tb(m):
         blk.properties_out[0].flow_mass_phase_comp['Liq', 'TDS']
         == blk.properties_in[0].flow_mol * blk.properties_in[0].mole_frac_comp['Ca(HCO3)2'] * mw_comp['Ca']
         + blk.properties_in[0].flow_mol * blk.properties_in[0].mole_frac_comp['Mg(HCO3)2'] * mw_comp['Mg']
-        + blk.properties_in[0].flow_mol * blk.properties_in[0].mole_frac_comp['NaCl'] * mw_comp['Na']
+        + blk.properties_in[0].flow_mol * blk.properties_in[0].mole_frac_comp['NaCl'] * (mw_comp['Na'] + mw_comp['Cl'])
         + blk.properties_in[0].flow_mol * blk.properties_in[0].mole_frac_comp['Cl_-'] * mw_comp['Cl']
         + blk.properties_in[0].flow_mol * blk.properties_in[0].mole_frac_comp['SO4_2-'] * mw_comp['SO4']
         )
