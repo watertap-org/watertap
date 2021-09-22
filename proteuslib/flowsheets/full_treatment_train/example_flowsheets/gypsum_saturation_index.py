@@ -40,10 +40,18 @@ def build(m, section='desalination', pretrt_type='NF', **kwargs):
         sb_dilute = m.fs.tb_pretrt_to_desal.properties_in[0]
         if kwargs['is_twostage']:
             sb_perm = m.fs.mixer_permeate.mixed_state[0]
-            sb_conc = m.fs.RO2.feed_side.properties_out[0]
+            if kwargs['RO_type'] == '0D':
+                sb_conc = m.fs.RO2.feed_side.properties_out[0]
+            elif kwargs['RO_type'] == '1D':
+                sb_conc = m.fs.RO2.feed_side.properties[0, 1]
         else:
-            sb_perm = m.fs.RO.permeate_side.properties_mixed[0]
-            sb_conc = m.fs.RO.feed_side.properties_out[0]
+            if kwargs['RO_type'] == '0D':
+                sb_perm = m.fs.RO.permeate_side.properties_mixed[0]
+                sb_conc = m.fs.RO.feed_side.properties_out[0]
+            elif kwargs['RO_type'] == '1D':
+                sb_perm = m.fs.RO.mixed_permeate[0]
+                sb_conc = m.fs.RO.feed_side.properties[0, 1]
+
 
         m.fs.desal_saturation.eq_temperature = Constraint(
             expr=sb_eNRTL.temperature == sb_conc.temperature)
