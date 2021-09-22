@@ -41,7 +41,7 @@ def build_costing(m, module=financials, **kwargs):
         m.fs.pump_NF.get_costing(module=module, section='pretreatment', pump_type="low pressure", cost_capacity=False)
     # Reverse Osmosis
     if hasattr(m.fs, 'RO'):
-        if kwargs['RO_type'] == '0D':
+        if kwargs['RO_type'] == '0D' or kwargs['RO_type'] == '1D':
             m.fs.RO.get_costing(module=module, section='primary')
         elif kwargs['RO_type'] == 'Sep':
             raise NotImplementedError("get_costing will not be implemented for the RO separator model.")

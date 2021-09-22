@@ -72,10 +72,19 @@ def build_flowsheet_mvp_softening(m, **kwargs):
     # touch some properties used in optimization
     if kwargs['is_twostage']:
         product_water_sb = m.fs.mixer_permeate.mixed_state[0]
-        RO_waste_sb = m.fs.RO2.feed_side.properties_out[0]
+        if kwargs['RO_type'] == '0D':
+            RO_waste_sb = m.fs.RO2.feed_side.properties_out[0]
+        elif kwargs['RO_type'] == '1D':
+            RO_waste_sb = m.fs.RO2.feed_side.properties[0, 1]
     else:
-        product_water_sb = m.fs.RO.permeate_side.properties_mixed[0]
-        RO_waste_sb = m.fs.RO.feed_side.properties_out[0]
+        if kwargs['RO_type'] == '0D':
+            product_water_sb = m.fs.RO.permeate_side.properties_mixed[0]
+            RO_waste_sb = m.fs.RO.feed_side.properties_out[0]
+        elif kwargs['RO_type'] == '1D':
+            product_water_sb = m.fs.RO.mixed_permeate[0]
+            RO_waste_sb = m.fs.RO.feed_side.properties[0, 1]
+
+
 
     # NOTE: Building the costing here means it gets
     #       initialized during the simulation phase.
@@ -250,11 +259,11 @@ def solve_optimization(system_recovery=0.75, **kwargs_flowsheet):
     pretreatment_softening.display(m)
     m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs_flowsheet)
-    costing.display_costing(m, **kwargs_flowsheet)
     print('desalination saturation index:', value(m.fs.desal_saturation.saturation_index))
     # print('pretreatment saturation index:', value(m.fs.pretrt_saturation.saturation_index))
     print('Ca mass frac out (ppm):', value(m.fs.Ca_mass_frac_out * 1e6))
     print('water recovery:', value(m.fs.system_recovery))
+
     return m
 
 
@@ -267,3 +276,4 @@ if __name__ == "__main__":
         m = solve_flowsheet_mvp_NF(**kwargs_flowsheet)
     else:
         m = solve_optimization(system_recovery=float(sys.argv[1]), **kwargs_flowsheet)
+    costing.display_costing(m, **kwargs_flowsheet)
