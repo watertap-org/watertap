@@ -70,10 +70,10 @@ def test_unit_0DRO_detailed():
 @pytest.mark.component
 def test_unit_1DRO_detailed():
     m = unit_1DRO.solve_RO(base='TDS', level='detailed')
-    assert value(m.fs.RO.permeate_outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.2541, rel=1e-3)
-    assert value(m.fs.RO.permeate_outlet.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(8.577e-5, rel=1e-3)
-    assert value(m.fs.RO.feed_outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.7109, rel=1e-3)
-    assert value(m.fs.RO.feed_outlet.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(3.491e-2, rel=1e-3)
+    assert value(m.fs.RO.mixed_permeate[0].flow_mass_phase_comp['Liq', 'H2O']) == pytest.approx(0.2541, rel=1e-3)
+    assert value(m.fs.RO.mixed_permeate[0].flow_mass_phase_comp['Liq', 'TDS']) == pytest.approx(8.577e-5, rel=1e-3)
+    assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.7109, rel=1e-3)
+    assert value(m.fs.RO.retentate.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(3.491e-2, rel=1e-3)
 
 
 @pytest.mark.component
