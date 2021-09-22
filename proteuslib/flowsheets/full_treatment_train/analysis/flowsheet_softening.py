@@ -23,8 +23,6 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
                                      constraint_autoscale_large_jac)
 from idaes.core.util.initialization import propagate_state
 from proteuslib.flowsheets.full_treatment_train.example_flowsheets import (pretreatment_softening,
-                                                                           desalination,
-                                                                           translator_block,
                                                                            costing,
                                                                            financials)
 from proteuslib.flowsheets.full_treatment_train.example_models import property_models
@@ -60,8 +58,6 @@ def build(m):
              * m.fs.costing_param.load_factor)
     costing.build_costing(m, module=financials)
 
-    # create useful expressions
-
     return m
 
 
@@ -82,7 +78,7 @@ def report(m):
     m.fs.tb_pretrt_to_desal.report()
 
 
-def solve():
+def solve_flowsheet():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     build(m)
@@ -109,7 +105,7 @@ def simulate(m):
 
 
 if __name__ == "__main__":
-    m = solve()
+    m = solve_flowsheet()
     import sys
 
     lime_cost = m.fs.stoich_softening_mixer_unit.costing.caoh2_cost.value

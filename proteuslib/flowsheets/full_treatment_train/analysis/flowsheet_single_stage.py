@@ -44,7 +44,8 @@ def build_components(m, pretrt_type='NF', **kwargs):
     desal_port = desalination.build_desalination(m, **kwargs_desalination)
     m.fs.s_tb_desal = Arc(source=m.fs.tb_pretrt_to_desal.outlet, destination=desal_port['in'])
 
-    property_models.build_prop(m, base='eNRTL')
+    if pretrt_type == 'softening':
+        property_models.build_prop(m, base='eNRTL')
     gypsum_saturation_index.build(m, section='desalination', pretrt_type=pretrt_type,  **kwargs)
 
     m.fs.RO.area.fix(80)
@@ -90,6 +91,7 @@ def build(m, **kwargs):
                               name_str='tb_pretrt_to_desal')
     m.fs.s_pretrt_tb = Arc(source=m.fs.feed.outlet, destination=m.fs.tb_pretrt_to_desal.inlet)
 
+    property_models.build_prop(m, base='eNRTL')
     desal_port = build_components(m, **kwargs)
 
 
