@@ -62,5 +62,6 @@ Class Documentation
 -------------------
 
 .. automodule:: proteuslib.unit_models.reverse_osmosis_1D
-   :members:
+    :members:
+    :noindex:
 
