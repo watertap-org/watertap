@@ -83,7 +83,7 @@ def set_optimization_components(m, system_recovery, **kwargs):
 def set_up_optimization(m, system_recovery=0.50, **kwargs):
     set_optimization_components(m, system_recovery, **kwargs)
     calculate_scaling_factors(m)
-    check_dof(m, 6)
+    check_dof(m, 8)
 
 
 def optimize(m):

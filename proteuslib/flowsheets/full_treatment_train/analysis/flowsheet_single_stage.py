@@ -129,6 +129,8 @@ def set_optimization_components(m, system_recovery, **kwargs):
     m.fs.RO.area.setlb(10)
     m.fs.RO.area.setub(300)
 
+    m.fs.RO.N_Re_io[0, 'in'].unfix()
+
     # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
     m.fs.RO.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
     if kwargs['RO_type'] == '0D':
@@ -158,7 +160,7 @@ def set_optimization_components(m, system_recovery, **kwargs):
 
 def set_up_optimization(m, system_recovery=0.50, **kwargs):
     set_optimization_components(m, system_recovery, **kwargs)
-    check_dof(m, 2)
+    check_dof(m, 3)
 
 
 def optimize(m):
