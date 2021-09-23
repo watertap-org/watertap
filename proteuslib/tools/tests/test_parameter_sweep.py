@@ -23,6 +23,7 @@ from proteuslib.tools.parameter_sweep import (_init_mpi,
                                                _divide_combinations,
                                                _update_model_values,
                                                _aggregate_results,
+                                               _interp_nan_values,
                                                parameter_sweep,
                                                LinearSample,
                                                UniformSample,
@@ -254,6 +255,30 @@ class TestParallelManager():
             assert global_results[0, 1] == pytest.approx(local_results[0, 1])
             assert global_results[-1, 0] == pytest.approx(num_procs*local_results[-1, 0])
             assert global_results[-1, 1] == pytest.approx(num_procs*local_results[-1, 1])
+
+    @pytest.mark.unit
+    def test_interp_nan_values(self):
+
+        global_values = np.array([[  0,   0,   0],
+                                  [  0,   0,   1],
+                                  [  0,   1,   0],
+                                  [  0,   1,   1],
+                                  [  1,   0,   0],
+                                  [  1,   0,   1],
+                                  [  1,   1,   0],
+                                  [  1,   1,   1],
+                                  [0.5, 0.5, 0.5],
+                                  [  1,   1,   1]])
+
+        global_results = np.array([0, 1, 2, 3, 4, 5, 6, 7, np.nan, np.nan])[np.newaxis].T
+
+        global_results_clean = _interp_nan_values(global_values, global_results)
+
+        assert np.shape(global_results_clean)[1] == np.shape(global_results)[1]
+        assert np.shape(global_results_clean)[0] == np.shape(global_results)[0]
+
+        assert(global_results_clean[8]) == pytest.approx(np.mean(global_results[0:8]))
+        assert(global_results_clean[9]) == pytest.approx(global_results[7])
 
     @pytest.mark.component
     def test_parameter_sweep(self, model, tmp_path):
