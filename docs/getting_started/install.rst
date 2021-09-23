@@ -77,7 +77,6 @@ From the same environment where ProteusLib was installed, run:
 
 .. note:: Typically, the ``idaes get-extensions`` command only needs to be run once for each system, as it will install the required files into a common, system-wide location.
 
-
 .. _install-edb:
 
 Installing the Electrolyte Database (EDB)
@@ -128,6 +127,29 @@ To install the EDB, follow these steps:
        database you are going to click on next circled).
        Then, select the "electrolytedb" database. The result should show three collections with some records loaded in
        each, as in :ref:`this screen <screenshot-mongodb-compass-edb>` .
+
+Running the ProteusLib test suite
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+#. To run the ProteusLib test suite, first install the optional testing dependencies using pip:
+
+    .. code-block:: shell
+
+        pip install "proteuslib[testing]"
+
+#. Then, run the following command to run the complete ProteusLib test suite:
+
+    .. code-block:: shell
+
+        pytest --pyargs proteuslib
+
+#. (Optional) To see a list of available command-line options, run:
+
+    .. code-block:: shell
+    
+        pytest --pyargs proteuslib --help
+
+.. note:: Some tests will be skipped (denoted by an ``s`` symbol). This is to be expected, as some of the tests are only applicable within a developer environment.
 
 For ProteusLib developers
 -------------------------
