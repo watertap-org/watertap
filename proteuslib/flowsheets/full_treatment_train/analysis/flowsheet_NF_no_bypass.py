@@ -32,6 +32,7 @@ def solve_flowsheet():
 
 def simulate(m):
     flowsheet_NF.simulate(m)
+    return m
 
 if __name__ == "__main__":
     m = solve_flowsheet()

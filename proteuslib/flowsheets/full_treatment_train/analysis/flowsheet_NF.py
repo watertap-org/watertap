@@ -100,7 +100,7 @@ def solve_flowsheet(has_bypass=True):
     initialize(m, has_bypass=has_bypass)
 
     check_dof(m)
-    solve_with_user_scaling(m, tee=True, fail_flag=True, bound_push=1e-10, mu_init=1e-6)
+    solve_with_user_scaling(m, tee=True, fail_flag=True)
 
     # report
     report(m, has_bypass=has_bypass)
@@ -109,7 +109,7 @@ def solve_flowsheet(has_bypass=True):
 
 
 def simulate(m):
-    solve_with_user_scaling(m, tee=False, fail_flag=True, bound_push=1e-10, mu_init=1e-6)
+    solve_with_user_scaling(m, tee=False, fail_flag=True)
 
 
 if __name__ == "__main__":
