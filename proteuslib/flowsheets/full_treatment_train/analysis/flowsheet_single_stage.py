@@ -114,7 +114,7 @@ def report(m, **kwargs):
     desalination.display_desalination(m, **kwargs)
     print('desalination solubility index:', value(m.fs.desal_saturation.saturation_index))
     print('water recovery:', value(m.fs.system_recovery))
-    print('LCOW:', value(m.fs.costing.LCOW))
+    costing.display_costing(m, **kwargs)
 
 
 def set_optimization_components(m, system_recovery, **kwargs):

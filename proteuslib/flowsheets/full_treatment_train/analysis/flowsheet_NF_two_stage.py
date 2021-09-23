@@ -62,7 +62,7 @@ def report(m, **kwargs):
     flowsheet_two_stage.report(m, **kwargs)
 
 
-def set_optimization_components(m, system_recovery):
+def set_optimization_components(m, system_recovery, **kwargs):
     # unfix variables
     m.fs.splitter.split_fraction[0, 'bypass'].unfix()
     m.fs.splitter.split_fraction[0, 'bypass'].setlb(0.001)
@@ -77,11 +77,11 @@ def set_optimization_components(m, system_recovery):
         expr=m.fs.NF.feed_side.properties_out[0].mass_frac_phase_comp['Liq', 'Ca']
         <= m.fs.max_conc_factor_target * m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'Ca'])
 
-    flowsheet_two_stage.set_optimization_components(m, system_recovery)
+    flowsheet_two_stage.set_optimization_components(m, system_recovery, **kwargs)
 
 
-def set_up_optimization(m, system_recovery=0.50):
-    set_optimization_components(m, system_recovery)
+def set_up_optimization(m, system_recovery=0.50, **kwargs):
+    set_optimization_components(m, system_recovery, **kwargs)
     calculate_scaling_factors(m)
     check_dof(m, 6)
 
@@ -114,9 +114,9 @@ def solve_flowsheet():
     return m
 
 
-def optimize_flowsheet(system_recovery=0.50):
+def optimize_flowsheet(system_recovery=0.50, **kwargs):
     m = solve_flowsheet()
-    set_up_optimization(m, system_recovery=system_recovery)
+    set_up_optimization(m, system_recovery=system_recovery, **kwargs)
     optimize(m)
 
     report(m, **flowsheet_two_stage.desal_kwargs)
@@ -129,4 +129,5 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         m = solve_flowsheet()
     else:
-        m = optimize_flowsheet(system_recovery=float(sys.argv[1]))
+        desal_kwargs = flowsheet_two_stage.desal_kwargs
+        m = optimize_flowsheet(system_recovery=float(sys.argv[1]), **desal_kwargs)

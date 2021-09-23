@@ -278,7 +278,7 @@ if __name__ == "__main__":
     kwargs_flowsheet = {
         'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'NF_type': 'ZO', 'NF_base': 'ion',
-        'RO_type': '1D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
+        'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
     if len(sys.argv) == 1:
         m = solve_flowsheet_mvp_NF(**kwargs_flowsheet)
     else:
