@@ -2,6 +2,11 @@ Technical Reference
 ===================
 
 .. toctree::
+    :maxdepth: 1
+
+    Module Reference <../apidoc/modules>
+
+.. toctree::
    :maxdepth: 2
    
    unit_models/index
@@ -9,6 +14,6 @@ Technical Reference
    tools/index
 
 .. toctree::
-   :maxdepth: 1
+    :maxdepth: 1
 
-   edb/index
+    edb/index

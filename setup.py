@@ -103,6 +103,11 @@ setup(
         'pywin32==225 ; platform_system=="Windows" and python_version>="3.8"',
     ],
     extras_require={
+        "testing": [
+            "pytest",
+            "json-schema-for-humans",
+            "mongomock",
+        ],
         "dev": [
             "myst-parser",  # markdown support for Sphinx
             # other requirements
