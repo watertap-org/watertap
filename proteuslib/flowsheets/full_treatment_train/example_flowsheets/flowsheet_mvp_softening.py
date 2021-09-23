@@ -255,6 +255,8 @@ def solve_flowsheet_mvp_NF(**kwargs):
     # print('pretreatment solubility index:', value(m.fs.pretrt_saturation.saturation_index))
     print('water recovery:', value(m.fs.system_recovery))
     print('LCOW:', value(m.fs.costing.LCOW))
+    print('CP modulus:', value(m.fs.desal_saturation.cp_modulus))
+
     # print('Ca mass frac out (ppm):', value(m.fs.Ca_mass_frac_out*1e6))
 
     return m
@@ -274,6 +276,7 @@ def solve_optimization(system_recovery=0.75, **kwargs_flowsheet):
     # print('pretreatment saturation index:', value(m.fs.pretrt_saturation.saturation_index))
     print('Ca mass frac out (ppm):', value(m.fs.Ca_mass_frac_out * 1e6))
     print('water recovery:', value(m.fs.system_recovery))
+    print('CP modulus:', value(m.fs.desal_saturation.cp_modulus))
 
     return m
 

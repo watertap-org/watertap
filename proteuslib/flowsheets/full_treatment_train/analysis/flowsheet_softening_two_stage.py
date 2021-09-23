@@ -58,7 +58,7 @@ def report(m, **kwargs):
     flowsheet_two_stage.report(m, **kwargs)
 
 
-def set_optimization_components(m, system_recovery):
+def set_optimization_components(m, system_recovery, **kwargs):
     # unfix variables
     m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0].unfix()
     m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol.setlb(1e-6 / 74.09e-3)
@@ -67,11 +67,11 @@ def set_optimization_components(m, system_recovery):
     m.fs.stoich_softening_separator_unit.hardness.setlb(10)
     m.fs.stoich_softening_separator_unit.hardness.setub(10000)
 
-    flowsheet_two_stage.set_optimization_components(m, system_recovery)
+    flowsheet_two_stage.set_optimization_components(m, system_recovery, **kwargs)
 
 
-def set_up_optimization(m, system_recovery=0.50):
-    set_optimization_components(m, system_recovery)
+def set_up_optimization(m, system_recovery=0.50, **kwargs):
+    set_optimization_components(m, system_recovery, **kwargs)
     calculate_scaling_factors(m)
     check_dof(m, 5)
 
@@ -104,9 +104,9 @@ def solve_flowsheet():
     return m
 
 
-def optimize_flowsheet(system_recovery=0.50):
+def optimize_flowsheet(system_recovery=0.50, **kwargs):
     m = solve_flowsheet()
-    set_up_optimization(m, system_recovery=system_recovery)
+    set_up_optimization(m, system_recovery=system_recovery, **kwargs)
     optimize(m)
 
     report(m, **flowsheet_two_stage.desal_kwargs)
@@ -119,4 +119,5 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         m = solve_flowsheet()
     else:
-        m = optimize_flowsheet(system_recovery=float(sys.argv[1]))
+        desal_kwargs = flowsheet_two_stage.desal_kwargs
+        m = optimize_flowsheet(system_recovery=float(sys.argv[1]), **desal_kwargs)
