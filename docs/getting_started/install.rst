@@ -77,7 +77,6 @@ From the same environment where ProteusLib was installed, run:
 
 .. note:: Typically, the ``idaes get-extensions`` command only needs to be run once for each system, as it will install the required files into a common, system-wide location.
 
-
 .. _install-edb:
 
 Installing the Electrolyte Database (EDB)
@@ -129,6 +128,29 @@ To install the EDB, follow these steps:
        Then, select the "electrolytedb" database. The result should show three collections with some records loaded in
        each, as in :ref:`this screen <screenshot-mongodb-compass-edb>` .
 
+Running the ProteusLib test suite
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+#. To run the ProteusLib test suite, first install the optional testing dependencies using pip:
+
+    .. code-block:: shell
+
+        pip install "proteuslib[testing]"
+
+#. Then, run the following command to run the complete ProteusLib test suite:
+
+    .. code-block:: shell
+
+        pytest --pyargs proteuslib
+
+#. (Optional) To see a list of available command-line options, run:
+
+    .. code-block:: shell
+    
+        pytest --pyargs proteuslib --help
+
+.. note:: Some tests will be skipped (denoted by an ``s`` symbol). This is to be expected, as some of the tests are only applicable within a developer environment.
+
 For ProteusLib developers
 -------------------------
 
@@ -163,6 +185,8 @@ If you plan to contribute to ProteusLib's codebase, choose this option.
 	.. code-block:: shell
 
 		pytest
+
+#. To view/change the generated documentation, see the :ref:`documentation-mini-guide` section
 
 Installing in existing development environments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -224,8 +248,76 @@ When either the ``proteuslib`` package or one of its dependencies are installed,
 
     MongoDB Compass electrolytedb Collections (9/2021)
 
+.. _documentation-mini-guide:
 
+Documentation for developers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+The project documentation is created and updated using the `Sphinx documentation tool <https://www.sphinx-doc.org>`_.
+This tool generates nice, indexed, HTML webpages --- like this one --- from text files in the "docs" directory.
+The documentation will include the docstrings you put on your modules, classes, methods, and functions as well
+as additional documentation in text files in the "docs" directory. The project is set up so that Sphinx documentation
+is generated automatically online for new releases. This section describes how to do this same documentation
+generation locally in your development environment so you can preview what will be shown to the users.
 
+.. _documentation-mini-guide-gen:
 
+Generating the documentation
+++++++++++++++++++++++++++++
 
+To generate a local copy of the documentation for the first time, follow these steps:
+
+1. Change directory to the "docs" subdirectory
+
+2. Generate the tree of API documentation with "sphinx-apidoc". For convenience, a script has been
+   provided that has all the required options.
+
+   * On Windows, run ``.\apidoc.bat``
+
+   * On Linux/OSX run ``./apidoc.sh``
+
+3. Generate the HTML with Sphinx.
+
+   * On Windows, run ``.\make html``
+
+   * On Linux/OSX run ``make html``
+
+After these steps are complete, you should be able to preview the HTML documentation by opening the file
+located at "_build/html/index.html" in a web browser. To see the tree of API documentation that is generated
+automatically from the source code, browse to the "Technical Reference" page and click on the "Modules" link at the
+bottom.
+
+.. _documentation-mini-guide-update:
+
+Updating the documentation
+++++++++++++++++++++++++++
+
+If you make changes in your code's docstrings that you want to see reflected in the generated documentation,
+you need to re-generate the API documentation using "sphinx-apidoc". To do this, simply re-run the command
+given in step 2 of :ref:`documentation-mini-guide-gen`.
+
+If you edited some documentation directly, i.e. created or modified a text file with extension `.rst`, then you
+don't need to run the previous command. Regardless, you will next need to update the documentation with the
+Sphinx build command given in step 3 of :ref:`documentation-mini-guide-gen`.
+
+.. important:: The files under "docs/apidoc" are tracked in Git, otherwise they would not be available to the
+    ReadTheDocs builder (that doesn't know about sphinx-apidoc, strangely). Please remember to commit and push
+    them along with the changes in the source code.
+
+Documenting your modules
+++++++++++++++++++++++++
+Full documentation for modules should be placed in the appropriate subfolder --- e.g., `property_models` or
+`unit_models` --- of the `docs/technical_reference` section (and folder). See `docs/technical_reference/unit_modles/reverse_osmosis_0D.rst`
+for an example.
+
+Note that at the bottom of the file you should add the ``.. automodule::`` directive that will insert the
+documentation for your module as generated from the source code (and docstrings). This generally looks like this::
+
+    .. automodule:: proteuslib.<package_name>.<module_name>
+        :members:
+        :noindex:
+
+The ``:members:`` option says to include all the classes, functions, etc. in the module. It is important to add
+the ``:noindex:`` option, otherwise Sphinx will try to generate an index entry that conflicts with the
+entry that was created by the API docs (step 2 of :ref:`documentation-mini-guide-gen`), which would result
+in warnings and failed builds for ReadTheDocs and the tests.

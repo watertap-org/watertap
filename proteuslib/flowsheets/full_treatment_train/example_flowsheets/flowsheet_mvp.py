@@ -262,7 +262,7 @@ def solve_optimization(system_recovery=0.75, **kwargs_flowsheet):
     pretreatment.display_pretreatment_NF(m, **kwargs_flowsheet)
     m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs_flowsheet)
-    costing.display_costing(m, **kwargs_flowsheet)
+    costing.display_costing(m)
     print('desalination saturation index:', value(m.fs.desal_saturation.saturation_index))
     print('pretreatment saturation index:', value(m.fs.pretrt_saturation.saturation_index))
     print('pretreatment Ca concentration factor:', value(

@@ -13,9 +13,6 @@
 from pyomo.environ import (
     Block, Constraint, Expression, Var, Param, Reals, NonNegativeReals, units as pyunits)
 from idaes.core.util.exceptions import ConfigurationError
-pyunits.load_definitions_from_strings(['USD = [currency]'])
-pyunits.USD # dollars
-
 
 
 def add_costing_param_block(self):
@@ -198,7 +195,6 @@ def Nanofiltration_costing(self, section='pretreatment'):
 
     b_NF = self.parent_block()
     b_fs = b_NF.parent_block()
-    # b_section = getattr(self, section)
 
     # capital cost
     self.eq_capital_cost = Constraint(
@@ -209,8 +205,6 @@ def Nanofiltration_costing(self, section='pretreatment'):
         expr=self.operating_cost == b_fs.costing_param.factor_membrane_replacement
              * b_fs.costing_param.NF_mem_cost * b_NF.area / pyunits.m ** 2)
 
-    # # Treatment section cost
-    # self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
 
 def Separator_costing(self, section=None, cost_capacity=False):
     _make_vars(self, section)
@@ -221,7 +215,7 @@ def Separator_costing(self, section=None, cost_capacity=False):
         self.a = Param(initialize=645, mutable=True, units=pyunits.dimensionless)
         self.b = Param(initialize=1324, mutable=True, units=pyunits.dimensionless)
         self.n = Param(initialize=0.4, mutable=True, units=pyunits.dimensionless)
-        # TODO: reconsider material factor=9 for converting cost of carbon steel to titanium- change to 3
+        # changing to Fm from 9 to 3
         self.Fm = Param(initialize=3, mutable=True, units=pyunits.dimensionless)
 
         # capital cost
@@ -241,7 +235,7 @@ def Separator_costing(self, section=None, cost_capacity=False):
     self.operating_cost.fix(0)
 
 
-def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False): #TODO add fixed cost options vs economies_of_scale
+def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False):
     _make_vars(self, section)
 
     b_m = self.parent_block()
@@ -253,7 +247,7 @@ def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False)
             self.a = Param(initialize=645, mutable=True, units=pyunits.dimensionless)
             self.b = Param(initialize=1324, mutable=True, units=pyunits.dimensionless)
             self.n = Param(initialize=0.4, mutable=True, units=pyunits.dimensionless)
-            # TODO: reconsider material factor=9 for converting cost of carbon steel to titanium - change to 3
+            # changing to Fm from 9 to 3
             self.Fm = Param(initialize=3, mutable=True, units=pyunits.dimensionless)
 
             # capital cost
@@ -283,7 +277,6 @@ def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False)
              cost escalation factor, cost_esc, can be modified to account for changes over time.'''
 
             # NaOCl specific capex ($/m3/day) = 479.87 * x ** (-0.396) ; x is plant capacity (m3/day)
-            # TODO: may need to touch flow_vol while building naocl_mixer_unit. Double-check. Alternative: use flow_vol of RO final permeate
             self.eq_capital_cost = Constraint(expr=self.capital_cost ==
                                                    479.87
                                                    * (b_m.inlet_stream_state[0].flow_vol
@@ -299,7 +292,6 @@ def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False)
         # Sodium hypochlorite cost taken from WaterTAP (2020 USD) which assumes 15% purity
         self.naocl_cost = Param(initialize=0.23, mutable=True, units=pyunits.kg**-1)
         self.naocl_purity = Param(initialize=0.15, mutable=True)
-        #TODO: no electricity cost included -- would be based on pump work, expected to be negligible for the time being
         self.eq_operating_cost = Constraint(expr=self.operating_cost ==
                                                  b_m.naocl_stream.flow_mol[0]
                                                  * b_m.naocl_stream.mole_frac_comp[0, "OCl_-"]
@@ -347,12 +339,12 @@ def Mixer_costing(self, mixer_type='default', section=None, cost_capacity=False)
                                                    * self.lime_lbs_per_day * self.cost_esc
                                                    / b_fs.costing_param.factor_total_investment)
         # Calcium hydroxide (lime) cost taken from WaterTAP (2020 USD) which assumes 100% purity
-        # TODO: $0.15/kg cost of lime from WaterTAP seems too high--> consider reducing by ~10x or more
+        # $0.15/kg cost of lime from WaterTAP
         # Alternative price source: https://www.indexmundi.com/en/commodities/minerals/lime/lime_t5.html
         # ~12 cents/kg average based on alternative price source.
         self.caoh2_cost = Param(initialize=0.12, mutable=True, units=pyunits.kg**-1)
         self.caoh2_purity = Param(initialize=1, mutable=True)
-        #TODO: no electricity cost included -- would be based on pump work, expected to be negligible for the time being
+
         self.eq_operating_cost = Constraint(expr=self.operating_cost == b_m.lime_stream.flow_mol[0]
                                                  * b_m.lime_stream.mole_frac_comp[0, "Ca(OH)2"]
                                                  * 74.093e-3 * pyunits.kg / pyunits.mol
@@ -402,8 +394,7 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None, cost_c
             self.a = Param(initialize=9052, mutable=True, units=pyunits.dimensionless)
             self.b = Param(initialize=231, mutable=True, units=pyunits.dimensionless)
             self.n = Param(initialize=0.9, mutable=True, units=pyunits.dimensionless)
-            #TODO: reconsider material factor=9 for converting cost of carbon steel to titanium
-            # changing to Fm=3
+            # changing to Fm from 9 to 3
             self.Fm = Param(initialize=3, mutable=True, units=pyunits.dimensionless)
             # capital cost
             self.eq_capital_cost = Constraint(
@@ -414,7 +405,6 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None, cost_c
 
         elif not cost_capacity:
             # assume linear cost per L/s based on median of cost-capacity curve
-            #TODO: adjust pump_unit_capex accordingly with material factor (convert from titanium to stainless steel)
             self.pump_unit_capex = Param(initialize=889, mutable=True, units=pyunits.dimensionless, doc="Capex per liter/s")
             self.eq_capital_cost = Constraint(expr=self.capital_cost == self.pump_unit_capex
                                                    * b_PC.control_volume.properties_in[0].flow_vol * 1000 * self.cost_esc
@@ -425,7 +415,6 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None, cost_c
             expr=self.operating_cost == (b_PC.work_mechanical[0] / pyunits.W
                                          * 3600 * 24 * 365 * b_fs.costing_param.load_factor)
                  * b_fs.costing_param.electricity_cost / 3600 / 1000)
-
 
     elif pump_type == 'pressure exchanger':
         # capital cost
@@ -445,5 +434,4 @@ def pressure_changer_costing(self, pump_type="centrifugal", section=None, cost_c
         raise NotImplementedError("pump type of {pump_type} is not implemented in the financials file"
                                   "".format(pump_type=pump_type))
 
-    # # Treatment section cost
-    # self.eq_section = Constraint(expr=b_section == self.operating_cost + self.capital_cost)
+
