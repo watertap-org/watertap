@@ -50,6 +50,15 @@ def build_components(m, has_bypass=True):
     if has_bypass:
         m.fs.splitter.split_fraction[0, 'bypass'].fix(0.50)
 
+        m.fs.removal_Ca = Expression(
+            expr=(m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'Ca']
+                  - m.fs.mixer.mixed_state[0].flow_mass_phase_comp['Liq', 'Ca'])
+                 / m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'Ca'])
+        m.fs.removal_Mg = Expression(
+            expr=(m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'Mg']
+                  - m.fs.mixer.mixed_state[0].flow_mass_phase_comp['Liq', 'Mg'])
+                 / m.fs.feed.properties[0].flow_mass_phase_comp['Liq', 'Mg'])
+
 
 def build(m, has_bypass=True):
     """

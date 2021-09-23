@@ -15,24 +15,30 @@ import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF as flows
 def build_components(m):
     flowsheet_NF.build_components(m, has_bypass=False)
 
+
 def build(m):
     flowsheet_NF.build(m, has_bypass=False)
+
 
 def scale(m):
     flowsheet_NF.scale(m, has_bypass=False)
 
+
 def initialize(m):
     flowsheet_NF.initialize(m, has_bypass=False)
+
 
 def report(m):
     flowsheet_NF.report(m, has_bypass=False)
 
+
 def solve_flowsheet():
     flowsheet_NF.solve_flowsheet(has_bypass=False)
+
 
 def simulate(m):
     flowsheet_NF.simulate(m)
     return m
 
 if __name__ == "__main__":
-    m = solve_flowsheet()
+    solve_flowsheet()
