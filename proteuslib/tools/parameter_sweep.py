@@ -17,6 +17,7 @@ import os
 import itertools
 import warnings
 
+from scipy.interpolate import griddata
 from enum import Enum, auto
 from abc import abstractmethod, ABC 
 from idaes.core.util import get_solver
@@ -294,9 +295,33 @@ def _process_sweep_params(sweep_params):
 
 # ================================================================
 
+def _interp_nan_values(global_values, global_results):
+
+    global_results_clean = np.copy(global_results)
+
+    n_vals = np.shape(global_values)[1]
+    n_outs = np.shape(global_results)[1]
+
+    # Build a mask of all the non-nan saved outputs
+    # i.e., where the optimzation succeeded
+    mask = np.isfinite(global_results[:, 0])
+
+    # Create a list of points where good data is available
+    x0 = global_values[mask, :]
+
+    # Interpolate to get a value for nan points where possible
+    for k in range(n_outs):
+        y0 = global_results[mask, k]
+        yi = griddata(x0, y0, global_values, method='linear', rescale=True)
+        global_results_clean[~mask, k] = yi[~mask]
+
+    return global_results_clean
+
+# ================================================================
+
 def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
         optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
-        mpi_comm=None, debugging_data_dir=None, num_samples=None, seed=None):
+        mpi_comm=None, debugging_data_dir=None, interpolate_nan_outputs=False, num_samples=None, seed=None):
 
     '''
     This function offers a general way to perform repeated optimizations
@@ -352,6 +377,12 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
 
         debugging_data_dir (optional) : Save results on a per-process basis for parallel debugging
                                         purposes. If None no `debugging` data will be saved.
+
+        interpolate_nan_outputs (optional) : When the parameter sweep has finished, interior values
+                                             of np.nan will be replaced with a value obtained via
+                                             a linear interpolation of their surrounding valid neighbors.
+                                             If true, a second output file with the extension "_clean"
+                                             will be saved alongside the raw (un-interpolated) values. 
 
         num_samples (optional) : If the user is using sampling techniques rather than a linear grid
                                  of values, they need to set the number of samples
@@ -462,6 +493,12 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
     if rank == 0 and results_file is not None:
         # Save the global data
         np.savetxt(results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
+
+        if interpolate_nan_outputs:
+            global_results_clean = _interp_nan_values(global_values, global_results)
+            global_save_data_clean = np.hstack((global_values, global_results_clean))
+
+            np.savetxt('interpolated_%s' % (results_file), global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
     
     return global_save_data
 
