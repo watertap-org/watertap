@@ -103,7 +103,7 @@ def solve_flowsheet():
     initialize(m)
 
     check_dof(m)
-    solve_with_user_scaling(m, tee=True, fail_flag=True, bound_push=1e-10, mu_init=1e-6)
+    solve_with_user_scaling(m, tee=True, fail_flag=True)
 
     # report
     report(m)
@@ -112,8 +112,7 @@ def solve_flowsheet():
 
 
 def simulate(m):
-    solve_with_user_scaling(m, tee=False, fail_flag=True, bound_push=1e-10, mu_init=1e-6)
-
+    solve_with_user_scaling(m, tee=False, fail_flag=True)
 
 if __name__ == "__main__":
     m = solve_flowsheet()
