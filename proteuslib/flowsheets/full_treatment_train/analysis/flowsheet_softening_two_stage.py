@@ -60,16 +60,11 @@ def report(m, **kwargs):
 
 def set_optimization_components(m, system_recovery):
     # unfix variables
-    setup_block_to_solve_lime_dosing_rate(m, target_hardness_mg_per_L=5000)
-    # TODO: just adding upper and lower bounds as recommended in comment above; may want to revise bound values or comment out all together if not impactful
+    m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0].unfix()
     m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol.setlb(1e-6 / 74.09e-3)
     m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol.setub(1 / 74.09e-3)
 
-    # TODO: setup_block_to_solve_lime_dosing_rate fixes hardness which seems potentially problematic;
-    #  here, I am unfixing hardness (or could use set_value() instead of fix()) and applying
-    #  bounds; change back or revise if not impactful
-    m.fs.stoich_softening_separator_unit.hardness.unfix()
-    m.fs.stoich_softening_separator_unit.hardness.setlb(1000)
+    m.fs.stoich_softening_separator_unit.hardness.setlb(10)
     m.fs.stoich_softening_separator_unit.hardness.setub(10000)
 
     flowsheet_two_stage.set_optimization_components(m, system_recovery)
