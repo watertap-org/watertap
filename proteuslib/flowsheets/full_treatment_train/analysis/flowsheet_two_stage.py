@@ -34,8 +34,8 @@ desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
 
 
-def set_optimization_components(m, system_recovery):
-    single_stage.set_optimization_components(m, system_recovery)
+def set_optimization_components(m, system_recovery, **kwargs):
+    single_stage.set_optimization_components(m, system_recovery, **kwargs)
 
     m.fs.max_allowable_pressure = Param(initialize=300e5, mutable=True, units=pyunits.pascal)
     m.fs.pump_RO2.control_volume.properties_out[0].pressure.unfix()
@@ -48,13 +48,18 @@ def set_optimization_components(m, system_recovery):
 
     # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
     m.fs.RO2.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
-    m.fs.RO2.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO2.A_comp[0, 'H2O']
-                                                                   * m.fs.RO2.dens_solvent
-                                                                   * m.fs.RO2.NDPmin)
+    if desal_kwargs['RO_type'] == '0D':
+        m.fs.RO2.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO2.A_comp[0, 'H2O']
+                                                                       * m.fs.RO2.dens_solvent
+                                                                       * m.fs.RO2.NDPmin)
+    elif desal_kwargs['RO_type'] == '1D':
+        m.fs.RO2.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'].setlb(m.fs.RO2.A_comp[0, 'H2O']
+                                                                       * m.fs.RO2.dens_solvent
+                                                                       * m.fs.RO2.NDPmin)
 
 
-def set_up_optimization(m, system_recovery=0.50):
-    set_optimization_components(m, system_recovery)
+def set_up_optimization(m, system_recovery=0.50, **kwargs):
+    set_optimization_components(m, system_recovery, **kwargs)
     check_dof(m, 4)
 
 
@@ -82,9 +87,9 @@ def solve_flowsheet():
     return m
 
 
-def optimize_flowsheet(system_recovery=0.50):
+def optimize_flowsheet(system_recovery=0.50, **kwargs):
     m = solve_flowsheet()
-    set_up_optimization(m, system_recovery=system_recovery)
+    set_up_optimization(m, system_recovery=system_recovery, **kwargs)
     optimize(m)
 
     report(m, **desal_kwargs)
@@ -97,4 +102,4 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         m = solve_flowsheet()
     else:
-        m = optimize_flowsheet(system_recovery=float(sys.argv[1]))
+        m = optimize_flowsheet(system_recovery=float(sys.argv[1]), **desal_kwargs)

@@ -149,9 +149,15 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
 
     # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
     m.fs.RO.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
-    m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO.A_comp[0, 'H2O']
-                                                                  * m.fs.RO.dens_solvent
-                                                                  * m.fs.RO.NDPmin)
+    if kwargs_flowsheet['RO_type'] == '0D':
+        m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO.A_comp[0, 'H2O']
+                                                                      * m.fs.RO.dens_solvent
+                                                                      * m.fs.RO.NDPmin)
+    elif kwargs_flowsheet['RO_type'] == '1D':
+        m.fs.RO.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'].setlb(m.fs.RO.A_comp[0, 'H2O']
+                                                                      * m.fs.RO.dens_solvent
+                                                                      * m.fs.RO.NDPmin)
+
 
     if is_twostage:
         m.fs.max_allowable_pressure = Param(initialize=300e5, mutable=True, units=pyunits.pascal)
@@ -165,9 +171,14 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
 
         # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
         m.fs.RO2.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
-        m.fs.RO2.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO2.A_comp[0, 'H2O']
+        if kwargs_flowsheet['RO_type'] == '0D':
+            m.fs.RO2.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO2.A_comp[0, 'H2O']
                                                                        * m.fs.RO2.dens_solvent
                                                                        * m.fs.RO2.NDPmin)
+        elif kwargs_flowsheet['RO_type'] == '1D':
+            m.fs.RO2.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'].setlb(m.fs.RO2.A_comp[0, 'H2O']
+                                                                           * m.fs.RO2.dens_solvent
+                                                                           * m.fs.RO2.NDPmin)
 
     # add additional constraints
     # fixed system recovery
@@ -244,6 +255,8 @@ def solve_flowsheet_mvp_NF(**kwargs):
     # print('pretreatment solubility index:', value(m.fs.pretrt_saturation.saturation_index))
     print('water recovery:', value(m.fs.system_recovery))
     print('LCOW:', value(m.fs.costing.LCOW))
+    print('CP modulus:', value(m.fs.desal_saturation.cp_modulus))
+
     # print('Ca mass frac out (ppm):', value(m.fs.Ca_mass_frac_out*1e6))
 
     return m
@@ -263,6 +276,7 @@ def solve_optimization(system_recovery=0.75, **kwargs_flowsheet):
     # print('pretreatment saturation index:', value(m.fs.pretrt_saturation.saturation_index))
     print('Ca mass frac out (ppm):', value(m.fs.Ca_mass_frac_out * 1e6))
     print('water recovery:', value(m.fs.system_recovery))
+    print('CP modulus:', value(m.fs.desal_saturation.cp_modulus))
 
     return m
 
