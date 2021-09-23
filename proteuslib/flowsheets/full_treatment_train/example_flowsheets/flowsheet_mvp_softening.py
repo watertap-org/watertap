@@ -290,4 +290,4 @@ if __name__ == "__main__":
         m = solve_flowsheet_mvp_NF(**kwargs_flowsheet)
     else:
         m = solve_optimization(system_recovery=float(sys.argv[1]), **kwargs_flowsheet)
-    costing.display_costing(m, **kwargs_flowsheet)
+    costing.display_costing(m)
