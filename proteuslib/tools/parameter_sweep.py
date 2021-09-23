@@ -498,7 +498,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
             global_results_clean = _interp_nan_values(global_values, global_results)
             global_save_data_clean = np.hstack((global_values, global_results_clean))
 
-            np.savetxt('%s_clean' % (results_file), global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
+            np.savetxt('interpolated_%s' % (results_file), global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
     
     return global_save_data
 
