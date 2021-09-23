@@ -114,7 +114,7 @@ jobs:
         make -C docs linkcheck -d
 
   user-mode-pytest:
-    name: pytest (user mode) (py${{ matrix.python-version }}//${{ matrix.os }})
+    name: pytest (user mode) (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
     strategy:
       fail-fast: false
