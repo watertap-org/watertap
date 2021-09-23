@@ -23,7 +23,7 @@ def test_build_and_scale_desalination():
     for has_desal_feed in [True]:
         for is_twostage in [True, False]:
             for has_ERD in [True, False]:
-                for RO_type in ['Sep', '0D']:
+                for RO_type in ['Sep', '0D', '1D']:
                     for RO_base in ['TDS']:
                         for RO_level in ['simple', 'detailed']:
                             kwargs = {'has_desal_feed': has_desal_feed, 'is_twostage': is_twostage, 'has_ERD': has_ERD,
@@ -32,6 +32,8 @@ def test_build_and_scale_desalination():
                             if RO_type == 'Sep' and is_twostage:
                                 continue  # not a supported combination
                             elif RO_type == 'Sep' and has_ERD:
+                                continue  # not a supported combination
+                            elif RO_type == '1D' and RO_level == 'simple':
                                 continue  # not a supported combination
 
                             m = ConcreteModel()
