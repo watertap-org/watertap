@@ -237,6 +237,7 @@ def solve_flowsheet_mvp_NF(**kwargs):
     print('pretreatment solubility index:', value(m.fs.pretrt_saturation.saturation_index))
     print('water recovery:', value(m.fs.system_recovery))
     print('LCOW:', value(m.fs.costing.LCOW))
+    print('CP modulus:', value(m.fs.desal_saturation.cp_modulus))
 
     return m
 

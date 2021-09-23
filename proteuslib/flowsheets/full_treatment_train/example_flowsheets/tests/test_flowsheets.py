@@ -70,7 +70,7 @@ def test_flowsheet_mvp_NF_bypass_twostage_1():
     assert value(m.fs.NF.retentate.flow_mass_phase_comp[0, 'Liq', 'Ca']) == pytest.approx(1.669e-4, rel=1e-3)
     assert value(m.fs.RO2.retentate.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.2408, rel=1e-3)
     assert value(m.fs.RO2.retentate.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(2.605e-2, rel=1e-3)
-    assert value(m.fs.desal_saturation.saturation_index) == pytest.approx(0.3886, rel=1e-3)
+    assert value(m.fs.desal_saturation.saturation_index) == pytest.approx(0.4073, rel=1e-3)
 
 @pytest.mark.component
 def test_flowsheet_mvp_cost_optimization():
@@ -78,6 +78,6 @@ def test_flowsheet_mvp_cost_optimization():
         'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
         'NF_type': 'ZO', 'NF_base': 'ion',
         'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
-    m = flowsheet_mvp.solve_optimization(system_recovery=0.7051, **kwargs_flowsheet)
-    assert value(m.fs.mixer_permeate.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.7028, rel=1e-3)
-    assert value(m.fs.costing.LCOW) == pytest.approx(0.5908, rel=1e-3)
+    m = flowsheet_mvp.solve_optimization(system_recovery=0.68, **kwargs_flowsheet)
+    assert value(m.fs.mixer_permeate.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(0.6778, rel=1e-3)
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.5569, rel=1e-3)

@@ -42,17 +42,24 @@ def build(m, section='desalination', pretrt_type='NF', **kwargs):
             sb_perm = m.fs.mixer_permeate.mixed_state[0]
             if kwargs['RO_type'] == '0D':
                 sb_conc = m.fs.RO2.feed_side.properties_out[0]
+                sb_conc_inter = m.fs.RO2.feed_side.properties_interface_out[0]
             elif kwargs['RO_type'] == '1D':
                 sb_conc = m.fs.RO2.feed_side.properties[0, 1]
+                sb_conc_inter = m.fs.RO2.feed_side.properties_interface[0, 1]
         else:
             if kwargs['RO_type'] == '0D':
                 sb_perm = m.fs.RO.permeate_side.properties_mixed[0]
                 sb_conc = m.fs.RO.feed_side.properties_out[0]
+                sb_conc_inter = m.fs.RO.feed_side.properties_interface_out[0]
             elif kwargs['RO_type'] == '1D':
                 sb_perm = m.fs.RO.mixed_permeate[0]
                 sb_conc = m.fs.RO.feed_side.properties[0, 1]
+                sb_conc_inter = m.fs.RO.feed_side.properties_interface[0, 1]
 
+        m.fs.desal_saturation.cp_modulus = Expression(
+            expr=sb_conc_inter.conc_mass_phase_comp['Liq', 'TDS'] / sb_conc.conc_mass_phase_comp['Liq', 'TDS'])
 
+        # constraints
         m.fs.desal_saturation.eq_temperature = Constraint(
             expr=sb_eNRTL.temperature == sb_conc.temperature)
         m.fs.desal_saturation.eq_pressure = Constraint(
@@ -70,12 +77,14 @@ def build(m, section='desalination', pretrt_type='NF', **kwargs):
             @m.fs.desal_saturation.Constraint(comp_match_dict.keys())
             def eq_flow_mol_balance(b, j):
                 if j in ['Cl_-', 'Na_+']:
+                    bulk_flow = (sb_dilute.flow_mol_phase_comp['Liq', comp_match_dict[j]]
+                                 - sb_perm.flow_mass_phase_comp['Liq', 'TDS'] / (58.44e-3 * pyunits.kg / pyunits.mol))
                     return (sb_eNRTL.flow_mol_phase_comp['Liq', j]
-                            == sb_dilute.flow_mol_phase_comp['Liq', comp_match_dict[j]]
-                            - sb_perm.flow_mass_phase_comp['Liq', 'TDS'] / (58.44e-3 * pyunits.kg/pyunits.mol))
+                            == bulk_flow * m.fs.desal_saturation.cp_modulus)
                 elif j in ['Ca_2+', 'Mg_2+', 'SO4_2-']:
                     return (sb_eNRTL.flow_mol_phase_comp['Liq', j]
-                            == sb_dilute.flow_mol_phase_comp['Liq', comp_match_dict[j]])
+                            == sb_dilute.flow_mol_phase_comp['Liq', comp_match_dict[j]]
+                            * m.fs.desal_saturation.cp_modulus)
                 elif j == 'H2O':
                     return (sb_eNRTL.flow_mol_phase_comp['Liq', j] ==
                             sb_conc.flow_mol_phase_comp['Liq', 'H2O'])
@@ -91,17 +100,20 @@ def build(m, section='desalination', pretrt_type='NF', **kwargs):
             @m.fs.desal_saturation.Constraint(comp_match_dict.keys())
             def eq_flow_mol_balance(b, j):
                 if j == 'Na_+':
+                    bulk_flow = (sb_dilute.flow_mol_phase_comp['Liq', 'NaCl']
+                                 - sb_perm.flow_mass_phase_comp['Liq', 'TDS'] / (58.44e-3 * pyunits.kg / pyunits.mol))
                     return (sb_eNRTL.flow_mol_phase_comp['Liq', j]
-                            == sb_dilute.flow_mol_phase_comp['Liq', 'NaCl']
-                            - sb_perm.flow_mass_phase_comp['Liq', 'TDS'] / (58.44e-3 * pyunits.kg / pyunits.mol))
+                            == bulk_flow * m.fs.desal_saturation.cp_modulus)
                 if j in 'Cl_-':
-                    return (sb_eNRTL.flow_mol_phase_comp['Liq', j]
-                            == sb_dilute.flow_mol_phase_comp['Liq', 'Cl_-']
+                    bulk_flow = (sb_dilute.flow_mol_phase_comp['Liq', 'Cl_-']
                             + sb_dilute.flow_mol_phase_comp['Liq', 'NaCl']
                             - sb_perm.flow_mass_phase_comp['Liq', 'TDS'] / (58.44e-3 * pyunits.kg / pyunits.mol))
+                    return (sb_eNRTL.flow_mol_phase_comp['Liq', j]
+                            == bulk_flow * m.fs.desal_saturation.cp_modulus)
                 elif j in ['Ca_2+', 'Mg_2+', 'SO4_2-']:
                     return (sb_eNRTL.flow_mol_phase_comp['Liq', j]
-                            == sb_dilute.flow_mol_phase_comp['Liq', comp_match_dict[j]])
+                            == sb_dilute.flow_mol_phase_comp['Liq', comp_match_dict[j]]
+                            * m.fs.desal_saturation.cp_modulus)
                 elif j == 'H2O':
                     return (sb_eNRTL.flow_mol_phase_comp['Liq', j] ==
                             sb_conc.flow_mol_phase_comp['Liq', 'H2O'])
