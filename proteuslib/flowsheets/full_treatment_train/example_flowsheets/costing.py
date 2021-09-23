@@ -16,6 +16,7 @@ from pyomo.environ import (
 import proteuslib.flowsheets.full_treatment_train.example_flowsheets.financials as financials
 import idaes.core.util.scaling as iscale
 
+cost_capacity_flag = False
 def build_costing(m, module=financials, **kwargs):
     '''
     Add costing to a given flowsheet. This function will
@@ -38,7 +39,7 @@ def build_costing(m, module=financials, **kwargs):
         elif kwargs['NF_type'] == 'Sep':
             raise NotImplementedError("get_costing will not be implemented for the NF separator model.")
     if hasattr(m.fs, 'pump_NF'):
-        m.fs.pump_NF.get_costing(module=module, section='pretreatment', pump_type="low pressure", cost_capacity=False)
+        m.fs.pump_NF.get_costing(module=module, section='pretreatment', pump_type="low pressure", cost_capacity=cost_capacity_flag)
     # Reverse Osmosis
     if hasattr(m.fs, 'RO'):
         if kwargs['RO_type'] == '0D' or kwargs['RO_type'] == '1D':
@@ -60,7 +61,7 @@ def build_costing(m, module=financials, **kwargs):
         m.fs.ERD.get_costing(module=module, section='primary', pump_type='pressure exchanger')
     # Pretreatment
     if hasattr(m.fs,'stoich_softening_mixer_unit'):
-        m.fs.stoich_softening_mixer_unit.get_costing(module=module, section='pretreatment', mixer_type="lime_softening",cost_capacity=False)
+        m.fs.stoich_softening_mixer_unit.get_costing(module=module, section='pretreatment', mixer_type="lime_softening",cost_capacity=cost_capacity_flag)
         m.fs.lime_softening_unit_capex = Expression(expr=m.fs.stoich_softening_mixer_unit.costing.capital_cost/m.fs.annual_water_production *crf)
         m.fs.lime_softening_unit_opex = Expression(expr=m.fs.stoich_softening_mixer_unit.costing.operating_cost / m.fs.annual_water_production)
     else:
@@ -68,7 +69,7 @@ def build_costing(m, module=financials, **kwargs):
         m.fs.lime_softening_unit_opex = Expression(expr=0)
     if hasattr(m.fs,'ideal_naocl_mixer_unit'): #TODO: check how posttreatment (chlorination) was implemented on flowsheet (once added in)
         # print('FOUND CHLORINATION UNIT')
-        m.fs.ideal_naocl_mixer_unit.get_costing(module=module, section='post_treatment', mixer_type='naocl_mixer')
+        m.fs.ideal_naocl_mixer_unit.get_costing(module=module, section='post_treatment', mixer_type='naocl_mixer', cost_capacity=cost_capacity_flag)
         m.fs.chlorination_unit_capex = Expression(expr=m.fs.ideal_naocl_mixer_unit.costing.capital_cost/m.fs.annual_water_production *crf)
         m.fs.chlorination_unit_opex = Expression(expr=m.fs.ideal_naocl_mixer_unit.costing.operating_cost / m.fs.annual_water_production)
     else:
@@ -77,7 +78,7 @@ def build_costing(m, module=financials, **kwargs):
 
     # TODO: Solver currently fails to converge when trying to account for permeate mixer costing (two-stage not converging)
     if hasattr(m.fs,'mixer_permeate'):
-        m.fs.mixer_permeate.get_costing(module=module, section='primary')
+        m.fs.mixer_permeate.get_costing(module=module, section='primary', cost_capacity=cost_capacity_flag)
     # call get_system_costing for whole flowsheet
     module.get_system_costing(m.fs)
 

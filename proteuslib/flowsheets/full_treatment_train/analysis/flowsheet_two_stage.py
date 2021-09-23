@@ -84,6 +84,8 @@ def solve_flowsheet():
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
     # report
+    print('==================================='
+          '\n          Simulation          ')
     report(m, **desal_kwargs)
 
     return m
@@ -93,7 +95,8 @@ def optimize_flowsheet(system_recovery=0.50, **kwargs):
     m = solve_flowsheet()
     set_up_optimization(m, system_recovery=system_recovery, **kwargs)
     optimize(m)
-
+    print('==================================='
+          '\n       Optimization            ')
     report(m, **desal_kwargs)
 
     return m

@@ -2,4 +2,6 @@ Getting Started
 ===============
 
 .. toctree::
-	install
+    :maxdepth: 2
+
+    install
