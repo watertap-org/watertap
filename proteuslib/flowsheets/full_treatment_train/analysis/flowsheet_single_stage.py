@@ -14,7 +14,7 @@
 mutable parameters for optimization:
     m.fs.system_recovery_target
 '''
-from pyomo.environ import ConcreteModel, Objective, Expression, Constraint, TransformationFactory, value, Param
+from pyomo.environ import ConcreteModel, Objective, Expression, Constraint, TransformationFactory, value, Param, Var
 from pyomo.environ import units as pyunits
 from pyomo.network import Arc
 
@@ -64,12 +64,20 @@ def build_components(m, pretrt_type='NF', **kwargs):
         elif kwargs['RO_type'] == '1D':
             product_water_sb = m.fs.RO.mixed_permeate[0]
 
+    feed_flow_vol = 0.0009769808  # value of feed flowrate using the seawater property package with 1 kg/s mass flowrate
     m.fs.system_recovery = Expression(
-        expr=product_water_sb.flow_vol / m.fs.feed.properties[0].flow_vol)
-    m.fs.total_work = Expression(expr=m.fs.pump_RO.work_mechanical[0])
+        expr=product_water_sb.flow_vol / feed_flow_vol)
 
     # need load factor from costing_param_block for annual_water_production
     financials.add_costing_param_block(m.fs)
+
+    # RO recovery
+    m.fs.RO_recovery = Var(initialize=0.5,
+                           bounds=(0.01, 0.99),
+                           doc='Total volumetric water recovery for RO')
+    m.fs.eq_RO_recovery = Constraint(
+        expr=m.fs.RO_recovery
+             == product_water_sb.flow_vol / m.fs.tb_pretrt_to_desal.properties_out[0].flow_vol)
 
     # annual water production
     m.fs.annual_water_production = Expression(

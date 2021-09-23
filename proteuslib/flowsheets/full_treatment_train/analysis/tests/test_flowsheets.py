@@ -39,25 +39,25 @@ def test_flowsheet_NF():
 def test_flowsheet_single_stage():
     desal_kwargs = flowsheet_single_stage.desal_kwargs
     m = flowsheet_single_stage.optimize_flowsheet(system_recovery=0.5, **desal_kwargs)
-    assert value(m.fs.costing.LCOW) == pytest.approx(0.4972, rel=1e-3)
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.4996, rel=1e-3)
 
 
 @pytest.mark.component
 def test_flowsheet_two_stage():
     desal_kwargs = flowsheet_two_stage.desal_kwargs
     m = flowsheet_two_stage.optimize_flowsheet(system_recovery=0.65, **desal_kwargs)
-    assert value(m.fs.costing.LCOW) == pytest.approx(0.5457, rel=1e-3)
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.5435, rel=1e-3)
 
 
 @pytest.mark.component
 def test_flowsheet_NF_two_stage():
     desal_kwargs = flowsheet_two_stage.desal_kwargs
     m = flowsheet_NF_two_stage.optimize_flowsheet(system_recovery=0.70, **desal_kwargs)
-    assert value(m.fs.costing.LCOW) == pytest.approx(0.5700, rel=1e-3)
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.5518, rel=1e-3)
 
 
 @pytest.mark.component
 def test_flowsheet_softening_two_stage():
     desal_kwargs = flowsheet_two_stage.desal_kwargs
     m = flowsheet_softening_two_stage.optimize_flowsheet(system_recovery=0.80, **desal_kwargs)
-    assert value(m.fs.costing.LCOW) == pytest.approx(1.006, rel=1e-3)
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.9277, rel=1e-3)
