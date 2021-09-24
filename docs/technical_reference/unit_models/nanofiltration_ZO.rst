@@ -1,10 +1,10 @@
 Nanofiltration (ZO)
 ====================
 This nanofiltration (NF) unit model
-   * is a zero-order model that enables specification of ion rejection
+   * is a zero-order model that enables the user to specify performance in terms of membrane solvent flux and solute/ion rejection
    * supports a single liquid phase only
    * supports steady-state only
-   * default data for water flux and ion rejection are based on Labban et al. (2017) https://doi.org/10.1016/j.memsci.2016.08.062, applying the Donnan steric pore model with dielectric exclusion (DPSM-DE) for artificial seawater
+   * assumes isothermal conditions
 
 .. index::
    pair: proteuslib.unit_models.nanofiltration_ZO;nanofiltration_ZO
@@ -54,84 +54,13 @@ Variables
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Solvent permeability coefficient", ":math:`A`", "A_comp", "[t, j]", ":math:`\text{m/Pa/s}`"
-   "Solute permeability coefficient", ":math:`B`", "B_comp", "[t, j]", ":math:`\text{m/s}`"
    "Mass density of pure water", ":math:`\rho_w`", "dens_solvent", "[p]", ":math:`\text{kg/}\text{m}^3`"
-   "Mass flux across membrane", ":math:`J`", "flux_mass_io_phase_comp", "[t, x, p, j]", ":math:`\text{kg/s}\text{/m}^2`"
+   "Solvent volumetric flux across membrane", ":math:`J_{solv}`", "flux_vol_solvent", "[t, j]", ":math:`\text{m}^3\text{/m}^2\text{/s}`"
    "Membrane area", ":math:`A_m`", "area", "None", ":math:`\text{m}^2`"
    "Component recovery rate", ":math:`R_j`", "recovery_mass_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
    "Volumetric recovery rate", ":math:`R_{vol}`", "recovery_vol_phase", "[t, p]", ":math:`\text{dimensionless}`"
    "Observed solute rejection", ":math:`r_j`", "rejection_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
-   "Over-pressure ratio", ":math:`P_{f,out}/Δ\pi_{out}`", "over_pressure_ratio", "[t]", ":math:`\text{dimensionless}`"
    "Mass transfer to permeate", ":math:`M_p`", "mass_transfer_phase_comp", "[t, p, j]", ":math:`\text{kg/s}`"
-
-The following variables are only built when specific configuration key-value pairs are selected.
-
-if ``has_pressure_change`` is set to ``True``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Pressure drop", ":math:`ΔP`", "deltaP", "[t]", ":math:`\text{Pa}`"
-
-if ``concentration_polarization_type`` is set to ``ConcentrationPolarizationType.fixed``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Concentration polarization modulus", ":math:`CP_{mod}`", "cp_modulus", "[t, j]", ":math:`\text{dimensionless}`"
-
-if ``concentration_polarization_type`` is set to ``ConcentrationPolarizationType.calculated``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Mass transfer coefficient in feed channel", ":math:`k_f`", "Kf_io", "[t, x, j]", ":math:`\text{m/s}`"
-
-if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``
-or ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Feed-channel height", ":math:`h_{ch}`", "channel_height", "None", ":math:`\text{m}`"
-   "Hydraulic diameter", ":math:`d_h`", "dh", "None", ":math:`\text{m}`"
-   "Spacer porosity", ":math:`\epsilon_{sp}`", "spacer_porosity", "None", ":math:`\text{dimensionless}`"
-   "Reynolds number", ":math:`Re`", "N_Re_io", "[t, x]", ":math:`\text{dimensionless}`"
-
-
-if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Schmidt number", ":math:`Sc`", "N_Sc_io", "[t, x]", ":math:`\text{dimensionless}`"
-   "Sherwood number", ":math:`Sh`", "N_Sh_io", "[t, x]", ":math:`\text{dimensionless}`"
-
-if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``
-or ``pressure_change_type`` is **NOT** set to ``PressureChangeType.fixed_per_stage``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Membrane length", ":math:`L`", "length", "None", ":math:`\text{m}`"
-   "Membrane width", ":math:`W`", "width", "None", ":math:`\text{m}`"
-
-if ``pressure_change_type`` is set to ``PressureChangeType.fixed_per_unit_length``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Average pressure drop per unit length of feed channel", ":math:`(\frac{ΔP}{Δx})_{avg}`", "dP_dx", "[t]", ":math:`\text{Pa/m}`"
-
-if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
-
-.. csv-table::
-   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
-
-   "Feed-channel velocity", ":math:`v_f`", "velocity_io", "[t, x]", ":math:`\text{m/s}`"
-   "Friction factor", ":math:`f`", "friction_factor_darcy_io", "[t, x]", ":math:`\text{dimensionless}`"
-   "Pressure drop per unit length of feed channel at inlet/outlet", ":math:`ΔP/Δx`", "dP_dx_io", "[t, x]", ":math:`\text{Pa/m}`"
 
 .. _ZO_NF_equations:
 
