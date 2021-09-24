@@ -33,7 +33,9 @@ def report(m):
 
 
 def solve_flowsheet():
-    flowsheet_NF.solve_flowsheet(has_bypass=False)
+    m = flowsheet_NF.solve_flowsheet(has_bypass=False)
+
+    return m
 
 
 def simulate(m):
