@@ -312,7 +312,7 @@ def _interp_nan_values(global_values, global_results):
     # Interpolate to get a value for nan points where possible
     for k in range(n_outs):
         y0 = global_results[mask, k]
-        yi = griddata(x0, y0, global_values, method='linear', rescale=True)
+        yi = griddata(x0, y0, global_values, method='linear', rescale=True).reshape(-1)
         global_results_clean[~mask, k] = yi[~mask]
 
     return global_results_clean
