@@ -18,7 +18,7 @@ from pyomo.environ import ConcreteModel, value
 from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
 from pyomo.util.check_units import assert_units_consistent
-from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from proteuslib.util.flowsheets import solve_with_user_scaling, check_dof
 import proteuslib.property_models.seawater_ion_prop_pack as property_seawater_ions
 
 # -----------------------------------------------------------------------------
