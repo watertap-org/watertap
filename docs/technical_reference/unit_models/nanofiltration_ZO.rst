@@ -54,7 +54,7 @@ Variables
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Mass density of pure water", ":math:`\rho_w`", "dens_solvent", "[p]", ":math:`\text{kg/}\text{m}^3`"
+   "Mass density of solvent", ":math:`\rho_{solvent}`", "dens_solvent", "[p]", ":math:`\text{kg/}\text{m}^3`"
    "Solvent volumetric flux across membrane", ":math:`J_{solv}`", "flux_vol_solvent", "[t, j]", ":math:`\text{m}^3\text{/m}^2\text{/s}`"
    "Membrane area", ":math:`A_m`", "area", "None", ":math:`\text{m}^2`"
    "Component recovery rate", ":math:`R_j`", "recovery_mass_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
@@ -70,27 +70,10 @@ Equations
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Solvent flux across membrane", ":math:`J_{solvent} = \rho_{solvent} A(P_{f} - P_p - (\pi_{f}-\pi_{p}))`"
-   "Solute flux across membrane", ":math:`J_{solute} = B(C_{f} - C_{p})`"
-   "Average flux across membrane", ":math:`J_{avg, j} = \frac{1}{2}\sum_{x} J_{x, j}`"
-   "Permeate mass flow by component j", ":math:`M_{p, j} = A_m J_{avg,j}`"
-   "Permeate-side membrane-interface solute mass fraction", ":math:`X_{x, j} = \frac{J_{x, j}}{\sum_{x} J_{x, j}}`"
-   "Feed-side membrane-interface solute concentration", ":math:`C_{interface} = CP_{mod}C_{bulk}=C_{bulk}\exp(\frac{J_{solvent}}{k_f})-\frac{J_{solute}}{J_{solvent}}(\exp(\frac{J_{solvent}}{k_f})-1)`"
-   "Concentration polarization modulus",":math:`CP_{mod} = C_{interface}/C_{bulk}`"
-   "Mass transfer coefficient",":math:`k_f = \frac{D Sh}{d_h}`"
-   "Sherwood number",":math:`Sh = 0.46 (Re Sc)^{0.36}`"
-   "Schmidt number",":math:`Sc = \frac{\mu}{\rho D}`"
-   "Reynolds number",":math:`Re = \frac{\rho v_f d_h}{\mu}`"
-   "Hydraulic diameter",":math:`d_h = \frac{4\epsilon_{sp}}{2/h_{ch} + (1-\epsilon_{sp})8/h_{ch}}`"
-   "Cross-sectional area",":math:`A_c = h_{ch}W\epsilon_{sp}`"
-   "Membrane area",":math:`A_m = LW`"
-   "Pressure drop",":math:`ΔP = (\frac{ΔP}{Δx})_{avg}L`"
-   "Feed-channel velocity",":math:`v_f = Q_f/A_c`"
-   "Friction factor",":math:`f = 0.42+\frac{189.3}{Re}`"
-   "Pressure drop per unit length",":math:`\frac{ΔP}{Δx} = \frac{1}{2d_h}f\rho v_f^{2}`"
+   "Solvent mass transfer", ":math:`M_{p, solv} = A_m J_{solv} \rho_{solvent}`"
    "Component recovery rate",":math:`R_j = \frac{M_{p,j}}{M_{f,in,j}}`"
    "Volumetric recovery rate",":math:`R_{vol} = \frac{Q_{p}}{Q_{f,in}}`"
-   "Observed solute rejection", ":math:`r_j = 1 - \frac{C_{p,mix}}{C_{f,in}}`" 
+   "Observed solute rejection", ":math:`r_j = 1 - \frac{C_{p}}{C_{f,in}}`"
 
 Class Documentation
 -------------------

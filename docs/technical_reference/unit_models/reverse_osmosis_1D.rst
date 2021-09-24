@@ -5,6 +5,7 @@ This reverse osmosis (RO) unit model
    * supports a single liquid phase only
    * supports steady-state only
    * is based on the solution-diffusion model and film theory
+   * assumes isothermal conditions
 
 .. index::
    pair: proteuslib.unit_models.reverse_osmosis_1D;reverse_osmosis_1D
