@@ -53,11 +53,11 @@ def set_optimization_components(m, system_recovery, **kwargs):
 
     # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
     m.fs.RO2.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
-    if desal_kwargs['RO_type'] == '0D':
+    if kwargs['RO_type'] == '0D':
         m.fs.RO2.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO2.A_comp[0, 'H2O']
                                                                        * m.fs.RO2.dens_solvent
                                                                        * m.fs.RO2.NDPmin)
-    elif desal_kwargs['RO_type'] == '1D':
+    elif kwargs['RO_type'] == '1D':
         m.fs.RO2.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'].setlb(m.fs.RO2.A_comp[0, 'H2O']
                                                                        * m.fs.RO2.dens_solvent
                                                                        * m.fs.RO2.NDPmin)
@@ -68,7 +68,7 @@ def set_up_optimization(m, system_recovery=0.50, **kwargs):
     check_dof(m, 6)
 
 
-def solve_flowsheet():
+def solve_flowsheet(**desal_kwargs):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     build(m, **desal_kwargs)
@@ -95,12 +95,12 @@ def solve_flowsheet():
 
 
 def optimize_flowsheet(system_recovery=0.50, **kwargs):
-    m = solve_flowsheet()
+    m = solve_flowsheet(**kwargs)
     set_up_optimization(m, system_recovery=system_recovery, **kwargs)
     optimize(m)
     print('==================================='
           '\n       Optimization            ')
-    report(m, **desal_kwargs)
+    report(m, **kwargs)
 
     return m
 
@@ -108,6 +108,6 @@ def optimize_flowsheet(system_recovery=0.50, **kwargs):
 if __name__ == "__main__":
     import sys
     if len(sys.argv) == 1:
-        m = solve_flowsheet()
+        m = solve_flowsheet(**desal_kwargs)
     else:
         m = optimize_flowsheet(system_recovery=float(sys.argv[1]), **desal_kwargs)

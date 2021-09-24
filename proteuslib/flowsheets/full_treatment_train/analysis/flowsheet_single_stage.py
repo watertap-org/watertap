@@ -178,7 +178,7 @@ def optimize(m):
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
 
-def solve_flowsheet():
+def solve_flowsheet(**desal_kwargs):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     build(m, **desal_kwargs)
@@ -206,11 +206,11 @@ def solve_flowsheet():
 
 
 def optimize_flowsheet(system_recovery=0.50, **kwargs):
-    m = solve_flowsheet()
+    m = solve_flowsheet(**kwargs)
     set_up_optimization(m, system_recovery=system_recovery, **kwargs)
     optimize(m)
 
-    report(m, **desal_kwargs)
+    report(m, **kwargs)
 
     return m
 
@@ -218,6 +218,6 @@ def optimize_flowsheet(system_recovery=0.50, **kwargs):
 if __name__ == "__main__":
     import sys
     if len(sys.argv) == 1:
-        m = solve_flowsheet()
+        m = solve_flowsheet(**desal_kwargs)
     else:
         m = optimize_flowsheet(system_recovery=float(sys.argv[1]), **desal_kwargs)

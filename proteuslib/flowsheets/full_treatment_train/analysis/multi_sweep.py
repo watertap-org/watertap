@@ -16,14 +16,17 @@ def append_costing_outputs(m, outputs, units_to_cost):
     return outputs
 
 
-def run_analysis(case_num, nx):
+def run_analysis(case_num, nx, RO_type):
     if case_num == 1:
         # ================================================================
         # Single Stage RO
         # ================================================================
         import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_single_stage as fs_single_stage
 
-        m = fs_single_stage.optimize_flowsheet(RO_type='0D')
+        desal_kwargs = {'has_desal_feed': False, 'is_twostage': False, 'has_ERD': True,
+                        'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
+
+        m = fs_single_stage.optimize_flowsheet(**desal_kwargs)
 
         sweep_params = {}
         # sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.3, 0.95, nx)
@@ -35,7 +38,7 @@ def run_analysis(case_num, nx):
         outputs['Pump Pressure'] = m.fs.pump_RO.control_volume.properties_out[0].pressure
         outputs = append_costing_outputs(m, outputs, ['RO', 'pump_RO', 'ERD'])
 
-        output_filename = 'output/fs_single_stage/results_%d.csv' % case_num
+        output_filename = 'output/fs_single_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
 
         opt_function = fs_single_stage.optimize
 
@@ -45,7 +48,10 @@ def run_analysis(case_num, nx):
         # ================================================================
         import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_two_stage as fs_two_stage 
 
-        m = fs_two_stage.optimize_flowsheet(RO_type='0D')
+        desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
+                        'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
+
+        m = fs_two_stage.optimize_flowsheet(**desal_kwargs)
 
         sweep_params = {}
         # sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.3, 0.95, nx)
@@ -59,7 +65,7 @@ def run_analysis(case_num, nx):
         outputs['RO-2 Pump Pressure'] = m.fs.pump_RO2.control_volume.properties_out[0].pressure
         outputs = append_costing_outputs(m, outputs, ['RO', 'pump_RO', 'RO2', 'pump_RO2', 'ERD'])
 
-        output_filename = 'output/fs_two_stage/results_%d.csv' % case_num
+        output_filename = 'output/fs_two_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
 
         opt_function = fs_two_stage.optimize
 
@@ -88,7 +94,10 @@ def run_analysis(case_num, nx):
         # ================================================================
         import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF_two_stage as fs_NF_two_stage
 
-        m = fs_NF_two_stage.optimize_flowsheet(RO_type='0D')
+        desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
+                        'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
+
+        m = fs_NF_two_stage.optimize_flowsheet(**desal_kwargs)
 
         sweep_params = {}
         sweep_params['NF Split Fraction'] = LinearSample(m.fs.splitter.split_fraction[0, 'bypass'], .01, .99, nx)
@@ -96,7 +105,7 @@ def run_analysis(case_num, nx):
         outputs = {}
         outputs['Ca Removal'] = m.fs.removal_Ca
 
-        output_filename = 'output/fs_NF_two_stage/results_%d.csv' % case_num
+        output_filename = 'output/fs_NF_two_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
 
         opt_function = fs_NF_two_stage.optimize
 
@@ -106,7 +115,10 @@ def run_analysis(case_num, nx):
         # ================================================================
         import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF_two_stage as fs_NF_two_stage
 
-        m = fs_NF_two_stage.optimize_flowsheet(RO_type='0D')
+        desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
+                        'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
+
+        m = fs_NF_two_stage.optimize_flowsheet(**desal_kwargs)
 
         sweep_params = {}
         sweep_params['NF Split Fraction'] = LinearSample(m.fs.splitter.split_fraction[0, 'bypass'], 0.25, 1.0, 4)
@@ -115,7 +127,7 @@ def run_analysis(case_num, nx):
         outputs = {}
         outputs['LCOW'] = m.fs.costing.LCOW
 
-        output_filename = 'output/fs_NF_two_stage/results_%d.csv' % case_num
+        output_filename = 'output/fs_NF_two_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
 
         opt_function = fs_NF_two_stage.optimize
 
@@ -125,7 +137,10 @@ def run_analysis(case_num, nx):
         # ================================================================
         import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF_two_stage as fs_NF_two_stage
 
-        m = fs_NF_two_stage.optimize_flowsheet(RO_type='0D')
+        desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
+                        'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
+
+        m = fs_NF_two_stage.optimize_flowsheet(**desal_kwargs)
 
         sweep_params = {}
         sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.5, 0.95, nx)
@@ -133,7 +148,7 @@ def run_analysis(case_num, nx):
         outputs = {}
         outputs['NF Split Fraction'] = m.fs.splitter.split_fraction[0, 'bypass']
 
-        output_filename = 'output/fs_NF_two_stage/results_%d.csv' % case_num
+        output_filename = 'output/fs_NF_two_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
 
         opt_function = fs_NF_two_stage.optimize
 
@@ -143,7 +158,10 @@ def run_analysis(case_num, nx):
         # ================================================================
         import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF_two_stage as fs_NF_two_stage
 
-        m = fs_NF_two_stage.optimize_flowsheet(RO_type='0D')
+        desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
+                        'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
+
+        m = fs_NF_two_stage.optimize_flowsheet(**desal_kwargs)
 
         sweep_params = {}
         sweep_params['NF Split Fraction'] = LinearSample(m.fs.splitter.split_fraction[0, 'bypass'], 0.25, 1.0, 4)
@@ -152,7 +170,7 @@ def run_analysis(case_num, nx):
         outputs = {}
         outputs['LCOW'] = m.fs.costing.LCOW
 
-        output_filename = 'output/fs_NF_two_stage/results_%d.csv' % case_num
+        output_filename = 'output/fs_NF_two_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
 
         opt_function = fs_NF_two_stage.optimize
 
@@ -179,17 +197,13 @@ def run_analysis(case_num, nx):
     elif case_num == 9:
         # ================================================================
         # Softening Two Stage
-        #
-        # RuntimeError: Cannot load the PyNumero ASL interface (pynumero_ASL)
-        # Exception ignored in: <function AmplInterface.__del__ at 0x7f8e8e0e9050>
-        # Traceback (most recent call last):
-        #   File "/opt/anaconda3/envs/proteus3/lib/python3.7/site-packages/pyomo/contrib/pynumero/asl.py", line 216, in __del__
-        #     self.ASLib.EXTERNAL_AmplInterface_free_memory(self._obj)
-        # AttributeError: 'AmplInterface' object has no attribute 'ASLib'
         # ================================================================
         import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_softening_two_stage as fs_softening_two_stage
 
-        m = fs_softening_two_stage.optimize_flowsheet()
+        desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
+                        'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
+
+        m = fs_softening_two_stage.optimize_flowsheet(**desal_kwargs)
 
         sweep_params = {}
         sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.5, 0.95, nx)
@@ -198,7 +212,7 @@ def run_analysis(case_num, nx):
         outputs['LCOW'] = m.fs.costing.LCOW
         outputs['Lime Dosing'] = m.fs.stoich_softening_mixer_unit.lime_stream_state[0].flow_mol
 
-        output_filename = 'output/fs_softening_two_stage/results_%d.csv' % case_num
+        output_filename = 'output/fs_softening_two_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
 
         opt_function = fs_softening_two_stage.optimize
 
@@ -233,8 +247,16 @@ if __name__ == "__main__":
         # Default to a 4-point discretization
         nx = 4
 
+    # Get the default RO unit to use (1D or 0D)
+    try:
+        RO_type = sys.argv[3]
+    except:
+        # Default to RO_type='0D'
+        RO_type = '0D'
+
     tic = time.time()
-    global_results, sweep_params = run_analysis(case_num, nx)
+    global_results, sweep_params = run_analysis(case_num, nx, RO_type)
+    print(global_results)
     toc = time.time()
 
     if rank == 0:

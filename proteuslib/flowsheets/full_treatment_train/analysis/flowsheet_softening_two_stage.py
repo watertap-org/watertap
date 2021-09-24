@@ -80,8 +80,9 @@ def optimize(m):
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
 
-def solve_flowsheet():
-    desal_kwargs = flowsheet_two_stage.desal_kwargs
+def solve_flowsheet(**desal_kwargs):
+    if desal_kwargs == {}:
+        desal_kwargs = flowsheet_two_stage.desal_kwargs
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -107,7 +108,7 @@ def solve_flowsheet():
 
 
 def optimize_flowsheet(system_recovery=0.50, **kwargs):
-    m = solve_flowsheet()
+    m = solve_flowsheet(**kwargs)
     set_up_optimization(m, system_recovery=system_recovery, **kwargs)
     optimize(m)
 
