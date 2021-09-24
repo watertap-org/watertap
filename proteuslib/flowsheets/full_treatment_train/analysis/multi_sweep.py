@@ -208,8 +208,8 @@ def run_analysis(case_num, nx):
 
     global_results = parameter_sweep(m, sweep_params, outputs, output_filename, 
                                      optimize_function=opt_function,
-                                     debugging_data_dir=os.path.split(output_filename)[0]+'/local',
-                                     interpolate_nan_outputs=True)
+                                     debugging_data_dir=os.path.split(output_filename)[0]+'/local')#,
+                                     #interpolate_nan_outputs=True) FIXME: This only works with 2D sweeps
 
     return global_results, sweep_params
 
