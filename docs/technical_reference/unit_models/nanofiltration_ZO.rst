@@ -15,15 +15,15 @@ Degrees of Freedom
 ------------------
 The zero-order NF model has at least 7 degrees of freedom that should be fixed for the unit to be fully specified.
 Typically, the following variables are fixed:
-    * solvent mass flow rate at the inlet
-    * inlet temperature
-    * inlet pressure
-    * solvent volumetric flux of the membrane
-    * permeate pressure
+* solvent mass flow rate at the inlet
+* inlet temperature
+* inlet pressure
+* solvent volumetric flux of the membrane
+* permeate pressure
 
 There are 2 degrees of freedom for each solute in a given property model:
-    * solute rejection of the membrane
-    * solute mass flow rate at the inlet
+* solute rejection of the membrane
+* solute mass flow rate at the inlet
 
 Note, when a set of solutes comprises ions and includes more than one ion pair, the solute rejection of one ion could be left unfixed
 to satisfy an electroneutrality constraint. In this case, the last degree of freedom can be eliminated by fixing membrane area.
