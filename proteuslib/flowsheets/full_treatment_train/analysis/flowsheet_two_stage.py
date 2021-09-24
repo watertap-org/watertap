@@ -31,7 +31,7 @@ from proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_single_stage 
 
 
 desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
-        'RO_type': '1D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
+        'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
 
 
 def set_optimization_components(m, system_recovery, **kwargs):
