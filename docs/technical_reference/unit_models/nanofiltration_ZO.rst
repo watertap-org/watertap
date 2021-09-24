@@ -13,29 +13,25 @@ This nanofiltration (NF) unit model
 
 Degrees of Freedom
 ------------------
-The zero-order NF model has 15 degrees of freedom that should be fixed for the unit to be fully specified.
-
-
-Typically, the following variables are fixed, in addition to state variables at the inlet:
-    * membrane water permeability, A
-    * membrane salt permeability, B
+The zero-order NF model has at least 7 degrees of freedom that should be fixed for the unit to be fully specified.
+Typically, the following variables are fixed:
+    * solvent mass flow rate at the inlet
+    * inlet temperature
+    * inlet pressure
+    * solvent volumetric flux of the membrane
     * permeate pressure
-    * membrane area
 
-On the other hand, configuring the RO unit to calculate concentration polarization effects, mass transfer
-coefficient, and pressure drop would result in 3 additional degrees of freedom. In this case, in addition to the
-previously fixed variables, we typically fix the following variables to fully specify the unit:
+There are 2 degrees of freedom for each solute in a given property model:
+    * solute rejection of the membrane
+    * solute mass flow rate at the inlet
 
-    * feed-spacer porosity
-    * feed-channel height
-    * membrane length *or* membrane width *or* inlet Reynolds number
+Note, when a set of solutes comprises ions and includes more than one ion pair, the solute rejection of one ion could be left unfixed
+to satisfy an electroneutrality constraint. In this case, the last degree of freedom can be eliminated by fixing membrane area.
 
 Model Structure
 ------------------
-This RO model consists of 2 ControlVolume0DBlocks: one for the feed-side and one for the permeate-side.
- 
-* The feed-side includes 2 StateBlocks (properties_in and properties_out) which are used for mass, energy, and momentum balances, and 2 additional StateBlocks for the conditions at the membrane interface (properties_interface_in and properties_interface_out).
-* The permeate-side includes 3 StateBlocks (properties_in, properties_out, and properties_mixed). The inlet and outlet StateBlocks are used to only determine the permeate solute concentration for solvent and solute flux at the feed-side inlet and outlet, while the mixed StateBlock is used for mass balance based on the average flux.
+This NF model consists of 1 ControlVolume0DBlock for the feed-side of the membrane and 1 StateBlock (properties_permeate) for the permeate exiting the NF membrane module.
+The feed-side includes 2 StateBlocks (properties_in and properties_out) which are used for mass and momentum balances.
 
 Sets
 ----
@@ -43,13 +39,12 @@ Sets
    :header: "Description", "Symbol", "Indices"
 
    "Time", ":math:`t`", "[0]"
-   "Inlet/outlet", ":math:`x`", "['in', 'out']"
    "Phases", ":math:`p`", "['Liq']"
-   "Components", ":math:`j`", "['H2O', 'NaCl']*"
+   "Components", ":math:`j`", "['H2O', 'Solute']*"
 
-\*Solute depends on the imported property model; example shown here is for the NaCl property model.
+\*Solute depends on the imported property model, and more than one solute can be provided; ions can be represented as solutes in a given property model to be recognized by this NF model.
 
-.. _0dro_variables:
+.. _ZO_NF_variables:
 
 Variables
 ----------
@@ -136,7 +131,7 @@ if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
    "Friction factor", ":math:`f`", "friction_factor_darcy_io", "[t, x]", ":math:`\text{dimensionless}`"
    "Pressure drop per unit length of feed channel at inlet/outlet", ":math:`ΔP/Δx`", "dP_dx_io", "[t, x]", ":math:`\text{Pa/m}`"
 
-.. _0dro_equations:
+.. _ZO_NF_equations:
 
 Equations
 -----------
@@ -169,7 +164,7 @@ Equations
 Class Documentation
 -------------------
 
-.. automodule:: proteuslib.unit_models.reverse_osmosis_0D
+.. automodule:: proteuslib.unit_models.nanofiltration_ZO
     :members:
     :noindex:
 
