@@ -17,14 +17,17 @@ def append_costing_outputs(m, outputs, units_to_cost):
 
 
 def run_analysis(case_num, nx, RO_type):
+
+    desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
+                    'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
+
     if case_num == 1:
         # ================================================================
         # Single Stage RO
         # ================================================================
         import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_single_stage as fs_single_stage
 
-        desal_kwargs = {'has_desal_feed': False, 'is_twostage': False, 'has_ERD': True,
-                        'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
+        desal_kwargs['is_twostage'] = False
 
         m = fs_single_stage.optimize_flowsheet(**desal_kwargs)
 
@@ -47,9 +50,6 @@ def run_analysis(case_num, nx, RO_type):
         # Two Stage RO
         # ================================================================
         import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_two_stage as fs_two_stage 
-
-        desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
-                        'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
 
         m = fs_two_stage.optimize_flowsheet(**desal_kwargs)
 
@@ -94,9 +94,6 @@ def run_analysis(case_num, nx, RO_type):
         # ================================================================
         import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF_two_stage as fs_NF_two_stage
 
-        desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
-                        'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
-
         m = fs_NF_two_stage.optimize_flowsheet(**desal_kwargs)
 
         sweep_params = {}
@@ -115,13 +112,11 @@ def run_analysis(case_num, nx, RO_type):
         # ================================================================
         import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF_two_stage as fs_NF_two_stage
 
-        desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
-                        'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
-
         m = fs_NF_two_stage.optimize_flowsheet(**desal_kwargs)
 
         sweep_params = {}
         sweep_params['NF Split Fraction'] = LinearSample(m.fs.splitter.split_fraction[0, 'bypass'], 0.25, 1.0, 4)
+        # sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.5, 0.95, nx)
         sweep_params['RO Recovery'] = LinearSample(m.fs.RO_recovery, 0.5, 0.95, nx)
 
         outputs = {}
@@ -136,9 +131,6 @@ def run_analysis(case_num, nx, RO_type):
         # NF Two Stage
         # ================================================================
         import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF_two_stage as fs_NF_two_stage
-
-        desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
-                        'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
 
         m = fs_NF_two_stage.optimize_flowsheet(**desal_kwargs)
 
@@ -157,9 +149,6 @@ def run_analysis(case_num, nx, RO_type):
         # NF Two Stage
         # ================================================================
         import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF_two_stage as fs_NF_two_stage
-
-        desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
-                        'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
 
         m = fs_NF_two_stage.optimize_flowsheet(**desal_kwargs)
 
@@ -199,9 +188,6 @@ def run_analysis(case_num, nx, RO_type):
         # Softening Two Stage
         # ================================================================
         import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_softening_two_stage as fs_softening_two_stage
-
-        desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
-                        'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
 
         m = fs_softening_two_stage.optimize_flowsheet(**desal_kwargs)
 
