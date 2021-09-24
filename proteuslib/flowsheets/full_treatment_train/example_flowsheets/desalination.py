@@ -157,9 +157,18 @@ def scale_desalination(m, **kwargs):
     if kwargs['has_desal_feed']:
         calculate_scaling_factors(m.fs.feed)
 
+    if kwargs['RO_type'] == '1D':
+        set_scaling_factor(m.fs.RO.feed_side.area, 1e3)
+        set_scaling_factor(m.fs.RO.area, 1e-1)
+        set_scaling_factor(m.fs.RO.width, 1)
+
     calculate_scaling_factors(m.fs.RO)
 
     if kwargs['is_twostage']:
+        if kwargs['RO_type'] == '1D':
+            set_scaling_factor(m.fs.RO2.feed_side.area, 1e3)
+            set_scaling_factor(m.fs.RO2.area, 1e-1)
+            set_scaling_factor(m.fs.RO2.width, 1)
         calculate_scaling_factors(m.fs.RO2)
 
     if kwargs['RO_type'] == '0D' or kwargs['RO_type'] == '1D':

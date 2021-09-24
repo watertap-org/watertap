@@ -1066,7 +1066,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
     def _get_performance_contents(self, time_point=0):
         x_in = self.feed_side.length_domain.first()
-        x_interface_in = self.feed_side.length_domain[2]
+        x_interface_in = self.feed_side.length_domain.at(2)
         x_out = self.feed_side.length_domain.last()
         feed_inlet = self.feed_side.properties[time_point, x_in]
         feed_outlet = self.feed_side.properties[time_point, x_out]

@@ -31,7 +31,7 @@ from proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_single_stage 
 
 
 desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
-        'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
+        'RO_type': '1D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
 
 
 def set_optimization_components(m, system_recovery, **kwargs):
@@ -46,7 +46,10 @@ def set_optimization_components(m, system_recovery, **kwargs):
     m.fs.RO2.area.setlb(1)
     m.fs.RO2.area.setub(300)
 
-    m.fs.RO2.N_Re_io[0, 'in'].unfix()
+    if kwargs['RO_type'] == '0D':
+        m.fs.RO2.N_Re_io[0, 'in'].unfix()
+    elif kwargs['RO_type'] == '1D':
+        m.fs.RO2.N_Re[0, 0].unfix()
 
     # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
     m.fs.RO2.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
