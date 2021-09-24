@@ -7,9 +7,9 @@ This nanofiltration (NF) unit model
    * default data for water flux and ion rejection are based on Labban et al. (2017) https://doi.org/10.1016/j.memsci.2016.08.062, applying the Donnan steric pore model with dielectric exclusion (DPSM-DE) for artificial seawater
 
 .. index::
-   pair: proteuslib.unit_models.reverse_osmosis_0D;reverse_osmosis_0D
+   pair: proteuslib.unit_models.nanofiltration_ZO;nanofiltration_ZO
 
-.. currentmodule:: proteuslib.unit_models.reverse_osmosis_0D
+.. currentmodule:: proteuslib.unit_models.nanofiltration_ZO
 
 Degrees of Freedom
 ------------------
