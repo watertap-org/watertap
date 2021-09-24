@@ -13,8 +13,8 @@ This nanofiltration (NF) unit model
 
 Degrees of Freedom
 ------------------
-Aside from the inlet feed state variables (i.e. temperature, pressure, component flowrates), the RO model has
-at least 4 degrees of freedom that should be fixed for the unit to be fully specified.
+The zero-order NF model has 15 degrees of freedom that should be fixed for the unit to be fully specified.
+
 
 Typically, the following variables are fixed, in addition to state variables at the inlet:
     * membrane water permeability, A
