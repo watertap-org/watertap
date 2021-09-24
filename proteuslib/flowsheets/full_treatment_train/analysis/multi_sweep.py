@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 import os
-from idaes.core.util import get_solver
+import time
 
 from proteuslib.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
 
@@ -22,7 +22,7 @@ try:
     case_num = int(sys.argv[1])
 except:
     # Default to running all cases
-    case_num = 6
+    case_num = 1
 
 # Get the default number of discretization points
 try:
@@ -41,6 +41,7 @@ def add_costing_outputs_to_dict(m, units_to_cost, outputs):
 
     return outputs
 
+tic = time.time()
 
 if case_num == 1:
     # ================================================================
@@ -231,3 +232,16 @@ elif case_num == 9:
 
 else:
     raise ValueError('case_num = %d not recognized.' % (case_num))
+
+
+toc = time.time()
+
+total_samples = 1
+
+for k, v in sweep_params.items():
+    total_samples *= v.num_samples
+    
+print('Finished case_num = %d.' % (case_num))
+print('Processed %d swept parameters comprising %d total points.' % (len(sweep_params), total_samples))
+print('Elapse time = %.1f s.' % (toc-tic))
+
