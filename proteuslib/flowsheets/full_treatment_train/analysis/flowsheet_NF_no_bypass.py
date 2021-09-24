@@ -38,7 +38,11 @@ def solve_flowsheet():
     return m
 
 
-def simulate(m):
+def simulate(m, **kwargs):
+    if kwargs is not None:
+        if kwargs['unfix_nf_area']:
+            m.fs.NF.area.unfix()
+
     flowsheet_NF.simulate(m)
     return m
 

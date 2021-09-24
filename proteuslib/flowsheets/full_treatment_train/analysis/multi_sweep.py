@@ -20,6 +20,10 @@ def run_analysis(case_num, nx, RO_type):
 
     desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
                     'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
+    
+    sweep_params = {}
+    outputs = {}
+    optimize_kwargs=None
 
     if case_num == 1:
         # ================================================================
@@ -31,14 +35,13 @@ def run_analysis(case_num, nx, RO_type):
 
         m = fs_single_stage.optimize_flowsheet(**desal_kwargs)
 
-        sweep_params = {}
-        # sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.3, 0.95, nx)
-        sweep_params['RO Recovery'] = LinearSample(m.fs.RO_recovery, 0.3, 0.95, nx)
+        sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.3, 0.95, nx)
+        # sweep_params['RO Recovery'] = LinearSample(m.fs.RO_recovery, 0.3, 0.95, nx)
 
-        outputs = {}
         outputs['LCOW'] = m.fs.costing.LCOW
         outputs['Saturation Index'] = m.fs.desal_saturation.saturation_index
         outputs['Pump Pressure'] = m.fs.pump_RO.control_volume.properties_out[0].pressure
+        outputs['RO Recovery'] = m.fs.RO_recovery
         outputs = append_costing_outputs(m, outputs, ['RO', 'pump_RO', 'ERD'])
 
         output_filename = 'output/fs_single_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
@@ -53,16 +56,15 @@ def run_analysis(case_num, nx, RO_type):
 
         m = fs_two_stage.optimize_flowsheet(**desal_kwargs)
 
-        sweep_params = {}
-        # sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.3, 0.95, nx)
-        sweep_params['RO Recovery'] = LinearSample(m.fs.RO_recovery, 0.3, 0.95, nx)
+        sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.3, 0.95, nx)
+        # sweep_params['RO Recovery'] = LinearSample(m.fs.RO_recovery, 0.3, 0.95, nx)
         sweep_params['Max Pressure'] = LinearSample(m.fs.max_allowable_pressure, 300e5, 75e5, nx)
 
-        outputs = {}
         outputs['LCOW'] = m.fs.costing.LCOW
         outputs['Saturation Index'] = m.fs.desal_saturation.saturation_index
         outputs['RO-1 Pump Pressure'] = m.fs.pump_RO.control_volume.properties_out[0].pressure
         outputs['RO-2 Pump Pressure'] = m.fs.pump_RO2.control_volume.properties_out[0].pressure
+        outputs['RO Recovery'] = m.fs.RO_recovery
         outputs = append_costing_outputs(m, outputs, ['RO', 'pump_RO', 'RO2', 'pump_RO2', 'ERD'])
 
         output_filename = 'output/fs_two_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
@@ -77,16 +79,16 @@ def run_analysis(case_num, nx, RO_type):
 
         m = fs_NF_no_bypass.solve_flowsheet()
 
-        sweep_params = {}
         sweep_params['NF Recovery'] = LinearSample(m.fs.NF.recovery_mass_phase_comp[0, 'Liq', 'H2O'], .3, .95, nx)
 
-        outputs = {}
         outputs['LCOW'] = m.fs.costing.LCOW
         outputs['Saturation Index'] = m.fs.pretrt_saturation.saturation_index
 
         output_filename = 'output/fs_NF_no_bypass/results_%d.csv' % case_num
 
         opt_function = fs_NF_no_bypass.simulate
+        # Need to unfix NF area to simulate with fixed NF recovery
+        optimize_kwargs = {'unfix_nf_area': True}
 
     elif case_num == 4:
         # ================================================================
@@ -96,11 +98,10 @@ def run_analysis(case_num, nx, RO_type):
 
         m = fs_NF_two_stage.optimize_flowsheet(**desal_kwargs)
 
-        sweep_params = {}
-        sweep_params['NF Split Fraction'] = LinearSample(m.fs.splitter.split_fraction[0, 'bypass'], .01, .99, nx)
+        sweep_params['NF Split Fraction'] = LinearSample(m.fs.splitter.split_fraction[0, 'pretreatment'], .01, .99, nx)
 
-        outputs = {}
         outputs['Ca Removal'] = m.fs.removal_Ca
+        outputs['Max Concentration Constraint']  = m.fs.eq_max_conc_NF.body
 
         output_filename = 'output/fs_NF_two_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
 
@@ -114,13 +115,12 @@ def run_analysis(case_num, nx, RO_type):
 
         m = fs_NF_two_stage.optimize_flowsheet(**desal_kwargs)
 
-        sweep_params = {}
-        sweep_params['NF Split Fraction'] = LinearSample(m.fs.splitter.split_fraction[0, 'bypass'], 0.25, 1.0, 4)
-        # sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.5, 0.95, nx)
-        sweep_params['RO Recovery'] = LinearSample(m.fs.RO_recovery, 0.5, 0.95, nx)
+        sweep_params['NF Split Fraction'] = LinearSample(m.fs.splitter.split_fraction[0, 'pretreatment'], 0.25, 1.0, 4)
+        # sweep_params['RO Recovery'] = LinearSample(m.fs.RO_recovery, 0.3, 0.95, nx)
+        sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.5, 0.95, nx)
 
-        outputs = {}
         outputs['LCOW'] = m.fs.costing.LCOW
+        outputs['RO Recovery'] = m.fs.RO_recovery
 
         output_filename = 'output/fs_NF_two_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
 
@@ -134,11 +134,10 @@ def run_analysis(case_num, nx, RO_type):
 
         m = fs_NF_two_stage.optimize_flowsheet(**desal_kwargs)
 
-        sweep_params = {}
         sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.5, 0.95, nx)
 
-        outputs = {}
-        outputs['NF Split Fraction'] = m.fs.splitter.split_fraction[0, 'bypass']
+        outputs['LCOW'] = m.fs.costing.LCOW
+        outputs['NF Split Fraction'] = m.fs.splitter.split_fraction[0, 'pretreatment']
 
         output_filename = 'output/fs_NF_two_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
 
@@ -152,11 +151,9 @@ def run_analysis(case_num, nx, RO_type):
 
         m = fs_NF_two_stage.optimize_flowsheet(**desal_kwargs)
 
-        sweep_params = {}
-        sweep_params['NF Split Fraction'] = LinearSample(m.fs.splitter.split_fraction[0, 'bypass'], 0.25, 1.0, 4)
+        sweep_params['NF Split Fraction'] = LinearSample(m.fs.splitter.split_fraction[0, 'pretreatment'], 0.25, 1.0, 4)
         sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.5, 0.95, nx)
 
-        outputs = {}
         outputs['LCOW'] = m.fs.costing.LCOW
 
         output_filename = 'output/fs_NF_two_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
@@ -171,10 +168,8 @@ def run_analysis(case_num, nx, RO_type):
 
         m = fs_softening.solve_flowsheet()
 
-        sweep_params = {}
         sweep_params['Lime Dosing'] = LinearSample(m.fs.stoich_softening_mixer_unit.lime_stream_state[0].flow_mol, 0.0, 0.128, nx)
 
-        outputs = {}
         outputs['LCOW'] = m.fs.costing.LCOW
         outputs['Ca Removal'] = m.fs.removal_Ca
         outputs['Mg Removal'] = m.fs.removal_Mg
@@ -191,10 +186,8 @@ def run_analysis(case_num, nx, RO_type):
 
         m = fs_softening_two_stage.optimize_flowsheet(**desal_kwargs)
 
-        sweep_params = {}
         sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.5, 0.95, nx)
 
-        outputs = {}
         outputs['LCOW'] = m.fs.costing.LCOW
         outputs['Lime Dosing'] = m.fs.stoich_softening_mixer_unit.lime_stream_state[0].flow_mol
 
@@ -208,6 +201,7 @@ def run_analysis(case_num, nx, RO_type):
 
     global_results = parameter_sweep(m, sweep_params, outputs, output_filename, 
                                      optimize_function=opt_function,
+                                     optimize_kwargs=optimize_kwargs,
                                      debugging_data_dir=os.path.split(output_filename)[0]+'/local')#,
                                      #interpolate_nan_outputs=True) FIXME: This only works with 2D sweeps
 
