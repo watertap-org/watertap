@@ -94,18 +94,19 @@ def run_analysis(case_num, nx, RO_type):
         # ================================================================
         # NF Two Stage
         # ================================================================
-        import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF_two_stage as fs_NF_two_stage
+        import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF as fs_NF
 
-        m = fs_NF_two_stage.optimize_flowsheet(**desal_kwargs)
+        m = fs_NF.optimize_flowsheet()
 
         sweep_params['NF Split Fraction'] = LinearSample(m.fs.splitter.split_fraction[0, 'pretreatment'], .01, .99, nx)
 
+        outputs['LCOW']  = m.fs.costing.LCOW
         outputs['Ca Removal'] = m.fs.removal_Ca
         outputs['Max Concentration Constraint']  = m.fs.eq_max_conc_NF.body
 
-        output_filename = 'output/fs_NF_two_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
+        output_filename = 'output/fs_NF/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
 
-        opt_function = fs_NF_two_stage.optimize
+        opt_function = fs_NF.optimize
 
     elif case_num == 5:
         # ================================================================
