@@ -53,7 +53,9 @@ def test_flowsheet_two_stage():
 def test_flowsheet_NF_two_stage():
     desal_kwargs = flowsheet_two_stage.desal_kwargs
     m = flowsheet_NF_two_stage.optimize_flowsheet(system_recovery=0.70, **desal_kwargs)
-    assert value(m.fs.costing.LCOW) == pytest.approx(0.5518, rel=1e-3)
+    # No longer true with NF.area.lb = 0.1 and pseudo-equality constraint
+    # assert value(m.fs.costing.LCOW) == pytest.approx(0.5518, rel=1e-3)
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.5502, rel=1e-3)
 
 
 @pytest.mark.component
