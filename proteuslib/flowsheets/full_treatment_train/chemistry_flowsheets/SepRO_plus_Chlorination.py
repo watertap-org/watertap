@@ -47,7 +47,7 @@
     ---------- NOTE: This is only an example ---------
 """
 
-from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator, property_models
+from proteuslib.flowsheets.full_treatment_train.model_components import unit_separator, property_models
 from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.PostTreatment_SimpleNaOCl_Chlorination import (
     build_simple_naocl_chlorination_unit,
     initialize_chlorination_example,

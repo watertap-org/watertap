@@ -19,14 +19,14 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      constraint_autoscale_large_jac)
 from idaes.core.util.initialization import propagate_state
-from proteuslib.flowsheets.full_treatment_train.example_flowsheets import (desalination,
-                                                                           translator_block,
-                                                                           feed_block,
-                                                                           gypsum_saturation_index,
-                                                                           costing,
-                                                                           financials,
-                                                                           pretreatment_softening)
-from proteuslib.flowsheets.full_treatment_train.example_models import property_models
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components import (desalination,
+                                                                             translator_block,
+                                                                             feed_block,
+                                                                             gypsum_saturation_index,
+                                                                             costing,
+                                                                             financials,
+                                                                             pretreatment_softening)
+from proteuslib.flowsheets.full_treatment_train.model_components import property_models
 from proteuslib.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
                                                              check_dof,
                                                              check_build,

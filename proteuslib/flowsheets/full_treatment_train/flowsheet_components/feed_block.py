@@ -15,7 +15,7 @@
 
 from pyomo.environ import Constraint
 from idaes.generic_models.unit_models import Feed
-from proteuslib.flowsheets.full_treatment_train.example_models import property_models
+from proteuslib.flowsheets.full_treatment_train.model_components import property_models
 from idaes.core.util.scaling import calculate_scaling_factors
 
 

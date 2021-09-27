@@ -17,7 +17,7 @@ from pyomo.environ import ConcreteModel, TransformationFactory
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import Feed
-from proteuslib.flowsheets.full_treatment_train.example_models import Separator, Mixer
+from proteuslib.flowsheets.full_treatment_train.model_components import Separator, Mixer
 from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      set_scaling_factor,
@@ -25,8 +25,8 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
                                      constraint_scaling_transform)
 from idaes.core.util.initialization import propagate_state
 from proteuslib.unit_models.pump_isothermal import Pump
-from proteuslib.flowsheets.full_treatment_train.example_flowsheets import feed_block
-from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator, unit_ZONF, property_models
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components import feed_block
+from proteuslib.flowsheets.full_treatment_train.model_components import unit_separator, unit_ZONF, property_models
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 

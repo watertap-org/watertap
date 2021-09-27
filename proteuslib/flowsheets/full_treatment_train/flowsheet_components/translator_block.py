@@ -16,7 +16,7 @@
 from pyomo.environ import Constraint
 from idaes.generic_models.unit_models.translator import Translator
 from idaes.core.util.scaling import calculate_scaling_factors, constraint_scaling_transform, get_scaling_factor
-from proteuslib.flowsheets.full_treatment_train.example_models import property_models
+from proteuslib.flowsheets.full_treatment_train.model_components import property_models
 
 
 def build_tb(m, base_inlet='ion', base_outlet='TDS', name_str=None):

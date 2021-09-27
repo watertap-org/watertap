@@ -47,8 +47,8 @@
     ---------- NOTE: This is only an example ---------
 """
 
-from proteuslib.flowsheets.full_treatment_train.example_models import property_models, unit_0DRO
-from proteuslib.flowsheets.full_treatment_train.example_flowsheets import desalination, translator_block
+from proteuslib.flowsheets.full_treatment_train.model_components import property_models, unit_0DRO
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components import desalination, translator_block
 from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.PostTreatment_SimpleNaOCl_Chlorination import (
     build_simple_naocl_chlorination_unit,
     initialize_chlorination_example,

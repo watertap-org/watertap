@@ -23,7 +23,7 @@ import pytest
 from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.pretreatment_stoich_softening_block import (
     run_stoich_softening_mixer_example, run_stoich_softening_reactor_example, run_stoich_softening_separator_example,
     run_softening_block_example)
-from proteuslib.flowsheets.full_treatment_train.example_models import property_models
+from proteuslib.flowsheets.full_treatment_train.model_components import property_models
 
 __author__ = "Austin Ladshaw"
 

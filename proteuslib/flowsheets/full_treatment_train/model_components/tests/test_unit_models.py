@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 from pyomo.environ import value
-from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator, unit_0DRO, unit_1DRO, unit_ZONF
+from proteuslib.flowsheets.full_treatment_train.model_components import unit_separator, unit_0DRO, unit_1DRO, unit_ZONF
 
 
 @pytest.mark.component

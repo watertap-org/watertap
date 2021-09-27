@@ -13,8 +13,8 @@
 import pytest
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
-from proteuslib.flowsheets.full_treatment_train.example_flowsheets import desalination
-from proteuslib.flowsheets.full_treatment_train.example_models import property_models
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components import desalination
+from proteuslib.flowsheets.full_treatment_train.model_components import property_models
 from proteuslib.flowsheets.full_treatment_train.util import check_build, check_scaling
 
 
@@ -40,8 +40,8 @@ def test_build_and_scale_desalination():
                             m.fs = FlowsheetBlock(default={"dynamic": False})
                             property_models.build_prop(m, base=kwargs['RO_base'])
 
-                            # check_build(m, build_func=desalination.build_desalination, **kwargs)
-                            # check_scaling(m, scale_func=desalination.scale_desalination, **kwargs)
+                            check_build(m, build_func=desalination.build_desalination, **kwargs)
                             assert hasattr(m.fs, 'RO')
+                            check_scaling(m, scale_func=desalination.scale_desalination, **kwargs)
 
                             desalination.display_desalination(m, **kwargs)

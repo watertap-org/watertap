@@ -16,15 +16,15 @@
 from pyomo.environ import ConcreteModel, TransformationFactory, Constraint
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
-from proteuslib.flowsheets.full_treatment_train.example_models import Mixer
+from proteuslib.flowsheets.full_treatment_train.model_components import Mixer
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      set_scaling_factor,
                                      get_scaling_factor,
                                      constraint_scaling_transform)
 from idaes.core.util.initialization import propagate_state
 from proteuslib.unit_models.pump_isothermal import Pump
-from proteuslib.flowsheets.full_treatment_train.example_flowsheets import feed_block
-from proteuslib.flowsheets.full_treatment_train.example_models import unit_separator, unit_0DRO, unit_1DRO, property_models
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components import feed_block
+from proteuslib.flowsheets.full_treatment_train.model_components import unit_separator, unit_0DRO, unit_1DRO, property_models
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 from idaes.core.util.model_statistics import fixed_variables_generator
 

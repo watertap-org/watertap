@@ -57,7 +57,7 @@ from idaes.generic_models.properties.core.generic.generic_reaction import Concen
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
 
 # Import costing and financials to test
-from proteuslib.flowsheets.full_treatment_train.example_flowsheets import costing, financials
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components import costing, financials
 
 # Import safe log power law equation
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
@@ -86,7 +86,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
-from proteuslib.flowsheets.full_treatment_train.example_models import property_models
+from proteuslib.flowsheets.full_treatment_train.model_components import property_models
 from idaes.core.util import get_solver
 
 # Import the idaes objects for Generic Properties and Reactions
@@ -100,7 +100,7 @@ from idaes.generic_models.unit_models.stoichiometric_reactor import \
     StoichiometricReactor
 
 # Import the Proteuslib objects inherited (includes for the Mixer and Separator unit model
-from proteuslib.flowsheets.full_treatment_train.example_models import Separator, Mixer
+from proteuslib.flowsheets.full_treatment_train.model_components import Separator, Mixer
 
 from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
 

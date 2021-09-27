@@ -19,7 +19,7 @@ from idaes.core.util.scaling import calculate_scaling_factors, constraint_scalin
 from idaes.core.util.initialization import propagate_state
 import pretreatment_stoich_softening_block as pssb
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
-from proteuslib.flowsheets.full_treatment_train.example_models import property_models
+from proteuslib.flowsheets.full_treatment_train.model_components import property_models
 
 
 def build_feed_block(model):

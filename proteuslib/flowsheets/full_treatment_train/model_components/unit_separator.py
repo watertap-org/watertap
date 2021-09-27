@@ -18,9 +18,9 @@ from idaes.core import FlowsheetBlock
 # from idaes.generic_models.unit_models import Separator  # replaced separator
 from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
 from idaes.core.util.scaling import calculate_scaling_factors, set_scaling_factor, constraint_scaling_transform
-from proteuslib.flowsheets.full_treatment_train.example_models import property_models
+from proteuslib.flowsheets.full_treatment_train.model_components import property_models
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
-from proteuslib.flowsheets.full_treatment_train.example_models import Separator
+from proteuslib.flowsheets.full_treatment_train.model_components import Separator
 
 
 def build_SepRO(m, base='TDS'):

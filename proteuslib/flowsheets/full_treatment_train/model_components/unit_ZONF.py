@@ -15,9 +15,9 @@
 
 from pyomo.environ import ConcreteModel, Constraint
 from idaes.core import FlowsheetBlock
-from proteuslib.flowsheets.full_treatment_train.example_models.nanofiltration_ZO import NanofiltrationZO
+from proteuslib.flowsheets.full_treatment_train.model_components.nanofiltration_ZO import NanofiltrationZO
 from idaes.core.util.scaling import calculate_scaling_factors, constraint_scaling_transform
-from proteuslib.flowsheets.full_treatment_train.example_models import property_models
+from proteuslib.flowsheets.full_treatment_train.model_components import property_models
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
