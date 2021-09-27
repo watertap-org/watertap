@@ -13,13 +13,13 @@
 
 """Seawater feed specifications for supported property packages"""
 
-from pyomo.environ import ConcreteModel, Constraint
+from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.generic.generic_property import GenericParameterBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 from proteuslib.property_models import seawater_prop_pack
 from proteuslib.flowsheets.full_treatment_train.example_models import seawater_salt_prop_pack, seawater_ion_prop_pack
-from proteuslib.flowsheets.full_treatment_train.eNRTL import entrl_config_FTPx, entrl_config_FpcTP
+from proteuslib.flowsheets.full_treatment_train.example_models.eNRTL import entrl_config_FpcTP
 from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling
 
 
