@@ -1,10 +1,9 @@
 import numpy as np
 import sys
 from scipy.interpolate import griddata
-from idaes.core.util import get_solver
 
 from proteuslib.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
-from proteuslib.flowsheets.full_treatment_train.flowsheet_components.flowsheet_mvp import (solve_optimization, optimize, set_up_optimization)
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components.examples.flowsheet_mvp import (solve_optimization, optimize)
 
 comm, rank, num_procs = _init_mpi()
 

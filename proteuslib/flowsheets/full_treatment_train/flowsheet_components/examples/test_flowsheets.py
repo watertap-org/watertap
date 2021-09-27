@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 from pyomo.environ import value
-from proteuslib.flowsheets.full_treatment_train.flowsheet_components import flowsheet_limited, flowsheet_mvp
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components.examples import flowsheet_mvp, flowsheet_limited
 
 
 @pytest.mark.component
