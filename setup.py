@@ -98,10 +98,16 @@ setup(
         "click",  # command-line tools with Click
         # tutorial tests
         "nbformat",
+        "scipy",
         # https://www.python.org/dev/peps/pep-0508/#environment-markers
         'pywin32==225 ; platform_system=="Windows" and python_version>="3.8"',
     ],
     extras_require={
+        "testing": [
+            "pytest",
+            "json-schema-for-humans",
+            "mongomock",
+        ],
         "dev": [
             "myst-parser",  # markdown support for Sphinx
             # other requirements
