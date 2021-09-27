@@ -13,7 +13,7 @@
 import pytest
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
-from proteuslib.flowsheets.full_treatment_train.flowsheet_components import pretreatment
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components import pretreatment_NF
 from proteuslib.flowsheets.full_treatment_train.model_components import property_models
 from proteuslib.flowsheets.full_treatment_train.util import check_build, check_scaling
 
@@ -33,8 +33,8 @@ def test_build_and_scale_pretreatment_NF():
                 m.fs = FlowsheetBlock(default={"dynamic": False})
                 property_models.build_prop(m, base=kwargs['NF_base'])
 
-                check_build(m, build_func=pretreatment.build_pretreatment_NF, **kwargs)
+                check_build(m, build_func=pretreatment_NF.build_pretreatment_NF, **kwargs)
                 assert hasattr(m.fs, 'NF')
-                check_scaling(m, scale_func=pretreatment.scale_pretreatment_NF, **kwargs)
+                check_scaling(m, scale_func=pretreatment_NF.scale_pretreatment_NF, **kwargs)
 
-                pretreatment.display_pretreatment_NF(m, **kwargs)
+                pretreatment_NF.display_pretreatment_NF(m, **kwargs)

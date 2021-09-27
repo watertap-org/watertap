@@ -21,7 +21,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
                                      badly_scaled_var_generator,
                                      constraint_autoscale_large_jac)
 from idaes.core.util.initialization import propagate_state
-from proteuslib.flowsheets.full_treatment_train.flowsheet_components import (pretreatment,
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components import (pretreatment_NF,
                                                                              desalination,
                                                                              gypsum_saturation_index,
                                                                              translator_block,
@@ -33,7 +33,7 @@ from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scal
 def build_components(m, has_bypass=True):
     # build flowsheet
     property_models.build_prop(m, base='ion')
-    pretrt_port = pretreatment.build_pretreatment_NF(m, NF_type='ZO', NF_base='ion', has_bypass=has_bypass)
+    pretrt_port = pretreatment_NF.build_pretreatment_NF(m, NF_type='ZO', NF_base='ion', has_bypass=has_bypass)
 
     property_models.build_prop(m, base='TDS')
     translator_block.build_tb(m, base_inlet='ion',
@@ -78,20 +78,20 @@ def build(m, has_bypass=True):
 
 
 def scale(m, has_bypass=True):
-    pretreatment.scale_pretreatment_NF(m, NF_type='ZO', NF_base='ion', has_bypass=has_bypass)
+    pretreatment_NF.scale_pretreatment_NF(m, NF_type='ZO', NF_base='ion', has_bypass=has_bypass)
     calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
 
 
 def initialize(m, has_bypass=True):
     optarg = {'nlp_scaling_method': 'user-scaling'}
-    pretreatment.initialize_pretreatment_NF(m, NF_type='ZO', NF_base='ion', has_bypass=has_bypass)
+    pretreatment_NF.initialize_pretreatment_NF(m, NF_type='ZO', NF_base='ion', has_bypass=has_bypass)
     m.fs.pretrt_saturation.properties.initialize(optarg=optarg)
     propagate_state(m.fs.s_pretrt_tb)
     m.fs.tb_pretrt_to_desal.initialize(optarg=optarg)
 
 
 def report(m, has_bypass=True):
-    pretreatment.display_pretreatment_NF(m, NF_type='ZO', NF_base='ion', has_bypass=has_bypass)
+    pretreatment_NF.display_pretreatment_NF(m, NF_type='ZO', NF_base='ion', has_bypass=has_bypass)
     m.fs.tb_pretrt_to_desal.report()
 
 

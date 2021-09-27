@@ -140,6 +140,8 @@ def solve_specify_feed(base):
     # display
     m.fs.stream.display()
 
+    return m
+
 
 if __name__ == "__main__":
     solve_specify_feed('TDS')

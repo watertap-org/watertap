@@ -19,7 +19,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      constraint_autoscale_large_jac)
 from idaes.core.util.initialization import propagate_state
-from proteuslib.flowsheets.full_treatment_train.flowsheet_components import (pretreatment,
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components import (pretreatment_NF,
                                                                              desalination,
                                                                              translator_block,
                                                                              feed_block,
@@ -43,7 +43,7 @@ def build_flowsheet_mvp_NF(m, **kwargs):
                                                   'RO_type', 'RO_base', 'RO_level',)}
     # build flowsheet
     property_models.build_prop(m, base='ion')
-    pretrt_port = pretreatment.build_pretreatment_NF(m, **kwargs_pretreatment)
+    pretrt_port = pretreatment_NF.build_pretreatment_NF(m, **kwargs_pretreatment)
 
     property_models.build_prop(m, base=kwargs['RO_base'])
     desal_port = desalination.build_desalination(m, **kwargs_desalination)
@@ -219,14 +219,14 @@ def solve_flowsheet_mvp_NF(**kwargs):
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scale
-    pretreatment.scale_pretreatment_NF(m, **kwargs)
+    pretreatment_NF.scale_pretreatment_NF(m, **kwargs)
     calculate_scaling_factors(m.fs.tb_pretrt_to_desal)
     desalination.scale_desalination(m, **kwargs)
     calculate_scaling_factors(m)
 
     # initialize
     optarg = {'nlp_scaling_method': 'user-scaling'}
-    pretreatment.initialize_pretreatment_NF(m, **kwargs)
+    pretreatment_NF.initialize_pretreatment_NF(m, **kwargs)
     m.fs.pretrt_saturation.properties.initialize(optarg=optarg)
     propagate_state(m.fs.s_pretrt_tb)
     m.fs.tb_pretrt_to_desal.initialize(optarg=optarg)
@@ -240,7 +240,7 @@ def solve_flowsheet_mvp_NF(**kwargs):
     check_dof(m)
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
-    pretreatment.display_pretreatment_NF(m, **kwargs)
+    pretreatment_NF.display_pretreatment_NF(m, **kwargs)
     m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs)
     print('desalination solubility index:', value(m.fs.desal_saturation.saturation_index))
@@ -259,7 +259,7 @@ def solve_optimization(system_recovery=0.75, **kwargs_flowsheet):
     set_up_optimization(m, system_recovery=system_recovery, **kwargs_flowsheet)
     optimize(m)
 
-    pretreatment.display_pretreatment_NF(m, **kwargs_flowsheet)
+    pretreatment_NF.display_pretreatment_NF(m, **kwargs_flowsheet)
     m.fs.tb_pretrt_to_desal.report()
     desalination.display_desalination(m, **kwargs_flowsheet)
     costing.display_costing(m)
