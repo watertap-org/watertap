@@ -17,6 +17,7 @@ from proteuslib.flowsheets.full_treatment_train.analysis import (flowsheet_NF,
                                                                  flowsheet_single_stage,
                                                                  flowsheet_two_stage,
                                                                  flowsheet_NF_two_stage,
+                                                                 flowsheet_softening,
                                                                  flowsheet_softening_two_stage)
 
 @pytest.mark.component
@@ -27,13 +28,15 @@ def test_flowsheet_NF():
     assert (value(m.fs.tb_pretrt_to_desal.properties_in[0].flow_mass_phase_comp['Liq', 'Ca'])
             == pytest.approx(2.151e-4, rel=1e-3))
 
-# @pytest.mark.component
-# def test_flowsheet_NF_no_bypass():
-#     m = flowsheet_NF_no_bypass.solve_flowsheet()
-#     assert (value(m.fs.tb_pretrt_to_desal.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'])
-#             == pytest.approx(0.2923, rel=1e-3))
-#     assert (value(m.fs.tb_pretrt_to_desal.properties_in[0].flow_mass_phase_comp['Liq', 'Ca'])
-#             == pytest.approx(2.414e-5, rel=1e-3))
+
+@pytest.mark.component
+def test_flowsheet_NF_no_bypass():
+    m = flowsheet_NF_no_bypass.solve_flowsheet()
+    assert (value(m.fs.tb_pretrt_to_desal.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'])
+            == pytest.approx(0.29225, rel=1e-3))
+    assert (value(m.fs.tb_pretrt_to_desal.properties_in[0].flow_mass_phase_comp['Liq', 'Ca'])
+            == pytest.approx(2.413e-5, rel=1e-3))
+
 
 @pytest.mark.component
 def test_flowsheet_single_stage():
@@ -53,9 +56,13 @@ def test_flowsheet_two_stage():
 def test_flowsheet_NF_two_stage():
     desal_kwargs = flowsheet_two_stage.desal_kwargs
     m = flowsheet_NF_two_stage.optimize_flowsheet(system_recovery=0.70, **desal_kwargs)
-    # No longer true with NF.area.lb = 0.1 and pseudo-equality constraint
-    # assert value(m.fs.costing.LCOW) == pytest.approx(0.5518, rel=1e-3)
     assert value(m.fs.costing.LCOW) == pytest.approx(0.5502, rel=1e-3)
+
+
+@pytest.mark.component
+def test_flowsheet_softening():
+    m = flowsheet_softening.solve_flowsheet()
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.3837, rel=1e-3)
 
 
 @pytest.mark.component
@@ -63,3 +70,11 @@ def test_flowsheet_softening_two_stage():
     desal_kwargs = flowsheet_two_stage.desal_kwargs
     m = flowsheet_softening_two_stage.optimize_flowsheet(system_recovery=0.80, **desal_kwargs)
     assert value(m.fs.costing.LCOW) == pytest.approx(0.9277, rel=1e-3)
+
+
+@pytest.mark.component
+def test_flowsheet_1DRO():
+    desal_kwargs = flowsheet_two_stage.desal_kwargs
+    desal_kwargs['RO_type'] = '1D'
+    m = flowsheet_two_stage.optimize_flowsheet(system_recovery=0.70, **desal_kwargs)
+    assert value(m.fs.costing.LCOW) == pytest.approx(0.5963, rel=1e-3)

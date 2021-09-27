@@ -72,17 +72,12 @@ def set_optimization_components(m, system_recovery, **kwargs):
     m.fs.NF.area.setlb(0.1)
     m.fs.NF.area.setub(1000)
 
-    # m.fs.max_conc_factor_target = Param(initialize=3.5, mutable=True)
-    # m.fs.eq_max_conc_NF = Constraint(
-    #     expr=m.fs.NF.feed_side.properties_out[0].mass_frac_phase_comp['Liq', 'Ca']
-    #     <= m.fs.max_conc_factor_target * m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'Ca'])
-
     m.fs.max_conc_factor_target = Param(initialize=3.5, mutable=True)
     m.fs.max_conc_factor_target_tol = Param(initialize=5e-6, mutable=True)
-
     m.fs.eq_max_conc_NF = Constraint(
         expr=(0,
-              m.fs.NF.feed_side.properties_out[0].mass_frac_phase_comp['Liq', 'Ca'] - m.fs.max_conc_factor_target * m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'Ca'],
+              m.fs.NF.feed_side.properties_out[0].mass_frac_phase_comp['Liq', 'Ca']
+              - m.fs.max_conc_factor_target * m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'Ca'],
               m.fs.max_conc_factor_target_tol))
 
     flowsheet_two_stage.set_optimization_components(m, system_recovery, **kwargs)

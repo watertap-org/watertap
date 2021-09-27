@@ -19,6 +19,7 @@ from proteuslib.flowsheets.full_treatment_train.flowsheet_components import (pre
 #       flowsheet to solve for lime dosage
 from proteuslib.flowsheets.full_treatment_train.flowsheet_components.chemistry.pretreatment_stoich_softening_block import *
 
+
 def build_components(m):
     # build flowsheet
     pretrt_port = pretreatment_softening.build(m)
@@ -99,19 +100,6 @@ def solve_flowsheet():
 def simulate(m):
     solve_with_user_scaling(m, tee=False, fail_flag=True)
 
+
 if __name__ == "__main__":
     m = solve_flowsheet()
-
-    for x in [0, 0.002, 0.004, 0.006, 0.008, 0.010, 0.012, 0.014, 0.02, 0.03, 0.04, 0.05, 0.1, 0.128]:
-        m.fs.stoich_softening_mixer_unit.lime_stream_state[0].flow_mol.fix(x)
-        simulate(m)
-        print('Lime flow (kg/day): %.3f, Ca removal: %.2f, Mg removal: %.2f, Ca: %.2f, Mg: %.2f, LCOW: %.2f' %
-              (value(m.fs.stoich_softening_mixer_unit.lime_stream_state[0].flow_mol)
-               * 74.09e-3 * 60 * 60 * 24,
-               value(m.fs.removal_Ca),
-               value(m.fs.removal_Mg),
-               value(m.fs.stoich_softening_separator_unit.outlet_stream_state[0.0].mole_frac_comp['Ca(HCO3)2'] * 1e6),
-               value(m.fs.stoich_softening_separator_unit.outlet_stream_state[0.0].mole_frac_comp['Mg(HCO3)2'] * 1e6),
-               value(m.fs.costing.LCOW)
-               )
-              )
