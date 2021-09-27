@@ -23,9 +23,6 @@ from idaes.core.util.scaling import calculate_scaling_factors
 from proteuslib.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
                                                              check_dof)
 
-from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.pretreatment_stoich_softening_block import (
-        setup_block_to_solve_lime_dosing_rate)
-
 import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_softening as flowsheet_softening
 import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_two_stage as flowsheet_two_stage
 

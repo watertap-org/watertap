@@ -15,7 +15,7 @@
     Simple example of a flowsheet containing an RO separator unit model and
     a simple NaOCl chlorination post-treatment unit model.
 
-    inlet ---> [RO Separator] ---> permeate ---> (Translator) ---> [Chlorination] ---> outlet
+    inlet ---> [  0D RO  ] ---> permeate ---> (Translator) ---> [Chlorination] ---> outlet
                     |
                     |
                     v
@@ -47,23 +47,21 @@
     ---------- NOTE: This is only an example ---------
 """
 
-from proteuslib.flowsheets.full_treatment_train.model_components import unit_separator, property_models
-from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.PostTreatment_SimpleNaOCl_Chlorination import (
+from proteuslib.flowsheets.full_treatment_train.model_components import property_models
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components import desalination
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components.chemistry.PostTreatment_SimpleNaOCl_Chlorination import (
     build_simple_naocl_chlorination_unit,
     initialize_chlorination_example,
     display_results_of_chlorination,
-    simple_naocl_reaction_config, run_chlorination_example)
+    simple_naocl_reaction_config)
 
 # Import specific pyomo objects
 from pyomo.environ import (ConcreteModel,
-                           SolverStatus,
-                           TerminationCondition,
                            Constraint,
+                           Expression,
+                           Objective,
                            TransformationFactory,
-                           value,
-                           Suffix)
-
-from pyomo.network import SequentialDecomposition
+                           value)
 
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock
@@ -83,17 +81,28 @@ from idaes.core.util import scaling as iscale
 
 from idaes.core.util import get_solver
 
+from idaes.core.util.initialization import propagate_state
+
 __author__ = "Austin Ladshaw"
 
 # Get default solver for testing
 solver = get_solver()
 
-
-def build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0):
+def build_0DRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0, RO_level='detailed'):
     property_models.build_prop(model, base='TDS')
-    unit_separator.build_SepRO(model)
-    iscale.calculate_scaling_factors(model.fs.RO)
-    property_models.specify_feed(model.fs.RO.mixed_state[0], base='TDS')
+
+    # Here, we set 'has_feed' to True because RO is our first block in the flowsheet
+    kwargs_desal = {'has_desal_feed': True, 'is_twostage': False, 'has_ERD': False,
+                    'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': RO_level}
+    desal_port = desalination.build_desalination(model, **kwargs_desal)
+    desalination.scale_desalination(model, **kwargs_desal)
+    desalination.initialize_desalination(model, **kwargs_desal)
+
+    # You can change some RO unit defaults here
+    #model.fs.RO.area.set_value(100)
+
+    #unit_0DRO.build_RO(model, base='TDS', level='simple')
+    #property_models.specify_feed(model.fs.RO.feed_side.properties_in[0], base='TDS')
 
     total_molar_density = 1/18*1000 #mol/L
     free_chlorine_added = mg_per_L_NaOCl_added/74.44/1000*70900 #mg/L as NaOCl
@@ -148,14 +157,21 @@ def build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0):
                 "HOCl", "OCl_-", "Cl_-", "Na_+"]) )
 
     # Add the connecting arcs
-    model.fs.S1 = Arc(source=model.fs.RO.permeate, destination=model.fs.RO_to_Chlor.inlet)
+    model.fs.S1 = Arc(source=desal_port['out'], destination=model.fs.RO_to_Chlor.inlet)
+    #model.fs.S1 = Arc(source=model.fs.RO.permeate, destination=model.fs.RO_to_Chlor.inlet)
     model.fs.S2 = Arc(source=model.fs.RO_to_Chlor.outlet, destination=model.fs.simple_naocl_unit.inlet)
     TransformationFactory("network.expand_arcs").apply_to(model)
 
     # Inlet conditions for RO unit already set from the build function
 
     # Calculate scaling factors and setup each block
+    model.fs.RO_to_Chlor.properties_in[0].mass_frac_phase_comp
     iscale.calculate_scaling_factors(model.fs.RO_to_Chlor)
+    model.fs.RO_to_Chlor.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
+
+    iscale.calculate_scaling_factors(model.fs.RO_to_Chlor)
+    iscale.constraint_autoscale_large_jac(model.fs.RO_to_Chlor)
+
     state_args, stoich_extents = approximate_chemical_state_args(model.fs.simple_naocl_unit,
                                 model.fs.simple_naocl_rxn_params, simple_naocl_reaction_config)
     calculate_chemical_scaling_factors(model.fs.simple_naocl_unit,
@@ -185,18 +201,39 @@ def build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0):
 
     check_dof(model)
 
-
-def run_SepRO_Chlorination_flowsheet_example():
+def run_0DRO_Chlorination_flowsheet_example(with_seq_decomp=True, RO_level='detailed'):
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
 
     # build the flow sheet
-    build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=2)
+    build_0DRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=2, RO_level=RO_level)
 
     # Call the sequential decomposition initializer tool
-    seq_decomp_initializer(model)
+    if with_seq_decomp == True:
+        seq_decomp_initializer(model)
+    # Manually initialize the blocks sequentially
+    else:
+        propagate_state(model.fs.S1)
+        model.fs.RO_to_Chlor.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
+        propagate_state(model.fs.S2)
 
-    # run the full solve
+        # Use propogated state (which updated chlorination unit inlet port) to initialize
+        model.fs.simple_naocl_unit.initialize(optarg={'nlp_scaling_method': 'user-scaling',
+                                     'bound_push': 1e-10,
+                                     'mu_init': 1e-6})
+
+        # Recall the auto scaling after initialization
+        ##  NOTE: There is a bug in the autoscaling or RO unit which does not allow
+        #           us to use autoscaling on that unit if using the 'detailed' version
+        #iscale.constraint_autoscale_large_jac(model.fs.RO)
+        iscale.constraint_autoscale_large_jac(model.fs.simple_naocl_unit)
+        iscale.constraint_autoscale_large_jac(model.fs.RO_to_Chlor)
+
+    #End manual seq decomp
+
+    model.fs.simple_naocl_unit.free_chlorine.fix(2)
+    model.fs.RO_to_Chlor.OCl_con.deactivate()
+
     solve_with_user_scaling(model, tee=True)
 
     model.fs.RO.inlet.display()
@@ -210,27 +247,53 @@ def run_SepRO_Chlorination_flowsheet_example():
 
     return model
 
-def run_SepRO_Chlorination_flowsheet_with_outlet_constraint_example():
-    model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
+def run_0DRO_Chlorination_flowsheet_optimization_example(with_seq_decomp=True, RO_flux=20):
 
-    # build the flow sheet (if constraining outlet, becareful of your initial guess for
-    #       the added NaOCl. Scaling is dependent on good guesses)
-    build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=3)
+    # First step is to build and solve the flowsheet under current conditions
+    model = run_0DRO_Chlorination_flowsheet_example(with_seq_decomp=with_seq_decomp, RO_level='simple')
 
-    # Call the sequential decomposition initializer tool
-    seq_decomp_initializer(model)
+    model.fs.RO.area.display()
+    model.fs.RO.permeate_side.properties_mixed[0].flow_vol.display()
 
-    #Redefine the constraints and fixed vars here
-    # Here we fix the exit free chlorine then remove the
-    #   constraint the defines the amount of OCl from the translator
-    #   block to the chlorination process. We are essentially using
-    #   the translator block as both a translator and a mixer.
-    model.fs.simple_naocl_unit.free_chlorine.fix(2)
-    model.fs.RO_to_Chlor.OCl_con.deactivate()
+    # Unfix RO area and replace with constraint on RO_flux
+    model.fs.RO.area.unfix()
+    model.fs.RO.area.setlb(10)
+    model.fs.RO.area.setub(300)
 
-    # run the full solve
-    solve_with_user_scaling(model, tee=True)
+    # fixed RO water flux
+    model.fs.RO_flux = Expression(
+        expr=model.fs.RO.permeate_side.properties_mixed[0].flow_vol
+             / model.fs.RO.area)
+    model.fs.eq_RO_flux = Constraint(
+        expr=model.fs.RO_flux*1000*3600 >= RO_flux)
+
+    # Unfix free chlorine and replace with constraint on minimum chlorine
+    model.fs.simple_naocl_unit.free_chlorine.unfix()
+    model.fs.simple_naocl_unit.free_chlorine.setlb(0.1)
+    model.fs.simple_naocl_unit.free_chlorine.setub(5)
+
+    model.fs.exit_chlorine = Constraint(expr=model.fs.simple_naocl_unit.free_chlorine >= 2)
+
+    # Constraint on flow from permeate to be above certain level
+    model.fs.flow_mol_cons = Constraint(expr=model.fs.RO.permeate_side.properties_mixed[0].flow_vol >= 0.0002)
+
+    # Add an objective function (something to minimize)
+    model.fs.objective = Objective(expr=model.fs.simple_naocl_unit.dosing_rate*10 + model.fs.RO.area*1)
+
+    iscale.constraint_autoscale_large_jac(model.fs.simple_naocl_unit)
+    iscale.constraint_autoscale_large_jac(model.fs.RO_to_Chlor)
+
+    #   Can't use this tool because of issues in detailed RO
+    try:
+        iscale.constraint_autoscale_large_jac(model)
+    except:
+        pass
+
+    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+
+    model.fs.RO.area.display()
+    model.fs.RO.permeate_side.properties_mixed[0].flow_vol.display()
+    print(value(model.fs.RO_flux.expr)*1000*3600)
 
     model.fs.RO.inlet.display()
     model.fs.RO.permeate.display()
@@ -240,9 +303,11 @@ def run_SepRO_Chlorination_flowsheet_with_outlet_constraint_example():
     model.fs.RO_to_Chlor.outlet.display()
 
     display_results_of_chlorination(model.fs.simple_naocl_unit)
+
 
     return model
 
 if __name__ == "__main__":
-    model = run_SepRO_Chlorination_flowsheet_example()
-    model = run_SepRO_Chlorination_flowsheet_with_outlet_constraint_example()
+    #model = run_0DRO_Chlorination_flowsheet_example(False)
+    #model = run_0DRO_Chlorination_flowsheet_example(True)
+    model = run_0DRO_Chlorination_flowsheet_optimization_example()

@@ -256,7 +256,7 @@ def _default_optimize(model, options=None, tee=False):
 
         model : A Pyomo ConcreteModel to optimize
 
-        options (optional) : Solver options to pass into idaes.core.util.get_solver.
+        options (optional) : Solver options to pass into idaes.core.utils.get_solver.
                              Default is None
         tee (options) : To display the solver log. Default it False
 

@@ -11,28 +11,13 @@
 #
 ###############################################################################
 
-from pyomo.environ import (ConcreteModel, Objective, Expression, Constraint, Param,
-                           TransformationFactory, value, units as pyunits)
-from pyomo.network import Arc
-from pyomo.util import infeasible
-from idaes.core import FlowsheetBlock
-from idaes.core.util.scaling import (calculate_scaling_factors,
-                                     unscaled_constraints_generator,
-                                     unscaled_variables_generator,
-                                     badly_scaled_var_generator,
-                                     constraint_autoscale_large_jac)
-from idaes.core.util.initialization import propagate_state
-from proteuslib.flowsheets.full_treatment_train.flowsheet_components import (pretreatment_softening,
-                                                                             costing,
-                                                                             financials)
-from proteuslib.flowsheets.full_treatment_train.model_components import property_models
-from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from idaes.core.util.scaling import (calculate_scaling_factors)
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components import (pretreatment_softening)
 
 # Added import statements for testing.
 #       Need the pretreatment_stoich_softening_block functions to setup
 #       flowsheet to solve for lime dosage
-from idaes.core.util import scaling as iscale
-from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.pretreatment_stoich_softening_block import *
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components.chemistry.pretreatment_stoich_softening_block import *
 
 def build_components(m):
     # build flowsheet
@@ -116,7 +101,6 @@ def simulate(m):
 
 if __name__ == "__main__":
     m = solve_flowsheet()
-    import sys
 
     for x in [0, 0.002, 0.004, 0.006, 0.008, 0.010, 0.012, 0.014, 0.02, 0.03, 0.04, 0.05, 0.1, 0.128]:
         m.fs.stoich_softening_mixer_unit.lime_stream_state[0].flow_mol.fix(x)

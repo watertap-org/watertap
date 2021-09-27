@@ -20,7 +20,7 @@
 """
 import pytest
 
-from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.posttreatment_ideal_naocl_chlorination_block import (
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components.chemistry.posttreatment_ideal_naocl_chlorination_block import (
     run_ideal_naocl_mixer_example, run_ideal_naocl_chlorination_example, run_chlorination_block_example,
     build_translator_from_RO_to_chlorination_block)
 from proteuslib.flowsheets.full_treatment_train.model_components import property_models

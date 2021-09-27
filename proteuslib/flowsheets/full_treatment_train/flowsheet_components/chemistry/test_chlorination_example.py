@@ -20,16 +20,16 @@
 """
 import pytest
 
-from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.PreTreatment_Simple_Softening import (
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components.chemistry.PreTreatment_Simple_Softening import (
     run_softening_example)
 
-from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.PostTreatment_SimpleNaOCl_Chlorination import (
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components.chemistry.PostTreatment_SimpleNaOCl_Chlorination import (
     run_chlorination_example, run_chlorination_constrained_outlet_example)
 
-from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.SepRO_plus_Chlorination import (
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components.chemistry.SepRO_plus_Chlorination import (
     run_SepRO_Chlorination_flowsheet_example, run_SepRO_Chlorination_flowsheet_with_outlet_constraint_example)
 
-from proteuslib.flowsheets.full_treatment_train.chemistry_flowsheets.ZeroDRO_plus_Chlorination import (
+from proteuslib.flowsheets.full_treatment_train.flowsheet_components.chemistry.ZeroDRO_plus_Chlorination import (
     run_0DRO_Chlorination_flowsheet_example, run_0DRO_Chlorination_flowsheet_optimization_example)
 
 __author__ = "Austin Ladshaw"
