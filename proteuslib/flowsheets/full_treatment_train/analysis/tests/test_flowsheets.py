@@ -22,11 +22,11 @@ from proteuslib.flowsheets.full_treatment_train.analysis import (flowsheet_NF,
 
 @pytest.mark.component
 def test_flowsheet_NF():
-    m = flowsheet_NF.solve_flowsheet(True)
+    m = flowsheet_NF.optimize_flowsheet(system_recovery=0.5)
     assert (value(m.fs.tb_pretrt_to_desal.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'])
-            == pytest.approx(0.7745, rel=1e-3))
+            == pytest.approx(0.7629, rel=1e-3))
     assert (value(m.fs.tb_pretrt_to_desal.properties_in[0].flow_mass_phase_comp['Liq', 'Ca'])
-            == pytest.approx(2.151e-4, rel=1e-3))
+            == pytest.approx(1.139e-4, rel=1e-3))
 
 
 @pytest.mark.component
@@ -36,6 +36,10 @@ def test_flowsheet_NF_no_bypass():
             == pytest.approx(0.29225, rel=1e-3))
     assert (value(m.fs.tb_pretrt_to_desal.properties_in[0].flow_mass_phase_comp['Liq', 'Ca'])
             == pytest.approx(2.413e-5, rel=1e-3))
+    m.fs.NF.recovery_mass_phase_comp[0, 'Liq', 'H2O'].fix(0.5)
+    flowsheet_NF_no_bypass.simulate(m, **{'unfix_nf_area': True})
+    assert (value(m.fs.tb_pretrt_to_desal.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'])
+            == pytest.approx(0.4823, rel=1e-3))
 
 
 @pytest.mark.component
