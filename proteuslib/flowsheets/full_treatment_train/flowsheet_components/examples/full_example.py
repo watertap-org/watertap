@@ -32,7 +32,7 @@ from proteuslib.flowsheets.full_treatment_train.util import (solve_with_user_sca
                                                              check_build,
                                                              check_scaling)
 
-"""Flowsheet examples that satisfy minimum viable product requirements"""
+"""Flowsheet example that satisfy minimum viable product requirements"""
 def build_flowsheet_mvp_NF(m, **kwargs):
     """
     Build a flowsheet with NF pretreatment and RO.
