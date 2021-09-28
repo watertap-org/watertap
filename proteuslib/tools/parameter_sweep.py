@@ -256,7 +256,7 @@ def _default_optimize(model, options=None, tee=False):
 
         model : A Pyomo ConcreteModel to optimize
 
-        options (optional) : Solver options to pass into idaes.core.util.get_solver.
+        options (optional) : Solver options to pass into idaes.core.utils.get_solver.
                              Default is None
         tee (options) : To display the solver log. Default it False
 
@@ -312,7 +312,7 @@ def _interp_nan_values(global_values, global_results):
     # Interpolate to get a value for nan points where possible
     for k in range(n_outs):
         y0 = global_results[mask, k]
-        yi = griddata(x0, y0, global_values, method='linear', rescale=True)
+        yi = griddata(x0, y0, global_values, method='linear', rescale=True).reshape(-1)
         global_results_clean[~mask, k] = yi[~mask]
 
     return global_results_clean
@@ -498,7 +498,14 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
             global_results_clean = _interp_nan_values(global_values, global_results)
             global_save_data_clean = np.hstack((global_values, global_results_clean))
 
-            np.savetxt('interpolated_%s' % (results_file), global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
+            head, tail = os.path.split(results_file)
+
+            if head == '':
+                interp_file = 'interpolated_%s' % (tail)
+            else:
+                interp_file = '%s/interpolated_%s' % (head, tail)
+
+            np.savetxt(interp_file, global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
     
     return global_save_data
 
