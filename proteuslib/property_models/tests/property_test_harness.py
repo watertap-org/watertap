@@ -236,7 +236,7 @@ class PropertyTestHarness():
     def check_constraint_status(blk, tol=1e-8):
         c_violated_lst = []
 
-        # implementation modified from Pyomo 5.7.3, pyomo.util.infeasible.log_infeasible_constraints
+        # implementation modified from Pyomo 5.7.3, pyomo.utils.infeasible.log_infeasible_constraints
         for c in blk.component_data_objects(
                 ctype=Constraint, active=True, descend_into=True):
             c_body_value = value(c.body, exception=False)
