@@ -367,8 +367,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # Apply transformation to feed side
         feed_side.apply_transformation()
         # Add inlet/outlet ports for feed side
-        self.add_inlet_port(name="feed_inlet", block=feed_side)
-        self.add_outlet_port(name="feed_outlet", block=feed_side)
+        self.add_inlet_port(name="inlet", block=feed_side)
+        self.add_outlet_port(name="retentate", block=feed_side)
         # Make indexed stateblock and separate stateblock for permeate-side and permeate outlet, respectively.
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
@@ -379,7 +379,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             self.feed_side.length_domain,
             doc="Material properties of permeate along permeate channel",
             default=tmp_dict)
-        self.permeate_out = self.config.property_package.state_block_class(
+        self.mixed_permeate = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of mixed permeate exiting the module",
             default=tmp_dict)
@@ -391,8 +391,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             doc="Material properties of feed-side membrane interface",
             default=tmp_dict)
 
-        # Add port to permeate_out
-        self.add_port(name="permeate_outlet", block=self.permeate_out)
+        # Add port to mixed_permeate
+        self.add_port(name="permeate", block=self.mixed_permeate)
 
         # ==========================================================================
         """ Add references to control volume geometry."""
@@ -678,7 +678,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         @self.Constraint(self.flowsheet().config.time)
         def eq_recovery_vol_phase(b, t):
             return (b.recovery_vol_phase[t, 'Liq'] ==
-                    b.permeate_out[t].flow_vol_phase['Liq'] /
+                    b.mixed_permeate[t].flow_vol_phase['Liq'] /
                     b.feed_side.properties[t, self.feed_side.length_domain.first()].flow_vol_phase['Liq'])
 
         # ==========================================================================
@@ -689,7 +689,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         def eq_recovery_mass_phase_comp(b, t, j):
             return (b.recovery_mass_phase_comp[t, 'Liq', j]
                     * b.feed_side.properties[t, b.feed_side.length_domain.first()].flow_mass_phase_comp['Liq', j] ==
-                    b.permeate_out[t].flow_mass_phase_comp['Liq', j])
+                    b.mixed_permeate[t].flow_mass_phase_comp['Liq', j])
 
         # ==========================================================================
         # Mass transfer term equation
@@ -755,7 +755,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Permeate mass flow rates exiting unit")
         def eq_permeate_production(b, t, p, j):
-            return (b.permeate_out[t].get_material_flow_terms(p, j)
+            return (b.mixed_permeate[t].get_material_flow_terms(p, j)
                     == sum(b.permeate_side[t, x].get_material_flow_terms(p, j)
                            for x in b.feed_side.length_domain if x != 0))
         # ==========================================================================
@@ -932,7 +932,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          doc="Isothermal assumption for permeate out")
         def eq_permeate_outlet_isothermal(b, t):
             return b.feed_side.properties[t, b.feed_side.length_domain.first()].temperature == \
-                   b.permeate_out[t].temperature
+                   b.mixed_permeate[t].temperature
         # ==========================================================================
         # isobaric conditions across permeate channel and at permeate outlet
 
@@ -941,7 +941,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          doc="Isobaric assumption for permeate out")
         def eq_permeate_outlet_isobaric(b, t, x):
             return b.permeate_side[t, x].pressure == \
-                   b.permeate_out[t].pressure
+                   b.mixed_permeate[t].pressure
         # ==========================================================================
         # Bulk and interface connections on the feed-side
         # TEMPERATURE
@@ -1028,7 +1028,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         init_log.info('Starting Initialization Step 1: initialize blocks.')
         # ---------------------------------------------------------------------
-        # Step 1: Initialize feed_side, permeate_side, and permeate_out blocks
+        # Step 1: Initialize feed_side, permeate_side, and mixed_permeate blocks
         flags_feed_side = blk.feed_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
@@ -1041,7 +1041,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             solver=solver,
             state_args=permeate_side_args)
         init_log.info('Permeate-side initialization complete. Initialize permeate outlet. ')
-        flags_permeate_out = blk.permeate_out.initialize(
+        flags_mixed_permeate = blk.mixed_permeate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -1061,17 +1061,18 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         check_solve(res, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 3: final solve')
-
+        # Release Inlet state
+        blk.feed_side.release_state(flags_feed_side, outlvl)
 
     def _get_performance_contents(self, time_point=0):
         x_in = self.feed_side.length_domain.first()
-        x_interface_in = self.feed_side.length_domain[2]
+        x_interface_in = self.feed_side.length_domain.at(2)
         x_out = self.feed_side.length_domain.last()
         feed_inlet = self.feed_side.properties[time_point, x_in]
         feed_outlet = self.feed_side.properties[time_point, x_out]
         interface_inlet = self.feed_side.properties_interface[time_point, x_interface_in]
         interface_outlet = self.feed_side.properties_interface[time_point, x_out]
-        permeate = self.permeate_out[time_point]
+        permeate = self.mixed_permeate[time_point]
         var_dict = {}
         expr_dict = {}
         var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[time_point, 'Liq']
@@ -1140,9 +1141,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
             {
-                "Feed Inlet": self.feed_inlet,
-                "Feed Outlet": self.feed_outlet,
-                "Permeate Outlet": self.permeate_outlet,
+                "Feed Inlet": self.inlet,
+                "Feed Outlet": self.retentate,
+                "Permeate Outlet": self.permeate,
             },
             time_point=time_point,
         )
@@ -1332,7 +1333,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         for (t, j), c in self.eq_recovery_mass_phase_comp.items():
             sf = (iscale.get_scaling_factor(self.recovery_mass_phase_comp[t, 'Liq', j])
-                  * iscale.get_scaling_factor(self.feed_inlet.flow_mass_phase_comp[0, 'Liq', j]))
+                  * iscale.get_scaling_factor(self.inlet.flow_mass_phase_comp[0, 'Liq', j]))
             iscale.constraint_scaling_transform(c, sf)
 
         for (t, x, j), c in self.feed_side.eq_concentration_polarization.items():
