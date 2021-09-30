@@ -16,19 +16,16 @@
     and usage of solids phases in conjunction with aqueous phases. This test
     is primarily being used to probe for issues that may exist in how IDAES
     handles this new system and properties, since it is brand new to the
-    framework.
+    framework. Several tests of the same basic case are observed.
 
-    Case 1: [Combine] A and B are aqueous, declare AB a solid, add precipitation reaction (record IDAES debug)
+    Case 1: [Combine] A and B are aqueous, declare AB a solid,
+                    add precipitation reaction (record IDAES debug)
+
+    Several studies of this case are repeated for numerous inlet values to
+    assess IDAES's ability to capture both precipitation and dissolution 
 
     Solubility Reaction:
         AB <---> A + B
-
-
-    NOTE: All cases should be tested with and without scaling, and with
-            a multitude of inlet concentration ranges.
-
-    NOTE: All cases will involve H2O as the bulk solvent (keeps our problem relevant)
-            Exception: Case2b
 """
 
 # Importing testing libraries
@@ -150,200 +147,6 @@ case1_thermo_config = {
                     "entr_mol_form_liq_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
                                 },
                     },
-
-              },
-              # End Component list
-        "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": Ideal}
-                    },
-
-        "state_definition": FTPx,
-        "state_bounds": {"flow_mol": (0, 50, 100),
-                         "temperature": (273.15, 300, 650),
-                         "pressure": (5e4, 1e5, 1e6)
-                     },
-
-        "pressure_ref": 1e5,
-        "temperature_ref": 300,
-        "base_units": {"time": pyunits.s,
-                       "length": pyunits.m,
-                       "mass": pyunits.kg,
-                       "amount": pyunits.mol,
-                       "temperature": pyunits.K},
-
-    }
-    # End thermo_config definition
-
-# Case 2a Config
-case2a_thermo_config = {
-    "components": {
-        'H2O': {"type": Solvent, "valid_phase_types": PT.aqueousPhase,
-              "dens_mol_liq_comp": Constant,
-              "enth_mol_liq_comp": Constant,
-              "cp_mol_liq_comp": Constant,
-              "entr_mol_liq_comp": Constant,
-              # Parameter data is always associated with the methods defined above
-              "parameter_data": {
-                    "mw": (18.0153, pyunits.g/pyunits.mol),
-                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
-                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
-                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ/pyunits.mol),
-                    "entr_mol_form_liq_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
-                                },
-                    # End parameter_data
-                    },
-        'A': {"type": Component, "valid_phase_types": PT.solidPhase,
-              "dens_mol_sol_comp": Constant,
-              "enth_mol_sol_comp": Constant,
-              "cp_mol_sol_comp": Constant,
-              "entr_mol_sol_comp": Constant,
-              "parameter_data": {
-                    "mw": (18, pyunits.g/pyunits.mol),
-                    "dens_mol_sol_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
-                    "cp_mol_sol_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
-                    "enth_mol_form_sol_comp_ref": (0, pyunits.kJ/pyunits.mol),
-                    "entr_mol_form_sol_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
-                                },
-                    },
-        'B': {"type": Component, "valid_phase_types": PT.solidPhase,
-              "dens_mol_sol_comp": Constant,
-              "enth_mol_sol_comp": Constant,
-              "cp_mol_sol_comp": Constant,
-              "entr_mol_sol_comp": Constant,
-              "parameter_data": {
-                    "mw": (18, pyunits.g/pyunits.mol),
-                    "dens_mol_sol_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
-                    "cp_mol_sol_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
-                    "enth_mol_form_sol_comp_ref": (0, pyunits.kJ/pyunits.mol),
-                    "entr_mol_form_sol_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
-                                },
-                    },
-
-              },
-              # End Component list
-        "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": Ideal},
-                    'Sol': {"type": SolidPhase,
-                                        "equation_of_state": Ideal}
-                    },
-
-        "state_definition": FTPx,
-        "state_bounds": {"flow_mol": (0, 50, 100),
-                         "temperature": (273.15, 300, 650),
-                         "pressure": (5e4, 1e5, 1e6)
-                     },
-
-        "pressure_ref": 1e5,
-        "temperature_ref": 300,
-        "base_units": {"time": pyunits.s,
-                       "length": pyunits.m,
-                       "mass": pyunits.kg,
-                       "amount": pyunits.mol,
-                       "temperature": pyunits.K},
-
-    }
-    # End thermo_config definition
-
-
-# Case 2b Config
-case2b_thermo_config = {
-    "components": {
-        'A': {"type": Component, "valid_phase_types": PT.solidPhase,
-              "dens_mol_sol_comp": Constant,
-              "enth_mol_sol_comp": Constant,
-              "cp_mol_sol_comp": Constant,
-              "entr_mol_sol_comp": Constant,
-              "parameter_data": {
-                    "mw": (18, pyunits.g/pyunits.mol),
-                    "dens_mol_sol_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
-                    "cp_mol_sol_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
-                    "enth_mol_form_sol_comp_ref": (0, pyunits.kJ/pyunits.mol),
-                    "entr_mol_form_sol_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
-                                },
-                    },
-        'B': {"type": Component, "valid_phase_types": PT.solidPhase,
-              "dens_mol_sol_comp": Constant,
-              "enth_mol_sol_comp": Constant,
-              "cp_mol_sol_comp": Constant,
-              "entr_mol_sol_comp": Constant,
-              "parameter_data": {
-                    "mw": (18, pyunits.g/pyunits.mol),
-                    "dens_mol_sol_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
-                    "cp_mol_sol_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
-                    "enth_mol_form_sol_comp_ref": (0, pyunits.kJ/pyunits.mol),
-                    "entr_mol_form_sol_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
-                                },
-                    },
-
-              },
-              # End Component list
-        "phases":  {
-                    'Sol': {"type": SolidPhase,
-                                        "equation_of_state": Ideal}
-                    },
-
-        "state_definition": FTPx,
-        "state_bounds": {"flow_mol": (0, 50, 100),
-                         "temperature": (273.15, 300, 650),
-                         "pressure": (5e4, 1e5, 1e6)
-                     },
-
-        "pressure_ref": 1e5,
-        "temperature_ref": 300,
-        "base_units": {"time": pyunits.s,
-                       "length": pyunits.m,
-                       "mass": pyunits.kg,
-                       "amount": pyunits.mol,
-                       "temperature": pyunits.K},
-
-    }
-    # End thermo_config definition
-
-
-# Case 3 Config
-case3_thermo_config = {
-    "components": {
-        'H2O': {"type": Solvent, "valid_phase_types": PT.aqueousPhase,
-              "dens_mol_liq_comp": Constant,
-              "enth_mol_liq_comp": Constant,
-              "cp_mol_liq_comp": Constant,
-              "entr_mol_liq_comp": Constant,
-              # Parameter data is always associated with the methods defined above
-              "parameter_data": {
-                    "mw": (18.0153, pyunits.g/pyunits.mol),
-                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
-                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
-                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ/pyunits.mol),
-                    "entr_mol_form_liq_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
-                                },
-                    # End parameter_data
-                    },
-        'A': {"type": Solute, "valid_phase_types": PT.aqueousPhase,
-              "dens_mol_liq_comp": Constant,
-              "enth_mol_liq_comp": Constant,
-              "cp_mol_liq_comp": Constant,
-              "entr_mol_liq_comp": Constant,
-              "parameter_data": {
-                    "mw": (18, pyunits.g/pyunits.mol),
-                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
-                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
-                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ/pyunits.mol),
-                    "entr_mol_form_liq_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
-                                },
-                    },
-        'B': {"type": Solute, "valid_phase_types": PT.aqueousPhase,
-              "dens_mol_liq_comp": Constant,
-              "enth_mol_liq_comp": Constant,
-              "cp_mol_liq_comp": Constant,
-              "entr_mol_liq_comp": Constant,
-              "parameter_data": {
-                    "mw": (18, pyunits.g/pyunits.mol),
-                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
-                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
-                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ/pyunits.mol),
-                    "entr_mol_form_liq_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
-                                },
-                    },
         'AB': {"type": Component, "valid_phase_types": PT.solidPhase,
               "dens_mol_sol_comp": Constant,
               "enth_mol_sol_comp": Constant,
@@ -382,23 +185,6 @@ case3_thermo_config = {
 
     }
     # End thermo_config definition
-
-# This config is REQUIRED to use EquilibriumReactor even if we have no equilibrium reactions
-reaction_dummy = {
-    "base_units": {"time": pyunits.s,
-                   "length": pyunits.m,
-                   "mass": pyunits.kg,
-                   "amount": pyunits.mol,
-                   "temperature": pyunits.K},
-    "equilibrium_reactions": {
-        "dummy": {
-                "stoichiometry": {},
-                "equilibrium_form": log_power_law_equil,
-               }
-         }
-         # End equilibrium_reactions
-    }
-    # End reaction_config definition
 
 # Actual solubility product
 reaction_solubility = {
@@ -447,7 +233,7 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
     print()
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=case3_thermo_config)
+    model.fs.thermo_params = GenericParameterBlock(default=case1_thermo_config)
 
     model.fs.rxn_params = GenericReactionParameterBlock(
             default={"property_package": model.fs.thermo_params,
@@ -474,6 +260,15 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
     model.fs.unit.inlet.temperature.fix(298.)
     model.fs.unit.outlet.temperature.fix(298.)
     model.fs.unit.inlet.flow_mol.fix(10)
+
+    assert (degrees_of_freedom(model) == 0)
+
+    """
+        IDAES BUG: Units are listed as inconsistent
+        ----------
+        yomo.core.base.units_container.InconsistentUnitsError: Error in units found in expression: (fs.unit.control_volume.properties_out[0.0].flow_mol_phase[Sol]*fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[Sol,AB]) - ((exp(fs.unit.control_volume.reactions[0.0].log_k_eq[AB_Ksp])) - fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[Liq,A]**fs.rxn_params.reaction_AB_Ksp.reaction_order[Liq,A]*fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[Liq,B]**fs.rxn_params.reaction_AB_Ksp.reaction_order[Liq,B]): mole / second not compatible with dimensionless.
+    """
+    #assert_units_consistent(model)
 
     # For equilibrium reactions
     try:
@@ -509,17 +304,14 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
                 #scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
                 scale = rxn_config["equilibrium_reactions"][i[1]]["parameter_data"]["k_eq_ref"][0]
 
-                model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].pprint()
-                model.fs.unit.control_volume.reactions[0.0].log_k_eq[i[1]].pprint()
-
                 # this may also need to be different for solubility_product
-                iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 1/scale)
+                iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 1e-1/scale)
 
                 # very different if not using log conc form
                 #       We need to set this value very high because we are not using
                 #       a well scaled constraint if we are not doing the log forms
                 iscale.constraint_scaling_transform(
-                    model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 1/scale)
+                    model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 1e-1/scale)
         except:
             pass
 
@@ -551,17 +343,24 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
 
 
         iscale.calculate_scaling_factors(model.fs.unit)
-        model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint.pprint()
+        assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+        assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
+        assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
     #End scaling if statement
 
     solver.options['bound_push'] = 1e-5
     solver.options['mu_init'] = 1e-3
-    solver.options['max_iter'] = 2000
+    solver.options['max_iter'] = 200
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+
+    assert degrees_of_freedom(model) == 0
 
     solver.options['bound_push'] = 1e-5
     solver.options['mu_init'] = 1e-3
     results = solver.solve(model, tee=True)
+
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
 
     print("comp\toutlet.tot_molfrac")
     for i in model.fs.unit.inlet.mole_frac_comp:
@@ -577,22 +376,48 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
     Ksp = value(model.fs.unit.control_volume.reactions[0.0].k_eq["AB_Ksp"].expr)
 
     print()
-    if Ksp >= A*B:
+    if Ksp*1.01 >= A*B:
         print("Constraint is satisfied!")
     else:
         print("Constraint is VIOLATED!")
         print("\tRelative error: "+str(Ksp/A/B)+">=1")
+        assert False
     print("Ksp =\t"+str(Ksp))
     print("A*B =\t"+str(A*B))
 
     print("==========================================================================")
 
-if __name__ == "__main__":
+    return model
 
-    #run_case1(xA=1e-9, xB=1e-9, xAB=1e-25, scaling=True, rxn_config=reaction_solubility)  # ok
-    #run_case1(xA=1e-9, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_solubility)   # ok
-    #run_case1(xA=1e-2, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_solubility)   # ok - some small constraint violation
-    #run_case1(xA=1e-9, xB=1e-9, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)    # ok - some small constraint violation
-    #run_case1(xA=1e-9, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)     # ok
-    #run_case1(xA=1e-2, xB=1e-9, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)     # ok
-    run_case1(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)    #ok
+@pytest.mark.component
+def test_case1_low_conc_no_precipitation():
+    model = run_case1(xA=1e-9, xB=1e-9, xAB=1e-25, scaling=True, rxn_config=reaction_solubility)
+
+@pytest.mark.component
+def test_case1_mid_conc_no_precipitation():
+    model = run_case1(xA=1e-9, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_solubility)
+
+@pytest.mark.component
+def test_case1_high_conc_with_precipitation():
+    model = run_case1(xA=1e-2, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_solubility)
+
+@pytest.mark.component
+def test_case1_low_conc_with_dissolution():
+    model = run_case1(xA=1e-9, xB=1e-9, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)
+
+@pytest.mark.component
+def test_case1_mid_conc_with_dissolution():
+    model = run_case1(xA=1e-9, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)
+
+@pytest.mark.component
+def test_case1_high_conc_for_all():
+    model = run_case1(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)
+
+# This is for additional testing
+if __name__ == "__main__":
+    #model = run_case1(xA=1e-9, xB=1e-9, xAB=1e-25, scaling=True, rxn_config=reaction_solubility)  # ok
+    #model = run_case1(xA=1e-9, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_solubility)   # ok
+    #model = run_case1(xA=1e-2, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_solubility)   # ok - some small constraint violation
+    #model = run_case1(xA=1e-9, xB=1e-9, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)    # ok - some small constraint violation
+    #model = run_case1(xA=1e-9, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)     # ok
+    model = run_case1(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)    #ok
