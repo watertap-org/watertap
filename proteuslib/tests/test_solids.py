@@ -18,13 +18,7 @@
     handles this new system and properties, since it is brand new to the
     framework.
 
-    Case 1: Declare A and B as aqueous, no reactions (record IDAES debug)
-
-    Case 2a: Declare A and B as solids, no reactions (record IDAES debug) [with bulk H2O]
-
-    Case 2b: Declare A and B as solids, no reactions (record IDAES debug) [without any liq solvent]
-
-    Case 3: [Combine] A and B are aqueous, declare AB a solid, add precipitation reaction (record IDAES debug)
+    Case 1: [Combine] A and B are aqueous, declare AB a solid, add precipitation reaction (record IDAES debug)
 
     Solubility Reaction:
         AB <---> A + B
@@ -421,10 +415,10 @@ reaction_solubility = {
                     "heat_of_reaction": constant_dh_rxn,
                     "equilibrium_constant": van_t_hoff,
                     "equilibrium_form": solubility_product,
-                    "concentration_form": ConcentrationForm.molarity,
+                    "concentration_form": ConcentrationForm.moleFraction,
                     "parameter_data": {
                         "dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
-                        "k_eq_ref": (10**-10, pyunits.mol**2/pyunits.L**2),
+                        "k_eq_ref": (10**-10, pyunits.dimensionless),
                         "T_eq_ref": (300.0, pyunits.K),
                         "reaction_order": { ("Sol", "AB"): 0,
                                             ("Liq", "A"): 1,
@@ -442,250 +436,9 @@ reaction_solubility = {
 # Get default solver for testing
 solver = get_solver()
 
-def run_case1(xA, xB, scaling=True):
+def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
     print("==========================================================================")
-    print("Case 1: A and B are aqueous, no reactions")
-    print("xA = "+str(xA))
-    print("xB = "+str(xB))
-    print("scaling = "+str(scaling))
-    print("including water = "+str(True))
-    print()
-    model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=case1_thermo_config)
-
-    model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params,
-                    **reaction_dummy
-                    })
-
-    model.fs.unit = EquilibriumReactor(default={
-            "property_package": model.fs.thermo_params,
-            "reaction_package": model.fs.rxn_params,
-            "has_rate_reactions": False,
-            "has_equilibrium_reactions": False,
-            "has_heat_transfer": False,
-            "has_heat_of_reaction": False,
-            "has_pressure_change": False,
-            "energy_balance_type": EnergyBalanceType.none
-            })
-
-    model.fs.unit.inlet.mole_frac_comp[0, "A"].fix( xA )
-    model.fs.unit.inlet.mole_frac_comp[0, "B"].fix( xB )
-    model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1-xA-xB )
-
-    model.fs.unit.inlet.pressure.fix(101325.0)
-    model.fs.unit.inlet.temperature.fix(298.)
-    model.fs.unit.outlet.temperature.fix(298.)
-    model.fs.unit.inlet.flow_mol.fix(10)
-
-    # Scaling
-    if scaling == True:
-
-        # For species
-        min = 1e-10
-        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
-            # i[0] = phase, i[1] = species
-            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
-                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
-            else:
-                scale = min
-
-            #NOTE: Something goes wrong with this scaling for solid species
-            if i[0] == 'Liq':
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-                iscale.constraint_scaling_transform(
-                    model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-                iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
-            #NOTE: trying to scale solids in this way is significantly worse
-            else:
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-                iscale.constraint_scaling_transform(
-                    model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-                iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
-
-        iscale.calculate_scaling_factors(model.fs.unit)
-    #End scaling if statement
-
-    solver.options['bound_push'] = 1e-20
-    solver.options['mu_init'] = 1e-6
-    solver.options['max_iter'] = 2000
-    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-
-    solver.options['bound_push'] = 1e-20
-    solver.options['mu_init'] = 1e-6
-    results = solver.solve(model, tee=True)
-
-    print("==========================================================================")
-
-def run_case2a(xA, xB, scaling=True):
-    print("==========================================================================")
-    print("Case 2a: A and B are solids, no reactions [includes H2O as solvent]")
-    print("xA = "+str(xA))
-    print("xB = "+str(xB))
-    print("scaling = "+str(scaling))
-    print("including water = "+str(True))
-    print()
-    model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=case2a_thermo_config)
-
-    model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params,
-                    **reaction_dummy
-                    })
-
-    model.fs.unit = EquilibriumReactor(default={
-            "property_package": model.fs.thermo_params,
-            "reaction_package": model.fs.rxn_params,
-            "has_rate_reactions": False,
-            "has_equilibrium_reactions": False,
-            "has_heat_transfer": False,
-            "has_heat_of_reaction": False,
-            "has_pressure_change": False,
-            "energy_balance_type": EnergyBalanceType.none
-            })
-
-    model.fs.unit.inlet.mole_frac_comp[0, "A"].fix( xA )
-    model.fs.unit.inlet.mole_frac_comp[0, "B"].fix( xB )
-    model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1-xA-xB )
-
-    model.fs.unit.inlet.pressure.fix(101325.0)
-    model.fs.unit.inlet.temperature.fix(298.)
-    model.fs.unit.outlet.temperature.fix(298.)
-    model.fs.unit.inlet.flow_mol.fix(10)
-
-    # Scaling
-    if scaling == True:
-
-        # For species
-        min = 1e-10
-        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
-            # i[0] = phase, i[1] = species
-            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
-                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
-            else:
-                scale = min
-
-            #NOTE: Something goes wrong with this scaling for solid species
-            if i[0] == 'Liq':
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-                iscale.constraint_scaling_transform(
-                    model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-                iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
-            #NOTE: trying to scale solids in this way is significantly worse
-            else:
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-                iscale.constraint_scaling_transform(
-                    model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-                iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
-
-
-        iscale.calculate_scaling_factors(model.fs.unit)
-    #End scaling if statement
-
-    solver.options['bound_push'] = 1e-20
-    solver.options['mu_init'] = 1e-6
-    solver.options['max_iter'] = 2000
-    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-
-    solver.options['bound_push'] = 1e-20
-    solver.options['mu_init'] = 1e-6
-    results = solver.solve(model, tee=True)
-
-    print("==========================================================================")
-
-def run_case2b(xA, scaling=True):
-    print("==========================================================================")
-    print("Case 2a: A and B are solids, no reactions [NO liquids, not even water]")
-    print("xA = "+str(xA))
-    print("xB = "+str(1-xA))
-    print("scaling = "+str(scaling))
-    print("including water = "+str(False))
-    print()
-    model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=case2b_thermo_config)
-
-    model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params,
-                    **reaction_dummy
-                    })
-
-    model.fs.unit = EquilibriumReactor(default={
-            "property_package": model.fs.thermo_params,
-            "reaction_package": model.fs.rxn_params,
-            "has_rate_reactions": False,
-            "has_equilibrium_reactions": False,
-            "has_heat_transfer": False,
-            "has_heat_of_reaction": False,
-            "has_pressure_change": False,
-            "energy_balance_type": EnergyBalanceType.none
-            })
-
-    model.fs.unit.inlet.mole_frac_comp[0, "A"].fix( xA )
-    model.fs.unit.inlet.mole_frac_comp[0, "B"].fix( 1-xA )
-
-    model.fs.unit.inlet.pressure.fix(101325.0)
-    model.fs.unit.inlet.temperature.fix(298.)
-    model.fs.unit.outlet.temperature.fix(298.)
-    model.fs.unit.inlet.flow_mol.fix(10)
-
-    # Scaling
-    if scaling == True:
-
-        # For species
-        min = 1e-10
-        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
-            # i[0] = phase, i[1] = species
-            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
-                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
-            else:
-                scale = min
-
-            #NOTE: Something goes wrong with this scaling for solid species
-            if i[0] == 'Liq':
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-                iscale.constraint_scaling_transform(
-                    model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-                iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
-            #NOTE: trying to scale solids in this way is significantly worse (unless there is no liquid phase)
-            else:
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-                iscale.constraint_scaling_transform(
-                    model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-                iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
-
-
-        iscale.calculate_scaling_factors(model.fs.unit)
-    #End scaling if statement
-
-    solver.options['bound_push'] = 1e-20
-    solver.options['mu_init'] = 1e-6
-    solver.options['max_iter'] = 2000
-    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-
-    solver.options['bound_push'] = 1e-20
-    solver.options['mu_init'] = 1e-6
-    results = solver.solve(model, tee=True)
-
-    print("==========================================================================")
-
-def run_case3(xA, xB, xAB=1e-25, scaling=True):
-    print("==========================================================================")
-    print("Case 3: A and B are aqueous, AB is solid that forms from reaction")
+    print("Case 1: A and B are aqueous, AB is solid that forms from reaction")
     print("xA = "+str(xA))
     print("xB = "+str(xB))
     print("xAB = "+str(xAB))
@@ -698,7 +451,7 @@ def run_case3(xA, xB, xAB=1e-25, scaling=True):
 
     model.fs.rxn_params = GenericReactionParameterBlock(
             default={"property_package": model.fs.thermo_params,
-                    **reaction_solubility
+                    **rxn_config
                     })
 
     model.fs.unit = EquilibriumReactor(default={
@@ -725,9 +478,13 @@ def run_case3(xA, xB, xAB=1e-25, scaling=True):
     # For equilibrium reactions
     try:
         for rid in model.fs.rxn_params.equilibrium_reaction_idx:
-            scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
+            # NOTE: Changes in how this expression is formulated will NO LONGER
+            #       allow us to query the value in this way. Instead, we must
+            #       obtain the value directly from the
+            #scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
+            scale = rxn_config["equilibrium_reactions"][rid]["parameter_data"]["k_eq_ref"][0]
 
-            # Not all equilibrium reactions will have an eps factor
+            # NOTE: The solubility_product function STILL has an eps value that we need to set
             try:
                 # Want to set eps in some fashion similar to this
                 if scale < 1e-16:
@@ -745,15 +502,29 @@ def run_case3(xA, xB, xAB=1e-25, scaling=True):
             #Add scaling factors for reactions
             for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
                 # i[0] = time, i[1] = reaction
-                scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
+
+                # NOTE: Changes in how this expression is formulated will NO LONGER
+                #       allow us to query the value in this way. Instead, we must
+                #       obtain the value directly from the
+                #scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
+                scale = rxn_config["equilibrium_reactions"][i[1]]["parameter_data"]["k_eq_ref"][0]
+
+                model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].pprint()
+                model.fs.unit.control_volume.reactions[0.0].log_k_eq[i[1]].pprint()
+
+                # this may also need to be different for solubility_product
                 iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 1/scale)
-                iscale.constraint_scaling_transform(model.fs.unit.control_volume.reactions[0.0].
-                        equilibrium_constraint[i[1]], 1)
+
+                # very different if not using log conc form
+                #       We need to set this value very high because we are not using
+                #       a well scaled constraint if we are not doing the log forms
+                iscale.constraint_scaling_transform(
+                    model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 1/scale)
         except:
             pass
 
         # For species
-        min = 1e-10
+        min = 1e-6
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
             if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
@@ -770,25 +541,26 @@ def run_case3(xA, xB, xAB=1e-25, scaling=True):
                     model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
                 iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
             #NOTE: trying to scale solids in this way is significantly worse
-            #else:
-            #    iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-            #    iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-            #    iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-            #    iscale.constraint_scaling_transform(
-            #        model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-            #    iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
+            else:
+                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+                iscale.constraint_scaling_transform(
+                    model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+                iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
 
         iscale.calculate_scaling_factors(model.fs.unit)
+        model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint.pprint()
     #End scaling if statement
 
-    solver.options['bound_push'] = 1e-20
-    solver.options['mu_init'] = 1e-6
+    solver.options['bound_push'] = 1e-5
+    solver.options['mu_init'] = 1e-3
     solver.options['max_iter'] = 2000
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
-    solver.options['bound_push'] = 1e-20
-    solver.options['mu_init'] = 1e-6
+    solver.options['bound_push'] = 1e-5
+    solver.options['mu_init'] = 1e-3
     results = solver.solve(model, tee=True)
 
     print("comp\toutlet.tot_molfrac")
@@ -796,15 +568,13 @@ def run_case3(xA, xB, xAB=1e-25, scaling=True):
         print(str(i[1])+"\t"+str(value(model.fs.unit.outlet.mole_frac_comp[i[0], i[1]])))
     print()
 
-    # NOTE: There is a genuine error in IDAES core associated with solid properties
-    #       Code throws errors whenever referencing 'conc_mol_phase_comp' and will
-    #       crash if I try to report
-    for i in model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp:
-        print(str(i)+"\t"+str(value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[i])/1000))
+    # NOTE: Changed all to mole fraction
+    for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+        print(str(i)+"\t"+str(value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i])))
 
-    A = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","A"])/1000
-    B = value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp["Liq","B"])/1000
-    Ksp = value(model.fs.unit.control_volume.reactions[0.0].k_eq["AB_Ksp"].expr)/1000/1000
+    A = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp["Liq","A"])
+    B = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp["Liq","B"])
+    Ksp = value(model.fs.unit.control_volume.reactions[0.0].k_eq["AB_Ksp"].expr)
 
     print()
     if Ksp >= A*B:
@@ -819,54 +589,10 @@ def run_case3(xA, xB, xAB=1e-25, scaling=True):
 
 if __name__ == "__main__":
 
-    '''
-    run_case1(xA=1e-9, xB=1e-9, scaling=True)
-    run_case1(xA=1e-2, xB=1e-9, scaling=True)
-    run_case1(xA=1e-9, xB=1e-2, scaling=True)
-    run_case1(xA=1e-2, xB=1e-2, scaling=True)
-
-    run_case1(xA=1e-9, xB=1e-9, scaling=False)
-    run_case1(xA=1e-2, xB=1e-9, scaling=False)
-    run_case1(xA=1e-9, xB=1e-2, scaling=False)
-    run_case1(xA=1e-2, xB=1e-2, scaling=False)
-    '''
-
-    '''
-    run_case2a(xA=1e-9, xB=1e-9, scaling=True)
-    run_case2a(xA=1e-2, xB=1e-9, scaling=True)
-    run_case2a(xA=1e-9, xB=1e-2, scaling=True)
-    run_case2a(xA=1e-2, xB=1e-2, scaling=True)
-
-    run_case2a(xA=1e-9, xB=1e-9, scaling=False)
-    run_case2a(xA=1e-2, xB=1e-9, scaling=False)
-    run_case2a(xA=1e-9, xB=1e-2, scaling=False)
-    run_case2a(xA=1e-2, xB=1e-2, scaling=False)
-    '''
-
-    '''
-    run_case2b(xA=1e-9, scaling=True)
-    run_case2b(xA=1e-2, scaling=True)
-    run_case2b(xA=0.5, scaling=True)
-
-    run_case2b(xA=1e-9, scaling=False)
-    run_case2b(xA=1e-2, scaling=False)
-    run_case2b(xA=0.5, scaling=False)
-    '''
-
-
-    run_case3(xA=1e-9, xB=1e-9, xAB=1e-25, scaling=False)
-    run_case3(xA=1e-9, xB=1e-2, xAB=1e-25, scaling=False)
-    run_case3(xA=1e-2, xB=1e-2, xAB=1e-25, scaling=False)
-    run_case3(xA=1e-9, xB=1e-9, xAB=1e-2, scaling=False)
-    run_case3(xA=1e-9, xB=1e-2, xAB=1e-2, scaling=False)
-    run_case3(xA=1e-2, xB=1e-9, xAB=1e-2, scaling=False)
-    run_case3(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=False)
-
-    run_case3(xA=1e-9, xB=1e-9, xAB=1e-25, scaling=True)
-    run_case3(xA=1e-9, xB=1e-2, xAB=1e-25, scaling=True)
-    run_case3(xA=1e-2, xB=1e-2, xAB=1e-25, scaling=True)
-    run_case3(xA=1e-9, xB=1e-9, xAB=1e-2, scaling=True)
-    run_case3(xA=1e-9, xB=1e-2, xAB=1e-2, scaling=True)
-    run_case3(xA=1e-2, xB=1e-9, xAB=1e-2, scaling=True)
-    run_case3(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=True)
-    
+    #run_case1(xA=1e-9, xB=1e-9, xAB=1e-25, scaling=True, rxn_config=reaction_solubility)  # ok
+    #run_case1(xA=1e-9, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_solubility)   # ok
+    #run_case1(xA=1e-2, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_solubility)   # ok - some small constraint violation
+    #run_case1(xA=1e-9, xB=1e-9, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)    # ok - some small constraint violation
+    #run_case1(xA=1e-9, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)     # ok
+    #run_case1(xA=1e-2, xB=1e-9, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)     # ok
+    run_case1(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)    #ok
