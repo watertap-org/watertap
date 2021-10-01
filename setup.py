@@ -36,14 +36,14 @@ for active use by water treatment researchers and engineers.""".replace(
 
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=1.10.1",  # from PyPI
+    "idaes-pse>=1.11.0",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the proteuslib development
-    "idaes-pse @ https://github.com/nawi-hub/idaes-pse/archive/1.10.1.proteuslib.2021.08.23.zip"
+    "idaes-pse>=1.11.0"
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -52,7 +52,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="proteuslib",
     url="https://github.com/nawi-hub/proteuslib",
-    version="0.2.0dev",
+    version="0.3.0dev",
     description="ProteusLib modeling library",
     long_description=long_description,
     long_description_content_type="text/plain",
@@ -98,10 +98,16 @@ setup(
         "click",  # command-line tools with Click
         # tutorial tests
         "nbformat",
+        "scipy",
         # https://www.python.org/dev/peps/pep-0508/#environment-markers
         'pywin32==225 ; platform_system=="Windows" and python_version>="3.8"',
     ],
     extras_require={
+        "testing": [
+            "pytest",
+            "json-schema-for-humans",
+            "mongomock",
+        ],
         "dev": [
             "myst-parser",  # markdown support for Sphinx
             # other requirements

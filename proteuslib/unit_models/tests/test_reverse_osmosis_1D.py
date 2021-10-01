@@ -200,17 +200,17 @@ class TestReverseOsmosis():
         pressure_atmospheric = 1e5
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
 
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
             feed_flow_mass * feed_mass_frac_NaCl)
 
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
             feed_flow_mass * feed_mass_frac_H2O)
 
-        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.N_Re[0, 0].fix(400)
         m.fs.unit.recovery_mass_phase_comp[0, 'Liq', 'H2O'].fix(0.5)
         m.fs.unit.spacer_porosity.fix(0.97)
@@ -223,7 +223,7 @@ class TestReverseOsmosis():
         m = RO_frame
 
         # test ports
-        port_lst = ['feed_inlet', 'feed_outlet', 'permeate_outlet']
+        port_lst = ['inlet', 'retentate', 'permeate']
         for port_str in port_lst:
             port = getattr(m.fs.unit, port_str)
             assert len(port.vars) == 3  # number of state variables for NaCl property package
@@ -297,7 +297,7 @@ class TestReverseOsmosis():
             sb = getattr(m.fs.unit.feed_side, sb_str)
             assert isinstance(sb, props.NaClStateBlock)
 
-        stateblock_lst = ['permeate_side', 'permeate_out']
+        stateblock_lst = ['permeate_side', 'mixed_permeate']
         for sb_str in stateblock_lst:
             sb = getattr(m.fs.unit, sb_str)
             assert isinstance(sb, StateBlock)
@@ -371,7 +371,7 @@ class TestReverseOsmosis():
         flow_mass_retentate = sum(
             b.feed_side.properties[0, 1].flow_mass_phase_comp['Liq', j] for j in comp_lst)
         flow_mass_permeate = sum(
-            b.permeate_out[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
+            b.mixed_permeate[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
 
         assert value(flow_mass_inlet) == pytest.approx(1/3.6, rel=1e-3)
         assert value(flow_mass_retentate) == pytest.approx(0.1437, rel=1e-3)
@@ -398,9 +398,9 @@ class TestReverseOsmosis():
         assert (pytest.approx(8.543, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl'] * 3.6e6))
         assert (pytest.approx(0.1341, rel=1e-3) ==
-                value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'H2O']))
+                value(m.fs.unit.mixed_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
         assert (pytest.approx(6.3195e-5, rel=1e-3) ==
-                value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'NaCl']))
+                value(m.fs.unit.mixed_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
         assert (pytest.approx(371.01, rel=1e-3) == value(m.fs.unit.N_Re_avg[0]))
         assert (pytest.approx(107.48, rel=1e-3) == value(m.fs.unit.Kf_avg[0, 'NaCl'] * 3.6e6))
         assert (pytest.approx(26.63, rel=1e-3) == value(m.fs.unit.area))
@@ -431,17 +431,17 @@ class TestReverseOsmosis():
         pressure_atmospheric = 101325
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
 
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
             feed_flow_mass * feed_mass_frac_NaCl)
 
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
             feed_flow_mass * feed_mass_frac_H2O)
 
-        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.length.fix(8)
         m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.4)
 
@@ -532,7 +532,7 @@ class TestReverseOsmosis():
         flow_mass_retentate = sum(
             b.feed_side.properties[0, 1].flow_mass_phase_comp['Liq', j] for j in comp_lst)
         flow_mass_permeate = sum(
-            b.permeate_out[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
+            b.mixed_permeate[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
 
         assert value(flow_mass_inlet) == pytest.approx(1.0, rel=1e-3)
         assert value(flow_mass_retentate) == pytest.approx(0.6103, rel=1e-3)
@@ -554,9 +554,9 @@ class TestReverseOsmosis():
         assert (pytest.approx(2.000e-6, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp[0, 1, 'Liq', 'NaCl']))
         assert (pytest.approx(0.3896, rel=1e-3) ==
-                value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'H2O']))
+                value(m.fs.unit.mixed_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
         assert (pytest.approx(2.652e-4, rel=1e-3) ==
-                value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'NaCl']))
+                value(m.fs.unit.mixed_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
 
     @pytest.mark.component
     def testReverseOsmosis_cp_mod_fixed(self):
@@ -585,17 +585,17 @@ class TestReverseOsmosis():
         pressure_atmospheric = 101325
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
 
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
             feed_flow_mass * feed_mass_frac_NaCl)
 
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
             feed_flow_mass * feed_mass_frac_H2O)
 
-        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.length.fix(8)
         m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.4)
         m.fs.unit.cp_modulus.fix(1.1)
@@ -682,7 +682,7 @@ class TestReverseOsmosis():
         flow_mass_retentate = sum(
             b.feed_side.properties[0, 1].flow_mass_phase_comp['Liq', j] for j in comp_lst)
         flow_mass_permeate = sum(
-            b.permeate_out[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
+            b.mixed_permeate[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
 
         assert value(flow_mass_inlet) == pytest.approx(1.0, rel=1e-3)
         assert value(flow_mass_retentate) == pytest.approx(0.6103, rel=1e-3)
@@ -704,9 +704,9 @@ class TestReverseOsmosis():
         assert (pytest.approx(2.052e-6, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp[0, 1, 'Liq', 'NaCl']))
         assert (pytest.approx(0.3895, rel=1e-3) ==
-                value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'H2O']))
+                value(m.fs.unit.mixed_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
         assert (pytest.approx(6.529e-4, rel=1e-3) ==
-                value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'NaCl']))
+                value(m.fs.unit.mixed_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
 
     @pytest.mark.component
     def testReverseOsmosis_cp_calculated_kf_fixed(self):
@@ -735,18 +735,18 @@ class TestReverseOsmosis():
         pressure_atmospheric = 101325
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
 
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
             feed_flow_mass * feed_mass_frac_NaCl)
 
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
             feed_flow_mass * feed_mass_frac_H2O)
 
-        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
         # m.fs.unit.deltaP.fix(0)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.length.fix(8)
         m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.4)
         m.fs.unit.Kf.fix(2e-5)
@@ -828,7 +828,7 @@ class TestReverseOsmosis():
         flow_mass_retentate = sum(
             b.feed_side.properties[0, 1].flow_mass_phase_comp['Liq', j] for j in comp_lst)
         flow_mass_permeate = sum(
-            b.permeate_out[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
+            b.mixed_permeate[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
 
         assert value(flow_mass_inlet) == pytest.approx(1.0, rel=1e-3)
         assert value(flow_mass_retentate) == pytest.approx(0.6103, rel=1e-3)
@@ -850,9 +850,9 @@ class TestReverseOsmosis():
         assert (pytest.approx(2.027e-6, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp[0, 1, 'Liq', 'NaCl']))
         assert (pytest.approx(0.3895, rel=1e-3) ==
-                value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'H2O']))
+                value(m.fs.unit.mixed_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
         assert (pytest.approx(4.645e-4, rel=1e-3) ==
-                value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'NaCl']))
+                value(m.fs.unit.mixed_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
 
     @pytest.mark.component
     def testReverseOsmosis_cp_calculated_kf_calculated(self):
@@ -881,17 +881,17 @@ class TestReverseOsmosis():
         pressure_atmospheric = 101325
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
 
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
             feed_flow_mass * feed_mass_frac_NaCl)
 
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
             feed_flow_mass * feed_mass_frac_H2O)
 
-        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.length.fix(8)
         m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.4)
         m.fs.unit.spacer_porosity.fix(0.75)
@@ -989,7 +989,7 @@ class TestReverseOsmosis():
         flow_mass_retentate = sum(
             b.feed_side.properties[0, 1].flow_mass_phase_comp['Liq', j] for j in comp_lst)
         flow_mass_permeate = sum(
-            b.permeate_out[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
+            b.mixed_permeate[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
 
         assert value(flow_mass_inlet) == pytest.approx(1.0, rel=1e-3)
         assert value(flow_mass_retentate) == pytest.approx(0.6103, rel=1e-3)
@@ -1011,9 +1011,9 @@ class TestReverseOsmosis():
         assert (pytest.approx(2.034e-6, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp[0, 1, 'Liq', 'NaCl']))
         assert (pytest.approx(0.3895, rel=1e-3) ==
-                value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'H2O']))
+                value(m.fs.unit.mixed_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
         assert (pytest.approx(5.467e-4, rel=1e-3) ==
-                value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'NaCl']))
+                value(m.fs.unit.mixed_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
 
     @pytest.mark.component
     def testRO_cp_calculated_kf_calculated_pdrop_fixed_by_dx(self):
@@ -1043,17 +1043,17 @@ class TestReverseOsmosis():
         pressure_atmospheric = 101325
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
 
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
             feed_flow_mass * feed_mass_frac_NaCl)
 
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
             feed_flow_mass * feed_mass_frac_H2O)
 
-        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.length.fix(8)
         m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.4)
         m.fs.unit.spacer_porosity.fix(0.75)
@@ -1155,7 +1155,7 @@ class TestReverseOsmosis():
         flow_mass_retentate = sum(
             b.feed_side.properties[0, 1].flow_mass_phase_comp['Liq', j] for j in comp_lst)
         flow_mass_permeate = sum(
-            b.permeate_out[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
+            b.mixed_permeate[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
 
         assert value(flow_mass_inlet) == pytest.approx(1.0, rel=1e-3)
         assert value(flow_mass_retentate) == pytest.approx(0.6103, rel=1e-3)
@@ -1177,9 +1177,9 @@ class TestReverseOsmosis():
         assert (pytest.approx(2.008e-6, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp[0, 1, 'Liq', 'NaCl']))
         assert (pytest.approx(0.3895, rel=1e-3) ==
-                value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'H2O']))
+                value(m.fs.unit.mixed_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
         assert (pytest.approx(5.888e-4, rel=1e-3) ==
-                value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'NaCl']))
+                value(m.fs.unit.mixed_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
 
     @pytest.mark.component
     def testRO_cp_calculated_kf_calculated_pdrop_fixed_by_stage(self):
@@ -1209,17 +1209,17 @@ class TestReverseOsmosis():
         pressure_atmospheric = 101325
         feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
 
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
             feed_flow_mass * feed_mass_frac_NaCl)
 
-        m.fs.unit.feed_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
+        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
             feed_flow_mass * feed_mass_frac_H2O)
 
-        m.fs.unit.feed_inlet.pressure[0].fix(feed_pressure)
-        m.fs.unit.feed_inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.inlet.pressure[0].fix(feed_pressure)
+        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
-        m.fs.unit.permeate_outlet.pressure[0].fix(pressure_atmospheric)
+        m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         m.fs.unit.length.fix(8)
         m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.4)
         m.fs.unit.spacer_porosity.fix(0.75)
@@ -1321,7 +1321,7 @@ class TestReverseOsmosis():
         flow_mass_retentate = sum(
             b.feed_side.properties[0, 1].flow_mass_phase_comp['Liq', j] for j in comp_lst)
         flow_mass_permeate = sum(
-            b.permeate_out[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
+            b.mixed_permeate[0].flow_mass_phase_comp['Liq', j] for j in comp_lst)
 
         assert value(flow_mass_inlet) == pytest.approx(1.0, rel=1e-3)
         assert value(flow_mass_retentate) == pytest.approx(0.6103, rel=1e-3)
@@ -1344,7 +1344,10 @@ class TestReverseOsmosis():
         assert (pytest.approx(2.013e-6, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp[0, 1, 'Liq', 'NaCl']))
         assert (pytest.approx(0.3895, rel=1e-3) ==
-                value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'H2O']))
+                value(m.fs.unit.mixed_permeate[0].flow_mass_phase_comp['Liq', 'H2O']))
         assert (pytest.approx(5.792e-4, rel=1e-3) ==
-                value(m.fs.unit.permeate_out[0].flow_mass_phase_comp['Liq', 'NaCl']))
+                value(m.fs.unit.mixed_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']))
 
+    @pytest.mark.unit
+    def test_report(self, RO_frame):
+        RO_frame.fs.unit.report()

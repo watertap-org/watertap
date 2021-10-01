@@ -17,15 +17,19 @@ import os
 import itertools
 import warnings
 
+from scipy.interpolate import griddata
 from enum import Enum, auto
 from abc import abstractmethod, ABC 
 from idaes.core.util import get_solver
+
+from idaes.surrogate.pysmo import sampling
 
 # ================================================================
 
 class SamplingType(Enum):
     FIXED = auto()
     RANDOM = auto()
+    RANDOM_LHS = auto()
 
 # ================================================================
 
@@ -95,6 +99,18 @@ class NormalSample(RandomSample):
 
 # ================================================================
 
+class LatinHypercubeSample(_Sample):
+    sampling_type = SamplingType.RANDOM_LHS
+
+    def sample(self, num_samples): 
+        return [self.lower_limit, self.upper_limit]
+
+    def setup(self, lower_limit, upper_limit):
+        self.lower_limit = lower_limit
+        self.upper_limit = upper_limit
+
+# ================================================================
+
 def _init_mpi(mpi_comm=None):
 
     if mpi_comm is None:
@@ -131,6 +147,15 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
             sorting = np.argsort(param_values[0])
             global_combo_array = np.vstack(param_values).T
             global_combo_array = global_combo_array[sorting, :]
+
+        elif sampling_type == SamplingType.RANDOM_LHS:
+            lb = [val[0] for val in param_values]
+            ub = [val[1] for val in param_values]
+            lhs = sampling.LatinHypercubeSampling([lb, ub], number_of_samples=num_samples, sampling_type='creation')
+            global_combo_array = lhs.sample_points()
+            sorting = np.argsort(global_combo_array[:, 0])
+            global_combo_array = global_combo_array[sorting, :]
+
         else:
             raise ValueError(f"Unknown sampling type: {sampling_type}")
 
@@ -144,7 +169,7 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
             nx = 1
             for k, v in d.items():
                 nx *= v.num_samples
-        elif sampling_type == SamplingType.RANDOM:
+        elif sampling_type == SamplingType.RANDOM or sampling_type == SamplingType.RANDOM_LHS:
             nx = num_samples
         else:
             raise ValueError(f"Unknown sampling type: {sampling_type}")
@@ -231,7 +256,7 @@ def _default_optimize(model, options=None, tee=False):
 
         model : A Pyomo ConcreteModel to optimize
 
-        options (optional) : Solver options to pass into idaes.core.util.get_solver.
+        options (optional) : Solver options to pass into idaes.core.utils.get_solver.
                              Default is None
         tee (options) : To display the solver log. Default it False
 
@@ -270,9 +295,33 @@ def _process_sweep_params(sweep_params):
 
 # ================================================================
 
+def _interp_nan_values(global_values, global_results):
+
+    global_results_clean = np.copy(global_results)
+
+    n_vals = np.shape(global_values)[1]
+    n_outs = np.shape(global_results)[1]
+
+    # Build a mask of all the non-nan saved outputs
+    # i.e., where the optimzation succeeded
+    mask = np.isfinite(global_results[:, 0])
+
+    # Create a list of points where good data is available
+    x0 = global_values[mask, :]
+
+    # Interpolate to get a value for nan points where possible
+    for k in range(n_outs):
+        y0 = global_results[mask, k]
+        yi = griddata(x0, y0, global_values, method='linear', rescale=True).reshape(-1)
+        global_results_clean[~mask, k] = yi[~mask]
+
+    return global_results_clean
+
+# ================================================================
+
 def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
         optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
-        mpi_comm=None, debugging_data_dir=None, num_samples=None, seed=None):
+        mpi_comm=None, debugging_data_dir=None, interpolate_nan_outputs=False, num_samples=None, seed=None):
 
     '''
     This function offers a general way to perform repeated optimizations
@@ -328,6 +377,12 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
 
         debugging_data_dir (optional) : Save results on a per-process basis for parallel debugging
                                         purposes. If None no `debugging` data will be saved.
+
+        interpolate_nan_outputs (optional) : When the parameter sweep has finished, interior values
+                                             of np.nan will be replaced with a value obtained via
+                                             a linear interpolation of their surrounding valid neighbors.
+                                             If true, a second output file with the extension "_clean"
+                                             will be saved alongside the raw (un-interpolated) values. 
 
         num_samples (optional) : If the user is using sampling techniques rather than a linear grid
                                  of values, they need to set the number of samples
@@ -438,6 +493,19 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
     if rank == 0 and results_file is not None:
         # Save the global data
         np.savetxt(results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
+
+        if interpolate_nan_outputs:
+            global_results_clean = _interp_nan_values(global_values, global_results)
+            global_save_data_clean = np.hstack((global_values, global_results_clean))
+
+            head, tail = os.path.split(results_file)
+
+            if head == '':
+                interp_file = 'interpolated_%s' % (tail)
+            else:
+                interp_file = '%s/interpolated_%s' % (head, tail)
+
+            np.savetxt(interp_file, global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
     
     return global_save_data
 
