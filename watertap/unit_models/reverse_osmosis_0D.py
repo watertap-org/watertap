@@ -376,12 +376,12 @@ class ReverseOsmosisData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc='Observed solute rejection')
 
-        self.over_pressure_ratio = Var(
-            self.flowsheet().config.time,
-            initialize=1.1,
-            bounds=(0.5, 5),
-            units=pyunits.dimensionless,
-            doc='Over pressure ratio')
+        #self.over_pressure_ratio = Var(
+        #    self.flowsheet().config.time,
+        #    initialize=1.1,
+        #    bounds=(0.5, 5),
+        #    units=pyunits.dimensionless,
+        #    doc='Over pressure ratio')
 
         if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
             self.cp_modulus = Var(
@@ -889,12 +889,12 @@ class ReverseOsmosisData(UnitModelBlockData):
                     1 - (b.permeate_side.properties_mixed[t].conc_mass_phase_comp['Liq', j] /
                          b.feed_side.properties_in[t].conc_mass_phase_comp['Liq', j]))
 
-        @self.Constraint(self.flowsheet().config.time)
-        def eq_over_pressure_ratio(b, t):
-            return (b.feed_side.properties_out[t].pressure ==
-                    b.over_pressure_ratio[t]
-                    * (b.feed_side.properties_out[t].pressure_osm
-                    - b.permeate_side.properties_out[t].pressure_osm))
+        #@self.Constraint(self.flowsheet().config.time)
+        #def eq_over_pressure_ratio(b, t):
+        #    return (b.feed_side.properties_out[t].pressure ==
+        #            b.over_pressure_ratio[t]
+        #            * (b.feed_side.properties_out[t].pressure_osm
+        #            - b.permeate_side.properties_out[t].pressure_osm))
 
     def initialize(blk,
                    initialize_guess=None,
@@ -1044,8 +1044,9 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Solve unit
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+        #with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        #    res = opt.solve(blk, tee=slc.tee)
+        res = opt.solve(blk, tee=True)
         check_solve(res, checkpoint='Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
         # ---------------------------------------------------------------------
         # Release Inlet state
@@ -1178,7 +1179,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             iscale.set_scaling_factor(self.dens_solvent, sf)
 
         if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
-            iscale.set_scaling_factor(self.recovery_vol_phase, 1)
+            iscale.set_scaling_factor(self.recovery_vol_phase, 100.)
 
         for (t, p, j), v in self.recovery_mass_phase_comp.items():
             if j in self.config.property_package.solvent_set:
@@ -1192,8 +1193,8 @@ class ReverseOsmosisData(UnitModelBlockData):
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, 1)
 
-        if iscale.get_scaling_factor(self.over_pressure_ratio) is None:
-            iscale.set_scaling_factor(self.over_pressure_ratio, 1)
+        #if iscale.get_scaling_factor(self.over_pressure_ratio) is None:
+        #    iscale.set_scaling_factor(self.over_pressure_ratio, 1e-5)
 
         if hasattr(self, 'cp_modulus'):
             if iscale.get_scaling_factor(self.cp_modulus) is None:
@@ -1295,7 +1296,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         # transforming constraints
         for ind, c in self.eq_mass_transfer_term.items():
             sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf/10.)
 
         for ind, c in self.eq_permeate_production.items():
             sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
@@ -1311,7 +1312,7 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         for ind, c in self.eq_connect_enthalpy_transfer.items():
             sf = iscale.get_scaling_factor(self.feed_side.enthalpy_transfer[ind])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf*100.)
 
         for t, c in self.eq_permeate_isothermal.items():
             sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].temperature)
@@ -1323,7 +1324,7 @@ class ReverseOsmosisData(UnitModelBlockData):
             elif x == 'out':
                 prop_io = self.permeate_side.properties_out[t]
             sf = iscale.get_scaling_factor(prop_io.mass_frac_phase_comp['Liq', j])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf*100.)
 
         for (t, x), c in self.permeate_side.eq_temperature_permeate_io.items():
             if x == 'in':
@@ -1441,6 +1442,6 @@ class ReverseOsmosisData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.rejection_phase_comp[t, 'Liq', j])
             iscale.constraint_scaling_transform(c, sf)
 
-        for t, c in self.eq_over_pressure_ratio.items():
-            sf = iscale.get_scaling_factor(self.over_pressure_ratio[t])
-            iscale.constraint_scaling_transform(c, sf)
+        #for t, c in self.eq_over_pressure_ratio.items():
+        #    sf = iscale.get_scaling_factor(self.over_pressure_ratio[t])
+        #    iscale.constraint_scaling_transform(c, sf)
