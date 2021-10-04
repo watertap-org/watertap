@@ -5,6 +5,7 @@ This reverse osmosis (RO) unit model
    * supports a single liquid phase only
    * supports steady-state only
    * is based on the solution-diffusion model and film theory
+   * assumes isothermal conditions
 
 .. index::
    pair: proteuslib.unit_models.reverse_osmosis_0D;reverse_osmosis_0D
@@ -59,7 +60,7 @@ Variables
 
    "Solvent permeability coefficient", ":math:`A`", "A_comp", "[t, j]", ":math:`\text{m/Pa/s}`"
    "Solute permeability coefficient", ":math:`B`", "B_comp", "[t, j]", ":math:`\text{m/s}`"
-   "Mass density of pure water", ":math:`\rho_w`", "dens_solvent", "[p]", ":math:`\text{kg/}\text{m}^3`"
+   "Mass density of solvent", ":math:`\rho_{solvent}`", "dens_solvent", "[p]", ":math:`\text{kg/}\text{m}^3`"
    "Mass flux across membrane", ":math:`J`", "flux_mass_io_phase_comp", "[t, x, p, j]", ":math:`\text{kg/s}\text{/m}^2`"
    "Membrane area", ":math:`A_m`", "area", "None", ":math:`\text{m}^2`"
    "Component recovery rate", ":math:`R_j`", "recovery_mass_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
@@ -148,7 +149,7 @@ Equations
    "Solute flux across membrane", ":math:`J_{solute} = B(C_{f} - C_{p})`"
    "Average flux across membrane", ":math:`J_{avg, j} = \frac{1}{2}\sum_{x} J_{x, j}`"
    "Permeate mass flow by component j", ":math:`M_{p, j} = A_m J_{avg,j}`"
-   "Permeate-side membrane-interface solute mass fraction", ":math:`X_{x, j} = \frac{J_{x, j}}{\sum_{x} J_{x, j}}`"
+   "Permeate-side solute mass fraction", ":math:`X_{x, j} = \frac{J_{x, j}}{\sum_{x} J_{x, j}}`"
    "Feed-side membrane-interface solute concentration", ":math:`C_{interface} = CP_{mod}C_{bulk}=C_{bulk}\exp(\frac{J_{solvent}}{k_f})-\frac{J_{solute}}{J_{solvent}}(\exp(\frac{J_{solvent}}{k_f})-1)`"
    "Concentration polarization modulus",":math:`CP_{mod} = C_{interface}/C_{bulk}`"
    "Mass transfer coefficient",":math:`k_f = \frac{D Sh}{d_h}`"
