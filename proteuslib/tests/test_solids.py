@@ -497,9 +497,7 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
                 # this may also need to be different for solubility_product
                 iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10/scale)
 
-                # very different if not using log conc form
-                #       We need to set this value very high because we are not using
-                #       a well scaled constraint if we are not doing the log forms
+                # =========== Will this work? ==========
                 iscale.constraint_scaling_transform(
                     model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 10/scale)
         except:
@@ -531,12 +529,24 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
                     model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
                 iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
-
-        iscale.calculate_scaling_factors(model.fs.unit)
-        assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
-        assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
-        assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
+        """
+            IDAES Bug:
+            ----------
+            Attribute Error for 'k_eq' when calculating scaling factors
+        """
+        #iscale.calculate_scaling_factors(model.fs.unit)
+        #assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+        #assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
+        #assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
     #End scaling if statement
+
+    # Cannot solve model without setting scaling factors
+    solver.options['bound_push'] = 1e-5
+    solver.options['mu_init'] = 1e-3
+    solver.options['max_iter'] = 200
+    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+
+    assert degrees_of_freedom(model) == 0
 
     return model
 
@@ -573,4 +583,4 @@ if __name__ == "__main__":
     #model = run_case1(xA=1e-9, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)     # ok
     #model = run_case1(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)    #ok
 
-    model = run_case2(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility)
+    model = run_case2(xA=1e-2, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_log_solubility)
