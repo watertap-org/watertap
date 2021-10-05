@@ -57,9 +57,6 @@ from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rx
 # Import safe log power law equation
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil, power_law_equil
 
-# Import built-in Gibb's Energy function
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import gibbs_energy
-
 # Import built-in van't Hoff function
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
 
@@ -76,6 +73,7 @@ from pyomo.environ import (ConcreteModel,
                            Suffix)
 
 from idaes.core.util import scaling as iscale
+from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 
 import idaes.logger as idaeslog
 
@@ -592,8 +590,16 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None, state="FpcTP"):
             "flow_mol": 10,
         }
 
+    flags = fix_state_vars(model.fs.unit.control_volume.properties_out, state_args)
+    revert_state_vars(model.fs.unit.control_volume.properties_out, flags)
+
     solver.options['bound_push'] = 1e-5
     solver.options['mu_init'] = 1e-3
+
+    #results = solver.solve(model, tee=True)
+    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+    # NOTE: Calling initialize 2x times helped resolve some issues, but why???
+
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
     #model.fs.unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
 
@@ -672,9 +678,9 @@ if __name__ == "__main__":
     #model = run_case2(xA=1e-9, xB=1e-9, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility)  #ok
 
     # Convergence here is very finicky, but when it does converge, the solution is correct
-    #model = run_case2(xA=1e-2, xB=1e-9, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility)  #ok
+    model = run_case2(xA=1e-2, xB=1e-9, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility)  #ok
     #model = run_case2(xA=1e-9, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility, state="FpcTP")  #ok
 
-    model = run_case2(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility)  #ok
+    #model = run_case2(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility)  #ok
 
-    # NOTE to SELF:  STUFF to test - Change the eps value, play with bound_push at initialization, change states 
+    # NOTE to SELF:  STUFF to test - Change the eps value, play with bound_push at initialization, change states
