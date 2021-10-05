@@ -593,13 +593,15 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None, state="FpcTP"):
     flags = fix_state_vars(model.fs.unit.control_volume.properties_out, state_args)
     revert_state_vars(model.fs.unit.control_volume.properties_out, flags)
 
-    solver.options['bound_push'] = 1e-5
-    solver.options['mu_init'] = 1e-3
+    solver.options['bound_push'] = 1e-10
+    solver.options['mu_init'] = 1e-6
 
     #results = solver.solve(model, tee=True)
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
     # NOTE: Calling initialize 2x times helped resolve some issues, but why???
 
+    solver.options['bound_push'] = 1e-5
+    solver.options['mu_init'] = 1e-3
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
     #model.fs.unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
 
