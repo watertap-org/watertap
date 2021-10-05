@@ -45,7 +45,7 @@ from idaes.core.phases import PhaseType as PT
 # Imports from idaes generic models
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
 from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
-from idaes.generic_models.properties.core.state_definitions import FTPx
+from idaes.generic_models.properties.core.state_definitions import FTPx, FpcTP
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
@@ -171,8 +171,11 @@ case1_thermo_config = {
                             "equation_of_state": Ideal}
                     },
 
-        "state_definition": FTPx,
-        "state_bounds": {"flow_mol": (0, 50, 100),
+        # Default for testing = FpcTP
+        "state_definition": FpcTP,
+        #"state_definition": FTPx,
+        "state_bounds": {
+                         #"flow_mol": (0, 50, 100),
                          "temperature": (273.15, 300, 650),
                          "pressure": (5e4, 1e5, 1e6)
                      },
@@ -284,15 +287,17 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
             "energy_balance_type": EnergyBalanceType.none
             })
 
-    model.fs.unit.inlet.mole_frac_comp[0, "A"].fix( xA )
-    model.fs.unit.inlet.mole_frac_comp[0, "B"].fix( xB )
-    model.fs.unit.inlet.mole_frac_comp[0, "AB"].fix( xAB )
-    model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1-xA-xB-xAB )
+    total_flow_mol = 10
+
+    # Set flow_mol_phase_comp
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "A"].fix( xA*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "B"].fix( xB*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Sol", "AB"].fix( xAB*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix( (1-xA-xB-xAB)*total_flow_mol )
 
     model.fs.unit.inlet.pressure.fix(101325.0)
     model.fs.unit.inlet.temperature.fix(298.)
     model.fs.unit.outlet.temperature.fix(298.)
-    model.fs.unit.inlet.flow_mol.fix(10)
 
     assert (degrees_of_freedom(model) == 0)
 
@@ -347,8 +352,8 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
         min = 1e-6
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
-            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
-                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
+            if model.fs.unit.inlet.flow_mol_phase_comp[0, i[0], i[1]].value > min:
+                scale = model.fs.unit.inlet.flow_mol_phase_comp[0, i[0], i[1]].value
             else:
                 scale = min
 
@@ -357,16 +362,12 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
                 iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
                 iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
                 iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-                iscale.constraint_scaling_transform(
-                    model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
                 iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
             #NOTE: trying to scale solids in this way is significantly worse
             else:
                 iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
                 iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
                 iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-                iscale.constraint_scaling_transform(
-                    model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
                 iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
 
@@ -391,8 +392,8 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
     assert results.solver.status == SolverStatus.ok
 
     print("comp\toutlet.tot_molfrac")
-    for i in model.fs.unit.inlet.mole_frac_comp:
-        print(str(i[1])+"\t"+str(value(model.fs.unit.outlet.mole_frac_comp[i[0], i[1]])))
+    for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp:
+        print(str(i)+"\t"+str(value( model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i] )))
     print()
 
     # NOTE: Changed all to mole fraction
@@ -417,7 +418,7 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
 
     return model
 
-def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
+def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None, state="FpcTP"):
     print("==========================================================================")
     print("Case 2 (log form): A and B are aqueous, AB is solid that forms from reaction")
     print("xA = "+str(xA))
@@ -428,6 +429,16 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
     print()
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
+
+    if state == "FpcTP":
+        case1_thermo_config["state_definition"] = FpcTP
+    elif state == "FTPx":
+        case1_thermo_config["state_definition"] = FTPx
+        case1_thermo_config["state_bounds"]["flow_mol"] = (0, 50, 100)
+    else:
+        print("Error! Undefined state...")
+        assert False
+
     model.fs.thermo_params = GenericParameterBlock(default=case1_thermo_config)
 
     model.fs.rxn_params = GenericReactionParameterBlock(
@@ -446,15 +457,26 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
             "energy_balance_type": EnergyBalanceType.none
             })
 
-    model.fs.unit.inlet.mole_frac_comp[0, "A"].fix( xA )
-    model.fs.unit.inlet.mole_frac_comp[0, "B"].fix( xB )
-    model.fs.unit.inlet.mole_frac_comp[0, "AB"].fix( xAB )
-    model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( 1-xA-xB-xAB )
+    total_flow_mol = 10
+
+    # Set flow_mol_phase_comp
+    if case1_thermo_config["state_definition"] == FpcTP:
+
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "A"].fix( xA*total_flow_mol )
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "B"].fix( xB*total_flow_mol )
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Sol", "AB"].fix( xAB*total_flow_mol )
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix( (1-xA-xB-xAB)*total_flow_mol )
+
+    if case1_thermo_config["state_definition"] == FTPx:
+        model.fs.unit.inlet.mole_frac_comp[0, "A"].fix( xA )
+        model.fs.unit.inlet.mole_frac_comp[0, "B"].fix( xB )
+        model.fs.unit.inlet.mole_frac_comp[0, "AB"].fix( xAB )
+        model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix( (1-xA-xB-xAB) )
+        model.fs.unit.inlet.flow_mol.fix(total_flow_mol)
 
     model.fs.unit.inlet.pressure.fix(101325.0)
     model.fs.unit.inlet.temperature.fix(298.)
     model.fs.unit.outlet.temperature.fix(298.)
-    model.fs.unit.inlet.flow_mol.fix(10)
 
     assert (degrees_of_freedom(model) == 0)
 
@@ -507,44 +529,73 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
         min = 1e-6
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
-            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
-                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
-            else:
-                scale = min
+            if case1_thermo_config["state_definition"] == FpcTP:
+                if model.fs.unit.inlet.flow_mol_phase_comp[0, i[0], i[1]].value > min:
+                    scale = model.fs.unit.inlet.flow_mol_phase_comp[0, i[0], i[1]].value
+                else:
+                    scale = min
+
+            if case1_thermo_config["state_definition"] == FTPx:
+                if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
+                    scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
+                else:
+                    scale = min
+
+            if case1_thermo_config["state_definition"] == FTPx:
+                iscale.constraint_scaling_transform(
+                    model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
 
             #NOTE: Something goes wrong with this scaling for solid species
             if i[0] == 'Liq':
                 iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
                 iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
                 iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-                iscale.constraint_scaling_transform(
-                    model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
                 iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
             #NOTE: trying to scale solids in this way is significantly worse
             else:
                 iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
                 iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
                 iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-                iscale.constraint_scaling_transform(
-                    model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
                 iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
         iscale.calculate_scaling_factors(model.fs.unit)
         assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
         assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
         assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
-
-        #iscale.constraint_autoscale_large_jac(model)
-
-        model.pprint()
     #End scaling if statement
 
-    # Cannot solve model without setting scaling factors
+    # Initialize model
+
+    if case1_thermo_config["state_definition"] == FpcTP:
+        state_args = {
+            "flow_mol_phase_comp": {
+                ("Liq","H2O"): model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].value,
+                ("Liq","A"): model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "A"].value,
+                ("Liq","B"): model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "B"].value,
+                ("Sol","AB"): model.fs.unit.inlet.flow_mol_phase_comp[0, "Sol", "AB"].value
+            },
+            "pressure": 101325,
+            "temperature": 298,
+            "flow_mol": 10,
+        }
+
+    if case1_thermo_config["state_definition"] == FTPx:
+        state_args = {
+            "mole_frac_comp": {
+                "H2O": model.fs.unit.inlet.mole_frac_comp[0, "H2O"].value,
+                "A": model.fs.unit.inlet.mole_frac_comp[0, "A"].value,
+                "B": model.fs.unit.inlet.mole_frac_comp[0, "B"].value,
+                "AB": model.fs.unit.inlet.mole_frac_comp[0, "AB"].value
+            },
+            "pressure": 101325,
+            "temperature": 298,
+            "flow_mol": 10,
+        }
+
     solver.options['bound_push'] = 1e-5
     solver.options['mu_init'] = 1e-3
-    solver.options['max_iter'] = 200
-    #solver.options['nlp_scaling_method'] = 'user-scaling'
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+    #model.fs.unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
@@ -556,8 +607,8 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
     assert results.solver.status == SolverStatus.ok
 
     print("comp\toutlet.tot_molfrac")
-    for i in model.fs.unit.inlet.mole_frac_comp:
-        print(str(i[1])+"\t"+str(value(model.fs.unit.outlet.mole_frac_comp[i[0], i[1]])))
+    for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp:
+        print(str(i)+"\t"+str(value( model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i] )))
     print()
 
     # NOTE: Changed all to mole fraction
@@ -615,4 +666,15 @@ if __name__ == "__main__":
     #model = run_case1(xA=1e-9, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)     # ok
     #model = run_case1(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)    #ok
 
-    model = run_case2(xA=1e-2, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_log_solubility)
+    #model = run_case2(xA=1e-9, xB=1e-9, xAB=1e-25, scaling=True, rxn_config=reaction_log_solubility) #ok
+    #model = run_case2(xA=1e-9, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_log_solubility)  #ok
+    #model = run_case2(xA=1e-2, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_log_solubility)  #ok
+    #model = run_case2(xA=1e-9, xB=1e-9, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility)  #ok
+
+    # Convergence here is very finicky, but when it does converge, the solution is correct
+    #model = run_case2(xA=1e-2, xB=1e-9, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility)  #ok
+    #model = run_case2(xA=1e-9, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility, state="FpcTP")  #ok
+
+    model = run_case2(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility)  #ok
+
+    # NOTE to SELF:  STUFF to test - Change the eps value, play with bound_push at initialization, change states 
