@@ -419,7 +419,7 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
 
 def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
     print("==========================================================================")
-    print("Case 1: A and B are aqueous, AB is solid that forms from reaction")
+    print("Case 2 (log form): A and B are aqueous, AB is solid that forms from reaction")
     print("xA = "+str(xA))
     print("xB = "+str(xB))
     print("xAB = "+str(xAB))
@@ -494,12 +494,12 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
                 #scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
                 scale = rxn_config["equilibrium_reactions"][i[1]]["parameter_data"]["k_eq_ref"][0]
 
-                # this may also need to be different for solubility_product
-                iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10/scale)
+                # Not sure how much to scale here (for the new log form)
+                iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10)
 
-                # =========== Will this work? ==========
+                # Equilibrium constraint should be 1 or 0.1 in log form
                 iscale.constraint_scaling_transform(
-                    model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 10/scale)
+                    model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 0.1)
         except:
             pass
 
@@ -529,24 +529,56 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
                     model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
                 iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
-        """
-            IDAES Bug:
-            ----------
-            Attribute Error for 'k_eq' when calculating scaling factors
-        """
-        #iscale.calculate_scaling_factors(model.fs.unit)
-        #assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
-        #assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
-        #assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
+        iscale.calculate_scaling_factors(model.fs.unit)
+        assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+        assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
+        assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
+
+        #iscale.constraint_autoscale_large_jac(model)
+
+        model.pprint()
     #End scaling if statement
 
     # Cannot solve model without setting scaling factors
     solver.options['bound_push'] = 1e-5
     solver.options['mu_init'] = 1e-3
     solver.options['max_iter'] = 200
+    #solver.options['nlp_scaling_method'] = 'user-scaling'
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
+
+    solver.options['bound_push'] = 1e-5
+    solver.options['mu_init'] = 1e-3
+    results = solver.solve(model, tee=True)
+
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+    print("comp\toutlet.tot_molfrac")
+    for i in model.fs.unit.inlet.mole_frac_comp:
+        print(str(i[1])+"\t"+str(value(model.fs.unit.outlet.mole_frac_comp[i[0], i[1]])))
+    print()
+
+    # NOTE: Changed all to mole fraction
+    for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+        print(str(i)+"\t"+str(value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i])))
+
+    A = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp["Liq","A"])
+    B = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp["Liq","B"])
+    Ksp = value(model.fs.unit.control_volume.reactions[0.0].k_eq["AB_Ksp"].expr)
+
+    print()
+    if Ksp*1.01 >= A*B:
+        print("Constraint is satisfied!")
+    else:
+        print("Constraint is VIOLATED!")
+        print("\tRelative error: "+str(Ksp/A/B)+">=1")
+        assert False
+    print("Ksp =\t"+str(Ksp))
+    print("A*B =\t"+str(A*B))
+
+    print("==========================================================================")
 
     return model
 
