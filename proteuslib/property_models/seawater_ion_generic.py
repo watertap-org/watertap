@@ -28,7 +28,8 @@ from idaes.core import (AqueousPhase,
                         Solvent,
                         Apparent,
                         Anion,
-                        Cation)
+                        Cation,
+                        MaterialFlowBasis)
 from idaes.generic_models.properties.core.eos.enrtl import ENRTL
 from idaes.generic_models.properties.core.eos.enrtl_reference_states import \
     Symmetric, Unsymmetric
@@ -68,14 +69,6 @@ class VolMolNa2SO4():
     def return_expression(b, cobj, T):
         return cobj.vol_mol_pure
 
-class VolMolNa2SO4():
-    def build_parameters(b):
-        b.vol_mol_pure = Param(initialize=142.04e-6,
-                               units=pyunits.m**3/pyunits.mol,
-                               mutable=True)
-
-    def return_expression(b, cobj, T):
-        return cobj.vol_mol_pure
 
 class VolMolCaCl2():
     def build_parameters(b):
@@ -120,26 +113,44 @@ configuration = {
                 "relative_permittivity_liq_comp":
                     relative_permittivity_constant,
                 "parameter_data": {
-                    "mw": (18E-3, pyunits.kg/pyunits.mol),
+                    "mw_comp": (18E-3, pyunits.kg/pyunits.mol),
                     "relative_permittivity_liq_comp": 78.54}},
         "NaCl": {"type": Apparent,
                  "dissociation_species": {"Na_+": 1, "Cl_-": 1},
-                 "vol_mol_liq_comp": VolMolNaCl},
+                 "vol_mol_liq_comp": VolMolNaCl,
+                 "parameter_data": {
+                     "mw_comp": (58.44E-3, pyunits.kg / pyunits.mol)
+                 }},
         "Na2SO4": {"type": Apparent,
                    "dissociation_species": {"Na_+": 2, "SO4_2-": 1},
-                   "vol_mol_liq_comp": VolMolNa2SO4},
+                   "vol_mol_liq_comp": VolMolNa2SO4,
+                   "parameter_data": {
+                       "mw_comp": (142.04E-3, pyunits.kg / pyunits.mol)
+                   }},
         "CaCl2": {"type": Apparent,
                   "dissociation_species": {"Ca_2+": 1, "Cl_-": 2},
-                  "vol_mol_liq_comp": VolMolCaCl2},
+                  "vol_mol_liq_comp": VolMolCaCl2,
+                  "parameter_data": {
+                      "mw_comp": (110.98E-3, pyunits.kg / pyunits.mol)
+                  }},
         "CaSO4": {"type": Apparent,
                   "dissociation_species": {"Ca_2+": 1, "SO4_2-": 1},
-                  "vol_mol_liq_comp": VolMolCaSO4},
+                  "vol_mol_liq_comp": VolMolCaSO4,
+                  "parameter_data": {
+                      "mw_comp": (136.14E-3, pyunits.kg / pyunits.mol)
+                  }},
         "MgCl2": {"type": Apparent,
                   "dissociation_species": {"Mg_2+": 1, "Cl_-": 2},
-                  "vol_mol_liq_comp": VolMolMgCl2},
+                  "vol_mol_liq_comp": VolMolMgCl2,
+                  "parameter_data": {
+                      "mw_comp": (95.21E-3, pyunits.kg / pyunits.mol)
+                  }},
         "MgSO4": {"type": Apparent,
                   "dissociation_species": {"Mg_2+": 1, "SO4_2-": 1},
-                  "vol_mol_liq_comp": VolMolMgSO4},
+                  "vol_mol_liq_comp": VolMolMgSO4,
+                  "parameter_data": {
+                      "mw_comp": (120.37E-3, pyunits.kg / pyunits.mol)
+                  }},
         "Na_+": {"type": Cation,
                  "charge": +1},
         "Ca_2+": {"type": Cation,
@@ -162,6 +173,7 @@ configuration = {
                    "temperature": pyunits.K},
     "state_definition": FpcTP,
     "state_components": StateIndex.true,
+    "reaction_basis": MaterialFlowBasis.molar,
     "pressure_ref": 1e5,
     "temperature_ref": 298.15,
     "parameter_data": {
