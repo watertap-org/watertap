@@ -13,9 +13,9 @@
 import pytest
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
-from proteuslib.flowsheets.full_treatment_train.flowsheet_components import pretreatment_NF
-from proteuslib.flowsheets.full_treatment_train.model_components import property_models
-from proteuslib.flowsheets.full_treatment_train.util import check_build, check_scaling
+from watertap.flowsheets.full_treatment_train.flowsheet_components import pretreatment_NF
+from watertap.flowsheets.full_treatment_train.model_components import property_models
+from watertap.flowsheets.full_treatment_train.util import check_build, check_scaling
 
 
 @pytest.mark.unit

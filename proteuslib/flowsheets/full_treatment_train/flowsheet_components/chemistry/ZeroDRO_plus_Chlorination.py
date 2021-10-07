@@ -47,9 +47,9 @@
     ---------- NOTE: This is only an example ---------
 """
 
-from proteuslib.flowsheets.full_treatment_train.model_components import property_models
-from proteuslib.flowsheets.full_treatment_train.flowsheet_components import desalination
-from proteuslib.flowsheets.full_treatment_train.flowsheet_components.chemistry.PostTreatment_SimpleNaOCl_Chlorination import (
+from watertap.flowsheets.full_treatment_train.model_components import property_models
+from watertap.flowsheets.full_treatment_train.flowsheet_components import desalination
+from watertap.flowsheets.full_treatment_train.flowsheet_components.chemistry.PostTreatment_SimpleNaOCl_Chlorination import (
     build_simple_naocl_chlorination_unit,
     initialize_chlorination_example,
     display_results_of_chlorination,
@@ -69,13 +69,13 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models.translator import Translator
 from pyomo.network import Arc
 
-from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
-from proteuslib.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
+from watertap.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
     approximate_chemical_state_args,
     calculate_chemical_scaling_factors)
 
-from proteuslib.flowsheets.full_treatment_train.chemical_flowsheet_util import seq_decomp_initializer
+from watertap.flowsheets.full_treatment_train.chemical_flowsheet_util import seq_decomp_initializer
 
 from idaes.core.util import scaling as iscale
 

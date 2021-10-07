@@ -2,7 +2,7 @@ import sys
 import os
 import time
 
-from proteuslib.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
+from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
 
 
 def append_costing_outputs(m, outputs, units_to_cost):
@@ -29,7 +29,7 @@ def run_analysis(case_num, nx, RO_type):
         # ================================================================
         # Single Stage RO
         # ================================================================
-        import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_single_stage as fs_single_stage
+        import watertap.flowsheets.full_treatment_train.analysis.flowsheet_single_stage as fs_single_stage
 
         desal_kwargs['is_twostage'] = False
 
@@ -53,7 +53,7 @@ def run_analysis(case_num, nx, RO_type):
         # ================================================================
         # Two Stage RO
         # ================================================================
-        import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_two_stage as fs_two_stage 
+        import watertap.flowsheets.full_treatment_train.analysis.flowsheet_two_stage as fs_two_stage 
 
         m = fs_two_stage.optimize_flowsheet(**desal_kwargs)
 
@@ -77,7 +77,7 @@ def run_analysis(case_num, nx, RO_type):
         # ================================================================
         # NF No Bypass
         # ================================================================
-        import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF_no_bypass as fs_NF_no_bypass
+        import watertap.flowsheets.full_treatment_train.analysis.flowsheet_NF_no_bypass as fs_NF_no_bypass
 
         m = fs_NF_no_bypass.solve_flowsheet()
 
@@ -96,7 +96,7 @@ def run_analysis(case_num, nx, RO_type):
         # ================================================================
         # NF Two Stage
         # ================================================================
-        import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF as fs_NF
+        import watertap.flowsheets.full_treatment_train.analysis.flowsheet_NF as fs_NF
 
         m = fs_NF.optimize_flowsheet()
 
@@ -114,7 +114,7 @@ def run_analysis(case_num, nx, RO_type):
         # ================================================================
         # NF Two Stage
         # ================================================================
-        import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF_two_stage as fs_NF_two_stage
+        import watertap.flowsheets.full_treatment_train.analysis.flowsheet_NF_two_stage as fs_NF_two_stage
 
         m = fs_NF_two_stage.optimize_flowsheet(**desal_kwargs)
 
@@ -133,7 +133,7 @@ def run_analysis(case_num, nx, RO_type):
         # ================================================================
         # NF Two Stage
         # ================================================================
-        import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF_two_stage as fs_NF_two_stage
+        import watertap.flowsheets.full_treatment_train.analysis.flowsheet_NF_two_stage as fs_NF_two_stage
 
         m = fs_NF_two_stage.optimize_flowsheet(**desal_kwargs)
 
@@ -150,7 +150,7 @@ def run_analysis(case_num, nx, RO_type):
         # ================================================================
         # NF Two Stage
         # ================================================================
-        import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF_two_stage as fs_NF_two_stage
+        import watertap.flowsheets.full_treatment_train.analysis.flowsheet_NF_two_stage as fs_NF_two_stage
 
         m = fs_NF_two_stage.optimize_flowsheet(**desal_kwargs)
 
@@ -167,7 +167,7 @@ def run_analysis(case_num, nx, RO_type):
         # ================================================================
         # Softening
         # ================================================================
-        import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_softening as fs_softening
+        import watertap.flowsheets.full_treatment_train.analysis.flowsheet_softening as fs_softening
 
         m = fs_softening.solve_flowsheet()
 
@@ -188,7 +188,7 @@ def run_analysis(case_num, nx, RO_type):
         # ================================================================
         # Softening Two Stage
         # ================================================================
-        import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_softening_two_stage as fs_softening_two_stage
+        import watertap.flowsheets.full_treatment_train.analysis.flowsheet_softening_two_stage as fs_softening_two_stage
 
         m = fs_softening_two_stage.optimize_flowsheet(**desal_kwargs)
 

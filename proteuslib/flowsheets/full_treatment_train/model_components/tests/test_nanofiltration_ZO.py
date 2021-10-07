@@ -25,8 +25,8 @@ from idaes.core import (FlowsheetBlock,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         ControlVolume0DBlock)
-from proteuslib.flowsheets.full_treatment_train.model_components.nanofiltration_ZO import NanofiltrationZO
-import proteuslib.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as props
+from watertap.flowsheets.full_treatment_train.model_components.nanofiltration_ZO import NanofiltrationZO
+import watertap.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as props
 
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import (degrees_of_freedom,

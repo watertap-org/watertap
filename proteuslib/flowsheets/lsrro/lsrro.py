@@ -31,14 +31,14 @@ from idaes.generic_models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 
-from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
+from watertap.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
                                                        ConcentrationPolarizationType,
                                                        MassTransferCoefficient,
                                                        PressureChangeType)
-from proteuslib.unit_models.pump_isothermal import Pump
-from proteuslib.util.initialization import assert_degrees_of_freedom, assert_no_degrees_of_freedom
-import proteuslib.flowsheets.lsrro.financials as financials
-import proteuslib.property_models.NaCl_prop_pack as props
+from watertap.unit_models.pump_isothermal import Pump
+from watertap.util.initialization import assert_degrees_of_freedom, assert_no_degrees_of_freedom
+import watertap.flowsheets.lsrro.financials as financials
+import watertap.property_models.NaCl_prop_pack as props
 
 
 

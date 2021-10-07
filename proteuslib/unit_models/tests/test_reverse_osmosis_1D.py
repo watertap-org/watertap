@@ -27,11 +27,11 @@ from idaes.core import (FlowsheetBlock,
                         MomentumBalanceType,
                         ControlVolume1DBlock,
                         StateBlock)
-from proteuslib.unit_models.reverse_osmosis_1D import (ReverseOsmosis1D,
+from watertap.unit_models.reverse_osmosis_1D import (ReverseOsmosis1D,
                                                        ConcentrationPolarizationType,
                                                        MassTransferCoefficient,
                                                        PressureChangeType)
-import proteuslib.property_models.NaCl_prop_pack \
+import watertap.property_models.NaCl_prop_pack \
     as props
 
 from idaes.core.util import get_solver

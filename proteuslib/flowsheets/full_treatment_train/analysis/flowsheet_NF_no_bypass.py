@@ -10,7 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF as flowsheet_NF
+import watertap.flowsheets.full_treatment_train.analysis.flowsheet_NF as flowsheet_NF
 
 
 # def build_components(m):

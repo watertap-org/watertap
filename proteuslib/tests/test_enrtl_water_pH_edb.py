@@ -20,7 +20,7 @@ in terms of the IDAES chemistry packages.
 XXX: This test currently doesn't *do* anything
 """
 import pytest
-from proteuslib.edb import ElectrolyteDB
+from watertap.edb import ElectrolyteDB
 
 # Set global database object after checking that MongoDB server is up
 g_edb = None

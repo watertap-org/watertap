@@ -35,7 +35,7 @@ def get_edb_data(filename: str) -> pathlib.Path:
     Returns:
         Path object for file.
     """
-    from proteuslib import _ROOT
+    from watertap import _ROOT
 
     return _ROOT / "edb" / "data" / filename
 

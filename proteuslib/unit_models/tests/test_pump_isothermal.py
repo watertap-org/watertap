@@ -19,8 +19,8 @@ from pyomo.environ import (ConcreteModel,
                            Constraint,
                            Var)
 from idaes.core import FlowsheetBlock
-from proteuslib.unit_models.pump_isothermal import Pump
-import proteuslib.property_models.seawater_prop_pack as props
+from watertap.unit_models.pump_isothermal import Pump
+import watertap.property_models.seawater_prop_pack as props
 
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom

@@ -41,7 +41,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.initialization import solve_indexed_blocks
 from enum import Enum, auto
-from proteuslib.util.initialization import check_solve, check_dof
+from watertap.util.initialization import check_solve, check_dof
 import idaes.logger as idaeslog
 
 

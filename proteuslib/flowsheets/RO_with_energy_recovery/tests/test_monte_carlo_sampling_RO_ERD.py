@@ -13,7 +13,7 @@
 import pytest
 import numpy as np
 
-from proteuslib.flowsheets.RO_with_energy_recovery.monte_carlo_sampling_RO_ERD import run_parameter_sweep
+from watertap.flowsheets.RO_with_energy_recovery.monte_carlo_sampling_RO_ERD import run_parameter_sweep
 
 @pytest.mark.component
 def test_monte_carlo_sampling():

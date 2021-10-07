@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 from pyomo.environ import value
-from proteuslib.flowsheets.full_treatment_train.model_components import property_models
+from watertap.flowsheets.full_treatment_train.model_components import property_models
 
 
 @pytest.mark.component

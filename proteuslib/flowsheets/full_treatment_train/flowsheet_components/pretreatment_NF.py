@@ -17,17 +17,17 @@ from pyomo.environ import ConcreteModel, TransformationFactory
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import Feed
-from proteuslib.flowsheets.full_treatment_train.model_components import Separator, Mixer
+from watertap.flowsheets.full_treatment_train.model_components import Separator, Mixer
 from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      set_scaling_factor,
                                      get_scaling_factor,
                                      constraint_scaling_transform)
 from idaes.core.util.initialization import propagate_state
-from proteuslib.unit_models.pump_isothermal import Pump
-from proteuslib.flowsheets.full_treatment_train.flowsheet_components import feed_block
-from proteuslib.flowsheets.full_treatment_train.model_components import unit_separator, unit_ZONF, property_models
-from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.unit_models.pump_isothermal import Pump
+from watertap.flowsheets.full_treatment_train.flowsheet_components import feed_block
+from watertap.flowsheets.full_treatment_train.model_components import unit_separator, unit_ZONF, property_models
+from watertap.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
 def build_pretreatment_NF(m, has_bypass=True, NF_type='ZO', NF_base='ion'):

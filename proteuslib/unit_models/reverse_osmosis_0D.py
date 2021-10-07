@@ -41,7 +41,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
-from proteuslib.util.initialization import check_solve, check_dof
+from watertap.util.initialization import check_solve, check_dof
 import idaes.logger as idaeslog
 
 

@@ -12,9 +12,9 @@
 ###############################################################################
 
 from idaes.core.util import get_solver
-from proteuslib.tools.parameter_sweep import UniformSample, NormalSample, LatinHypercubeSample, parameter_sweep
+from watertap.tools.parameter_sweep import UniformSample, NormalSample, LatinHypercubeSample, parameter_sweep
 
-from proteuslib.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (build,
+from watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (build,
     set_operating_conditions,
     initialize_system,
     solve,

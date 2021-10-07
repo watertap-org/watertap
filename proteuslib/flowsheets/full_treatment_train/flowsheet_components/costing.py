@@ -13,17 +13,17 @@
 
 from pyomo.environ import (
     Block, ConcreteModel, Constraint, Expression, Var, Param, value, TransformationFactory, units as pyunits)
-import proteuslib.flowsheets.full_treatment_train.flowsheet_components.financials as financials
-from proteuslib.flowsheets.full_treatment_train.flowsheet_components import feed_block
-from proteuslib.flowsheets.full_treatment_train.model_components import unit_separator, unit_0DRO, unit_1DRO, property_models
+import watertap.flowsheets.full_treatment_train.flowsheet_components.financials as financials
+from watertap.flowsheets.full_treatment_train.flowsheet_components import feed_block
+from watertap.flowsheets.full_treatment_train.model_components import unit_separator, unit_0DRO, unit_1DRO, property_models
 
-from proteuslib.flowsheets.full_treatment_train.flowsheet_components.desalination import (build_desalination,
+from watertap.flowsheets.full_treatment_train.flowsheet_components.desalination import (build_desalination,
                                                                                           solve_desalination,
                                                                                           scale_desalination,
                                                                                           initialize_desalination,
                                                                                           display_desalination)
-# from proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_softening_two_stage import build, scale, initialize
-from proteuslib.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
+# from watertap.flowsheets.full_treatment_train.analysis.flowsheet_softening_two_stage import build, scale, initialize
+from watertap.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
                                                              check_dof)
 import idaes.core.util.scaling as iscale
 from idaes.core import FlowsheetBlock

@@ -34,11 +34,11 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.scaling import (unscaled_variables_generator,
                                      unscaled_constraints_generator)
 
-import proteuslib.property_models.NaCl_prop_pack as props
-from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
-from proteuslib.unit_models.pressure_exchanger import PressureExchanger
-from proteuslib.unit_models.pump_isothermal import Pump
-from proteuslib.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
+import watertap.property_models.NaCl_prop_pack as props
+from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
+from watertap.unit_models.pressure_exchanger import PressureExchanger
+from watertap.unit_models.pump_isothermal import Pump
+from watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
 build, set_operating_conditions, initialize_system, solve, optimize_set_up, optimize, display_system, display_state, display_design)
 
 

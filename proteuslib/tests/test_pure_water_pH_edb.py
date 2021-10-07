@@ -19,7 +19,7 @@ Modified to use the Electrolyte Database -dang 08/2021
 """
 import os
 import pytest
-from proteuslib.edb import ElectrolyteDB
+from watertap.edb import ElectrolyteDB
 from .test_pure_water_pH import TestPureWater
 
 # Set global database object after checking that MongoDB server is up

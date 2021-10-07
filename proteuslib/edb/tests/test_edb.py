@@ -17,9 +17,9 @@ import json
 import pytest
 import mongomock
 
-from proteuslib.edb import commands
-from proteuslib.edb.db_api import ElectrolyteDB
-from proteuslib.edb.validate import validate
+from watertap.edb import commands
+from watertap.edb.db_api import ElectrolyteDB
+from watertap.edb.validate import validate
 
 class MockDB(ElectrolyteDB):
 

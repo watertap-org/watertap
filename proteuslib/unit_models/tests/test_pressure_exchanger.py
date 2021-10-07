@@ -23,8 +23,8 @@ from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType)
-from proteuslib.unit_models.pressure_exchanger import PressureExchanger
-import proteuslib.property_models.seawater_prop_pack as props
+from watertap.unit_models.pressure_exchanger import PressureExchanger
+import watertap.property_models.seawater_prop_pack as props
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,

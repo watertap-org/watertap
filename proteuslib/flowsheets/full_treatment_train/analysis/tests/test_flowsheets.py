@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 from pyomo.environ import value
-from proteuslib.flowsheets.full_treatment_train.analysis import (flowsheet_NF,
+from watertap.flowsheets.full_treatment_train.analysis import (flowsheet_NF,
                                                                  flowsheet_NF_no_bypass,
                                                                  flowsheet_single_stage,
                                                                  flowsheet_two_stage,

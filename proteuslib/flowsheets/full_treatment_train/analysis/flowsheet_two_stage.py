@@ -22,11 +22,11 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.scaling import calculate_scaling_factors
 
-from proteuslib.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
+from watertap.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
                                                              check_dof)
 
-import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_single_stage as single_stage
-from proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_single_stage import (
+import watertap.flowsheets.full_treatment_train.analysis.flowsheet_single_stage as single_stage
+from watertap.flowsheets.full_treatment_train.analysis.flowsheet_single_stage import (
         build, build_components, scale, initialize, report, optimize)
 
 

@@ -11,10 +11,10 @@
 #
 ###############################################################################
 import pytest
-import proteuslib.property_models.seawater_prop_pack as props
+import watertap.property_models.seawater_prop_pack as props
 from idaes.generic_models.properties.tests.test_harness import \
     PropertyTestHarness as PropertyTestHarness_idaes
-from proteuslib.property_models.tests.property_test_harness import \
+from watertap.property_models.tests.property_test_harness import \
     (PropertyTestHarness, PropertyRegressionTest, PropertyCalculateStateTest)
 
 # -----------------------------------------------------------------------------

@@ -12,15 +12,15 @@
 ###############################################################################
 
 import pytest
-from proteuslib.property_models.tests.property_test_harness import \
+from watertap.property_models.tests.property_test_harness import \
     (PropertyTestHarness, PropertyRegressionTest)
 from pyomo.environ import ConcreteModel, value
 from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
 from pyomo.util.check_units import assert_units_consistent
-from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
-import proteuslib.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as property_seawater_ions
-import proteuslib.flowsheets.full_treatment_train.model_components.seawater_salt_prop_pack as property_seawater_salts
+from watertap.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+import watertap.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as property_seawater_ions
+import watertap.flowsheets.full_treatment_train.model_components.seawater_salt_prop_pack as property_seawater_salts
 
 # -----------------------------------------------------------------------------
 @pytest.mark.component

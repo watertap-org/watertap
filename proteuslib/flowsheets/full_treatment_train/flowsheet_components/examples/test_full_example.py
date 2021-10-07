@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 from pyomo.environ import value
-from proteuslib.flowsheets.full_treatment_train.flowsheet_components.examples import full_example
+from watertap.flowsheets.full_treatment_train.flowsheet_components.examples import full_example
 
 @pytest.mark.component
 def test_flowsheet_mvp_NF_bypass_twostage_1():

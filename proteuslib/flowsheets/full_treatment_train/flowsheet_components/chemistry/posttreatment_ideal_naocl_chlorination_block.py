@@ -69,8 +69,8 @@ from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from pyomo.util.check_units import assert_units_consistent
 
 
-from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
-from proteuslib.flowsheets.full_treatment_train.model_components import property_models
+from watertap.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.flowsheets.full_treatment_train.model_components import property_models
 from idaes.core.util import get_solver
 
 # Import the idaes objects for Generic Properties and Reactions
@@ -83,10 +83,10 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
 
 # Import the Proteuslib object inherited for the Mixer unit model
-from proteuslib.flowsheets.full_treatment_train.model_components import Mixer
+from watertap.flowsheets.full_treatment_train.model_components import Mixer
 
 # Import costing and financials to test
-from proteuslib.flowsheets.full_treatment_train.flowsheet_components import costing, financials
+from watertap.flowsheets.full_treatment_train.flowsheet_components import costing, financials
 
 from idaes.generic_models.unit_models.translator import Translator
 
@@ -99,12 +99,12 @@ from pyomo.environ import log10
 import idaes.logger as idaeslog
 
 # Grab the scaling utilities
-from proteuslib.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
+from watertap.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
     approximate_chemical_state_args,
     calculate_chemical_scaling_factors,
     calculate_chemical_scaling_factors_for_energy_balances)
 
-from proteuslib.flowsheets.full_treatment_train.chemical_flowsheet_util import (
+from watertap.flowsheets.full_treatment_train.chemical_flowsheet_util import (
     set_H2O_molefraction, zero_out_non_H2O_molefractions, fix_all_molefractions,
     unfix_all_molefractions, seq_decomp_initializer )
 

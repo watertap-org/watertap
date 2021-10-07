@@ -16,12 +16,12 @@
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
-from proteuslib.flowsheets.full_treatment_train.model_components import property_models
-from proteuslib.unit_models.reverse_osmosis_1D import (ReverseOsmosis1D,
+from watertap.flowsheets.full_treatment_train.model_components import property_models
+from watertap.unit_models.reverse_osmosis_1D import (ReverseOsmosis1D,
                                                        ConcentrationPolarizationType,
                                                        MassTransferCoefficient,
                                                        PressureChangeType)
-from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
 def build_RO(m, base='TDS', level='simple', name_str='RO'):

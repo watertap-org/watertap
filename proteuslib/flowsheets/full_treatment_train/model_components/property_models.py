@@ -17,10 +17,10 @@ from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.generic.generic_property import GenericParameterBlock
 from idaes.core.util.scaling import calculate_scaling_factors
-from proteuslib.property_models import seawater_prop_pack
-from proteuslib.flowsheets.full_treatment_train.model_components import seawater_salt_prop_pack, seawater_ion_prop_pack
-from proteuslib.flowsheets.full_treatment_train.model_components.eNRTL import entrl_config_FpcTP
-from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling
+from watertap.property_models import seawater_prop_pack
+from watertap.flowsheets.full_treatment_train.model_components import seawater_salt_prop_pack, seawater_ion_prop_pack
+from watertap.flowsheets.full_treatment_train.model_components.eNRTL import entrl_config_FpcTP
+from watertap.flowsheets.full_treatment_train.util import solve_with_user_scaling
 
 
 def build_prop(m, base='TDS'):

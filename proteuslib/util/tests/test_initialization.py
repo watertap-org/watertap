@@ -19,7 +19,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
-from proteuslib.util.initialization import (check_solve, check_dof,
+from watertap.util.initialization import (check_solve, check_dof,
         assert_no_degrees_of_freedom, assert_degrees_of_freedom)
 
 __author__ = "Adam Atia"

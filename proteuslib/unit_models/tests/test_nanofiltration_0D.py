@@ -23,8 +23,8 @@ from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType)
-from proteuslib.unit_models.nanofiltration_0D import NanoFiltration0D
-import proteuslib.property_models.NaCl_prop_pack as props
+from watertap.unit_models.nanofiltration_0D import NanoFiltration0D
+import watertap.property_models.NaCl_prop_pack as props
 
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import (degrees_of_freedom,

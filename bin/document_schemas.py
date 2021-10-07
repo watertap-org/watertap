@@ -40,7 +40,7 @@ import json
 from pathlib import Path
 import sys
 # package
-from proteuslib.edb.schemas import schemas
+from watertap.edb.schemas import schemas
 
 __author__ = "Dan Gunter (LBNL)"
 

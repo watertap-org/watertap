@@ -18,7 +18,7 @@ import pyomo.environ as pyo
 
 from pyomo.environ import value
 
-from proteuslib.tools.parameter_sweep import (_init_mpi,
+from watertap.tools.parameter_sweep import (_init_mpi,
                                                _build_combinations,
                                                _divide_combinations,
                                                _update_model_values,

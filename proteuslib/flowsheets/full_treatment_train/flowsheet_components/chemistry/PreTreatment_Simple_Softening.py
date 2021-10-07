@@ -52,7 +52,7 @@ from idaes.core.util import scaling as iscale
 from pyomo.util.check_units import assert_units_consistent
 
 
-from proteuslib.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 from idaes.core.util import get_solver
 
 # Import the idaes objects for Generic Properties and Reactions
@@ -76,7 +76,7 @@ from pyomo.environ import log10
 import idaes.logger as idaeslog
 
 # Grab the scaling utilities
-from proteuslib.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
+from watertap.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
     approximate_chemical_state_args,
     calculate_chemical_scaling_factors)
 

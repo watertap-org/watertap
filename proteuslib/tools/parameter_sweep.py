@@ -331,7 +331,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
 
     Arguments:
 
-        model : A Pyomo ConcreteModel containing a proteuslib flowsheet, for best 
+        model : A Pyomo ConcreteModel containing a watertap flowsheet, for best 
                 results it should be initialized before being passed to this
                 function.
 

@@ -42,7 +42,7 @@ SPECIAL_DEPENDENCIES_FOR_RELEASE = [
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
-    # will become needed for the proteuslib development
+    # will become needed for the watertap development
     "idaes-pse>=1.11.0"
 ]
 
@@ -50,7 +50,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 # Fields marked as "Optional" may be commented out.
 
 setup(
-    name="proteuslib",
+    name="watertap",
     url="https://github.com/watertap-org/watertap",
     version="0.3.0dev",
     description="WaterTAP modeling library",
@@ -89,7 +89,7 @@ setup(
     python_requires=">=3.6, <4",
     install_requires=[
         # primary requirements for unit and property models
-        # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of proteuslib
+        # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
         *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
         "pyomo",  # (also needed for units in electrolyte database (edb))
         # the following requirements are for the electrolyte database (edb)
@@ -130,7 +130,7 @@ setup(
     entry_points={
         # add edb CLI commands
         "console_scripts": [
-            "edb = proteuslib.edb.commands:command_base",
+            "edb = watertap.edb.commands:command_base",
         ]
     },
 )

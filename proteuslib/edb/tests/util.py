@@ -3,7 +3,7 @@ Utility functions for EDB tests
 """
 import pytest
 import mongomock
-from proteuslib.edb.db_api import ElectrolyteDB
+from watertap.edb.db_api import ElectrolyteDB
 
 
 class MockDB(ElectrolyteDB):

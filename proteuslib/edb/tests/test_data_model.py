@@ -55,9 +55,9 @@ from ..error import BadConfiguration, ValidationError
 @pytest.fixture
 def debug_logging():
     """Use fixture cleanup ability to set and unset debug logging."""
-    logging.getLogger("proteuslib.edb.data_model").setLevel(logging.DEBUG)
+    logging.getLogger("watertap.edb.data_model").setLevel(logging.DEBUG)
     yield "debug"
-    logging.getLogger("proteuslib.edb.data_model").setLevel(logging.INFO)
+    logging.getLogger("watertap.edb.data_model").setLevel(logging.INFO)
 
 
 def assert_configuration_equal(a: Dict, b: Dict, fld: str):
@@ -90,7 +90,7 @@ def test_config_generator():
 
 @pytest.mark.unit
 def test_component_ca_thermo():
-    logging.getLogger("idaes.proteuslib.edb.data_model").setLevel(logging.DEBUG)
+    logging.getLogger("idaes.watertap.edb.data_model").setLevel(logging.DEBUG)
     comp = Component(testdata.Ca_thermo_data)
     generated_config = comp.idaes_config
 
@@ -103,7 +103,7 @@ def test_component_ca_thermo():
     assert_configuration_equal(
         comp.idaes_config, testdata.Ca_thermo_config, "components"
     )
-    logging.getLogger("idaes.proteuslib.edb.data_model").setLevel(logging.INFO)
+    logging.getLogger("idaes.watertap.edb.data_model").setLevel(logging.INFO)
 
 
 @pytest.mark.unit
@@ -326,7 +326,7 @@ def test_component_from_idaes_config(debug_logging):
             }
         }
     }
-    logging.getLogger("proteuslib.edb.data_model").setLevel(logging.DEBUG)
+    logging.getLogger("watertap.edb.data_model").setLevel(logging.DEBUG)
     # create Component from the config
     components = Component.from_idaes_config(H2O_thermo_config)
     assert len(components) == 1
@@ -335,7 +335,7 @@ def test_component_from_idaes_config(debug_logging):
     validate(component)
     # create a config from the Component, i.e. round-trip, and compare
     assert_configuration_equal(H2O_thermo_config, component.idaes_config, "components")
-    logging.getLogger("proteuslib.edb.data_model").setLevel(logging.INFO)
+    logging.getLogger("watertap.edb.data_model").setLevel(logging.INFO)
 
 
 def test_reaction_from_idaes_config(debug_logging):
