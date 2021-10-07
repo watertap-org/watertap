@@ -1,5 +1,5 @@
 ###############################################################################
-# ProteusLib Copyright (c) 2021, The Regents of the University of California,
+# WaterTAP Copyright (c) 2021, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National
 # Laboratory, National Renewable Energy Laboratory, and National Energy
 # Technology Laboratory (subject to receipt of any required approvals from
@@ -20,12 +20,12 @@ import pathlib
 
 cwd = pathlib.Path(__file__).parent.resolve()  # this will come in handy, probably
 
-long_description = """ProteusLib is an open-source, integrated suite of predictive multi-scale models
-for design and optimization of water treatment processes and systems. Specifically, ProteusLib is a new
+long_description = """WaterTAP is an open-source, integrated suite of predictive multi-scale models
+for design and optimization of water treatment processes and systems. Specifically, WaterTAP is a new
 library of water treatment-specific property, process unit, and network models that depend on the IDAES Platform,
 an open source, next generation process systems engineering platform developed at the National Energy Technology
-Laboratory with other partners. The ProteusLib project is funded by the NAWI  as a part of U.S. Department of
-Energy’s Energy-Water Desalination Hub. The goal of ProteusLib is to assist the hub and the broader water R&D
+Laboratory with other partners. The WaterTAP project is funded by the NAWI  as a part of U.S. Department of
+Energy’s Energy-Water Desalination Hub. The goal of WaterTAP is to assist the hub and the broader water R&D
 community in assessing existing and emerging water treatment technologies by 1) providing predictive capabilities
 involving the design, optimization, and performance of water treatment systems that will lead to improved energy
 efficiency and lower cost, 2) advancing the state of the art for the design of water treatment components, systems
@@ -53,7 +53,7 @@ setup(
     name="proteuslib",
     url="https://github.com/nawi-hub/proteuslib",
     version="0.3.0dev",
-    description="ProteusLib modeling library",
+    description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/plain",
     author="NAWI team",

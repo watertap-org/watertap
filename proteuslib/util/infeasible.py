@@ -1,5 +1,5 @@
 ###############################################################################
-# ProteusLib Copyright (c) 2021, The Regents of the University of California,
+# WaterTAP Copyright (c) 2021, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National
 # Laboratory, National Renewable Energy Laboratory, and National Energy
 # Technology Laboratory (subject to receipt of any required approvals from
@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module contains utility functions for infeasibility diagnostics of ProteusLib models.
+This module contains utility functions for infeasibility diagnostics of WaterTAP models.
 """
 from math import isclose
 from pyomo.environ import Var, Constraint, value

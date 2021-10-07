@@ -1,4 +1,4 @@
-# ProteusLib Tutorials & Examples
+# WaterTAP Tutorials & Examples
 
 This directory contains tutorial Jupyter notebooks
-for ProteusLib.
+for WaterTAP.

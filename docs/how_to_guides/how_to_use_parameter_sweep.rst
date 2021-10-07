@@ -4,7 +4,7 @@ How to explore a model with parameter sweep
 Overview
 --------
 
-This guide shows you how to use the parameter sweep tool to explore the effect of changing model parameters or decision variables within your ProteusLib model.
+This guide shows you how to use the parameter sweep tool to explore the effect of changing model parameters or decision variables within your WaterTAP model.
 This might be useful, for example, if you have an existing model of a multi-stage treatment train and you'd like to see the effect of varying Pump 1 pressure and Pump 2 pressure independently (where all possible combinations of Pump 1 and Pump 2 pressure will be explicitly tested).
 The type and quantity of parameters to be varied are easily changed following steps like the ones below.
 

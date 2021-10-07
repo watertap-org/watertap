@@ -1,9 +1,9 @@
 How to scale a model
 --------------------
 
-In ProteusLib, models are scaled in two ways: 1) passing scaling factors for each variable to the solver, and 2) transforming each constraint on the model. 
+In WaterTAP, models are scaled in two ways: 1) passing scaling factors for each variable to the solver, and 2) transforming each constraint on the model. 
 The method to pass scaling factors for each variable to the solver depends on the solver, but the methods are generally similar. 
-Here we describe how to scale models for the solver IPOPT, which is the supported and default solver for ProteusLib.
+Here we describe how to scale models for the solver IPOPT, which is the supported and default solver for WaterTAP.
 
 Scaling a model in four steps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

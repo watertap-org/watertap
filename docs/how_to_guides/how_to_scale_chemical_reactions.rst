@@ -8,7 +8,7 @@ How to scale chemical reactions
     functionality built into ipopt. It is not advised to use 'user-scaling' with
     the chemical modules, as this tends to have poor convergence. 
 
-No model in ProteusLib can solve without proper scaling of the constraints
+No model in WaterTAP can solve without proper scaling of the constraints
 and variables within that model. This can be a difficult task for aqueous
 chemistry systems as these systems must deal with extremely dilute or trace
 chemical species and reaction coefficients that may vary from each other

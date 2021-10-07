@@ -1,4 +1,4 @@
 .. _developer-guide:
 
-How to contribute to ProteusLib's development
+How to contribute to WaterTAP's development
 ---------------------------------------------

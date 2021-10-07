@@ -1,5 +1,5 @@
 ###############################################################################
-# ProteusLib Copyright (c) 2021, The Regents of the University of California,
+# WaterTAP Copyright (c) 2021, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National
 # Laboratory, National Renewable Energy Laboratory, and National Energy
 # Technology Laboratory (subject to receipt of any required approvals from
@@ -39,21 +39,21 @@ from idaes.core.util import get_solver
 # -----------------------------------------------------------------------------
 class PropertyAttributeError(AttributeError):
     """
-    ProteusLib exception for generic attribute errors arising from property package testing.
+    WaterTAP exception for generic attribute errors arising from property package testing.
     """
     pass
 
 
 class PropertyValueError(ValueError):
     """
-    ProteusLib exception for generic value errors arising from property package testing.
+    WaterTAP exception for generic value errors arising from property package testing.
     """
     pass
 
 
 class PropertyRuntimeError(RuntimeError):
     """
-    ProteusLib exception for generic runtime errors arising from property package testing.
+    WaterTAP exception for generic runtime errors arising from property package testing.
     """
     pass
 

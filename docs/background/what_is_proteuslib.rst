@@ -1,8 +1,8 @@
-What is ProteusLib
+What is WaterTAP
 ------------------
 
-ProteusLib is a Python-based, open-source library of water treatment models than can be used to assess water treatment trains through simulation, optimization, and other advanced methods.
-ProteusLib development is funded by the `National Alliance for Water Innovation (NAWI) <https://www.nawihub.org/>`_, the U.S. Department of Energy’s Energy-Water Desalination Hub.
+WaterTAP is a Python-based, open-source library of water treatment models than can be used to assess water treatment trains through simulation, optimization, and other advanced methods.
+WaterTAP development is funded by the `National Alliance for Water Innovation (NAWI) <https://www.nawihub.org/>`_, the U.S. Department of Energy’s Energy-Water Desalination Hub.
 
 Motivation
 ^^^^^^^^^^
@@ -24,10 +24,10 @@ all within a single fully-featured programming language (Python).
 Advantages
 ^^^^^^^^^^
 
-ProteusLib has significant advantages over typical modeling approaches including:
+WaterTAP has significant advantages over typical modeling approaches including:
 
 * **Modular** – Proteuslib’s modular approach allows users to rapidly assemble components to represent a treatment train and more fully assess the impact of a technology or innovation
-* **Multi-hierarchical** – ProteusLib provides models with multiple levels of detail thereby allowing a user to select the appropriate relationships and computational demand for their application
-* **Customizable** – ProteusLib allows users to modify the standard models or create custom models to suit their needs
-* **IDAES Capabilities** – ProteusLib includes the advantages of the `IDAES Platform <https://idaes-pse.readthedocs.io/en/stable/user_guide/why_idaes.html>`_. These advantages include: 1) an equation-oriented approach, which greatly benefits simulation and optimization-based analyses by supporting linear, non-linear, and mixed-integer problems as well as providing access to highly efficient derivative-based solvers; and 2) support for advanced capabilities like dynamics, parameter estimation, conceptual design, surrogate modeling, and uncertainty quantification
-* **Open-source** – all ProteusLib code is made freely available for use, modification, and redistribution. ProteusLib's license is located :ref:`here<license:License Agreement>`.
+* **Multi-hierarchical** – WaterTAP provides models with multiple levels of detail thereby allowing a user to select the appropriate relationships and computational demand for their application
+* **Customizable** – WaterTAP allows users to modify the standard models or create custom models to suit their needs
+* **IDAES Capabilities** – WaterTAP includes the advantages of the `IDAES Platform <https://idaes-pse.readthedocs.io/en/stable/user_guide/why_idaes.html>`_. These advantages include: 1) an equation-oriented approach, which greatly benefits simulation and optimization-based analyses by supporting linear, non-linear, and mixed-integer problems as well as providing access to highly efficient derivative-based solvers; and 2) support for advanced capabilities like dynamics, parameter estimation, conceptual design, surrogate modeling, and uncertainty quantification
+* **Open-source** – all WaterTAP code is made freely available for use, modification, and redistribution. WaterTAP's license is located :ref:`here<license:License Agreement>`.
