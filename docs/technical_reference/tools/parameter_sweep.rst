@@ -2,9 +2,9 @@ Parameter Sweep Tool
 ====================
 
 .. index::
-   pair: proteuslib.tools.parameter_sweep;parameter_sweep
+   pair: watertap.tools.parameter_sweep;parameter_sweep
 
-.. currentmodule:: proteuslib.tools.parameter_sweep
+.. currentmodule:: watertap.tools.parameter_sweep
 
 Overview
 --------
@@ -75,6 +75,6 @@ as an argument.
 Function Documentation
 ----------------------
 
-.. automodule:: proteuslib.tools.parameter_sweep
+.. automodule:: watertap.tools.parameter_sweep
    :members:
    :noindex:

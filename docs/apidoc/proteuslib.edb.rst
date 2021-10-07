@@ -1,54 +1,54 @@
-proteuslib.edb package
+watertap.edb package
 ======================
 
 Submodules
 ----------
 
-proteuslib.edb.commands module
+watertap.edb.commands module
 ------------------------------
 
-.. automodule:: proteuslib.edb.commands
+.. automodule:: watertap.edb.commands
    :members:
    :show-inheritance:
 
-proteuslib.edb.data\_model module
+watertap.edb.data\_model module
 ---------------------------------
 
-.. automodule:: proteuslib.edb.data_model
+.. automodule:: watertap.edb.data_model
    :members:
    :show-inheritance:
 
-proteuslib.edb.db\_api module
+watertap.edb.db\_api module
 -----------------------------
 
-.. automodule:: proteuslib.edb.db_api
+.. automodule:: watertap.edb.db_api
    :members:
    :show-inheritance:
 
-proteuslib.edb.error module
+watertap.edb.error module
 ---------------------------
 
-.. automodule:: proteuslib.edb.error
+.. automodule:: watertap.edb.error
    :members:
    :show-inheritance:
 
-proteuslib.edb.schemas module
+watertap.edb.schemas module
 -----------------------------
 
-.. automodule:: proteuslib.edb.schemas
+.. automodule:: watertap.edb.schemas
    :members:
    :show-inheritance:
 
-proteuslib.edb.validate module
+watertap.edb.validate module
 ------------------------------
 
-.. automodule:: proteuslib.edb.validate
+.. automodule:: watertap.edb.validate
    :members:
    :show-inheritance:
 
 Module contents
 ---------------
 
-.. automodule:: proteuslib.edb
+.. automodule:: watertap.edb
    :members:
    :show-inheritance:

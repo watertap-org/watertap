@@ -38,7 +38,7 @@ Database API
 ^^^^^^^^^^^^
 Connect to the database and create, read, update and delete its contents.
 
-.. automodule:: proteuslib.edb.db_api
+.. automodule:: watertap.edb.db_api
     :members: ElectrolyteDB
     :noindex:
 
@@ -46,7 +46,7 @@ Data object API
 ^^^^^^^^^^^^^^^
 Data models for components and reactions, including conversion to IDAES config objects.
 
-.. automodule:: proteuslib.edb.data_model
+.. automodule:: watertap.edb.data_model
     :members: Base, Component, Reaction, Result
     :noindex:
 

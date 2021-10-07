@@ -9,7 +9,7 @@ Example: Configure the RO model to account for concentration polarization and pr
 .. testcode::
 
     #Import RO model and configuration classes
-    from proteuslib.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
+    from watertap.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
                                                            ConcentrationPolarizationType,
                                                            MassTransferCoefficient,
                                                            PressureChangeType)
@@ -19,7 +19,7 @@ Example: Configure the RO model to account for concentration polarization and pr
     # Import flowsheet block from IDAES core
     from idaes.core import FlowsheetBlock
     # Import NaCl property model
-    import proteuslib.property_models.NaCl_prop_pack as props
+    import watertap.property_models.NaCl_prop_pack as props
 
     # Create a concrete model, flowsheet, and NaCl property parameter block.
     m = ConcreteModel()

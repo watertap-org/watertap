@@ -1,47 +1,47 @@
-proteuslib.unit\_models package
+watertap.unit\_models package
 ===============================
 
 Submodules
 ----------
 
-proteuslib.unit\_models.nanofiltration\_0D module
+watertap.unit\_models.nanofiltration\_0D module
 -------------------------------------------------
 
-.. automodule:: proteuslib.unit_models.nanofiltration_0D
+.. automodule:: watertap.unit_models.nanofiltration_0D
    :members:
    :show-inheritance:
 
-proteuslib.unit\_models.pressure\_exchanger module
+watertap.unit\_models.pressure\_exchanger module
 --------------------------------------------------
 
-.. automodule:: proteuslib.unit_models.pressure_exchanger
+.. automodule:: watertap.unit_models.pressure_exchanger
    :members:
    :show-inheritance:
 
-proteuslib.unit\_models.pump\_isothermal module
+watertap.unit\_models.pump\_isothermal module
 -----------------------------------------------
 
-.. automodule:: proteuslib.unit_models.pump_isothermal
+.. automodule:: watertap.unit_models.pump_isothermal
    :members:
    :show-inheritance:
 
-proteuslib.unit\_models.reverse\_osmosis\_0D module
+watertap.unit\_models.reverse\_osmosis\_0D module
 ---------------------------------------------------
 
-.. automodule:: proteuslib.unit_models.reverse_osmosis_0D
+.. automodule:: watertap.unit_models.reverse_osmosis_0D
    :members:
    :show-inheritance:
 
-proteuslib.unit\_models.reverse\_osmosis\_1D module
+watertap.unit\_models.reverse\_osmosis\_1D module
 ---------------------------------------------------
 
-.. automodule:: proteuslib.unit_models.reverse_osmosis_1D
+.. automodule:: watertap.unit_models.reverse_osmosis_1D
    :members:
    :show-inheritance:
 
 Module contents
 ---------------
 
-.. automodule:: proteuslib.unit_models
+.. automodule:: watertap.unit_models
    :members:
    :show-inheritance:

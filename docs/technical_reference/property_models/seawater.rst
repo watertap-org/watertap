@@ -103,7 +103,7 @@ The user can specify the scaling factors for component mass flowrates with the f
 .. testcode::
    
    # relevant imports
-   import proteuslib.property_models.seawater_prop_pack as props
+   import watertap.property_models.seawater_prop_pack as props
    from idaes.core.util.scaling import calculate_scaling_factors
 
    # relevant assignments

@@ -1,4 +1,4 @@
-proteuslib.flowsheets package
+watertap.flowsheets package
 =============================
 
 Subpackages
@@ -7,11 +7,11 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   proteuslib.flowsheets.RO_with_energy_recovery
+   watertap.flowsheets.RO_with_energy_recovery
 
 Module contents
 ---------------
 
-.. automodule:: proteuslib.flowsheets
+.. automodule:: watertap.flowsheets
    :members:
    :show-inheritance:

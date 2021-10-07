@@ -1,4 +1,4 @@
-proteuslib package
+watertap package
 ==================
 
 Subpackages
@@ -7,14 +7,14 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   proteuslib.edb
-   proteuslib.flowsheets
-   proteuslib.property_models
-   proteuslib.unit_models
+   watertap.edb
+   watertap.flowsheets
+   watertap.property_models
+   watertap.unit_models
 
 Module contents
 ---------------
 
-.. automodule:: proteuslib
+.. automodule:: watertap
    :members:
    :show-inheritance:

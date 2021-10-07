@@ -1,5 +1,5 @@
 .. index::
-   pair: proteuslib;Home
+   pair: watertap;Home
 
 Welcome to WaterTAP's documentation!
 ======================================
