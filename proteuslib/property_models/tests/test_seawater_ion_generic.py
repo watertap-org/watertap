@@ -39,12 +39,12 @@ def test_property_seawater_ions():
                       'Mg': 1394e-6,
                       'SO4': 2136e-6,
                       'Cl': 20300e-6}
-    m.fs.stream[0].mole_frac_phase_comp['Liq','Na_+'].fix(0.008845)
-    m.fs.stream[0].mole_frac_phase_comp['Liq','Ca_2+'].fix(0.000174)
-    m.fs.stream[0].mole_frac_phase_comp['Liq','Mg_2+'].fix(0.001049)
-    m.fs.stream[0].mole_frac_phase_comp['Liq','SO4_2-'].fix(0.000407)
-    m.fs.stream[0].mole_frac_phase_comp['Liq','Cl_-'].fix(0.010479)
-    m.fs.stream[0].mole_frac_phase_comp['Liq', 'H2O'].fix(0.979046)
+    m.fs.stream[0].flow_mol_phase_comp['Liq', 'Na_+'].fix(0.008845)
+    m.fs.stream[0].flow_mol_phase_comp['Liq', 'Ca_2+'].fix(0.000174)
+    m.fs.stream[0].flow_mol_phase_comp['Liq', 'Mg_2+'].fix(0.001049)
+    m.fs.stream[0].flow_mol_phase_comp['Liq', 'SO4_2-'].fix(0.000407)
+    m.fs.stream[0].flow_mol_phase_comp['Liq', 'Cl_-'].fix(0.010479)
+    m.fs.stream[0].flow_mol_phase_comp['Liq', 'H2O'].fix(0.979046)
     m.fs.stream[0].flow_vol
     # m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'].fix(
     #     feed_flow_mass * (1 - sum(x for x in feed_mass_frac.values())))
@@ -54,7 +54,9 @@ def test_property_seawater_ions():
     m.fs.stream[0].pressure.fix(101325)
 
     m.fs.stream[0].flow_mol_phase_comp
-    m.fs.stream[0].mass_frac_comp
+    m.fs.stream[0].mw_comp
+    m.fs.stream[0].flow_mass_phase_comp
+    # m.fs.stream[0].mass_frac_comp
 
     # # scaling
     # m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))

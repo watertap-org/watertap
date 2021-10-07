@@ -113,54 +113,69 @@ configuration = {
                 "relative_permittivity_liq_comp":
                     relative_permittivity_constant,
                 "parameter_data": {
-                    "mw_comp": (18E-3, pyunits.kg/pyunits.mol),
+                    "mw": (18E-3, pyunits.kg/pyunits.mol),
                     "relative_permittivity_liq_comp": 78.54}},
         "NaCl": {"type": Apparent,
                  "dissociation_species": {"Na_+": 1, "Cl_-": 1},
                  "vol_mol_liq_comp": VolMolNaCl,
                  "parameter_data": {
-                     "mw_comp": (58.44E-3, pyunits.kg / pyunits.mol)
+                     "mw": (58.44E-3, pyunits.kg / pyunits.mol)
                  }},
         "Na2SO4": {"type": Apparent,
                    "dissociation_species": {"Na_+": 2, "SO4_2-": 1},
                    "vol_mol_liq_comp": VolMolNa2SO4,
                    "parameter_data": {
-                       "mw_comp": (142.04E-3, pyunits.kg / pyunits.mol)
+                       "mw": (142.04E-3, pyunits.kg / pyunits.mol)
                    }},
         "CaCl2": {"type": Apparent,
                   "dissociation_species": {"Ca_2+": 1, "Cl_-": 2},
                   "vol_mol_liq_comp": VolMolCaCl2,
                   "parameter_data": {
-                      "mw_comp": (110.98E-3, pyunits.kg / pyunits.mol)
+                      "mw": (110.98E-3, pyunits.kg / pyunits.mol)
                   }},
         "CaSO4": {"type": Apparent,
                   "dissociation_species": {"Ca_2+": 1, "SO4_2-": 1},
                   "vol_mol_liq_comp": VolMolCaSO4,
                   "parameter_data": {
-                      "mw_comp": (136.14E-3, pyunits.kg / pyunits.mol)
+                      "mw": (136.14E-3, pyunits.kg / pyunits.mol)
                   }},
         "MgCl2": {"type": Apparent,
                   "dissociation_species": {"Mg_2+": 1, "Cl_-": 2},
                   "vol_mol_liq_comp": VolMolMgCl2,
                   "parameter_data": {
-                      "mw_comp": (95.21E-3, pyunits.kg / pyunits.mol)
+                      "mw": (95.21E-3, pyunits.kg / pyunits.mol)
                   }},
         "MgSO4": {"type": Apparent,
                   "dissociation_species": {"Mg_2+": 1, "SO4_2-": 1},
                   "vol_mol_liq_comp": VolMolMgSO4,
                   "parameter_data": {
-                      "mw_comp": (120.37E-3, pyunits.kg / pyunits.mol)
+                      "mw": (120.37E-3, pyunits.kg / pyunits.mol)
                   }},
         "Na_+": {"type": Cation,
-                 "charge": +1},
+                 "charge": +1,
+                 "parameter_data":{
+                     "mw": 23e-3
+                 }},
         "Ca_2+": {"type": Cation,
-                  "charge": +2},
+                  "charge": +2,
+                  "parameter_data": {
+                      "mw": 40e-3
+                  }},
         "Mg_2+": {"type": Cation,
-                  "charge": +2},
+                  "charge": +2,
+                  "parameter_data":{
+                      "mw": 24.3e-3
+                  }},
         "Cl_-": {"type": Anion,
-                 "charge": -1},
+                 "charge": -1,
+                 "parameter_data": {
+                     "mw": 35.45e-3
+                 }},
         "SO4_2-": {"type": Anion,
-                   "charge": -2}},
+                   "charge": -2,
+                   "parameter_data": {
+                       "mw": 96.06e-3
+                   }}},
     "phases": {
         "Liq": {"type": AqueousPhase,
                 "equation_of_state": ENRTL,
