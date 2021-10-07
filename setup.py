@@ -7,7 +7,7 @@
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
-# "https://github.com/nawi-hub/proteuslib/"
+# "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
 """
@@ -51,7 +51,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 
 setup(
     name="proteuslib",
-    url="https://github.com/nawi-hub/proteuslib",
+    url="https://github.com/watertap-org/watertap",
     version="0.3.0dev",
     description="WaterTAP modeling library",
     long_description=long_description,

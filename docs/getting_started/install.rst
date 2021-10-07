@@ -170,7 +170,7 @@ If you plan to contribute to WaterTAP's codebase, choose this option.
 
 	.. code-block:: shell
 
-		git clone https://github.com/nawi-hub/proteuslib && cd proteuslib
+		git clone https://github.com/watertap-org/watertap && cd proteuslib
 
 #. Install WaterTAP and the development dependencies using ``pip`` and the ``requirements-dev.txt`` file:
 

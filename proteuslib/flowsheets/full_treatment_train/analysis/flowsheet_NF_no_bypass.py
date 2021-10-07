@@ -7,7 +7,7 @@
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
-# "https://github.com/nawi-hub/proteuslib/"
+# "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
 import proteuslib.flowsheets.full_treatment_train.analysis.flowsheet_NF as flowsheet_NF

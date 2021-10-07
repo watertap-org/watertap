@@ -137,7 +137,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Define install URL (default)
       env:
-        _repo_full_name: nawi-hub/proteuslib
+        _repo_full_name: watertap-org/watertap
         _ref_to_install: main
       run: |
         echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV

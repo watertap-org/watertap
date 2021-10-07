@@ -10,4 +10,4 @@ the IDAES tutorials `Short introduction to Python and Pyomo <https://idaes.githu
 `Longer introduction to Python and Pyomo <https://idaes.github.io/examples-pse/latest/Tutorials/Basics/introduction_solution_doc.html>`_.
 
 The tutorials included with WaterTAP are available in the "tutorials" directory
-on the WaterTAP GitHub Homepage: `<https://github.com/nawi-hub/proteuslib/tree/main/tutorials>`_.
+on the WaterTAP GitHub Homepage: `<https://github.com/watertap-org/watertap/tree/main/tutorials>`_.
