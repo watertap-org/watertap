@@ -53,7 +53,7 @@ jobs:
     - name: Set up Python ${{ matrix.python-version }}
       uses: conda-incubator/setup-miniconda@v2
       with:
-        activate-environment: proteuslib-dev
+        activate-environment: watertap-dev
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
@@ -133,11 +133,11 @@ jobs:
     - name: Set up Python ${{ matrix.python-version }}
       uses: conda-incubator/setup-miniconda@v2
       with:
-        activate-environment: proteuslib
+        activate-environment: watertap
         python-version: ${{ matrix.python-version }}
     - name: Define install URL (default)
       env:
-        _repo_full_name: nawi-hub/proteuslib
+        _repo_full_name: watertap-org/watertap
         _ref_to_install: main
       run: |
         echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
@@ -148,10 +148,10 @@ jobs:
         _ref_to_install: ${{ github.event.pull_request.head.sha }}
       run:
         echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
-    - name: Install proteuslib and testing dependencies
+    - name: Install watertap and testing dependencies
       run: |
         echo '::group::Output of "pip install" commands'
-        pip install --progress-bar off "proteuslib[testing] @ ${_install_url}"
+        pip install --progress-bar off "watertap[testing] @ ${_install_url}"
         echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
@@ -163,4 +163,4 @@ jobs:
         echo '::endgroup::'
     - name: Run pytest
       run: |
-        pytest --pyargs proteuslib
+        pytest --pyargs watertap

@@ -8,9 +8,9 @@ This reverse osmosis (RO) unit model
    * assumes isothermal conditions
 
 .. index::
-   pair: proteuslib.unit_models.reverse_osmosis_1D;reverse_osmosis_1D
+   pair: watertap.unit_models.reverse_osmosis_1D;reverse_osmosis_1D
 
-.. currentmodule:: proteuslib.unit_models.reverse_osmosis_1D
+.. currentmodule:: watertap.unit_models.reverse_osmosis_1D
 
 Degrees of Freedom
 ------------------
@@ -62,7 +62,7 @@ Refer to the :any:`0dro_equations` section in the 0DRO model.
 Class Documentation
 -------------------
 
-.. automodule:: proteuslib.unit_models.reverse_osmosis_1D
+.. automodule:: watertap.unit_models.reverse_osmosis_1D
     :members:
     :noindex:
 

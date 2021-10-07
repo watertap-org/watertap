@@ -4,4 +4,4 @@ Background
 .. toctree::
    :maxdepth: 1
 
-   what_is_proteuslib
+   what_is_watertap

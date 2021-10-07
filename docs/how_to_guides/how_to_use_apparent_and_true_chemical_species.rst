@@ -1,7 +1,7 @@
 How to use apparent and true chemical species
 =============================================
 
-In ProteusLib, most all chemical processes simulated will be considered "true"
+In WaterTAP, most all chemical processes simulated will be considered "true"
 species, i.e., species that actually exist in an aqueous solution (e.g., Na+ and Cl- for NaCl). However, there
 may be times when you want to have your system report the "apparent" species
 between your inlet and/or outlet ports of a flowsheet. To do this, you need
@@ -188,7 +188,7 @@ an ``"Apparent"`` species.
                            "pressure": (5e4, 1e5, 1e6)
                        },
 
-          # We must define the 'StateIndex' as "true". This is because in ProteusLib,
+          # We must define the 'StateIndex' as "true". This is because in WaterTAP,
           #   all speciation reactions are defined on the true species, not the
           #   apparent species.
           "state_components": StateIndex.true,
@@ -209,5 +209,5 @@ an ``"Apparent"`` species.
     When you define a species as ``"Apparent"`` and specify ``"state_components": StateIndex.true``,
     you cannot reference that species as part of your inlet variables or in any
     reactions in the system. The ``"StateIndex"`` is used to define what species
-    can be used in reactions or in the inlet ports to set initial states. For ProteusLib,
+    can be used in reactions or in the inlet ports to set initial states. For WaterTAP,
     we will always define reactions on a true species basis.
