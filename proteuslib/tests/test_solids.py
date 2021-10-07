@@ -596,7 +596,6 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None, state="FpcTP"):
     solver.options['bound_push'] = 1e-10
     solver.options['mu_init'] = 1e-6
 
-    #results = solver.solve(model, tee=True)
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
     # NOTE: Calling initialize 2x times helped resolve some issues, but why???
 
