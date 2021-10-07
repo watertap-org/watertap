@@ -32,7 +32,7 @@
         Solubility:     CaCO3 <--> Ca + CO3         logK = -12
 
 
-    Case 3: (softening, with lime)
+    Case 3: (softening, with lime: precipitation + dissolution)
         Aqueous Rxns:   H2O <--> H + OH             logK = -14
                         H2CO3 <--> H + HCO3         logK = -6.3
                         HCO3 <--> H + CO3           logK = -10.2
