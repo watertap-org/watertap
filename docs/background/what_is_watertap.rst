@@ -8,14 +8,14 @@ Motivation
 ^^^^^^^^^^
 
 NAWI’s objective is to advance early-stage water treatment technologies and enable the treatment of non-traditional water sources. 
-As part of these efforts, NAWI is funding the development of Proteuslib to predict the performance and cost of next-generation desalination systems and aid in their design and operation. 
-Through the development of Proteuslib, NAWI is seeking to provide the broader water research community an integrated, 
+As part of these efforts, NAWI is funding the development of WaterTAP to predict the performance and cost of next-generation desalination systems and aid in their design and operation. 
+Through the development of WaterTAP, NAWI is seeking to provide the broader water research community an integrated, 
 open source modeling and simulation capability to evaluate water treatment options and identify high impact opportunities for innovation including novel materials, processes, and networks.
 
 IDAES
 ^^^^^
 
-Proteuslib is based on the `Institute of Design of Advanced Energy Systems (IDAES) Integrated Platform <https://idaes.org/>`_, 
+WaterTAP is based on the `Institute of Design of Advanced Energy Systems (IDAES) Integrated Platform <https://idaes.org/>`_, 
 which is an advanced process systems engineering tool developed by the U.S. Department of Energy. 
 This platform provides significant benefits over traditional modeling approaches because it supports equation-oriented algebraic modeling, 
 open-source and commercial solvers, libraries of process units and property packages, and a diverse set of analysis tools,
@@ -26,7 +26,7 @@ Advantages
 
 WaterTAP has significant advantages over typical modeling approaches including:
 
-* **Modular** – Proteuslib’s modular approach allows users to rapidly assemble components to represent a treatment train and more fully assess the impact of a technology or innovation
+* **Modular** – WaterTAP’s modular approach allows users to rapidly assemble components to represent a treatment train and more fully assess the impact of a technology or innovation
 * **Multi-hierarchical** – WaterTAP provides models with multiple levels of detail thereby allowing a user to select the appropriate relationships and computational demand for their application
 * **Customizable** – WaterTAP allows users to modify the standard models or create custom models to suit their needs
 * **IDAES Capabilities** – WaterTAP includes the advantages of the `IDAES Platform <https://idaes-pse.readthedocs.io/en/stable/user_guide/why_idaes.html>`_. These advantages include: 1) an equation-oriented approach, which greatly benefits simulation and optimization-based analyses by supporting linear, non-linear, and mixed-integer problems as well as providing access to highly efficient derivative-based solvers; and 2) support for advanced capabilities like dynamics, parameter estimation, conceptual design, surrogate modeling, and uncertainty quantification

@@ -99,7 +99,7 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 from idaes.generic_models.unit_models.stoichiometric_reactor import \
     StoichiometricReactor
 
-# Import the Proteuslib objects inherited (includes for the Mixer and Separator unit model
+# Import the WaterTAP objects inherited (includes for the Mixer and Separator unit model
 from watertap.flowsheets.full_treatment_train.model_components import Separator, Mixer
 
 from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType

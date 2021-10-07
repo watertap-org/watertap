@@ -82,7 +82,7 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 # Import the idaes object for the EquilibriumReactor unit model
 from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
 
-# Import the Proteuslib object inherited for the Mixer unit model
+# Import the WaterTAP object inherited for the Mixer unit model
 from watertap.flowsheets.full_treatment_train.model_components import Mixer
 
 # Import costing and financials to test
