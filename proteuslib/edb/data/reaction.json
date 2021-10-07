@@ -553,42 +553,6 @@
     "components": [
       "H2O"
     ]
-  },
-    {
-    "stoichiometry": {
-      "Liq": {
-        "H2O": -1,
-        "H_+": 1,
-        "OH_-": 1
-      }
-    },
-    "heat_of_reaction": "constant_dh_rxn",
-    "equilibrium_constant": "van_t_hoff_aqueous",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.activity",
-    "parameter_data": {
-      "dh_rxn_ref": [
-        {
-          "v": 0,
-          "u": "kJ/mol",
-          "i": 0
-        }
-      ],
-      "k_eq_ref": [
-        { "v":  3.2818735559756347e-24,
-        "u": "mol**2/L**2",
-        "i": 0
-        }
-      ],
-      "T_eq_ref": [
-        {"v": 298, "u": "K", "i": 0}
-      ]
-    },
-    "type": "equilibrium",
-    "name": "H2O_Kw_2",
-    "components": [
-      "H2O"
-    ]
   }
 
 ]
