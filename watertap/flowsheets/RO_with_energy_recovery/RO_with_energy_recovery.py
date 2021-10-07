@@ -48,7 +48,12 @@ import watertap.flowsheets.RO_with_energy_recovery.financials as financials
 
 def main():
     # set up solver
-    solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
+    solver = get_solver(options=
+            {
+                'bound_push': 1e-20,
+                'mu_init': 1e-6,
+                'tol' : 1e-10,
+            })
 
     # build, set, and initialize
     m = build()
@@ -56,7 +61,7 @@ def main():
     initialize_system(m, solver=solver)
 
     # simulate and display
-    solve(m, solver=solver)
+    solve(m, tee=True, solver=solver)
     print('\n***---Simulation results---***')
     display_system(m)
     display_design(m)
@@ -354,7 +359,7 @@ def optimize_set_up(m):
 
 def optimize(m, solver=None):
     # --solve---
-    solve(m, solver=solver)
+    solve(m, tee=True, solver=solver)
 
 def display_system(m):
     print('---system metrics---')
