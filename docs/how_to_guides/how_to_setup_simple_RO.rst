@@ -17,11 +17,11 @@ The example below shows how to setup and initialize a simple RO unit model.
     # Import flowsheet block from IDAES core
     from idaes.core import FlowsheetBlock
     # Import NaCl property model
-    import proteuslib.property_models.NaCl_prop_pack as props
+    import watertap.property_models.NaCl_prop_pack as props
     # Import utility tool for calculating scaling factors
     from idaes.core.util.scaling import calculate_scaling_factors
     # Import RO model
-    from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
+    from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 
 
     # Create a concrete model, flowsheet, and NaCl property parameter block.

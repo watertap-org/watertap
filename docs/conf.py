@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'ProteusLib'
+project = 'WaterTAP'
 copyright = '2021, NAWI'
 author = 'NAWI'
 

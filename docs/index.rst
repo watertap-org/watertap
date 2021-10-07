@@ -1,12 +1,12 @@
 .. index::
-   pair: proteuslib;Home
+   pair: watertap;Home
 
-Welcome to ProteusLib's documentation!
+Welcome to WaterTAP's documentation!
 ======================================
 
-Proteuslib is a National Alliance for Water Innovation (NAWI) funded initiative to create an open-source water treatment model library
+WaterTAP is a National Alliance for Water Innovation (NAWI) funded initiative to create an open-source water treatment model library
 that is compatible with the IDAES Platform, an advanced process systems engineering tool developed by the U.S. Department of Energy.
-Refer :ref:`here<background/what_is_proteuslib:What is ProteusLib>` for more background information.
+Refer :ref:`here<background/what_is_watertap:What is WaterTAP>` for more background information.
 
 Documentation Organization
 --------------------------
@@ -22,7 +22,7 @@ The documentation is organized into five major categories:
 Collaborating Institutions
 --------------------------
 
-The ProteusLib development team is composed of researchers from:
+The WaterTAP development team is composed of researchers from:
 
 * National Energy Technology Laboratory
 * Lawrence Berkeley National Laboratory

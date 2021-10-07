@@ -4,7 +4,7 @@ How to explore a model with parameter sweep
 Overview
 --------
 
-This guide shows you how to use the parameter sweep tool to explore the effect of changing model parameters or decision variables within your ProteusLib model.
+This guide shows you how to use the parameter sweep tool to explore the effect of changing model parameters or decision variables within your WaterTAP model.
 This might be useful, for example, if you have an existing model of a multi-stage treatment train and you'd like to see the effect of varying Pump 1 pressure and Pump 2 pressure independently (where all possible combinations of Pump 1 and Pump 2 pressure will be explicitly tested).
 The type and quantity of parameters to be varied are easily changed following steps like the ones below.
 
@@ -33,13 +33,13 @@ In general you would import your own flowsheet module.
 
     # replace this with your own flowsheet module, e.g.
     # import my_flowsheet_module as mfm
-    import proteuslib.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO_flowsheet
+    import watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO_flowsheet
 
 Once this is done, import the parameter sweep tool
 
 .. testcode::
 
-    from proteuslib.tools.parameter_sweep import parameter_sweep, LinearSample
+    from watertap.tools.parameter_sweep import parameter_sweep, LinearSample
 
 Conceptually, regardless of the number of iterations necessary to test each possible combination of variables, it is only necessary to build, simulate, and set up the model once.
 Thus, these steps are left to the user and handled outside the parameter sweep function.
@@ -103,6 +103,6 @@ Note that there are additional keyword arguments that can be passed to this func
 Function Documentation
 ----------------------
 
-.. automodule :: proteuslib.tools.parameter_sweep
+.. automodule :: watertap.tools.parameter_sweep
    :noindex:
    :members:

@@ -7,9 +7,9 @@ This nanofiltration (NF) unit model
    * assumes isothermal conditions
 
 .. index::
-   pair: proteuslib.flowsheets.full_treatment_train.model_components.nanofiltration_ZO;nanofiltration_ZO
+   pair: watertap.flowsheets.full_treatment_train.model_components.nanofiltration_ZO;nanofiltration_ZO
 
-.. currentmodule:: proteuslib.flowsheets.full_treatment_train.model_components.nanofiltration_ZO
+.. currentmodule:: watertap.flowsheets.full_treatment_train.model_components.nanofiltration_ZO
 
 Degrees of Freedom
 ------------------
@@ -78,7 +78,7 @@ Equations
 Class Documentation
 -------------------
 
-.. automodule:: proteuslib.flowsheets.full_treatment_train.model_components.nanofiltration_ZO
+.. automodule:: watertap.flowsheets.full_treatment_train.model_components.nanofiltration_ZO
     :members:
     :noindex:
 

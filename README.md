@@ -6,7 +6,7 @@ WaterTAP is developed as part of the [National Alliance for Water Innovation](ht
 ## Build Status
 
 [![Checks](https://github.com/watertap-org/watertap/actions/workflows/checks.yml/badge.svg)](https://github.com/watertap-org/watertap/actions/workflows/checks.yml)
-[![Documentation Status](https://readthedocs.org/projects/proteuslib/badge/?version=latest)](https://proteuslib.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/watertap/badge/?version=latest)](https://watertap.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/watertap-org/watertap/branch/main/graph/badge.svg)](https://codecov.io/gh/watertap-org/watertap)  
 [![GitHub contributors](https://img.shields.io/github/contributors/watertap-org/watertap.svg)](https://github.com/watertap-org/watertap/graphs/contributors)  
 [![Merged PRs](https://img.shields.io/github/issues-pr-closed-raw/watertap-org/watertap.svg?label=merged+PRs)](https://github.com/watertap-org/watertap/pulls?q=is:pr+is:merged)  
@@ -14,11 +14,11 @@ WaterTAP is developed as part of the [National Alliance for Water Innovation](ht
 
 ## Getting started
 
-To quickly install and start using WaterTAP, head over to the [Getting Started](https://proteuslib.readthedocs.io/en/latest/getting_started/install.html#general-installation) section of the documentation.
+To quickly install and start using WaterTAP, head over to the [Getting Started](https://watertap.readthedocs.io/en/latest/getting_started/install.html#general-installation) section of the documentation.
 
 ## Documentation
 
-The WaterTAP documentation is available online at <https://proteuslib.readthedocs.io>.
+The WaterTAP documentation is available online at <https://watertap.readthedocs.io>.
 ## Developer notes
 
-Refer to the [Getting Started for Developers](https://proteuslib.readthedocs.io/en/latest/getting_started/install.html#for-proteuslib-developers) section of the documentation.
+Refer to the [Getting Started for Developers](https://watertap.readthedocs.io/en/latest/getting_started/install.html#for-watertap-developers) section of the documentation.
