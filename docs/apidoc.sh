@@ -4,4 +4,4 @@ printf -- '-- Removing current apidoc content\n'
 rm -rf apidoc
 printf -- '-- Running sphinx-apidoc command\n'
 export SPHINX_APIDOC_OPTIONS=members,show-inheritance
-sphinx-apidoc ../proteuslib "../proteuslib/*tests" -o apidoc
+sphinx-apidoc ../watertap "../watertap/*tests" -o apidoc
