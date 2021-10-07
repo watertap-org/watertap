@@ -12,4 +12,3 @@ sphinx:
 python:
    install:
    - requirements: requirements-dev.txt
- 
