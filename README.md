@@ -1,7 +1,7 @@
-# ProteusLib
-The ProteusLib development repository.
+# WaterTAP
+The WaterTAP development repository.
 
-ProteusLib is developed as part of the [National Alliance for Water Innovation](https://nawihub.org/) project.
+WaterTAP is developed as part of the [National Alliance for Water Innovation](https://nawihub.org/) project.
 
 ## Build Status
 
@@ -14,11 +14,11 @@ ProteusLib is developed as part of the [National Alliance for Water Innovation](
 
 ## Getting started
 
-To quickly install and start using ProteusLib, head over to the [Getting Started](https://proteuslib.readthedocs.io/en/latest/getting_started/install.html#general-installation) section of the documentation.
+To quickly install and start using WaterTAP, head over to the [Getting Started](https://proteuslib.readthedocs.io/en/latest/getting_started/install.html#general-installation) section of the documentation.
 
 ## Documentation
 
-The ProteusLib documentation is available online at <https://proteuslib.readthedocs.io>.
+The WaterTAP documentation is available online at <https://proteuslib.readthedocs.io>.
 ## Developer notes
 
 Refer to the [Getting Started for Developers](https://proteuslib.readthedocs.io/en/latest/getting_started/install.html#for-proteuslib-developers) section of the documentation.
