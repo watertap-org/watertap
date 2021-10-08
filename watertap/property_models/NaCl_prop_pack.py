@@ -738,7 +738,7 @@ class NaClStateBlockData(StateBlockData):
 
         # transforming constraints
         # property relationships with no index, simple constraint
-        v_str_lst_simple = ['osm_coeff', 'pressure_osm']
+        v_str_lst_simple = ('osm_coeff', 'pressure_osm')
         for v_str in v_str_lst_simple:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
@@ -747,14 +747,14 @@ class NaClStateBlockData(StateBlockData):
                 iscale.constraint_scaling_transform(c, sf)
 
         # property relationships with phase index, but simple constraint
-        for v_str in ('flow_vol_phase', 'visc_d_phase', 'diffus_phase', 'enth_mass_phase'):
+        for v_str in ('flow_vol_phase', 'visc_d_phase', 'diffus_phase'):
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
                 sf = iscale.get_scaling_factor(v['Liq'], default=1, warning=True)
                 c = getattr(self, 'eq_' + v_str)
                 iscale.constraint_scaling_transform(c, sf)
 
-        for v_str in ('dens_mass_phase',):
+        for v_str in ('dens_mass_phase', 'enth_mass_phase'):
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
                 sf = iscale.get_scaling_factor(v['Liq'], default=1, warning=True)

@@ -1290,7 +1290,7 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         for ind, c in self.eq_permeate_production.items():
             sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf/10.)
 
         for ind, c in self.eq_flux_io.items():
             sf = iscale.get_scaling_factor(self.flux_mass_io_phase_comp[ind])
@@ -1298,7 +1298,7 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         for ind, c in self.eq_connect_mass_transfer.items():
             sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf/10.)
 
         for ind, c in self.eq_connect_enthalpy_transfer.items():
             sf = iscale.get_scaling_factor(self.feed_side.enthalpy_transfer[ind])
@@ -1356,7 +1356,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         if hasattr(self, 'eq_N_Re_io'):
             for ind, c in self.eq_N_Re_io.items():
                 sf = iscale.get_scaling_factor(self.N_Re_io[ind])
-                iscale.constraint_scaling_transform(c, sf*1e3)
+                iscale.constraint_scaling_transform(c, sf*1e4)
 
         if hasattr(self, 'eq_N_Sc_io'):
             for ind, c in self.eq_N_Sc_io.items():
