@@ -1,9 +1,9 @@
 How to scale a model
 --------------------
 
-In ProteusLib, models are scaled in two ways: 1) passing scaling factors for each variable to the solver, and 2) transforming each constraint on the model. 
+In WaterTAP, models are scaled in two ways: 1) passing scaling factors for each variable to the solver, and 2) transforming each constraint on the model. 
 The method to pass scaling factors for each variable to the solver depends on the solver, but the methods are generally similar. 
-Here we describe how to scale models for the solver IPOPT, which is the supported and default solver for ProteusLib.
+Here we describe how to scale models for the solver IPOPT, which is the supported and default solver for WaterTAP.
 
 Scaling a model in four steps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -33,8 +33,8 @@ This object is a Pyomo Suffix and can be displayed to show what variables have s
 
    from pyomo.environ import ConcreteModel
    from idaes.core import FlowsheetBlock
-   import proteuslib.property_models.NaCl_prop_pack as props
-   from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
+   import watertap.property_models.NaCl_prop_pack as props
+   from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 
    m = ConcreteModel()
    m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -89,8 +89,8 @@ A user can achieve this by setting the default scaling at the property Parameter
 
    from pyomo.environ import ConcreteModel
    from idaes.core import FlowsheetBlock
-   import proteuslib.property_models.NaCl_prop_pack as props
-   from proteuslib.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
+   import watertap.property_models.NaCl_prop_pack as props
+   from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 
    m = ConcreteModel()
    m.fs = FlowsheetBlock(default={"dynamic": False})

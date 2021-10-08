@@ -1,5 +1,5 @@
 ###############################################################################
-# ProteusLib Copyright (c) 2021, The Regents of the University of California,
+# WaterTAP Copyright (c) 2021, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National
 # Laboratory, National Renewable Energy Laboratory, and National Energy
 # Technology Laboratory (subject to receipt of any required approvals from
@@ -7,7 +7,7 @@
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license
 # information, respectively. These files are also available online at the URL
-# "https://github.com/nawi-hub/proteuslib/"
+# "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
 """
@@ -44,8 +44,8 @@ from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.core import FlowsheetBlock
 
-from proteuslib.edb.db_api import ElectrolyteDB
-from proteuslib.edb.error import Error as EDBError
+from watertap.edb.db_api import ElectrolyteDB
+from watertap.edb.error import Error as EDBError
 
 # Produce similar output to IDAES logger
 _log = logging.getLogger("carbonic_acid_example")
@@ -256,7 +256,7 @@ def main():
     import logging
     # DEBUG
     #_log.setLevel(logging.DEBUG)
-    #idaeslog.getLogger("idaes.proteuslib.edb").setLevel(logging.DEBUG)
+    #idaeslog.getLogger("idaes.watertap.edb").setLevel(logging.DEBUG)
     _log.setLevel(logging.INFO)
 
     component_names = ["H2O", "H +",  "OH -", "H2CO3", "HCO3 -", "CO3 2-", "CO2"]

@@ -1,7 +1,7 @@
 License Agreement
 =================
 
-ProteusLib Copyright (c) 2021, The Regents of the University of California,
+WaterTAP Copyright (c) 2021, The Regents of the University of California,
 through Lawrence Berkeley National Laboratory, Oak Ridge National
 Laboratory, National Renewable Energy Laboratory, and National Energy
 Technology Laboratory (subject to receipt of any required approvals from

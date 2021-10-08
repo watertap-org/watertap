@@ -1,3 +1,3 @@
-.. _proteuslib-copyright:
+.. _watertap-copyright:
 
 .. include:: ../COPYRIGHT.md

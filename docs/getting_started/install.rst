@@ -1,4 +1,4 @@
-Installing ProteusLib
+Installing WaterTAP
 =====================
 
 Introduction
@@ -16,26 +16,26 @@ Once a Conda environment is *activated*, using the ``conda activate`` command in
 For these reasons, Conda environments are especially useful to install and manage multiple projects (and/or multiple *versions* of the same project) on the same computer with minimal effort,
 as they provide a way to seamlessly switch between different projects without conflicts.
 
-Using Conda environments is not mandatory to be able to install and use ProteusLib; however, it is strongly recommended.
+Using Conda environments is not mandatory to be able to install and use WaterTAP; however, it is strongly recommended.
 
 To use Conda environments, the ``conda`` package manager is required. Refer to the `Conda installation guide <https://docs.conda.io/projects/conda/en/latest/user-guide/install/>`_ for detailed steps on how to install Conda for your operating system.
 
 General installation
 --------------------
 
-If you are going to use ProteusLib's functionality, but *do not* plan to contribute to ProteusLib's codebase, choose this option.
+If you are going to use WaterTAP's functionality, but *do not* plan to contribute to WaterTAP's codebase, choose this option.
 
-#. Create a Conda environment (in this example, named ``proteuslib``) where ProteusLib and its runtime dependencies will be installed:
-
-	.. code-block:: shell
-
-		conda create --name proteuslib --yes python=3.8 pip=21.1
-
-#. Activate the ``proteuslib`` environment:
+#. Create a Conda environment (in this example, named ``watertap``) where WaterTAP and its runtime dependencies will be installed:
 
 	.. code-block:: shell
 
-		conda activate proteuslib
+		conda create --name watertap --yes python=3.8 pip=21.1
+
+#. Activate the ``watertap`` environment:
+
+	.. code-block:: shell
+
+		conda activate watertap
 	
 	To verify that the correct environment is active, run the following command:
 
@@ -47,29 +47,29 @@ If you are going to use ProteusLib's functionality, but *do not* plan to contrib
 
 	.. important:: The ``conda activate`` command described above must be run each time a new terminal/console session is started.
 
-#. Install ProteusLib using ``pip``:
+#. Install WaterTAP using ``pip``:
 
 	.. code-block:: shell
 
-		pip install proteuslib
+		pip install watertap
 
-#. To verify that the installation was successful, open a Python interpreter and try importing some of ProteusLib's modules, e.g.:
+#. To verify that the installation was successful, open a Python interpreter and try importing some of WaterTAP's modules, e.g.:
 
 	.. code-block:: shell
 
 		python
-		>>> from proteuslib.unit_models import *
+		>>> from watertap.unit_models import *
 
 .. _install-idaes-ext:
 
 Installing solvers distributed through IDAES Extensions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-After installing ProteusLib, the ``idaes get-extensions`` command can be used to automatically install the solvers distributed as part of the IDAES Extensions.
+After installing WaterTAP, the ``idaes get-extensions`` command can be used to automatically install the solvers distributed as part of the IDAES Extensions.
 
 .. important:: Depending on your operating system, additional steps might be needed. For more information, refer to the `IDAES installation guide <https://idaes-pse.readthedocs.io/en/stable/getting_started/index.html>`_.
 
-From the same environment where ProteusLib was installed, run:
+From the same environment where WaterTAP was installed, run:
 
     .. code-block:: shell
 
@@ -93,7 +93,7 @@ To install the EDB, follow these steps:
    select the correct operating system and follow the instructions to install the server.
 
 
-2. **Load data**. Some electrolyte data is distributed with ProteusLib to "bootstrap" the EDB.
+2. **Load data**. Some electrolyte data is distributed with WaterTAP to "bootstrap" the EDB.
    To load it, use the ``edb load`` command --- part of the :ref:`EDB command-line tools <edb-cli>` ---
    with the bootstrap option, from a shell or command window::
 
@@ -128,51 +128,51 @@ To install the EDB, follow these steps:
        Then, select the "electrolytedb" database. The result should show three collections with some records loaded in
        each, as in :ref:`this screen <screenshot-mongodb-compass-edb>` .
 
-Running the ProteusLib test suite
+Running the WaterTAP test suite
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-#. To run the ProteusLib test suite, first install the optional testing dependencies using pip:
+#. To run the WaterTAP test suite, first install the optional testing dependencies using pip:
 
     .. code-block:: shell
 
-        pip install "proteuslib[testing]"
+        pip install "watertap[testing]"
 
-#. Then, run the following command to run the complete ProteusLib test suite:
+#. Then, run the following command to run the complete WaterTAP test suite:
 
     .. code-block:: shell
 
-        pytest --pyargs proteuslib
+        pytest --pyargs watertap
 
 #. (Optional) To see a list of available command-line options, run:
 
     .. code-block:: shell
     
-        pytest --pyargs proteuslib --help
+        pytest --pyargs watertap --help
 
 .. note:: Some tests will be skipped (denoted by an ``s`` symbol). This is to be expected, as some of the tests are only applicable within a developer environment.
 
-For ProteusLib developers
+For WaterTAP developers
 -------------------------
 
-If you plan to contribute to ProteusLib's codebase, choose this option.
+If you plan to contribute to WaterTAP's codebase, choose this option.
 
-.. note:: Typically, *contributing to ProteusLib* will involve opening a Pull Request (PR) in ProteusLib's repository. For more information, refer to :ref:`developer-guide`.
+.. note:: Typically, *contributing to WaterTAP* will involve opening a Pull Request (PR) in WaterTAP's repository. For more information, refer to :ref:`developer-guide`.
 
-#. Create a Conda environment (in this example, named ``proteuslib-dev``) where ProteusLib and all dependendencies needed for development will be installed, then activate it:
+#. Create a Conda environment (in this example, named ``watertap-dev``) where WaterTAP and all dependendencies needed for development will be installed, then activate it:
 
 	.. code-block:: shell
 
-		conda create --name proteuslib-dev --yes python=3.8 pip=21.1 && conda activate proteuslib-dev
+		conda create --name watertap-dev --yes python=3.8 pip=21.1 && conda activate watertap-dev
 
 	.. note:: For more information about using Conda environments, refer to the ":ref:`about-conda`" section above.
 
-#. Clone the ProteusLib repository to your local development machine using ``git clone``, then enter the newly created ``proteuslib`` subdirectory:
+#. Clone the WaterTAP repository to your local development machine using ``git clone``, then enter the newly created ``watertap`` subdirectory:
 
 	.. code-block:: shell
 
-		git clone https://github.com/nawi-hub/proteuslib && cd proteuslib
+		git clone https://github.com/watertap-org/watertap && cd watertap
 
-#. Install ProteusLib and the development dependencies using ``pip`` and the ``requirements-dev.txt`` file:
+#. Install WaterTAP and the development dependencies using ``pip`` and the ``requirements-dev.txt`` file:
 
 	.. code-block:: shell
 
@@ -180,7 +180,7 @@ If you plan to contribute to ProteusLib's codebase, choose this option.
 
 #. If needed, follow the steps described in the ":ref:`install-idaes-ext`" section above to install solvers distributed through IDAES Extensions.
 
-#. To verify that the installation was successful, try running the ProteusLib test suite using ``pytest``:
+#. To verify that the installation was successful, try running the WaterTAP test suite using ``pytest``:
 
 	.. code-block:: shell
 
@@ -191,7 +191,7 @@ If you plan to contribute to ProteusLib's codebase, choose this option.
 Installing in existing development environments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-When either the ``proteuslib`` package or one of its dependencies are installed, it should be possible to update those packages within an existing developer environment.
+When either the ``watertap`` package or one of its dependencies are installed, it should be possible to update those packages within an existing developer environment.
 
 .. important:: In case of any issue or unexpected behavior when updating an existing environment,
     first try to see if the issues are solved if a freshly created environment is used instead.
@@ -200,20 +200,20 @@ When either the ``proteuslib`` package or one of its dependencies are installed,
 
     .. code-block:: shell
 
-        conda activate proteuslib-dev
+        conda activate watertap-dev
 
-#. Enter the directory where your local clone of the ProteusLib repository is located, and pull the latest changes using ``git pull``:
+#. Enter the directory where your local clone of the WaterTAP repository is located, and pull the latest changes using ``git pull``:
 
     .. code-block:: shell
         
         cd /path/to/your/clone
         git pull
 
-#. Uninstall the version of ``proteuslib`` that's currently installed in the environment:
+#. Uninstall the version of ``watertap`` that's currently installed in the environment:
 
     .. code-block:: shell
 
-        pip uninstall proteuslib
+        pip uninstall watertap
 
 #. Run the ``pip install`` command targeting the ``requirements-dev.txt`` file.
 
@@ -313,7 +313,7 @@ for an example.
 Note that at the bottom of the file you should add the ``.. automodule::`` directive that will insert the
 documentation for your module as generated from the source code (and docstrings). This generally looks like this::
 
-    .. automodule:: proteuslib.<package_name>.<module_name>
+    .. automodule:: watertap.<package_name>.<module_name>
         :members:
         :noindex:
 

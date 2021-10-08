@@ -18,7 +18,7 @@ and the expected structure and fields of the *component* and *reaction* data is 
 `JSON Schema <https://json-schema.org>`_. Validation using those schemas is built into the API (though it can be disabled).
 
 To interface with the `IDAES Core Modeling Framework <https://idaes-pse.readthedocs.io/en/stable/user_guide/concepts.html>`_
-(IDAES-CMF, which underlies ProteusLib), add components and reactions to a "base" object and fetch the result as a Python 
+(IDAES-CMF, which underlies WaterTAP), add components and reactions to a "base" object and fetch the result as a Python 
 `dict`. This result can be used to configure and build IDAES objects (`ParameterBlocks`, `ReactionBlocks`, etc.). 
 The API also has methods to construct component and reaction objects from IDAES configurations.
 
@@ -38,7 +38,7 @@ Database API
 ^^^^^^^^^^^^
 Connect to the database and create, read, update and delete its contents.
 
-.. automodule:: proteuslib.edb.db_api
+.. automodule:: watertap.edb.db_api
     :members: ElectrolyteDB
     :noindex:
 
@@ -46,7 +46,7 @@ Data object API
 ^^^^^^^^^^^^^^^
 Data models for components and reactions, including conversion to IDAES config objects.
 
-.. automodule:: proteuslib.edb.data_model
+.. automodule:: watertap.edb.data_model
     :members: Base, Component, Reaction, Result
     :noindex:
 
