@@ -744,28 +744,18 @@ class TestSeawaterAlkalinity():
     @pytest.mark.unit
     def test_stats_inherent(self, inherent_reactions_config):
         model = inherent_reactions_config
-        assert (number_variables(model) == 268)
-        assert (number_total_constraints(model) == 59)
+        assert (number_variables(model) == 281)
+        assert (number_total_constraints(model) == 72)
 
     @pytest.mark.unit
     def test_stats_equilibrium(self, equilibrium_reactions_config):
         model = equilibrium_reactions_config
-        assert (number_variables(model) == 220)
-        assert (number_total_constraints(model) == 59)
+        assert (number_variables(model) == 233)
+        assert (number_total_constraints(model) == 72)
 
     @pytest.mark.component
     def test_scaling_inherent(self, inherent_reactions_config):
         model = inherent_reactions_config
-
-        # Iterate through the reactions to set appropriate eps values
-        factor = 1e-4
-        for rid in model.fs.thermo_params.inherent_reaction_idx:
-            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
-            # Want to set eps in some fashion similar to this
-            if scale < 1e-16:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*factor
-            else:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
 
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
@@ -799,17 +789,6 @@ class TestSeawaterAlkalinity():
     @pytest.mark.component
     def test_scaling_equilibrium(self, equilibrium_reactions_config):
         model = equilibrium_reactions_config
-
-        # Equilibrium reactions have eps in the 'rxn_params'
-
-        factor = 1e-4
-        for rid in model.fs.rxn_params.equilibrium_reaction_idx:
-            scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
-            # Want to set eps in some fashion similar to this
-            if scale < 1e-16:
-                model.fs.rxn_params.component("reaction_"+rid).eps.value = scale*factor
-            else:
-                model.fs.rxn_params.component("reaction_"+rid).eps.value = 1e-16*factor
 
         for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
@@ -850,8 +829,12 @@ class TestSeawaterAlkalinity():
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
-        solver.options['bound_push'] = 1e-10
-        solver.options['mu_init'] = 1e-6
+        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
+        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0.001)
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1.001)
+
+        solver.options['bound_push'] = 1e-5
+        solver.options['mu_init'] = 1e-3
         model.fs.unit.initialize(optarg=solver.options)
 
         fin_fixed_vars = fixed_variables_set(model)
@@ -869,8 +852,12 @@ class TestSeawaterAlkalinity():
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
-        solver.options['bound_push'] = 1e-10
-        solver.options['mu_init'] = 1e-6
+        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
+        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0.001)
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1.001)
+
+        solver.options['bound_push'] = 1e-5
+        solver.options['mu_init'] = 1e-3
         model.fs.unit.initialize(optarg=solver.options)
 
         fin_fixed_vars = fixed_variables_set(model)
@@ -884,7 +871,7 @@ class TestSeawaterAlkalinity():
     @pytest.mark.component
     def test_solve_inherent(self, inherent_reactions_config):
         model = inherent_reactions_config
-        solver.options['max_iter'] = 2
+        solver.options['max_iter'] = 20
         results = solver.solve(model)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
@@ -892,7 +879,7 @@ class TestSeawaterAlkalinity():
     @pytest.mark.component
     def test_solve_equilibrium(self, equilibrium_reactions_config):
         model = equilibrium_reactions_config
-        solver.options['max_iter'] = 2
+        solver.options['max_iter'] = 20
         results = solver.solve(model)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
@@ -926,13 +913,12 @@ class TestSeawaterAlkalinity():
         carbonate_alk += value(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"])*total_molar_density
         carbonate_alk -= value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])*total_molar_density
         carbonate_alk = carbonate_alk*50000
-        assert pytest.approx(79.3897375619494, rel=1e-5) == carbonate_alk
+        assert pytest.approx(79.389737, rel=1e-4) == carbonate_alk
 
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-        assert pytest.approx(8.3176417, rel=1e-5) == pH
-        assert pytest.approx(5.6916706, rel=1e-5) == pOH
-        assert pytest.approx(0.97986, rel=1e-5) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
+        assert pytest.approx(8.31763834, rel=1e-4) == pH
+        assert pytest.approx(5.6916662, rel=1e-4) == pOH
 
     @pytest.mark.component
     def test_solution_equilibrium(self, equilibrium_reactions_config):
@@ -963,10 +949,9 @@ class TestSeawaterAlkalinity():
         carbonate_alk += value(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"])*total_molar_density
         carbonate_alk -= value(model.fs.unit.outlet.mole_frac_comp[0, "H_+"])*total_molar_density
         carbonate_alk = carbonate_alk*50000
-        assert pytest.approx(79.3897375619494, rel=1e-5) == carbonate_alk
+        assert pytest.approx(79.389737, rel=1e-4) == carbonate_alk
 
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
-        assert pytest.approx(8.3176417, rel=1e-5) == pH
-        assert pytest.approx(5.6916706, rel=1e-5) == pOH
-        assert pytest.approx(0.97986, rel=1e-5) == value(model.fs.unit.outlet.mole_frac_comp[0.0, 'H2O'])
+        assert pytest.approx(8.31763834, rel=1e-4) == pH
+        assert pytest.approx(5.6916662, rel=1e-4) == pOH
