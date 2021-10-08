@@ -930,7 +930,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver and options
         if optarg is None:
-            optarg = {'bound_push': 1e-10}
+            optarg = {'bound_push': 1e-6}
         opt = get_solver(solver, optarg)
 
         # assumptions
@@ -1431,4 +1431,3 @@ class ReverseOsmosisData(UnitModelBlockData):
         for (t, j), c in self.eq_rejection_phase_comp.items():
             sf = iscale.get_scaling_factor(self.rejection_phase_comp[t, 'Liq', j])
             iscale.constraint_scaling_transform(c, sf)
-

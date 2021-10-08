@@ -1156,7 +1156,13 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         super().calculate_scaling_factors()
         # setting scaling factors for variables
         for j in self.config.property_package.component_list:
-            iscale.set_scaling_factor(self.permeate_side[0, 0].flow_mass_phase_comp['Liq', j], 0)
+            if j in self.config.property_package.solvent_set:
+                iscale.set_scaling_factor(self.permeate_side[0, 0].flow_mass_phase_comp['Liq', j], 1e+5)
+            elif j in self.config.property_package.solute_set:
+                iscale.set_scaling_factor(self.permeate_side[0, 0].flow_mass_phase_comp['Liq', j], 1e+5)
+            else:
+                raise RuntimeError(f"Unexpected non-solvent and non-solute component {j}")
+
         # these variables should have user input, if not there will be a warning
         if iscale.get_scaling_factor(self.area) is None:
             sf = iscale.get_scaling_factor(self.area, default=1, warning=True)
@@ -1273,8 +1279,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          * iscale.get_scaling_factor(self.width)
                     comp = self.config.property_package.get_component(j)
                     if comp.is_solute:
-                        sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
-                    iscale.set_scaling_factor(v, sf)
+                        sf *= 1e-1  # solute typically has mass transfer 2 orders magnitude less than flow
+                    iscale.set_scaling_factor(v, sf/100.)
 
         for (t, x, p, j), v in self.mass_transfer_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
