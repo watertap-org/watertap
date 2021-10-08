@@ -234,7 +234,7 @@ def run_0DRO_Chlorination_flowsheet_example(with_seq_decomp=True, RO_level='deta
     model.fs.simple_naocl_unit.free_chlorine.fix(2)
     model.fs.RO_to_Chlor.OCl_con.deactivate()
 
-    solve_with_user_scaling(model, tee=True)
+    solve_with_user_scaling(model, tee=True, bound_push=1e-5, mu_init=1e-3)
 
     model.fs.RO.inlet.display()
     model.fs.RO.permeate.display()
@@ -289,7 +289,7 @@ def run_0DRO_Chlorination_flowsheet_optimization_example(with_seq_decomp=True, R
     except:
         pass
 
-    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+    solve_with_user_scaling(model, tee=True, bound_push=1e-5, mu_init=1e-3)
 
     model.fs.RO.area.display()
     model.fs.RO.permeate_side.properties_mixed[0].flow_vol.display()
