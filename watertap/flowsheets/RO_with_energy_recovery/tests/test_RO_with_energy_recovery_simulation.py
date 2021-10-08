@@ -44,9 +44,7 @@ build, set_operating_conditions, initialize_system, solve, optimize_set_up, opti
 
 solver = get_solver(options=
         {
-            'bound_push': 1e-20,
-            'mu_init': 1e-6,
-            'tol' : 1e-10,
+            'bound_push': 1e-10,
         })
 
 # -----------------------------------------------------------------------------

@@ -50,9 +50,7 @@ def main():
     # set up solver
     solver = get_solver(options=
             {
-                'bound_push': 1e-20,
-                'mu_init': 1e-6,
-                'tol' : 1e-10,
+                'bound_push': 1e-10,
             })
 
     # build, set, and initialize
