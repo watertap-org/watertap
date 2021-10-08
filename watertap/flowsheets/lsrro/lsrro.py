@@ -344,7 +344,7 @@ def initialize(m, verbose=False, solver=None):
     # ---initializing---
     # set up solvers
     if solver is None:
-        solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
+        solver = get_solver(options={'bound_push': 1e-10})
 
     optarg = solver.options
     do_initialization_pass(m, optarg=optarg, guess_mixers=True)
@@ -369,7 +369,7 @@ def initialize(m, verbose=False, solver=None):
 def solve(m, solver=None, tee=False, raise_on_failure=False):
     # ---solving---
     if solver is None:
-        solver = get_solver(options={'nlp_scaling_method':'user-scaling'})
+        solver = get_solver(options={'bound_push': 1e-10})
 
     results = solver.solve(m, tee=tee)
     if check_optimal_termination(results):

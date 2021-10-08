@@ -256,8 +256,8 @@ class TestLSRRO_1Stage(_TestLSRRO):
 
     number_of_stages = 1
 
-    number_of_variables = 291
-    number_of_constraints = 190
+    number_of_variables = 290
+    number_of_constraints = 189
 
     display_system = \
 """----system metrics----
@@ -331,8 +331,8 @@ class TestLSRRO_2Stage(_TestLSRRO):
 
     number_of_stages = 2
 
-    number_of_variables = 536
-    number_of_constraints = 380
+    number_of_variables = 534
+    number_of_constraints = 378
 
     display_system = \
 """----system metrics----
@@ -416,8 +416,8 @@ class TestLSRRO_3Stage(_TestLSRRO):
 
     number_of_stages = 3
 
-    number_of_variables = 781
-    number_of_constraints = 570
+    number_of_variables = 778
+    number_of_constraints = 567
 
     display_system = \
 """----system metrics----
