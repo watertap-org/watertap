@@ -42,10 +42,7 @@ from watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import 
 build, set_operating_conditions, initialize_system, solve, optimize_set_up, optimize, display_system, display_state, display_design)
 
 
-solver = get_solver(options=
-        {
-            'bound_push': 1e-8,
-        })
+solver = get_solver(options={'bound_push': 1e-8})
 
 # -----------------------------------------------------------------------------
 class TestEnergyRecoverySystem:

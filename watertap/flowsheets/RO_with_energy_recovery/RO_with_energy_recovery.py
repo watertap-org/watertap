@@ -48,10 +48,7 @@ import watertap.flowsheets.RO_with_energy_recovery.financials as financials
 
 def main():
     # set up solver
-    solver = get_solver(options=
-            {
-                'bound_push': 1e-8,
-            })
+    solver = get_solver(options={'bound_push': 1e-8})
 
     # build, set, and initialize
     m = build()
@@ -59,7 +56,7 @@ def main():
     initialize_system(m, solver=solver)
 
     # simulate and display
-    solve(m, tee=True, solver=solver)
+    solve(m, solver=solver)
     print('\n***---Simulation results---***')
     display_system(m)
     display_design(m)
@@ -357,7 +354,7 @@ def optimize_set_up(m):
 
 def optimize(m, solver=None):
     # --solve---
-    solve(m, tee=True, solver=solver)
+    solve(m, solver=solver)
 
 def display_system(m):
     print('---system metrics---')
