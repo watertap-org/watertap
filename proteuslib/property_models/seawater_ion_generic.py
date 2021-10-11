@@ -12,8 +12,9 @@
 ###############################################################################
 """
 Artificial seawater properties comprising Na+, Cl-, Ca_2+, SO4_2-, Mg_2+
+Equation of state: eNRTL
 
-eNRTL property configuration dicts for synthetic hard water
+eNRTL property configuration dicts for synthetic hard water based on [1]
 
 References:
 
