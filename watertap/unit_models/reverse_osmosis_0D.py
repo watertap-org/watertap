@@ -1037,9 +1037,8 @@ class ReverseOsmosisData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Solve unit
-        #with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        #    res = opt.solve(blk, tee=slc.tee)
-        res = opt.solve(blk, tee=True)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
         check_solve(res, checkpoint='Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
         # ---------------------------------------------------------------------
         # Release Inlet state
