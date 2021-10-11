@@ -673,7 +673,7 @@ class NaClStateBlockData(StateBlockData):
         if self.is_property_constructed('pressure_osm'):
             if iscale.get_scaling_factor(self.pressure_osm) is None:
                 iscale.set_scaling_factor(self.pressure_osm,
-                                          iscale.get_scaling_factor(self.pressure)*1.)
+                                          iscale.get_scaling_factor(self.pressure))
 
         if self.is_property_constructed('mass_frac_phase_comp'):
             for j in self.params.component_list:
