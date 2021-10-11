@@ -226,8 +226,8 @@ class _TestLSRRO:
         assert captured.out == self.display_state
 
     @pytest.mark.component
-    def test_optimize_set_up(self, model):
-        optimize_set_up(model)
+    def test_optimize_set_up(self, model, optimization_data):
+        optimize_set_up(model, water_recovery=optimization_data[model.fs.water_recovery])
         fs = model.fs
 
         for pump in fs.PrimaryPumps.values():
