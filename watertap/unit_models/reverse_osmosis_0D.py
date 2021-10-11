@@ -930,7 +930,7 @@ class ReverseOsmosisData(UnitModelBlockData):
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver and options
         if optarg is None:
-            optarg = {'bound_push': 1e-6}
+            optarg = {'bound_push': 1e-8}
         opt = get_solver(solver, optarg)
 
         # assumptions

@@ -34,7 +34,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver(options={'bound_push':1e-10})
+solver = get_solver(options={'bound_push':1e-8})
 
 
 # -----------------------------------------------------------------------------

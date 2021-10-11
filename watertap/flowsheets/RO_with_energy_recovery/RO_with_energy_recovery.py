@@ -50,7 +50,7 @@ def main():
     # set up solver
     solver = get_solver(options=
             {
-                'bound_push': 1e-10,
+                'bound_push': 1e-8,
             })
 
     # build, set, and initialize
@@ -158,7 +158,7 @@ def build():
 
 def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=None):
     if solver is None:
-        solver = get_solver(options={'bound_push': 1e-10})
+        solver = get_solver(options={'bound_push': 1e-8})
 
     # ---specifications---
     # feed
@@ -263,14 +263,14 @@ def calculate_operating_pressure(feed_state_block=None, over_pressure=0.15,
 
 def solve(blk, solver=None, tee=False):
     if solver is None:
-        solver = get_solver(options={'bound_push': 1e-10})
+        solver = get_solver(options={'bound_push': 1e-8})
     results = solver.solve(blk, tee=tee)
     assert_optimal_termination(results)
 
 
 def initialize_system(m, solver=None):
     if solver is None:
-        solver = get_solver(options={'bound_push': 1e-10})
+        solver = get_solver(options={'bound_push': 1e-8})
     optarg = solver.options
 
     # ---initialize RO---
