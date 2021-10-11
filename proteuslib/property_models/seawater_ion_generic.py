@@ -25,7 +25,8 @@ Vol. 276.
 
 from pyomo.environ import Param, units as pyunits
 
-from idaes.core import (AqueousPhase,
+from idaes.core import (LiquidPhase,
+                        AqueousPhase,
                         Solvent,
                         Apparent,
                         Anion,

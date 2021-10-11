@@ -44,7 +44,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the proteuslib development
     # "idaes-pse>=1.11.0"
-    "idaes-pse @ https://github.com/IDAES/idaes-pse/archive/refs/pull/545/head.zip"
+    "idaes-pse @ https://github.com/IDAES/idaes-pse/archive/main.zip"
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
