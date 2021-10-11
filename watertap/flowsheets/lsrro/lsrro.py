@@ -42,7 +42,7 @@ import watertap.property_models.NaCl_prop_pack as props
 
 
 
-def main(number_of_stages):
+def main(number_of_stages, water_recovery=None):
     m = build(number_of_stages)
     set_operating_conditions(m)
     initialize(m)
@@ -52,7 +52,7 @@ def main(number_of_stages):
     display_design(m)
     display_state(m)
 
-    optimize_set_up(m)
+    optimize_set_up(m, water_recovery)
     solve(m)
     print('\n***---Optimization results---***')
     display_system(m)
@@ -489,8 +489,10 @@ def display_system(m):
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) != 2:
-        print("Usage: python lsrro.py number_of_stages")
-    else:
+    if len(sys.argv) not in (2,3):
+        print("Usage 1: python lsrro.py number_of_stages")
+        print("Usage 2: python lsrro.py number_of_stages target_water_recovery_fraction")
+    elif len(sys.argv) == 2:
         main(int(sys.argv[1]))
-
+    else:
+        main(int(sys.argv[1]), float(sys.argv[2]))
