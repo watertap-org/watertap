@@ -43,9 +43,9 @@ def test_ideal_naocl_chlorination():
     assert model.fs.ideal_naocl_chlorination_unit.free_chlorine.value == \
             pytest.approx(1.893849296278168, rel=1e-3)
     assert model.fs.ideal_naocl_chlorination_unit.outlet.mole_frac_comp[0,'OCl_-'].value == \
-            pytest.approx(4.254858076026844e-07, rel=1e-3)
+            pytest.approx(4.254858076511e-07, rel=1e-3)
     assert model.fs.ideal_naocl_chlorination_unit.outlet.mole_frac_comp[0,'H_+'].value == \
-            pytest.approx(5.640767226351033e-11, rel=1e-3)
+            pytest.approx(5.6407676871845223e-11, rel=1e-3)
 
 @pytest.mark.component
 def test_ideal_naocl_chlorination_full_block():
@@ -60,9 +60,9 @@ def test_ideal_naocl_chlorination_full_block():
     assert model.fs.ideal_naocl_chlorination_unit.free_chlorine.value == \
             pytest.approx(2, rel=1e-3)
     assert model.fs.ideal_naocl_chlorination_unit.outlet.mole_frac_comp[0,'OCl_-'].value == \
-            pytest.approx(4.508813505652909e-07, rel=1e-3)
+            pytest.approx(4.508812116261189e-07, rel=1e-3)
     assert model.fs.ideal_naocl_chlorination_unit.outlet.mole_frac_comp[0,'H_+'].value == \
-            pytest.approx(5.479684673084312e-11, rel=1e-3)
+            pytest.approx(5.47976004923939e-11, rel=1e-3)
 
 @pytest.mark.component
 def test_addition_of_translator():

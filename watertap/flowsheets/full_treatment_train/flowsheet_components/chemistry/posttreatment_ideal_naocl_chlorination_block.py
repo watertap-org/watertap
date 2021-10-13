@@ -420,6 +420,10 @@ def build_ideal_naocl_chlorination_unit(model):
             "has_heat_of_reaction": False,
             "has_pressure_change": False})
 
+    model.fs.ideal_naocl_chlorination_unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
+    model.fs.ideal_naocl_chlorination_unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0.001)
+    model.fs.ideal_naocl_chlorination_unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1.001)
+
     # new var includes an initial calculation (will be overwritten later)
     fc = model.fs.ideal_naocl_chlorination_unit.inlet.mole_frac_comp[0, "HOCl"].value*55.6
     fc += model.fs.ideal_naocl_chlorination_unit.inlet.mole_frac_comp[0, "OCl_-"].value*55.6
@@ -788,7 +792,12 @@ def run_chlorination_block_example(fix_free_chlorine=False):
 
     if fix_free_chlorine == True:
         setup_block_to_solve_naocl_dosing_rate(model)
-    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+
+    # NOTE: With new log conc form, it is better to NOT have a very low bound_push
+    #           inside of your flowsheet. For initialization of the block, it is
+    #           usually fine. BUT, when solving the flowsheet (wth user-scaling)
+    #           it seems to cause some issues
+    solve_with_user_scaling(model, tee=True, bound_push=1e-4, mu_init=1e-1)
 
     display_results_of_ideal_naocl_mixer(model.fs.ideal_naocl_mixer_unit)
     display_results_of_chlorination_unit(model.fs.ideal_naocl_chlorination_unit)

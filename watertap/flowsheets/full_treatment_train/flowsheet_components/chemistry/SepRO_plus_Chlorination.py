@@ -188,10 +188,11 @@ def run_SepRO_Chlorination_flowsheet_example():
     build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=2)
 
     # Call the sequential decomposition initializer tool
+    # NOTE: Generally shouldn't use this, just manually initialize
     seq_decomp_initializer(model)
 
     # run the full solve
-    solve_with_user_scaling(model, tee=True)
+    solve_with_user_scaling(model, tee=True, bound_push=1e-5, mu_init=1e-3)
 
     model.fs.RO.inlet.display()
     model.fs.RO.permeate.display()
@@ -224,7 +225,7 @@ def run_SepRO_Chlorination_flowsheet_with_outlet_constraint_example():
     model.fs.RO_to_Chlor.OCl_con.deactivate()
 
     # run the full solve
-    solve_with_user_scaling(model, tee=True)
+    solve_with_user_scaling(model, tee=True, bound_push=1e-5, mu_init=1e-3)
 
     model.fs.RO.inlet.display()
     model.fs.RO.permeate.display()

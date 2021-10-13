@@ -324,16 +324,6 @@ class TestENRTLwater():
     def test_scaling_water(self, water_model):
         model = water_model
 
-        # Iterate through the reactions to set appropriate eps values
-        factor = 1e-4
-        for rid in model.fs.thermo_params.inherent_reaction_idx:
-            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
-            # Want to set eps in some fashion similar to this
-            if scale < 1e-16:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*factor
-            else:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
-
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
             iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
@@ -369,16 +359,23 @@ class TestENRTLwater():
     @pytest.mark.component
     def test_initialize_solver_water(self, water_model):
         model = water_model
-        solver.options['bound_push'] = 1e-20
-        solver.options['mu_init'] = 1e-6
-        model.fs.unit.initialize(optarg=solver.options)
+        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
+        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0.001)
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1.001)
+
+        solver.options['bound_push'] = 1e-5
+        solver.options['mu_init'] = 1e-3
+        model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
     def test_solve_water(self, water_model):
         model = water_model
-        solver.options['max_iter'] = 2
-        results = solver.solve(model)
+        solver.options['max_iter'] = 200
+        solver.options['bound_push'] = 1e-5
+        solver.options['mu_init'] = 1e-3
+        solver.options['halt_on_ampl_error'] = 'yes'
+        results = solver.solve(model, tee=True, symbolic_solver_labels=True)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
@@ -390,8 +387,8 @@ class TestENRTLwater():
         pH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","H_+"])*55.2)
         pOH = -log10(value(model.fs.unit.control_volume.properties_out[0.0].act_phase_comp["Liq","OH_-"])*55.2)
 
-        assert pytest.approx(7.00000, rel=1e-5) == pH
-        assert pytest.approx(7.00000, rel=1e-5) == pOH
+        assert pytest.approx(7.0001611, rel=1e-4) == pH
+        assert pytest.approx(7.0001611, rel=1e-4) == pOH
 
 # Configuration dictionary
 carbonic_thermo_config = {
@@ -659,7 +656,7 @@ carbonic_thermo_config = {
                        #        HOWEVER, the typical Ka1 dissociation constant of
                        #        10**-6.33 is defined on a molar basis. Thus, we must
                        #        divide by the total (~55.2 M) concentration raised to the
-                       #        net reaction order (i.e., 1 in this case). 
+                       #        net reaction order (i.e., 1 in this case).
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
                        "k_eq_ref": (10**-6.33/55.2,pyunits.dimensionless),
                        "T_eq_ref": (300, pyunits.K),
@@ -687,7 +684,7 @@ carbonic_thermo_config = {
                        #        HOWEVER, the typical Ka1 dissociation constant of
                        #        10**-10.35 is defined on a molar basis. Thus, we must
                        #        divide by the total (~55.2 M) concentration raised to the
-                       #        net reaction order (i.e., 1 in this case).                       
+                       #        net reaction order (i.e., 1 in this case).
                        "dh_rxn_ref": (0, pyunits.kJ/pyunits.mol),
                        "k_eq_ref": (10**-10.35/55.2,pyunits.dimensionless),
                        "T_eq_ref": (300, pyunits.K),
@@ -781,16 +778,6 @@ class TestENRTLcarbonicAcid():
     def test_scaling_carbonic_acid(self, carbonic_acid_model):
         model = carbonic_acid_model
 
-        # Iterate through the reactions to set appropriate eps values
-        factor = 1e-4
-        for rid in model.fs.thermo_params.inherent_reaction_idx:
-            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
-            # Want to set eps in some fashion similar to this
-            if scale < 1e-16:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*factor
-            else:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
-
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
             iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
@@ -826,17 +813,16 @@ class TestENRTLcarbonicAcid():
     @pytest.mark.component
     def test_initialize_solver_carbonic_acid(self, carbonic_acid_model):
         model = carbonic_acid_model
-        solver.options['bound_push'] = 1e-20
-        solver.options['mu_init'] = 1e-6
-        solver.options['max_iter'] = 1000
+        solver.options['bound_push'] = 1e-5
+        solver.options['mu_init'] = 1e-3
+        solver.options['max_iter'] = 100
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
     def test_solve_carbonic_acid(self, carbonic_acid_model):
         model = carbonic_acid_model
-        solver.options['max_iter'] = 2
-        results = solver.solve(model)
+        results = solver.solve(model, tee=True)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok

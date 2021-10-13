@@ -74,7 +74,7 @@ def set_up_optimization(m, system_recovery=0.50, **kwargs):
 
 
 def optimize(m):
-    solve_with_user_scaling(m, tee=False, fail_flag=True)
+    solve_with_user_scaling(m, tee=False, fail_flag=True, bound_push=1e-5, mu_init=1e-3)
 
 
 def solve_flowsheet(**desal_kwargs):
@@ -94,7 +94,7 @@ def solve_flowsheet(**desal_kwargs):
     initialize(m, **desal_kwargs)
 
     check_dof(m)
-    solve_with_user_scaling(m, tee=False, fail_flag=True)
+    solve_with_user_scaling(m, tee=False, fail_flag=True, bound_push=1e-5, mu_init=1e-3)
 
     # report
     print('==================================='

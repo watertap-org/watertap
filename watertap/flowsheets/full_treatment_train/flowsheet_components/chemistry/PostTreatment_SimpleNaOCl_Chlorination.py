@@ -378,6 +378,10 @@ def build_simple_naocl_chlorination_unit(model,
             "has_heat_of_reaction": False,
             "has_pressure_change": False})
 
+    model.fs.simple_naocl_unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
+    model.fs.simple_naocl_unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0.001)
+    model.fs.simple_naocl_unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1.001)
+
     model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "H_+"].fix( 0. )
     model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "OH_-"].fix( 0. )
     model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "HOCl"].fix( 0. )
@@ -493,7 +497,7 @@ def run_chlorination_example():
 
     initialize_chlorination_example(model.fs.simple_naocl_unit, state_args)
 
-    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+    solve_with_user_scaling(model, tee=True, bound_push=1e-1, mu_init=1e-1)
 
     display_results_of_chlorination(model.fs.simple_naocl_unit)
 
@@ -505,6 +509,7 @@ def run_chlorination_constrained_outlet_example():
     model.fs = FlowsheetBlock(default={"dynamic": False})
 
     # Give bad initial guess for the dosing rate
+    #       NOTE: If you give BAD initial guess... then DON't set low bound push
     build_simple_naocl_chlorination_unit(model, mg_per_L_NaOCl_added = 1)
     state_args, stoich_extents = approximate_chemical_state_args(model.fs.simple_naocl_unit,
                                 model.fs.simple_naocl_rxn_params, simple_naocl_reaction_config)
@@ -519,7 +524,8 @@ def run_chlorination_constrained_outlet_example():
     model.fs.simple_naocl_unit.dosing_rate.unfix()
     model.fs.simple_naocl_unit.free_chlorine.fix(2)
 
-    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+    # After intialized, setup model with higher bound push (when solving in opt mode)
+    solve_with_user_scaling(model, tee=True, bound_push=1e-1, mu_init=1e-1)
 
     display_results_of_chlorination(model.fs.simple_naocl_unit)
 
