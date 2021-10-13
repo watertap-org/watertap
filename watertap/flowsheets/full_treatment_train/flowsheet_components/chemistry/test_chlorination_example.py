@@ -50,15 +50,15 @@ def test_SimpleNaOCl_Chlorination():
     assert model.fs.simple_naocl_unit.outlet.mole_frac_comp[0,'H2O'].value == \
             pytest.approx(0.9999989745408085, rel=1e-3)
     assert model.fs.simple_naocl_unit.outlet.mole_frac_comp[0,'HOCl'].value == \
-            pytest.approx(5.8124920339055656e-08, rel=1e-3)
+            pytest.approx(5.8123275986334075e-08, rel=1e-3)
     assert model.fs.simple_naocl_unit.outlet.mole_frac_comp[0,'H_+'].value == \
-            pytest.approx(5.640767226351033e-11, rel=1e-3)
+            pytest.approx(5.640709426712995e-11, rel=1e-3)
     assert model.fs.simple_naocl_unit.outlet.mole_frac_comp[0,'Na_+'].value == \
-            pytest.approx(4.836107279417401e-07, rel=1e-3)
+            pytest.approx(4.836107279341315e-07, rel=1e-3)
     assert model.fs.simple_naocl_unit.outlet.mole_frac_comp[0,'OCl_-'].value == \
-            pytest.approx(4.254858076026844e-07, rel=1e-3)
+            pytest.approx(4.254874519554062e-07, rel=1e-3)
     assert model.fs.simple_naocl_unit.outlet.mole_frac_comp[0,'OH_-'].value == \
-            pytest.approx(5.8181328011319155e-08, rel=1e-3)
+            pytest.approx(5.8123275986334075e-08, rel=1e-3)
 
 @pytest.mark.component
 def test_SimpleNaOCl_Chlorination_with_outlet_constraint():
@@ -115,7 +115,6 @@ def test_SepRO_Chlorination_flowsheet_with_outlet_constraint():
     assert model.fs.simple_naocl_unit.dosing_rate.value == \
             pytest.approx(1.0196136841188141, rel=1e-3)
 
-
 @pytest.mark.component
 def test_0DRO_Chlorination_flowsheet_with_outlet_constraint_with_seq_decomp():
     model = run_0DRO_Chlorination_flowsheet_example(True)
@@ -131,7 +130,6 @@ def test_0DRO_Chlorination_flowsheet_with_outlet_constraint_without_seq_decomp()
             pytest.approx(2.0, rel=1e-3)
     assert model.fs.simple_naocl_unit.dosing_rate.value == \
             pytest.approx(0.5604052608884579, rel=1e-3)
-
 
 @pytest.mark.component
 def test_0DRO_Chlorination_flowsheet_with_simple_optimization():

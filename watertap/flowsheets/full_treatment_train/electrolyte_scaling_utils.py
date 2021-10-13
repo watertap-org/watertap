@@ -102,6 +102,7 @@ def approximate_chemical_state_args(unit, rxn_params, reaction_config, contains_
 # Perform scaling transformations for inherent reactions (if they exist)
 def calculate_chemical_scaling_factors_for_inherent_log_reactions(unit, thermo_params):
     try:
+        '''
         # Iterate through the reactions to set appropriate eps values
         factor = 1e-4
         for rid in thermo_params.inherent_reaction_idx:
@@ -111,6 +112,7 @@ def calculate_chemical_scaling_factors_for_inherent_log_reactions(unit, thermo_p
                 thermo_params.component("reaction_"+rid).eps.value = scale*factor
             else:
                 thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
+        '''
 
         for i in unit.control_volume.inherent_reaction_extent_index:
             scale = value(unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
@@ -123,6 +125,7 @@ def calculate_chemical_scaling_factors_for_inherent_log_reactions(unit, thermo_p
 # Perform scaling transformations for equilibrium reactions (if they exist)
 def calculate_chemical_scaling_factors_for_equilibrium_log_reactions(unit, rxn_params):
     try:
+        '''
         # Equilibrium reactions have eps in the 'simple_naocl_rxn_params'
         factor = 1e-4
         for rid in rxn_params.equilibrium_reaction_idx:
@@ -133,6 +136,7 @@ def calculate_chemical_scaling_factors_for_equilibrium_log_reactions(unit, rxn_p
                     rxn_params.component("reaction_"+rid).eps.value = scale*factor
                 else:
                     rxn_params.component("reaction_"+rid).eps.value = 1e-16*factor
+        '''
 
         for i in unit.control_volume.equilibrium_reaction_extent_index:
             if i[1] != "dummy":

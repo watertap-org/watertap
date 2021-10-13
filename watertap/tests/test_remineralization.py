@@ -87,6 +87,7 @@ from pyomo.environ import (ConcreteModel,
 
 # Import idaes methods to check the model during construction
 from idaes.core.util import scaling as iscale
+from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -693,16 +694,6 @@ class TestRemineralization():
     def test_scaling_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
 
-        # Iterate through the reactions to set appropriate eps values
-        factor = 1e-4
-        for rid in model.fs.thermo_params.inherent_reaction_idx:
-            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
-            # Want to set eps in some fashion similar to this
-            if scale < 1e-16:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*factor
-            else:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
-
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
             iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
@@ -738,6 +729,11 @@ class TestRemineralization():
     @pytest.mark.component
     def test_initialize_solver_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
+
+        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
+        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0)
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1)
+
         solver.options['bound_push'] = 1e-10
         solver.options['mu_init'] = 1e-6
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
@@ -746,8 +742,11 @@ class TestRemineralization():
     @pytest.mark.component
     def test_solve_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
-        solver.options['bound_push'] = 1e-10
-        solver.options['mu_init'] = 1e-6
+
+        # NOTE: With new methods, after initialization the 'bound_push' and 'mu_init'
+        #       options can be relaxed from what they were before.
+        solver.options['bound_push'] = 1e-5
+        solver.options['mu_init'] = 1e-3
         results = solver.solve(model, tee=True)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
@@ -798,10 +797,10 @@ class TestRemineralization():
         assert pytest.approx( 8.127381781520279e-07, rel=1e-3) == h2co3
 
         caoh = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','Ca(OH)2'])
-        assert pytest.approx( 5.303703532167982e-09, rel=1e-3) == caoh
+        assert pytest.approx( 5.303805621810129e-09, rel=1e-3) == caoh
 
         naoh = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','NaOH'])
-        assert pytest.approx( 1.8209382127110066e-08, rel=1e-3) == naoh
+        assert pytest.approx( 1.8209732607155688e-08, rel=1e-3) == naoh
 
         caco3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp_apparent['Liq','CaCO3'])
         assert pytest.approx( 1.581439142347598e-07, rel=1e-3) == caco3
@@ -1257,7 +1256,7 @@ reaction_config_cstr = {
                "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
                    "dh_rxn_ref": (0, pyunits.J/pyunits.mol),
-                   "arrhenius_const": (1, pyunits.mol/pyunits.m**3/pyunits.s),
+                   "arrhenius_const": (1e-0, pyunits.mol/pyunits.m**3/pyunits.s),
                    "energy_activation": (0, pyunits.J/pyunits.mol)}
                    },
         "R2": {"stoichiometry": {("Liq", "Ca(OH)2"): -1,
@@ -1269,7 +1268,7 @@ reaction_config_cstr = {
                "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
                    "dh_rxn_ref": (0, pyunits.J/pyunits.mol),
-                   "arrhenius_const": (1, pyunits.mol/pyunits.m**3/pyunits.s),
+                   "arrhenius_const": (0.5e-0, pyunits.mol/pyunits.m**3/pyunits.s),
                    "energy_activation": (0, pyunits.J/pyunits.mol)}
                    }
          }
@@ -1388,16 +1387,6 @@ class TestRemineralizationCSTR():
     def test_scaling_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
 
-        # Iterate through the reactions to set appropriate eps values
-        factor = 1e-4
-        for rid in model.fs.thermo_params.inherent_reaction_idx:
-            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[rid].expr)
-            # Want to set eps in some fashion similar to this
-            if scale < 1e-16:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = scale*factor
-            else:
-                model.fs.thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
-
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
             iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
@@ -1428,6 +1417,9 @@ class TestRemineralizationCSTR():
         #       NOTE: Volume is indexed by time
         iscale.set_scaling_factor(model.fs.unit.control_volume.volume, 10/model.fs.unit.volume[0.0].value)
 
+        # uncertain whether or not this is needed
+        #iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true_eq,10)
+
         iscale.calculate_scaling_factors(model.fs.unit)
 
         assert hasattr(model.fs.unit.control_volume, 'scaling_factor')
@@ -1442,16 +1434,29 @@ class TestRemineralizationCSTR():
     @pytest.mark.component
     def test_initialize_solver_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
-        solver.options['bound_push'] = 1e-20
+
+        # Set upper and lower bounds for lnx_i and x_i params
+        #       Doing this helps to restrict the search area of ipopt and
+        #       seems to lead to better convergence behavior
+        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
+        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0)
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1)
+
+        solver.options['bound_push'] = 1e-10
         solver.options['mu_init'] = 1e-6
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+
         assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
     def test_solve_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
-        solver.options['bound_push'] = 1e-20
-        solver.options['mu_init'] = 1e-6
+
+        # NOTE: With new methods, after initialization the 'bound_push' and 'mu_init'
+        #       options can be relaxed from what they were before.
+        solver.options['bound_push'] = 1e-5
+        solver.options['mu_init'] = 1e-3
+        solver.options['halt_on_ampl_error'] = 'yes'
         results = solver.solve(model, tee=True, symbolic_solver_labels=True)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
@@ -1465,19 +1470,19 @@ class TestRemineralizationCSTR():
         pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
         pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"]*total_molar_density))
 
-        assert pytest.approx(8.1593619, rel=1e-4) == pH
-        assert pytest.approx(5.8412514, rel=1e-4) == pOH
+        assert pytest.approx(8.144577167341051, rel=1e-4) == pH
+        assert pytest.approx(5.856040363828365, rel=1e-4) == pOH
 
         # Calculate total hardness
         TH = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'Ca_2+')])/1000
         TH = TH*50000
-        assert pytest.approx(54.110449, rel=1e-4) == TH
+        assert pytest.approx(49.60109933146309, rel=1e-4) == TH
 
         # Calculating carbonate alkalinity to determine the split of total hardness
         CarbAlk = 2*value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'CO3_2-')])/1000
         CarbAlk += value(model.fs.unit.control_volume.properties_out[0.0].conc_mol_phase_comp[('Liq', 'HCO3_-')])/1000
         CarbAlk = 50000*CarbAlk
-        assert pytest.approx(146.927839, rel=1e-4) == CarbAlk
+        assert pytest.approx(142.42137166781512, rel=1e-4) == CarbAlk
 
         # Non-Carbonate Hardness only exists if there is excess hardness above alkalinity
         if TH <= CarbAlk:
