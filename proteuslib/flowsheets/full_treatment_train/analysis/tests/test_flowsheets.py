@@ -24,7 +24,7 @@ from proteuslib.flowsheets.full_treatment_train.analysis import (flowsheet_NF,
 def test_flowsheet_NF():
     m = flowsheet_NF.optimize_flowsheet(system_recovery=0.5)
     assert (value(m.fs.tb_pretrt_to_desal.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'])
-            == pytest.approx(0.7629, rel=1e-3))
+            == pytest.approx(0.7656, rel=1e-3))
     assert (value(m.fs.tb_pretrt_to_desal.properties_in[0].flow_mass_phase_comp['Liq', 'Ca'])
             == pytest.approx(1.139e-4, rel=1e-3))
 
