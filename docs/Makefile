@@ -19,5 +19,5 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 #   TODO: Revisit %SPHINXAPIDOC% and get it working adequately with readthedocs
-#	@$(SPHINXAPIDOC) -f -M -H ProteusLib -d 3 -o apidoc ../proteuslib "../*tests*"
+#	@$(SPHINXAPIDOC) -f -M -H WaterTAP -d 3 -o apidoc ../watertap "../*tests*"
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

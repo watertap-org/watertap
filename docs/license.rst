@@ -1,3 +1,3 @@
-.. _proteuslib-license:
+.. _watertap-license:
 
 .. include:: ../LICENSE.md

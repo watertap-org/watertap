@@ -19,7 +19,7 @@ How to setup simple chemistry
 .. _EquilibriumReactor: https://idaes-pse.readthedocs.io/en/stable/technical_specs/model_libraries/generic/unit_models/equilibrium.html
 .. _IDAESWorkflow: https://idaes-pse.readthedocs.io/en/stable/user_guide/workflow/general.html
 
-In ProteusLib, chemistry modules leverage the Generic Properties
+In WaterTAP, chemistry modules leverage the Generic Properties
 (`GenericProperties`_)
 and Generic Reactions
 (`GenericReactions`_)
@@ -208,7 +208,7 @@ There is a significant amount to breakdown here, so let's discuss a couple of th
 step by step...
 
 **(1)** All components need a ``"type"``. For this, you have a number of ``"type"`` options within IDAES.
-Generally, the ``"H2O"`` component should always be a ``Solvent`` within ProteusLib. Charged species
+Generally, the ``"H2O"`` component should always be a ``Solvent`` within WaterTAP. Charged species
 will always be either a ``Cation`` or ``Anion`` depending on the sign of their actual ``"charge"``.
 More information on ``"components"`` can be found at `Components`_.
 
@@ -223,7 +223,7 @@ needs, have a look at `Perrys`_ and `Constant`_ methods in IDAES.
 **(3)** In this example, we are just setting up a configuration for water only. Thus, we are
 not particularly interested in any other phases. In this case, we define the ``"phases"``
 dictionary to contain a single phase we named ``'Liq'`` and declared this to be an ``AqueousPhase``.
-In ProteusLib, most of our models will be using ``AqueousPhase``, but may add additional phases
+In WaterTAP, most of our models will be using ``AqueousPhase``, but may add additional phases
 for effects such as precipitation and/or gas-absorbtion. Also, it should be noted that each phase
 must also define a method for the ``"equation_of_state"`` argument. In this case, we are assuming
 that the phase behaves under the ``Ideal`` assumption. For more information on phases and equations
@@ -236,7 +236,7 @@ options available. More information can be found in `StateDefinition`_.
 
     Much of the difficulties and complications with setting up a proper **thermo-properties**
     configuration dictionary can be handled by the **Electrolyte Database** system in
-    ProteusLib (Documentation pending)
+    WaterTAP (Documentation pending)
 
 
 

@@ -9,9 +9,9 @@ This pressure exchanger unit model:
     * assumes equal flowrates on both sides
 
 .. index::
-   pair: proteuslib.unit_models.pressure_exchanger;pressure_exchanger
+   pair: watertap.unit_models.pressure_exchanger;pressure_exchanger
 
-.. currentmodule:: proteuslib.unit_models.pressure_exchanger
+.. currentmodule:: watertap.unit_models.pressure_exchanger
 
 Degrees of Freedom
 ------------------
@@ -96,6 +96,6 @@ Equations
 Class Documentation
 -------------------
 
-.. automodule:: proteuslib.unit_models.pressure_exchanger
+.. automodule:: watertap.unit_models.pressure_exchanger
     :members:
     :noindex:

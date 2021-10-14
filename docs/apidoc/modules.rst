@@ -1,7 +1,7 @@
-proteuslib
+watertap
 ==========
 
 .. toctree::
    :maxdepth: 4
 
-   proteuslib
+   watertap
