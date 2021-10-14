@@ -29,7 +29,7 @@ from watertap.unit_models.nanofiltration_ZO import NanofiltrationZO
 from idaes.generic_models.properties.core.generic.generic_property import GenericParameterBlock
 from watertap.property_models.seawater_ion_generic import configuration
 import watertap.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as props
-from watertap.util.initialization import check_dof
+from watertap.util.initialization import assert_no_degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util import get_solver
@@ -143,7 +143,7 @@ class TestNanofiltration():
     @pytest.mark.unit
     def test_dof(self, unit_frame):
         m = unit_frame
-        check_dof(m, fail_flag=True)
+        assert_no_degrees_of_freedom(m)
 
     @pytest.mark.unit
     def test_calculate_scaling(self, unit_frame):
@@ -259,7 +259,7 @@ class TestNanofiltration():
 
         assert_units_consistent(m)
 
-        check_dof(m, fail_flag=True)
+        assert_no_degrees_of_freedom(m)
 
         calculate_scaling_factors(m)
 
