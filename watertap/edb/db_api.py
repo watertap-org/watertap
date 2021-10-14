@@ -74,7 +74,7 @@ class ElectrolyteDB:
 
     @classmethod
     def can_connect(cls, host=None, port=None, **kwargs):
-        result = True
+        result = None
 
         if host is None:
             host = cls.DEFAULT_HOST
@@ -96,6 +96,7 @@ class ElectrolyteDB:
             # The ismaster command is cheap and does not require auth.
             client.admin.command("ismaster")
             _log.debug(f"MongoDB server at {host}:{port} is available")
+            result = True
         except ConnectionFailure:
             _log.error(f"MongoDB server at {host}:{port} is NOT available")
             result = False
