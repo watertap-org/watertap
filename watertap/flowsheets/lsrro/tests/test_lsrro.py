@@ -137,7 +137,7 @@ class _TestLSRRO:
         model.compute_statistics()
         assert model.statistics.number_of_variables == self.number_of_variables
         assert model.statistics.number_of_constraints == self.number_of_constraints
-        assert model.statistics.number_of_objectives == 0
+        assert model.statistics.number_of_objectives == 1
 
         assert_units_consistent(fs)
 

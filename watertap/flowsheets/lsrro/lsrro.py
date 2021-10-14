@@ -136,6 +136,8 @@ def build(number_of_stages=2):
 
     # costing
     financials.get_system_costing(m.fs)
+    # objective
+    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
     # connections
 
@@ -383,8 +385,6 @@ def solve(m, solver=None, tee=False, raise_on_failure=False):
 
 
 def optimize_set_up(m, water_recovery=None):
-    # objective
-    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
     for pump in m.fs.PrimaryPumps.values():
         pump.control_volume.properties_out[0].pressure.unfix()
