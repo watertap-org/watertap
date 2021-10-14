@@ -22,12 +22,13 @@ import pytest
 from watertap.edb import ElectrolyteDB
 from .test_pure_water_pH import TestPureWater
 
+
+GITHUB_ACTIONS = os.environ.get('GITHUB_ACTIONS') == "true"
+
 # Set global database object after checking that MongoDB server is up
 g_edb = None
 if ElectrolyteDB.can_connect():
-    # for now, skip using MongoDB in GitHub CI -dang 8/30/2021
-    if os.environ.get('GITHUB_ACTIONS') != "true":
-        g_edb = ElectrolyteDB()
+    g_edb = ElectrolyteDB()
 
 
 def get_thermo_config(edb):
