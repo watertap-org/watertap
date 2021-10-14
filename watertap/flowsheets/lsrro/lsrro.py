@@ -243,7 +243,7 @@ def set_operating_conditions(m):
         stage.B_comp.fix(mem_B*B_scale)
         stage.channel_height.fix(height)
         stage.spacer_porosity.fix(spacer_porosity)
-        stage.area.fix(area)
+        stage.area.fix(area/float(idx))
         stage.width.fix(width)
         stage.permeate.pressure[0].fix(pressure_atm)
 
