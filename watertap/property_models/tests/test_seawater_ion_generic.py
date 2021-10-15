@@ -50,7 +50,6 @@ def test_property_seawater_ions():
     m.fs.stream[0].temperature.fix(273.15 + 25)
     m.fs.stream[0].pressure.fix(101325)
 
-    # m.fs.stream[0].mass_frac_comp # TODO: mass_frac_comp and mass_frac_phase_comp need to be added to generic property model
 
     # # scaling
     iscale.calculate_scaling_factors(m.fs)
