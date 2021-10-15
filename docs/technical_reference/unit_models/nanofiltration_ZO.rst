@@ -7,9 +7,9 @@ This nanofiltration (NF) unit model
    * assumes isothermal conditions
 
 .. index::
-   pair: watertap.flowsheets.full_treatment_train.model_components.nanofiltration_ZO;nanofiltration_ZO
+   pair: watertap.unit_models.nanofiltration_ZO;nanofiltration_ZO
 
-.. currentmodule:: watertap.flowsheets.full_treatment_train.model_components.nanofiltration_ZO
+.. currentmodule:: watertap.unit_models.nanofiltration_ZO
 
 Degrees of Freedom
 ------------------
@@ -28,7 +28,8 @@ There are 2 degrees of freedom for each solute in a given property model:
    * solute mass flow rate at the inlet
 
 Note, when a set of solutes comprises ions and includes more than one ion pair, the solute rejection of one ion could be left unfixed
-to satisfy an electroneutrality constraint. In this case, the last degree of freedom can be eliminated by fixing membrane area.
+to satisfy an electroneutrality constraint. In this case, the last degree of freedom can be eliminated by fixing another variable such
+as volumetric recovery rate or membrane area.
 
 Model Structure
 ------------------
@@ -78,7 +79,7 @@ Equations
 Class Documentation
 -------------------
 
-.. automodule:: watertap.flowsheets.full_treatment_train.model_components.nanofiltration_ZO
+.. automodule:: watertap.unit_models.nanofiltration_ZO
     :members:
     :noindex:
 
