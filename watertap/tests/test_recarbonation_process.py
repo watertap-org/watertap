@@ -607,16 +607,6 @@ class TestCarbonationProcess:
     def test_scaling_equilibrium(self, equilibrium_config):
         model = equilibrium_config
 
-        # Equilibrium reactions have eps in the 'rxn_params'
-        factor = 1e-4
-        for rid in model.fs.rxn_params.equilibrium_reaction_idx:
-            scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
-            # Want to set eps in some fashion similar to this
-            if scale < 1e-16:
-                model.fs.rxn_params.component("reaction_"+rid).eps.value = scale*factor
-            else:
-                model.fs.rxn_params.component("reaction_"+rid).eps.value = 1e-16*factor
-
         for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
             iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10/scale)
@@ -658,8 +648,13 @@ class TestCarbonationProcess:
     @pytest.mark.component
     def test_initialize_solver(self, equilibrium_config):
         model = equilibrium_config
-        solver.options["bound_push"] = 1e-10
-        solver.options["mu_init"] = 1e-6
+
+        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
+        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0.001)
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1.001)
+
+        solver.options["bound_push"] = 1e-5
+        solver.options["mu_init"] = 1e-3
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(model) == 0
 
@@ -667,7 +662,7 @@ class TestCarbonationProcess:
     def test_solve_equilibrium(self, equilibrium_config):
         model = equilibrium_config
         solver.options["max_iter"] = 100
-        results = solver.solve(model)
+        results = solver.solve(model, tee=True)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
@@ -697,7 +692,7 @@ class TestCarbonationProcess:
         pOH = -value(
             log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"] * total_molar_density)
         )
-        assert pytest.approx(5.33989, rel=1e-4) == pH
+        assert pytest.approx(5.339891, rel=1e-4) == pH
         assert pytest.approx(8.660655, rel=1e-4) == pOH
 
         CO2_sorbed = value(
@@ -705,4 +700,4 @@ class TestCarbonationProcess:
                 ("Liq", "CO2")
             ]
         )
-        assert pytest.approx(27.5312738, rel=1e-5) == CO2_sorbed
+        assert pytest.approx(27.531571, rel=1e-4) == CO2_sorbed

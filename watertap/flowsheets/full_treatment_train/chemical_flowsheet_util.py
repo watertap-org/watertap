@@ -51,9 +51,15 @@ def unfix_all_molefractions(port):
     for i in port.mole_frac_comp:
         port.mole_frac_comp[i[0], i[1]].unfix()
 
+# NOTE: With new log conc form, we don't seem to need the very low
+#       bound push anymore. In fact, too low a value is degrading
+#       the solutions/iterations in some cases.
+#
+#   This tool for block decomp may be less useful moving forward.
+#       probably better to initialize each manually.
 def block_initializer(blk, tee=False):
-    solver.options['bound_push'] = 1e-10
-    solver.options['mu_init'] = 1e-6
+    solver.options['bound_push'] = 1e-1
+    solver.options['mu_init'] = 1e-1
     solver.options["nlp_scaling_method"] = "user-scaling"
     if tee==True:
         print(blk)
