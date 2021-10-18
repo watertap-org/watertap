@@ -13,18 +13,18 @@
 import pytest
 from pyomo.environ import value
 from watertap.flowsheets.full_treatment_train.analysis import (flowsheet_NF,
-                                                                 flowsheet_NF_no_bypass,
-                                                                 flowsheet_single_stage,
-                                                                 flowsheet_two_stage,
-                                                                 flowsheet_NF_two_stage,
-                                                                 flowsheet_softening,
-                                                                 flowsheet_softening_two_stage)
+                                                               flowsheet_NF_no_bypass,
+                                                               flowsheet_single_stage,
+                                                               flowsheet_two_stage,
+                                                               flowsheet_NF_two_stage,
+                                                               flowsheet_softening,
+                                                               flowsheet_softening_two_stage)
 
 @pytest.mark.component
 def test_flowsheet_NF():
     m = flowsheet_NF.optimize_flowsheet(system_recovery=0.5)
     assert (value(m.fs.tb_pretrt_to_desal.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'])
-            == pytest.approx(0.765618, rel=1e-3))
+            == pytest.approx(0.7656, rel=1e-3))
     assert (value(m.fs.tb_pretrt_to_desal.properties_in[0].flow_mass_phase_comp['Liq', 'Ca'])
             == pytest.approx(1.14034e-4, rel=1e-3))
 
