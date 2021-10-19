@@ -47,7 +47,7 @@ class TestCheckDOF:
     @pytest.mark.unit
     def test_more_expected(self, m):
         check_dof(m, fail_flag=False, expected_dof=3)
-        msg = "Unexpected degrees of freedom: Degrees of freedom on unknown = 1. Expected 3. Unfix 2 variable\(s\)"
+        msg = r"Unexpected degrees of freedom: Degrees of freedom on unknown = 1. Expected 3. Unfix 2 variable\(s\)"
         with pytest.raises(ValueError, match=msg):
             check_dof(m, fail_flag=True, expected_dof=3)
         with pytest.raises(ValueError, match=msg):
@@ -56,7 +56,7 @@ class TestCheckDOF:
     @pytest.mark.unit
     def test_less_expected(self, m):
         check_dof(m, fail_flag=False, expected_dof=-1)
-        msg = "Unexpected degrees of freedom: Degrees of freedom on unknown = 1. Expected -1. Fix 2 variable\(s\)"
+        msg = r"Unexpected degrees of freedom: Degrees of freedom on unknown = 1. Expected -1. Fix 2 variable\(s\)"
         with pytest.raises(ValueError, match=msg):
             check_dof(m, fail_flag=True, expected_dof=-1)
         with pytest.raises(ValueError, match=msg):
@@ -66,7 +66,7 @@ class TestCheckDOF:
     def test_zero_expected(self, m):
         # check_dof should pass since fail_flag=False produces warning for DOF!=0
         check_dof(m, fail_flag=False)
-        msg = "Non-zero degrees of freedom: Degrees of freedom on unknown = 1. Fix 1 more variable\(s\)"
+        msg = r"Non-zero degrees of freedom: Degrees of freedom on unknown = 1. Fix 1 more variable\(s\)"
         # Verify error is raised since DOF!=0
         with pytest.raises(ValueError, match=msg):
             check_dof(m, fail_flag=True)
