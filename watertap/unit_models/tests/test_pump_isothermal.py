@@ -34,7 +34,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver(options={'bound_push':1e-8})
 
 
 # -----------------------------------------------------------------------------
@@ -129,7 +129,6 @@ class TestPumpIsothermal():
     @pytest.mark.component
     def test_solve(self, Pump_frame):
         m = Pump_frame
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
 
         # Check for optimal solution

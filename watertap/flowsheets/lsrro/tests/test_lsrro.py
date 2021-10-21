@@ -137,7 +137,7 @@ class _TestLSRRO:
         model.compute_statistics()
         assert model.statistics.number_of_variables == self.number_of_variables
         assert model.statistics.number_of_constraints == self.number_of_constraints
-        assert model.statistics.number_of_objectives == 0
+        assert model.statistics.number_of_objectives == 1
 
         assert_units_consistent(fs)
 
@@ -186,7 +186,7 @@ class _TestLSRRO:
 
             self._test_fixed_value(ro.channel_height, 1e-3)
             self._test_fixed_value(ro.spacer_porosity, 0.97)
-            self._test_fixed_value(ro.area, 100)
+            self._test_fixed_value(ro.area, 100/float(idx))
             self._test_fixed_value(ro.width, 5)
             self._test_fixed_value(ro.permeate.pressure[0], 101325)
 
@@ -226,8 +226,8 @@ class _TestLSRRO:
         assert captured.out == self.display_state
 
     @pytest.mark.component
-    def test_optimize_set_up(self, model):
-        optimize_set_up(model)
+    def test_optimize_set_up(self, model, optimization_data):
+        optimize_set_up(model, water_recovery=optimization_data[model.fs.water_recovery])
         fs = model.fs
 
         for pump in fs.PrimaryPumps.values():
@@ -256,8 +256,8 @@ class TestLSRRO_1Stage(_TestLSRRO):
 
     number_of_stages = 1
 
-    number_of_variables = 291
-    number_of_constraints = 190
+    number_of_variables = 290
+    number_of_constraints = 189
 
     display_system = \
 """----system metrics----
@@ -331,16 +331,16 @@ class TestLSRRO_2Stage(_TestLSRRO):
 
     number_of_stages = 2
 
-    number_of_variables = 536
-    number_of_constraints = 380
+    number_of_variables = 534
+    number_of_constraints = 378
 
     display_system = \
 """----system metrics----
 Feed: 1.00 kg/s, 70000 ppm
-Product: 0.380 kg/s, 699 ppm
-Volumetric water recovery: 38.0%
-Energy Consumption: 7.7 kWh/m3
-Levelized cost of water: 1.89 $/m3
+Product: 0.297 kg/s, 926 ppm
+Volumetric water recovery: 29.7%
+Energy Consumption: 6.3 kWh/m3
+Levelized cost of water: 1.98 $/m3
 """
     display_design = \
 """--decision variables--
@@ -348,25 +348,25 @@ Stage 1 operating pressure 75.0 bar
 Stage 1 membrane area      100.0 m2
 Stage 1 salt perm. coeff.  0.1 LMH
 Stage 2 operating pressure 75.0 bar
-Stage 2 membrane area      100.0 m2
+Stage 2 membrane area      50.0 m2
 Stage 2 salt perm. coeff.  12.6 LMH
 """
     display_state = \
 """--------state---------
 Feed                : 1.000 kg/s, 70000 ppm, 1.0 bar
 Primary Pump 1 out  : 1.000 kg/s, 70000 ppm, 75.0 bar
-Mixer 1 recycle     : 0.589 kg/s, 38805 ppm, 75.0 bar
-Mixer 1 out         : 1.589 kg/s, 58440 ppm, 75.0 bar
-RO 1 permeate       : 0.380 kg/s, 699 ppm, 1.0 bar
-RO 1 retentate      : 1.209 kg/s, 76588 ppm, 71.1 bar
-Stage 1 Volumetric water recovery: 24.96%, Salt rejection: 98.85%
-Primary Pump 2 out  : 1.209 kg/s, 76588 ppm, 75.0 bar
-RO 2 permeate       : 0.589 kg/s, 38805 ppm, 1.0 bar
-RO 2 retentate      : 0.620 kg/s, 112464 ppm, 72.8 bar
-Stage 2 Volumetric water recovery: 50.06%, Salt rejection: 50.71%
-Booster Pump 2 out  : 0.589 kg/s, 38805 ppm, 75.0 bar
-Disposal            : 0.620 kg/s, 112464 ppm, 1.0 bar
-Product             : 0.380 kg/s, 699 ppm, 1.0 bar
+Mixer 1 recycle     : 0.308 kg/s, 37757 ppm, 75.0 bar
+Mixer 1 out         : 1.308 kg/s, 62417 ppm, 75.0 bar
+RO 1 permeate       : 0.297 kg/s, 926 ppm, 1.0 bar
+RO 1 retentate      : 1.011 kg/s, 80454 ppm, 72.0 bar
+Stage 1 Volumetric water recovery: 23.74%, Salt rejection: 98.58%
+Primary Pump 2 out  : 1.011 kg/s, 80454 ppm, 75.0 bar
+RO 2 permeate       : 0.308 kg/s, 37757 ppm, 1.0 bar
+RO 2 retentate      : 0.703 kg/s, 99118 ppm, 74.0 bar
+Stage 2 Volumetric water recovery: 31.38%, Salt rejection: 54.50%
+Booster Pump 2 out  : 0.308 kg/s, 37757 ppm, 75.0 bar
+Disposal            : 0.703 kg/s, 99118 ppm, 1.0 bar
+Product             : 0.297 kg/s, 926 ppm, 1.0 bar
 """
 
     @pytest.fixture(scope="class")
@@ -374,10 +374,10 @@ Product             : 0.380 kg/s, 699 ppm, 1.0 bar
         data = pyo.ComponentMap()
         fs = model.fs
 
-        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.379673
-        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.265454e-3
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.550327
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.697345e-1
+        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.296269
+        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.274578e-3
+        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.633730
+        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.697254e-1
         data[fs.costing.LCOW]   = 1.0
         data[fs.water_recovery] = 0.5
 
@@ -388,12 +388,12 @@ Product             : 0.380 kg/s, 699 ppm, 1.0 bar
         data = pyo.ComponentMap()
         fs = model.fs
 
-        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.379673
-        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.265454e-3
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.550327
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.697345e-1
-        data[fs.costing.LCOW]   = 1.88555
-        data[fs.water_recovery] = 0.379939
+        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.296269
+        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.274578e-3
+        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.633730
+        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.697254e-1
+        data[fs.costing.LCOW]   = 1.98397
+        data[fs.water_recovery] = 0.296544
 
         return data
 
@@ -403,7 +403,7 @@ Product             : 0.380 kg/s, 699 ppm, 1.0 bar
         fs = model.fs
 
         data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.732053
-        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.451388e-3
+        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.451359e-3
         data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.197947
         data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.695486e-1
         data[fs.costing.LCOW]   = 1.21780
@@ -416,15 +416,15 @@ class TestLSRRO_3Stage(_TestLSRRO):
 
     number_of_stages = 3
 
-    number_of_variables = 781
-    number_of_constraints = 570
+    number_of_variables = 778
+    number_of_constraints = 567
 
     display_system = \
 """----system metrics----
 Feed: 1.00 kg/s, 70000 ppm
-Product: 0.462 kg/s, 557 ppm
-Volumetric water recovery: 46.2%
-Energy Consumption: 10.0 kWh/m3
+Product: 0.330 kg/s, 823 ppm
+Volumetric water recovery: 33.0%
+Energy Consumption: 7.8 kWh/m3
 Levelized cost of water: 2.08 $/m3
 """
     display_design = \
@@ -433,35 +433,35 @@ Stage 1 operating pressure 75.0 bar
 Stage 1 membrane area      100.0 m2
 Stage 1 salt perm. coeff.  0.1 LMH
 Stage 2 operating pressure 75.0 bar
-Stage 2 membrane area      100.0 m2
+Stage 2 membrane area      50.0 m2
 Stage 2 salt perm. coeff.  12.6 LMH
 Stage 3 operating pressure 75.0 bar
-Stage 3 membrane area      100.0 m2
+Stage 3 membrane area      33.3 m2
 Stage 3 salt perm. coeff.  12.6 LMH
 """
     display_state = \
 """--------state---------
 Feed                : 1.000 kg/s, 70000 ppm, 1.0 bar
 Primary Pump 1 out  : 1.000 kg/s, 70000 ppm, 75.0 bar
-Mixer 1 recycle     : 0.700 kg/s, 31688 ppm, 75.0 bar
-Mixer 1 out         : 1.700 kg/s, 54222 ppm, 75.0 bar
-RO 1 permeate       : 0.462 kg/s, 557 ppm, 1.0 bar
-RO 1 retentate      : 1.238 kg/s, 74259 ppm, 70.8 bar
-Stage 1 Volumetric water recovery: 28.29%, Salt rejection: 99.01%
-Primary Pump 2 out  : 1.238 kg/s, 74259 ppm, 75.0 bar
-Mixer 2 recycle     : 0.410 kg/s, 56986 ppm, 75.0 bar
-Mixer 2 out         : 1.648 kg/s, 69964 ppm, 75.0 bar
-RO 2 permeate       : 0.700 kg/s, 31688 ppm, 1.0 bar
-RO 2 retentate      : 0.947 kg/s, 98252 ppm, 71.4 bar
-Stage 2 Volumetric water recovery: 43.70%, Salt rejection: 55.96%
-Booster Pump 2 out  : 0.700 kg/s, 31688 ppm, 75.0 bar
-Primary Pump 3 out  : 0.947 kg/s, 98252 ppm, 75.0 bar
-RO 3 permeate       : 0.410 kg/s, 56986 ppm, 1.0 bar
-RO 3 retentate      : 0.538 kg/s, 129683 ppm, 73.3 bar
-Stage 3 Volumetric water recovery: 44.54%, Salt rejection: 43.69%
-Booster Pump 3 out  : 0.410 kg/s, 56986 ppm, 75.0 bar
-Disposal            : 0.538 kg/s, 129683 ppm, 1.0 bar
-Product             : 0.462 kg/s, 557 ppm, 1.0 bar
+Mixer 1 recycle     : 0.348 kg/s, 32663 ppm, 75.0 bar
+Mixer 1 out         : 1.348 kg/s, 60351 ppm, 75.0 bar
+RO 1 permeate       : 0.330 kg/s, 823 ppm, 1.0 bar
+RO 1 retentate      : 1.019 kg/s, 79612 ppm, 71.9 bar
+Stage 1 Volumetric water recovery: 25.55%, Salt rejection: 98.69%
+Primary Pump 2 out  : 1.019 kg/s, 79612 ppm, 75.0 bar
+Mixer 2 recycle     : 0.175 kg/s, 45135 ppm, 75.0 bar
+Mixer 2 out         : 1.194 kg/s, 74561 ppm, 75.0 bar
+RO 2 permeate       : 0.348 kg/s, 32663 ppm, 1.0 bar
+RO 2 retentate      : 0.845 kg/s, 91835 ppm, 73.8 bar
+Stage 2 Volumetric water recovery: 30.10%, Salt rejection: 57.51%
+Booster Pump 2 out  : 0.348 kg/s, 32663 ppm, 75.0 bar
+Primary Pump 3 out  : 0.845 kg/s, 91835 ppm, 75.0 bar
+RO 3 permeate       : 0.175 kg/s, 45135 ppm, 1.0 bar
+RO 3 retentate      : 0.670 kg/s, 104020 ppm, 74.4 bar
+Stage 3 Volumetric water recovery: 21.40%, Salt rejection: 52.48%
+Booster Pump 3 out  : 0.175 kg/s, 45135 ppm, 75.0 bar
+Disposal            : 0.670 kg/s, 104020 ppm, 1.0 bar
+Product             : 0.330 kg/s, 823 ppm, 1.0 bar
 """
 
     @pytest.fixture(scope="class")
@@ -469,10 +469,10 @@ Product             : 0.462 kg/s, 557 ppm, 1.0 bar
         data = pyo.ComponentMap()
         fs = model.fs
 
-        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.461950
-        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.257311e-3
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.468049
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.697427e-1
+        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.329389
+        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.271454e-3
+        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.600609
+        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.697285e-1
         data[fs.costing.LCOW]   = 1.0
         data[fs.water_recovery] = 0.5
 
@@ -483,12 +483,12 @@ Product             : 0.462 kg/s, 557 ppm, 1.0 bar
         data = pyo.ComponentMap()
         fs = model.fs
 
-        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.461950
-        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.257311e-3
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.468049
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.697427e-1
-        data[fs.costing.LCOW]   = 2.08278
-        data[fs.water_recovery] = 0.462208
+        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.329390
+        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.271454e-3
+        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.600609
+        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.697285e-1
+        data[fs.costing.LCOW]   = 2.07793
+        data[fs.water_recovery] = 0.329661
 
         return data
 
@@ -498,10 +498,10 @@ Product             : 0.462 kg/s, 557 ppm, 1.0 bar
         fs = model.fs
 
         data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.732036
-        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.445542e-3
+        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.445064e-3
         data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.197964
         data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.695545e-1
-        data[fs.costing.LCOW]   = 1.22403
+        data[fs.costing.LCOW]   = 1.51258
         data[fs.water_recovery] = 0.732481
 
         return data
