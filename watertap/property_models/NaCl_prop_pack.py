@@ -146,8 +146,8 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling('pressure', 1e-6)
         self.set_default_scaling('dens_mass_phase', 1e-3, index='Liq')
         self.set_default_scaling('visc_d_phase', 1e3, index='Liq')
-        self.set_default_scaling('diffus_phase', 1e9, index='Liq')
-        self.set_default_scaling('osm_coeff', 1e0)
+        self.set_default_scaling('diffus_phase', 1e10, index='Liq')
+        self.set_default_scaling('osm_coeff', 1e1)
         self.set_default_scaling('enth_mass_phase', 1e-5, index='Liq')
 
     @classmethod
@@ -683,12 +683,12 @@ class NaClStateBlockData(StateBlockData):
                               / iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O']))
                         iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], sf)
                     elif j == 'H2O':
-                        iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], 1)
+                        iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], 100)
 
         if self.is_property_constructed('flow_vol_phase'):
             sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'])
                   / iscale.get_scaling_factor(self.dens_mass_phase['Liq']))
-            iscale.set_scaling_factor(self.flow_vol_phase, sf)
+            iscale.set_scaling_factor(self.flow_vol_phase, sf*10.)
 
         if self.is_property_constructed('flow_vol'):
             sf = iscale.get_scaling_factor(self.flow_vol_phase)
@@ -738,7 +738,7 @@ class NaClStateBlockData(StateBlockData):
 
         # transforming constraints
         # property relationships with no index, simple constraint
-        v_str_lst_simple = ['osm_coeff', 'pressure_osm']
+        v_str_lst_simple = ('osm_coeff', 'pressure_osm')
         for v_str in v_str_lst_simple:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
@@ -747,14 +747,19 @@ class NaClStateBlockData(StateBlockData):
                 iscale.constraint_scaling_transform(c, sf)
 
         # property relationships with phase index, but simple constraint
-        v_str_lst_phase = ['dens_mass_phase', 'flow_vol_phase', 'visc_d_phase',
-                           'diffus_phase', 'enth_mass_phase']
-        for v_str in v_str_lst_phase:
+        for v_str in ('flow_vol_phase', 'visc_d_phase', 'diffus_phase'):
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
                 sf = iscale.get_scaling_factor(v['Liq'], default=1, warning=True)
                 c = getattr(self, 'eq_' + v_str)
                 iscale.constraint_scaling_transform(c, sf)
+
+        for v_str in ('dens_mass_phase', 'enth_mass_phase'):
+            if self.is_property_constructed(v_str):
+                v = getattr(self, v_str)
+                sf = iscale.get_scaling_factor(v['Liq'], default=1, warning=True)
+                c = getattr(self, 'eq_' + v_str)
+                iscale.constraint_scaling_transform(c, sf*10.)
 
         # property relationship indexed by component
         v_str_lst_comp = ['molality_comp']

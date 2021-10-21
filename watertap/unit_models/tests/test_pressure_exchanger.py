@@ -43,7 +43,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver(options={'bound_push':1e-8})
 
 
 # # -----------------------------------------------------------------------------
@@ -168,7 +168,6 @@ class TestPressureExchanger():
         m.fs.unit.high_pressure_side.properties_in[0].temperature.fix(temperature)
 
         # solve inlet conditions and only fix state variables (i.e. unfix flow_vol and mass_frac_phase)
-        solver.options['nlp_scaling_method'] = 'user-scaling'
         results = solver.solve(m.fs.unit.low_pressure_side.properties_in[0])
         assert results.solver.termination_condition == TerminationCondition.optimal
         m.fs.unit.low_pressure_side.properties_in[0].flow_mass_phase_comp['Liq', 'TDS'].fix()
@@ -207,7 +206,7 @@ class TestPressureExchanger():
     def test_initialize(self, unit_frame):
         m = unit_frame
         kwargs = {'solver': 'ipopt',
-                  'optarg': {'nlp_scaling_method': 'user-scaling'}}
+                  'optarg': {'bound_push': 1e-8}}
         initialization_tester(unit_frame, **kwargs)
 
 
@@ -220,7 +219,6 @@ class TestPressureExchanger():
     @pytest.mark.component
     def test_solve(self, unit_frame):
         m = unit_frame
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
 
         # Check for optimal solution
