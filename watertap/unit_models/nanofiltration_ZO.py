@@ -29,7 +29,8 @@ from idaes.core import (ControlVolume0DBlock,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         UnitModelBlockData,
-                        useDefault)
+                        useDefault,
+                        MaterialFlowBasis)
 from idaes.core.util import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
@@ -131,6 +132,19 @@ class NanofiltrationData(UnitModelBlockData):
     **Valid values:** {
     see property package for documentation.}"""))
 
+
+    def _process_config(self):
+        if len(self.config.property_package.solvent_set) > 1:
+            raise ConfigurationError("NF model only supports one solvent component,"
+                                     "the provided property package has specified {} solvent components"
+                                     .format(len(self.config.property_package.solvent_set)))
+
+        if len(self.config.property_package.solvent_set) == 0:
+            raise ConfigurationError("The NF model was expecting a solvent and did not receive it.")
+
+        if len(self.config.property_package.solute_set) == 0 and len(self.config.property_package.ion_set) == 0:
+            raise ConfigurationError("The NF model was expecting at least one solute or ion and did not receive any.")
+
     def build(self):
         # Call UnitModel.build to setup dynamics
         super().build()
@@ -138,6 +152,16 @@ class NanofiltrationData(UnitModelBlockData):
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
+
+        self._process_config()
+
+        if hasattr(self.config.property_package,'ion_set'):
+            solute_set = self.config.property_package.ion_set
+        elif hasattr(self.config.property_package,'solute_set'):
+            solute_set = self.config.property_package.solute_set
+
+        solvent_solute_set = self.config.property_package.solvent_set | solute_set
+
 
         # Add unit parameters
         self.flux_vol_solvent = Var(
@@ -150,7 +174,7 @@ class NanofiltrationData(UnitModelBlockData):
         self.rejection_phase_comp = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
-            self.config.property_package.solute_set,
+            solute_set,
             initialize=0.9,
             bounds=(-1 + 1e-6, 1 - 1e-6),
             units=pyunits.dimensionless,
@@ -169,23 +193,26 @@ class NanofiltrationData(UnitModelBlockData):
             doc='Membrane area')
 
         def recovery_mass_phase_comp_initialize(b, t, p, j):
-            if j in self.config.property_package.solvent_set:
+            if j in b.config.property_package.solvent_set:
                 return 0.8
-            elif j in self.config.property_package.solute_set:
+            elif j in solute_set:
                 return 0.1
 
         def recovery_mass_phase_comp_bounds(b, t, p, j):
             ub = 1 - 1e-6
-            if j in self.config.property_package.solvent_set:
+            if j in b.config.property_package.solvent_set:
                 lb = 1e-2
-            elif j in self.config.property_package.solute_set:
+            elif j in solute_set:
                 lb = 1e-5
+            else:
+                lb = 1e-5
+
             return lb, ub
 
         self.recovery_mass_phase_comp = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
-            self.config.property_package.component_list,
+            solvent_solute_set,
             initialize=recovery_mass_phase_comp_initialize,
             bounds=recovery_mass_phase_comp_bounds,
             units=pyunits.dimensionless,
@@ -246,7 +273,7 @@ class NanofiltrationData(UnitModelBlockData):
         self.mass_transfer_phase_comp = Var(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
-            self.config.property_package.component_list,
+            solvent_solute_set,
             initialize=1,
             bounds=(1e-8, 1e6),
             domain=NonNegativeReals,
@@ -255,10 +282,21 @@ class NanofiltrationData(UnitModelBlockData):
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
+                         solvent_solute_set,
                          doc="Mass transfer term")
         def eq_mass_transfer_term(b, t, p, j):
-            return b.mass_transfer_phase_comp[t, p, j] == -b.feed_side.mass_transfer_term[t, p, j]
+            # TODO- come up with better way to handle different locations of mw_comp in property models (generic vs simple ion prop model)
+            if b.feed_side.properties_in[0].get_material_flow_basis() == MaterialFlowBasis.mass:
+                return b.mass_transfer_phase_comp[t, p, j] == -b.feed_side.mass_transfer_term[t, p, j]
+            elif b.feed_side.properties_in[0].get_material_flow_basis() == MaterialFlowBasis.molar:
+                if hasattr(b.feed_side.properties_in[0].params, 'mw_comp'):
+                    mw_comp = b.feed_side.properties_in[0].params.mw_comp[j]
+                elif hasattr(b.feed_side.properties_in[0], 'mw_comp'):
+                    mw_comp = b.feed_side.properties_in[0].mw_comp[j]
+                else:
+                    raise ConfigurationError('mw_comp was not found.')
+                return b.mass_transfer_phase_comp[t, p, j] == -b.feed_side.mass_transfer_term[t, p, j] \
+                       * mw_comp
 
         # NF performance equations
         @self.Constraint(self.flowsheet().config.time,
@@ -266,20 +304,32 @@ class NanofiltrationData(UnitModelBlockData):
                          self.config.property_package.solvent_set,
                          doc="Solvent mass transfer")
         def eq_solvent_transfer(b, t, p, j):
-            return (b.flux_vol_solvent[t, j] * b.dens_solvent * b.area
-                    == -b.feed_side.mass_transfer_term[t, p, j])
+            if b.feed_side.properties_in[0].get_material_flow_basis() == MaterialFlowBasis.mass:
+                return (b.flux_vol_solvent[t, j] * b.dens_solvent * b.area
+                        == -b.feed_side.mass_transfer_term[t, p, j])
+            elif b.feed_side.properties_in[0].get_material_flow_basis() == MaterialFlowBasis.molar:
+                #TODO- come up with better way to handle different locations of mw_comp in property models (generic vs simple ion prop model)
+                if hasattr(b.feed_side.properties_in[0].params, 'mw_comp'):
+                    mw_comp = b.feed_side.properties_in[0].params.mw_comp[j]
+                elif hasattr(b.feed_side.properties_in[0], 'mw_comp'):
+                    mw_comp = b.feed_side.properties_in[0].mw_comp[j]
+                else:
+                    raise ConfigurationError('mw_comp was not found.')
+                return (b.flux_vol_solvent[t, j] * b.dens_solvent * b.area
+                        == -b.feed_side.mass_transfer_term[t, p, j] * mw_comp)
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
+                         solvent_solute_set,
                          doc="Permeate production")
         def eq_permeate_production(b, t, p, j):
             return (b.properties_permeate[t].get_material_flow_terms(p, j)
                     == -b.feed_side.mass_transfer_term[t, p, j])
 
+
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
-                         self.config.property_package.solute_set,
+                         solute_set,
                          doc="Solute rejection")
         def eq_rejection_phase_comp(b, t, p, j):
             return (b.properties_permeate[t].conc_mol_phase_comp['Liq', j]
@@ -293,7 +343,7 @@ class NanofiltrationData(UnitModelBlockData):
                     b.feed_side.properties_in[t].flow_vol)
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.config.property_package.component_list)
+                         solvent_solute_set)
         def eq_recovery_mass_phase_comp(b, t, j):
             return (b.recovery_mass_phase_comp[t, 'Liq', j] ==
                     b.properties_permeate[t].flow_mass_phase_comp['Liq', j] /
@@ -329,6 +379,9 @@ class NanofiltrationData(UnitModelBlockData):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver options
+        if optarg is None:
+            optarg = {'bound_push': 1e-8}
+
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
@@ -379,26 +432,45 @@ class NanofiltrationData(UnitModelBlockData):
         )
 
     def _get_performance_contents(self, time_point=0):
+        for k in ('ion_set', 'solute_set'):
+            if hasattr(self.config.property_package, k):
+                solute_set = getattr(self.config.property_package, k)
+                break
         var_dict = {}
+        expr_dict = {}
         var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[time_point, 'Liq']
         var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[time_point, 'Liq', 'H2O']
         var_dict["Membrane Area"] = self.area
         if hasattr(self, "deltaP"):
             var_dict["Pressure Change"] = self.deltaP[time_point]
         if self.feed_side.properties_in[time_point].is_property_constructed('flow_vol'):
-            var_dict['Volumetric Flowrate @Inlet'] = (
-                self.feed_side.properties_in[time_point].flow_vol)
+            if self.feed_side.properties_in[time_point].flow_vol.is_variable_type():
+                obj_dict = var_dict
+            elif self.feed_side.properties_in[time_point].flow_vol.is_named_expression_type():
+                obj_dict = expr_dict
+            else:
+                raise Exception(f"{self.feed_side.properties_in[time_point].flow_vol} isn't a variable nor expression")
+            obj_dict['Volumetric Flowrate @Inlet'] = self.feed_side.properties_in[time_point].flow_vol
         if self.feed_side.properties_out[time_point].is_property_constructed('flow_vol'):
-            var_dict['Volumetric Flowrate @Outlet'] = (
-                self.feed_side.properties_out[time_point].flow_vol)
+            if self.feed_side.properties_out[time_point].flow_vol.is_variable_type():
+                obj_dict = var_dict
+            elif self.feed_side.properties_out[time_point].flow_vol.is_named_expression_type():
+                obj_dict = expr_dict
+            else:
+                raise Exception(f"{self.feed_side.properties_in[time_point].flow_vol} isn't a variable nor expression")
+            obj_dict['Volumetric Flowrate @Outlet'] = self.feed_side.properties_out[time_point].flow_vol
         var_dict['Solvent Volumetric Flux']= self.flux_vol_solvent[time_point, 'H2O']
-        for j in self.config.property_package.solute_set:
-          var_dict[f'{j} Rejection'] = self.rejection_phase_comp[time_point, 'Liq', j]
-          var_dict[f'{j} Molar Concentration @Inlet'] = self.feed_side.properties_in[time_point].conc_mol_phase_comp['Liq', j]
-          var_dict[f'{j} Molar Concentration @Outlet'] = self.feed_side.properties_out[time_point].conc_mol_phase_comp['Liq', j]
-          var_dict[f'{j} Molar Concentration @Permeate'] = self.properties_permeate[time_point].conc_mol_phase_comp['Liq', j]
+        for j in solute_set:
+            var_dict[f'{j} Rejection'] = self.rejection_phase_comp[time_point, 'Liq', j]
+            if self.feed_side.properties_in[time_point].conc_mol_phase_comp['Liq', j].is_expression_type():
+                obj_dict = expr_dict
+            elif self.feed_side.properties_in[time_point].conc_mol_phase_comp['Liq', j].is_variable_type():
+                obj_dict = var_dict
+            obj_dict[f'{j} Molar Concentration @Inlet'] = self.feed_side.properties_in[time_point].conc_mol_phase_comp['Liq', j]
+            obj_dict[f'{j} Molar Concentration @Outlet'] = self.feed_side.properties_out[time_point].conc_mol_phase_comp['Liq', j]
+            obj_dict[f'{j} Molar Concentration @Permeate'] = self.properties_permeate[time_point].conc_mol_phase_comp['Liq', j]
 
-        return {"vars": var_dict}
+        return {"vars": var_dict, "exprs": expr_dict}
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
@@ -416,6 +488,11 @@ class NanofiltrationData(UnitModelBlockData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
+
+        for k in ('ion_set', 'solute_set'):
+            if hasattr(self.config.property_package, k):
+                solute_set = getattr(self.config.property_package, k)
+                break
 
         # TODO: require users to set scaling factor for area or calculate it based on mass transfer and flux
         iscale.set_scaling_factor(self.area, 1e-1)
@@ -450,7 +527,7 @@ class NanofiltrationData(UnitModelBlockData):
         for (t, p, j), v in self.recovery_mass_phase_comp.items():
             if j in self.config.property_package.solvent_set:
                 sf = 1
-            elif j in self.config.property_package.solute_set:
+            elif j in solute_set:
                 sf = 10
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)

@@ -16,7 +16,6 @@
 from pyomo.environ import ConcreteModel, TransformationFactory
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models import Feed
 from watertap.flowsheets.full_treatment_train.model_components import Separator, Mixer
 from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
 from idaes.core.util.scaling import (calculate_scaling_factors,
