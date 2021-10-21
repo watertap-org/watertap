@@ -42,6 +42,10 @@ from idaes.core.util import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
 from watertap.util.initialization import check_solve, check_dof
+from watertap.unit_models.membrane_base import (ConcentrationPolarizationType,
+        MassTransferCoefficient,
+        PressureChangeType,
+        _MembraneBaseData)
 import idaes.logger as idaeslog
 
 
@@ -51,171 +55,50 @@ __author__ = "Tim Bartholomew, Adam Atia"
 _log = idaeslog.getLogger(__name__)
 
 
-class ConcentrationPolarizationType(Enum):
-    none = auto()                    # simplified assumption: no concentration polarization
-    fixed = auto()                   # simplified assumption: concentration polarization modulus is a user specified value
-    calculated = auto()              # calculate concentration polarization (concentration at membrane interface)
-
-
-class MassTransferCoefficient(Enum):
-    none = auto()                    # mass transfer coefficient not utilized for concentration polarization effect
-    fixed = auto()                   # mass transfer coefficient is a user specified value
-    calculated = auto()              # mass transfer coefficient is calculated
-    # TODO: add option for users to define their own relationship?
-
-
-class PressureChangeType(Enum):
-    fixed_per_stage = auto()         # pressure drop across membrane channel is a user-specified value
-    fixed_per_unit_length = auto()   # pressure drop per unit length across membrane channel is a user-specified value
-    calculated = auto()              # pressure drop across membrane channel is calculated
-
-
 @declare_process_block_class("ReverseOsmosis0D")
-class ReverseOsmosisData(UnitModelBlockData):
+class ReverseOsmosisData(_MembraneBaseData):
     """
     Standard RO Unit Model Class:
     - zero dimensional model
     - steady state only
     - single liquid phase only
     """
-    CONFIG = ConfigBlock()
+    CONFIG = _MembraneBaseData.CONFIG()
 
-    CONFIG.declare("dynamic", ConfigValue(
-        domain=In([False]),
-        default=False,
-        description="Dynamic model flag - must be False",
-        doc="""Indicates whether this model will be dynamic or not.
-    **default** = False. RO units do not support dynamic
-    behavior."""))
-    CONFIG.declare("has_holdup", ConfigValue(
-        default=False,
-        domain=In([False]),
-        description="Holdup construction flag - must be False",
-        doc="""Indicates whether holdup terms should be constructed or not.
-    **default** - False. RO units do not have defined volume, thus
-    this must be False."""))
-    CONFIG.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.useDefault,
-        domain=In(MaterialBalanceType),
-        description="Material balance construction flag",
-        doc="""Indicates what type of mass balance should be constructed.
-    **default** - MaterialBalanceType.useDefault.
-    **Valid values:** {
-    **MaterialBalanceType.useDefault - refer to property package for default
-    balance type
-    **MaterialBalanceType.none** - exclude material balances,
-    **MaterialBalanceType.componentPhase** - use phase component balances,
-    **MaterialBalanceType.componentTotal** - use total component balances,
-    **MaterialBalanceType.elementTotal** - use total element balances,
-    **MaterialBalanceType.total** - use total material balance.}"""))
-    CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.useDefault,
-        domain=In(EnergyBalanceType),
-        description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed.
-    **default** - EnergyBalanceType.useDefault.
-    **Valid values:** {
-    **EnergyBalanceType.useDefault - refer to property package for default
-    balance type
-    **EnergyBalanceType.none** - exclude energy balances,
-    **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
-    **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
-    **EnergyBalanceType.energyTotal** - single energy balance for material,
-    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-    CONFIG.declare("momentum_balance_type", ConfigValue(
-        default=MomentumBalanceType.pressureTotal,
-        domain=In(MomentumBalanceType),
-        description="Momentum balance construction flag",
-        doc="""Indicates what type of momentum balance should be constructed.
-    **default** - MomentumBalanceType.pressureTotal.
-    **Valid values:** {
-    **MomentumBalanceType.none** - exclude momentum balances,
-    **MomentumBalanceType.pressureTotal** - single pressure balance for material,
-    **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
-    **MomentumBalanceType.momentumTotal** - single momentum balance for material,
-    **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    CONFIG.declare("has_pressure_change", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be constructed.
-    **default** - False.
-    **Valid values:** {
-    **True** - include pressure change terms,
-    **False** - exclude pressure change terms.}"""))
-    CONFIG.declare("pressure_change_type", ConfigValue(
-        default=PressureChangeType.fixed_per_stage,
-        domain=In(PressureChangeType),
-        description="Pressure change term construction flag",
-        doc="""
-        Indicates what type of pressure change calculation will be made. To use any of the 
-        ``pressure_change_type`` options to account for pressure drop, the configuration keyword 
-        ``has_pressure_change`` must also be set to ``True``. Also, if a value is specified for pressure 
-        change, it should be negative to represent pressure drop. 
-        
-        **default** - ``PressureChangeType.fixed_per_stage`` 
-
-
-    .. csv-table::
-        :header: "Configuration Options", "Description"
-
-        "``PressureChangeType.fixed_per_stage``", "Specify an estimated value for pressure drop across the membrane feed channel"
-        "``PressureChangeType.fixed_per_unit_length``", "Specify an estimated value for pressure drop per unit length across the membrane feed channel"
-        "``PressureChangeType.calculated``", "Allow model to perform calculation of pressure drop across the membrane feed channel"
-
-"""))
     CONFIG.declare("concentration_polarization_type", ConfigValue(
         default=ConcentrationPolarizationType.none,
         domain=In(ConcentrationPolarizationType),
         description="External concentration polarization effect in RO",
         doc="""
-        Options to account for concentration polarization.
-        
-        **default** - ``ConcentrationPolarizationType.none`` 
+            Options to account for concentration polarization.
 
-    .. csv-table::
-        :header: "Configuration Options", "Description"
+            **default** - ``ConcentrationPolarizationType.none`` 
 
-        "``ConcentrationPolarizationType.none``", "Simplifying assumption to ignore concentration polarization"
-        "``ConcentrationPolarizationType.fixed``", "Specify an estimated value for the concentration polarization modulus"
-        "``ConcentrationPolarizationType.calculated``", "Allow model to perform calculation of membrane-interface concentration"
+        .. csv-table::
+            :header: "Configuration Options", "Description"
 
-    """))
+            "``ConcentrationPolarizationType.none``", "Simplifying assumption to ignore concentration polarization"
+            "``ConcentrationPolarizationType.fixed``", "Specify an estimated value for the concentration polarization modulus"
+            "``ConcentrationPolarizationType.calculated``", "Allow model to perform calculation of membrane-interface concentration"
+        """))
+
     CONFIG.declare("mass_transfer_coefficient", ConfigValue(
         default=MassTransferCoefficient.none,
         domain=In(MassTransferCoefficient),
         description="Mass transfer coefficient in RO feed channel",
         doc="""
-        Options to account for mass transfer coefficient.
-    
-        **default** - ``MassTransferCoefficient.none`` 
-    
-    .. csv-table::
-        :header: "Configuration Options", "Description"
-    
-        "``MassTransferCoefficient.none``", "Mass transfer coefficient not used in calculations"
-        "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
-        "``MassTransferCoefficient.calculated``", "Allow model to perform calculation of mass transfer coefficient"
+            Options to account for mass transfer coefficient.
 
-"""))
+            **default** - ``MassTransferCoefficient.none`` 
 
-    CONFIG.declare("property_package", ConfigValue(
-        default=useDefault,
-        domain=is_physical_parameter_block,
-        description="Property package to use for control volume",
-        doc="""Property parameter object used to define property calculations,
-    **default** - useDefault.
-    **Valid values:** {
-    **useDefault** - use default package from parent model or flowsheet,
-    **PhysicalParameterObject** - a PhysicalParameterBlock object.}"""))
-    CONFIG.declare("property_package_args", ConfigBlock(
-        implicit=True,
-        description="Arguments to use for constructing property packages",
-        doc="""A ConfigBlock with arguments to be passed to a property block(s)
-    and used when constructing these.
-    **default** - None.
-    **Valid values:** {
-    see property package for documentation.}"""))
+        .. csv-table::
+            :header: "Configuration Options", "Description"
+
+            "``MassTransferCoefficient.none``", "Mass transfer coefficient not used in calculations"
+            "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
+            "``MassTransferCoefficient.calculated``", "Allow model to perform calculation of mass transfer coefficient"
+        """))
+
 
     def _process_config(self):
         """Check for configuration errors

@@ -42,6 +42,10 @@ from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.initialization import solve_indexed_blocks
 from enum import Enum, auto
 from watertap.util.initialization import check_solve, check_dof
+from watertap.unit_models.membrane_base import (ConcentrationPolarizationType,
+        MassTransferCoefficient,
+        PressureChangeType,
+        _MembraneBaseData)
 import idaes.logger as idaeslog
 
 
@@ -51,149 +55,11 @@ __author__ = "Adam Atia"
 _log = idaeslog.getLogger(__name__)
 
 
-class ConcentrationPolarizationType(Enum):
-    none = auto()                    # no concentration polarization
-    fixed = auto()                   # concentration polarization modulus is a user specified value
-    calculated = auto()              # calculate concentration polarization (concentration at membrane interface)
-
-
-class MassTransferCoefficient(Enum):
-    none = auto()                    # mass transfer coefficient not utilized for concentration polarization effect
-    fixed = auto()                   # mass transfer coefficient is a user specified value
-    calculated = auto()              # mass transfer coefficient is calculated
-
-
-class PressureChangeType(Enum):
-    fixed_per_stage = auto()         # pressure drop across channel is user-specified value
-    fixed_per_unit_length = auto()   # pressure drop per unit length is user-specified value
-    calculated = auto()              # pressure drop across membrane channel is calculated
-
-
 @declare_process_block_class("ReverseOsmosis1D")
-class ReverseOsmosis1DData(UnitModelBlockData):
+class ReverseOsmosis1DData(_MembraneBaseData):
     """Standard 1D Reverse Osmosis Unit Model Class."""
 
-    CONFIG = ConfigBlock()
-
-    CONFIG.declare("dynamic", ConfigValue(
-        default=False,
-        domain=In([False]),
-        description="Dynamic model flag - must be False",
-        doc="""Indicates whether this model will be dynamic or not.
-    **default** = False. RO units do not yet support dynamic
-    behavior."""))
-
-    CONFIG.declare("has_holdup", ConfigValue(
-            default=False,
-            domain=In([False]),
-            description="Holdup construction flag",
-            doc="""Indicates whether holdup terms should be constructed or not.
-    **default** - False. RO units do not have defined volume, thus
-    this must be False."""))
-
-    CONFIG.declare("has_pressure_change", ConfigValue(
-            default=False,
-            domain=In([True, False]),
-            description="Pressure change term construction flag",
-            doc="""Indicates whether terms for pressure change should be
-    constructed,
-    **default** - False.
-    **Valid values:** {
-    **True** - include pressure change terms,
-    **False** - exclude pressure change terms.}"""))
-
-    CONFIG.declare("area_definition", ConfigValue(
-            default=DistributedVars.uniform,
-            domain=In(DistributedVars),
-            description="Argument for defining form of area variable",
-            doc="""Argument defining whether area variable should be spatially
-    variant or not. **default** - DistributedVars.uniform.
-    **Valid values:** {
-    DistributedVars.uniform - area does not vary across spatial domain,
-    DistributedVars.variant - area can vary over the domain and is indexed
-    by time and space.}"""))
-
-    CONFIG.declare("property_package", ConfigValue(
-            default=None,
-            domain=is_physical_parameter_block,
-            description="Property package to use for control volume",
-            doc="""Property parameter object used to define property calculations
-    **default** - useDefault.
-    **Valid values:** {
-    **useDefault** - use default package from parent model or flowsheet,
-    **PhysicalParameterObject** - a PhysicalParameterBlock object.}"""))
-
-    CONFIG.declare("property_package_args", ConfigValue(
-            default={},
-            description="Arguments for constructing property packages",
-            doc="""A ConfigBlock with arguments to be passed to a property block(s)
-    and used when constructing these.
-    **default** - None.
-    **Valid values:** {
-    see property package for documentation.}"""))
-
-    CONFIG.declare("material_balance_type", ConfigValue(
-            default=MaterialBalanceType.useDefault,
-            domain=In(MaterialBalanceType),
-            description="Material balance construction flag",
-            doc="""Indicates what type of mass balance should be constructed,
-    **default** - MaterialBalanceType.useDefault.
-    **Valid values:** {
-    **MaterialBalanceType.useDefault - refer to property package for default
-    balance type
-    **MaterialBalanceType.none** - exclude material balances,
-    **MaterialBalanceType.componentPhase** - use phase component balances,
-    **MaterialBalanceType.componentTotal** - use total component balances,
-    **MaterialBalanceType.elementTotal** - use total element balances,
-    **MaterialBalanceType.total** - use total material balance.}"""))
-
-    CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.useDefault,
-        domain=In(EnergyBalanceType),
-        description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed.
-    **default** - EnergyBalanceType.useDefault.
-    **Valid values:** {
-    **EnergyBalanceType.useDefault - refer to property package for default
-    balance type
-    **EnergyBalanceType.none** - exclude energy balances,
-    **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
-    **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
-    **EnergyBalanceType.energyTotal** - single energy balance for material,
-    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-
-    CONFIG.declare("momentum_balance_type", ConfigValue(
-            default=MomentumBalanceType.pressureTotal,
-            domain=In(MomentumBalanceType),
-            description="Momentum balance construction flag",
-            doc="""Indicates what type of momentum balance should be constructed,
-    **default** - MomentumBalanceType.pressureTotal.
-    **Valid values:** {
-    **MomentumBalanceType.none** - exclude momentum balances,
-    **MomentumBalanceType.pressureTotal** - single pressure balance for material,
-    **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
-    **MomentumBalanceType.momentumTotal** - single momentum balance for material,
-    **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-
-    CONFIG.declare("pressure_change_type", ConfigValue(
-        default=PressureChangeType.fixed_per_stage,
-        domain=In(PressureChangeType),
-        description="Pressure change term construction flag",
-        doc="""
-            Indicates what type of pressure change calculation will be made. To use any of the 
-            ``pressure_change_type`` options to account for pressure drop, the configuration keyword 
-            ``has_pressure_change`` must also be set to ``True``. Also, if a value is specified for pressure 
-            change, it should be negative to represent pressure drop. 
-
-            **default** - ``PressureChangeType.calculated`` 
-
-
-        .. csv-table::
-            :header: "Configuration Options", "Description"
-
-            "``PressureChangeType.fixed``", "Specify an estimated value for pressure drop across the membrane feed channel or per unit_length"
-            "``PressureChangeType.calculated``", "Allow model to perform calculation of pressure drop across the membrane feed channel"
-        """))
+    CONFIG = _MembraneBaseData.CONFIG()
 
     CONFIG.declare("concentration_polarization_type", ConfigValue(
         default=ConcentrationPolarizationType.calculated,
@@ -228,6 +94,17 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
             "``MassTransferCoefficient.calculated``", "Allow model to perform calculation of mass transfer coefficient"
         """))
+
+    CONFIG.declare("area_definition", ConfigValue(
+            default=DistributedVars.uniform,
+            domain=In(DistributedVars),
+            description="Argument for defining form of area variable",
+            doc="""Argument defining whether area variable should be spatially
+    variant or not. **default** - DistributedVars.uniform.
+    **Valid values:** {
+    DistributedVars.uniform - area does not vary across spatial domain,
+    DistributedVars.variant - area can vary over the domain and is indexed
+    by time and space.}"""))
 
     CONFIG.declare(
         "transformation_method",
