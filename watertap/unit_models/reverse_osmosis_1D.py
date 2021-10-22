@@ -61,6 +61,15 @@ class ReverseOsmosis1DData(_MembraneBaseData):
 
     CONFIG = _MembraneBaseData.CONFIG()
 
+    #NOTE: concentration_polarization_type and mass_transfer_coefficient
+    #      both exist on 0D and 1D RO, but have different defaults. For
+    #      input checking, it makes sense to do that in the base class to
+    #      avoid duplicating code, but here it means that we need to delete
+    #      and recreate these CONFIG options.
+    #      Alternatively, we could either (1) have MembraneBase check options
+    #      it didn't create, or (2) have the duplicated checking code in
+    #      both the 0D and 1D RO classes.
+    del CONFIG["concentration_polarization_type"]
     CONFIG.declare("concentration_polarization_type", ConfigValue(
         default=ConcentrationPolarizationType.calculated,
         domain=In(ConcentrationPolarizationType),
@@ -78,6 +87,7 @@ class ReverseOsmosis1DData(_MembraneBaseData):
             "``ConcentrationPolarizationType.calculated``", "Allow model to perform calculation of membrane-interface concentration"
         """))
 
+    del CONFIG["mass_transfer_coefficient"]
     CONFIG.declare("mass_transfer_coefficient", ConfigValue(
         default=MassTransferCoefficient.calculated,
         domain=In(MassTransferCoefficient),
@@ -167,26 +177,6 @@ class ReverseOsmosis1DData(_MembraneBaseData):
                 "difference."
             )
             self.config.transformation_scheme = "BACKWARD"
-
-        if (self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated
-                and self.config.mass_transfer_coefficient == MassTransferCoefficient.none):
-            raise ConfigurationError(
-                "\n'mass_transfer_coefficient' and 'concentration_polarization_type' options configured incorrectly:\n"
-                "'mass_transfer_coefficient' cannot be set to MassTransferCoefficient.none "
-                "while 'concentration_polarization_type' is set to ConcentrationPolarizationType.calculated.\n "
-                "\n\nSet 'mass_transfer_coefficient' to MassTransferCoefficient.fixed or "
-                "MassTransferCoefficient.calculated "
-                "\nor set 'concentration_polarization_type' to ConcentrationPolarizationType.fixed or "
-                "ConcentrationPolarizationType.none")
-        if (self.config.concentration_polarization_type != ConcentrationPolarizationType.calculated
-                and self.config.mass_transfer_coefficient != MassTransferCoefficient.none):
-            raise ConfigurationError(
-                "\nConflict between configuration options:\n"
-                "'mass_transfer_coefficient' cannot be set to {} "
-                "while 'concentration_polarization_type' is set to {}.\n\n"
-                "'mass_transfer_coefficient' must be set to MassTransferCoefficient.none\nor "
-                "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated"
-                    .format(self.config.mass_transfer_coefficient, self.config.concentration_polarization_type))
 
     def build(self):
         """

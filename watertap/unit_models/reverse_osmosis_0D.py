@@ -65,74 +65,12 @@ class ReverseOsmosisData(_MembraneBaseData):
     """
     CONFIG = _MembraneBaseData.CONFIG()
 
-    CONFIG.declare("concentration_polarization_type", ConfigValue(
-        default=ConcentrationPolarizationType.none,
-        domain=In(ConcentrationPolarizationType),
-        description="External concentration polarization effect in RO",
-        doc="""
-            Options to account for concentration polarization.
-
-            **default** - ``ConcentrationPolarizationType.none`` 
-
-        .. csv-table::
-            :header: "Configuration Options", "Description"
-
-            "``ConcentrationPolarizationType.none``", "Simplifying assumption to ignore concentration polarization"
-            "``ConcentrationPolarizationType.fixed``", "Specify an estimated value for the concentration polarization modulus"
-            "``ConcentrationPolarizationType.calculated``", "Allow model to perform calculation of membrane-interface concentration"
-        """))
-
-    CONFIG.declare("mass_transfer_coefficient", ConfigValue(
-        default=MassTransferCoefficient.none,
-        domain=In(MassTransferCoefficient),
-        description="Mass transfer coefficient in RO feed channel",
-        doc="""
-            Options to account for mass transfer coefficient.
-
-            **default** - ``MassTransferCoefficient.none`` 
-
-        .. csv-table::
-            :header: "Configuration Options", "Description"
-
-            "``MassTransferCoefficient.none``", "Mass transfer coefficient not used in calculations"
-            "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
-            "``MassTransferCoefficient.calculated``", "Allow model to perform calculation of mass transfer coefficient"
-        """))
-
-
-    def _process_config(self):
-        """Check for configuration errors
-        """
-        if (self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated
-                and self.config.mass_transfer_coefficient == MassTransferCoefficient.none):
-            raise ConfigurationError(
-                "\n'mass_transfer_coefficient' and 'concentration_polarization_type' options configured incorrectly:\n"
-                "'mass_transfer_coefficient' cannot be set to MassTransferCoefficient.none "
-                "while 'concentration_polarization_type' is set to ConcentrationPolarizationType.calculated.\n "
-                "\n\nSet 'mass_transfer_coefficient' to MassTransferCoefficient.fixed or "
-                "MassTransferCoefficient.calculated "
-                "\nor set 'concentration_polarization_type' to ConcentrationPolarizationType.fixed or "
-                "ConcentrationPolarizationType.none")
-        if (self.config.concentration_polarization_type != ConcentrationPolarizationType.calculated
-                and self.config.mass_transfer_coefficient != MassTransferCoefficient.none):
-            raise ConfigurationError(
-                "\nConflict between configuration options:\n"
-                "'mass_transfer_coefficient' cannot be set to {} "
-                "while 'concentration_polarization_type' is set to {}.\n\n"
-                "'mass_transfer_coefficient' must be set to MassTransferCoefficient.none\nor "
-                "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated"
-                .format(self.config.mass_transfer_coefficient, self.config.concentration_polarization_type))
-
-
     def build(self):
         """
         Build the RO model.
         """
         # Call UnitModel.build to setup dynamics
         super().build()
-
-        # Check configuration errors
-        self._process_config()
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
