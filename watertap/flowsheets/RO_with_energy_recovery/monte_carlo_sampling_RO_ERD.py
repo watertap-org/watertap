@@ -47,7 +47,7 @@ def run_parameter_sweep(results_file, seed=None, use_LHS=False):
     set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=solver)
     initialize_system(m, solver=solver)
 
-    # Simulate once outside the parameter sweep to ensure everything is appropriately initialized 
+    # Simulate once outside the parameter sweep to ensure everything is appropriately initialized
     solve(m, solver=solver)
 
     # Define the sampling type and ranges for three different variables
@@ -62,7 +62,7 @@ def run_parameter_sweep(results_file, seed=None, use_LHS=False):
     num_samples = 10
 
     # Run the parameter sweep
-    global_results = parameter_sweep(m, sweep_params, outputs, results_file=results_file, 
+    global_results = parameter_sweep(m, sweep_params, outputs, results_file=results_file,
         optimize_function=optimize, optimize_kwargs={'solver':solver}, num_samples=num_samples, seed=seed)
 
     return global_results

@@ -19,10 +19,13 @@ import warnings
 
 from scipy.interpolate import griddata
 from enum import Enum, auto
-from abc import abstractmethod, ABC 
+from abc import abstractmethod, ABC
 from idaes.core.util import get_solver
 
 from idaes.surrogate.pysmo import sampling
+from idaes.core.util.model_statistics import (variables_in_activated_equalities_set,
+    unfixed_variables_in_activated_equalities_set)
+
 
 # ================================================================
 
@@ -33,7 +36,7 @@ class SamplingType(Enum):
 
 # ================================================================
 
-class _Sample(ABC): 
+class _Sample(ABC):
 
     def __init__(self, pyomo_object, *args, **kwargs):
         # Check for indexed with single value
@@ -44,16 +47,16 @@ class _Sample(ABC):
         # Make sure we are a Var() or Param()
         if not (pyomo_object.is_parameter_type() or pyomo_object.is_variable_type()):
             raise ValueError(f"The sweep parameter needs to be a pyomo Param or Var but {type(pyomo_object)} was provided instead.")
-        self.pyomo_object = pyomo_object 
+        self.pyomo_object = pyomo_object
         self.setup(*args, **kwargs)
 
-    @abstractmethod 
-    def sample(self, num_samples): 
-        pass 
+    @abstractmethod
+    def sample(self, num_samples):
+        pass
 
-    @abstractmethod 
-    def setup(self, *args, **kwargs): 
-        pass 
+    @abstractmethod
+    def setup(self, *args, **kwargs):
+        pass
 
 # ================================================================
 
@@ -67,7 +70,7 @@ class FixedSample(_Sample):
 
 class LinearSample(FixedSample):
 
-    def sample(self, num_samples): 
+    def sample(self, num_samples):
         return np.linspace(self.lower_limit, self.upper_limit, self.num_samples)
 
     def setup(self, lower_limit, upper_limit, num_samples):
@@ -79,7 +82,7 @@ class LinearSample(FixedSample):
 
 class UniformSample(RandomSample):
 
-    def sample(self, num_samples): 
+    def sample(self, num_samples):
         return np.random.uniform(self.lower_limit, self.upper_limit, num_samples)
 
     def setup(self, lower_limit, upper_limit):
@@ -90,7 +93,7 @@ class UniformSample(RandomSample):
 
 class NormalSample(RandomSample):
 
-    def sample(self, num_samples): 
+    def sample(self, num_samples):
         return np.random.normal(self.mean, self.sd, num_samples)
 
     def setup(self, mean, sd):
@@ -102,7 +105,7 @@ class NormalSample(RandomSample):
 class LatinHypercubeSample(_Sample):
     sampling_type = SamplingType.RANDOM_LHS
 
-    def sample(self, num_samples): 
+    def sample(self, num_samples):
         return [self.lower_limit, self.upper_limit]
 
     def setup(self, lower_limit, upper_limit):
@@ -319,6 +322,61 @@ def _interp_nan_values(global_values, global_results):
 
 # ================================================================
 
+def _create_local_output_skeleton(model, num_samples, variable_type="unfixed"):
+
+    output_dict = {}
+
+    if variable_type == "unfixed":
+        for var in unfixed_variables_in_activated_equalities_set(model.fs):
+            var_str = var.name # or var.__str__ # Figure out which one is better
+            output_dict[var_str] = _create_component_output_skeleton(var, num_samples)
+    elif variable_type == "fixed":
+        raise NotImplementedError
+    else:
+        raise NotImplementedError
+
+
+    return output_dict
+
+# ================================================================
+
+def _create_component_output_skeleton(component, num_samples):
+    # TODO: Revisit thie variable "component" name
+
+    comp_dict = {}
+    attr_list  = dir(component)
+    comp_dict["value"] = np.zeros(num_samples, dtype=np.float)
+    if 'lb' in attr_list:
+        comp_dict["lower bound"] = component.lb
+    if 'ub' in attr_list:
+        comp_dict["upper bound"] = component.lb
+    if 'get_units' in attr_list:
+        # print("component.get_units()", component.get_units())
+        unit_obj = component.get_units()
+        if unit_obj is not None:
+            comp_dict["units"] = component.get_units().name
+        else:
+            comp_dict["units"] = "non-dimensional"
+
+    return comp_dict
+
+# ================================================================
+
+def _update_local_output_dict(model, case_number, output_dict, variable_type):
+
+    if variable_type == "unfixed":
+        for var in unfixed_variables_in_activated_equalities_set(model.fs):
+            output_dict[var.name]["value"][case_number] = var.value
+    elif variable_type == "fixed":
+        raise NotImplementedError
+    else:
+        raise NotImplementedError
+
+    return None
+
+# ================================================================
+
+
 def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
         optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
         mpi_comm=None, debugging_data_dir=None, interpolate_nan_outputs=False, num_samples=None, seed=None):
@@ -326,12 +384,12 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
     '''
     This function offers a general way to perform repeated optimizations
     of a model for the purposes of exploring a parameter space while
-    monitoring multiple outputs. 
+    monitoring multiple outputs.
     If provided, writes single CSV file to ``results_file`` with all inputs and resulting outputs.
 
     Arguments:
 
-        model : A Pyomo ConcreteModel containing a watertap flowsheet, for best 
+        model : A Pyomo ConcreteModel containing a watertap flowsheet, for best
                 results it should be initialized before being passed to this
                 function.
 
@@ -359,13 +417,13 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
                                      e.g., ``optimize_function(model, **optimize_kwargs)``. The default
                                      uses no kwargs.
 
-        reinitialize_function (optional) : A user-defined function to perform the re-initialize the 
+        reinitialize_function (optional) : A user-defined function to perform the re-initialize the
                                            flowsheet ``model`` if the first call to ``optimize_function``
                                            fails for any reason. After ``reinitialize_function``, the
                                            parameter sweep tool will immediately call
                                            ``optimize_function`` again.
 
-        reinitialize_kwargs (optional) : Dictionary or kwargs to pass into every call to 
+        reinitialize_kwargs (optional) : Dictionary or kwargs to pass into every call to
                                          ``reinitialize_function``. The first arg will always be
                                          ``model``, e.g.,
                                          ``reinitialize_function(model, **reinitialize_kwargs)``.
@@ -382,7 +440,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
                                              of np.nan will be replaced with a value obtained via
                                              a linear interpolation of their surrounding valid neighbors.
                                              If true, a second output file with the extension "_clean"
-                                             will be saved alongside the raw (un-interpolated) values. 
+                                             will be saved alongside the raw (un-interpolated) values.
 
         num_samples (optional) : If the user is using sampling techniques rather than a linear grid
                                  of values, they need to set the number of samples
@@ -392,7 +450,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
     Returns:
 
         save_data : A list were the first N columns are the values of the parameters passed
-                    by ``sweep_params`` and the remaining columns are the values of the 
+                    by ``sweep_params`` and the remaining columns are the values of the
                     simulation identified by the ``outputs`` argument.
     '''
 
@@ -402,7 +460,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
     # Convert sweep_params to LinearSamples
     sweep_params, sampling_type = _process_sweep_params(sweep_params)
 
-    # Set the seed before sampling 
+    # Set the seed before sampling
     np.random.seed(seed)
 
     # Enumerate/Sample the parameter space
@@ -422,6 +480,10 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
     if reinitialize_kwargs is None:
         reinitialize_kwargs = dict()
 
+    # Create the output skeleton for storing detailed data
+    output_variable_type = "unfixed"
+    local_output_dict = _create_local_output_skeleton(model, local_num_cases, variable_type=output_variable_type)
+
     # ================================================================
     # Run all optimization cases
     # ================================================================
@@ -433,6 +495,8 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
         try:
             # Simulate/optimize with this set of parameters
             optimize_function(model, **optimize_kwargs)
+            # store the values of the optimization
+            _update_local_output_dict(model, k, local_output_dict, output_variable_type)
 
         except:
             # If the run is infeasible, report nan
@@ -456,6 +520,8 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
             else:
                 local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
 
+    import pprint
+    pprint.pprint(output_dict)
 
     # ================================================================
     # Save results
@@ -469,7 +535,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
             dirname = os.path.dirname(results_file)
             if dirname != '':
                 os.makedirs(dirname, exist_ok=True)
-                
+
         if debugging_data_dir is not None:
             os.makedirs(debugging_data_dir, exist_ok=True)
 
@@ -506,7 +572,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
                 interp_file = '%s/interpolated_%s' % (head, tail)
 
             np.savetxt(interp_file, global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
-    
+
     return global_save_data
 
 # ================================================================
