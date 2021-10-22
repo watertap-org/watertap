@@ -63,8 +63,6 @@ class ReverseOsmosisData(_MembraneBaseData):
         # Call UnitModel.build to setup dynamics
         super().build()
 
-        super()._make_performance()
-
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         self.io_list = Set(initialize=['in', 'out'])  # inlet/outlet set

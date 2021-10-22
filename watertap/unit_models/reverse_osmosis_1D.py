@@ -299,7 +299,6 @@ class ReverseOsmosis1DData(_MembraneBaseData):
         Returns:
             None
         """
-        super()._make_performance()
 
         solvent_set = self.config.property_package.solvent_set
         solute_set = self.config.property_package.solute_set

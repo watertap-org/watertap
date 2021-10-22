@@ -195,7 +195,11 @@ class _MembraneBaseData(UnitModelBlockData):
 
 """))
 
-    def _process_config(self):
+    def build(self):
+        """
+        Common variables and constraints for an RO unit model
+        """
+        super().build()
 
         if len(self.config.property_package.solvent_set) > 1:
             raise ConfigurationError("Membrane models only supports one solvent component,"
@@ -240,16 +244,8 @@ class _MembraneBaseData(UnitModelBlockData):
                 "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated"
                     .format(self.config.mass_transfer_coefficient, self.config.concentration_polarization_type))
 
-    def build(self):
-        super().build()
-        self._process_config()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
-
-    def _make_performance(self):
-        """
-        Common variables and constraints for an RO unit model
-        """
 
         solvent_set = self.config.property_package.solvent_set
         solute_set = self.config.property_package.solute_set
