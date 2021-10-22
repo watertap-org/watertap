@@ -12,7 +12,7 @@
 ###############################################################################
 
 from enum import Enum, auto
-from pyomo.environ import Suffix
+from pyomo.environ import NonNegativeReals, Param, Suffix, Var, units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core import UnitModelBlockData, useDefault, MaterialBalanceType,\
         EnergyBalanceType, MomentumBalanceType
@@ -243,3 +243,87 @@ class _MembraneBaseData(UnitModelBlockData):
         self._process_config()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
+
+    def _make_performance(self):
+        """
+        Common variables and constraints for an RO unit model
+        """
+
+        solvent_set = self.config.property_package.solvent_set
+        solute_set = self.config.property_package.solute_set
+
+        units_meta = \
+            self.config.property_package.get_metadata().get_derived_units
+
+        """ Unit model variables"""
+        self.A_comp = Var(
+            self.flowsheet().config.time,
+            solvent_set,
+            initialize=1e-12,
+            bounds=(1e-18, 1e-6),
+            domain=NonNegativeReals,
+            units=units_meta('length') * units_meta('pressure') ** -1 * units_meta('time') ** -1,
+            doc='Solvent permeability coeff.')
+
+        self.B_comp = Var(
+            self.flowsheet().config.time,
+            solute_set,
+            initialize=1e-8,
+            bounds=(1e-11, 1e-5),
+            domain=NonNegativeReals,
+            units=units_meta('length')*units_meta('time')**-1,
+            doc='Solute permeability coeff.')
+
+        # TODO: add water density to NaCl prop model and remove here (or use IDAES version)
+        self.dens_solvent = Param(
+            initialize=1000,
+            units=units_meta('mass')*units_meta('length')**-3,
+            doc='Pure water density')
+
+        self.area = Var(
+            initialize=10,
+            bounds=(1e-1, 1e3),
+            domain=NonNegativeReals,
+            units=units_meta('length')**2,
+            doc='Membrane area')
+
+        self.recovery_mass_phase_comp = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            initialize=lambda b,t,p,j : 0.4037 if j in solvent_set else 0.0033,
+            bounds=lambda b,t,p,j : (1e-2, 1 - 1e-6) if j in solvent_set else (1e-5, 1 - 1e-6),
+            units=pyunits.dimensionless,
+            doc='Mass-based component recovery')
+
+        self.recovery_vol_phase = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            initialize=0.4,
+            bounds=(1e-2, 1 - 1e-6),
+            units=pyunits.dimensionless,
+            doc='Volumetric recovery rate')
+
+        if ((self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)
+                or self.config.pressure_change_type == PressureChangeType.calculated):
+
+            self.channel_height = Var(
+                initialize=1e-3,
+                bounds=(1e-4, 5e-3),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Feed-channel height')
+
+            self.dh = Var(
+                initialize=1e-3,
+                bounds=(1e-4, 5e-3),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Hydraulic diameter of feed channel')
+
+            self.spacer_porosity = Var(
+                initialize=0.95,
+                bounds=(0.1, 0.99),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc='Feed-channel spacer porosity')

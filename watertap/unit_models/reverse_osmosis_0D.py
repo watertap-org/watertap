@@ -72,6 +72,8 @@ class ReverseOsmosisData(_MembraneBaseData):
         # Call UnitModel.build to setup dynamics
         super().build()
 
+        super()._make_performance()
+
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         self.io_list = Set(initialize=['in', 'out'])  # inlet/outlet set
@@ -82,91 +84,16 @@ class ReverseOsmosisData(_MembraneBaseData):
         # For permeate-specific scaling in calculate_scaling_factors
         self._permeate_scaled_properties = ComponentSet()
 
-        # Add unit parameters
-        self.A_comp = Var(
-            self.flowsheet().config.time,
-            solvent_set,
-            initialize=1e-12,
-            bounds=(1e-18, 1e-6),
-            domain=NonNegativeReals,
-            units=units_meta('length')*units_meta('pressure')**-1*units_meta('time')**-1,
-            doc="""Solvent permeability coeff.""")
-        self.B_comp = Var(
-            self.flowsheet().config.time,
-            solute_set,
-            initialize=1e-8,
-            bounds=(1e-11, 1e-5),
-            domain=NonNegativeReals,
-            units=units_meta('length')*units_meta('time')**-1,
-            doc='Solute permeability coeff.')
-        self.dens_solvent = Param(
-            initialize=1000,
-            units=units_meta('mass')*units_meta('length')**-3,
-            doc='Pure water density')
-
         # Add unit variables
-        def flux_mass_io_phase_comp_initialize(b, t, io, p, j):
-            if j in solvent_set:
-                return 5e-4
-            elif j in solute_set:
-                return 1e-6
-
-        def flux_mass_io_phase_comp_bounds(b, t, io, p, j):
-            if j in solvent_set:
-                ub = 3e-2
-                lb = 1e-4
-            elif j in solute_set:
-                ub = 1e-3
-                lb = 1e-8
-            return lb, ub
-
         self.flux_mass_io_phase_comp = Var(
             self.flowsheet().config.time,
             self.io_list,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
-            initialize=flux_mass_io_phase_comp_initialize,
-            bounds=flux_mass_io_phase_comp_bounds,
+            initialize=lambda b,t,x,p,j : 5e-4 if j in solvent_set else 1e-6,
+            bounds=lambda b,t,x,p,j : (1e-4, 3e-2) if j in solvent_set else (1e-8, 1e-3),
             units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Mass flux across membrane at inlet and outlet')
-
-        self.area = Var(
-            initialize=10,
-            bounds=(1e-1, 1e3),
-            domain=NonNegativeReals,
-            units=units_meta('length')**2,
-            doc='Membrane area')
-
-        def recovery_mass_phase_comp_initialize(b, t, p, j):
-            if j in solvent_set:
-                return 0.1
-            elif j in solute_set:
-                return 0.01
-
-        def recovery_mass_phase_comp_bounds(b, t, p, j):
-            ub = 1 - 1e-6
-            if j in solvent_set:
-                lb = 1e-2
-            elif j in solute_set:
-                lb = 1e-5
-            return lb, ub
-
-        self.recovery_mass_phase_comp = Var(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            initialize=recovery_mass_phase_comp_initialize,
-            bounds=recovery_mass_phase_comp_bounds,
-            units=pyunits.dimensionless,
-            doc='Mass-based component recovery')
-
-        self.recovery_vol_phase = Var(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            initialize=0.1,
-            bounds=(1e-2, 1 - 1e-6),
-            units=pyunits.dimensionless,
-            doc='Volumetric-based recovery')
 
         self.rejection_phase_comp = Var(
             self.flowsheet().config.time,
@@ -199,24 +126,6 @@ class ReverseOsmosisData(_MembraneBaseData):
                 doc='Mass transfer coefficient in feed channel at inlet and outlet')
         if ((self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)
                 or self.config.pressure_change_type == PressureChangeType.calculated):
-            self.channel_height = Var(
-                initialize=1e-3,
-                bounds=(1e-4, 5e-3),
-                domain=NonNegativeReals,
-                units=units_meta('length'),
-                doc='Feed-channel height')
-            self.dh = Var(
-                initialize=1e-3,
-                bounds=(1e-4, 5e-3),
-                domain=NonNegativeReals,
-                units=units_meta('length'),
-                doc='Hydraulic diameter of feed channel')
-            self.spacer_porosity = Var(
-                initialize=0.95,
-                bounds=(0.1, 0.99),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc='Feed-channel spacer porosity')
             self.N_Re_io = Var(
                 self.flowsheet().config.time,
                 self.io_list,
