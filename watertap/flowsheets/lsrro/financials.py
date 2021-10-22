@@ -90,6 +90,7 @@ def get_system_costing(self):
     iscale.set_scaling_factor(b.investment_cost_total, 1e-5)
     iscale.set_scaling_factor(b.operating_cost_MLC, 1e-2)
     iscale.set_scaling_factor(b.operating_cost_total, 1e-2)
+    iscale.set_scaling_factor(b.LCOW, 1)
 
     capital_cost_var_lst = []
     operating_cost_var_lst = []
@@ -101,17 +102,26 @@ def get_system_costing(self):
 
     b.eq_capital_cost_total = Constraint(
         expr=b.capital_cost_total == sum(capital_cost_var_lst))
+    iscale.set_scaling_factor(b.eq_capital_cost_total, iscale.get_scaling_factor(b.capital_cost_total))
+
     b.eq_investment_cost_total = Constraint(
         expr=(b.investment_cost_total ==
               b.capital_cost_total * self.costing_param.factor_total_investment))
+    iscale.set_scaling_factor(b.eq_investment_cost_total, iscale.get_scaling_factor(b.investment_cost_total))
+
     b.eq_operating_cost_MLC = Constraint(
         expr=(b.operating_cost_MLC ==
               b.investment_cost_total * self.costing_param.factor_MLC))
+    iscale.set_scaling_factor(b.eq_operating_cost_MLC, iscale.get_scaling_factor(b.operating_cost_MLC))
+
     b.eq_operating_cost_total = Constraint(
         expr=b.operating_cost_total == sum(operating_cost_var_lst))
+    iscale.set_scaling_factor(b.eq_operating_cost_total, iscale.get_scaling_factor(b.operating_cost_total))
+
     b.eq_LCOW = Constraint(
         expr=b.LCOW == (b.investment_cost_total * self.costing_param.factor_capital_annualization
                         + b.operating_cost_total) / (self.annual_water_production / (pyunits.m**3/pyunits.year)))
+    iscale.set_scaling_factor(b.eq_LCOW, iscale.get_scaling_factor(b.LCOW))
 
 
 def _make_vars(self):
@@ -135,11 +145,13 @@ def ReverseOsmosis_costing(self):
     # capital cost
     self.eq_capital_cost = Constraint(
         expr=self.capital_cost == b_fs.costing_param.mem_cost * b_RO.area/pyunits.m**2)
+    iscale.set_scaling_factor(self.eq_capital_cost, iscale.get_scaling_factor(self.capital_cost))
 
     # operating cost
     self.eq_operating_cost = Constraint(
         expr=self.operating_cost == b_fs.costing_param.factor_membrane_replacement
              * b_fs.costing_param.mem_cost * b_RO.area / pyunits.m ** 2)
+    iscale.set_scaling_factor(self.eq_operating_cost, iscale.get_scaling_factor(self.operating_cost))
 
 def pressure_changer_costing(self,
                              pump_type="centrifugal"):
@@ -156,12 +168,14 @@ def pressure_changer_costing(self,
         # capital cost
         self.eq_capital_cost = Constraint(
             expr=self.capital_cost == b_fs.costing_param.hp_pump_cost * b_PC.work_mechanical[0] / pyunits.W)
+        iscale.set_scaling_factor(self.eq_capital_cost, iscale.get_scaling_factor(self.capital_cost))
 
         # operating cost
         self.eq_operating_cost = Constraint(
             expr=self.operating_cost == (b_PC.work_mechanical[0] / pyunits.W
                                          * 3600 * 24 * 365 * b_fs.costing_param.load_factor)
             * b_fs.costing_param.electricity_cost / 3600 / 1000)
+        iscale.set_scaling_factor(self.eq_operating_cost, iscale.get_scaling_factor(self.operating_cost))
 
     elif pump_type == 'Pressure exchanger':
         # capital cost
@@ -171,6 +185,8 @@ def pressure_changer_costing(self,
                  * (sum(b_cv_in.flow_mass_phase_comp['Liq', j] / (pyunits.kg/pyunits.s)
                         for j in b_PC.config.property_package.component_list)
                  / (b_cv_in.dens_mass_phase['Liq'] / (pyunits.kg/pyunits.m**3)) * 3600) ** 0.58))
+
+        iscale.set_scaling_factor(self.eq_capital_cost, iscale.get_scaling_factor(self.capital_cost))
 
         # operating cost
         self.operating_cost.fix(0)

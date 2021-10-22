@@ -49,7 +49,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver(options={'bound_push':1e-8})
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
 def test_config():
@@ -323,10 +323,7 @@ class TestReverseOsmosis():
         m = RO_frame
 
         m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e1, index=('Liq', 'H2O'))
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e4, index=('Liq', 'NaCl'))
-
-        set_scaling_factor(m.fs.unit.permeate_side[0, 0].flow_mass_phase_comp['Liq', 'H2O'], 0)
-        set_scaling_factor(m.fs.unit.permeate_side[0, 0].flow_mass_phase_comp['Liq', 'NaCl'], 0)
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'NaCl'))
 
         for x in m.fs.unit.feed_side.length_domain:
             set_scaling_factor(m.fs.unit.mass_transfer_phase_comp[0, x, 'Liq', 'NaCl'], 1e3)
@@ -354,7 +351,6 @@ class TestReverseOsmosis():
     def test_solve(self, RO_frame):
         m = RO_frame
 
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -517,7 +513,6 @@ class TestReverseOsmosis():
         assert badly_scaled_var_lst == []
 
         # Solve
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -667,7 +662,6 @@ class TestReverseOsmosis():
         assert badly_scaled_var_lst == []
 
         # Solve
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -813,7 +807,6 @@ class TestReverseOsmosis():
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
 
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -974,7 +967,6 @@ class TestReverseOsmosis():
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
 
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -1140,7 +1132,6 @@ class TestReverseOsmosis():
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
 
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -1306,7 +1297,6 @@ class TestReverseOsmosis():
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
 
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
 
         # Check for optimal solution

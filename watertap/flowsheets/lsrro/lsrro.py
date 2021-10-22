@@ -42,7 +42,7 @@ import watertap.property_models.NaCl_prop_pack as props
 
 
 
-def main(number_of_stages):
+def main(number_of_stages, water_recovery=None):
     m = build(number_of_stages)
     set_operating_conditions(m)
     initialize(m)
@@ -52,7 +52,7 @@ def main(number_of_stages):
     display_design(m)
     display_state(m)
 
-    optimize_set_up(m)
+    optimize_set_up(m, water_recovery)
     solve(m)
     print('\n***---Optimization results---***')
     display_system(m)
@@ -136,6 +136,8 @@ def build(number_of_stages=2):
 
     # costing
     financials.get_system_costing(m.fs)
+    # objective
+    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
     # connections
 
@@ -241,7 +243,7 @@ def set_operating_conditions(m):
         stage.B_comp.fix(mem_B*B_scale)
         stage.channel_height.fix(height)
         stage.spacer_porosity.fix(spacer_porosity)
-        stage.area.fix(area)
+        stage.area.fix(area/float(idx))
         stage.width.fix(width)
         stage.permeate.pressure[0].fix(pressure_atm)
 
@@ -344,7 +346,7 @@ def initialize(m, verbose=False, solver=None):
     # ---initializing---
     # set up solvers
     if solver is None:
-        solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
+        solver = get_solver(options={'bound_push': 1e-8})
 
     optarg = solver.options
     do_initialization_pass(m, optarg=optarg, guess_mixers=True)
@@ -369,7 +371,7 @@ def initialize(m, verbose=False, solver=None):
 def solve(m, solver=None, tee=False, raise_on_failure=False):
     # ---solving---
     if solver is None:
-        solver = get_solver(options={'nlp_scaling_method':'user-scaling'})
+        solver = get_solver(options={'bound_push': 1e-8})
 
     results = solver.solve(m, tee=tee)
     if check_optimal_termination(results):
@@ -383,8 +385,6 @@ def solve(m, solver=None, tee=False, raise_on_failure=False):
 
 
 def optimize_set_up(m, water_recovery=None):
-    # objective
-    m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
     for pump in m.fs.PrimaryPumps.values():
         pump.control_volume.properties_out[0].pressure.unfix()
@@ -489,8 +489,10 @@ def display_system(m):
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) != 2:
-        print("Usage: python lsrro.py number_of_stages")
-    else:
+    if len(sys.argv) not in (2,3):
+        print("Usage 1: python lsrro.py number_of_stages")
+        print("Usage 2: python lsrro.py number_of_stages target_water_recovery_fraction")
+    elif len(sys.argv) == 2:
         main(int(sys.argv[1]))
-
+    else:
+        main(int(sys.argv[1]), float(sys.argv[2]))
