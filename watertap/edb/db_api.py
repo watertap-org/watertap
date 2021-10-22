@@ -215,18 +215,24 @@ class ElectrolyteDB:
             it = collection.find()
         return Result(iterator=it, item_class=Reaction)
 
-    def get_base(self, name: str = None) -> Result:
-        """Get base information by name of its type."""
+    def get_base(self, name: str = None) -> Union[Result, Base]:
+        """Get base information by name of its type.
+
+        Args:
+            name: Name of the base type.
+        Returns:
+            If no name is given, a Result iterator over all the bases.
+            Otherwise, a single `Base` object.
+        """
         if name:
             query = {"name": name}
         else:
             query = {}
         collection = self._db.base
         result = Result(iterator=collection.find(filter=query), item_class=Base)
-        return result
-
-    def get_one_base(self, *args):
-        for result in self.get_base(*args):
+        if name:
+            return list(result)[0]
+        else:
             return result
 
     def load(
