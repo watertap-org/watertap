@@ -15,7 +15,6 @@
 # Import Pyomo libraries
 from pyomo.environ import (Var,
                            Param,
-                           Suffix,
                            NonNegativeReals,
                            NegativeReals,
                            units as pyunits,
@@ -24,20 +23,14 @@ from pyomo.environ import (Var,
                            Constraint,
                            Block)
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigValue, In
 # Import IDAES cores
 from idaes.core import (ControlVolume1DBlock,
                         declare_process_block_class,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
                         MomentumBalanceType,
-                        UnitModelBlockData,
                         useDefault)
 from idaes.core.control_volume1d import DistributedVars
-from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.initialization import solve_indexed_blocks
 from enum import Enum, auto
@@ -608,12 +601,6 @@ class ReverseOsmosis1DData(_MembraneBaseData):
                         sum(bulk.flow_mass_phase_comp['Liq', j] for j in b.config.property_package.component_list)
                         * b.dh)
 
-            @self.Constraint(doc="Hydraulic diameter")  # eqn. 17 in Schock & Miquel, 1987
-            def eq_dh(b):
-                return (b.dh ==
-                        4 * b.spacer_porosity
-                        / (2 / b.channel_height
-                           + (1 - b.spacer_porosity) * 8 / b.channel_height))
         ## ==========================================================================
         # Pressure drop
         if ((self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length
@@ -899,20 +886,6 @@ class ReverseOsmosis1DData(_MembraneBaseData):
         # TODO: add more vars
         return {"vars": var_dict, "exprs": expr_dict}
 
-    def _get_stream_table_contents(self, time_point=0):
-        return create_stream_table_dataframe(
-            {
-                "Feed Inlet": self.inlet,
-                "Feed Outlet": self.retentate,
-                "Permeate Outlet": self.permeate,
-            },
-            time_point=time_point,
-        )
-
-    def get_costing(self, module=None, **kwargs):
-        self.costing = Block()
-        module.ReverseOsmosis_costing(self.costing, **kwargs)
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
         # setting scaling factors for variables
@@ -920,9 +893,6 @@ class ReverseOsmosis1DData(_MembraneBaseData):
             iscale.set_scaling_factor(self.permeate_side[0, 0].flow_mass_phase_comp['Liq', j], 1e+5)
 
         # these variables should have user input, if not there will be a warning
-        if iscale.get_scaling_factor(self.area) is None:
-            sf = iscale.get_scaling_factor(self.area, default=10, warning=True)
-            iscale.set_scaling_factor(self.area, sf)
 
         if iscale.get_scaling_factor(self.width) is None:
             sf = iscale.get_scaling_factor(self.width, default=1, warning=True)
@@ -937,26 +907,9 @@ class ReverseOsmosis1DData(_MembraneBaseData):
         if iscale.get_scaling_factor(self.area_cross) == 1:
             iscale.set_scaling_factor(self.area_cross, 100)
 
-        if iscale.get_scaling_factor(self.A_comp) is None:
-            iscale.set_scaling_factor(self.A_comp, 1e12)
-
-        if iscale.get_scaling_factor(self.B_comp) is None:
-            iscale.set_scaling_factor(self.B_comp, 1e8)
-
         if iscale.get_scaling_factor(self.dens_solvent) is None:
             sf = iscale.get_scaling_factor(self.feed_side.properties[0, 0].dens_mass_phase['Liq'])
             iscale.set_scaling_factor(self.dens_solvent, sf)
-
-        if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
-            iscale.set_scaling_factor(self.recovery_vol_phase, 1)
-
-        for (t, p, j), v in self.recovery_mass_phase_comp.items():
-            if j in self.config.property_package.solvent_set:
-                sf = 1
-            elif j in self.config.property_package.solute_set:
-                sf = 100
-            if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(v, sf)
 
         for (t, x, p, j), v in self.flux_mass_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
@@ -987,18 +940,6 @@ class ReverseOsmosis1DData(_MembraneBaseData):
             for v in self.Kf.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1e5)
-
-        if hasattr(self, 'channel_height'):
-            if iscale.get_scaling_factor(self.channel_height) is None:
-                iscale.set_scaling_factor(self.channel_height, 1e3)
-
-        if hasattr(self, 'spacer_porosity'):
-            if iscale.get_scaling_factor(self.spacer_porosity) is None:
-                iscale.set_scaling_factor(self.spacer_porosity, 1)
-
-        if hasattr(self, 'dh'):
-            if iscale.get_scaling_factor(self.dh) is None:
-                iscale.set_scaling_factor(self.dh, 1e3)
 
         if hasattr(self, 'N_Re'):
             for t, x in self.N_Re.keys():
@@ -1142,10 +1083,6 @@ class ReverseOsmosis1DData(_MembraneBaseData):
             sf = iscale.get_scaling_factor(self.area_cross)
             iscale.constraint_scaling_transform(self.eq_area_cross, sf*10.)
 
-        if hasattr(self, 'eq_dh'):
-            sf = iscale.get_scaling_factor(self.dh)
-            iscale.constraint_scaling_transform(self.eq_dh, sf)
-
         if hasattr(self, 'eq_pressure_drop'):
             if (self.config.pressure_change_type == PressureChangeType.calculated
                 or self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length):
@@ -1172,5 +1109,3 @@ class ReverseOsmosis1DData(_MembraneBaseData):
                 sf = (iscale.get_scaling_factor(self.deltaP[ind])
                       * iscale.get_scaling_factor(self.dh))
                 iscale.constraint_scaling_transform(c, sf)
-
-

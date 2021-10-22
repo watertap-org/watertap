@@ -16,7 +16,9 @@ from pyomo.environ import NonNegativeReals, Param, Suffix, Var, units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core import UnitModelBlockData, useDefault, MaterialBalanceType,\
         EnergyBalanceType, MomentumBalanceType
+from idaes.core.util import scaling as iscale
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -327,3 +329,69 @@ class _MembraneBaseData(UnitModelBlockData):
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc='Feed-channel spacer porosity')
+
+        if (self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated
+            or self.config.pressure_change_type == PressureChangeType.calculated):
+
+            @self.Constraint(doc="Hydraulic diameter")  # eqn. 17 in Schock & Miquel, 1987
+            def eq_dh(b):
+                return (b.dh ==
+                        4 * b.spacer_porosity
+                        / (2 / b.channel_height
+                           + (1 - b.spacer_porosity) * 8 / b.channel_height))
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {
+                "Feed Inlet": self.inlet,
+                "Feed Outlet": self.retentate,
+                "Permeate Outlet": self.permeate,
+            },
+            time_point=time_point,
+        )
+
+    def get_costing(self, module=None, **kwargs):
+        self.costing = Block()
+        module.ReverseOsmosis_costing(self.costing, **kwargs)
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        # these variables should have user input, if not there will be a warning
+        if iscale.get_scaling_factor(self.area) is None:
+            sf = iscale.get_scaling_factor(self.area, default=10, warning=True)
+            iscale.set_scaling_factor(self.area, sf)
+
+        if iscale.get_scaling_factor(self.A_comp) is None:
+            iscale.set_scaling_factor(self.A_comp, 1e12)
+
+        if iscale.get_scaling_factor(self.B_comp) is None:
+            iscale.set_scaling_factor(self.B_comp, 1e8)
+
+        if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
+            iscale.set_scaling_factor(self.recovery_vol_phase, 1)
+
+        for (t, p, j), v in self.recovery_mass_phase_comp.items():
+            if j in self.config.property_package.solvent_set:
+                sf = 1
+            elif j in self.config.property_package.solute_set:
+                sf = 100
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, 'channel_height'):
+            if iscale.get_scaling_factor(self.channel_height) is None:
+                iscale.set_scaling_factor(self.channel_height, 1e3)
+
+        if hasattr(self, 'spacer_porosity'):
+            if iscale.get_scaling_factor(self.spacer_porosity) is None:
+                iscale.set_scaling_factor(self.spacer_porosity, 1)
+
+        if hasattr(self, 'dh'):
+            if iscale.get_scaling_factor(self.dh) is None:
+                iscale.set_scaling_factor(self.dh, 1e3)
+
+        if hasattr(self, 'eq_dh'):
+            sf = iscale.get_scaling_factor(self.dh)
+            iscale.constraint_scaling_transform(self.eq_dh, sf)
+
