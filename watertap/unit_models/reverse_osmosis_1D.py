@@ -145,13 +145,9 @@ class ReverseOsmosis1DData(_MembraneBaseData):
             **True** - report additional properties of interest that aren't constructed by
             the unit model by default. Also, report averaged expression values"""))
 
+
     def _process_config(self):
         #TODO: add config errors here:
-        if len(self.config.property_package.solvent_set) > 1:
-            raise ConfigurationError("RO model only supports one solvent component,"
-                                     "the provided property package has specified {} solvent components"
-                                     .format(len(self.config.property_package.solvent_set)))
-
         if self.config.transformation_method is useDefault:
             _log.warning(
                 "Discretization method was "
@@ -191,15 +187,6 @@ class ReverseOsmosis1DData(_MembraneBaseData):
                 "'mass_transfer_coefficient' must be set to MassTransferCoefficient.none\nor "
                 "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated"
                     .format(self.config.mass_transfer_coefficient, self.config.concentration_polarization_type))
-        if (self.config.pressure_change_type is not PressureChangeType.fixed_per_stage
-                and self.config.has_pressure_change is False):
-            raise ConfigurationError(
-                "\nConflict between configuration options:\n"
-                "'has_pressure_change' cannot be False "
-                "while 'pressure_change_type' is set to {}.\n\n"
-                "'pressure_change_type' must be set to PressureChangeType.fixed_per_stage\nor "
-                "'has_pressure_change' must be set to True"
-                    .format(self.config.pressure_change_type))
 
     def build(self):
         """
@@ -214,12 +201,11 @@ class ReverseOsmosis1DData(_MembraneBaseData):
         # Call UnitModel.build to setup dynamics
         super().build()
 
-        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
-
+        # Check configuration errors
         self._process_config()
 
         # Build 1D Control volume for feed side
-        self.feed_side = ControlVolume1DBlock(default={
+        self.feed_side = feed_side = ControlVolume1DBlock(default={
             "dynamic": self.config.dynamic,
             "has_holdup": self.config.has_holdup,
             "area_definition": self.config.area_definition,
@@ -231,7 +217,6 @@ class ReverseOsmosis1DData(_MembraneBaseData):
             "collocation_points": self.config.collocation_points
         })
 
-        feed_side = self.feed_side
         # Add geometry to feed side
         feed_side.add_geometry()
         # Add state blocks to feed side

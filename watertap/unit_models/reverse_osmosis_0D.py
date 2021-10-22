@@ -103,12 +103,6 @@ class ReverseOsmosisData(_MembraneBaseData):
     def _process_config(self):
         """Check for configuration errors
         """
-        if (len(self.config.property_package.phase_list) > 1
-                or 'Liq' not in [p for p in self.config.property_package.phase_list]):
-            raise ConfigurationError(
-                "RO model only supports one liquid phase ['Liq'],"
-                "the property package has specified the following phases {}"
-                .format([p for p in self.config.property_package.phase_list]))
         if (self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated
                 and self.config.mass_transfer_coefficient == MassTransferCoefficient.none):
             raise ConfigurationError(
@@ -128,20 +122,7 @@ class ReverseOsmosisData(_MembraneBaseData):
                 "'mass_transfer_coefficient' must be set to MassTransferCoefficient.none\nor "
                 "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated"
                 .format(self.config.mass_transfer_coefficient, self.config.concentration_polarization_type))
-        if (self.config.pressure_change_type is not PressureChangeType.fixed_per_stage
-                and self.config.has_pressure_change is False):
-            raise ConfigurationError(
-                "\nConflict between configuration options:\n"
-                "'has_pressure_change' cannot be False "
-                "while 'pressure_change_type' is set to {}.\n\n"
-                "'pressure_change_type' must be set to PressureChangeType.fixed_per_stage\nor "
-                "'has_pressure_change' must be set to True"
-                .format(self.config.pressure_change_type))
 
-        if len(self.config.property_package.solvent_set) > 1:
-            raise ConfigurationError("RO model only supports one solvent component,"
-                                     "the provided property package has specified {} solvent components"
-                                     .format(len(self.config.property_package.solvent_set)))
 
     def build(self):
         """
@@ -150,7 +131,8 @@ class ReverseOsmosisData(_MembraneBaseData):
         # Call UnitModel.build to setup dynamics
         super().build()
 
-        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        # Check configuration errors
+        self._process_config()
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
@@ -158,8 +140,6 @@ class ReverseOsmosisData(_MembraneBaseData):
 
         solvent_set = self.config.property_package.solvent_set
         solute_set = self.config.property_package.solute_set
-        # Check configuration errors
-        self._process_config()
 
         # For permeate-specific scaling in calculate_scaling_factors
         self._permeate_scaled_properties = ComponentSet()
