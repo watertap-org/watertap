@@ -27,6 +27,7 @@ from idaes.surrogate.pysmo import sampling
 from idaes.core.util.model_statistics import (variables_in_activated_equalities_set,
     unfixed_variables_in_activated_equalities_set)
 
+np.set_printoptions(linewidth=200)
 
 # ================================================================
 
@@ -406,17 +407,28 @@ def _create_global_output(local_output_dict, local_num_cases,
         # Create the global value array on rank 0
         if my_mpi_rank == 0:
             global_output_dict = copy.deepcopy(local_output_dict)
-            # Create a global value array in the dictionary
+            # Create a global value array of inputs in the dictionary
+            for key in global_output_dict["sweep_params"].keys():
+                global_output_dict["sweep_params"][key] = np.zeros(num_total_samples, dtype=np.float)
+
+            # Create a global value array of outputs in the dictionary
             for var, var_dict in global_output_dict.items():
-                var_dict["value"] = np.zeros(num_total_samples, dtype=np.float)
+                if var != 'sweep_params':
+                    var_dict["value"] = np.zeros(num_total_samples, dtype=np.float)
         else:
             global_output_dict = local_output_dict
 
         # Finally collect the values
-        for var, var_dict in local_output_dict.items():
-            comm.Gatherv(sendbuf=var_dict["value"],
-                         recvbuf=(global_output_dict[var]["value"], sample_split_arr),
-                         root=0)
+        for key, item in local_output_dict.items():
+            if key == 'sweep_params':
+                for subkey in item.keys():
+                    comm.Gatherv(sendbuf=item[subkey],
+                                 recvbuf=(global_output_dict[key][subkey], sample_split_arr),
+                                 root=0)
+            else:
+                comm.Gatherv(sendbuf=item["value"],
+                             recvbuf=(global_output_dict[key]["value"], sample_split_arr),
+                             root=0)
             comm.Barrier()
 
     return global_output_dict
@@ -611,19 +623,11 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
     if rank == 0 and results_file is not None:
         # Save the global data
         np.savetxt(results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
-        # print("\n")
-        # pprint.pprint(data_header)
-        # pprint.pprint(global_save_data)
 
         # Save the data of output dictionary
         pp_output_fpath_txt = os.path.join(dirname, "output_dict_{0}samples.txt".format(num_samples))
         with open(pp_output_fpath_txt, "w") as log_file:
             pprint.pprint(global_output_dict, log_file)
-
-        # json_fpath =  os.path.join(dirname, "output_dict.json")
-        # with open(json_fpath, "w") as outfile:
-        #     json.dump(global_output_dict, outfile)
-
 
         if interpolate_nan_outputs:
             global_results_clean = _interp_nan_values(global_values, global_results)
