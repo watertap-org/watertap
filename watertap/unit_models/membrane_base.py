@@ -202,14 +202,14 @@ class _MembraneBaseData(UnitModelBlockData):
         super().build()
 
         if len(self.config.property_package.solvent_set) > 1:
-            raise ConfigurationError("Membrane models only supports one solvent component,"
+            raise ConfigurationError("Membrane models only support one solvent component,"
                                      "the provided property package has specified {} solvent components"
                                      .format(len(self.config.property_package.solvent_set)))
 
         if (len(self.config.property_package.phase_list) > 1
                 or 'Liq' not in [p for p in self.config.property_package.phase_list]):
             raise ConfigurationError(
-                "Membrane models only supports one liquid phase ['Liq'],"
+                "Membrane models only support one liquid phase ['Liq'],"
                 "the property package has specified the following phases {}"
                 .format([p for p in self.config.property_package.phase_list]))
 
