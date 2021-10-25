@@ -21,7 +21,6 @@ from pyomo.environ import (Var,
                            NonNegativeReals,
                            NegativeReals,
                            Reference,
-                           Block,
                            units as pyunits,
                            exp,
                            value)

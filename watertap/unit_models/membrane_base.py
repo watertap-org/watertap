@@ -12,7 +12,7 @@
 ###############################################################################
 
 from enum import Enum, auto
-from pyomo.environ import NonNegativeReals, Param, Suffix, Var, units as pyunits
+from pyomo.environ import Block, NonNegativeReals, Param, Suffix, Var, units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core import UnitModelBlockData, useDefault, MaterialBalanceType,\
         EnergyBalanceType, MomentumBalanceType

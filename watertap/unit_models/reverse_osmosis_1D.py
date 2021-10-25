@@ -21,8 +21,7 @@ from pyomo.environ import (Var,
                            exp,
                            value,
                            Constraint,
-                           Block)
-
+                          )
 from pyomo.common.config import ConfigValue, In
 # Import IDAES cores
 from idaes.core import (ControlVolume1DBlock,
