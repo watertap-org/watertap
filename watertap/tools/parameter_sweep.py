@@ -16,6 +16,7 @@ import sys
 import os
 import itertools
 import warnings
+import copy, pprint
 
 from scipy.interpolate import griddata
 from enum import Enum, auto
@@ -322,9 +323,14 @@ def _interp_nan_values(global_values, global_results):
 
 # ================================================================
 
-def _create_local_output_skeleton(model, num_samples, variable_type="unfixed"):
+def _create_local_output_skeleton(model, sweep_params, num_samples, variable_type="unfixed"):
 
     output_dict = {}
+
+    # Lets deal with the inputs
+    output_dict["sweep_params"] = {}
+    for key in sweep_params.keys():
+        output_dict["sweep_params"][key] = np.zeros(num_samples, dtype=np.float)
 
     if variable_type == "unfixed":
         for var in unfixed_variables_in_activated_equalities_set(model.fs):
@@ -362,8 +368,13 @@ def _create_component_output_skeleton(component, num_samples):
 
 # ================================================================
 
-def _update_local_output_dict(model, case_number, output_dict, variable_type):
+def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, output_dict, variable_type):
 
+    op_ps_dict = output_dict["sweep_params"]
+    for key, item in sweep_params.items():
+        op_ps_dict[key][case_number] = item.pyomo_object.value
+
+    # Get the outputs from model
     if variable_type == "unfixed":
         for var in unfixed_variables_in_activated_equalities_set(model.fs):
             output_dict[var.name]["value"][case_number] = var.value
@@ -376,6 +387,41 @@ def _update_local_output_dict(model, case_number, output_dict, variable_type):
 
 # ================================================================
 
+def _create_global_output(local_output_dict, local_num_cases,
+        num_total_samples, comm):
+
+    my_mpi_rank = comm.Get_rank()
+    comm_size = comm.Get_size()
+
+    if comm_size == 1:
+        global_output_dict = local_output_dict
+    else:
+        # We make the assumption that the parameter sweep is running the same
+        # flowsheet num_samples number of times, i.e., the structure of the
+        # local_output_dict remains the same across all mpi_ranks
+
+        # Gather the size of the value array on each MPI rank
+        sample_split_arr = comm.gather(local_num_cases, root=0)
+
+        # Create the global value array on rank 0
+        if my_mpi_rank == 0:
+            global_output_dict = copy.deepcopy(local_output_dict)
+            # Create a global value array in the dictionary
+            for var, var_dict in global_output_dict.items():
+                var_dict["value"] = np.zeros(num_total_samples, dtype=np.float)
+        else:
+            global_output_dict = local_output_dict
+
+        # Finally collect the values
+        for var, var_dict in local_output_dict.items():
+            comm.Gatherv(sendbuf=var_dict["value"],
+                         recvbuf=(global_output_dict[var]["value"], sample_split_arr),
+                         root=0)
+            comm.Barrier()
+
+    return global_output_dict
+
+# ================================================================
 
 def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
         optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
@@ -482,7 +528,8 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
 
     # Create the output skeleton for storing detailed data
     output_variable_type = "unfixed"
-    local_output_dict = _create_local_output_skeleton(model, local_num_cases, variable_type=output_variable_type)
+    local_output_dict = _create_local_output_skeleton(model, sweep_params, local_num_cases,
+                                                      variable_type=output_variable_type)
 
     # ================================================================
     # Run all optimization cases
@@ -496,7 +543,8 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
             # Simulate/optimize with this set of parameters
             optimize_function(model, **optimize_kwargs)
             # store the values of the optimization
-            _update_local_output_dict(model, k, local_output_dict, output_variable_type)
+            _update_local_output_dict(model, sweep_params, k, local_values[k, :],
+                local_output_dict, output_variable_type)
 
         except:
             # If the run is infeasible, report nan
@@ -520,14 +568,18 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
             else:
                 local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
 
-    import pprint
-    pprint.pprint(output_dict)
-
     # ================================================================
     # Save results
     # ================================================================
 
+    # # print("global_save_data = \n", global_save_data)
+    # print("\nsweep_params = ")
+    # pprint.pprint(sweep_params)
+    # print("local_values = \n", local_values)
+
     global_results = _aggregate_results(local_results, global_values, comm, num_procs)
+    global_output_dict = _create_global_output(local_output_dict, local_num_cases,
+                                               num_samples, comm)
 
     # Make a directory for saved outputs
     if rank == 0:
@@ -559,6 +611,19 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
     if rank == 0 and results_file is not None:
         # Save the global data
         np.savetxt(results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
+        # print("\n")
+        # pprint.pprint(data_header)
+        # pprint.pprint(global_save_data)
+
+        # Save the data of output dictionary
+        pp_output_fpath_txt = os.path.join(dirname, "output_dict_{0}samples.txt".format(num_samples))
+        with open(pp_output_fpath_txt, "w") as log_file:
+            pprint.pprint(global_output_dict, log_file)
+
+        # json_fpath =  os.path.join(dirname, "output_dict.json")
+        # with open(json_fpath, "w") as outfile:
+        #     json.dump(global_output_dict, outfile)
+
 
         if interpolate_nan_outputs:
             global_results_clean = _interp_nan_values(global_values, global_results)
