@@ -32,10 +32,10 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
 from watertap.util.initialization import check_solve, check_dof
-from watertap.unit_models.membrane_base import (ConcentrationPolarizationType,
+from watertap.unit_models._reverse_osmosis_base import (ConcentrationPolarizationType,
         MassTransferCoefficient,
         PressureChangeType,
-        _MembraneBaseData)
+        _ReverseOsmosisBaseData)
 import idaes.logger as idaeslog
 
 
@@ -46,14 +46,14 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("ReverseOsmosis0D")
-class ReverseOsmosisData(_MembraneBaseData):
+class ReverseOsmosisData(_ReverseOsmosisBaseData):
     """
     Standard RO Unit Model Class:
     - zero dimensional model
     - steady state only
     - single liquid phase only
     """
-    CONFIG = _MembraneBaseData.CONFIG()
+    CONFIG = _ReverseOsmosisBaseData.CONFIG()
 
     def build(self):
         """

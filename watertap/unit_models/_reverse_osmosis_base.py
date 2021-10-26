@@ -18,6 +18,7 @@ from idaes.core import UnitModelBlockData, useDefault, MaterialBalanceType,\
         EnergyBalanceType, MomentumBalanceType
 from idaes.core.util import scaling as iscale
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 
@@ -43,9 +44,9 @@ class PressureChangeType(Enum):
     calculated = auto()              # pressure drop across membrane channel is calculated
 
 
-class _MembraneBaseData(UnitModelBlockData):
+class _ReverseOsmosisBaseData(UnitModelBlockData):
     """
-    Membrane-based filtration base class
+    Reverse-Osmosis filtration base class
     """
 
     CONFIG = ConfigBlock()
@@ -129,13 +130,13 @@ class _MembraneBaseData(UnitModelBlockData):
     **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
 
     CONFIG.declare("concentration_polarization_type", ConfigValue(
-        default=ConcentrationPolarizationType.none,
+        default=ConcentrationPolarizationType.calculated,
         domain=In(ConcentrationPolarizationType),
         description="External concentration polarization effect in RO",
         doc="""
             Options to account for concentration polarization.
 
-            **default** - ``ConcentrationPolarizationType.none``
+            **default** - ``ConcentrationPolarizationType.calculated``
 
         .. csv-table::
             :header: "Configuration Options", "Description"
@@ -146,13 +147,13 @@ class _MembraneBaseData(UnitModelBlockData):
         """))
 
     CONFIG.declare("mass_transfer_coefficient", ConfigValue(
-        default=MassTransferCoefficient.none,
+        default=MassTransferCoefficient.calculated,
         domain=In(MassTransferCoefficient),
         description="Mass transfer coefficient in RO feed channel",
         doc="""
             Options to account for mass transfer coefficient.
 
-            **default** - ``MassTransferCoefficient.none``
+            **default** - ``MassTransferCoefficient.calculated``
 
         .. csv-table::
             :header: "Configuration Options", "Description"

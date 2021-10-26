@@ -34,10 +34,10 @@ from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.initialization import solve_indexed_blocks
 from enum import Enum, auto
 from watertap.util.initialization import check_solve, check_dof
-from watertap.unit_models.membrane_base import (ConcentrationPolarizationType,
+from watertap.unit_models._reverse_osmosis_base import (ConcentrationPolarizationType,
         MassTransferCoefficient,
         PressureChangeType,
-        _MembraneBaseData)
+        _ReverseOsmosisBaseData)
 import idaes.logger as idaeslog
 
 
@@ -48,54 +48,10 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("ReverseOsmosis1D")
-class ReverseOsmosis1DData(_MembraneBaseData):
+class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
     """Standard 1D Reverse Osmosis Unit Model Class."""
 
-    CONFIG = _MembraneBaseData.CONFIG()
-
-    #NOTE: concentration_polarization_type and mass_transfer_coefficient
-    #      both exist on 0D and 1D RO, but have different defaults. For
-    #      input checking, it makes sense to do that in the base class to
-    #      avoid duplicating code, but here it means that we need to delete
-    #      and recreate these CONFIG options.
-    #      Alternatively, we could either (1) have MembraneBase check options
-    #      it didn't create, or (2) have the duplicated checking code in
-    #      both the 0D and 1D RO classes.
-    del CONFIG["concentration_polarization_type"]
-    CONFIG.declare("concentration_polarization_type", ConfigValue(
-        default=ConcentrationPolarizationType.calculated,
-        domain=In(ConcentrationPolarizationType),
-        description="External concentration polarization effect in RO",
-        doc="""
-            Options to account for concentration polarization.
-
-            **default** - ``ConcentrationPolarizationType.calculated`` 
-
-        .. csv-table::
-            :header: "Configuration Options", "Description"
-
-            "``ConcentrationPolarizationType.none``", "Simplifying assumption to ignore concentration polarization"
-            "``ConcentrationPolarizationType.fixed``", "Specify an estimated value for the concentration polarization modulus"
-            "``ConcentrationPolarizationType.calculated``", "Allow model to perform calculation of membrane-interface concentration"
-        """))
-
-    del CONFIG["mass_transfer_coefficient"]
-    CONFIG.declare("mass_transfer_coefficient", ConfigValue(
-        default=MassTransferCoefficient.calculated,
-        domain=In(MassTransferCoefficient),
-        description="Mass transfer coefficient in RO feed channel",
-        doc="""
-            Options to account for mass transfer coefficient.
-
-            **default** - ``MassTransferCoefficient.calculated`` 
-
-        .. csv-table::
-            :header: "Configuration Options", "Description"
-
-            "``MassTransferCoefficient.none``", "Mass transfer coefficient not used in calculations"
-            "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
-            "``MassTransferCoefficient.calculated``", "Allow model to perform calculation of mass transfer coefficient"
-        """))
+    CONFIG = _ReverseOsmosisBaseData.CONFIG()
 
     CONFIG.declare("area_definition", ConfigValue(
             default=DistributedVars.uniform,
