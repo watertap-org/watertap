@@ -46,7 +46,7 @@ class PressureChangeType(Enum):
 
 class _ReverseOsmosisBaseData(UnitModelBlockData):
     """
-    Reverse-Osmosis filtration base class
+    Reverse Osmosis base class
     """
 
     CONFIG = ConfigBlock()
