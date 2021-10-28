@@ -32,8 +32,8 @@
 
     (4) Invoke the 'ElectrolyteDB' object to connect to the database
 
-        [NOTE: Whether or not the connection is valid is not tested at this time, but there is
-        a helper function to see if you made a valid connection]
+        [# WARNING: A feature of 'ElectrolyteDB' appears to be missing from WaterTAP main
+        that is preventing us from following the tutorial verbatim.]
 
     (5) Grab a 'base' for a configuration dictionary, and place it into a class object
 
@@ -56,6 +56,15 @@ def connect_to_edb():
     print("connecting to " + str(ElectrolyteDB.DEFAULT_URL))
     db = ElectrolyteDB()
     connected = db.can_connect()
+
+    # Supposedly, we should be able to pass a check_connection arg to the
+    #   initialization of the 'ElectrolyteDB' object. However, that does
+    #   not appear to be a feature that exists in WaterTAP main.
+    try:
+        db2 = ElectrolyteDB("mongodb://some.other.host", check_connection=False)
+        print("Everything is good!")
+    except:
+        print("If you are here, that means that the EDB code is not up-to-date")
 
     return (db, connected)
 
