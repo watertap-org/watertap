@@ -53,7 +53,11 @@
         [NOTE: An alternative method is to provide a list of the names of components you want]
 
 
-    (7-a) Get the set of reactions you want in your system and
+    (7-a) Get the set of reactions you want in your system and put into a 'base' object.
+        That 'base' can be either a 'thermo' base (as in this example) or a 'reaction'
+        base. IF you are adding reactions to a 'thermo' base, they should be added
+        as 'inherent' reactions. IF you are adding reactions to a 'reaction' base,
+        they should be added as 'equilibrium' (or other) reactions. 
 
 """
 
