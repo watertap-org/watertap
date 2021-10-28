@@ -983,6 +983,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
     def initialize(blk,
                    feed_side_args=None,
+                   feed_side_membrane_args=None,
                    permeate_side_args=None,
                    permeate_block_args=None,
                    outlvl=idaeslog.NOTSET,
@@ -997,6 +998,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             feed_side_args : a dict of arguments to be passed to the property
              package(s) of the feed_side to provide an initial state for
              initialization (see documentation of the specific
+             property package)
+            feed_side_membrane_args : a dict of arguments to be passed to the property
+             package(s) of the feed_side of the membrane interface to provide an initial
+             state for initialization (see documentation of the specific
              property package)
             permeate_side_args : a dict of arguments to be passed to the property
              package(s) of the permeate_side to provide an initial state for
@@ -1034,6 +1039,11 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             optarg=optarg,
             solver=solver,
             state_args=feed_side_args)
+        flag_feed_side_properties_interface = blk.feed_side.properties_interface.initialize(
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                state_args=feed_side_membrane_args)
         init_log.info('Feed-side initialization complete. Initialize permeate-side. ')
         flags_permeate_side = blk.permeate_side.initialize(
             outlvl=outlvl,
@@ -1052,15 +1062,11 @@ class ReverseOsmosis1DData(UnitModelBlockData):
            check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
         # ---------------------------------------------------------------------
         # Step 2: Solve unit
-        init_log.info('Initialization Step 1 complete: all state blocks initialized.'
-                      'Starting Initialization Step 2: solve indexed blocks.')
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        check_solve(results, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 2: solve indexed blocks')
-        init_log.info('Starting Initialization Step 3: perform final solve.')
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
-        check_solve(res, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 3: final solve')
+        init_log.info('Initialization Step 1 complete: all state blocks initialized.')
+        init_log.info('Starting Initialization Step 2: perform final solve.')
+        #with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        res = opt.solve(blk, tee=True)
+        check_solve(res, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 2: final solve')
         # Release Inlet state
         blk.feed_side.release_state(flags_feed_side, outlvl)
 
@@ -1293,6 +1299,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             for v in self.feed_side.pressure_dx.values():
                 iscale.set_scaling_factor(v, 1e5)
 
+        '''
         # Scale constraints
         for ind, c in self.eq_mass_transfer_term.items():
             sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
@@ -1411,5 +1418,4 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 sf = (iscale.get_scaling_factor(self.deltaP[ind])
                       * iscale.get_scaling_factor(self.dh))
                 iscale.constraint_scaling_transform(c, sf)
-
-
+        '''
