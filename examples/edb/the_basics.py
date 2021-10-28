@@ -52,6 +52,9 @@
 
         [NOTE: An alternative method is to provide a list of the names of components you want]
 
+
+    (7-a) Get the set of reactions you want in your system and
+
 """
 
 # ========================== (3) ================================
@@ -118,6 +121,10 @@ def grab_base_thermo_config(db):
 
 # ========================== (6) ================================
 # Get chemical components/species for a simulation case
+#       NOTE: This function here also returns a 'list' of the
+#           components that it finds. This is not a built in
+#           feature of the EDB, but is very useful because
+#           getting reactions is dependent on the component list.
 def get_components_and_add_to_idaes_config(db, base_obj, by_elements=True):
     # Going to grab all components that contain ONLY "H" and "O"
     #   Expected behavior = Will get "H2O", "H_+", and "OH_-"
@@ -139,18 +146,36 @@ def get_components_and_add_to_idaes_config(db, base_obj, by_elements=True):
 
     # Iterate through the results object and add the components
     #   to the base_obj
+    db_comp_list = []
     for comp_obj in res_obj_comps:
         print("Adding " + str(comp_obj.name) + "" )
         base_obj.add(comp_obj)
+        db_comp_list.append(comp_obj.name)
+    print()
+    return (base_obj, db_comp_list)
+
+# ========================== (7-a) ================================
+# Grab the reactions associated with the list of components and add
+#   them to a base object (which could be a 'thermo' base or 'reaction' base)
+#
+def get_reactions_return_object(db, base_obj, comp_list, is_inherent=True):
+    react_obj = db.get_reactions(component_names=comp_list)
+    for r in react_obj:
+        print("Found reaction: " + str(r.name))
+        if (is_inherent == True):
+            r._data["type"] = "inherent"
+        else:
+            r._data["type"] = "equilibrium"
+        base_obj.add(r)
     return base_obj
 
 if __name__ == "__main__":
     (db, connected) = connect_to_edb()
     if (connected == False):
-        print("\nFailed to connect\n")
+        print("\nFailed to connect!!!\n")
         exit()
     else:
-        print("\nNow connected\n")
+        print("\n...connected\n")
 
     base_obj = grab_base_thermo_config(db)
     try:
@@ -159,6 +184,10 @@ if __name__ == "__main__":
         print("Error! Object does NOT contain 'idaes_config' dict!")
         exit()
 
-    base_obj = get_components_and_add_to_idaes_config(db, base_obj)
+    (base_obj, comp_list) = get_components_and_add_to_idaes_config(db, base_obj)
 
-    #print(base_obj.idaes_config)
+    base_obj = get_reactions_return_object(db, base_obj, comp_list)
+
+    print(base_obj.idaes_config)
+
+    # At this point, we should have a valid dict...
