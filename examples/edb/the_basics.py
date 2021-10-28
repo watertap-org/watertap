@@ -18,6 +18,7 @@
 
         [See more information on the ReadTheDocs under 'Getting Started --> Installing WaterTAP']
 
+
     (2) After installing MongoDB, you will need to 'load' the database using the
         command line function 'edb load -b'. This will load the default database
         that WaterTAP is bundled with.
@@ -28,17 +29,26 @@
         [NOTE 2: You can invoke the command line utility with the "help" keyword to
         get more information on funtionality. Command: 'edb --help' or 'edb [arg] --help']
 
+
     (3) To use EDB in python, start by importing the interface class object 'ElectrolyteDB'
+
 
     (4) Invoke the 'ElectrolyteDB' object to connect to the database
 
         [# WARNING: A feature of 'ElectrolyteDB' appears to be missing from WaterTAP main
         that is preventing us from following the tutorial verbatim.]
 
+
     (5) Grab a 'base' for a configuration dictionary, and place it into a class object
 
         [# WARNING: There are a number of ways to do this. Behavior is inconsistent with
         some of the tutorials currently.]
+
+
+    (6) Get the chemcial species/components for a simulation case. There are a number of ways
+        to do this. In this example, we will grab them by finding all components that contain
+        only specific elements. Then, we add those components and their associated parameters
+        to the configuration dictionary being built from the 'base'.
 
 """
 
@@ -62,9 +72,8 @@ def connect_to_edb():
     #   not appear to be a feature that exists in WaterTAP main.
     try:
         db2 = ElectrolyteDB("mongodb://some.other.host", check_connection=False)
-        print("Everything is good!")
     except:
-        print("If you are here, that means that the EDB code is not up-to-date")
+        print("\tWARNING: If you are here, that means that the EDB code is not up-to-date")
 
     return (db, connected)
 
@@ -101,16 +110,52 @@ def grab_base_thermo_config(db):
 
     # Get the base and place into a singular object
     #   with no need to iterate through
-    res_obj = db.get_one_base("thermo")
-    res_obj.idaes_config  # This gives more direct access to the information
-    return res_obj
+    base_obj = db.get_one_base("thermo")
+    base_obj.idaes_config  # This gives more direct access to the information
+    return base_obj
+
+# Get chemical components/species for a simulation case
+def get_components_and_add_to_idaes_config(db, base_obj, by_elements=True):
+    # Going to grab all components that contain ONLY "H" and "O"
+    #   Expected behavior = Will get "H2O", "H_+", and "OH_-"
+    element_list = ["H","O"]
+
+    # Alternatively, you can pass a list of individual componets
+    #   you want to grab and the EDB functions should grab explicitly
+    #   those components/species you want.
+    comp_list = ["H2O","H_+","OH_-"]
+
+    # Just like before, this function returns a results object
+    #   that contains other objects that must be iterated through
+    #   in order to access the information. Then, call the 'add'
+    #   function to add those components to the 'base' object
+    if (by_elements==True):
+        res_obj_comps = db.get_components(element_names=element_list)
+    else:
+        res_obj_comps = db.get_components(component_names=comp_list)
+
+    # Iterate through the results object and add the components
+    #   to the base_obj
+    for comp_obj in res_obj_comps:
+        print("Adding " + str(comp_obj.name) + "" )
+        base_obj.add(comp_obj)
+    return base_obj
 
 if __name__ == "__main__":
     (db, connected) = connect_to_edb()
     if (connected == False):
-        print("Failed to connect")
+        print("\nFailed to connect\n")
+        exit()
     else:
-        print("Now connected")
+        print("\nNow connected\n")
 
-    res_obj = grab_base_thermo_config(db)
-    print(res_obj.idaes_config)
+    base_obj = grab_base_thermo_config(db)
+    try:
+        base_obj.idaes_config
+    except:
+        print("Error! Object does NOT contain 'idaes_config' dict!")
+        exit()
+
+    base_obj = get_components_and_add_to_idaes_config(db, base_obj)
+
+    #print(base_obj.idaes_config)
