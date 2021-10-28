@@ -36,7 +36,10 @@ def build_RO(m, base='TDS', level='simple', name_str='RO'):
 
     if level == 'simple':
         # build unit
-        setattr(m.fs, name_str, ReverseOsmosis0D(default={"property_package": prop}))
+        setattr(m.fs, name_str, ReverseOsmosis0D(default={
+            "property_package": prop,
+            "mass_transfer_coefficient": MassTransferCoefficient.none,
+            "concentration_polarization_type": ConcentrationPolarizationType.none}))
         blk = getattr(m.fs, name_str)
 
         # specify unit
