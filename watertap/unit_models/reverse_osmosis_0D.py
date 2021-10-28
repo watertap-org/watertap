@@ -1330,7 +1330,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                 iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, 'eq_N_Re_io'):
-            for ind, c in self.eq_N_Re_io.items():
+            for (t,x), c in self.eq_N_Re_io.items():
                 if x == 'in':
                     prop_io = self.feed_side.properties_in[t]
                 elif x == 'out':
