@@ -333,9 +333,6 @@ class TestReverseOsmosis():
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
 
     @pytest.mark.component
     def test_initialize(self, RO_frame):
@@ -499,11 +496,7 @@ class TestReverseOsmosis():
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
-
         assert len(unscaled_var_list) == 0
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
 
         # Test initialization
         initialization_tester(m)
@@ -649,11 +642,7 @@ class TestReverseOsmosis():
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
-
         assert len(unscaled_var_list) == 0
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
 
         # Test initialization
         initialization_tester(m)
@@ -798,9 +787,6 @@ class TestReverseOsmosis():
 
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
 
         initialization_tester(m)
 
@@ -958,9 +944,6 @@ class TestReverseOsmosis():
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
 
         initialization_tester(m)
 
@@ -1123,9 +1106,6 @@ class TestReverseOsmosis():
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
 
         initialization_tester(m)
 
@@ -1288,9 +1268,6 @@ class TestReverseOsmosis():
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
 
         initialization_tester(m)
 

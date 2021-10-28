@@ -1282,6 +1282,7 @@ class ReverseOsmosisData(UnitModelBlockData):
                     sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
                 iscale.set_scaling_factor(v, sf)
 
+        '''
         # transforming constraints
         for ind, c in self.eq_mass_transfer_term.items():
             sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
@@ -1381,3 +1382,4 @@ class ReverseOsmosisData(UnitModelBlockData):
                 prop_interface_io = self.feed_side.properties_interface_out[t]
             sf = iscale.get_scaling_factor(prop_interface_io.flow_vol_phase['Liq'])
             iscale.constraint_scaling_transform(c, sf)
+        '''
