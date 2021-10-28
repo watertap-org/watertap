@@ -45,7 +45,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver(options={'bound_push':1e-8})
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
@@ -231,11 +231,11 @@ class TestReverseOsmosis():
                                'recovery_vol_phase': Var,
                                'recovery_mass_phase_comp': Var,
                                'rejection_phase_comp': Var,
-                               'over_pressure_ratio': Var,
                                'deltaP': Var,
                                'cp_modulus': Var,
                                'mass_transfer_phase_comp': Var,
                                'flux_mass_phase_comp_avg': Expression,
+                               'over_pressure_ratio': Expression,
                                'eq_mass_transfer_term': Constraint,
                                'eq_permeate_production': Constraint,
                                'eq_flux_io': Constraint,
@@ -245,7 +245,7 @@ class TestReverseOsmosis():
                                'eq_recovery_vol_phase': Constraint,
                                'eq_recovery_mass_phase_comp': Constraint,
                                'eq_rejection_phase_comp': Constraint,
-                               'eq_over_pressure_ratio': Constraint}
+                               }
         for (obj_str, obj_type) in unit_objs_type_dict.items():
             obj = getattr(m.fs.unit, obj_str)
             assert isinstance(obj, obj_type)
@@ -289,8 +289,8 @@ class TestReverseOsmosis():
             assert isinstance(obj, obj_type)
 
         # test statistics
-        assert number_variables(m) == 125
-        assert number_total_constraints(m) == 97
+        assert number_variables(m) == 124
+        assert number_total_constraints(m) == 96
         assert number_unused_variables(m) == 7  # vars from property package parameters
 
     @pytest.mark.unit
@@ -331,7 +331,6 @@ class TestReverseOsmosis():
     @pytest.mark.component
     def test_solve(self, RO_frame):
         m = RO_frame
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -424,8 +423,8 @@ class TestReverseOsmosis():
         m.fs.unit.Kf_io[0, 'out', 'NaCl'].fix(kf)
 
         # test statistics
-        assert number_variables(m) == 126
-        assert number_total_constraints(m) == 97
+        assert number_variables(m) == 125
+        assert number_total_constraints(m) == 96
         assert number_unused_variables(m) == 7  # vars from property package parameters
 
         # test degrees of freedom
@@ -458,7 +457,6 @@ class TestReverseOsmosis():
         assert badly_scaled_var_lst == []
 
         # test solve
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -526,8 +524,8 @@ class TestReverseOsmosis():
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 141
-        assert number_total_constraints(m) == 111
+        assert number_variables(m) == 140
+        assert number_total_constraints(m) == 110
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
         # test degrees of freedom
@@ -556,7 +554,6 @@ class TestReverseOsmosis():
         assert badly_scaled_var_lst == []
 
         # test solve
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m, tee=True)
 
         # Check for optimal solution
@@ -622,8 +619,8 @@ class TestReverseOsmosis():
         m.fs.unit.length.fix(16)
 
         # test statistics
-        assert number_variables(m) == 147
-        assert number_total_constraints(m) == 118
+        assert number_variables(m) == 146
+        assert number_total_constraints(m) == 117
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
         # test degrees of freedom
@@ -652,7 +649,6 @@ class TestReverseOsmosis():
         assert badly_scaled_var_lst == []
 
         # test solve
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m, tee=True)
 
         # Check for optimal solution
@@ -726,8 +722,8 @@ class TestReverseOsmosis():
         m.fs.unit.dP_dx.fix(-membrane_pressure_drop / length)
 
         # test statistics
-        assert number_variables(m) == 142
-        assert number_total_constraints(m) == 112
+        assert number_variables(m) == 141
+        assert number_total_constraints(m) == 111
         assert number_unused_variables(m) == 0
 
         # test degrees of freedom
@@ -756,7 +752,6 @@ class TestReverseOsmosis():
         assert badly_scaled_var_lst == []
 
         # test solve
-        solver.options = {'nlp_scaling_method': 'user-scaling'}
         results = solver.solve(m, tee=True)
 
         # Check for optimal solution

@@ -40,7 +40,7 @@ def get_sweep_params(m, use_LHS=False):
 def run_parameter_sweep(results_file, seed=None, use_LHS=False):
 
     # Set up the solver
-    solver = get_solver(options={'nlp_scaling_method': 'user-scaling'})
+    solver = get_solver(options={'bound_push': 1e-8})
 
     # Build, set, and initialize the system (these steps will change depending on the underlying model)
     m = build()

@@ -1022,7 +1022,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         # Create solver
         if optarg is None:
-            optarg = {'nlp_scaling_method': 'user-scaling'}
+            optarg = {'bound_push': 1e-8}
 
         opt = get_solver(solver, optarg)
 
@@ -1156,10 +1156,11 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         super().calculate_scaling_factors()
         # setting scaling factors for variables
         for j in self.config.property_package.component_list:
-            iscale.set_scaling_factor(self.permeate_side[0, 0].flow_mass_phase_comp['Liq', j], 0)
+            iscale.set_scaling_factor(self.permeate_side[0, 0].flow_mass_phase_comp['Liq', j], 1e+5)
+
         # these variables should have user input, if not there will be a warning
         if iscale.get_scaling_factor(self.area) is None:
-            sf = iscale.get_scaling_factor(self.area, default=1, warning=True)
+            sf = iscale.get_scaling_factor(self.area, default=10, warning=True)
             iscale.set_scaling_factor(self.area, sf)
 
         if iscale.get_scaling_factor(self.width) is None:
@@ -1167,10 +1168,14 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             iscale.set_scaling_factor(self.width, sf)
 
         if iscale.get_scaling_factor(self.length) is None:
-            sf = iscale.get_scaling_factor(self.length, default=1, warning=True)
+            sf = iscale.get_scaling_factor(self.length, default=10, warning=True)
             iscale.set_scaling_factor(self.length, sf)
 
         # will not override if the user provides the scaling factor
+        ## default of 1 set by ControlVolume1D
+        if iscale.get_scaling_factor(self.area_cross) == 1:
+            iscale.set_scaling_factor(self.area_cross, 100)
+
         if iscale.get_scaling_factor(self.A_comp) is None:
             iscale.set_scaling_factor(self.A_comp, 1e12)
 
@@ -1237,12 +1242,12 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         if hasattr(self, 'N_Re'):
             for t, x in self.N_Re.keys():
                 if iscale.get_scaling_factor(self.N_Re[t, x]) is None:
-                    iscale.set_scaling_factor(self.N_Re[t, x], 1e-3)
+                    iscale.set_scaling_factor(self.N_Re[t, x], 1e-1)
 
         if hasattr(self, 'N_Sc'):
             for t, x in self.N_Sc.keys():
                 if iscale.get_scaling_factor(self.N_Sc[t, x]) is None:
-                    iscale.set_scaling_factor(self.N_Sc[t, x], 1e-3)
+                    iscale.set_scaling_factor(self.N_Sc[t, x], 1e-1)
 
         if hasattr(self, 'N_Sh'):
             for t, x in self.N_Sh.keys():
@@ -1271,23 +1276,19 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 else:
                     sf = iscale.get_scaling_factor(self.flux_mass_phase_comp[t, x, p, j])\
                          * iscale.get_scaling_factor(self.width)
-                    comp = self.config.property_package.get_component(j)
-                    if comp.is_solute:
-                        sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
-                    iscale.set_scaling_factor(v, sf)
+                    iscale.set_scaling_factor(v, sf/100.)
 
         for (t, x, p, j), v in self.mass_transfer_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 sf = iscale.get_scaling_factor(self.feed_side.properties[t, x].get_material_flow_terms(p, j)) \
                      / iscale.get_scaling_factor(self.feed_side.length)
-                comp = self.config.property_package.get_component(j)
-                if comp.is_solute:
-                    sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
+                if x == 0:
+                    sf *= 10.
                 iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, 'deltaP'):
             for v in self.feed_side.pressure_dx.values():
-                iscale.set_scaling_factor(v, 1e-3)
+                iscale.set_scaling_factor(v, 1e-5)
         else:
             for v in self.feed_side.pressure_dx.values():
                 iscale.set_scaling_factor(v, 1e5)
@@ -1299,14 +1300,14 @@ class ReverseOsmosis1DData(UnitModelBlockData):
 
         for ind, c in self.eq_connect_mass_transfer.items():
             sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf*10.)
 
         sf = iscale.get_scaling_factor(self.area)
-        iscale.constraint_scaling_transform(self.eq_area, sf)
+        iscale.constraint_scaling_transform(self.eq_area, sf/10.)
 
         for ind, c in self.eq_permeate_production.items():
-            # TODO: revise this scaling factor; setting to 1 for now
-            iscale.constraint_scaling_transform(c, 1)
+            # TODO: revise this scaling factor; setting to 100 for now
+            iscale.constraint_scaling_transform(c, 100.)
 
         for ind, c in self.eq_flux_mass.items():
             sf = iscale.get_scaling_factor(self.flux_mass_phase_comp[ind])
@@ -1339,7 +1340,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         for (t, x, j), c in self.feed_side.eq_concentration_polarization.items():
             prop_interface = self.feed_side.properties_interface[t, x]
             sf = iscale.get_scaling_factor(prop_interface.conc_mass_phase_comp['Liq', j])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf*10.)
 
         for (t, x), c in self.feed_side.eq_equal_temp_interface.items():
             prop_interface = self.feed_side.properties_interface[t, x]
@@ -1359,26 +1360,26 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         if hasattr(self, 'eq_Kf'):
             for ind, c in self.eq_Kf.items():
                 sf = iscale.get_scaling_factor(self.Kf[ind])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf*10.)
 
         if hasattr(self, 'eq_N_Re'):
             for ind, c in self.eq_N_Re.items():
                 sf = iscale.get_scaling_factor(self.N_Re[ind])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf*1e4)
 
         if hasattr(self, 'eq_N_Sc'):
             for ind, c in self.eq_N_Sc.items():
                 sf = iscale.get_scaling_factor(self.N_Sc[ind])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf*1e4)
 
         if hasattr(self, 'eq_N_Sh'):
             for ind, c in self.eq_N_Sh.items():
                 sf = iscale.get_scaling_factor(self.N_Sh[ind])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf*1e1)
 
         if hasattr(self, 'eq_area_cross'):
             sf = iscale.get_scaling_factor(self.area_cross)
-            iscale.constraint_scaling_transform(self.eq_area_cross, sf)
+            iscale.constraint_scaling_transform(self.eq_area_cross, sf*10.)
 
         if hasattr(self, 'eq_dh'):
             sf = iscale.get_scaling_factor(self.dh)
@@ -1398,12 +1399,12 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         if hasattr(self, 'eq_velocity'):
             for ind, c in self.eq_velocity.items():
                 sf = iscale.get_scaling_factor(self.velocity[ind])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf*1e4)
 
         if hasattr(self, 'eq_friction_factor_darcy'):
             for ind, c in self.eq_friction_factor_darcy.items():
                 sf = iscale.get_scaling_factor(self.friction_factor_darcy[ind])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf/10.)
 
         if hasattr(self, 'eq_dP_dx'):
             for ind, c in self.eq_dP_dx.items():
