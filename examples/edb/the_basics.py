@@ -50,6 +50,8 @@
         only specific elements. Then, we add those components and their associated parameters
         to the configuration dictionary being built from the 'base'.
 
+        [NOTE: An alternative method is to provide a list of the names of components you want]
+
 """
 
 # ========================== (3) ================================
@@ -114,6 +116,7 @@ def grab_base_thermo_config(db):
     base_obj.idaes_config  # This gives more direct access to the information
     return base_obj
 
+# ========================== (6) ================================
 # Get chemical components/species for a simulation case
 def get_components_and_add_to_idaes_config(db, base_obj, by_elements=True):
     # Going to grab all components that contain ONLY "H" and "O"
