@@ -23,10 +23,6 @@ _log = logging.getLogger(__name__)
 JUPYTER_NB_VERSION = 4
 EXECUTE_TIMEOUT_SEC = 600
 
-# Globals
-
-_has_mongo = None  # undetermined
-
 # Exceptions
 
 
@@ -79,17 +75,12 @@ def docs_root(dirname="docs"):
 
 
 def mongodb():
-    global _has_mongo
-
-    if _has_mongo is None:
-        try:
-            ElectrolyteDB()
-            _has_mongo = True
-        except Exception as err:
-            _log.warning(f"Could not connect to MongoDB: {err}")
-            _has_mongo = False
-
-    return _has_mongo
+    try:
+        ElectrolyteDB()
+        return True
+    except Exception as err:
+        _log.warning(f"Could not connect to MongoDB: {err}")
+        return False
 
 # Tests
 # =====
