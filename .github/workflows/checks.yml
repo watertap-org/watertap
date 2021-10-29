@@ -105,8 +105,8 @@ jobs:
         # --pyargs watertap is needed to be able to define the CLI options in watertap/conftest.py
         # 
         echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --pyargs watertap --edb-no-mock" >> $GITHUB_ENV
-    - name: Test EDB client-server connection
-      run: pytest -k test_edb_client_server_connection
+    - name: Test EDB client
+      run: pytest -k test_edb_client
     - name: Add coverage report pytest options
       if: matrix.cov_report
       run:
