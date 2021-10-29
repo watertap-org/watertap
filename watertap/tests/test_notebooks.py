@@ -76,11 +76,11 @@ def docs_root(dirname="docs"):
 
 def mongodb():
     try:
-        ElectrolyteDB()
-        return True
+        edb = ElectrolyteDB()  # will fail if no DB
+        edb.get_base()  # will fail if DB is not loaded
     except Exception as err:
         _log.warning(f"Could not connect to MongoDB: {err}")
-        return False
+    return False
 
 # Tests
 # =====
