@@ -258,7 +258,10 @@ class ElectrolyteDB:
         collection = self._db.base
         result = Result(iterator=collection.find(filter=query), item_class=Base)
         if name:
-            return list(result)[0]
+            try:
+                return list(result)[0]
+            except IndexError:
+                raise IndexError("No bases found in DB")
         else:
             return result
 
