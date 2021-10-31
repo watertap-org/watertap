@@ -20,8 +20,9 @@ import re
 from typing import Dict, List, Optional, Union
 
 # third-party
+import certifi
 from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, PyMongoError
 
 # package
 from .data_model import Result, Component, Reaction, Base, DataWrapper
@@ -44,6 +45,12 @@ class ElectrolyteDB:
 
     # Default timeout, in ms, for sockets, connections, and server selection
     timeout_ms = 5000
+    # add timeouts (probably shorter than defaults)
+    timeout_args = {
+        "socketTimeoutMS": timeout_ms,
+        "connectTimeoutMS": timeout_ms,
+        "serverSelectionTimeoutMS": timeout_ms,
+    }
 
     # make sure these match lowercase names of the DataWrapper subclasses in
     # the `data_model` module
@@ -81,13 +88,7 @@ class ElectrolyteDB:
         if port is None:
             port = cls.DEFAULT_PORT
 
-        # add timeouts (probably shorter than defaults)
-        timeout_args = {
-            "socketTimeoutMS": cls.timeout_ms,
-            "connectTimeoutMS": cls.timeout_ms,
-            "serverSelectionTimeoutMS": cls.timeout_ms,
-        }
-        kwargs.update(timeout_args)
+        kwargs.update(cls.timeout_args)
 
         client = MongoClient(host=host, port=port, **kwargs)
 
@@ -101,6 +102,34 @@ class ElectrolyteDB:
             result = False
 
         return result
+
+    def _mongoclient_connect(self, url: str) -> Union[MongoClient, None]:
+        mc = None
+        self._mongoclient_connect_errors = {"initial": "ok", "retry": "ok"}
+        try:
+            mc = MongoClient(url, **self.timeout_args)
+            mc.admin.command("ismaster")
+            _log.info("MongoDB connection succeeded")
+        except ServerSelectionTimeoutError as sst_err:
+            if "CERTIFICATE_VERIFY_FAILED" in str(sst_err):
+                _log.warning(f"MongoDB connection failed due to certificate "
+                             f"verification. Retry with explicit location "
+                             f"for client certificates ({certifi.where()}")
+                self._mongoclient_connect_errors["initial"] = str(sst_err)
+                try:
+                    mc = MongoClient(url, tlsCAFile=certifi.where(), **self.timeout_args)
+                    mc.admin.command("ismaster")
+                except PyMongoError as err:
+                    _log.error(f"MongoDB connection failed on retry: {err}. "
+                               f"Error from first attempt: {sst_err}")
+                    self._mongoclient_connect_errors["retry"] = str(err)
+        return mc
+
+    @property
+    def connect_errors(self):
+        if not hasattr(self, "_mongoclient_connect_errors"):
+            return {"intial": "not tried", "retry": "not tried"}
+        return self._mongoclient_connect_errors.copy()
 
     @property
     def database(self):
