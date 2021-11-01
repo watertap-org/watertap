@@ -94,7 +94,13 @@ from idaes.core import FlowsheetBlock
 # Import log10 function from pyomo
 from pyomo.environ import log10
 
-__author__ = "Austin Ladshaw"
+
+__authors__ = [
+    "Austin Ladshaw",
+    "Ludovico Bianchi",
+    "Dan Gunter",
+]
+__author__ = __authors__[0]
 
 
 class Variant(str, enum.Enum):
