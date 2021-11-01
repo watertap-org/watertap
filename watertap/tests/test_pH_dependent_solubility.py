@@ -233,59 +233,6 @@ case1_thermo_config = {
     }
     # End thermo_config definition
 
-# Case 1 rxn config (without log_solubility_product)
-case1_rxn_config = {
-    "base_units": {"time": pyunits.s,
-                   "length": pyunits.m,
-                   "mass": pyunits.kg,
-                   "amount": pyunits.mol,
-                   "temperature": pyunits.K},
-    "equilibrium_reactions": {
-        "CaOH2_Ksp": {
-                    "stoichiometry": {  ("Sol", "Ca(OH)2"): -1,
-                                        ("Liq", "Ca_2+"): 1,
-                                        ("Liq", "OH_-"): 2},
-                    "heat_of_reaction": constant_dh_rxn,
-                    "equilibrium_constant": van_t_hoff,
-                    "equilibrium_form": solubility_product,
-                    "concentration_form": ConcentrationForm.moleFraction,
-                    "parameter_data": {
-                        "dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
-                        "k_eq_ref": (10**-5.26/55.2/55.2/55.2, pyunits.dimensionless),
-                        "T_eq_ref": (298.0, pyunits.K),
-                        "reaction_order": { ("Sol", "Ca(OH)2"): 0,
-                                            ("Liq", "Ca_2+"): 1,
-                                            ("Liq", "OH_-"): 2}
-                        }
-                        # End parameter_data
-                },
-        "H2O_Kw": {
-                "stoichiometry": {("Liq", "H2O"): -1,
-                                 ("Liq", "H_+"): 1,
-                                 ("Liq", "OH_-"): 1},
-               "heat_of_reaction": constant_dh_rxn,
-               "equilibrium_constant": van_t_hoff,
-               "equilibrium_form": log_power_law_equil,
-               "concentration_form": ConcentrationForm.moleFraction,
-               "parameter_data": {
-                   "dh_rxn_ref": (55.830, pyunits.J/pyunits.mol),
-                   "k_eq_ref": (10**-14/55.2/55.2, pyunits.dimensionless),
-                   "T_eq_ref": (298, pyunits.K),
-
-                   # By default, reaction orders follow stoichiometry
-                   #    manually set reaction order here to override
-                   "reaction_order": {("Liq", "H2O"): 0,
-                                    ("Liq", "H_+"): 1,
-                                    ("Liq", "OH_-"): 1}
-                    }
-                    # End parameter_data
-               }
-                # End Reactions
-         }
-         # End equilibrium_reactions
-    }
-    # End reaction_config definition
-
 # Case 1 rxn config (with log_solubility_product)
 case1_log_rxn_config = {
     "base_units": {"time": pyunits.s,
@@ -374,7 +321,7 @@ def _set_equ_rxn_scaling(unit, rxn_config):
             iscale.constraint_scaling_transform(
                 unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 1e-1/scale)
         else:
-            iscale.set_scaling_factor(unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 100/scale)
+            iscale.set_scaling_factor(unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10/scale)
             iscale.constraint_scaling_transform(
                 unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 0.1)
 
@@ -479,19 +426,14 @@ def run_case1(xOH=1e-7/55.2, xH=1e-7/55.2, xCaOH2=1e-20, xCa=1e-20,
 
     ## ==================== END Scaling for this problem ===========================
 
-    # First pass, low bound_push, low mu_init
-    #solver.options['bound_push'] = 1e-10
-    #solver.options['mu_init'] = 1e-6
-    #model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-
-    # Second pass, loosen bound_push to get more acceptable solve
-    solver.options['bound_push'] = 1e-5
+    # NOTE: Small bound_push at initialization works very well
+    solver.options['bound_push'] = 1e-8
     solver.options['mu_init'] = 1e-3
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
-    # Solve full model
+    # Solve full model (can use larger bound_push value at full solve)
     solver.options['bound_push'] = 1e-5
     solver.options['mu_init'] = 1e-3
     results = solver.solve(model, tee=True)
@@ -568,45 +510,432 @@ def test_case_1_low_precipitation():
                         thermo_config=case1_thermo_config, rxn_config=case1_log_rxn_config,
                         has_energy_balance=True)
 
+
+# Case 2 Config
+'''
+    Case 2 (softening, without explicit lime):
+        Aqueous Rxns:   H2O <--> H + OH             logK = -14
+                        H2CO3 <--> H + HCO3         logK = -6.3
+                        HCO3 <--> H + CO3           logK = -10.2
+        Solubility:     CaCO3 <--> Ca + CO3         logK = -12
+'''
+case2_thermo_config = {
+    "components": {
+        'H2O': {"type": Solvent, "valid_phase_types": PT.aqueousPhase,
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (18.0153, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (-285, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (69, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'H_+': {"type": Cation, "charge": 1,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (1.00784, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'OH_-': {"type": Anion, "charge": -1,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (17.008, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (-230, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (-10, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'Ca_2+': {"type": Cation, "charge": 2,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (40.078, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (-542.83, pyunits.J/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (-53, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'H2CO3': {"type": Solute, "valid_phase_types": PT.aqueousPhase,
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (62.03, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (-699.7, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (187, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'HCO3_-': {"type": Anion, "charge": -1,
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (62.03, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (-692, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (91.2, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'CO3_2-': {"type": Anion, "charge": -2,
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (62.03, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (-677.1, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (-56.9, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'CaCO3': {"type": Component, "valid_phase_types": PT.solidPhase,
+              "dens_mol_sol_comp": Constant,
+              "enth_mol_sol_comp": Constant,
+              "cp_mol_sol_comp": Constant,
+              "entr_mol_sol_comp": Constant,
+              "parameter_data": {
+                    "mw": (100.0869, pyunits.g/pyunits.mol),
+                    "dens_mol_sol_comp_coeff": (55, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_sol_comp_coeff": (167039, pyunits.J/pyunits.kmol/pyunits.K),
+                    "enth_mol_form_sol_comp_ref": (-1207, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_sol_comp_ref": (91.7, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    },
+
+              },
+              # End Component list
+        "phases":  {'Liq': {"type": AqueousPhase,
+                            "equation_of_state": Ideal},
+                    'Sol': {"type": SolidPhase,
+                            "equation_of_state": Ideal}
+                    },
+
+        "state_definition": FpcTP,
+        "state_bounds": {
+                         "temperature": (273.15, 300, 650),
+                         "pressure": (5e4, 1e5, 1e6)
+                     },
+
+        "pressure_ref": 1e5,
+        "temperature_ref": 300,
+        "base_units": {"time": pyunits.s,
+                       "length": pyunits.m,
+                       "mass": pyunits.kg,
+                       "amount": pyunits.mol,
+                       "temperature": pyunits.K},
+
+    }
+    # End thermo_config definition
+
+# Case 2 rxn config (with log_solubility_product)
+case2_log_rxn_config = {
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K},
+    "equilibrium_reactions": {
+        "CaCO3_Ksp": {
+                    "stoichiometry": {  ("Sol", "CaCO3"): -1,
+                                        ("Liq", "Ca_2+"): 1,
+                                        ("Liq", "CO3_2-"): 1},
+                    "heat_of_reaction": constant_dh_rxn,
+                    "equilibrium_constant": van_t_hoff,
+                    "equilibrium_form": log_solubility_product,
+                    "concentration_form": ConcentrationForm.moleFraction,
+                    "parameter_data": {
+                        "dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
+                        "k_eq_ref": (10**-12/55.2/55.2, pyunits.dimensionless),
+                        "T_eq_ref": (298.0, pyunits.K),
+                        "reaction_order": { ("Sol", "CaCO3"): 0,
+                                            ("Liq", "Ca_2+"): 1,
+                                            ("Liq", "CO3_2-"): 1}
+                        }
+                        # End parameter_data
+                },
+        "H2O_Kw": {
+                "stoichiometry": {("Liq", "H2O"): -1,
+                                 ("Liq", "H_+"): 1,
+                                 ("Liq", "OH_-"): 1},
+               "heat_of_reaction": constant_dh_rxn,
+               "equilibrium_constant": van_t_hoff,
+               "equilibrium_form": log_power_law_equil,
+               "concentration_form": ConcentrationForm.moleFraction,
+               "parameter_data": {
+                   "dh_rxn_ref": (55.830, pyunits.J/pyunits.mol),
+                   "k_eq_ref": (10**-14/55.2/55.2, pyunits.dimensionless),
+                   "T_eq_ref": (298, pyunits.K),
+
+                   # By default, reaction orders follow stoichiometry
+                   #    manually set reaction order here to override
+                   "reaction_order": {("Liq", "H2O"): 0,
+                                    ("Liq", "H_+"): 1,
+                                    ("Liq", "OH_-"): 1}
+                    }
+                    # End parameter_data
+               },
+        "H2CO3_Ka1": {
+                "stoichiometry": {
+                    ("Liq", "H2CO3"): -1,
+                    ("Liq", "H_+"): 1,
+                    ("Liq", "HCO3_-"): 1,
+                },
+                "heat_of_reaction": constant_dh_rxn,
+                "equilibrium_constant": van_t_hoff,
+                "equilibrium_form": log_power_law_equil,
+                "concentration_form": ConcentrationForm.moleFraction,
+                "parameter_data": {
+                    "dh_rxn_ref": (7.7, pyunits.kJ/pyunits.mol),
+                    "k_eq_ref": (10**-6.35/55.2, pyunits.dimensionless),
+                    "T_eq_ref": (298, pyunits.K),
+                    # By default, reaction orders follow stoichiometry
+                    #    manually set reaction order here to override
+                    "reaction_order": {
+                        ("Liq", "H2CO3"): -1,
+                        ("Liq", "H_+"): 1,
+                        ("Liq", "HCO3_-"): 1,
+                    },
+                }
+                # End parameter_data
+            },
+        "H2CO3_Ka2": {
+                "stoichiometry": {
+                    ("Liq", "HCO3_-"): -1,
+                    ("Liq", "H_+"): 1,
+                    ("Liq", "CO3_2-"): 1,
+                },
+                "heat_of_reaction": constant_dh_rxn,
+                "equilibrium_constant": van_t_hoff,
+                "equilibrium_form": log_power_law_equil,
+                "concentration_form": ConcentrationForm.moleFraction,
+                "parameter_data": {
+                    "dh_rxn_ref": (14.9, pyunits.kJ/pyunits.mol),
+                    "k_eq_ref": (10**-10.33/55.2, pyunits.dimensionless),
+                    "T_eq_ref": (298, pyunits.K),
+                    # By default, reaction orders follow stoichiometry
+                    #    manually set reaction order here to override
+                    "reaction_order": {
+                        ("Liq", "HCO3_-"): -1,
+                        ("Liq", "H_+"): 1,
+                        ("Liq", "CO3_2-"): 1,
+                    },
+                }
+                # End parameter_data
+            }
+            #End last reaction
+         }
+         # End equilibrium_reactions
+    }
+    # End reaction_config definition
+
+# Defaults to pH of 7 with no lime added
+def run_case2(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCa=1e-20, xH2CO3=1e-20, xHCO3=1e-20, xCO3=1e-20,
+            thermo_config=None, rxn_config=None, has_energy_balance=True):
+    print("==========================================================================")
+    print("Case 1: Remineralization via lime dissolution")
+    print("xOH = "+str(xOH))
+    print("xH = "+str(xH))
+    print("xCaCO3 = "+str(xCaCO3))
+    print("xCa = "+str(xCa))
+    print("xH2CO3 = "+str(xH2CO3))
+    print("xHCO3 = "+str(xHCO3))
+    print("xCO3 = "+str(xCO3))
+    print()
+
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+
+    model.fs.rxn_params = GenericReactionParameterBlock(
+            default={"property_package": model.fs.thermo_params,
+                    **rxn_config
+                    })
+
+    args = {"property_package": model.fs.thermo_params,
+            "reaction_package": model.fs.rxn_params,
+            "has_rate_reactions": False,
+            "has_equilibrium_reactions": True,
+            "has_heat_transfer": False,
+            "has_heat_of_reaction": False,
+            "has_pressure_change": False}
+    if has_energy_balance == False:
+        args["energy_balance_type"] = EnergyBalanceType.none
+
+    model.fs.unit = EquilibriumReactor(default=args)
+
+    total_flow_mol = 10
+
+    # Set flow_mol_phase_comp
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Ca_2+"].fix( xCa*total_flow_mol )
+
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H_+"].fix( xH*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "OH_-"].fix( xOH*total_flow_mol )
+
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2CO3"].fix( xH2CO3*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "HCO3_-"].fix( xHCO3*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO3_2-"].fix( xCO3*total_flow_mol )
+
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Sol", "CaCO3"].fix( xCaCO3*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix( (1-xH-xOH-xCaCO3-xCa-xH2CO3-xHCO3-xCO3)*total_flow_mol )
+
+    model.fs.unit.inlet.pressure.fix(101325.0)
+    model.fs.unit.inlet.temperature.fix(298.)
+    if has_energy_balance == False:
+        model.fs.unit.outlet.temperature.fix(298.)
+
+    assert (degrees_of_freedom(model) == 0)
+
+    ## ==================== Start Scaling for this problem ===========================
+    _set_eps_vals(model.fs.rxn_params, rxn_config)
+    _set_equ_rxn_scaling(model.fs.unit, rxn_config)
+    _set_mat_bal_scaling_FpcTP(model.fs.unit)
+    if has_energy_balance == True:
+        _set_ene_bal_scaling(model.fs.unit)
+
+    iscale.calculate_scaling_factors(model.fs.unit)
+    assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+    assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
+    assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
+
+    ## ==================== END Scaling for this problem ===========================
+
+    # NOTE: Small bound_push at initialization works very well
+    solver.options['bound_push'] = 1e-8
+    solver.options['mu_init'] = 1e-3
+    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+
+    assert degrees_of_freedom(model) == 0
+
+    # Solve full model (can use larger bound_push value at full solve)
+    solver.options['bound_push'] = 1e-5
+    solver.options['mu_init'] = 1e-3
+    results = solver.solve(model, tee=True)
+
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+    ## ==================== Check the results ================================
+    print("comp\toutlet.tot_molfrac")
+    for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp:
+        print(str(i)+"\t"+str(value( model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i] )))
+    print()
+
+    # NOTE: Changed all to mole fraction
+    for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+        print(str(i)+"\t"+str(value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i])))
+    print()
+
+    Ca = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp["Liq","Ca_2+"])
+    OH = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp["Liq","OH_-"])
+    H = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp["Liq","H_+"])
+    CO3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp["Liq","CO3_2-"])
+    Ksp = value(model.fs.unit.control_volume.reactions[0.0].k_eq["CaCO3_Ksp"].expr)
+
+    print("Final pH = " +str(-log10(H*55.2)))
+
+    print()
+    print("Ksp =\t"+str(Ksp))
+    print("Ca*CO3 =\t"+str(Ca*CO3))
+    print()
+    if Ksp*1.01 >= Ca*CO3:
+        print("Constraint is satisfied!")
+    else:
+        print("Constraint is VIOLATED!")
+        print("\tRelative error: "+str(Ksp/Ca/CO3)+">=1")
+        assert False
+
+    print("==========================================================================")
+
+    return model
+
+## ================================= Case 1 Tests ===============================
+@pytest.mark.component
+def test_case_2_do_nothing():
+    model = run_case2(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCa=1e-20, xH2CO3=1e-20, xHCO3=1e-20, xCO3=1e-20,
+                thermo_config=case2_thermo_config, rxn_config=case2_log_rxn_config, has_energy_balance=True)
+
+@pytest.mark.component
+def test_case_2_seawater_no_ca():
+    model = run_case2(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCa=1e-20,
+                    xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=1e-20,
+                    thermo_config=case2_thermo_config, rxn_config=case2_log_rxn_config,
+                    has_energy_balance=True)
+
+@pytest.mark.component
+def test_case_2_seawater_with_ca():
+    model = run_case2(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCa=200/50000/2/55.2,
+                    xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=1e-20,
+                    thermo_config=case2_thermo_config, rxn_config=case2_log_rxn_config,
+                    has_energy_balance=True)
+
+@pytest.mark.component
+def test_case_2_seawater_added_carbonates():
+    model = run_case2(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCa=200/50000/2/55.2,
+                    xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=0.1/55.2,
+                    thermo_config=case2_thermo_config, rxn_config=case2_log_rxn_config,
+                    has_energy_balance=True)
+
+@pytest.mark.component
+def test_case_2_low_pH_no_precip():
+    model = run_case2(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCa=200/50000/2/55.2,
+                    xH2CO3=0.00206/55.2, xHCO3=1e-20, xCO3=1e-20,
+                    thermo_config=case2_thermo_config, rxn_config=case2_log_rxn_config,
+                    has_energy_balance=True)
+
+@pytest.mark.component
+def test_case_2_ultra_high_ca():
+    model = run_case2(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCa=6000/50000/2/55.2,
+                    xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=0.1/55.2,
+                    thermo_config=case2_thermo_config, rxn_config=case2_log_rxn_config,
+                    has_energy_balance=True)
+
 # This is for additional testing
 if __name__ == "__main__":
-    ### All tests with NO dissolution passed ###
+    # Ultra-high Ca --> Massive amounts of precipitation
     '''
-    model = run_case1(xOH=1e-7/55.2, xH=1e-7/55.2, xCaOH2=1e-20,
-                        thermo_config=case1_thermo_config, rxn_config=case1_log_rxn_config,
-                        has_energy_balance=True)
-    '''
-
-    ### This test of lime dissolution is working and giving accurate pH
-    '''
-    model = run_case1(xOH=1e-7/55.2, xH=1e-7/55.2, xCaOH2=1e-5,
-                        thermo_config=case1_thermo_config, rxn_config=case1_log_rxn_config,
-                        has_energy_balance=True)
-    '''
-    '''
-    model = run_case1(xOH=1e-7/55.2, xH=1e-7/55.2, xCaOH2=1e-7,
-                        thermo_config=case1_thermo_config, rxn_config=case1_log_rxn_config,
-                        has_energy_balance=True)
-    '''
-    '''
-    model = run_case1(xOH=1e-7/55.2, xH=1e-7/55.2, xCaOH2=1e-9,
-                        thermo_config=case1_thermo_config, rxn_config=case1_log_rxn_config,
-                        has_energy_balance=True)
-    '''
-
-    ### These set of tests demonstrate precipitation of lime
-    '''
-    model = run_case1(xOH=1e-1/55.2, xH=1e-13/55.2, xCaOH2=1e-20, xCa=1e-1,
-                        thermo_config=case1_thermo_config, rxn_config=case1_log_rxn_config,
-                        has_energy_balance=True)
-    '''
-    '''
-    model = run_case1(xOH=1e-2/55.2, xH=1e-12/55.2, xCaOH2=1e-20, xCa=1e-1,
-                        thermo_config=case1_thermo_config, rxn_config=case1_log_rxn_config,
-                        has_energy_balance=True)
-    '''
-    '''
-    model = run_case1(xOH=1e-3/55.2, xH=1e-11/55.2, xCaOH2=1e-20, xCa=1e-1,
-                        thermo_config=case1_thermo_config, rxn_config=case1_log_rxn_config,
-                        has_energy_balance=True)
+    model = run_case2(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCa=6000/50000/2/55.2,
+                    xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=0.1/55.2,
+                    thermo_config=case2_thermo_config, rxn_config=case2_log_rxn_config,
+                    has_energy_balance=True)
     '''
