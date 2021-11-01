@@ -955,13 +955,20 @@ class Base(DataWrapper):
     def __init__(self, data: Dict):
         super().__init__(data, BaseConfig)
         self._to_merge = []
+        self._component_names = set()
         self._dirty = True
         self._idaes_config = None
 
     def add(self, item: DataWrapper):
         """Add wrapped data to this base object."""
         self._to_merge.append(item)
+        if isinstance(item, Component):
+            self._component_names.add(item.name)
         self._dirty = True
+
+    @property
+    def component_names(self):
+        return list(self._component_names)
 
     @property
     def idaes_config(self):

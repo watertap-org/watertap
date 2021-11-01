@@ -45,7 +45,6 @@ class ElectrolyteDB:
 
     # Default timeout, in ms, for sockets, connections, and server selection
     timeout_ms = 5000
-    # add timeouts (probably shorter than defaults)
     timeout_args = {
         "socketTimeoutMS": timeout_ms,
         "connectTimeoutMS": timeout_ms,
@@ -56,11 +55,47 @@ class ElectrolyteDB:
     # the `data_model` module
     _known_collections = ("base", "component", "reaction")
 
-    def __init__(self, url=DEFAULT_URL, db=DEFAULT_DB):
-        self._client = MongoClient(host=url)
+    def __init__(
+        self,
+        url: str = DEFAULT_URL,
+        db: str = DEFAULT_DB,
+        check_connection: bool = True,
+    ):
+        """Constructor.
+
+        Args:
+            url: MongoDB server URL
+            db: MongoDB 'database' (namespace) to use
+            check_connection: If True, check immediately if we can connect to the
+                server at the provided url. Otherwise defer this check until the
+                first operation (at which point a stack trace may occur).
+
+        Raises:
+            pymongo.errors.ConnectionFailure: if check_connection is True,
+                 and the connection fails
+        """
+        self._mongoclient_connect_status = {"initial": "untried", "retry": "untried"}
+        self._client = self._mongoclient(url, check_connection, **self.timeout_args)
+        if self._client is None:
+            msg = self.connect_status_str
+            _log.error(msg)
+            raise ConnectionFailure(msg)
         self._db = getattr(self._client, db)
         self._database_name = db
         self._server_url = url
+
+    def is_empty(self) -> bool:
+        if self._database_name not in self._client.list_database_names():
+            return True
+        collections = set(self._db.list_collection_names())
+        if not collections:
+            return True
+        if not {"base", "component", "reaction"}.intersection(collections):
+            _log.warning(
+                "Bootstrapping into non-empty database, but without any EDB collections"
+            )
+            return True
+        return False
 
     @staticmethod
     def drop_database(url, db):
@@ -80,56 +115,67 @@ class ElectrolyteDB:
         client.drop_database(db)
 
     @classmethod
-    def can_connect(cls, host=None, port=None, **kwargs):
+    def can_connect(cls, url: str, db=None) -> bool:
+        """Convenience method to check if a connection can be made without having
+           to instantiate the database object.
+
+        Args:
+            url: Same as constructor
+            db: Same as constructor
+
+        Returns:
+            True, yes can connect; False: cannot connect
+        """
+        url = url or f"mongodb://{cls.DEFAULT_HOST}:{cls.DEFAULT_PORT}"
+        db = db or cls.DEFAULT_DB
         result = True
-
-        if host is None:
-            host = cls.DEFAULT_HOST
-        if port is None:
-            port = cls.DEFAULT_PORT
-
-        kwargs.update(cls.timeout_args)
-
-        client = MongoClient(host=host, port=port, **kwargs)
-
-        # This approach is taken directly from MongoClient docstring -dang
         try:
-            # The ismaster command is cheap and does not require auth.
-            client.admin.command("ismaster")
-            _log.debug(f"MongoDB server at {host}:{port} is available")
+            _ = cls(url=url, db=db, check_connection=True)
         except ConnectionFailure:
-            _log.error(f"MongoDB server at {host}:{port} is NOT available")
             result = False
-
         return result
 
-    def _mongoclient_connect(self, url: str) -> Union[MongoClient, None]:
-        mc = None
-        self._mongoclient_connect_errors = {"initial": "ok", "retry": "ok"}
+    def _mongoclient(self, url: str, check, **client_kw) -> Union[MongoClient, None]:
+        _log.debug(f"MongoDB client at url={url}")
+        mc = MongoClient(url, **client_kw)
+        if not check:
+            _log.info(f"Skipping connection check for MongoDB client url={url}")
+            return mc
+        # check that client actually works
+        _log.info(f"Connection check MongoDB client url={url}")
         try:
-            mc = MongoClient(url, **self.timeout_args)
             mc.admin.command("ismaster")
+            self._mongoclient_connect_status["initial"] = "ok"
             _log.info("MongoDB connection succeeded")
-        except ServerSelectionTimeoutError as sst_err:
-            if "CERTIFICATE_VERIFY_FAILED" in str(sst_err):
+        except ConnectionFailure as conn_err:
+            mc = None
+            self._mongoclient_connect_status["initial"] = str(conn_err)
+            if "CERTIFICATE_VERIFY_FAILED" in str(conn_err):
                 _log.warning(f"MongoDB connection failed due to certificate "
-                             f"verification. Retry with explicit location "
+                             f"verification. Retrying with explicit location "
                              f"for client certificates ({certifi.where()}")
-                self._mongoclient_connect_errors["initial"] = str(sst_err)
                 try:
-                    mc = MongoClient(url, tlsCAFile=certifi.where(), **self.timeout_args)
+                    mc = MongoClient(url, tlsCAFile=certifi.where(), **client_kw)
                     mc.admin.command("ismaster")
-                except PyMongoError as err:
-                    _log.error(f"MongoDB connection failed on retry: {err}. "
-                               f"Error from first attempt: {sst_err}")
-                    self._mongoclient_connect_errors["retry"] = str(err)
+                    _log.info("Retried MongoDB connection succeeded")
+                except ConnectionFailure as err:
+                    mc = None
+                    self._mongoclient_connect_status["retry"] = str(err)
+                    _log.error(self.connect_status_str)
         return mc
 
     @property
-    def connect_errors(self):
-        if not hasattr(self, "_mongoclient_connect_errors"):
-            return {"intial": "not tried", "retry": "not tried"}
-        return self._mongoclient_connect_errors.copy()
+    def connect_status(self) -> Dict:
+        return self._mongoclient_connect_status.copy()
+
+    @property
+    def connect_status_str(self) -> str:
+        e = self._mongoclient_connect_status
+        if e["initial"] == "ok":
+            return "Connection succeeded"
+        if e["retry"] == "ok":
+            return "Initial connection failed, but retry succeeded"
+        return f"Initial connection error ({e['initial']}), retry error ({e['retry']})"
 
     @property
     def database(self):
@@ -208,8 +254,10 @@ class ElectrolyteDB:
                 allow_phases = set(phases)
             # build a set of normalized component names
             cnames = {c.replace(" ", "_") for c in component_names}
-            _log.debug(f"Get reaction with {'any' if any_components else 'all'} "
-                       f"components {cnames}")
+            _log.debug(
+                f"Get reaction with {'any' if any_components else 'all'} "
+                f"components {cnames}"
+            )
             # Brute force table scan: need to restructure DB for this to be
             # easy to do with a MongoDB query, i.e. need to put all the
             # *keys* for stoichiometry.Liq as *values* in an array, then do a:
@@ -244,18 +292,27 @@ class ElectrolyteDB:
             it = collection.find()
         return Result(iterator=it, item_class=Reaction)
 
-    def get_base(self, name: str = None) -> Result:
-        """Get base information by name of its type."""
+    def get_base(self, name: str = None) -> Union[Result, Base]:
+        """Get base information by name of its type.
+
+        Args:
+            name: Name of the base type.
+        Returns:
+            If no name is given, a Result iterator over all the bases.
+            Otherwise, a single `Base` object.
+        """
         if name:
             query = {"name": name}
         else:
             query = {}
         collection = self._db.base
         result = Result(iterator=collection.find(filter=query), item_class=Base)
-        return result
-
-    def get_one_base(self, *args):
-        for result in self.get_base(*args):
+        if name:
+            try:
+                return list(result)[0]
+            except IndexError:
+                raise IndexError("No bases found in DB")
+        else:
             return result
 
     def load(
