@@ -527,7 +527,7 @@ class TestPureWater:
         return model
 
     @pytest.mark.component
-    def test_scaling(self, model_scaling):
+    def test_scaling(self, model_scaling, variant: Variant):
         model = model_scaling
 
         assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
@@ -540,17 +540,11 @@ class TestPureWater:
             model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix
         )
 
-    def test_equilibrium_extra_scale_factors(self, model_scaling, variant: Variant):
-        """
-        When using equilibrium reactions, there are another set of scaling factors calculated
-        """
-        if not variant.is_equilibrium:
-            pytest.skip("Only applicable for equilibrium reaction")
-
-        model = model_scaling
-        assert isinstance(
-            model.fs.unit.control_volume.reactions[0.0].scaling_factor, Suffix
-        )
+        if variant.is_equilibrium:
+            # When using equilibrium reactions, there is another set of scaling factors calculated
+            assert isinstance(
+                model.fs.unit.control_volume.reactions[0.0].scaling_factor, Suffix
+            )
 
     @pytest.fixture
     def state_args(self):
