@@ -610,7 +610,7 @@ class TestPureWater:
     def test_solution(self, model_solve):
         model, _ = model_solve
 
-        assert pytest.approx(298, rel=1e-4) == value(
+        assert pytest.approx(298, rel=1e-5) == value(
             model.fs.unit.outlet.temperature[0]
         )
         assert pytest.approx(10, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
