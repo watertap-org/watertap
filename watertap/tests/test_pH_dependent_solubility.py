@@ -32,6 +32,11 @@
         Solubility:     CaCO3 <--> Ca + CO3         logK = -12
 
 
+    [NOTE: IPOPT/IDAES does not handle simultaneous dissolution and
+            precipitation very well. To implement this in a flowsheet,
+            there should be separate units for dissolution and precipitation.
+            For instance, have 1 unit for addition and dissolution of lime,
+            then a separate downstream unit for precipitation of CaCO3.]
     Case 3: (softening, with lime: precipitation + dissolution)
         Aqueous Rxns:   H2O <--> H + OH             logK = -14
                         H2CO3 <--> H + HCO3         logK = -6.3
@@ -40,7 +45,6 @@
                         Ca(OH)2 <--> Ca + 2 OH      logK = -5.26
 
 
-    [NOTE: Should just replace phosphorus removal test???]
     Case 4: (phosphorus removal, most realistic test)
         Aqueous Rxns:
                         H2O <---> H + OH
@@ -1386,6 +1390,259 @@ def test_case_3_ultra_faux_added_lime_and_ash():
                     thermo_config=case3_thermo_config, rxn_config=case3_log_rxn_config,
                     has_energy_balance=True)
 
+
+# # TODO: ======================== Pick Up From Here =============================
+
+# Case 4 Config
+'''
+    Case 4: (phosphorus removal, most realistic test)
+        Aqueous Rxns:
+                        H2O <---> H + OH
+                        H2CO3 <---> H + HCO3
+                        HCO3 <---> H + CO3
+                        H2PO4 <---> H + HPO4
+                        HPO4 <---> H + PO4
+                        FeOH <---> Fe + OH
+                        Fe(OH)2 <---> FeOH + OH
+                        Fe(OH)3 <---> Fe(OH)2 + OH
+                        Fe(OH)4 <---> Fe(OH)3 + OH
+        Solubility:
+                        FePO4 <---> Fe + PO4
+'''
+case4_thermo_config = {
+    "components": {
+        'H2O': {"type": Solvent, "valid_phase_types": PT.aqueousPhase,
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (18.0153, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (-285, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (69, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'H_+': {"type": Cation, "charge": 1,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (1.00784, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'OH_-': {"type": Anion, "charge": -1,
+              # Define the methods used to calculate the following properties
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (17.008, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (-230, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (-10, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'H2CO3': {"type": Solute, "valid_phase_types": PT.aqueousPhase,
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (62.03, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (-699.7, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (187, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'HCO3_-': {"type": Anion, "charge": -1,
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (62.03, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (-692, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (91.2, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'CO3_2-': {"type": Anion, "charge": -2,
+              "dens_mol_liq_comp": Constant,
+              "enth_mol_liq_comp": Constant,
+              "cp_mol_liq_comp": Constant,
+              "entr_mol_liq_comp": Constant,
+              # Parameter data is always associated with the methods defined above
+              "parameter_data": {
+                    "mw": (62.03, pyunits.g/pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J/pyunits.mol/pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (-677.1, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (-56.9, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    # End parameter_data
+                    },
+        'FePO4': {"type": Component, "valid_phase_types": PT.solidPhase,
+              "dens_mol_sol_comp": Constant,
+              "enth_mol_sol_comp": Constant,
+              "cp_mol_sol_comp": Constant,
+              "entr_mol_sol_comp": Constant,
+              "parameter_data": {
+                    "mw": (150.8, pyunits.g/pyunits.mol),
+                    "dens_mol_sol_comp_coeff": (55.2, pyunits.kmol*pyunits.m**-3),
+                    "cp_mol_sol_comp_coeff": (635000, pyunits.J/pyunits.kmol/pyunits.K),
+                    "enth_mol_form_sol_comp_ref": (0, pyunits.kJ/pyunits.mol),
+                    "entr_mol_form_sol_comp_ref": (0, pyunits.J/pyunits.K/pyunits.mol)
+                                },
+                    },
+
+              },
+              # End Component list
+        "phases":  {'Liq': {"type": AqueousPhase,
+                            "equation_of_state": Ideal},
+                    'Sol': {"type": SolidPhase,
+                            "equation_of_state": Ideal}
+                    },
+
+        "state_definition": FpcTP,
+        "state_bounds": {
+                         "temperature": (273.15, 300, 650),
+                         "pressure": (5e4, 1e5, 1e6)
+                     },
+
+        "pressure_ref": 1e5,
+        "temperature_ref": 300,
+        "base_units": {"time": pyunits.s,
+                       "length": pyunits.m,
+                       "mass": pyunits.kg,
+                       "amount": pyunits.mol,
+                       "temperature": pyunits.K},
+
+    }
+    # End thermo_config definition
+
+# Case 4 rxn config (with log_solubility_product)
+case4_log_rxn_config = {
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K},
+    "equilibrium_reactions": {
+        "FePO4_Ksp": {
+                    "stoichiometry": {  ("Sol", "FePO4"): -1,
+                                        ("Liq", "Fe_3+"): 1,
+                                        ("Liq", "PO4_3-"): 1},
+                    "heat_of_reaction": constant_dh_rxn,
+                    "equilibrium_constant": van_t_hoff,
+                    "equilibrium_form": log_solubility_product,
+                    "concentration_form": ConcentrationForm.moleFraction,
+                    "parameter_data": {
+                        "dh_rxn_ref": (0.0, pyunits.J/pyunits.mol),
+                        "k_eq_ref": (10**-23/55.2/55.2, pyunits.dimensionless),
+                        "T_eq_ref": (298.0, pyunits.K),
+                        "reaction_order": { ("Sol", "FePO4"): 0,
+                                            ("Liq", "Fe_3+"): 1,
+                                            ("Liq", "PO4_3-"): 1}
+                        }
+                        # End parameter_data
+                },
+        "H2O_Kw": {
+                "stoichiometry": {("Liq", "H2O"): -1,
+                                 ("Liq", "H_+"): 1,
+                                 ("Liq", "OH_-"): 1},
+               "heat_of_reaction": constant_dh_rxn,
+               "equilibrium_constant": van_t_hoff,
+               "equilibrium_form": log_power_law_equil,
+               "concentration_form": ConcentrationForm.moleFraction,
+               "parameter_data": {
+                   "dh_rxn_ref": (55.830, pyunits.J/pyunits.mol),
+                   "k_eq_ref": (10**-14/55.2/55.2, pyunits.dimensionless),
+                   "T_eq_ref": (298, pyunits.K),
+
+                   # By default, reaction orders follow stoichiometry
+                   #    manually set reaction order here to override
+                   "reaction_order": {("Liq", "H2O"): 0,
+                                    ("Liq", "H_+"): 1,
+                                    ("Liq", "OH_-"): 1}
+                    }
+                    # End parameter_data
+               },
+        "H2CO3_Ka1": {
+                "stoichiometry": {
+                    ("Liq", "H2CO3"): -1,
+                    ("Liq", "H_+"): 1,
+                    ("Liq", "HCO3_-"): 1,
+                },
+                "heat_of_reaction": constant_dh_rxn,
+                "equilibrium_constant": van_t_hoff,
+                "equilibrium_form": log_power_law_equil,
+                "concentration_form": ConcentrationForm.moleFraction,
+                "parameter_data": {
+                    "dh_rxn_ref": (7.7, pyunits.kJ/pyunits.mol),
+                    "k_eq_ref": (10**-6.35/55.2, pyunits.dimensionless),
+                    "T_eq_ref": (298, pyunits.K),
+                    # By default, reaction orders follow stoichiometry
+                    #    manually set reaction order here to override
+                    "reaction_order": {
+                        ("Liq", "H2CO3"): -1,
+                        ("Liq", "H_+"): 1,
+                        ("Liq", "HCO3_-"): 1,
+                    },
+                }
+                # End parameter_data
+            },
+        "H2CO3_Ka2": {
+                "stoichiometry": {
+                    ("Liq", "HCO3_-"): -1,
+                    ("Liq", "H_+"): 1,
+                    ("Liq", "CO3_2-"): 1,
+                },
+                "heat_of_reaction": constant_dh_rxn,
+                "equilibrium_constant": van_t_hoff,
+                "equilibrium_form": log_power_law_equil,
+                "concentration_form": ConcentrationForm.moleFraction,
+                "parameter_data": {
+                    "dh_rxn_ref": (14.9, pyunits.kJ/pyunits.mol),
+                    "k_eq_ref": (10**-10.33/55.2, pyunits.dimensionless),
+                    "T_eq_ref": (298, pyunits.K),
+                    # By default, reaction orders follow stoichiometry
+                    #    manually set reaction order here to override
+                    "reaction_order": {
+                        ("Liq", "HCO3_-"): -1,
+                        ("Liq", "H_+"): 1,
+                        ("Liq", "CO3_2-"): 1,
+                    },
+                }
+                # End parameter_data
+            }
+            #End last reaction
+         }
+         # End equilibrium_reactions
+    }
+    # End reaction_config definition
+
 # This is for additional testing
 if __name__ == "__main__":
     # seawater with 200 mg/L Ca hardness
@@ -1409,9 +1666,13 @@ if __name__ == "__main__":
     # Ultra high Ca - add lime and soda ash ? (faux addition)
     #   This works fine, but having another precipitate makes
     #   the model perform significantly worse
+    '''
     added_lime_x = 100/50000/2/55.2
     added_ash_x = 2000/50000/2/55.2
     model = run_case3(xOH=(1e-7/55.2)+2*added_lime_x, xH=1e-7/55.2, xCaCO3=1e-20, xCaOH2 = 1e-20, xCa=(2000/50000/2/55.2)+added_lime_x,
                     xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=1e-20+added_ash_x,
                     thermo_config=case3_thermo_config, rxn_config=case3_log_rxn_config,
                     has_energy_balance=True)
+    '''
+
+    exit()
