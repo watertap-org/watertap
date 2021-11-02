@@ -40,6 +40,7 @@
                         Ca(OH)2 <--> Ca + 2 OH      logK = -5.26
 
 
+    [NOTE: Should just replace phosphorus removal test???]
     Case 4: (phosphorus removal, most realistic test)
         Aqueous Rxns:
                         H2O <---> H + OH
@@ -1259,16 +1260,158 @@ def run_case3(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCaOH2 = 1e-20, xCa=1e-
 
     model.fs.unit = EquilibriumReactor(default=args)
 
-    ## TODO: =============== CONTINUE FROM HERE =====================
+    total_flow_mol = 10
+
+    # Set flow_mol_phase_comp
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Ca_2+"].fix( xCa*total_flow_mol )
+
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H_+"].fix( xH*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "OH_-"].fix( xOH*total_flow_mol )
+
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2CO3"].fix( xH2CO3*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "HCO3_-"].fix( xHCO3*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO3_2-"].fix( xCO3*total_flow_mol )
+
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Sol", "CaCO3"].fix( xCaCO3*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Sol", "Ca(OH)2"].fix( xCaOH2*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix( (1-xH-xOH-xCaCO3-xCaOH2-xCa-xH2CO3-xHCO3-xCO3)*total_flow_mol )
+
+    model.fs.unit.inlet.pressure.fix(101325.0)
+    model.fs.unit.inlet.temperature.fix(298.)
+    if has_energy_balance == False:
+        model.fs.unit.outlet.temperature.fix(298.)
+
+    assert (degrees_of_freedom(model) == 0)
+
+    ## ==================== Start Scaling for this problem ===========================
+    _set_eps_vals(model.fs.rxn_params, rxn_config)
+    _set_equ_rxn_scaling(model.fs.unit, rxn_config)
+    _set_mat_bal_scaling_FpcTP(model.fs.unit)
+    if has_energy_balance == True:
+        _set_ene_bal_scaling(model.fs.unit)
+
+    iscale.calculate_scaling_factors(model.fs.unit)
+    assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+    assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
+    assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
+
+    ## ==================== END Scaling for this problem ===========================
+
+    # NOTE: Small bound_push at initialization works very well
+    solver.options['bound_push'] = 1e-8
+    #solver.options['bound_frac'] = 1e-8
+    solver.options['mu_init'] = 1e-3
+    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+
+    assert degrees_of_freedom(model) == 0
+
+    # Solve full model (can use larger bound_push value at full solve)
+    solver.options['bound_push'] = 1e-5
+    #solver.options['bound_frac'] = 1e-5
+    solver.options['mu_init'] = 1e-3
+    results = solver.solve(model, tee=True)
+
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+    ## ==================== Check the results ================================
+    print("comp\toutlet.tot_molfrac")
+    for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp:
+        print(str(i)+"\t"+str(value( model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i] )))
+    print()
+
+    # NOTE: Changed all to mole fraction
+    for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+        print(str(i)+"\t"+str(value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i])))
+    print()
+
+    Ca = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp["Liq","Ca_2+"])
+    OH = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp["Liq","OH_-"])
+    H = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp["Liq","H_+"])
+    CO3 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp["Liq","CO3_2-"])
+    Ksp_CaCO3 = value(model.fs.unit.control_volume.reactions[0.0].k_eq["CaCO3_Ksp"].expr)
+    Ksp_CaOH2 = value(model.fs.unit.control_volume.reactions[0.0].k_eq["CaOH2_Ksp"].expr)
+
+    print("Final pH = " +str(-log10(H*55.2)))
+
+    print()
+    print("Ksp_CaCO3 =\t"+str(Ksp_CaCO3))
+    print("Ca*CO3 =\t"+str(Ca*CO3))
+    print()
+    if Ksp_CaCO3*1.01 >= Ca*CO3:
+        print("Constraint is satisfied!")
+    else:
+        print("Constraint is VIOLATED!")
+        print("\tRelative error: "+str(Ksp_CaCO3/Ca/CO3)+">=1")
+        assert False
+
+    print()
+    print("Ksp_CaOH2 =\t"+str(Ksp_CaOH2))
+    print("Ca*OH**2 =\t"+str(Ca*OH**2))
+    print()
+    if Ksp_CaOH2*1.01 >= Ca*OH**2:
+        print("Constraint is satisfied!")
+    else:
+        print("Constraint is VIOLATED!")
+        print("\tRelative error: "+str(Ksp_CaOH2/Ca/OH**2)+">=1")
+        assert False
+
+    print("==========================================================================")
 
     return model
 
 
+@pytest.mark.component
+def test_case_3_seawater_with_ca():
+    model = run_case3(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCaOH2 = 1e-20, xCa=200/50000/2/55.2,
+                    xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=1e-20,
+                    thermo_config=case3_thermo_config, rxn_config=case3_log_rxn_config,
+                    has_energy_balance=True)
+
+
+@pytest.mark.component
+def test_case_3_ultra_high_ca_forced_lime_precip():
+    model = run_case3(xOH=1e-1/55.2, xH=1e-13/55.2, xCaCO3=1e-20, xCaOH2 = 1e-20, xCa=2000/50000/2/55.2,
+                    xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=1e-20,
+                    thermo_config=case3_thermo_config, rxn_config=case3_log_rxn_config,
+                    has_energy_balance=True)
+
+
+@pytest.mark.component
+def test_case_3_ultra_faux_added_lime_and_ash():
+    added_lime_x = 100/50000/2/55.2
+    added_ash_x = 2000/50000/2/55.2
+    model = run_case3(xOH=(1e-7/55.2)+2*added_lime_x, xH=1e-7/55.2, xCaCO3=1e-20, xCaOH2 = 1e-20, xCa=(2000/50000/2/55.2)+added_lime_x,
+                    xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=1e-20+added_ash_x,
+                    thermo_config=case3_thermo_config, rxn_config=case3_log_rxn_config,
+                    has_energy_balance=True)
+
 # This is for additional testing
 if __name__ == "__main__":
-    # Ultra-high Ca --> Massive amounts of precipitation
+    # seawater with 200 mg/L Ca hardness
+    #   Ca natually starts precipitating out
+    '''
+    model = run_case3(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCaOH2 = 1e-20, xCa=200/50000/2/55.2,
+                    xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=1e-20,
+                    thermo_config=case3_thermo_config, rxn_config=case3_log_rxn_config,
+                    has_energy_balance=True)
+    '''
 
-    model = run_case3(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCaOH2 = 1e-20, xCa=1e-20,
-                    xH2CO3=1e-20, xHCO3=1e-20, xCO3=1e-20,
+    # Ultra high Ca - Ultra high initial pH
+    #   pH is so high that Ca(OH)2 precipitates
+    '''
+    model = run_case3(xOH=1e-1/55.2, xH=1e-13/55.2, xCaCO3=1e-20, xCaOH2 = 1e-20, xCa=2000/50000/2/55.2,
+                    xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=1e-20,
+                    thermo_config=case3_thermo_config, rxn_config=case3_log_rxn_config,
+                    has_energy_balance=True)
+    '''
+
+    # Ultra high Ca - add lime and soda ash ? (faux addition)
+    #   This works fine, but having another precipitate makes
+    #   the model perform significantly worse
+    added_lime_x = 100/50000/2/55.2
+    added_ash_x = 2000/50000/2/55.2
+    model = run_case3(xOH=(1e-7/55.2)+2*added_lime_x, xH=1e-7/55.2, xCaCO3=1e-20, xCaOH2 = 1e-20, xCa=(2000/50000/2/55.2)+added_lime_x,
+                    xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=1e-20+added_ash_x,
                     thermo_config=case3_thermo_config, rxn_config=case3_log_rxn_config,
                     has_energy_balance=True)
