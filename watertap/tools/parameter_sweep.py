@@ -17,6 +17,7 @@ import os
 import itertools
 import warnings
 import copy, pprint
+# import h5py
 
 from scipy.interpolate import griddata
 from enum import Enum, auto
@@ -327,16 +328,20 @@ def _interp_nan_values(global_values, global_results):
 def _create_local_output_skeleton(model, sweep_params, num_samples, variable_type="unfixed"):
 
     output_dict = {}
+    output_dict["sweep_params"] = {}
+    output_dict["outputs"] = {}
 
     # Lets deal with the inputs
-    output_dict["sweep_params"] = {}
     for key in sweep_params.keys():
-        output_dict["sweep_params"][key] = np.zeros(num_samples, dtype=np.float)
+        # print(sweep_params[key].pyomo_object.__getattribute__())
+        var = sweep_params[key].pyomo_object
+        var_str = sweep_params[key].pyomo_object.name
+        output_dict["sweep_params"][var_str] =  _create_component_output_skeleton(var, num_samples)# np.zeros(num_samples, dtype=np.float)
 
     if variable_type == "unfixed":
         for var in unfixed_variables_in_activated_equalities_set(model.fs):
             var_str = var.name # or var.__str__ # Figure out which one is better
-            output_dict[var_str] = _create_component_output_skeleton(var, num_samples)
+            output_dict["outputs"][var_str] = _create_component_output_skeleton(var, num_samples)
     elif variable_type == "fixed":
         raise NotImplementedError
     else:
@@ -373,12 +378,13 @@ def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, outp
 
     op_ps_dict = output_dict["sweep_params"]
     for key, item in sweep_params.items():
-        op_ps_dict[key][case_number] = item.pyomo_object.value
+        var_name = item.pyomo_object.name
+        op_ps_dict[var_name]['value'][case_number] = item.pyomo_object.value
 
     # Get the outputs from model
     if variable_type == "unfixed":
         for var in unfixed_variables_in_activated_equalities_set(model.fs):
-            output_dict[var.name]["value"][case_number] = var.value
+            output_dict["outputs"][var.name]["value"][case_number] = var.value
     elif variable_type == "fixed":
         raise NotImplementedError
     else:
@@ -408,28 +414,37 @@ def _create_global_output(local_output_dict, local_num_cases,
         if my_mpi_rank == 0:
             global_output_dict = copy.deepcopy(local_output_dict)
             # Create a global value array of inputs in the dictionary
-            for key in global_output_dict["sweep_params"].keys():
-                global_output_dict["sweep_params"][key] = np.zeros(num_total_samples, dtype=np.float)
-
-            # Create a global value array of outputs in the dictionary
-            for var, var_dict in global_output_dict.items():
-                if var != 'sweep_params':
-                    var_dict["value"] = np.zeros(num_total_samples, dtype=np.float)
+            for key, item in global_output_dict.items():
+                for subkey, subitem in item.items():
+                    subitem['value'] = np.zeros(num_total_samples, dtype=np.float)
+            # for key in global_output_dict["sweep_params"].keys():
+            #     global_output_dict["sweep_params"][key] = np.zeros(num_total_samples, dtype=np.float)
+            #
+            # # Create a global value array of outputs in the dictionary
+            # for var, var_dict in global_output_dict.items():
+            #     if var != 'sweep_params':
+            #         var_dict["value"] = np.zeros(num_total_samples, dtype=np.float)
         else:
             global_output_dict = local_output_dict
 
         # Finally collect the values
-        for key, item in local_output_dict.items():
-            if key == 'sweep_params':
-                for subkey in item.keys():
-                    comm.Gatherv(sendbuf=item[subkey],
-                                 recvbuf=(global_output_dict[key][subkey], sample_split_arr),
-                                 root=0)
-            else:
-                comm.Gatherv(sendbuf=item["value"],
-                             recvbuf=(global_output_dict[key]["value"], sample_split_arr),
+        for key, item in local_output_dict.items(): # This probably doesnt work
+            for subkey, subitem in item.items():
+                comm.Gatherv(sendbuf=subitem["value"],
+                             recvbuf=(global_output_dict[key][subkey]["value"], sample_split_arr),
                              root=0)
-            comm.Barrier()
+
+        # for key, item in local_output_dict.items():
+        #     if key == 'sweep_params':
+        #         for subkey in item.keys():
+        #             comm.Gatherv(sendbuf=item[subkey],
+        #                          recvbuf=(global_output_dict[key][subkey], sample_split_arr),
+        #                          root=0)
+        #     else:
+        #         comm.Gatherv(sendbuf=item["value"],
+        #                      recvbuf=(global_output_dict[key]["value"], sample_split_arr),
+        #                      root=0)
+        #     comm.Barrier()
 
     return global_output_dict
 
