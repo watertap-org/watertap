@@ -115,7 +115,7 @@ class ElectrolyteDB:
         client.drop_database(db)
 
     @classmethod
-    def can_connect(cls, url: str, db=None) -> bool:
+    def can_connect(cls, url=None, db=None) -> bool:
         """Convenience method to check if a connection can be made without having
            to instantiate the database object.
 
@@ -314,6 +314,9 @@ class ElectrolyteDB:
                 raise IndexError("No bases found in DB")
         else:
             return result
+
+    # older method name
+    get_one_base = get_base
 
     def load(
         self,

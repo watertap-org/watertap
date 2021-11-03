@@ -63,33 +63,12 @@ def find_notebooks(path: Path):
     return path.glob("**/*.ipynb")
 
 
-@pytest.fixture(scope="session")
-def docs_root(dirname="docs"):
-    p = Path(__file__).parent
-    while not (p / dirname).exists():
-        pp = p.parent
-        if pp == p:
-            raise RuntimeError(f"Could not find '{dirname}' dir")
-        p = pp
-    yield p / dirname
-
-
-def mongodb():
-    try:
-        edb = ElectrolyteDB()  # will fail if no DB
-        edb.get_base()  # will fail if DB is not loaded
-    except Exception as err:
-        _log.warning(f"Could not connect to MongoDB: {err}")
-    return False
-
 # Tests
 # =====
 
 
-@pytest.mark.skipif(not mongodb(), reason="MongoDB is required")
 @pytest.mark.component
-def test_edb_notebooks(docs_root):
-    print("\n")
+def test_edb_notebooks(docs_root, electrolytedb):
     for nb_path in find_notebooks(docs_root / "examples" / "edb"):
         if ".ipynb_checkpoints" in nb_path.parts:
             continue
