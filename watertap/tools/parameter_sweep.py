@@ -17,7 +17,7 @@ import os
 import itertools
 import warnings
 import copy, pprint
-# import h5py
+import h5py
 
 from scipy.interpolate import griddata
 from enum import Enum, auto
@@ -448,6 +448,48 @@ def _create_global_output(local_output_dict, local_num_cases,
 
     return global_output_dict
 
+def _write_output_to_h5(output_dict, output_directory="./output/",
+                        fname="output_dict.h5"):
+
+    fpath = os.path.join(output_directory, fname)
+    f = h5py.File(fpath, 'w')
+    for key, item in output_dict.items():
+        grp = f.create_group(key)
+        for subkey, subitem in item.items():
+            subgrp = grp.create_group(subkey)
+            for subsubkey, subsubitem in subitem.items():
+                if subsubkey == 'lower bound' and subsubitem is None:
+                    subgrp.create_dataset(subsubkey, data=np.finfo('d').min)
+                elif subsubkey == 'upper bound' and subsubitem is None:
+                    subgrp.create_dataset(subsubkey, data=np.finfo('d').max)
+                else:
+                    subgrp.create_dataset(subsubkey, data=output_dict[key][subkey][subsubkey])
+
+    f.close()
+
+def _read_output_h5(filepath):
+
+    f = h5py.File(filepath , 'r')
+
+    l1_keys = list(f.keys())
+    print(l1_keys)
+    output_dict = {}
+    for key in l1_keys: # Input or Output
+        output_dict[key] = {}
+        l2_keys = list(f[key].keys())
+        for subkey in l2_keys: # Variable name
+            output_dict[key][subkey] = {}
+            l3_keys = list(f[key][subkey].keys())
+            for subsubkey in l3_keys: # variable metadata
+                output_dict[key][subkey][subsubkey] = f[key][subkey][subsubkey][()]
+                if subsubkey == "units":
+                    # The strings are recovered in bytes. we choose to convert it to utf-8
+                    output_dict[key][subkey][subsubkey] = output_dict[key][subkey][subsubkey].decode("utf-8")
+
+    f.close()
+    pprint.pprint(output_dict)
+
+
 # ================================================================
 
 def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
@@ -643,6 +685,9 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
         pp_output_fpath_txt = os.path.join(dirname, "output_dict_{0}samples.txt".format(num_samples))
         with open(pp_output_fpath_txt, "w") as log_file:
             pprint.pprint(global_output_dict, log_file)
+
+        _write_output_to_h5(global_output_dict)
+        # _read_output_h5("./output/output_dict.h5")
 
         if interpolate_nan_outputs:
             global_results_clean = _interp_nan_values(global_values, global_results)
