@@ -44,7 +44,8 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinx.ext.autosectionlabel',
     'sphinx.ext.doctest',
-    'myst_parser'
+    'myst_parser',
+    'nbsphinx',  # Jupyter notebooks as docs
 ]
 
 autosectionlabel_prefix_document = True
