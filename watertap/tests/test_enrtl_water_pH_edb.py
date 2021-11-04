@@ -34,7 +34,7 @@ def get_thermo_config(edb):
         Unsymmetric,
     )
 
-    base = edb.get_one_base("water_reaction")
+    base = edb.get_base("water_reaction")
     elements = ["H", "O"]
     components = []
     # Add the components
@@ -71,7 +71,7 @@ def get_water_reaction_config(edb):
 
     elements = ["H", "O"]
     components = [c.name for c in edb.get_components(element_names=elements)]
-    base = edb.get_one_base("water_reaction")
+    base = edb.get_base("water_reaction")
     # Just use base units, and add a dummy equilibrium reaction config
     cfg = {
         "base_units": base.idaes_config["base_units"],
@@ -94,7 +94,7 @@ def get_carbonic_thermo_config(edb):
         Unsymmetric,
     )
 
-    base = edb.get_one_base("water_reaction")
+    base = edb.get_base("water_reaction")
     # The 'right' way to fetch all components
     # elements = ["H", "O", "C", "Na"]
     components = []
