@@ -110,10 +110,11 @@ setup(
         ],
         "dev": [
             "myst-parser",  # markdown support for Sphinx
-            # other requirements
-            "linkify-it-py",
+            "nbsphinx",  # jupyter notebook support for sphinx
             "Sphinx",  # docs
             "sphinx_rtd_theme",  # docs
+            # other requirements
+            "linkify-it-py",
             "json-schema-for-humans",  # pretty JSON schema in HTML
             "black",  # code formatting
             # other requirements
