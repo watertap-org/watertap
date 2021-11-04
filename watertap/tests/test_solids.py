@@ -693,22 +693,3 @@ def test_case2b_mid_conc_with_dissolution():
 @pytest.mark.component
 def test_case2_high_conc_for_all():
     model = model = run_case2(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility)
-
-# This is for additional testing
-if __name__ == "__main__":
-    #model = run_case1(xA=1e-9, xB=1e-9, xAB=1e-25, scaling=True, rxn_config=reaction_solubility)  # ok
-    #model = run_case1(xA=1e-9, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_solubility)   # ok
-    #model = run_case1(xA=1e-2, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_solubility)   # ok - some small constraint violation
-    #model = run_case1(xA=1e-9, xB=1e-9, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)    # ok - some small constraint violation
-    #model = run_case1(xA=1e-9, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)     # ok
-    #model = run_case1(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_solubility)    #ok
-
-    #model = run_case2(xA=1e-9, xB=1e-9, xAB=1e-25, scaling=True, rxn_config=reaction_log_solubility) #ok
-    #model = run_case2(xA=1e-9, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_log_solubility)  #ok
-    #model = run_case2(xA=1e-2, xB=1e-2, xAB=1e-25, scaling=True, rxn_config=reaction_log_solubility)  #ok
-    #model = run_case2(xA=1e-9, xB=1e-9, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility)  #ok
-    # Convergence here is very finicky, but when it does converge, the solution is correct
-    model = run_case2(xA=1e-2, xB=1e-9, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility)  #ok
-    #model = run_case2(xA=1e-9, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility, state="FpcTP")  #ok
-    #model = run_case2(xA=1e-2, xB=1e-2, xAB=1e-2, scaling=True, rxn_config=reaction_log_solubility)  #ok
-    # NOTE to SELF:  STUFF to test - Change the eps value, play with bound_push at initialization, change states
