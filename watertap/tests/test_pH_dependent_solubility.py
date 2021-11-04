@@ -1985,7 +1985,7 @@ def run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
 
     ## ==================== Start Scaling for this problem ===========================
     # # TODO: NOTE: The _set_eps_vals function may need to change. Some cases run
-    #               better without it included. 
+    #               better without it included.
     _set_eps_vals(model.fs.rxn_params, rxn_config)
     _set_equ_rxn_scaling(model.fs.unit, rxn_config)
     _set_mat_bal_scaling_FpcTP(model.fs.unit)
@@ -1993,9 +1993,9 @@ def run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
         _set_ene_bal_scaling(model.fs.unit)
 
     iscale.calculate_scaling_factors(model.fs.unit)
-    #assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
-    #assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
-    #assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
+    assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+    assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
+    assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
     ## ==================== END Scaling for this problem ===========================
 
@@ -2062,6 +2062,8 @@ if __name__ == "__main__":
     #       This works, but convergence of the initialization stage is VERY, VERY poor!!!
     #
     #   # TODO:  Figure out how to better initialize this case.
+    # # TODO: NOTE: The _set_eps_vals function may need to change. Some cases run
+    #               better without it included.
 
     model = run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
                     xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=1e-20,
