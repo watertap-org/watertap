@@ -1984,6 +1984,8 @@ def run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
     assert (degrees_of_freedom(model) == 0)
 
     ## ==================== Start Scaling for this problem ===========================
+    # # TODO: NOTE: The _set_eps_vals function may need to change. Some cases run
+    #               better without it included. 
     _set_eps_vals(model.fs.rxn_params, rxn_config)
     _set_equ_rxn_scaling(model.fs.unit, rxn_config)
     _set_mat_bal_scaling_FpcTP(model.fs.unit)
@@ -1991,9 +1993,9 @@ def run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
         _set_ene_bal_scaling(model.fs.unit)
 
     iscale.calculate_scaling_factors(model.fs.unit)
-    assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
-    assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
-    assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
+    #assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+    #assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
+    #assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
     ## ==================== END Scaling for this problem ===========================
 
@@ -2001,6 +2003,7 @@ def run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
     solver.options['bound_push'] = 1e-8
     #solver.options['bound_frac'] = 1e-8
     solver.options['mu_init'] = 1e-3
+    #solver.options['max_iter'] = 300
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
@@ -2056,8 +2059,10 @@ def run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
 if __name__ == "__main__":
     # seawater with standard amount of iron (5.38e-8 M) and phosphorus (3.22e-6 M)
     #
-    #       This works, but convergence of the initialization stage is VERY poor
-    '''
+    #       This works, but convergence of the initialization stage is VERY, VERY poor!!!
+    #
+    #   # TODO:  Figure out how to better initialize this case.
+
     model = run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
                     xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=1e-20,
                     xH2PO4=1e-20, xHPO4=3.22e-6/55.2, xPO4=1e-20,
@@ -2065,14 +2070,15 @@ if __name__ == "__main__":
                     xFeOH3=1e-20, xFeOH4=1e-20, xFePO4=1e-20,
                     thermo_config=case4_thermo_config,
                     rxn_config=case4_log_rxn_config,
-                    has_energy_balance=True, remove_precip_rxn=True)
-    '''
+                    has_energy_balance=True, remove_precip_rxn=False)
+
 
     # seawater with standard amount of iron (5.38e-8 M) and phosphorus (3.22e-6 M)
     #   Boost Fe, PO4, and OH to induce precipitation
     #       Add 1e-4 M of each...
     #
-    #       This is working... still has poor initialization convergence. 
+    #       This is working... still has poor initialization convergence.
+    '''
     model = run_case4(xOH=(1e-7/55.2)+(1e-4/55.2), xH=1e-7/55.2,
                     xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=1e-20,
                     xH2PO4=1e-20, xHPO4=(3.22e-6/55.2)+(1e-4/55.2), xPO4=1e-20,
@@ -2081,4 +2087,43 @@ if __name__ == "__main__":
                     thermo_config=case4_thermo_config,
                     rxn_config=case4_log_rxn_config,
                     has_energy_balance=True, remove_precip_rxn=False)
+    '''
+
+    # seawater with standard amount of iron (5.38e-8 M) and phosphorus (3.22e-6 M)
+    #   Boost Fe, PO4, and OH to induce precipitation
+    #       Add 1e-4 M of Fe
+    #       Add 1e-4 M of PO4
+    #       Add 0 M of OH
+    #
+    #   This is working... but still has poor initialization convergence
+    '''
+    model = run_case4(xOH=(1e-7/55.2)+(0/55.2), xH=1e-7/55.2,
+                    xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=1e-20,
+                    xH2PO4=1e-20, xHPO4=(3.22e-6/55.2)+(1e-4/55.2), xPO4=1e-20,
+                    xFe=(5.38e-8/55.2)+(1e-4/55.2), xFeOH=1e-20, xFeOH2=1e-20,
+                    xFeOH3=1e-20, xFeOH4=1e-20, xFePO4=1e-20,
+                    thermo_config=case4_thermo_config,
+                    rxn_config=case4_log_rxn_config,
+                    has_energy_balance=True, remove_precip_rxn=False)
+    '''
+
+    # seawater with standard amount of iron (5.38e-8 M) and phosphorus (3.22e-6 M)
+    #   Boost Fe, PO4, and OH to induce precipitation
+    #       Add 1e-4 M of Fe
+    #       Add 0 M of PO4
+    #       Add 0 M of OH
+    #
+    #   This is working... but still has poor initialization convergence
+    #       (All phosphorus has been removed)
+    '''
+    model = run_case4(xOH=(1e-7/55.2)+(0/55.2), xH=1e-7/55.2,
+                    xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=1e-20,
+                    xH2PO4=1e-20, xHPO4=(3.22e-6/55.2)+(0/55.2), xPO4=1e-20,
+                    xFe=(5.38e-8/55.2)+(1e-4/55.2), xFeOH=1e-20, xFeOH2=1e-20,
+                    xFeOH3=1e-20, xFeOH4=1e-20, xFePO4=1e-20,
+                    thermo_config=case4_thermo_config,
+                    rxn_config=case4_log_rxn_config,
+                    has_energy_balance=True, remove_precip_rxn=False)
+    '''
+
     exit()
