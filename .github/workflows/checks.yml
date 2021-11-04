@@ -58,7 +58,7 @@ jobs:
     - name: Install dependencies
       run: |
         echo '::group::Output of "conda install" commands'
-        conda install --quiet --yes pip=21.1 wheel setuptools
+        conda install --quiet --yes pip=21.1 wheel setuptools pandoc
         echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
         pip install --progress-bar off -r requirements-dev.txt
