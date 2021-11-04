@@ -643,7 +643,7 @@ class TestPureWaterEDB(TestPureWater):
 
     @pytest.fixture
     def thermo_config(self, edb):
-        base = edb.get_one_base("water_reaction")
+        base = edb.get_base("water_reaction")
         elements = ["H", "O"]
         components = []
         # Add the components
@@ -667,7 +667,7 @@ class TestPureWaterEDB(TestPureWater):
     def water_reaction_config(self, edb):
         elements = ["H", "O"]
         components = [c.name for c in edb.get_components(element_names=elements)]
-        base = edb.get_one_base("water_reaction")
+        base = edb.get_base("water_reaction")
         # Need to remove these to avoid errors when using the generated config
         base.remove("phases")
         base.remove("pressure_ref")
