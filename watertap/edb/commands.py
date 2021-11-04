@@ -319,9 +319,12 @@ def drop_database(url, database, yes):
     ElectrolyteDB.drop_database(url, database)
     click.echo(f"Done")
 
+
 #################################################################################
 # SCHEMA command
 #################################################################################
+
+
 @command_base.command(name="schema", help="Show JSON schemas, in raw or readable forms")
 @click.option(
     "-f",

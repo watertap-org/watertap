@@ -44,13 +44,43 @@ class ElectrolyteDB:
 
     # Default timeout, in ms, for sockets, connections, and server selection
     timeout_ms = 5000
+    timeout_args = {
+        "socketTimeoutMS": timeout_ms,
+        "connectTimeoutMS": timeout_ms,
+        "serverSelectionTimeoutMS": timeout_ms,
+    }
 
     # make sure these match lowercase names of the DataWrapper subclasses in
     # the `data_model` module
     _known_collections = ("base", "component", "reaction")
 
-    def __init__(self, url=DEFAULT_URL, db=DEFAULT_DB):
-        self._client = MongoClient(host=url)
+    def __init__(
+        self,
+        url: str = DEFAULT_URL,
+        db: str = DEFAULT_DB,
+        check_connection: bool = True,
+    ):
+        """Constructor.
+
+        Args:
+            url: MongoDB server URL
+            db: MongoDB 'database' (namespace) to use
+            check_connection: If True, check immediately if we can connect to the
+                server at the provided url. Otherwise defer this check until the
+                first operation (at which point a stack trace may occur).
+
+        Raises:
+            pymongo.errors.ConnectionFailure: if check_connection is True,
+                 and the connection fails
+        """
+        self._client = MongoClient(host=url, **self.timeout_args)
+        # check connection immediately
+        if check_connection:
+            try:
+                self._client.admin.command("ismaster")
+            except ConnectionFailure as err:
+                _log.error(f"Cannot connect to MongoDB server: {err}")
+                raise
         self._db = getattr(self._client, db)
         self._database_name = db
         self._server_url = url
@@ -82,12 +112,7 @@ class ElectrolyteDB:
             port = cls.DEFAULT_PORT
 
         # add timeouts (probably shorter than defaults)
-        timeout_args = {
-            "socketTimeoutMS": cls.timeout_ms,
-            "connectTimeoutMS": cls.timeout_ms,
-            "serverSelectionTimeoutMS": cls.timeout_ms,
-        }
-        kwargs.update(timeout_args)
+        kwargs.update(cls.timeout_args)
 
         client = MongoClient(host=host, port=port, **kwargs)
 
@@ -179,8 +204,10 @@ class ElectrolyteDB:
                 allow_phases = set(phases)
             # build a set of normalized component names
             cnames = {c.replace(" ", "_") for c in component_names}
-            _log.debug(f"Get reaction with {'any' if any_components else 'all'} "
-                       f"components {cnames}")
+            _log.debug(
+                f"Get reaction with {'any' if any_components else 'all'} "
+                f"components {cnames}"
+            )
             # Brute force table scan: need to restructure DB for this to be
             # easy to do with a MongoDB query, i.e. need to put all the
             # *keys* for stoichiometry.Liq as *values* in an array, then do a:
@@ -215,18 +242,27 @@ class ElectrolyteDB:
             it = collection.find()
         return Result(iterator=it, item_class=Reaction)
 
-    def get_base(self, name: str = None) -> Result:
-        """Get base information by name of its type."""
+    def get_base(self, name: str = None) -> Union[Result, Base]:
+        """Get base information by name of its type.
+
+        Args:
+            name: Name of the base type.
+        Returns:
+            If no name is given, a Result iterator over all the bases.
+            Otherwise, a single `Base` object.
+        """
         if name:
             query = {"name": name}
         else:
             query = {}
         collection = self._db.base
         result = Result(iterator=collection.find(filter=query), item_class=Base)
-        return result
-
-    def get_one_base(self, *args):
-        for result in self.get_base(*args):
+        if name:
+            try:
+                return list(result)[0]
+            except IndexError:
+                raise IndexError("No bases found in DB")
+        else:
             return result
 
     def load(
