@@ -1905,7 +1905,8 @@ def run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
                 xH2PO4=1e-20, xHPO4=1e-20, xPO4=1e-20,
                 xFe=1e-20, xFeOH=1e-20, xFeOH2=1e-20,
                 xFeOH3=1e-20, xFeOH4=1e-20, xFePO4=1e-20,
-                thermo_config=None, rxn_config=None, has_energy_balance=True):
+                thermo_config=None, rxn_config=None,
+                has_energy_balance=True, remove_precip_rxn=False):
     print("==========================================================================")
     print("Case 4: Phophorus removal through iron precipitation")
     print("xOH = "+str(xOH))
@@ -1925,6 +1926,10 @@ def run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
 
     print("xFePO4 = "+str(xFePO4))
     print()
+
+    Ksp_hold =  rxn_config["equilibrium_reactions"]["FePO4_Ksp"]["parameter_data"]["k_eq_ref"][0]
+    if (remove_precip_rxn == True):
+        del rxn_config["equilibrium_reactions"]["FePO4_Ksp"]
 
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1947,19 +1952,133 @@ def run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
 
     model.fs.unit = EquilibriumReactor(default=args)
 
+    total_flow_mol = 10
+
+    # Set flow_mol_phase_comp
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H_+"].fix( xH*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "OH_-"].fix( xOH*total_flow_mol )
+
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2CO3"].fix( xH2CO3*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "HCO3_-"].fix( xHCO3*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO3_2-"].fix( xCO3*total_flow_mol )
+
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2PO4_-"].fix( xH2PO4*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "HPO4_2-"].fix( xHPO4*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "PO4_3-"].fix( xPO4*total_flow_mol )
+
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Fe_3+"].fix( xFe*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "FeOH_2+"].fix( xFeOH*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Fe(OH)2_+"].fix( xFeOH2*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Fe(OH)3"].fix( xFeOH3*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Fe(OH)4_-"].fix( xFeOH4*total_flow_mol )
+
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Sol", "FePO4"].fix( xFePO4*total_flow_mol )
+    model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix(
+        (1-xH-xOH-xFePO4-xH2CO3-xHCO3-xCO3-xH2PO4-xHPO4-xPO4-xFe-xFeOH-xFeOH2-xFeOH3-xFeOH4)*total_flow_mol )
+
+    model.fs.unit.inlet.pressure.fix(101325.0)
+    model.fs.unit.inlet.temperature.fix(298.)
+    if has_energy_balance == False:
+        model.fs.unit.outlet.temperature.fix(298.)
+
+    assert (degrees_of_freedom(model) == 0)
+
+    ## ==================== Start Scaling for this problem ===========================
+    _set_eps_vals(model.fs.rxn_params, rxn_config)
+    _set_equ_rxn_scaling(model.fs.unit, rxn_config)
+    _set_mat_bal_scaling_FpcTP(model.fs.unit)
+    if has_energy_balance == True:
+        _set_ene_bal_scaling(model.fs.unit)
+
+    iscale.calculate_scaling_factors(model.fs.unit)
+    assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+    assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
+    assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
+
+    ## ==================== END Scaling for this problem ===========================
+
+    # NOTE: Small bound_push at initialization works very well
+    solver.options['bound_push'] = 1e-8
+    #solver.options['bound_frac'] = 1e-8
+    solver.options['mu_init'] = 1e-3
+    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+
+    assert degrees_of_freedom(model) == 0
+
+    # Solve full model (can use larger bound_push value at full solve)
+    solver.options['bound_push'] = 1e-5
+    #solver.options['bound_frac'] = 1e-5
+    solver.options['mu_init'] = 1e-3
+    results = solver.solve(model, tee=True)
+
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+    ## ==================== Check the results ================================
+    print("comp\toutlet.tot_molfrac")
+    for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp:
+        print(str(i)+"\t"+str(value( model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i] )))
+    print()
+
+    # NOTE: Changed all to mole fraction
+    for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+        print(str(i)+"\t"+str(value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i])))
+    print()
+
+    Fe = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp["Liq","Fe_3+"])
+    OH = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp["Liq","OH_-"])
+    H = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp["Liq","H_+"])
+    PO4 = value(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp["Liq","PO4_3-"])
+    if (remove_precip_rxn == False):
+        Ksp = value(model.fs.unit.control_volume.reactions[0.0].k_eq["FePO4_Ksp"].expr)
+    else:
+        Ksp = Ksp_hold
+
+    print("Final pH = " +str(-log10(H*55.2)))
+
+    print()
+    print("Ksp =\t"+str(Ksp))
+    print("Fe*PO4 =\t"+str(Fe*PO4))
+    print()
+    if Ksp*1.01 >= Fe*PO4:
+        print("Constraint is satisfied!")
+    else:
+        print("Constraint is VIOLATED!")
+        print("\tRelative error: "+str(Ksp/Fe/PO4)+">=1")
+        if (remove_precip_rxn == False):
+            assert False
+
+    print("==========================================================================")
+
     return model
 
 # This is for additional testing
 if __name__ == "__main__":
-    # seawater with 200 mg/L Ca hardness
-    #   Ca natually starts precipitating out
+    # seawater with standard amount of iron (5.38e-8 M) and phosphorus (3.22e-6 M)
+    #
+    #       This works, but convergence of the initialization stage is VERY poor
+    '''
     model = run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
-                    xH2CO3=1e-20, xHCO3=1e-20, xCO3=1e-20,
-                    xH2PO4=1e-20, xHPO4=1e-20, xPO4=1e-20,
-                    xFe=1e-20, xFeOH=1e-20, xFeOH2=1e-20,
+                    xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=1e-20,
+                    xH2PO4=1e-20, xHPO4=3.22e-6/55.2, xPO4=1e-20,
+                    xFe=5.38e-8/55.2, xFeOH=1e-20, xFeOH2=1e-20,
                     xFeOH3=1e-20, xFeOH4=1e-20, xFePO4=1e-20,
                     thermo_config=case4_thermo_config,
                     rxn_config=case4_log_rxn_config,
-                    has_energy_balance=True)
+                    has_energy_balance=True, remove_precip_rxn=True)
+    '''
 
+    # seawater with standard amount of iron (5.38e-8 M) and phosphorus (3.22e-6 M)
+    #   Boost Fe, PO4, and OH to induce precipitation
+    #       Add 1e-4 M of each...
+    #
+    #       This is working... still has poor initialization convergence. 
+    model = run_case4(xOH=(1e-7/55.2)+(1e-4/55.2), xH=1e-7/55.2,
+                    xH2CO3=1e-20, xHCO3=0.00206/55.2, xCO3=1e-20,
+                    xH2PO4=1e-20, xHPO4=(3.22e-6/55.2)+(1e-4/55.2), xPO4=1e-20,
+                    xFe=(5.38e-8/55.2)+(1e-4/55.2), xFeOH=1e-20, xFeOH2=1e-20,
+                    xFeOH3=1e-20, xFeOH4=1e-20, xFePO4=1e-20,
+                    thermo_config=case4_thermo_config,
+                    rxn_config=case4_log_rxn_config,
+                    has_energy_balance=True, remove_precip_rxn=False)
     exit()
