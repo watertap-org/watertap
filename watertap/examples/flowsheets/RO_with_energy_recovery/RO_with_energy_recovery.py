@@ -11,8 +11,6 @@
 #
 ###############################################################################
 from pyomo.environ import (ConcreteModel,
-                           SolverFactory,
-                           TerminationCondition,
                            value,
                            Constraint,
                            Expression,
@@ -22,14 +20,11 @@ from pyomo.environ import (ConcreteModel,
                            units as pyunits,
                            assert_optimal_termination)
 from pyomo.network import Arc
-import pyomo.util.infeasible as infeas
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (solve_indexed_blocks,
-                                            propagate_state,
-                                            fix_state_vars,
-                                            revert_state_vars)
+                                            propagate_state)
 from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
@@ -43,7 +38,7 @@ from watertap.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pump_isothermal import Pump
 from watertap.util.initialization import assert_degrees_of_freedom
-import watertap.flowsheets.RO_with_energy_recovery.financials as financials
+import watertap.examples.flowsheets.RO_with_energy_recovery.financials as financials
 
 
 def main():

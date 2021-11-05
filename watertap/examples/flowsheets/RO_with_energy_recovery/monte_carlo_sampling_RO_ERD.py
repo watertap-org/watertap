@@ -14,11 +14,11 @@
 from idaes.core.util import get_solver
 from watertap.tools.parameter_sweep import UniformSample, NormalSample, LatinHypercubeSample, parameter_sweep
 
-from watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (build,
-    set_operating_conditions,
-    initialize_system,
-    solve,
-    optimize)
+from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (build,
+                                                                                          set_operating_conditions,
+                                                                                          initialize_system,
+                                                                                          solve,
+                                                                                          optimize)
 
 
 def get_sweep_params(m, use_LHS=False):
