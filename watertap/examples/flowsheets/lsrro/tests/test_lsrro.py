@@ -15,20 +15,19 @@ import pytest
 
 import pyomo.environ as pyo
 from pyomo.util.check_units import assert_units_consistent
-from pyomo.network import Arc, Port
+from pyomo.network import Port
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.scaling import badly_scaled_var_generator
-from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
-from idaes.generic_models.unit_models.mixer import MomentumMixingType
+from idaes.generic_models.unit_models import Product, Feed
 
 from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
 from watertap.unit_models.pump_isothermal import Pump
 from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 
-from watertap.flowsheets.lsrro.lsrro import (build, set_operating_conditions,
-        initialize, optimize_set_up, solve, display_system, display_design, display_state)
+from watertap.examples.flowsheets.lsrro.lsrro import (build, set_operating_conditions,
+                                                      initialize, optimize_set_up, solve, display_system, display_design, display_state)
 
 class _TestLSRRO:
 
