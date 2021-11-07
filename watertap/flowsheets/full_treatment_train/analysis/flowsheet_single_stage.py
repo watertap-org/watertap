@@ -28,9 +28,9 @@ from watertap.flowsheets.full_treatment_train.flowsheet_components import (desal
                                                                              translator_block,
                                                                              costing,
                                                                              financials, )
-from watertap.flowsheets.full_treatment_train.model_components import property_models
-from watertap.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
-                                                             check_dof)
+from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
+from watertap.examples.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
+                                                                    check_dof)
 
 
 desal_kwargs = {'has_desal_feed': False, 'is_twostage': False, 'has_ERD': True,

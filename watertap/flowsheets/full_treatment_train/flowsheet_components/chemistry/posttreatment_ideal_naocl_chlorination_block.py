@@ -53,24 +53,18 @@ from idaes.generic_models.properties.core.reactions.equilibrium_constant import 
 from pyomo.environ import (ConcreteModel,
                            Var,
                            Constraint,
-                           SolverStatus,
-                           TerminationCondition,
                            TransformationFactory,
-                           value,
-                           Suffix,
-                           Expression)
+                           value)
 
 from pyomo.network import Arc
 
 from idaes.core.util import scaling as iscale
-from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 
 # Import pyomo methods to check the system units
-from pyomo.util.check_units import assert_units_consistent
 
 
-from watertap.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
-from watertap.flowsheets.full_treatment_train.model_components import property_models
+from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
 from idaes.core.util import get_solver
 
 # Import the idaes objects for Generic Properties and Reactions
@@ -86,7 +80,6 @@ from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReac
 from watertap.flowsheets.full_treatment_train.model_components import Mixer
 
 # Import costing and financials to test
-from watertap.flowsheets.full_treatment_train.flowsheet_components import costing, financials
 
 from idaes.generic_models.unit_models.translator import Translator
 
@@ -99,12 +92,11 @@ from pyomo.environ import log10
 import idaes.logger as idaeslog
 
 # Grab the scaling utilities
-from watertap.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
+from watertap.examples.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
     approximate_chemical_state_args,
-    calculate_chemical_scaling_factors,
-    calculate_chemical_scaling_factors_for_energy_balances)
+    calculate_chemical_scaling_factors)
 
-from watertap.flowsheets.full_treatment_train.chemical_flowsheet_util import (
+from watertap.examples.flowsheets.full_treatment_train.chemical_flowsheet_util import (
     set_H2O_molefraction, zero_out_non_H2O_molefractions, fix_all_molefractions,
     unfix_all_molefractions, seq_decomp_initializer )
 

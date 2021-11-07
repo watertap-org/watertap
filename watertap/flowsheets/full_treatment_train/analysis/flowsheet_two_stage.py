@@ -22,12 +22,12 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.scaling import calculate_scaling_factors
 
-from watertap.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
-                                                             check_dof)
+from watertap.examples.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
+                                                                    check_dof)
 
 import watertap.flowsheets.full_treatment_train.analysis.flowsheet_single_stage as single_stage
 from watertap.flowsheets.full_treatment_train.analysis.flowsheet_single_stage import (
-        build, build_components, scale, initialize, report, optimize)
+    build, scale, initialize, report, optimize)
 
 
 desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,

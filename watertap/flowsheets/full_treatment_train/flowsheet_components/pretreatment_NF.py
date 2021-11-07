@@ -25,8 +25,9 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
 from idaes.core.util.initialization import propagate_state
 from watertap.unit_models.pump_isothermal import Pump
 from watertap.flowsheets.full_treatment_train.flowsheet_components import feed_block
-from watertap.flowsheets.full_treatment_train.model_components import unit_separator, unit_ZONF, property_models
-from watertap.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.model_components import unit_separator, unit_ZONF, \
+    property_models
+from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
 def build_pretreatment_NF(m, has_bypass=True, NF_type='ZO', NF_base='ion'):

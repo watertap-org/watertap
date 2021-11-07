@@ -11,26 +11,21 @@
 #
 ###############################################################################
 
-from pyomo.environ import ConcreteModel, Objective, Expression, Constraint, TransformationFactory, value, Param, Block
+from pyomo.environ import ConcreteModel, Objective, Expression, Constraint, TransformationFactory, value, Param
 from pyomo.environ import units as pyunits
 from pyomo.network import Arc
-from pyomo.util import infeasible
 from idaes.core import FlowsheetBlock
-from idaes.core.util.scaling import (calculate_scaling_factors,
-                                     constraint_autoscale_large_jac)
+from idaes.core.util.scaling import (calculate_scaling_factors)
 from idaes.core.util.initialization import propagate_state
 from watertap.flowsheets.full_treatment_train.flowsheet_components import (pretreatment_NF,
                                                                              desalination,
                                                                              translator_block,
-                                                                             feed_block,
-                                                                             gypsum_saturation_index,
+                                                                           gypsum_saturation_index,
                                                                              costing,
                                                                              financials)
-from watertap.flowsheets.full_treatment_train.model_components import property_models
-from watertap.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
-                                                             check_dof,
-                                                             check_build,
-                                                             check_scaling)
+from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
+from watertap.examples.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
+                                                                    check_dof)
 
 """Flowsheet example that satisfy minimum viable product requirements"""
 def build_flowsheet_mvp_NF(m, **kwargs):

@@ -17,7 +17,6 @@
 from pyomo.environ import units as pyunits
 
 # Imports from idaes core
-from idaes.core import AqueousPhase
 from idaes.core.components import Solvent, Solute
 from idaes.core.phases import PhaseType as PT
 
@@ -40,19 +39,14 @@ from idaes.generic_models.properties.core.reactions.equilibrium_forms import log
 
 # Import specific pyomo objects
 from pyomo.environ import (ConcreteModel,
-                           Constraint,
-                           SolverStatus,
-                           TerminationCondition,
-                           value,
-                           Suffix)
+                           value)
 
 from idaes.core.util import scaling as iscale
 
 # Import pyomo methods to check the system units
-from pyomo.util.check_units import assert_units_consistent
 
 
-from watertap.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 from idaes.core.util import get_solver
 
 # Import the idaes objects for Generic Properties and Reactions
@@ -71,12 +65,9 @@ from idaes.core import (AqueousPhase,
                         EnergyBalanceType)
 
 # Import log10 function from pyomo
-from pyomo.environ import log10
-
-import idaes.logger as idaeslog
 
 # Grab the scaling utilities
-from watertap.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
+from watertap.examples.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
     approximate_chemical_state_args,
     calculate_chemical_scaling_factors)
 

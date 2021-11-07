@@ -20,8 +20,8 @@ from pyomo.environ import ConcreteModel, TransformationFactory
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 
-from watertap.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
-                                                             check_dof)
+from watertap.examples.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
+                                                                    check_dof)
 
 import watertap.flowsheets.full_treatment_train.analysis.flowsheet_softening as flowsheet_softening
 import watertap.flowsheets.full_treatment_train.analysis.flowsheet_two_stage as flowsheet_two_stage

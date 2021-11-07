@@ -17,8 +17,8 @@ from pyomo.environ import ConcreteModel, Constraint
 from idaes.core import FlowsheetBlock
 from watertap.unit_models.nanofiltration_ZO import NanofiltrationZO
 from idaes.core.util.scaling import calculate_scaling_factors, constraint_scaling_transform
-from watertap.flowsheets.full_treatment_train.model_components import property_models
-from watertap.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
+from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
 def build_ZONF(m, base='ion'):

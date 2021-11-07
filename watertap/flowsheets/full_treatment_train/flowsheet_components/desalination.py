@@ -24,9 +24,10 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
 from idaes.core.util.initialization import propagate_state
 from watertap.unit_models.pump_isothermal import Pump
 from watertap.flowsheets.full_treatment_train.flowsheet_components import feed_block
-from watertap.flowsheets.full_treatment_train.model_components import unit_separator, unit_0DRO, unit_1DRO, property_models
-from watertap.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
-from idaes.core.util.model_statistics import fixed_variables_generator
+from watertap.examples.flowsheets.full_treatment_train.model_components import unit_0DRO, unit_separator, unit_1DRO, \
+    property_models
+from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+
 
 def build_desalination(m, has_desal_feed=False, is_twostage=False, has_ERD=False,
                        RO_type='0D', RO_base='TDS', RO_level='simple'):

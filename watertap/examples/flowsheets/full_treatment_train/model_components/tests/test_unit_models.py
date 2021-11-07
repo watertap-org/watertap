@@ -12,7 +12,8 @@
 ###############################################################################
 import pytest
 from pyomo.environ import value
-from watertap.flowsheets.full_treatment_train.model_components import unit_separator, unit_0DRO, unit_1DRO, unit_ZONF
+from watertap.examples.flowsheets.full_treatment_train.model_components import unit_separator, unit_1DRO, unit_ZONF
+from watertap.examples.flowsheets.full_treatment_train.model_components import unit_0DRO
 
 
 @pytest.mark.component

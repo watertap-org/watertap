@@ -24,7 +24,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
 from idaes.core.util.initialization import propagate_state
 from watertap.flowsheets.full_treatment_train.flowsheet_components.chemistry import \
     pretreatment_stoich_softening_block as pssb
-from watertap.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 
 def build(m):

@@ -34,11 +34,11 @@
 """
 
 # Importing the object for units from pyomo
-from pyomo.environ import units as pyunits, Expression, NonNegativeReals
+from pyomo.environ import units as pyunits, NonNegativeReals
 
 # Imports from idaes core
 from idaes.core import AqueousPhase
-from idaes.core.components import Solvent, Solute, Cation, Anion
+from idaes.core.components import Solvent, Solute, Anion
 from idaes.core.phases import PhaseType as PT
 from idaes.core.util.math import smooth_min
 
@@ -57,36 +57,27 @@ from idaes.generic_models.properties.core.generic.generic_reaction import Concen
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
 
 # Import costing and financials to test
-from watertap.flowsheets.full_treatment_train.flowsheet_components import costing, financials
 
 # Import safe log power law equation
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
 
 # Import built-in van't Hoff function
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
 
 # Import specific pyomo objects
 from pyomo.environ import (ConcreteModel,
                            Var,
                            Constraint,
-                           SolverStatus,
-                           TerminationCondition,
                            TransformationFactory,
-                           value,
-                           Suffix)
+                           value)
 
 from pyomo.network import Arc
 from idaes.core.util.initialization import propagate_state
 
 from idaes.core.util import scaling as iscale
-from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 
 # Import pyomo methods to check the system units
-from pyomo.util.check_units import assert_units_consistent
 
 
-from watertap.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
-from watertap.flowsheets.full_treatment_train.model_components import property_models
+from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 from idaes.core.util import get_solver
 
 # Import the idaes objects for Generic Properties and Reactions
@@ -104,26 +95,19 @@ from watertap.flowsheets.full_treatment_train.model_components import Separator,
 
 from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
 
-from idaes.generic_models.unit_models.translator import Translator
-
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock
 
 
 # Import log10 function from pyomo
-from pyomo.environ import log10
 
 import idaes.logger as idaeslog
 
 # Grab the scaling utilities
-from watertap.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
-    approximate_chemical_state_args,
-    calculate_chemical_scaling_factors,
-    calculate_chemical_scaling_factors_for_energy_balances)
 
-from watertap.flowsheets.full_treatment_train.chemical_flowsheet_util import (
+from watertap.examples.flowsheets.full_treatment_train.chemical_flowsheet_util import (
     set_H2O_molefraction, zero_out_non_H2O_molefractions, fix_all_molefractions,
-    unfix_all_molefractions, seq_decomp_initializer )
+    unfix_all_molefractions)
 
 __author__ = "Austin Ladshaw, Srikanth Allu"
 

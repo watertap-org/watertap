@@ -10,25 +10,19 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-from pyomo.environ import (ConcreteModel, Objective, Expression, Constraint, Param,
-                           TransformationFactory, value, units as pyunits)
+from pyomo.environ import (ConcreteModel, Expression, Constraint, Param,
+                           TransformationFactory, units as pyunits)
 from pyomo.network import Arc
-from pyomo.util import infeasible
 from idaes.core import FlowsheetBlock
-from idaes.core.util.scaling import (calculate_scaling_factors,
-                                     unscaled_constraints_generator,
-                                     unscaled_variables_generator,
-                                     badly_scaled_var_generator,
-                                     constraint_autoscale_large_jac)
+from idaes.core.util.scaling import (calculate_scaling_factors)
 from idaes.core.util.initialization import propagate_state
 from watertap.flowsheets.full_treatment_train.flowsheet_components import (pretreatment_NF,
-                                                                             desalination,
-                                                                             gypsum_saturation_index,
+                                                                           gypsum_saturation_index,
                                                                              translator_block,
                                                                              costing,
                                                                              financials)
-from watertap.flowsheets.full_treatment_train.model_components import property_models
-from watertap.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
+from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
 
 def build_components(m, has_bypass=True):
     # build flowsheet

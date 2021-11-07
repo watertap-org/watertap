@@ -16,8 +16,9 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.generic.generic_property import GenericParameterBlock
 from idaes.core.util.scaling import calculate_scaling_factors, get_scaling_factor, constraint_scaling_transform
 from idaes.core.util import get_solver
-from watertap.flowsheets.full_treatment_train.model_components.eNRTL import entrl_config_FTPx, entrl_config_FpcTP
-from watertap.flowsheets.full_treatment_train.util import check_scaling, solve_with_user_scaling
+from watertap.examples.flowsheets.full_treatment_train.model_components.eNRTL import entrl_config_FpcTP, \
+    entrl_config_FTPx
+from watertap.examples.flowsheets.full_treatment_train.util import check_scaling, solve_with_user_scaling
 
 def simulate_enrtl_FTPx(state_var_args):
     m = ConcreteModel()
