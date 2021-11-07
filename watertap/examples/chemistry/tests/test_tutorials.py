@@ -22,7 +22,7 @@ import glob
 import os.path
 from nbconvert.preprocessors import ExecutePreprocessor
 
-_tutorials_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','tutorials')
+_tutorials_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../..', '..', 'tutorials')
 _notebooks = glob.glob(os.path.join(_tutorials_dir, '**', '*.ipynb'), recursive=True)
 
 class TestTutorials(unittest.TestCase):
