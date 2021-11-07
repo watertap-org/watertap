@@ -11,22 +11,16 @@
 #
 ###############################################################################
 
-from pyomo.environ import (ConcreteModel, SolverFactory, TerminationCondition,
-    value, Param, Var, Constraint, Expression, Objective, TransformationFactory,
-    Block, NonNegativeReals, PositiveIntegers, RangeSet, check_optimal_termination,
-    units as pyunits)
+from pyomo.environ import (ConcreteModel, value, Param, Var, Constraint, Expression, Objective, TransformationFactory,
+                           Block, NonNegativeReals, RangeSet, check_optimal_termination,
+                           units as pyunits)
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
-import pyomo.util.infeasible as infeas
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
-from idaes.core.util.initialization import (solve_indexed_blocks,
-                                            fix_state_vars,
-                                            revert_state_vars,
-                                            propagate_state)
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.generic_models.unit_models import Feed, Product, Mixer, Separator
+from idaes.core.util.initialization import (propagate_state)
+from idaes.generic_models.unit_models import Feed, Product, Mixer
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
@@ -36,7 +30,7 @@ from watertap.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
                                                        MassTransferCoefficient,
                                                        PressureChangeType)
 from watertap.unit_models.pump_isothermal import Pump
-from watertap.util.initialization import assert_degrees_of_freedom, assert_no_degrees_of_freedom
+from watertap.core.util.initialization import assert_degrees_of_freedom, assert_no_degrees_of_freedom
 import watertap.examples.flowsheets.lsrro.financials as financials
 import watertap.property_models.NaCl_prop_pack as props
 

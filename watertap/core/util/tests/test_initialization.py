@@ -15,11 +15,15 @@ import pytest
 
 from pyomo.environ import ConcreteModel, Var, Constraint, Block, SolverFactory
 
-from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
+from watertap.core.util.initialization import (check_dof,
+                                               assert_degrees_of_freedom,
+                                               assert_no_degrees_of_freedom,
+                                               check_solve,
+                                               generate_initialization_perturbation,
+                                               print_initialization_perturbation,
+                                               assert_no_initialization_perturbation)
 import idaes.logger as idaeslog
-
-from watertap.util.initialization import *
 
 __author__ = "Adam Atia"
 
