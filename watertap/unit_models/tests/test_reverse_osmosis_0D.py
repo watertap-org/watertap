@@ -68,9 +68,9 @@ def test_config():
     assert m.fs.unit.config.property_package is \
            m.fs.properties
     assert m.fs.unit.config.concentration_polarization_type == \
-           ConcentrationPolarizationType.none
+           ConcentrationPolarizationType.calculated
     assert m.fs.unit.config.mass_transfer_coefficient == \
-           MassTransferCoefficient.none
+           MassTransferCoefficient.calculated
     assert m.fs.unit.config.pressure_change_type == \
            PressureChangeType.fixed_per_stage
 
@@ -94,7 +94,8 @@ def test_option_concentration_polarization_type_fixed():
     m.fs.unit = ReverseOsmosis0D(default={
         "property_package": m.fs.properties,
         "has_pressure_change": True,
-        "concentration_polarization_type": ConcentrationPolarizationType.fixed})
+        "concentration_polarization_type": ConcentrationPolarizationType.fixed,
+        "mass_transfer_coefficient": MassTransferCoefficient.none})
 
     assert m.fs.unit.config.concentration_polarization_type == \
            ConcentrationPolarizationType.fixed
@@ -181,7 +182,8 @@ class TestReverseOsmosis():
         m.fs.unit = ReverseOsmosis0D(default={
             "property_package": m.fs.properties,
             "has_pressure_change": True,
-            "concentration_polarization_type": ConcentrationPolarizationType.fixed})
+            "concentration_polarization_type": ConcentrationPolarizationType.fixed,
+            "mass_transfer_coefficient": MassTransferCoefficient.none})
 
         # fully specify system
         feed_flow_mass = 1
