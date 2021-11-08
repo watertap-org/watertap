@@ -12,12 +12,10 @@
 ###############################################################################
 
 
-from enum import Enum, auto
 from copy import deepcopy
 # Import Pyomo libraries
 from pyomo.environ import (Var,
                            Set,
-                           Param,
                            NonNegativeReals,
                            NegativeReals,
                            Reference,
@@ -31,7 +29,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
-from watertap.util.initialization import check_solve, check_dof
+from watertap.core.util.initialization import check_solve, check_dof
 from watertap.unit_models._reverse_osmosis_base import (ConcentrationPolarizationType,
         MassTransferCoefficient,
         PressureChangeType,
