@@ -13,6 +13,7 @@
 
 from enum import Enum, auto
 from pyomo.environ import Block, NonNegativeReals, Param, Suffix, Var, units as pyunits
+from pyomo.common.collections import ComponentSet
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core import UnitModelBlockData, useDefault, MaterialBalanceType,\
         EnergyBalanceType, MomentumBalanceType
@@ -248,6 +249,9 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
+        # For permeate-specific scaling in calculate_scaling_factors
+        self._permeate_scaled_properties = ComponentSet()
+
         solvent_set = self.config.property_package.solvent_set
         solute_set = self.config.property_package.solute_set
 
@@ -392,3 +396,10 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.dh)
             iscale.constraint_scaling_transform(self.eq_dh, sf)
 
+
+    # permeate properties need to rescale solute values by 100
+    def _rescale_permeate_variable(self, var, factor=100):
+        if var not in self._permeate_scaled_properties:
+            sf = iscale.get_scaling_factor(var)
+            iscale.set_scaling_factor(var, sf * factor)
+            self._permeate_scaled_properties.add(var)

@@ -847,9 +847,25 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
+
         # setting scaling factors for variables
-        for j in self.config.property_package.component_list:
-            iscale.set_scaling_factor(self.permeate_side[0, 0].flow_mass_phase_comp['Liq', j], 1e+5)
+        for v in self.permeate_side[0, 0].flow_mass_phase_comp['Liq',:]:
+            iscale.set_scaling_factor(v, 1e+5)
+
+        for sb in (self.mixed_permeate, self.permeate_side):
+            for blk in sb.values():
+                for j in self.config.property_package.solute_set:
+                    self._rescale_permeate_variable(blk.flow_mass_phase_comp['Liq', j])
+                    if blk.is_property_constructed('mass_frac_phase_comp'):
+                        self._rescale_permeate_variable(blk.mass_frac_phase_comp['Liq', j])
+                    if blk.is_property_constructed('conc_mass_phase_comp'):
+                        self._rescale_permeate_variable(blk.conc_mass_phase_comp['Liq', j])
+                    if blk.is_property_constructed('mole_frac_phase_comp'):
+                        self._rescale_permeate_variable(blk.mole_frac_phase_comp[j])
+                    if blk.is_property_constructed('molality_comp'):
+                        self._rescale_permeate_variable(blk.molality_comp[j])
+                if blk.is_property_constructed('pressure_osm'):
+                    self._rescale_permeate_variable(blk.pressure_osm)
 
         # these variables should have user input, if not there will be a warning
 
@@ -869,6 +885,15 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         if iscale.get_scaling_factor(self.dens_solvent) is None:
             sf = iscale.get_scaling_factor(self.feed_side.properties[0, 0].dens_mass_phase['Liq'])
             iscale.set_scaling_factor(self.dens_solvent, sf)
+
+        for (t, x, p, j), v in self.mass_transfer_phase_comp.items():
+            sf = iscale.get_scaling_factor(self.feed_side.properties[t, x].get_material_flow_terms(p, j)) \
+                 / iscale.get_scaling_factor(self.feed_side.length)
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
+            v = self.feed_side.mass_transfer_term[t,x,p,j]
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
 
         for (t, x, p, j), v in self.flux_mass_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
@@ -898,17 +923,17 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         if hasattr(self, 'Kf'):
             for v in self.Kf.values():
                 if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, 1e5)
+                    iscale.set_scaling_factor(v, 1e4)
 
         if hasattr(self, 'N_Re'):
             for t, x in self.N_Re.keys():
                 if iscale.get_scaling_factor(self.N_Re[t, x]) is None:
-                    iscale.set_scaling_factor(self.N_Re[t, x], 1e-1)
+                    iscale.set_scaling_factor(self.N_Re[t, x], 1e-2)
 
         if hasattr(self, 'N_Sc'):
             for t, x in self.N_Sc.keys():
                 if iscale.get_scaling_factor(self.N_Sc[t, x]) is None:
-                    iscale.set_scaling_factor(self.N_Sc[t, x], 1e-1)
+                    iscale.set_scaling_factor(self.N_Sc[t, x], 1e-2)
 
         if hasattr(self, 'N_Sh'):
             for t, x in self.N_Sh.keys():
@@ -930,23 +955,6 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1)
 
-        for (t, x, p, j), v in self.eq_mass_flux_equal_mass_transfer.items():
-            if iscale.get_scaling_factor(v) is None:
-                if x == self.feed_side.length_domain.first():
-                    pass
-                else:
-                    sf = iscale.get_scaling_factor(self.flux_mass_phase_comp[t, x, p, j])\
-                         * iscale.get_scaling_factor(self.width)
-                    iscale.set_scaling_factor(v, sf/100.)
-
-        for (t, x, p, j), v in self.mass_transfer_phase_comp.items():
-            if iscale.get_scaling_factor(v) is None:
-                sf = iscale.get_scaling_factor(self.feed_side.properties[t, x].get_material_flow_terms(p, j)) \
-                     / iscale.get_scaling_factor(self.feed_side.length)
-                if x == 0:
-                    sf *= 10.
-                iscale.set_scaling_factor(v, sf)
-
         if hasattr(self, 'deltaP'):
             for v in self.feed_side.pressure_dx.values():
                 iscale.set_scaling_factor(v, 1e-5)
@@ -954,94 +962,49 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             for v in self.feed_side.pressure_dx.values():
                 iscale.set_scaling_factor(v, 1e5)
 
-        '''
         # Scale constraints
         for ind, c in self.eq_mass_transfer_term.items():
             sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
             iscale.constraint_scaling_transform(c, sf)
 
+        for (t, p, j), c in self.eq_permeate_production.items():
+            sf = iscale.get_scaling_factor(self.mixed_permeate[t].get_material_flow_terms(p, j))
+            iscale.constraint_scaling_transform(c, sf)
+
         for ind, c in self.eq_connect_mass_transfer.items():
             sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
-            iscale.constraint_scaling_transform(c, sf*10.)
-
-        sf = iscale.get_scaling_factor(self.area)
-        iscale.constraint_scaling_transform(self.eq_area, sf/10.)
-
-        for ind, c in self.eq_permeate_production.items():
-            # TODO: revise this scaling factor; setting to 100 for now
-            iscale.constraint_scaling_transform(c, 100.)
+            iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_flux_mass.items():
             sf = iscale.get_scaling_factor(self.flux_mass_phase_comp[ind])
             iscale.constraint_scaling_transform(c, sf)
 
-        for (t, x), c in self.eq_feed_isothermal.items():
-            sf = iscale.get_scaling_factor(self.feed_side.properties[t, x].temperature)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x), c in self.eq_permeate_isothermal.items():
-            sf = iscale.get_scaling_factor(self.feed_side.properties[t, x].temperature)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for t, c in self.eq_permeate_outlet_isothermal.items():
-            sf = iscale.get_scaling_factor(self.feed_side.properties[t, 0].temperature)
+        for ind, v in self.eq_mass_flux_equal_mass_transfer.items():
+            sf = iscale.get_scaling_factor(self.feed_side.mass_transfer_term[ind])
             iscale.constraint_scaling_transform(c, sf)
 
         for (t, x), c in self.eq_permeate_outlet_isobaric.items():
             sf = iscale.get_scaling_factor(self.permeate_side[t, x].pressure)
             iscale.constraint_scaling_transform(c, sf)
 
-        for t, c in self.eq_recovery_vol_phase.items():
-            iscale.constraint_scaling_transform(self.eq_recovery_vol_phase[t], 1)
-
-        for (t, j), c in self.eq_recovery_mass_phase_comp.items():
-            sf = (iscale.get_scaling_factor(self.recovery_mass_phase_comp[t, 'Liq', j])
-                  * iscale.get_scaling_factor(self.inlet.flow_mass_phase_comp[0, 'Liq', j]))
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x, j), c in self.feed_side.eq_concentration_polarization.items():
-            prop_interface = self.feed_side.properties_interface[t, x]
-            sf = iscale.get_scaling_factor(prop_interface.conc_mass_phase_comp['Liq', j])
-            iscale.constraint_scaling_transform(c, sf*10.)
-
-        for (t, x), c in self.feed_side.eq_equal_temp_interface.items():
-            prop_interface = self.feed_side.properties_interface[t, x]
-            sf = iscale.get_scaling_factor(prop_interface.temperature)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x), c in self.feed_side.eq_equal_pressure_interface.items():
-            prop_interface = self.feed_side.properties_interface[t, x]
-            sf = iscale.get_scaling_factor(prop_interface.pressure)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x), c in self.feed_side.eq_equal_flow_vol_interface.items():
-            prop_interface = self.feed_side.properties_interface[t, x]
-            sf = iscale.get_scaling_factor(prop_interface.flow_vol_phase['Liq'])
-            iscale.constraint_scaling_transform(c, sf)
-
         if hasattr(self, 'eq_Kf'):
             for ind, c in self.eq_Kf.items():
-                sf = iscale.get_scaling_factor(self.Kf[ind])
-                iscale.constraint_scaling_transform(c, sf*10.)
+                sf = iscale.get_scaling_factor(self.Kf[ind]) * \
+                        iscale.get_scaling_factor(self.dh)
+                iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, 'eq_N_Re'):
             for ind, c in self.eq_N_Re.items():
-                sf = iscale.get_scaling_factor(self.N_Re[ind])
-                iscale.constraint_scaling_transform(c, sf*1e4)
+                bulk = self.feed_side.properties[ind]
+                sf = min(iscale.get_scaling_factor(v) for v in bulk.flow_mass_phase_comp['Liq',:])
+                sf *= iscale.get_scaling_factor(self.dh)
+                iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, 'eq_N_Sc'):
             for ind, c in self.eq_N_Sc.items():
-                sf = iscale.get_scaling_factor(self.N_Sc[ind])
-                iscale.constraint_scaling_transform(c, sf*1e4)
-
-        if hasattr(self, 'eq_N_Sh'):
-            for ind, c in self.eq_N_Sh.items():
-                sf = iscale.get_scaling_factor(self.N_Sh[ind])
-                iscale.constraint_scaling_transform(c, sf*1e1)
-
-        if hasattr(self, 'eq_area_cross'):
-            sf = iscale.get_scaling_factor(self.area_cross)
-            iscale.constraint_scaling_transform(self.eq_area_cross, sf*10.)
+                bulk = self.feed_side.properties[ind]
+                sf = iscale.get_scaling_factor(bulk.visc_d_phase['Liq'])
+                iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, 'eq_pressure_drop'):
             if (self.config.pressure_change_type == PressureChangeType.calculated
@@ -1056,17 +1019,22 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
 
         if hasattr(self, 'eq_velocity'):
             for ind, c in self.eq_velocity.items():
-                sf = iscale.get_scaling_factor(self.velocity[ind])
-                iscale.constraint_scaling_transform(c, sf*1e4)
-
-        if hasattr(self, 'eq_friction_factor_darcy'):
-            for ind, c in self.eq_friction_factor_darcy.items():
-                sf = iscale.get_scaling_factor(self.friction_factor_darcy[ind])
-                iscale.constraint_scaling_transform(c, sf/10.)
+                bulk = self.feed_side.properties[ind]
+                sf = iscale.get_scaling_factor(bulk.flow_vol_phase['Liq'])
+                iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, 'eq_dP_dx'):
             for ind, c in self.eq_dP_dx.items():
                 sf = (iscale.get_scaling_factor(self.deltaP[ind])
                       * iscale.get_scaling_factor(self.dh))
                 iscale.constraint_scaling_transform(c, sf)
-        '''
+
+        for (t, x), c in self.feed_side.eq_equal_pressure_interface.items():
+            prop_interface = self.feed_side.properties_interface[t, x]
+            sf = iscale.get_scaling_factor(prop_interface.pressure)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for (t, x), c in self.feed_side.eq_equal_flow_vol_interface.items():
+            prop_interface = self.feed_side.properties_interface[t, x]
+            sf = iscale.get_scaling_factor(prop_interface.flow_vol_phase['Liq'])
+            iscale.constraint_scaling_transform(c, sf)

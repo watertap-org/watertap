@@ -322,11 +322,8 @@ class TestReverseOsmosis():
     def test_calculate_scaling(self, RO_frame):
         m = RO_frame
 
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e1, index=('Liq', 'H2O'))
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'NaCl'))
-
-        for x in m.fs.unit.feed_side.length_domain:
-            set_scaling_factor(m.fs.unit.mass_transfer_phase_comp[0, x, 'Liq', 'NaCl'], 1e3)
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e0, index=('Liq', 'H2O'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
 
         calculate_scaling_factors(m)
 
@@ -342,7 +339,9 @@ class TestReverseOsmosis():
     def test_var_scaling(self, RO_frame):
         m = RO_frame
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        assert badly_scaled_var_lst == []
+        for v, val in badly_scaled_var_generator(m):
+            print(v.name, val)
+            assert False
 
     @pytest.mark.component
     def test_solve(self, RO_frame):

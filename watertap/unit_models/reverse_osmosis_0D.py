@@ -22,7 +22,6 @@ from pyomo.environ import (Var,
                            units as pyunits,
                            exp,
                            value)
-from pyomo.common.collections import ComponentSet
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class)
@@ -66,9 +65,6 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
 
         solvent_set = self.config.property_package.solvent_set
         solute_set = self.config.property_package.solute_set
-
-        # For permeate-specific scaling in calculate_scaling_factors
-        self._permeate_scaled_properties = ComponentSet()
 
         # Add unit variables
         self.flux_mass_io_phase_comp = Var(
@@ -798,34 +794,24 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
 
         return {"vars": var_dict}
 
-    # permeate properties need to rescale solute values by 100
-    def _rescale_permeate_variable(self, var, factor=100):
-        if var not in self._permeate_scaled_properties:
-            sf = iscale.get_scaling_factor(var)
-            iscale.set_scaling_factor(var, sf * factor)
-            self._permeate_scaled_properties.add(var)
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
         for sb in (self.permeate_side.properties_in, self.permeate_side.properties_out,
                 self.permeate_side.properties_mixed):
-            for t in self.flowsheet().config.time:
+            for blk in sb.values():
                 for j in self.config.property_package.solute_set:
-                    self._rescale_permeate_variable(sb[t].flow_mass_phase_comp['Liq', j])
-                    if sb[t].is_property_constructed('mass_frac_phase_comp'):
-                        self._rescale_permeate_variable(sb[t].mass_frac_phase_comp['Liq', j])
-                    if sb[t].is_property_constructed('conc_mass_phase_comp'):
-                        self._rescale_permeate_variable(sb[t].conc_mass_phase_comp['Liq', j])
-                    if sb[t].is_property_constructed('mole_frac_phase_comp'):
-                        self._rescale_permeate_variable(sb[t].mole_frac_phase_comp[j])
-                    if sb[t].is_property_constructed('molality_comp'):
-                        self._rescale_permeate_variable(sb[t].molality_comp[j])
-                if sb[t].is_property_constructed('pressure_osm'):
-                    self._rescale_permeate_variable(sb[t].pressure_osm)
-
-        # TODO: require users to set scaling factor for area or calculate it based on mass transfer and flux
-        iscale.set_scaling_factor(self.area, 1e-1)
+                    self._rescale_permeate_variable(blk.flow_mass_phase_comp['Liq', j])
+                    if blk.is_property_constructed('mass_frac_phase_comp'):
+                        self._rescale_permeate_variable(blk.mass_frac_phase_comp['Liq', j])
+                    if blk.is_property_constructed('conc_mass_phase_comp'):
+                        self._rescale_permeate_variable(blk.conc_mass_phase_comp['Liq', j])
+                    if blk.is_property_constructed('mole_frac_phase_comp'):
+                        self._rescale_permeate_variable(blk.mole_frac_phase_comp[j])
+                    if blk.is_property_constructed('molality_comp'):
+                        self._rescale_permeate_variable(blk.molality_comp[j])
+                if blk.is_property_constructed('pressure_osm'):
+                    self._rescale_permeate_variable(blk.pressure_osm)
 
         # setting scaling factors for variables
 
@@ -919,8 +905,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         for (t, p, j), v in self.mass_transfer_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].get_material_flow_terms(p, j))
-                comp = self.config.property_package.get_component(j)
-                if comp.is_solute:
+                if self.config.property_package.get_component(j).is_solute():
                     sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
                 iscale.set_scaling_factor(v, sf)
 
@@ -933,12 +918,12 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
             iscale.constraint_scaling_transform(c, sf)
 
-        for ind, c in self.eq_flux_io.items():
-            sf = iscale.get_scaling_factor(self.flux_mass_io_phase_comp[ind])
-            iscale.constraint_scaling_transform(c, sf)
-
         for ind, c in self.eq_connect_mass_transfer.items():
             sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for ind, c in self.eq_flux_io.items():
+            sf = iscale.get_scaling_factor(self.flux_mass_io_phase_comp[ind])
             iscale.constraint_scaling_transform(c, sf)
 
         for ind, c in self.eq_connect_enthalpy_transfer.items():
@@ -977,7 +962,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                     prop_io = self.feed_side.properties_in[t]
                 elif x == 'out':
                     prop_io = self.feed_side.properties_out[t]
-                sf = sum(iscale.get_scaling_factor(prop_io.flow_mass_phase_comp['Liq', j]) for j in prop_io.component_list)
+                sf = min(iscale.get_scaling_factor(v) for v in prop_io.flow_mass_phase_comp['Liq',:])
                 sf *= iscale.get_scaling_factor(self.dh)
                 iscale.constraint_scaling_transform(c, sf)
 
@@ -989,10 +974,6 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                     prop_io = self.feed_side.properties_out[t]
                 sf = iscale.get_scaling_factor(prop_io.visc_d_phase['Liq'])
                 iscale.constraint_scaling_transform(c, sf)
-
-        if hasattr(self, 'eq_dh'):
-            sf = iscale.get_scaling_factor(self.dh)
-            iscale.constraint_scaling_transform(self.eq_dh, sf)
 
         if hasattr(self, 'eq_pressure_change'):
             for ind, c in self.eq_pressure_change.items():
