@@ -917,8 +917,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         if hasattr(self, 'cp_modulus'):
             for v in self.cp_modulus.values():
                 if iscale.get_scaling_factor(v) is None:
-                    sf = iscale.get_scaling_factor(v)
-                    iscale.set_scaling_factor(v, sf)
+                    iscale.set_scaling_factor(v, 1)
 
         if hasattr(self, 'Kf'):
             for v in self.Kf.values():
