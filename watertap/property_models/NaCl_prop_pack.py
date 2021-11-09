@@ -686,8 +686,8 @@ class NaClStateBlockData(StateBlockData):
                         iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], 100)
 
         if self.is_property_constructed('flow_vol_phase'):
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O']) \
-                  / iscale.get_scaling_factor(self.dens_mass_phase['Liq'])
+            sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'])
+                  / iscale.get_scaling_factor(self.dens_mass_phase['Liq']))
             iscale.set_scaling_factor(self.flow_vol_phase, sf)
 
         if self.is_property_constructed('flow_vol'):

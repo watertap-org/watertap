@@ -355,6 +355,13 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
         self.costing = Block()
         module.ReverseOsmosis_costing(self.costing, **kwargs)
 
+    # permeate properties need to rescale solute values by 100
+    def _rescale_permeate_variable(self, var, factor=100):
+        if var not in self._permeate_scaled_properties:
+            sf = iscale.get_scaling_factor(var)
+            iscale.set_scaling_factor(var, sf * factor)
+            self._permeate_scaled_properties.add(var)
+
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
@@ -395,11 +402,3 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
         if hasattr(self, 'eq_dh'):
             sf = iscale.get_scaling_factor(self.dh)
             iscale.constraint_scaling_transform(self.eq_dh, sf)
-
-
-    # permeate properties need to rescale solute values by 100
-    def _rescale_permeate_variable(self, var, factor=100):
-        if var not in self._permeate_scaled_properties:
-            sf = iscale.get_scaling_factor(var)
-            iscale.set_scaling_factor(var, sf * factor)
-            self._permeate_scaled_properties.add(var)

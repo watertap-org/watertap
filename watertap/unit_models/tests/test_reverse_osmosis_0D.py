@@ -40,6 +40,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_variables_generator,
+                                     unscaled_constraints_generator,
                                      badly_scaled_var_generator)
 
 # -----------------------------------------------------------------------------
@@ -311,6 +312,10 @@ class TestReverseOsmosis():
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
 
+        # check that all constraints have been scaled
+        unscaled_constraint_list = list(unscaled_constraints_generator(m))
+        assert len(unscaled_constraint_list) == 0
+
         for _ in badly_scaled_var_generator(m):
             assert False
 
@@ -441,6 +446,10 @@ class TestReverseOsmosis():
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
         assert len(unscaled_var_list) == 0
 
+        # check that all constraints have been scaled
+        unscaled_constraint_list = list(unscaled_constraints_generator(m))
+        assert len(unscaled_constraint_list) == 0
+
         # # test initialization
         initialization_tester(m)
 
@@ -534,6 +543,10 @@ class TestReverseOsmosis():
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
         assert len(unscaled_var_list) == 0
 
+        # check that all constraints have been scaled
+        unscaled_constraint_list = list(unscaled_constraints_generator(m))
+        assert len(unscaled_constraint_list) == 0
+
         # test initialization
         initialization_tester(m)
 
@@ -624,6 +637,10 @@ class TestReverseOsmosis():
         # TODO: see aforementioned TODO on revisiting scaling and associated testing for property models.
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
         assert len(unscaled_var_list) == 0
+
+        # check that all constraints have been scaled
+        unscaled_constraint_list = list(unscaled_constraints_generator(m))
+        assert len(unscaled_constraint_list) == 0
 
         # test initialization
         initialization_tester(m)
@@ -723,6 +740,10 @@ class TestReverseOsmosis():
         # TODO: see aforementioned TODO on revisiting scaling and associated testing for property models.
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
         assert len(unscaled_var_list) == 0
+
+        # check that all constraints have been scaled
+        unscaled_constraint_list = list(unscaled_constraints_generator(m))
+        assert len(unscaled_constraint_list) == 0
 
         # test initialization
         initialization_tester(m)
