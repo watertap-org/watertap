@@ -648,10 +648,11 @@ class TestPureWaterEDB(TestPureWater):
         components = []
         # Add the components
         for c in edb.get_components(element_names=elements):
-            # Need to remove these to avoid errors when using the generated config
-            c.remove("valid_phase_types")
+            # Should remove these since we don't have a vapor phase
+            # NOTE: The model still runs without removing these, but
+            #       the 'stats' won't pass their checks due to the addition
+            #       of new system variables that they inherently bring 
             c.remove("enth_mol_ig_comp")
-            c.remove("phase_equilibrium_form")
             c.remove("pressure_sat_comp")
             base.add(c)
             components.append(c.name)
@@ -667,13 +668,7 @@ class TestPureWaterEDB(TestPureWater):
     def water_reaction_config(self, edb):
         elements = ["H", "O"]
         components = [c.name for c in edb.get_components(element_names=elements)]
-        base = edb.get_base("default_thermo")
-        # Need to remove these to avoid errors when using the generated config
-        base.remove("phases")
-        base.remove("pressure_ref")
-        base.remove("state_bounds")
-        base.remove("state_definition")
-        base.remove("temperature_ref")
+        base = edb.get_base("reaction")
         # Add the reactions
         for r in edb.get_reactions(component_names=components):
             # Set a custom reaction order

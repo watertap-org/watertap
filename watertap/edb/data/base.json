@@ -130,8 +130,8 @@
 
     "phases_in_equilibrium": ["('Vap', 'Liq')"],
     "phase_equilibrium_state": {"('Vap', 'Liq')": "SmoothVLE"},
-
     "bubble_dew_method": "IdealBubbleDew",
+    
     "base_units": {
       "time": "s",
       "length": "m",
