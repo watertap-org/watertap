@@ -12,15 +12,13 @@
 ###############################################################################
 
 import pytest
-from watertap.property_models.tests.property_test_harness import \
-    (PropertyTestHarness, PropertyRegressionTest)
 from pyomo.environ import ConcreteModel, assert_optimal_termination, value
 from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
 from pyomo.util.check_units import assert_units_consistent
 from idaes.generic_models.properties.core.generic.generic_property import GenericParameterBlock
 from watertap.property_models.seawater_ion_generic import configuration
-from watertap.util.initialization import check_dof
+from watertap.core.util.initialization import check_dof
 from idaes.core.util import get_solver
 
 solver = get_solver()

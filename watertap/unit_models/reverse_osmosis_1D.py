@@ -32,8 +32,7 @@ from idaes.core.control_volume1d import DistributedVars
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.initialization import solve_indexed_blocks
-from enum import Enum, auto
-from watertap.util.initialization import check_solve, check_dof
+from watertap.core.util.initialization import check_solve, check_dof
 from watertap.unit_models._reverse_osmosis_base import (ConcentrationPolarizationType,
         MassTransferCoefficient,
         PressureChangeType,
