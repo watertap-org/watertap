@@ -875,6 +875,21 @@ class Reaction(DataWrapper):
     def reaction_type(self):
         return self.data.get("type", "")
 
+    # # TODO: This function behavior is WRONG!!!
+    #
+    #           Reaction order must be set by individual species
+    #           and not by whether or not a species is on one side
+    #           or another. Reaction orders can also be different
+    #           for different phases.
+    #
+    #           What we should do is pass a dictionary to this
+    #           function that gives the order value for each
+    #           corresponding phase-species pair in the reaction
+    #
+    #           i.e., order = {('Liq','H2O'): 0, ('Sol','CaCO3'): -1, ('Vap','CO2'): 1}
+    #
+    #           The above example should be valid if those phase-species pairs are
+    #           valid within the reaction stoichiometry
     def set_reaction_order(
         self,
         phase: str,

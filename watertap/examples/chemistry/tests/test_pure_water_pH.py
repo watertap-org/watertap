@@ -385,6 +385,7 @@ class TestPureWater:
         model = ConcreteModel()
         model.fs = FlowsheetBlock(default={"dynamic": False})
         model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+        print(water_reaction_config)
         model.fs.rxn_params = GenericReactionParameterBlock(
             default={"property_package": model.fs.thermo_params, **water_reaction_config}
         )
@@ -651,14 +652,16 @@ class TestPureWaterEDB(TestPureWater):
             # Should remove these since we don't have a vapor phase
             # NOTE: The model still runs without removing these, but
             #       the 'stats' won't pass their checks due to the addition
-            #       of new system variables that they inherently bring 
+            #       of new system variables that they inherently bring
             c.remove("enth_mol_ig_comp")
             c.remove("pressure_sat_comp")
             base.add(c)
             components.append(c.name)
         # Add the reactions
         for r in edb.get_reactions(component_names=components):
-            r.set_reaction_order('Liq', ('H2O',), ('H_+', 'OH_-'))
+            #Removed call to function 'set_reaction_order' because that function behavior is incorrect
+            #r.set_reaction_order('Liq', ('H2O',), ('H_+', 'OH_-'))
+            r._data["parameter_data"]["reaction_order"] = {'Liq': {'H2O': 0, 'H_+': 1, 'OH_-': 1}}
             r._data["type"] = "inherent"
             base.add(r)
         return base.idaes_config
@@ -672,7 +675,9 @@ class TestPureWaterEDB(TestPureWater):
         # Add the reactions
         for r in edb.get_reactions(component_names=components):
             # Set a custom reaction order
-            r.set_reaction_order('Liq', ('H2O',), ('H_+', 'OH_-'))
+            #Removed call to function 'set_reaction_order' because that function behavior is incorrect
+            #r.set_reaction_order('Liq', ('H2O',), ('H_+', 'OH_-'))
+            r._data["parameter_data"]["reaction_order"] = {'Liq': {'H2O': 0, 'H_+': 1, 'OH_-': 1}}
             # Need to remove this to avoid errors when using the generated config
             r.remove_parameter("ds_rxn_ref")
             base.add(r)
