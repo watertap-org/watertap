@@ -21,5 +21,13 @@ stored at ``./docs/schemas/edb_component_schema.html``. Supporting files will al
 
     edb schema -t component -f ./docs/schemas/edb_component_schema.html -o html-js
 
+|arrw| Loading the default database files bundled with WaterTAP. These files get loaded into a
+database named ``electrolytedb``::
+
+    edb load -b
+
+|arrw| Droping the default database named ``electrolytedb``::
+
+    edb drop -d electrolytedb
 
 .. |arrw| unicode:: U+27A2 .. nice looking arrow glyph
