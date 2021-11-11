@@ -88,7 +88,7 @@ from typing import Dict, Type, List
 from pyomo.environ import units as pyunits
 
 # IDAES methods and constants
-from idaes.core import AqueousPhase, LiquidPhase
+from idaes.core import AqueousPhase, LiquidPhase, SolidPhase, VaporPhase
 from idaes.core.phases import PhaseType
 from idaes.core import Component as IComponent
 from idaes.generic_models.properties.core.eos.ideal import Ideal
@@ -97,6 +97,7 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 )
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.generic_models.properties.core.pure import Perrys
+from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
 from idaes.generic_models.properties.core.pure.NIST import NIST
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
 from idaes.generic_models.properties.core.pure.electrolyte import (
@@ -108,17 +109,12 @@ from idaes.generic_models.properties.core.reactions.equilibrium_constant import 
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
     power_law_equil,
     log_power_law_equil,
+    solubility_product,
+    log_solubility_product,
 )
-from idaes.generic_models.properties.core.state_definitions import FTPx
+from idaes.generic_models.properties.core.state_definitions import FTPx, FpcTP
 from idaes.core.components import Solvent, Solute, Cation, Anion
 
-# package
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
-    log_power_law_equil,
-)
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
-    van_t_hoff,
-)
 from .error import ConfigGeneratorError, BadConfiguration
 
 
@@ -397,6 +393,7 @@ class ThermoConfig(ConfigGenerator):
         },
         "*_comp": {
             "perrys": Perrys,
+            "constant": Constant,
             "nist": NIST,
             "relative_permittivity_constant": relative_permittivity_constant,
         },
@@ -447,13 +444,13 @@ class ReactionConfig(ConfigGenerator):
     substitute_values = {
         "heat_of_reaction": {"constant_dh_rxn": constant_dh_rxn},
         "*_form": {
-            "log_power_law": log_power_law_equil,
+            "log_power_law_equil": log_power_law_equil,
+            "power_law_equil": power_law_equil,
             "concentrationform.molarity": ConcentrationForm.molarity,
             "concentrationform.molefraction": ConcentrationForm.moleFraction,
             "concentrationform.activity": ConcentrationForm.activity,
         },
         "*_constant": {
-            "van_t_hoff_aqueous": van_t_hoff,
             "van_t_hoff": van_t_hoff,
         },
     }
@@ -512,9 +509,13 @@ class ReactionConfig(ConfigGenerator):
 class BaseConfig(ConfigGenerator):
 
     substitute_values = {
-        "state_definition": {"FTPx": FTPx},
+        "state_definition": {"FTPx": FTPx, "FpcTP": FpcTP},
         "phases.Liq.type": {"LiquidPhase": LiquidPhase, "AqueousPhase": AqueousPhase},
+        "phases.Sol.type": {"SolidPhase": SolidPhase},
+        "phases.Vap.type": {"VaporPhase": VaporPhase},
         "phases.Liq.equation_of_state": {"Ideal": Ideal},
+        "phases.Sol.equation_of_state": {"Ideal": Ideal},
+        "phases.Vap.equation_of_state": {"Ideal": Ideal},
         "base_units.*": ConfigGenerator.SUBST_UNITS,
     }
 
