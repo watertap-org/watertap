@@ -114,6 +114,8 @@ from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
 )
 from idaes.generic_models.properties.core.state_definitions import FTPx, FpcTP
 from idaes.core.components import Solvent, Solute, Cation, Anion
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
+from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBubbleDew
 
 from .error import ConfigGeneratorError, BadConfiguration
 
@@ -446,6 +448,8 @@ class ReactionConfig(ConfigGenerator):
         "*_form": {
             "log_power_law_equil": log_power_law_equil,
             "power_law_equil": power_law_equil,
+            "log_solubility_product": log_solubility_product,
+            "solubility_product": solubility_product,
             "concentrationform.molarity": ConcentrationForm.molarity,
             "concentrationform.molefraction": ConcentrationForm.moleFraction,
             "concentrationform.activity": ConcentrationForm.activity,
@@ -516,6 +520,14 @@ class BaseConfig(ConfigGenerator):
         "phases.Liq.equation_of_state": {"Ideal": Ideal},
         "phases.Sol.equation_of_state": {"Ideal": Ideal},
         "phases.Vap.equation_of_state": {"Ideal": Ideal},
+        "bubble_dew_method": {"IdealBubbleDew": IdealBubbleDew},
+
+        # TODO: NOTE: I'm not sure how to handle the following...
+        #
+        #"phases_in_equilibrium": ["('Vap','Liq')"],
+        #"phase_equilibrium_state": {"('Vap','Liq')": "SmoothVLE"},
+        #
+        #   The above are options used in base configs for Vapor and Liquid systems
         "base_units.*": ConfigGenerator.SUBST_UNITS,
     }
 
