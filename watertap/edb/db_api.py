@@ -136,10 +136,11 @@ class ElectrolyteDB:
         return result
 
     def _mongoclient(self, url: str, check, **client_kw) -> Union[MongoClient, None]:
-        _log.debug(f"MongoDB client at url={url}")
+        _log.debug(f"Begin: Create MongoDB client. url={url}")
         mc = MongoClient(url, **client_kw)
         if not check:
-            _log.info(f"Skipping connection check for MongoDB client url={url}")
+            _log.info(f"Skipping connection check for MongoDB client. url={url}")
+            _log.debug(f"End: Create MongoDB client. url={url}")
             return mc
         # check that client actually works
         _log.info(f"Connection check MongoDB client url={url}")
@@ -153,7 +154,7 @@ class ElectrolyteDB:
             if "CERTIFICATE_VERIFY_FAILED" in str(conn_err):
                 _log.warning(f"MongoDB connection failed due to certificate "
                              f"verification. Retrying with explicit location "
-                             f"for client certificates ({certifi.where()}")
+                             f"for client certificates ({certifi.where()})")
                 try:
                     mc = MongoClient(url, tlsCAFile=certifi.where(), **client_kw)
                     mc.admin.command("ismaster")
@@ -162,6 +163,7 @@ class ElectrolyteDB:
                     mc = None
                     self._mongoclient_connect_status["retry"] = str(err)
                     _log.error(self.connect_status_str)
+        _log.debug(f"End: Create MongoDB client. url={url}")
         return mc
 
     @property
