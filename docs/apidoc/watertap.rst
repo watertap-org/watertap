@@ -8,7 +8,7 @@ Subpackages
    :maxdepth: 4
 
    watertap.edb
-   watertap.flowsheets
+   watertap.examples.flowsheets
    watertap.property_models
    watertap.unit_models
 

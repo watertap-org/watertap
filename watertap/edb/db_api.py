@@ -84,6 +84,7 @@ class ElectrolyteDB:
             _log.error(msg)
             raise ConnectionFailure(msg)
         self._db = getattr(self._client, db)
+        self._db = getattr(self._client, db)
         self._database_name = db
         self._server_url = url
 
