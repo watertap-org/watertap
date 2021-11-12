@@ -20,7 +20,10 @@ import re
 from typing import Dict, List, Optional, Union
 
 # third-party
-import certifi
+try:
+    import certifi
+except ImportError:
+    certifi = None
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, PyMongoError
 
@@ -153,16 +156,18 @@ class ElectrolyteDB:
             self._mongoclient_connect_status["initial"] = str(conn_err)
             if "CERTIFICATE_VERIFY_FAILED" in str(conn_err):
                 _log.warning(f"MongoDB connection failed due to certificate "
-                             f"verification. Retrying with explicit location "
-                             f"for client certificates ({certifi.where()})")
-                try:
-                    mc = MongoClient(url, tlsCAFile=certifi.where(), **client_kw)
-                    mc.admin.command("ismaster")
-                    _log.info("Retried MongoDB connection succeeded")
-                except ConnectionFailure as err:
-                    mc = None
-                    self._mongoclient_connect_status["retry"] = str(err)
-                    _log.error(self.connect_status_str)
+                             f"verification.")
+                if certifi is not None:
+                    _log.info("Retrying MongoDB connection with explicit location "
+                              f"for client certificates ({certifi.where()})")
+                    try:
+                        mc = MongoClient(url, tlsCAFile=certifi.where(), **client_kw)
+                        mc.admin.command("ismaster")
+                        _log.info("Retried MongoDB connection succeeded")
+                    except ConnectionFailure as err:
+                        mc = None
+                        self._mongoclient_connect_status["retry"] = str(err)
+                        _log.error(self.connect_status_str)
         _log.debug(f"End: Create MongoDB client. url={url}")
         return mc
 
