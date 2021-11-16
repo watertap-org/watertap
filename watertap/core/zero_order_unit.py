@@ -64,6 +64,15 @@ class SITOBaseData(UnitModelBlockData):
     def build(self):
         super().build()
 
+        if not hasattr(self, "_has_deltaP_outlet"):
+            raise NotImplementedError(
+                f"{self.name} derived class class has not implemented "
+                f"_has_deltaP_outlet.")
+        if not hasattr(self, "_has_deltaP_waste"):
+            raise NotImplementedError(
+                f"{self.name} derived class class has not implemented "
+                f"_has_deltaP_waste.")
+
         # Get units metadata
         units_meta = \
             self.config.property_package.get_metadata().get_derived_units
@@ -111,16 +120,18 @@ class SITOBaseData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc='Solute removal fraction')
 
-        self.deltaP_outlet = Var(
-            self.flowsheet().time,
-            initialize=0,
-            units=units_meta('pressure'),
-            doc='Pressure change between inlet and outlet')
-        self.deltaP_waste = Var(
-            self.flowsheet().time,
-            initialize=0,
-            units=units_meta('pressure'),
-            doc='Pressure change between inlet and waste')
+        if self._has_deltaP_outlet:
+            self.deltaP_outlet = Var(
+                self.flowsheet().time,
+                initialize=0,
+                units=units_meta('pressure'),
+                doc='Pressure change between inlet and outlet')
+        if self._has_deltaP_waste:
+            self.deltaP_waste = Var(
+                self.flowsheet().time,
+                initialize=0,
+                units=units_meta('pressure'),
+                doc='Pressure change between inlet and waste')
 
         # Add performance constraints
         # Water recovery
@@ -157,12 +168,20 @@ class SITOBaseData(UnitModelBlockData):
         # Pressure drop
         @self.Constraint(self.flowsheet().time, doc='Outlet pressure equation')
         def outlet_pressure_constraint(b, t):
-            return (b.properties_in[t].pressure + b.deltaP_outlet[t] ==
+            if self._has_deltaP_outlet:
+                dp = b.deltaP_outlet[t]
+            else:
+                dp = 0
+            return (b.properties_in[t].pressure + dp ==
                     b.properties_out[t].pressure)
 
         @self.Constraint(self.flowsheet().time, doc='Waste pressure equation')
         def waste_pressure_constraint(b, t):
-            return (b.properties_in[t].pressure + b.deltaP_waste[t] ==
+            if self._has_deltaP_waste:
+                dp = b.deltaP_waste[t]
+            else:
+                dp = 0
+            return (b.properties_in[t].pressure + dp ==
                     b.properties_waste[t].pressure)
 
         # Temperature equality
