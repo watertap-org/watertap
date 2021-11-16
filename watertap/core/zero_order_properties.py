@@ -234,7 +234,7 @@ class WaterStateBlockData(StateBlockData):
         self.conc_mass_comp = Var(self.params.solute_set,
                                   domain=PositiveReals,
                                   initialize=1e-5,
-                                  bounds=(1e-20, 1),
+                                  bounds=(1e-20, 1e3),
                                   doc='Component mass concentrations',
                                   units=pyunits.kg/pyunits.m**3)
 
