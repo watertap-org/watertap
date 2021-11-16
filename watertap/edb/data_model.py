@@ -82,7 +82,7 @@ from fnmatch import fnmatchcase
 import logging
 from pprint import pformat
 import re
-from typing import Dict, Type, List
+from typing import Dict, Type, List, Union, Tuple
 
 # 3rd party
 from pyomo.environ import units as pyunits
@@ -865,19 +865,13 @@ class Reaction(DataWrapper):
     def set_reaction_order(
         self,
         phase: str,
-        lhs: List[str],
-        rhs: List[str],
-        lhs_value: int = 0,
-        rhs_value: int = 1,
+        order: Union[List[Tuple[str, int]], Dict[str, int]]
     ) -> Dict:
         """Set the reaction order (if it differs from stoichiometry).
 
         Args:
             phase: 'Liq' or 'Vap'
-            lhs: Left-hand side of equation components
-            rhs: Right-hand side of equation components
-            lhs_value: Integer value for LHS components
-            rhs_value: Integer value for RHS components
+            order: Either a dict or list of (element, value) pairs
 
         Returns:
             Reaction order for all phases, which can be modified further in-place
@@ -885,23 +879,29 @@ class Reaction(DataWrapper):
         Raises:
             KeyError: something is missing in the data structure
         """
-        with field(self.NAMES.param) as param:
-            if param not in self.data:
-                raise KeyError(f"Reaction missing '{param}'")
-            with field("reaction_order") as ro:
-                # create a blank 'reaction_order' section if not present
-                if ro not in self.data[param]:
-                    self.data[param][ro] = {}
-                ro_section = self.data[param][ro]
-                # replace reaction_order value for key 'phase' with new value
-                reaction_order = {}
-                for comp in lhs:
-                    reaction_order[comp] = lhs_value
-                for comp in rhs:
-                    reaction_order[comp] = rhs_value
-                ro_section[phase] = reaction_order
+        param, ro = self.NAMES.param, "reaction_order"
+        if param not in self.data:
+            raise KeyError(f"Reaction missing '{param}'")
+        elif ro not in self.data[param]:
+            raise KeyError(f"Reaction missing '{param}.{ro}'")
+        elif phase not in self.data[param][ro]:
+            raise KeyError(f"Phase '{phase}' not found")
 
-        return ro_section
+        # with field(self.NAMES.param) as param:
+        #     with field("reaction_order") as ro:
+        #         # create a blank 'reaction_order' section if not present
+        #         if ro not in self.data[param]:
+        #             self.data[param][ro] = {}
+        #         ro_section = self.data[param][ro]
+        #         # replace reaction_order value for key 'phase' with new value
+        #         reaction_order = {}
+        #         for comp in lhs:
+        #             reaction_order[comp] = lhs_value
+        #         for comp in rhs:
+        #             reaction_order[comp] = rhs_value
+        #         ro_section[phase] = reaction_order
+        #
+        # return ro_section
 
     @classmethod
     def from_idaes_config(cls, config: Dict) -> List["Reaction"]:

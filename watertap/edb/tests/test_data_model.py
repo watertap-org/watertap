@@ -459,3 +459,29 @@ def test_thermoconfig_set_type():
     thermo = Component(data)
     config = thermo.idaes_config
     assert _type(config) == Solvent
+
+
+@pytest.mark.unit
+def test_reaction_order():
+    # minimal Reaction object to work with
+    r = Reaction({
+        "name": "foo",
+        "components": {},
+        "elements": ["Ca", "O", "H"],
+        # valid chemistry? no. useful? yes.
+        Reaction.NAMES.param: {
+            "reaction_order": {'Liq': {"B": -1, "C": 1, "H": 1},
+                           'Vap': {"B": 1, "C": -1, "H": 1}}
+        },
+        "type": "equilibrium"
+    })
+    # Reaction missing param
+    with pytest.raises(KeyError):
+        Reaction({"elements": ["H"]}).set_reaction_order('Foo', {})
+    # Reaction missing reaction_order
+    with pytest.raises(KeyError):
+        (Reaction({"elements": ["H"], Reaction.NAMES.param: {}})
+         .set_reaction_order('Foo', {}))
+    # Invalid phase
+    with pytest.raises(KeyError):
+        r.set_reaction_order('Plasma', {"B": 1, "C": 1, "H": 1})
