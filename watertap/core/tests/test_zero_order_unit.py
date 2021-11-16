@@ -19,6 +19,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
+import idaes.core.util.scaling as iscale
 from pyomo.environ import (ConcreteModel,
                            Constraint,
                            SolverStatus,
@@ -109,6 +110,36 @@ def test_degrees_of_freedom(model):
 @pytest.mark.component
 def test_unit_consistency(model):
     assert_units_consistent(model)
+
+
+@pytest.mark.component
+def test_scaling(model):
+    iscale.calculate_scaling_factors(model)
+
+    assert iscale.get_constraint_transform_applied_scaling_factor(
+        model.fs.unit.water_recovery_equation[0]) == 1e3
+    assert iscale.get_constraint_transform_applied_scaling_factor(
+        model.fs.unit.flow_balance[0]) == 1e3
+    assert iscale.get_constraint_transform_applied_scaling_factor(
+        model.fs.unit.solute_removal_equation[0, "A"]) == 1e5
+    assert iscale.get_constraint_transform_applied_scaling_factor(
+        model.fs.unit.solute_removal_equation[0, "B"]) == 1e5
+    assert iscale.get_constraint_transform_applied_scaling_factor(
+        model.fs.unit.solute_removal_equation[0, "C"]) == 1e5
+    assert iscale.get_constraint_transform_applied_scaling_factor(
+        model.fs.unit.solute_mass_balances[0, "A"]) == 1e5
+    assert iscale.get_constraint_transform_applied_scaling_factor(
+        model.fs.unit.solute_mass_balances[0, "B"]) == 1e5
+    assert iscale.get_constraint_transform_applied_scaling_factor(
+        model.fs.unit.solute_mass_balances[0, "C"]) == 1e5
+    assert iscale.get_constraint_transform_applied_scaling_factor(
+        model.fs.unit.outlet_pressure_constraint[0]) == 1e-5
+    assert iscale.get_constraint_transform_applied_scaling_factor(
+        model.fs.unit.waste_pressure_constraint[0]) == 1e-5
+    assert iscale.get_constraint_transform_applied_scaling_factor(
+        model.fs.unit.outlet_temperature_equality[0]) == 1e-2
+    assert iscale.get_constraint_transform_applied_scaling_factor(
+        model.fs.unit.outlet_temperature_equality[0]) == 1e-2
 
 
 @pytest.mark.component

@@ -23,12 +23,10 @@ from idaes.core import (EnergyBalanceType,
                         declare_process_block_class)
 from idaes.core.components import Solvent, Solute
 from idaes.core.phases import LiquidPhase
-from idaes.core.util import get_solver
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.initialization import (
-    fix_state_vars, revert_state_vars, solve_indexed_blocks)
+from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 from pyomo.environ import (Expression,
                            Param,
@@ -96,6 +94,14 @@ class WaterParameterBlockData(PhysicalParameterBlock):
                                domain=PositiveReals,
                                mutable=True,
                                doc="Mass density")
+
+        # ---------------------------------------------------------------------
+        # Set default scaling factors
+        self.default_scaling_factor = {
+            ("flow_vol"): 1e3,
+            ("conc_mass_comp"): 1e2,
+            ("pressure"): 1e-5,
+            ("temperature"): 1e-2}
 
     @classmethod
     def define_metadata(cls, obj):
@@ -217,7 +223,7 @@ class WaterStateBlockData(StateBlockData):
         super().build()
 
         # Create state variables
-        self.flow_vol = Var(initialize=1.0,
+        self.flow_vol = Var(initialize=1e-3,
                             domain=PositiveReals,
                             doc='Total volumetric flowrate',
                             units=pyunits.m**3/pyunits.s)
@@ -302,3 +308,46 @@ class WaterStateBlockData(StateBlockData):
 
     def get_material_flow_basis(blk):
         return MaterialFlowBasis.mass
+
+    def calculate_scaling_factors(self):
+        # Get default scale factors and do calculations from base classes
+        super().calculate_scaling_factors()
+
+        sf_Q = iscale.get_scaling_factor(self.flow_vol)
+        if sf_Q is None:
+            sf_Q = self.params.default_scaling_factor["flow_vol"]
+            iscale.set_scaling_factor(self.flow_vol, sf_Q)
+
+        for j, v in self.conc_mass_comp.items():
+            sf_c = iscale.get_scaling_factor(self.conc_mass_comp[j])
+            if sf_c is None:
+                try:
+                    sf_c = self.params.default_scaling_factor[
+                        ("conc_mass_comp", j)]
+                except KeyError:
+                    sf_c = self.params.default_scaling_factor["conc_mass_comp"]
+                iscale.set_scaling_factor(self.conc_mass_comp[j], sf_c)
+
+        if iscale.get_scaling_factor(self.pressure) is None:
+            iscale.set_scaling_factor(
+                self.pressure,
+                self.params.default_scaling_factor["pressure"])
+
+        if iscale.get_scaling_factor(self.temperature) is None:
+            iscale.set_scaling_factor(
+                self.temperature,
+                self.params.default_scaling_factor["temperature"])
+
+        for j, v in self.flow_mass_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                if j == "H2O":
+                    sf_c = 1e-3
+                else:
+                    sf_c = iscale.get_scaling_factor(
+                        self.conc_mass_comp[j], default=1e2, warning=True)
+                iscale.set_scaling_factor(v, sf_Q*sf_c)
+
+        if iscale.get_scaling_factor(self._enth_dens_term) is None:
+            iscale.set_scaling_factor(self._enth_dens_term, 1e-5)
+        if iscale.get_scaling_factor(self._enth_flow_term) is None:
+            iscale.set_scaling_factor(self._enth_flow_term, 1e-4)

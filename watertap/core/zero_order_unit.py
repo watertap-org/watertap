@@ -19,6 +19,7 @@ from idaes.core import (
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
+import idaes.core.util.scaling as iscale
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.environ import NonNegativeReals, Var, units as pyunits
@@ -164,7 +165,7 @@ class SITOBaseData(UnitModelBlockData):
             return (b.properties_in[t].pressure + b.deltaP_waste[t] ==
                     b.properties_waste[t].pressure)
 
-        # TEmperature equality
+        # Temperature equality
         @self.Constraint(self.flowsheet().time,
                          doc='Outlet temperature equality')
         def outlet_temperature_equality(b, t):
@@ -262,3 +263,67 @@ class SITOBaseData(UnitModelBlockData):
 
         init_log.info('Initialization Complete: {}'
                       .format(idaeslog.condition(results)))
+
+    def calculate_scaling_factors(self):
+        # Get default scale factors and do calculations from base classes
+        super().calculate_scaling_factors()
+
+        for t, v in self.water_recovery_equation.items():
+            iscale.constraint_scaling_transform(
+                v, iscale.get_scaling_factor(
+                    self.properties_in[t].flow_vol,
+                    default=1,
+                    warning=True,
+                    hint=" for water recovery"))
+
+        for t, v in self.flow_balance.items():
+            iscale.constraint_scaling_transform(
+                v, iscale.get_scaling_factor(
+                    self.properties_in[t].flow_vol,
+                    default=1,
+                    warning=False))  # would just be a duplicate of above
+
+        for (t, j), v in self.solute_removal_equation.items():
+            iscale.constraint_scaling_transform(
+                v, iscale.get_scaling_factor(
+                    self.properties_in[t].flow_mass_comp[j],
+                    default=1,
+                    warning=True,
+                    hint=" for solute removal"))
+
+        for (t, j), v in self.solute_mass_balances.items():
+            iscale.constraint_scaling_transform(
+                v, iscale.get_scaling_factor(
+                    self.properties_in[t].flow_mass_comp[j],
+                    default=1,
+                    warning=False))  # would just be a duplicate of above
+
+        for t, v in self.outlet_pressure_constraint.items():
+            iscale.constraint_scaling_transform(
+                v, iscale.get_scaling_factor(
+                    self.properties_in[t].pressure,
+                    default=1e-5,
+                    warning=True,
+                    hint=" for outlet pressure constraint"))
+
+        for t, v in self.waste_pressure_constraint.items():
+            iscale.constraint_scaling_transform(
+                v, iscale.get_scaling_factor(
+                    self.properties_in[t].pressure,
+                    default=1e-5,
+                    warning=False))  # would just be a duplicate of above
+
+        for t, v in self.outlet_temperature_equality.items():
+            iscale.constraint_scaling_transform(
+                v, iscale.get_scaling_factor(
+                    self.properties_in[t].temperature,
+                    default=1e-2,
+                    warning=True,
+                    hint=" for outlet temperature equality"))
+
+        for t, v in self.waste_temperature_equality.items():
+            iscale.constraint_scaling_transform(
+                v, iscale.get_scaling_factor(
+                    self.properties_in[t].temperature,
+                    default=1e-2,
+                    warning=False))  # would just be a duplicate of above

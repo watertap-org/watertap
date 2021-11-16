@@ -24,6 +24,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set,
                                               unused_variables_set)
+import idaes.core.util.scaling as iscale
 from pyomo.environ import (ConcreteModel,
                            Expression,
                            Param,
@@ -151,6 +152,43 @@ def test_state_block_basic_attributes(model):
 def test_state_block_other_properties(model):
     assert model.fs.state[0].cp_mass is model.fs.water_props.cp_mass
     assert model.fs.state[0].dens_mass is model.fs.water_props.dens_mass
+
+
+@pytest.mark.unit
+def test_state_block_scaling(model):
+    # Set some new default scaling factors
+    model.fs.water_props.default_scaling_factor[("conc_mass_comp", "B")] = 5e-2
+
+    iscale.calculate_scaling_factors(model)
+
+    model.fs.state[0].scaling_factor.display()
+    assert len(model.fs.state[0].scaling_factor) == 12
+
+    assert model.fs.state[0].scaling_factor[model.fs.state[0].flow_vol] == 1e3
+    assert model.fs.state[0].scaling_factor[
+        model.fs.state[0].conc_mass_comp["A"]] == 100
+    assert model.fs.state[0].scaling_factor[
+        model.fs.state[0].conc_mass_comp["B"]] == 5e-2
+    assert model.fs.state[0].scaling_factor[
+        model.fs.state[0].conc_mass_comp["C"]] == 100
+    assert model.fs.state[0].scaling_factor[
+        model.fs.state[0].temperature] == 1e-2
+    assert model.fs.state[0].scaling_factor[
+        model.fs.state[0].pressure] == 1e-5
+
+    assert model.fs.state[0].scaling_factor[
+        model.fs.state[0].flow_mass_comp["H2O"]] == 1
+    assert model.fs.state[0].scaling_factor[
+        model.fs.state[0].flow_mass_comp["A"]] == 1e5
+    assert model.fs.state[0].scaling_factor[
+        model.fs.state[0].flow_mass_comp["B"]] == 5e1
+    assert model.fs.state[0].scaling_factor[
+        model.fs.state[0].flow_mass_comp["C"]] == 1e5
+
+    assert model.fs.state[0].scaling_factor[
+        model.fs.state[0]._enth_dens_term] == 1e-5
+    assert model.fs.state[0].scaling_factor[
+        model.fs.state[0]._enth_flow_term] == 1e-4
 
 
 @pytest.mark.component
