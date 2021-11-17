@@ -182,8 +182,6 @@ class PressureExchangerData(UnitModelBlockData):
         def work(b, t):
             return b.properties_in[t].flow_vol * b.deltaP[t]
 
-
-
         @self.high_pressure_side.Expression(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
@@ -191,7 +189,7 @@ class PressureExchangerData(UnitModelBlockData):
             doc='mass transferred to low pressure side')
         def mass_transfer(b, t, p, j):
             return b.properties_in[t].flow_mass_phase_comp[p,j]-b.properties_out[t].flow_mass_phase_comp[p,j]
-            
+
         #Build control volume for low pressure side
         self.low_pressure_side = ControlVolume0DBlock(default={
             "dynamic": False,
@@ -217,6 +215,14 @@ class PressureExchangerData(UnitModelBlockData):
             doc='Work transferred to low pressure side fluid')
         def work(b, t):
             return b.properties_in[t].flow_vol * b.deltaP[t]
+
+        @self.low_pressure_side.Expression(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            doc='mass transferred to low pressure side (will be negative, gained mass)')
+        def mass_transfer(b, t, p, j):
+            return b.properties_in[t].flow_mass_phase_comp[p,j]-b.properties_out[t].flow_mass_phase_comp[p,j]
 
         #Add Ports
         self.add_inlet_port(name='high_pressure_inlet', block=self.high_pressure_side)
@@ -255,13 +261,13 @@ class PressureExchangerData(UnitModelBlockData):
                 b.high_pressure_side.properties_in[t].flow_mass_phase_comp[p,j]*b.solute_leakage_fraction[t]+
                 b.low_pressure_side.properties_in[t].flow_mass_phase_comp[p,j])
 
-        ### probably not necessary ###
+        ### this constraint (eq_mass_high_pressure_outlet) might not be needed###
         @self.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             doc="mass loss from HP inlet propagation to HP outlet")
-        def eq_mass_high_pressure_outlet(b, t,p, j):
+        def eq_mass_high_pressure_outlet(b, t, p, j):
             comp = self.config.property_package.get_component(j)
             if comp.is_solvent():
                 return (b.high_pressure_side.properties_out[t].flow_mass_phase_comp[p,j]==\
@@ -402,7 +408,12 @@ class PressureExchangerData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.efficiency_pressure_exchanger) is None:
             # efficiency should always be between 0.1-1
             iscale.set_scaling_factor(self.efficiency_pressure_exchanger, 1)
-
+        if iscale.get_scaling_factor(self.solute_leakage_fraction) is None:
+            # efficiency should always be between 0.1-1
+            iscale.set_scaling_factor(self.solute_leakage_fraction, 1)
+        if iscale.get_scaling_factor(self.solvent_leakage_fraction) is None:
+            # efficiency should always be between 0.1-1
+            iscale.set_scaling_factor(self.solvent_leakage_fraction, 1)
         # scale expressions
         if iscale.get_scaling_factor(self.low_pressure_side.work) is None:
             sf = iscale.get_scaling_factor(self.low_pressure_side.properties_in[0].flow_vol)
@@ -414,6 +425,16 @@ class PressureExchangerData(UnitModelBlockData):
             sf = sf * iscale.get_scaling_factor(self.high_pressure_side.deltaP[0])
             iscale.set_scaling_factor(self.high_pressure_side.work, sf)
 
+        if iscale.get_scaling_factor(self.high_pressure_side.mass_transfer) is None:
+            for p,j in self.high_pressure_side.properties_in[0].flow_mass_phase_comp:
+                sf = iscale.get_scaling_factor(self.high_pressure_side.properties_in[0].flow_mass_phase_comp[p,j])
+                sf = sf * iscale.get_scaling_factor(self.high_pressure_side.properties_out[0].flow_mass_phase_comp[p,j])
+                iscale.set_scaling_factor(self.high_pressure_side.mass_transfer, sf)
+        if iscale.get_scaling_factor(self.low_pressure_side.mass_transfer) is None:
+            for p,j in self.low_pressure_side.properties_in[0].flow_mass_phase_comp:
+                sf = iscale.get_scaling_factor(self.low_pressure_side.properties_in[0].flow_mass_phase_comp[p,j])
+                sf = sf * iscale.get_scaling_factor(self.low_pressure_side.properties_out[0].flow_mass_phase_comp[p,j])
+                iscale.set_scaling_factor(self.low_pressure_side.mass_transfer, sf)
         # transform constraints
         for t, c in self.low_pressure_side.eq_isothermal_temperature.items():
             sf = iscale.get_scaling_factor(self.low_pressure_side.properties_in[t].temperature)
@@ -433,6 +454,15 @@ class PressureExchangerData(UnitModelBlockData):
 
         for t, c in self.eq_equal_low_pressure.items():
             sf = iscale.get_scaling_factor(self.low_pressure_side.properties_in[t].pressure)
+            iscale.constraint_scaling_transform(c, sf)
+
+        for (t,p,j), c in self.eq_mass_transfer_from_high_to_low_pressure.items():
+            sf = iscale.get_scaling_factor(self.high_pressure_side.properties_in[t].flow_mass_phase_comp[p,j])
+            sf = sf*iscale.get_scaling_factor(self.low_pressure_side.properties_in[t].flow_mass_phase_comp[p,j])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for (t,p,j), c in self.eq_mass_high_pressure_outlet.items():
+            sf = iscale.get_scaling_factor(self.high_pressure_side.properties_in[t].flow_mass_phase_comp[p,j])
             iscale.constraint_scaling_transform(c, sf)
 
     def _get_stream_table_contents(self, time_point=0):
