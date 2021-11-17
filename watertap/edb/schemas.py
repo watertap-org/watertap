@@ -139,11 +139,11 @@ schemas = {
             Reaction.NAMES.eq_const: {"type": "string"},
             Reaction.NAMES.eq_form: {"type": "string"},
             Reaction.NAMES.conc_form: {"type": "string"},
-            "parameter_data": {
+            Reaction.NAMES.param: {
                 "type": "object",
                 "patternProperties": {
                     "_ref": {"$ref": "#/definitions/parameter"},
-                    "reaction_order": {
+                    Reaction.NAMES.reaction_order: {
                         "type": "object",
                         "properties": {
                             "Liq": {"$ref": "#/definitions/reaction_order"},
