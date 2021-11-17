@@ -51,4 +51,6 @@ The EDB will also greatly simplify how WaterTAP users can define their own syste
 example, take a look at the difference between the amount of code and knowledge that is necessary
 to create configuration dictionaries :ref:`manually<how_to_setup_simple_chemistry>` versus how
 the EDB can generate those same configuration dictionaries :ref:`automatically<how_to_use_edb>`
-(view the 'Simple EDB Example').
+in the 'Simple EDB Example'.
+
+To start using EDB, have a look at the :ref:`installation instructions<install-edb>`
