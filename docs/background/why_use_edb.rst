@@ -1,5 +1,5 @@
-Why use the ElectrolyteDB
--------------------------
+Why use the Electrolyte Database
+--------------------------------
 
 The electrolyte database (EDB) provides both a command line interface for loading
 chemical species and reaction data, as well as a programming interface for creating
@@ -32,9 +32,23 @@ where the EDB comes into play.
 Usages
 ^^^^^^
 
-stuff
+1. Provides a means to load and/or store data associated with chemical species and chemical reactions
+2. Provides an interface for users to request specific information on chemical species and reactions
+3. Provides subroutines to search for possible reactions in a system when given a set of chemicals
+4. Provides a methodology to automatically generate IDAES configuration dictionaries for use in WaterTAP
 
 Advantages
 ^^^^^^^^^^
 
-more stuff
+Full utilization of EDB will streamline WaterTAP workflow in the development of chemical reaction
+sub-modules. In each chemical sub-module, there is a significant amount of overlap in terms of
+the chemical species and reactions present. If you were not using the EDB's functionality to
+automatically generate configuration dictionaries, then there would be significant amounts of
+code duplication, as each of the configuration dictionaries would have significant overlap with
+each other.
+
+The EDB will also greatly simplify how WaterTAP users can define their own system chemistry. As an
+example, take a look at the difference between the amount of code and knowledge that is necessary
+to create configuration dictionaries :ref:`manually<how_to_setup_simple_chemistry>` versus how
+the EDB can generate those same configuration dictionaries :ref:`automatically<how_to_use_edb>`
+(view the 'Simple EDB Example').
