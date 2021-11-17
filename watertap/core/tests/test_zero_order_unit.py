@@ -231,8 +231,8 @@ class TestPressureChange:
         assert len(model.fs.unit.flow_balance) == 1
         assert isinstance(model.fs.unit.solute_removal_equation, Constraint)
         assert len(model.fs.unit.solute_removal_equation) == 3
-        assert isinstance(model.fs.unit.solute_mass_balances, Constraint)
-        assert len(model.fs.unit.solute_mass_balances) == 3
+        assert isinstance(model.fs.unit.solute_outlet_equation, Constraint)
+        assert len(model.fs.unit.solute_outlet_equation) == 3
         assert isinstance(model.fs.unit.outlet_pressure_constraint, Constraint)
         assert len(model.fs.unit.outlet_pressure_constraint) == 1
         assert isinstance(model.fs.unit.waste_pressure_constraint, Constraint)
@@ -266,11 +266,11 @@ class TestPressureChange:
         assert iscale.get_constraint_transform_applied_scaling_factor(
             model.fs.unit.solute_removal_equation[0, "C"]) == 1e5
         assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_mass_balances[0, "A"]) == 1e5
+            model.fs.unit.solute_outlet_equation[0, "A"]) == 1e5
         assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_mass_balances[0, "B"]) == 1e5
+            model.fs.unit.solute_outlet_equation[0, "B"]) == 1e5
         assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_mass_balances[0, "C"]) == 1e5
+            model.fs.unit.solute_outlet_equation[0, "C"]) == 1e5
         assert iscale.get_constraint_transform_applied_scaling_factor(
             model.fs.unit.outlet_pressure_constraint[0]) == 1e-5
         assert iscale.get_constraint_transform_applied_scaling_factor(
@@ -400,8 +400,8 @@ class TestNoPressureChangeOutlet:
         assert len(model.fs.unit.flow_balance) == 1
         assert isinstance(model.fs.unit.solute_removal_equation, Constraint)
         assert len(model.fs.unit.solute_removal_equation) == 3
-        assert isinstance(model.fs.unit.solute_mass_balances, Constraint)
-        assert len(model.fs.unit.solute_mass_balances) == 3
+        assert isinstance(model.fs.unit.solute_outlet_equation, Constraint)
+        assert len(model.fs.unit.solute_outlet_equation) == 3
         assert isinstance(model.fs.unit.outlet_pressure_constraint, Constraint)
         assert len(model.fs.unit.outlet_pressure_constraint) == 1
         assert isinstance(model.fs.unit.waste_pressure_constraint, Constraint)
@@ -435,11 +435,11 @@ class TestNoPressureChangeOutlet:
         assert iscale.get_constraint_transform_applied_scaling_factor(
             model.fs.unit.solute_removal_equation[0, "C"]) == 1e5
         assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_mass_balances[0, "A"]) == 1e5
+            model.fs.unit.solute_outlet_equation[0, "A"]) == 1e5
         assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_mass_balances[0, "B"]) == 1e5
+            model.fs.unit.solute_outlet_equation[0, "B"]) == 1e5
         assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_mass_balances[0, "C"]) == 1e5
+            model.fs.unit.solute_outlet_equation[0, "C"]) == 1e5
         assert iscale.get_constraint_transform_applied_scaling_factor(
             model.fs.unit.outlet_pressure_constraint[0]) == 1e-5
         assert iscale.get_constraint_transform_applied_scaling_factor(
@@ -569,8 +569,8 @@ class TestNoPressureChangeWaste:
         assert len(model.fs.unit.flow_balance) == 1
         assert isinstance(model.fs.unit.solute_removal_equation, Constraint)
         assert len(model.fs.unit.solute_removal_equation) == 3
-        assert isinstance(model.fs.unit.solute_mass_balances, Constraint)
-        assert len(model.fs.unit.solute_mass_balances) == 3
+        assert isinstance(model.fs.unit.solute_outlet_equation, Constraint)
+        assert len(model.fs.unit.solute_outlet_equation) == 3
         assert isinstance(model.fs.unit.outlet_pressure_constraint, Constraint)
         assert len(model.fs.unit.outlet_pressure_constraint) == 1
         assert isinstance(model.fs.unit.waste_pressure_constraint, Constraint)
@@ -604,11 +604,11 @@ class TestNoPressureChangeWaste:
         assert iscale.get_constraint_transform_applied_scaling_factor(
             model.fs.unit.solute_removal_equation[0, "C"]) == 1e5
         assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_mass_balances[0, "A"]) == 1e5
+            model.fs.unit.solute_outlet_equation[0, "A"]) == 1e5
         assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_mass_balances[0, "B"]) == 1e5
+            model.fs.unit.solute_outlet_equation[0, "B"]) == 1e5
         assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_mass_balances[0, "C"]) == 1e5
+            model.fs.unit.solute_outlet_equation[0, "C"]) == 1e5
         assert iscale.get_constraint_transform_applied_scaling_factor(
             model.fs.unit.outlet_pressure_constraint[0]) == 1e-5
         assert iscale.get_constraint_transform_applied_scaling_factor(

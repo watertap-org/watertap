@@ -184,17 +184,18 @@ class SITOBaseData(UnitModelBlockData):
                          doc='Solute removal equations')
         def solute_removal_equation(b, t, j):
             return (b.removal_mass_solute[t, j] *
-                    b.properties_in[t].get_material_flow_terms("Liq", j) ==
-                    b.properties_waste[t].get_material_flow_terms("Liq", j))
+                    b.properties_in[t].conc_mass_comp[j] ==
+                    (1 - b.recovery_vol[t]) *
+                    b.properties_waste[t].conc_mass_comp[j])
 
-        # Solute balances
+        # Solute concentration at outlet
         @self.Constraint(self.flowsheet().time,
                          self.config.property_package.solute_set,
-                         doc='Solute mass balance equations')
-        def solute_mass_balances(b, t, j):
-            return (b.properties_in[t].get_material_flow_terms("Liq", j) ==
-                    b.properties_out[t].get_material_flow_terms("Liq", j) +
-                    b.properties_waste[t].get_material_flow_terms("Liq", j))
+                         doc='Constraint for solute concentration at outlet')
+        def solute_outlet_equation(b, t, j):
+            return ((1 - b.removal_mass_solute[t, j]) *
+                    b.properties_in[t].conc_mass_comp[j] ==
+                    b.recovery_vol[t]*b.properties_out[t].conc_mass_comp[j])
 
         # Pressure drop
         @self.Constraint(self.flowsheet().time, doc='Outlet pressure equation')
@@ -341,7 +342,7 @@ class SITOBaseData(UnitModelBlockData):
                     warning=True,
                     hint=" for solute removal"))
 
-        for (t, j), v in self.solute_mass_balances.items():
+        for (t, j), v in self.solute_outlet_equation.items():
             iscale.constraint_scaling_transform(
                 v, iscale.get_scaling_factor(
                     self.properties_in[t].flow_mass_comp[j],
