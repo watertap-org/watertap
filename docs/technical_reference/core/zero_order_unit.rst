@@ -13,6 +13,9 @@ Usage
 
 .. testcode::
 
+  # Import IDAES Core components
+  from idaes.core import FlowsheetBlock
+
   # Import base class
   from watertap.core.zero_order_unit import SITOBaseData
 
