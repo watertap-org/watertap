@@ -181,13 +181,17 @@ class PressureExchangerData(UnitModelBlockData):
             doc='Work transferred to high pressure side fluid (should be negative)')
         def work(b, t):
             return b.properties_in[t].flow_vol * b.deltaP[t]
-        # @self.high_pressure_side.Expression(
-        #     self.flowsheet().config.time,
-        #     self.config.property_package.phase_list,
-        #     self.config.property_package.component_list,
-        #     doc='Salt transferred from high pressure side (Should be negative)')
-        # def salt_transfer(b,t,p,j):
-        #     return b.properties_in[t].conc_mass_phase_comp[p,j] * b.salt_leakage_percentage[t]
+
+
+
+        @self.high_pressure_side.Expression(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            doc='mass transferred to low pressure side')
+        def mass_transfer(b, t, p, j):
+            return b.properties_in[t].flow_mass_phase_comp[p,j]-b.properties_out[t].flow_mass_phase_comp[p,j]
+            
         #Build control volume for low pressure side
         self.low_pressure_side = ControlVolume0DBlock(default={
             "dynamic": False,
@@ -213,11 +217,7 @@ class PressureExchangerData(UnitModelBlockData):
             doc='Work transferred to low pressure side fluid')
         def work(b, t):
             return b.properties_in[t].flow_vol * b.deltaP[t]
-        # @self.high_pressure_side.Expression(
-        #     self.flowsheet().config.time,
-        #     doc='Salt transferred to low pressure side')
-        # def salt_transfer(b):
-        #     return b.high_pressure_side.properties_in[t].conc_mass_phase_comp[p,j] * b.salt_leakage_percentage[t]
+
         #Add Ports
         self.add_inlet_port(name='high_pressure_inlet', block=self.high_pressure_side)
         self.add_outlet_port(name='high_pressure_outlet', block=self.high_pressure_side)
@@ -244,7 +244,7 @@ class PressureExchangerData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             doc="mass leak from HP inlet to LP outlet")
-        def eq_leak_HP_to_LP(b, t, p, j):
+        def eq_mass_transfer_from_high_to_low_pressure(b, t, p, j):
             comp = self.config.property_package.get_component(j)
             if comp.is_solvent():
                 return (b.low_pressure_side.properties_out[t].flow_mass_phase_comp[p,j]==\
@@ -255,12 +255,13 @@ class PressureExchangerData(UnitModelBlockData):
                 b.high_pressure_side.properties_in[t].flow_mass_phase_comp[p,j]*b.solute_leakage_fraction[t]+
                 b.low_pressure_side.properties_in[t].flow_mass_phase_comp[p,j])
 
+        ### probably not necessary ###
         @self.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             doc="mass loss from HP inlet propagation to HP outlet")
-        def eq_salt_in_HP(b, t,p, j):
+        def eq_mass_high_pressure_outlet(b, t,p, j):
             comp = self.config.property_package.get_component(j)
             if comp.is_solvent():
                 return (b.high_pressure_side.properties_out[t].flow_mass_phase_comp[p,j]==\
