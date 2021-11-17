@@ -14,12 +14,12 @@
 This module contains the base class for all zero order single inlet-two outlet
 (SITO) unit models.
 """
-from idaes.core import (
-    UnitModelBlockData, declare_process_block_class, useDefault)
+from idaes.core import UnitModelBlockData, useDefault
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import ConfigurationError
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.environ import NonNegativeReals, Var, units as pyunits
@@ -28,10 +28,16 @@ from pyomo.environ import NonNegativeReals, Var, units as pyunits
 __author__ = "Andrew Lee"
 
 
-@declare_process_block_class('SITOBase')
 class SITOBaseData(UnitModelBlockData):
     """
-    Standard single inlet-two outlet Unit Model Class
+    Standard base class for single inlet-two outlet unit models.
+
+    This class is intended to be used for creating derived model classes and
+    cannot be instantiated as by itself. When creating derived classes,
+    developers must set the '_has_deltaP_outlet` and `_has_deltaP_waste`
+    attributes on the model before calling `super().build()`. These attributes
+    determine whetehr the deltaP terms for the outlet and waste streams are
+    added to the model and included in the pressure constraints.
     """
 
     CONFIG = ConfigBlock()
@@ -64,6 +70,7 @@ class SITOBaseData(UnitModelBlockData):
     def build(self):
         super().build()
 
+        # Check that derived class has implemented flags for pressure change
         if not hasattr(self, "_has_deltaP_outlet"):
             raise NotImplementedError(
                 f"{self.name} derived class class has not implemented "
@@ -72,6 +79,30 @@ class SITOBaseData(UnitModelBlockData):
             raise NotImplementedError(
                 f"{self.name} derived class class has not implemented "
                 f"_has_deltaP_waste.")
+
+        # Check that property package meets requirements
+        if self.config.property_package.phase_list != ["Liq"]:
+            raise ConfigurationError(
+                f"{self.name} configured with invalid property package. "
+                f"Zero-order models only support proeprty packages with a "
+                f"single phase named 'Liq'.")
+        if (not hasattr(self.config.property_package, "solvent_set") or
+                self.config.property_package.solvent_set != ["H2O"]):
+            raise ConfigurationError(
+                f"{self.name} configured with invalid property package. "
+                f"Zero-order models only support property packages which "
+                f"include 'H2O' as the only Solvent.")
+        if not hasattr(self.config.property_package, "solute_set"):
+            raise ConfigurationError(
+                f"{self.name} configured with invalid property package. "
+                f"Zero-order models require property packages to declare all "
+                f"dissolved species as Solutes.")
+        if (len(self.config.property_package.solute_set) !=
+                len(self.config.property_package.component_list)-1):
+            raise ConfigurationError(
+                f"{self.name} configured with invalid property package. "
+                f"Zero-order models only support `H2O` as a solvent and all "
+                f"other species as Solutes.")
 
         # Get units metadata
         units_meta = \
@@ -105,20 +136,20 @@ class SITOBaseData(UnitModelBlockData):
         self.add_port("waste", self.properties_waste, doc="Waste port")
 
         # Add performance variables
-        self.water_recovery = Var(
+        self.recovery_vol = Var(
             self.flowsheet().time,
             initialize=0.8,
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             bounds=(1E-8, 1.0000001),
-            doc='Water recovery fraction')
-        self.removal_fraction = Var(
+            doc='Volumetric recovery fraction of water in the outlet stream')
+        self.removal_mass_solute = Var(
             self.flowsheet().time,
             self.config.property_package.solute_set,
             domain=NonNegativeReals,
             initialize=0.01,
             units=pyunits.dimensionless,
-            doc='Solute removal fraction')
+            doc='Solute removal fraction on a mass basis')
 
         if self._has_deltaP_outlet:
             self.deltaP_outlet = Var(
@@ -137,7 +168,7 @@ class SITOBaseData(UnitModelBlockData):
         # Water recovery
         @self.Constraint(self.flowsheet().time, doc='Water recovery equation')
         def water_recovery_equation(b, t):
-            return (b.water_recovery[t] * b.properties_in[t].flow_vol ==
+            return (b.recovery_vol[t] * b.properties_in[t].flow_vol ==
                     b.properties_out[t].flow_vol)
 
         # Flow balance
@@ -152,7 +183,7 @@ class SITOBaseData(UnitModelBlockData):
                          self.config.property_package.solute_set,
                          doc='Solute removal equations')
         def solute_removal_equation(b, t, j):
-            return (b.removal_fraction[t, j] *
+            return (b.removal_mass_solute[t, j] *
                     b.properties_in[t].get_material_flow_terms("Liq", j) ==
                     b.properties_waste[t].get_material_flow_terms("Liq", j))
 

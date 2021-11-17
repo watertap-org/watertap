@@ -20,7 +20,9 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
-from pyomo.environ import (ConcreteModel,
+from idaes.core.util.exceptions import ConfigurationError
+from pyomo.environ import (Block,
+                           ConcreteModel,
                            Constraint,
                            SolverStatus,
                            TerminationCondition,
@@ -30,15 +32,107 @@ from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
 
-from watertap.core.zero_order_unit import SITOBase, SITOBaseData
+from watertap.core.zero_order_unit import SITOBaseData
 from watertap.core.zero_order_properties import \
     WaterParameterBlock, WaterStateBlock
 
 solver = get_solver()
 
 
+class TestSITOConfigurationErrors:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.params = WaterParameterBlock(
+            default={"solute_list": ["A", "B", "C"]})
+
+        m.fs.params.del_component(m.fs.params.phase_list)
+        m.fs.params.del_component(m.fs.params.solvent_set)
+        m.fs.params.del_component(m.fs.params.solute_set)
+        m.fs.params.del_component(m.fs.params.component_list)
+
+        return m
+
+    @declare_process_block_class("DerivedSITO0")
+    class DerivedSITOData0(SITOBaseData):
+        def build(self):
+            self._has_deltaP_outlet = True
+            self._has_deltaP_waste = True
+            super().build()
+
+    @pytest.mark.unit
+    def test_phase_list(self, model):
+        model.fs.params.phase_list = ["foo"]
+
+        with pytest.raises(ConfigurationError,
+                           match="fs.unit configured with invalid property "
+                           "package. Zero-order models only support proeprty "
+                           "packages with a single phase named 'Liq'."):
+            model.fs.unit = DerivedSITO0(
+                default={"property_package": model.fs.params})
+
+    @pytest.mark.unit
+    def test_no_solvent_set(self, model):
+        model.fs.params.phase_list = ["Liq"]
+
+        with pytest.raises(ConfigurationError,
+                           match="fs.unit configured with invalid property "
+                           "package. Zero-order models only support property "
+                           "packages which include 'H2O' as the only Solvent."
+                           ):
+            model.fs.unit = DerivedSITO0(
+                default={"property_package": model.fs.params})
+
+    @pytest.mark.unit
+    def test_invalid_solvent_set(self, model):
+        model.fs.params.phase_list = ["Liq"]
+        model.fs.params.solvent_set = ["foo"]
+
+        with pytest.raises(ConfigurationError,
+                           match="fs.unit configured with invalid property "
+                           "package. Zero-order models only support property "
+                           "packages which include 'H2O' as the only Solvent."
+                           ):
+            model.fs.unit = DerivedSITO0(
+                default={"property_package": model.fs.params})
+
+    @pytest.mark.unit
+    def test_no_solute_set(self, model):
+        model.fs.params.phase_list = ["Liq"]
+        model.fs.params.solvent_set = ["H2O"]
+
+        with pytest.raises(ConfigurationError,
+                           match="fs.unit configured with invalid property "
+                           "package. Zero-order models require property "
+                           "packages to declare all dissolved species as "
+                           "Solutes."):
+            model.fs.unit = DerivedSITO0(
+                default={"property_package": model.fs.params})
+
+    @pytest.mark.unit
+    def test_non_solvent_or_solute(self, model):
+        model.fs.params.phase_list = ["Liq"]
+        model.fs.params.solvent_set = ["H2O"]
+        model.fs.params.solute_set = ["A", "B", "C"]
+        model.fs.params.component_list = ["H2O", "A", "B", "C", "foo"]
+
+        with pytest.raises(ConfigurationError,
+                           match="fs.unit configured with invalid property "
+                           "package. Zero-order models only support `H2O` as "
+                           "a solvent and all other species as Solutes."):
+            model.fs.unit = DerivedSITO0(
+                default={"property_package": model.fs.params})
+
+
 @pytest.mark.unit
 def test_no_has_deltaP_outlet():
+    @declare_process_block_class("DerivedSITO1")
+    class DerivedSITOData1(SITOBaseData):
+        def build(self):
+            self._has_deltaP_waste = True
+            super().build()
+
     m = ConcreteModel()
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -49,13 +143,14 @@ def test_no_has_deltaP_outlet():
     with pytest.raises(NotImplementedError,
                        match="fs.unit derived class class has not implemented "
                        "_has_deltaP_outlet."):
-        m.fs.unit = SITOBase(default={"property_package": m.fs.water_props})
+        m.fs.unit = DerivedSITO1(
+            default={"property_package": m.fs.water_props})
 
 
 @pytest.mark.unit
 def test_no_has_deltaP_waste():
-    @declare_process_block_class("DerivedSITO0")
-    class DerivedSITOData0(SITOBaseData):
+    @declare_process_block_class("DerivedSITO2")
+    class DerivedSITOData2(SITOBaseData):
         def build(self):
             self._has_deltaP_outlet = True
             super().build()
@@ -70,14 +165,14 @@ def test_no_has_deltaP_waste():
     with pytest.raises(NotImplementedError,
                        match="fs.unit derived class class has not implemented "
                        "_has_deltaP_waste."):
-        m.fs.unit = DerivedSITO0(
+        m.fs.unit = DerivedSITO2(
             default={"property_package": m.fs.water_props})
 
 
 class TestPressureChange:
 
-    @declare_process_block_class("DerivedSITO1")
-    class DerivedSITOData1(SITOBaseData):
+    @declare_process_block_class("DerivedSITO3")
+    class DerivedSITOData3(SITOBaseData):
         def build(self):
             self._has_deltaP_outlet = True
             self._has_deltaP_waste = True
@@ -92,7 +187,7 @@ class TestPressureChange:
         m.fs.water_props = WaterParameterBlock(
             default={"solute_list": ["A", "B", "C"]})
 
-        m.fs.unit = DerivedSITO1(
+        m.fs.unit = DerivedSITO3(
             default={"property_package": m.fs.water_props})
 
         m.fs.unit.inlet.flow_vol.fix(42)
@@ -102,10 +197,10 @@ class TestPressureChange:
         m.fs.unit.inlet.temperature.fix(303.15)
         m.fs.unit.inlet.pressure.fix(1.5e5)
 
-        m.fs.unit.water_recovery.fix(0.8)
-        m.fs.unit.removal_fraction[0, "A"].fix(0.1)
-        m.fs.unit.removal_fraction[0, "B"].fix(0.2)
-        m.fs.unit.removal_fraction[0, "C"].fix(0.3)
+        m.fs.unit.recovery_vol.fix(0.8)
+        m.fs.unit.removal_mass_solute[0, "A"].fix(0.1)
+        m.fs.unit.removal_mass_solute[0, "B"].fix(0.2)
+        m.fs.unit.removal_mass_solute[0, "C"].fix(0.3)
         m.fs.unit.deltaP_outlet.fix(1000)
         m.fs.unit.deltaP_waste.fix(2000)
 
@@ -121,10 +216,10 @@ class TestPressureChange:
         assert isinstance(model.fs.unit.outlet, Port)
         assert isinstance(model.fs.unit.waste, Port)
 
-        assert isinstance(model.fs.unit.water_recovery, Var)
-        assert len(model.fs.unit.water_recovery) == 1
-        assert isinstance(model.fs.unit.removal_fraction, Var)
-        assert len(model.fs.unit.removal_fraction) == 3
+        assert isinstance(model.fs.unit.recovery_vol, Var)
+        assert len(model.fs.unit.recovery_vol) == 1
+        assert isinstance(model.fs.unit.removal_mass_solute, Var)
+        assert len(model.fs.unit.removal_mass_solute) == 3
         assert isinstance(model.fs.unit.deltaP_outlet, Var)
         assert len(model.fs.unit.deltaP_outlet) == 1
         assert isinstance(model.fs.unit.deltaP_waste, Var)
@@ -246,8 +341,8 @@ class TestPressureChange:
 
 class TestNoPressureChangeOutlet:
 
-    @declare_process_block_class("DerivedSITO2")
-    class DerivedSITOData2(SITOBaseData):
+    @declare_process_block_class("DerivedSITO4")
+    class DerivedSITOData4(SITOBaseData):
         def build(self):
             self._has_deltaP_outlet = False
             self._has_deltaP_waste = True
@@ -262,7 +357,7 @@ class TestNoPressureChangeOutlet:
         m.fs.water_props = WaterParameterBlock(
             default={"solute_list": ["A", "B", "C"]})
 
-        m.fs.unit = DerivedSITO2(
+        m.fs.unit = DerivedSITO4(
             default={"property_package": m.fs.water_props})
 
         m.fs.unit.inlet.flow_vol.fix(42)
@@ -272,10 +367,10 @@ class TestNoPressureChangeOutlet:
         m.fs.unit.inlet.temperature.fix(303.15)
         m.fs.unit.inlet.pressure.fix(1.5e5)
 
-        m.fs.unit.water_recovery.fix(0.8)
-        m.fs.unit.removal_fraction[0, "A"].fix(0.1)
-        m.fs.unit.removal_fraction[0, "B"].fix(0.2)
-        m.fs.unit.removal_fraction[0, "C"].fix(0.3)
+        m.fs.unit.recovery_vol.fix(0.8)
+        m.fs.unit.removal_mass_solute[0, "A"].fix(0.1)
+        m.fs.unit.removal_mass_solute[0, "B"].fix(0.2)
+        m.fs.unit.removal_mass_solute[0, "C"].fix(0.3)
         m.fs.unit.deltaP_waste.fix(2000)
 
         return m
@@ -290,10 +385,10 @@ class TestNoPressureChangeOutlet:
         assert isinstance(model.fs.unit.outlet, Port)
         assert isinstance(model.fs.unit.waste, Port)
 
-        assert isinstance(model.fs.unit.water_recovery, Var)
-        assert len(model.fs.unit.water_recovery) == 1
-        assert isinstance(model.fs.unit.removal_fraction, Var)
-        assert len(model.fs.unit.removal_fraction) == 3
+        assert isinstance(model.fs.unit.recovery_vol, Var)
+        assert len(model.fs.unit.recovery_vol) == 1
+        assert isinstance(model.fs.unit.removal_mass_solute, Var)
+        assert len(model.fs.unit.removal_mass_solute) == 3
 
         assert not hasattr(model.fs.unit, "deltaP_outlet")
         assert isinstance(model.fs.unit.deltaP_waste, Var)
@@ -415,8 +510,8 @@ class TestNoPressureChangeOutlet:
 
 class TestNoPressureChangeWaste:
 
-    @declare_process_block_class("DerivedSITO3")
-    class DerivedSITOData3(SITOBaseData):
+    @declare_process_block_class("DerivedSITO5")
+    class DerivedSITOData5(SITOBaseData):
         def build(self):
             self._has_deltaP_outlet = True
             self._has_deltaP_waste = False
@@ -431,7 +526,8 @@ class TestNoPressureChangeWaste:
         m.fs.water_props = WaterParameterBlock(
             default={"solute_list": ["A", "B", "C"]})
 
-        m.fs.unit = DerivedSITO3(default={"property_package": m.fs.water_props})
+        m.fs.unit = DerivedSITO5(
+            default={"property_package": m.fs.water_props})
 
         m.fs.unit.inlet.flow_vol.fix(42)
         m.fs.unit.inlet.conc_mass_comp[0, "A"].fix(10)
@@ -440,10 +536,10 @@ class TestNoPressureChangeWaste:
         m.fs.unit.inlet.temperature.fix(303.15)
         m.fs.unit.inlet.pressure.fix(1.5e5)
 
-        m.fs.unit.water_recovery.fix(0.8)
-        m.fs.unit.removal_fraction[0, "A"].fix(0.1)
-        m.fs.unit.removal_fraction[0, "B"].fix(0.2)
-        m.fs.unit.removal_fraction[0, "C"].fix(0.3)
+        m.fs.unit.recovery_vol.fix(0.8)
+        m.fs.unit.removal_mass_solute[0, "A"].fix(0.1)
+        m.fs.unit.removal_mass_solute[0, "B"].fix(0.2)
+        m.fs.unit.removal_mass_solute[0, "C"].fix(0.3)
         m.fs.unit.deltaP_outlet.fix(1000)
 
         return m
@@ -458,10 +554,10 @@ class TestNoPressureChangeWaste:
         assert isinstance(model.fs.unit.outlet, Port)
         assert isinstance(model.fs.unit.waste, Port)
 
-        assert isinstance(model.fs.unit.water_recovery, Var)
-        assert len(model.fs.unit.water_recovery) == 1
-        assert isinstance(model.fs.unit.removal_fraction, Var)
-        assert len(model.fs.unit.removal_fraction) == 3
+        assert isinstance(model.fs.unit.recovery_vol, Var)
+        assert len(model.fs.unit.recovery_vol) == 1
+        assert isinstance(model.fs.unit.removal_mass_solute, Var)
+        assert len(model.fs.unit.removal_mass_solute) == 3
 
         assert not hasattr(model.fs.unit, "deltaP_waste")
         assert isinstance(model.fs.unit.deltaP_outlet, Var)
