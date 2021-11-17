@@ -536,6 +536,7 @@ class BaseConfig(ConfigGenerator):
 
 class DataWrapperNames:
     param = "parameter_data"
+    reaction_order = "reaction_order"
 
 
 class DataWrapper:
@@ -865,43 +866,61 @@ class Reaction(DataWrapper):
     def set_reaction_order(
         self,
         phase: str,
-        order: Union[List[Tuple[str, int]], Dict[str, int]]
+        order: Union[List[Tuple[str, int]], Dict[str, int]],
+        require_all: bool = False
     ) -> Dict:
         """Set the reaction order (if it differs from stoichiometry).
 
         Args:
             phase: 'Liq' or 'Vap'
             order: Either a dict or list of (element, value) pairs
+            require_all: If True, require that all components in the reaction be
+               given an order. If False, it is OK if some components are missing.
 
         Returns:
             Reaction order for all phases, which can be modified further in-place
 
         Raises:
-            KeyError: something is missing in the data structure
+            KeyError: something is missing in the data structure, or unknown
+                      component provided
+            ValueError: Wrong or incomplete components provided
         """
-        param, ro = self.NAMES.param, "reaction_order"
-        if param not in self.data:
-            raise KeyError(f"Reaction missing '{param}'")
-        elif ro not in self.data[param]:
-            raise KeyError(f"Reaction missing '{param}.{ro}'")
-        elif phase not in self.data[param][ro]:
+        if bool(order) is False:
+            raise ValueError("No components provided for reaction order")
+        # schema validation should guarantee this structure
+        ro = self.data[self.NAMES.param][self.NAMES.reaction_order]
+        if phase not in ro:
             raise KeyError(f"Phase '{phase}' not found")
+        ro = ro[phase]
+        # normalize input to dict form
+        if not hasattr(order, 'keys'):
+            order = dict(order)
+        # additional checks for 'require_all' flag
+        if require_all:
+            if len(order) != len(ro):
+                why = "not enough" if len(order) < len(ro) else "too many"
+                raise ValueError(f"{why.title()} components provided for new reaction "
+                                 f"order, with 'require_all' flag set to True")
+            if len(order) > len(ro):
+                raise ValueError("Too many components provided for new reaction "
+                                 "order, with 'require_all' flag set to True")
+            if set(order.keys()) != set(ro.keys()):
+                raise ValueError("Components in new reaction order do not match "
+                                 "components in reaction, with 'require_all' flag "
+                                 "set to True")
+        # Replace one component at a time, raise KeyError if unknown component.
+        # Ensure that the instance is not modified unless the changes are ok.
+        ro_tmp = ro.copy()
+        for key, value in order.items():
+            if value < 0:
+                raise ValueError(f"Component '{key}' reaction order is less than "
+                                 f"zero: {value}")
+            if key not in ro:
+                raise KeyError(f"Component '{key}' not found in reaction")
+            ro_tmp[key] = value
+        self.data[self.NAMES.param][self.NAMES.reaction_order][phase] = ro_tmp
+        return ro_tmp
 
-        # with field(self.NAMES.param) as param:
-        #     with field("reaction_order") as ro:
-        #         # create a blank 'reaction_order' section if not present
-        #         if ro not in self.data[param]:
-        #             self.data[param][ro] = {}
-        #         ro_section = self.data[param][ro]
-        #         # replace reaction_order value for key 'phase' with new value
-        #         reaction_order = {}
-        #         for comp in lhs:
-        #             reaction_order[comp] = lhs_value
-        #         for comp in rhs:
-        #             reaction_order[comp] = rhs_value
-        #         ro_section[phase] = reaction_order
-        #
-        # return ro_section
 
     @classmethod
     def from_idaes_config(cls, config: Dict) -> List["Reaction"]:
