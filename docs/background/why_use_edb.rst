@@ -26,7 +26,7 @@ As was shown in that :ref:`How to setup simple chemistry<how_to_setup_simple_che
 guide, even a simple configuration dictionary can be 100s of lines of python code and
 involves numerous parameters that the user must provide. All that example did was
 show how to simulate water self-ionization. Essentially a useless problem to solve.
-Realistic chemistry may require dozens of hundreds of reactions and species. That is
+Realistic chemistry may require hundreds of reactions and species. That is
 where the EDB comes into play.
 
 Usages
