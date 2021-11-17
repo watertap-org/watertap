@@ -46,7 +46,9 @@ _log = idaeslog.getLogger(__name__)
 class WaterParameterBlockData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
-    Define component and phase lists, along with base units
+
+    Defines component and phase lists, along with base units and constant
+    parameters.
     """
     CONFIG = PhysicalParameterBlock.CONFIG()
 
