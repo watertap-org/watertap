@@ -10,7 +10,7 @@ The ideal water properties module contains a simple property package for saline 
 
 .. testcode::
 
-  import pyomo.environ as pe # Pyomo environment
+  import pyomo.environ as pyo # Pyomo environment
 
   from idaes.core import FlowsheetBlock
 
@@ -18,7 +18,7 @@ The ideal water properties module contains a simple property package for saline 
   from watertap.core.zero_order_properties import WaterParameterBlock
 
   # Create a flowsheet
-  m = ConcreteModel()
+  m = pyo.ConcreteModel()
   m.fs = FlowsheetBlock(default={"dynamic": False})
 
   # Add an instance of the ideal water property package with three solutes A, B and C
