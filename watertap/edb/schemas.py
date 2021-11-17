@@ -91,7 +91,7 @@ schemas = {
             },
             "phase_equilibrium_form": {
                 "type": "object",
-                "properties": {"Vap": {"type": "string"}, "Liq": {"type": "string"}},
+                "properties": {phase: {"type": "string"} for phase in Reaction.PHASES},
             },
             "parameter_data": {
                 "type": "object",
@@ -130,8 +130,8 @@ schemas = {
                 "description": "Moles for the given species in the reaction. "
                 "Grouped by phase.",
                 "properties": {
-                    "Liq": {"$ref": "#/definitions/stoichiometry"},
-                    "Vap": {"$ref": "#/definitions/stoichiometry"},
+                    phase: {"$ref": "#/definitions/stoichiometry"}
+                    for phase in Reaction.PHASES
                 },
                 "additionalProperties": False,
             },

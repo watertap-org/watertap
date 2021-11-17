@@ -848,6 +848,7 @@ class Reaction(DataWrapper):
     merge_keys = ("equilibrium_reactions", "rate_reactions", "inherent_reactions")
 
     NAMES = ReactionNames
+    PHASES = ('Liq', 'Vap')
 
     def __init__(self, data: Dict, validation=True):
         """Constructor.
@@ -866,19 +867,19 @@ class Reaction(DataWrapper):
     def set_reaction_order(
         self,
         phase: str,
-        order: Union[List[Tuple[str, int]], Dict[str, int]],
+        order: Union[List[Tuple[str, float]], Dict[str, float]],
         require_all: bool = False
-    ) -> Dict:
-        """Set the reaction order (if it differs from stoichiometry).
+    ) -> None:
+        """Set the reaction order for the given phase.
 
         Args:
-            phase: 'Liq' or 'Vap'
+            phase: a value from self.PHASES
             order: Either a dict or list of (element, value) pairs
             require_all: If True, require that all components in the reaction be
                given an order. If False, it is OK if some components are missing.
 
         Returns:
-            Reaction order for all phases, which can be modified further in-place
+            None. Reaction order is modified in place.
 
         Raises:
             KeyError: something is missing in the data structure, or unknown
@@ -889,6 +890,9 @@ class Reaction(DataWrapper):
             raise ValueError("No components provided for reaction order")
         # schema validation should guarantee this structure
         ro = self.data[self.NAMES.param][self.NAMES.reaction_order]
+        if phase not in self.PHASES:
+            raise ValueError(f"Invalid phase '{phase}'. Valid values: "
+                             f"{', '.join(self.PHASES)}")
         if phase not in ro:
             raise KeyError(f"Phase '{phase}' not found")
         ro = ro[phase]
@@ -908,8 +912,9 @@ class Reaction(DataWrapper):
                 raise ValueError("Components in new reaction order do not match "
                                  "components in reaction, with 'require_all' flag "
                                  "set to True")
-        # Replace one component at a time, raise KeyError if unknown component.
-        # Ensure that the instance is not modified unless the changes are ok.
+        # Replace one component at a time, raising a KeyError if unknown component and
+        # a ValueError if the reaction order is a negative number.
+        # Ensure that the instance is not modified if there are any errors.
         ro_tmp = ro.copy()
         for key, value in order.items():
             if value < 0:
@@ -918,9 +923,8 @@ class Reaction(DataWrapper):
             if key not in ro:
                 raise KeyError(f"Component '{key}' not found in reaction")
             ro_tmp[key] = value
+        # Update reaction order in this object
         self.data[self.NAMES.param][self.NAMES.reaction_order][phase] = ro_tmp
-        return ro_tmp
-
 
     @classmethod
     def from_idaes_config(cls, config: Dict) -> List["Reaction"]:

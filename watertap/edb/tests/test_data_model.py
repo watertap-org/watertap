@@ -508,7 +508,7 @@ def test_reaction_order():
         )
     # Invalid phase
     r = reaction()
-    with pytest.raises(KeyError):
+    with pytest.raises(ValueError):  # bad phase
         r.set_reaction_order("Plasma", {"B": 1, "C": 1, "H": 1})
     # No components
     with pytest.raises(ValueError):
@@ -531,13 +531,11 @@ def test_reaction_order():
     for i in range(2):
         r = reaction()
         v = values[i]
-        result = r.set_reaction_order("Liq", v)
+        r.set_reaction_order("Liq", v)
         ro = r.data[Reaction.NAMES.param][Reaction.NAMES.reaction_order]["Liq"]
         for k in v:
             if i == 0:
-                assert ro[k] == v[k] and ro[k] == result[k]
+                assert ro[k] == v[k]
             else:
-                k = k[0]
-                v_k = dict(v)[k]
-                assert ro[k] == v_k and ro[k] == result[k]
+                assert ro[k[0]] == dict(v)[k[0]]
 
