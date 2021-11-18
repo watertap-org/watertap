@@ -67,7 +67,7 @@ class TestSITOConfigurationErrors:
 
         with pytest.raises(ConfigurationError,
                            match="fs.unit configured with invalid property "
-                           "package. Zero-order models only support proeprty "
+                           "package. Zero-order models only support property "
                            "packages with a single phase named 'Liq'."):
             model.fs.unit = DerivedSITO0(
                 default={"property_package": model.fs.params})
