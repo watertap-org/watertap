@@ -267,16 +267,21 @@ Generating the documentation
 
 To generate a local copy of the documentation for the first time, follow these steps:
 
-1. Change directory to the "docs" subdirectory
+#. Install the ``pandoc`` executable. As ``pandoc`` is a standalone tool rather than a Python package, it cannot be installed using ``pip``. Instead, use one of the following options:
 
-2. Generate the tree of API documentation with "sphinx-apidoc". For convenience, a script has been
+   * If using a Conda environment, run ``conda install -c conda-forge pandoc``
+   * Alternatively, refer to the installation steps appropriate for your system on pandoc's `website <https://pandoc.org/installing.html>`_
+
+#. Change directory to the "docs" subdirectory
+
+#. Generate the tree of API documentation with "sphinx-apidoc". For convenience, a script has been
    provided that has all the required options.
 
    * On Windows, run ``.\apidoc.bat``
 
    * On Linux/OSX run ``./apidoc.sh``
 
-3. Generate the HTML with Sphinx.
+#. Generate the HTML with Sphinx.
 
    * On Windows, run ``.\make html``
 
