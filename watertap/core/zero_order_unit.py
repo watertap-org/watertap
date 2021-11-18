@@ -36,7 +36,7 @@ class SITOBaseData(UnitModelBlockData):
     cannot be instantiated by itself. When creating derived classes,
     developers must set the '_has_deltaP_outlet` and `_has_deltaP_waste`
     attributes on the model before calling `super().build()`. These attributes
-    determine whetehr the deltaP terms for the outlet and waste streams are
+    determine whether the deltaP terms for the outlet and waste streams are
     added to the model and included in the pressure constraints.
     """
 
