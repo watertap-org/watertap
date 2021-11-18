@@ -73,18 +73,18 @@ class SITOBaseData(UnitModelBlockData):
         # Check that derived class has implemented flags for pressure change
         if not hasattr(self, "_has_deltaP_outlet"):
             raise NotImplementedError(
-                f"{self.name} derived class class has not implemented "
+                f"{self.name} derived class has not been implemented "
                 f"_has_deltaP_outlet.")
         if not hasattr(self, "_has_deltaP_waste"):
             raise NotImplementedError(
-                f"{self.name} derived class class has not implemented "
+                f"{self.name} derived class has not been implemented "
                 f"_has_deltaP_waste.")
 
         # Check that property package meets requirements
         if self.config.property_package.phase_list != ["Liq"]:
             raise ConfigurationError(
                 f"{self.name} configured with invalid property package. "
-                f"Zero-order models only support proeprty packages with a "
+                f"Zero-order models only support property packages with a "
                 f"single phase named 'Liq'.")
         if (not hasattr(self.config.property_package, "solvent_set") or
                 self.config.property_package.solvent_set != ["H2O"]):
