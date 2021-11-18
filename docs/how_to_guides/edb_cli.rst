@@ -26,7 +26,7 @@ database named ``electrolytedb``::
 
     edb load -b
 
-|arrw| Droping the default database named ``electrolytedb``::
+|arrw| Dropping the default database named ``electrolytedb``::
 
     edb drop -d electrolytedb
 
