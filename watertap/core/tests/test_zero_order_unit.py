@@ -141,7 +141,7 @@ def test_no_has_deltaP_outlet():
         default={"solute_list": ["A", "B", "C"]})
 
     with pytest.raises(NotImplementedError,
-                       match="fs.unit derived class class has not implemented "
+                       match="fs.unit derived class has not been implemented "
                        "_has_deltaP_outlet."):
         m.fs.unit = DerivedSITO1(
             default={"property_package": m.fs.water_props})
