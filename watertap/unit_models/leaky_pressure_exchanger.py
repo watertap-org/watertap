@@ -147,7 +147,7 @@ class PressureExchangerData(UnitModelBlockData):
             bounds=(1e-6, 1),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc='Pressure exchanger salt leakage')
+            doc='Pressure exchanger solute leakage')
 
         self.solvent_leakage_fraction = Var(
             self.flowsheet().config.time,
@@ -155,7 +155,7 @@ class PressureExchangerData(UnitModelBlockData):
             bounds=(1e-6, 1),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc='Pressure exchanger salt leakage')
+            doc='Pressure exchanger solvent leakage')
         # Build control volume for high pressure side
         self.high_pressure_side = ControlVolume0DBlock(default={
             "dynamic": False,
