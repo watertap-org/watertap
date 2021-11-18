@@ -100,8 +100,8 @@ def test_build():
     # test unit constraints
     unit_cons_lst = ['eq_pressure_transfer', \
     'eq_equal_flow_vol', 'eq_equal_low_pressure',\
-    'eq_mass_transfer_from_high_to_low_pressure',
-    'eq_mass_high_pressure_outlet']
+    'eq_mass_transfer_from_high_to_low_pressure_outlet',
+    'eq_mass_balance_high_pressure_outlet']
     for c in unit_cons_lst:
         assert hasattr(m.fs.unit, c)
         con = getattr(m.fs.unit, c)
