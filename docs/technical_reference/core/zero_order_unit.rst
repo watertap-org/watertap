@@ -6,7 +6,7 @@ Zero Order Unit Model Base Class
 
 .. currentmodule:: watertap.core.zero_order_unit
 
-The zero-order unit model base class is intended to form the basis for a library of generic single inlet-two outlet (SITO) units models using recovery and removal fractions to partition the incoming flow between the two outlets. This base class is not intended to be used by itself, and requires the user to define a derived class before it can be used in a flowsheet.
+The zero-order unit model base class is intended to form the basis for a library of generic single inlet-two outlet (SITO) unit models using recovery and removal fractions to partition the incoming flow between the two outlets. This base class is not intended to be used by itself and requires the user to define a derived class before it can be used in a flowsheet.
 
 Usage
 -----
