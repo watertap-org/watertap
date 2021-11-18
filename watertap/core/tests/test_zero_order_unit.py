@@ -163,7 +163,7 @@ def test_no_has_deltaP_waste():
         default={"solute_list": ["A", "B", "C"]})
 
     with pytest.raises(NotImplementedError,
-                       match="fs.unit derived class class has not implemented "
+                       match="fs.unit derived class has not been implemented "
                        "_has_deltaP_waste."):
         m.fs.unit = DerivedSITO2(
             default={"property_package": m.fs.water_props})
