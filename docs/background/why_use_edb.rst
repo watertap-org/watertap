@@ -53,4 +53,4 @@ to create configuration dictionaries :ref:`manually<how_to_setup_simple_chemistr
 the EDB can generate those same configuration dictionaries :ref:`automatically<how_to_use_edb>`
 in the 'Simple EDB Example'.
 
-To start using EDB, have a look at the :ref:`installation instructions<install-edb>`
+To start using EDB, have a look at the :ref:`installation instructions<install-edb>`.
