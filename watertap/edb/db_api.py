@@ -341,7 +341,6 @@ class ElectrolyteDB:
         # print(f"{s} -> {symbols}{charge}")
         return f"{symbols}{charge}"
 
-
 def get_elements(components):
     elements = set()
     for comp in components:

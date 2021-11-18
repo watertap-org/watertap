@@ -385,6 +385,7 @@ class TestPureWater:
         model = ConcreteModel()
         model.fs = FlowsheetBlock(default={"dynamic": False})
         model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+        print(water_reaction_config)
         model.fs.rxn_params = GenericReactionParameterBlock(
             default={"property_package": model.fs.thermo_params, **water_reaction_config}
         )
@@ -643,21 +644,24 @@ class TestPureWaterEDB(TestPureWater):
 
     @pytest.fixture
     def thermo_config(self, edb):
-        base = edb.get_base("water_reaction")
+        base = edb.get_base("default_thermo")
         elements = ["H", "O"]
         components = []
         # Add the components
         for c in edb.get_components(element_names=elements):
-            # Need to remove these to avoid errors when using the generated config
-            c.remove("valid_phase_types")
+            # Should remove these since we don't have a vapor phase
+            # NOTE: The model still runs without removing these, but
+            #       the 'stats' won't pass their checks due to the addition
+            #       of new system variables that they inherently bring
             c.remove("enth_mol_ig_comp")
-            c.remove("phase_equilibrium_form")
             c.remove("pressure_sat_comp")
             base.add(c)
             components.append(c.name)
         # Add the reactions
         for r in edb.get_reactions(component_names=components):
-            r.set_reaction_order('Liq', ('H2O',), ('H_+', 'OH_-'))
+            #Removed call to function 'set_reaction_order' because that function behavior is incorrect
+            #r.set_reaction_order('Liq', ('H2O',), ('H_+', 'OH_-'))
+            r._data["parameter_data"]["reaction_order"] = {'Liq': {'H2O': 0, 'H_+': 1, 'OH_-': 1}}
             r._data["type"] = "inherent"
             base.add(r)
         return base.idaes_config
@@ -667,17 +671,13 @@ class TestPureWaterEDB(TestPureWater):
     def water_reaction_config(self, edb):
         elements = ["H", "O"]
         components = [c.name for c in edb.get_components(element_names=elements)]
-        base = edb.get_base("water_reaction")
-        # Need to remove these to avoid errors when using the generated config
-        base.remove("phases")
-        base.remove("pressure_ref")
-        base.remove("state_bounds")
-        base.remove("state_definition")
-        base.remove("temperature_ref")
+        base = edb.get_base("reaction")
         # Add the reactions
         for r in edb.get_reactions(component_names=components):
             # Set a custom reaction order
-            r.set_reaction_order('Liq', ('H2O',), ('H_+', 'OH_-'))
+            #Removed call to function 'set_reaction_order' because that function behavior is incorrect
+            #r.set_reaction_order('Liq', ('H2O',), ('H_+', 'OH_-'))
+            r._data["parameter_data"]["reaction_order"] = {'Liq': {'H2O': 0, 'H_+': 1, 'OH_-': 1}}
             # Need to remove this to avoid errors when using the generated config
             r.remove_parameter("ds_rxn_ref")
             base.add(r)
