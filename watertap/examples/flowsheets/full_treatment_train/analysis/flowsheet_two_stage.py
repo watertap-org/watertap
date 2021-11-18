@@ -15,7 +15,7 @@ mutable parameters for optimization:
     m.fs.system_recovery_target
     m.fs.max_allowable_pressure
 '''
-from pyomo.environ import ConcreteModel, TransformationFactory, Param
+from pyomo.environ import ConcreteModel, TransformationFactory, Param, value
 from pyomo.environ import units as pyunits
 
 from idaes.core import FlowsheetBlock
@@ -54,13 +54,13 @@ def set_optimization_components(m, system_recovery, **kwargs):
     # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
     m.fs.RO2.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
     if kwargs['RO_type'] == '0D':
-        m.fs.RO2.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO2.A_comp[0, 'H2O']
-                                                                       * m.fs.RO2.dens_solvent
-                                                                       * m.fs.RO2.NDPmin)
+        m.fs.RO2.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(value(m.fs.RO2.A_comp[0, 'H2O']
+                                                                             * m.fs.RO2.dens_solvent
+                                                                             * m.fs.RO2.NDPmin))
     elif kwargs['RO_type'] == '1D':
-        m.fs.RO2.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'].setlb(m.fs.RO2.A_comp[0, 'H2O']
-                                                                       * m.fs.RO2.dens_solvent
-                                                                       * m.fs.RO2.NDPmin)
+        m.fs.RO2.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'].setlb(value(m.fs.RO2.A_comp[0, 'H2O']
+                                                                      * m.fs.RO2.dens_solvent
+                                                                      * m.fs.RO2.NDPmin))
 
 
 def set_up_optimization(m, system_recovery=0.50, **kwargs):
