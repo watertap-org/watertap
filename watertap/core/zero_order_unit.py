@@ -33,7 +33,7 @@ class SITOBaseData(UnitModelBlockData):
     Standard base class for single inlet-two outlet unit models.
 
     This class is intended to be used for creating derived model classes and
-    cannot be instantiated as by itself. When creating derived classes,
+    cannot be instantiated by itself. When creating derived classes,
     developers must set the '_has_deltaP_outlet` and `_has_deltaP_waste`
     attributes on the model before calling `super().build()`. These attributes
     determine whetehr the deltaP terms for the outlet and waste streams are
