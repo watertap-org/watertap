@@ -186,7 +186,7 @@ class PressureExchangerData(UnitModelBlockData):
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
-            doc='mass transferred to low pressure side')
+            doc='Mass transfered on high pressure side')
         def mass_transfer(b, t, p, j):
             return b.properties_in[t].flow_mass_phase_comp[p,j]-b.properties_out[t].flow_mass_phase_comp[p,j]
 
@@ -220,7 +220,7 @@ class PressureExchangerData(UnitModelBlockData):
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
-            doc='mass transferred to low pressure side (will be negative, gained mass)')
+            doc='Mass transfered on low pressure side (will be negative, gained mass)')
         def mass_transfer(b, t, p, j):
             return b.properties_in[t].flow_mass_phase_comp[p,j]-b.properties_out[t].flow_mass_phase_comp[p,j]
 
@@ -250,7 +250,7 @@ class PressureExchangerData(UnitModelBlockData):
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             doc="mass leak from HP inlet to LP outlet")
-        def eq_mass_transfer_from_high_to_low_pressure(b, t, p, j):
+        def eq_mass_transfer_from_high_to_low_pressure_outlet(b, t, p, j):
             comp = self.config.property_package.get_component(j)
             if comp.is_solvent():
                 return (b.low_pressure_side.properties_out[t].flow_mass_phase_comp[p,j]==\
@@ -261,13 +261,13 @@ class PressureExchangerData(UnitModelBlockData):
                 b.high_pressure_side.properties_in[t].flow_mass_phase_comp[p,j]*b.solute_leakage_fraction[t]+
                 b.low_pressure_side.properties_in[t].flow_mass_phase_comp[p,j])
 
-        ### this constraint (eq_mass_high_pressure_outlet) might not be needed###
+        ### this constraint (eq_mass_balance_high_pressure_outlet) might not be needed###
         @self.Constraint(
             self.flowsheet().config.time,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             doc="mass loss from HP inlet propagation to HP outlet")
-        def eq_mass_high_pressure_outlet(b, t, p, j):
+        def eq_mass_balance_high_pressure_outlet(b, t, p, j):
             comp = self.config.property_package.get_component(j)
             if comp.is_solvent():
                 return (b.high_pressure_side.properties_out[t].flow_mass_phase_comp[p,j]==\
@@ -456,12 +456,12 @@ class PressureExchangerData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.low_pressure_side.properties_in[t].pressure)
             iscale.constraint_scaling_transform(c, sf)
 
-        for (t,p,j), c in self.eq_mass_transfer_from_high_to_low_pressure.items():
+        for (t,p,j), c in self.eq_mass_transfer_from_high_to_low_pressure_outlet.items():
             sf = iscale.get_scaling_factor(self.high_pressure_side.properties_in[t].flow_mass_phase_comp[p,j])
             sf = sf*iscale.get_scaling_factor(self.low_pressure_side.properties_in[t].flow_mass_phase_comp[p,j])
             iscale.constraint_scaling_transform(c, sf)
 
-        for (t,p,j), c in self.eq_mass_high_pressure_outlet.items():
+        for (t,p,j), c in self.eq_mass_balance_high_pressure_outlet.items():
             sf = iscale.get_scaling_factor(self.high_pressure_side.properties_in[t].flow_mass_phase_comp[p,j])
             iscale.constraint_scaling_transform(c, sf)
 
