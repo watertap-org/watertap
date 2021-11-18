@@ -69,7 +69,7 @@ The :math:`\Delta P_{outlet,t}` and :math:`\Delta P_{waste,t}` terms are optiona
 Constraints
 -----------
 
-The SITO base class writes the following constraints which relate the inlet state to those in the outlet and waste streams. As mentioned previously, these constraint are formulated such that they will be linear if `flow_vol`, `conc_mass_comp`, `pressure` and `temperature` are the state variables used by the property package and the recovery and removal fractions are fixed.
+The SITO base class writes the following constraints which relate the inlet state to those in the outlet and waste streams. As mentioned previously, these constraints are formulated such that they will be linear if `flow_vol`, `conc_mass_comp`, `pressure` and `temperature` are the state variables used by the property package and the recovery and removal fractions are fixed.
 
 First, a volumetric flow recovery equation is written to relate the flowrate at the outlet to that at the inlet:
 
