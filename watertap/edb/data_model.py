@@ -917,7 +917,14 @@ class Reaction(DataWrapper):
         if bool(order) is False:
             raise ValueError("No components provided for reaction order")
         # schema validation should guarantee this structure
-        ro = self.data[self.NAMES.param][self.NAMES.reaction_order]
+
+        # If 'reaction_order' key does not exist, then create one as a copy of stoich 
+        if self.NAMES.reaction_order in self.data[self.NAMES.param]:
+            ro = self.data[self.NAMES.param][self.NAMES.reaction_order]
+        else:
+            self.data[self.NAMES.param][self.NAMES.reaction_order] = self.data[self.NAMES.stoich].copy()
+            ro = self.data[self.NAMES.param][self.NAMES.reaction_order]
+
         if phase not in self.PHASES:
             raise ValueError(f"Invalid phase '{phase}'. Valid values: "
                              f"{', '.join(self.PHASES)}")
