@@ -481,7 +481,7 @@ def test_reaction_order():
         return Reaction(
         {
             "name": "foo",
-            "components": {},
+            "components": [],
             "elements": ["Ca", "O", "H"],
             # valid chemistry? no. useful? yes.
             Reaction.NAMES.param: {
@@ -500,13 +500,12 @@ def test_reaction_order():
     # Reaction missing param
     with pytest.raises(bad_input_error):
         Reaction({"elements": ["H"]}).set_reaction_order("Foo", {})
-    # Reaction missing reaction_order
-    with pytest.raises(bad_input_error):
-        (
-            Reaction({"elements": ["H"], Reaction.NAMES.param: {}}).set_reaction_order(
-                "Foo", {}
-            )
-        )
+    # Reaction missing reaction_order, still OK handled in pre-processing
+    # but empty input list causes an error
+    with pytest.raises(ValueError):
+        Reaction({"components": [], "elements": ["H"], Reaction.NAMES.param: {},
+                  "type": "equilibrium", "name": "Foo"}).set_reaction_order(
+                    "Foo", {})
     # Invalid phase
     r = reaction()
     with pytest.raises(ValueError):  # bad phase

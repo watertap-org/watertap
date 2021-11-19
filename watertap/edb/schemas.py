@@ -125,6 +125,13 @@ schemas = {
                 "description": "Type of reaction",
             },
             "name": {"type": "string", "description": "Name of reaction"},
+            "compnents": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "description": "Name of a component of the reaction",
+                },
+            },
             Reaction.NAMES.stoich: {
                 "type": "object",
                 "description": "Moles for the given species in the reaction. "
@@ -143,6 +150,8 @@ schemas = {
                 "type": "object",
                 "patternProperties": {
                     "_ref": {"$ref": "#/definitions/parameter"},
+                },
+                "properties": {
                     Reaction.NAMES.reaction_order: {
                         "type": "object",
                         "properties": {
@@ -152,9 +161,10 @@ schemas = {
                         "additionalProperties": False,
                     },
                 },
+                "required": [Reaction.NAMES.reaction_order],
             },
         },
-        "required": ["name", "parameter_data", "type"],
+        "required": ["name", "parameter_data", "type", "components"],
         "definitions": {
             "parameter": _parameter_def,
             "stoichiometry": {

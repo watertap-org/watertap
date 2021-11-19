@@ -178,7 +178,8 @@ class ConfigGenerator:
             return
         for param_key in params:
             val = params[param_key]
-            if param_key == "reaction_order":
+            if param_key == Reaction.NAMES.reaction_order:
+                # change form of reaction_order, just like stoichiometry
                 reaction_order_table = {}
                 for phase in val:
                     for species, num in val[phase].items():
@@ -521,11 +522,10 @@ class BaseConfig(ConfigGenerator):
         "phases.Sol.equation_of_state": {"Ideal": Ideal},
         "phases.Vap.equation_of_state": {"Ideal": Ideal},
         "bubble_dew_method": {"IdealBubbleDew": IdealBubbleDew},
-
         # TODO: NOTE: I'm not sure how to handle the following...
         #
-        #"phases_in_equilibrium": ["('Vap','Liq')"],
-        #"phase_equilibrium_state": {"('Vap','Liq')": "SmoothVLE"},
+        # "phases_in_equilibrium": ["('Vap','Liq')"],
+        # "phase_equilibrium_state": {"('Vap','Liq')": "SmoothVLE"},
         #
         #   The above are options used in base configs for Vapor and Liquid systems
         "base_units.*": ConfigGenerator.SUBST_UNITS,
@@ -861,7 +861,7 @@ class Reaction(DataWrapper):
     merge_keys = ("equilibrium_reactions", "rate_reactions", "inherent_reactions")
 
     NAMES = ReactionNames
-    PHASES = ('Liq', 'Vap', 'Sol')
+    PHASES = ("Liq", "Vap", "Sol")
 
     def __init__(self, data: Dict, validation=True):
         """Constructor.
@@ -881,7 +881,7 @@ class Reaction(DataWrapper):
         self,
         phase: str,
         order: Union[List[Tuple[str, float]], Dict[str, float]],
-        require_all: bool = False
+        require_all: bool = False,
     ) -> None:
         """Set the reaction order for the given phase.
 
@@ -907,28 +907,35 @@ class Reaction(DataWrapper):
         if self.NAMES.reaction_order in self.data[self.NAMES.param]:
             ro = self.data[self.NAMES.param][self.NAMES.reaction_order]
         else:
-            self.data[self.NAMES.param][self.NAMES.reaction_order] = self.data[self.NAMES.stoich].copy()
+            self.data[self.NAMES.param][self.NAMES.reaction_order] = self.data[
+                self.NAMES.stoich
+            ].copy()
             ro = self.data[self.NAMES.param][self.NAMES.reaction_order]
 
         if phase not in self.PHASES:
-            raise ValueError(f"Invalid phase '{phase}'. Valid values: "
-                             f"{', '.join(self.PHASES)}")
+            raise ValueError(
+                f"Invalid phase '{phase}'. Valid values: " f"{', '.join(self.PHASES)}"
+            )
         if phase not in ro:
             raise KeyError(f"Phase '{phase}' not found")
         ro = ro[phase]
         # normalize input to dict form
-        if not hasattr(order, 'keys'):
+        if not hasattr(order, "keys"):
             order = dict(order)
         # additional checks for 'require_all' flag
         if require_all:
             if len(order) != len(ro):
                 why = "not enough" if len(order) < len(ro) else "too many"
-                raise ValueError(f"{why.title()} components provided for new reaction "
-                                 f"order, with 'require_all' flag set to True")
+                raise ValueError(
+                    f"{why.title()} components provided for new reaction "
+                    f"order, with 'require_all' flag set to True"
+                )
             if set(order.keys()) != set(ro.keys()):
-                raise ValueError("Components in new reaction order do not match "
-                                 "components in reaction, with 'require_all' flag "
-                                 "set to True")
+                raise ValueError(
+                    "Components in new reaction order do not match "
+                    "components in reaction, with 'require_all' flag "
+                    "set to True"
+                )
         # Replace one component at a time, raising a KeyError if unknown component
         # Ensure that the instance is not modified if there are any errors.
         ro_tmp = ro.copy()
