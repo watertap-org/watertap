@@ -487,7 +487,8 @@ def test_reaction_order():
             Reaction.NAMES.param: {
                 "reaction_order": {
                     "Liq": {"B": 2, "C": 1, "H": 1},
-                    "Vap": {"B": 1, "C": 2, "H": 1},
+                    "Vap": {"B": 1, "C": -2, "H": 1},
+                    "Sol": {"B": -1, "C": 2, "H": 0},
                 }
             },
             "type": "equilibrium",
@@ -525,12 +526,19 @@ def test_reaction_order():
     with pytest.raises(ValueError):
         r.set_reaction_order("Liq", [("B", 0), ("C", 0), ("X", 0)], require_all=True)
     # check happy path
-    values = [{"B": 0.5, "C": 1.5}, [("B", 2), ("C", 2)]]
+    values = [{"B": 0.5, "C": 1.5}, [("B", -2), ("C", 2)]]
     for i in range(2):
         r = reaction()
         v = values[i]
         r.set_reaction_order("Liq", v)
         ro = r.data[Reaction.NAMES.param][Reaction.NAMES.reaction_order]["Liq"]
+        for k in v:
+            if i == 0:
+                assert ro[k] == v[k]
+            else:
+                assert ro[k[0]] == dict(v)[k[0]]
+        r.set_reaction_order("Sol", v)
+        ro = r.data[Reaction.NAMES.param][Reaction.NAMES.reaction_order]["Sol"]
         for k in v:
             if i == 0:
                 assert ro[k] == v[k]
