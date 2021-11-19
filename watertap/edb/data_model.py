@@ -940,14 +940,10 @@ class Reaction(DataWrapper):
                 raise ValueError("Components in new reaction order do not match "
                                  "components in reaction, with 'require_all' flag "
                                  "set to True")
-        # Replace one component at a time, raising a KeyError if unknown component and
-        # a ValueError if the reaction order is a negative number.
+        # Replace one component at a time, raising a KeyError if unknown component
         # Ensure that the instance is not modified if there are any errors.
         ro_tmp = ro.copy()
         for key, value in order.items():
-            if value < 0:
-                raise ValueError(f"Component '{key}' reaction order is less than "
-                                 f"zero: {value}")
             if key not in ro:
                 raise KeyError(f"Component '{key}' not found in reaction")
             ro_tmp[key] = value

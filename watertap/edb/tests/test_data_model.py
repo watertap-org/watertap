@@ -520,8 +520,6 @@ def test_reaction_order():
         r.set_reaction_order("Liq", {"X": 3})
     with pytest.raises(KeyError):
         r.set_reaction_order("Liq", [("X", 3)])
-    with pytest.raises(ValueError):  # negative r.o. value
-        r.set_reaction_order("Liq", [("B", -3)])
     with pytest.raises(ValueError):
         r.set_reaction_order("Liq", {"B": 1}, require_all=True)
     with pytest.raises(ValueError):
@@ -538,4 +536,3 @@ def test_reaction_order():
                 assert ro[k] == v[k]
             else:
                 assert ro[k[0]] == dict(v)[k[0]]
-
