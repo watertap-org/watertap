@@ -146,8 +146,8 @@ schemas = {
                     Reaction.NAMES.reaction_order: {
                         "type": "object",
                         "properties": {
-                            "Liq": {"$ref": "#/definitions/reaction_order"},
-                            "Vap": {"$ref": "#/definitions/reaction_order"},
+                            phase: {"$ref": "#/definitions/stoichiometry"}
+                            for phase in Reaction.PHASES
                         },
                         "additionalProperties": False,
                     },

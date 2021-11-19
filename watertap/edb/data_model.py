@@ -861,7 +861,7 @@ class Reaction(DataWrapper):
     merge_keys = ("equilibrium_reactions", "rate_reactions", "inherent_reactions")
 
     NAMES = ReactionNames
-    PHASES = ('Liq', 'Vap')
+    PHASES = ('Liq', 'Vap', 'Sol')
 
     def __init__(self, data: Dict, validation=True):
         """Constructor.
