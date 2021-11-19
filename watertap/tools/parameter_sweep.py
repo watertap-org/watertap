@@ -27,6 +27,7 @@ from idaes.core.util import get_solver
 from idaes.surrogate.pysmo import sampling
 from idaes.core.util.model_statistics import (variables_in_activated_equalities_set,
     unfixed_variables_in_activated_equalities_set)
+from pyomo.core.base.block import TraversalStrategy
 
 np.set_printoptions(linewidth=200)
 
@@ -374,6 +375,17 @@ def _create_component_output_skeleton(component, num_samples):
 
 # ================================================================
 
+# def _get_parent_name_list(variable):
+#     # Check if the variable has a parent component
+#     parent_component = variable.parent_component()
+#     if variable.name == parent_component.name:
+#         parent_block = variable.parent_block()
+#         grand_parent = _get_parent_name_list()
+#     else:
+#         grand_parent = _grand
+
+# ================================================================
+
 def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, output_dict, variable_type):
 
     op_ps_dict = output_dict["sweep_params"]
@@ -417,13 +429,6 @@ def _create_global_output(local_output_dict, local_num_cases,
             for key, item in global_output_dict.items():
                 for subkey, subitem in item.items():
                     subitem['value'] = np.zeros(num_total_samples, dtype=np.float)
-            # for key in global_output_dict["sweep_params"].keys():
-            #     global_output_dict["sweep_params"][key] = np.zeros(num_total_samples, dtype=np.float)
-            #
-            # # Create a global value array of outputs in the dictionary
-            # for var, var_dict in global_output_dict.items():
-            #     if var != 'sweep_params':
-            #         var_dict["value"] = np.zeros(num_total_samples, dtype=np.float)
         else:
             global_output_dict = local_output_dict
 
@@ -434,19 +439,38 @@ def _create_global_output(local_output_dict, local_num_cases,
                              recvbuf=(global_output_dict[key][subkey]["value"], sample_split_arr),
                              root=0)
 
-        # for key, item in local_output_dict.items():
-        #     if key == 'sweep_params':
-        #         for subkey in item.keys():
-        #             comm.Gatherv(sendbuf=item[subkey],
-        #                          recvbuf=(global_output_dict[key][subkey], sample_split_arr),
-        #                          root=0)
-        #     else:
-        #         comm.Gatherv(sendbuf=item["value"],
-        #                      recvbuf=(global_output_dict[key]["value"], sample_split_arr),
-        #                      root=0)
-        #     comm.Barrier()
-
     return global_output_dict
+
+# ================================================================
+
+def _write_outputs(output_dict, output_directory="./output/",
+                   fname_no_extension="output_dict", write_h5=True,
+                   write_txt=True, txt_options="metadata"):
+
+        if write_h5:
+            h5_fname = fname_no_extension + ".h5"
+            _write_output_to_h5(output_dict, output_directory=output_directory,
+                                fname=h5_fname)
+
+        if write_txt:
+            txt_fname = fname_no_extension + ".txt"
+            txt_fpath = os.path.join(output_directory, txt_fname)
+            if txt_options == "metadata":
+                my_dict = copy.deepcopy(output_dict)
+                for key, value in my_dict.items():
+                    for subkey, subvalue in value.items():
+                        subvalue.pop('value')
+            elif txt_options == "keys":
+                my_dict = {}
+                for key, value in output_dict.items():
+                    my_dict[key] = list(value.keys())
+            else:
+                my_dict = output_dict
+
+            with open(txt_fpath, "w") as log_file:
+                pprint.pprint(my_dict, log_file)
+
+# ================================================================
 
 def _write_output_to_h5(output_dict, output_directory="./output/",
                         fname="output_dict.h5"):
@@ -466,6 +490,8 @@ def _write_output_to_h5(output_dict, output_directory="./output/",
                     subgrp.create_dataset(subsubkey, data=output_dict[key][subkey][subsubkey])
 
     f.close()
+
+# ================================================================
 
 def _read_output_h5(filepath):
 
@@ -637,14 +663,37 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
             else:
                 local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
 
+    # for var in unfixed_variables_in_activated_equalities_set(model.fs):
+    #     print(var)
+    #     print(var.is_component_type())
+    #     parent_comp = var.parent_component()
+    #     print(parent_comp)
+    #     print(dir(parent_comp))
+    #     print(parent_comp.is_component_type())
+    #     # parent_var = var.parent_block()
+    #     # grand_parent_var = parent_var.parent_block()
+    #     # ggrand_parent_var = grand_parent_var.parent_block()
+    #     # print(ggrand_parent_var.parent_block())
+    #     break
+
+    # print(dir(model.fs.CONFIG))
+    # for block in model.fs.component_data_objects(active=None,
+    #                                             descend_into=True,
+    #                                             descent_order=TraversalStrategy.BreadthFirstSearch):
+        # print(model.fs.block_data_objects())
+    # Constraint = pyo.Constraint
+    # for block in model.fs.component_data_iterindex(active=True,
+    #                                                descend_into=True,
+    #                                                ctype=Constraint):
+    #
+    #     print(block[0])
+
+    # for block in model.fs.component_map():
+    #     print(block)
+
     # ================================================================
     # Save results
     # ================================================================
-
-    # # print("global_save_data = \n", global_save_data)
-    # print("\nsweep_params = ")
-    # pprint.pprint(sweep_params)
-    # print("local_values = \n", local_values)
 
     global_results = _aggregate_results(local_results, global_values, comm, num_procs)
     global_output_dict = _create_global_output(local_output_dict, local_num_cases,
@@ -682,12 +731,9 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
         np.savetxt(results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
 
         # Save the data of output dictionary
-        pp_output_fpath_txt = os.path.join(dirname, "output_dict_{0}samples.txt".format(num_samples))
-        with open(pp_output_fpath_txt, "w") as log_file:
-            pprint.pprint(global_output_dict, log_file)
-
-        _write_output_to_h5(global_output_dict)
+        _write_outputs(global_output_dict, txt_options="keys")
         # _read_output_h5("./output/output_dict.h5")
+
 
         if interpolate_nan_outputs:
             global_results_clean = _interp_nan_values(global_values, global_results)
