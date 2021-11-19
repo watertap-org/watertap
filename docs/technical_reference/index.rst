@@ -12,6 +12,7 @@ Technical Reference
    unit_models/index
    property_models/index
    tools/index
+   core/index
 
 .. toctree::
     :maxdepth: 1
