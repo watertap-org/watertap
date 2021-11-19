@@ -1,3 +1,5 @@
+.. _how_to_use_edb:
+
 How to use the Electrolyte Database (EDB)
 =========================================
 
