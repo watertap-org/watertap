@@ -49,17 +49,18 @@ solver = get_solver(options={'bound_push':1e-8})
 # # -----------------------------------------------------------------------------
 
 @pytest.mark.unit
-def test_config():
+def test_config_no_mass_transfer():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={'dynamic': False})
     m.fs.properties = props.SeawaterParameterBlock()
     m.fs.unit = PressureExchanger(default={'property_package': m.fs.properties})
 
     # check unit config arguments
-    assert len(m.fs.unit.config) == 7
+    assert len(m.fs.unit.config) == 8
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
+
     assert m.fs.unit.config.material_balance_type == \
            MaterialBalanceType.useDefault
     assert m.fs.unit.config.energy_balance_type == \
@@ -68,17 +69,35 @@ def test_config():
            MomentumBalanceType.pressureTotal
     assert m.fs.unit.config.property_package is m.fs.properties
 
+    # verify no mass transfer
+    assert not m.fs.unit.config.has_mass_transfer
+
+
 @pytest.mark.unit
-def test_build():
+def test_config_mass_transfer():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={'dynamic': False})
     m.fs.properties = props.SeawaterParameterBlock()
-    m.fs.unit = PressureExchanger(default={'property_package': m.fs.properties})
+    m.fs.unit = PressureExchanger(default={'property_package': m.fs.properties,
+    'has_mass_transfer':True})
+
+    # check mass_transfer is added
+    assert m.fs.unit.config.has_mass_transfer
+
+
+@pytest.mark.unit
+def test_build(has_mass_transfer=False,extra_variables=0,extra_constraint=0):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={'dynamic': False})
+    m.fs.properties = props.SeawaterParameterBlock()
+    m.fs.unit = PressureExchanger(default={'property_package': m.fs.properties,
+    'has_mass_transfer':has_mass_transfer})
 
     # test ports and state variables
     port_lst = ['low_pressure_inlet', 'low_pressure_outlet',
                 'high_pressure_inlet', 'high_pressure_outlet']
     port_vars_lst = ['flow_mass_phase_comp', 'pressure', 'temperature']
+
     for port_str in port_lst:
         assert hasattr(m.fs.unit, port_str)
         port = getattr(m.fs.unit, port_str)
@@ -92,9 +111,19 @@ def test_build():
     # test unit variables
     assert hasattr(m.fs.unit, 'efficiency_pressure_exchanger')
     assert isinstance(m.fs.unit.efficiency_pressure_exchanger, Var)
-
+    if not has_mass_transfer:
+        assert not hasattr(m.fs.unit, 'solvent_transfer_fraction')
+        assert not hasattr(m.fs.unit, 'solute_transfer_fraction')
+    else:
+        assert isinstance(m.fs.unit.solute_transfer_fraction, Var)
+        assert isinstance(m.fs.unit.solvent_transfer_fraction, Var)
     # test unit constraints
     unit_cons_lst = ['eq_pressure_transfer', 'eq_equal_flow_vol', 'eq_equal_low_pressure']
+
+    if has_mass_transfer:
+        unit_cons_lst.append('eq_mass_transfer_from_high_pressure_side')
+        unit_cons_lst.append('eq_mass_transfer_term')
+
     for c in unit_cons_lst:
         assert hasattr(m.fs.unit, c)
         con = getattr(m.fs.unit, c)
@@ -103,8 +132,9 @@ def test_build():
     # test control volumes, only terms directly used by pressure exchanger
     cv_list = ['low_pressure_side', 'high_pressure_side']
     cv_var_lst = ['deltaP']
+    if has_mass_transfer:
+        cv_var_lst.append('mass_transfer_term')
     cv_con_lst = ['eq_isothermal_temperature']
-    cv_exp_lst = ['work']
     for cv_str in cv_list:
         assert hasattr(m.fs.unit, cv_str)
         cv = getattr(m.fs.unit, cv_str)
@@ -114,9 +144,6 @@ def test_build():
         for cv_con_str in cv_con_lst:
             cv_con = getattr(cv, cv_con_str)
             assert isinstance(cv_con, Constraint)
-        for cv_exp_str in cv_exp_lst:
-            cv_exp = getattr(cv, cv_exp_str)
-            assert isinstance(cv_exp, Expression)
 
     # test state blocks, only terms directly used by pressure exchanger
     cv_stateblock_lst = ['properties_in', 'properties_out']
@@ -137,9 +164,20 @@ def test_build():
                 assert isinstance(sb_exp, Expression)
 
     # test statistics
-    assert number_variables(m.fs.unit) == 39
-    assert number_total_constraints(m.fs.unit) == 31
+    assert number_variables(m.fs.unit) == 39 + extra_variables
+    assert number_total_constraints(m.fs.unit) == 31 + extra_constraint
     assert number_unused_variables(m.fs.unit) == 0
+
+
+@pytest.mark.unit
+def test_build_with_mass_transfer():
+    # 2 variables for mass tranfer fractions (solute,solvent)
+    # 4 extra vars for mass_transfer_term on LP and HP side, and solute, solvent
+    # 4 extra constraints for mass transsfer from HP side (soute, solvent)
+    # + constraint for equal solute and solvent transfer
+    test_build(has_mass_transfer=True,\
+    extra_variables=6,\
+    extra_constraint=4)
 
 class TestPressureExchanger():
     @pytest.fixture(scope="class")
@@ -242,7 +280,7 @@ class TestPressureExchanger():
         assert (pytest.approx(4.654e6, rel=1e-3) ==
                 value(m.fs.unit.low_pressure_side.deltaP[0]))
         assert (pytest.approx(4.654e3, rel=1e-3) ==
-                value(m.fs.unit.low_pressure_side.work[0]))
+                value(m.fs.unit.low_pressure_side.energy_transfer[0]))
         assert (pytest.approx(-4.899e6, rel=1e-3) ==
                 value(m.fs.unit.high_pressure_side.deltaP[0]))
         assert (pytest.approx(-4.899e3, rel=1e-3) ==
