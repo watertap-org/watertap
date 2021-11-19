@@ -933,9 +933,6 @@ class Reaction(DataWrapper):
                 why = "not enough" if len(order) < len(ro) else "too many"
                 raise ValueError(f"{why.title()} components provided for new reaction "
                                  f"order, with 'require_all' flag set to True")
-            if len(order) > len(ro):
-                raise ValueError("Too many components provided for new reaction "
-                                 "order, with 'require_all' flag set to True")
             if set(order.keys()) != set(ro.keys()):
                 raise ValueError("Components in new reaction order do not match "
                                  "components in reaction, with 'require_all' flag "
