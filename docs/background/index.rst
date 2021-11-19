@@ -5,3 +5,4 @@ Background
    :maxdepth: 1
 
    what_is_watertap
+   why_use_edb
