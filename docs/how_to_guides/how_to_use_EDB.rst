@@ -30,4 +30,13 @@ stored at ``./docs/schemas/edb_component_schema.html``. Supporting files will al
     edb schema -t component -f ./docs/schemas/edb_component_schema.html -o html-js
 
 
+.. currentmodule:: watertap.edb
+
+EDB APIs
+^^^^^^^^
+
+**How to set the reaction order.** By default the reaction order in a :class:`~data_model.Reaction`
+object simply matches the stoichiometry. To set different values, call
+:meth:`~data_model.Reaction.set_reaction`
+
 .. |arrw| unicode:: U+27A2 .. nice looking arrow glyph
