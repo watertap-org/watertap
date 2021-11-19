@@ -861,7 +861,7 @@ class Reaction(DataWrapper):
     merge_keys = ("equilibrium_reactions", "rate_reactions", "inherent_reactions")
 
     NAMES = ReactionNames
-    PHASES = ('Liq', 'Vap')
+    PHASES = ('Liq', 'Vap', 'Sol')
 
     def __init__(self, data: Dict, validation=True):
         """Constructor.
@@ -877,21 +877,6 @@ class Reaction(DataWrapper):
     def reaction_type(self):
         return self.data.get("type", "")
 
-    # # TODO: This function behavior is WRONG!!!
-    #
-    #           Reaction order must be set by individual species
-    #           and not by whether or not a species is on one side
-    #           or another. Reaction orders can also be different
-    #           for different phases.
-    #
-    #           What we should do is pass a dictionary to this
-    #           function that gives the order value for each
-    #           corresponding phase-species pair in the reaction
-    #
-    #           i.e., order = {('Liq','H2O'): 0, ('Sol','CaCO3'): -1, ('Vap','CO2'): 1}
-    #
-    #           The above example should be valid if those phase-species pairs are
-    #           valid within the reaction stoichiometry
     def set_reaction_order(
         self,
         phase: str,
@@ -917,7 +902,14 @@ class Reaction(DataWrapper):
         if bool(order) is False:
             raise ValueError("No components provided for reaction order")
         # schema validation should guarantee this structure
-        ro = self.data[self.NAMES.param][self.NAMES.reaction_order]
+
+        # If 'reaction_order' key does not exist, then create one as a copy of stoich
+        if self.NAMES.reaction_order in self.data[self.NAMES.param]:
+            ro = self.data[self.NAMES.param][self.NAMES.reaction_order]
+        else:
+            self.data[self.NAMES.param][self.NAMES.reaction_order] = self.data[self.NAMES.stoich].copy()
+            ro = self.data[self.NAMES.param][self.NAMES.reaction_order]
+
         if phase not in self.PHASES:
             raise ValueError(f"Invalid phase '{phase}'. Valid values: "
                              f"{', '.join(self.PHASES)}")
@@ -937,14 +929,10 @@ class Reaction(DataWrapper):
                 raise ValueError("Components in new reaction order do not match "
                                  "components in reaction, with 'require_all' flag "
                                  "set to True")
-        # Replace one component at a time, raising a KeyError if unknown component and
-        # a ValueError if the reaction order is a negative number.
+        # Replace one component at a time, raising a KeyError if unknown component
         # Ensure that the instance is not modified if there are any errors.
         ro_tmp = ro.copy()
         for key, value in order.items():
-            if value < 0:
-                raise ValueError(f"Component '{key}' reaction order is less than "
-                                 f"zero: {value}")
             if key not in ro:
                 raise KeyError(f"Component '{key}' not found in reaction")
             ro_tmp[key] = value

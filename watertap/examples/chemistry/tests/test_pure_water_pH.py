@@ -659,9 +659,8 @@ class TestPureWaterEDB(TestPureWater):
             components.append(c.name)
         # Add the reactions
         for r in edb.get_reactions(component_names=components):
-            #Removed call to function 'set_reaction_order' because that function behavior is incorrect
-            #r.set_reaction_order('Liq', ('H2O',), ('H_+', 'OH_-'))
-            r._data["parameter_data"]["reaction_order"] = {'Liq': {'H2O': 0, 'H_+': 1, 'OH_-': 1}}
+            # Set a custom reaction order
+            r.set_reaction_order("Liq", {"H2O": 0, "H_+": 1, "OH_-": 1})
             r._data["type"] = "inherent"
             base.add(r)
         return base.idaes_config
@@ -675,9 +674,7 @@ class TestPureWaterEDB(TestPureWater):
         # Add the reactions
         for r in edb.get_reactions(component_names=components):
             # Set a custom reaction order
-            #Removed call to function 'set_reaction_order' because that function behavior is incorrect
-            #r.set_reaction_order('Liq', ('H2O',), ('H_+', 'OH_-'))
-            r._data["parameter_data"]["reaction_order"] = {'Liq': {'H2O': 0, 'H_+': 1, 'OH_-': 1}}
+            r.set_reaction_order("Liq", {"H2O": 0, "H_+": 1, "OH_-": 1})
             # Need to remove this to avoid errors when using the generated config
             r.remove_parameter("ds_rxn_ref")
             base.add(r)
