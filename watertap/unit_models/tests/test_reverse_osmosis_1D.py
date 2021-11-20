@@ -339,7 +339,7 @@ class TestReverseOsmosis():
 
     @pytest.mark.component
     def test_initialize(self, RO_frame):
-        initialization_tester(RO_frame)
+        initialization_tester(RO_frame, fail_on_warning=True)
 
     @pytest.mark.component
     def test_var_scaling(self, RO_frame):
@@ -506,7 +506,7 @@ class TestReverseOsmosis():
         assert len(unscaled_constraint_list) == 0
 
         # Test initialization
-        initialization_tester(m)
+        initialization_tester(m, fail_on_warning=True)
 
         # Test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
@@ -656,7 +656,7 @@ class TestReverseOsmosis():
         assert len(unscaled_constraint_list) == 0
 
         # Test initialization
-        initialization_tester(m)
+        initialization_tester(m, fail_on_warning=True)
         #Check for poorly scaled variables
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
@@ -802,7 +802,7 @@ class TestReverseOsmosis():
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
         assert len(unscaled_constraint_list) == 0
 
-        initialization_tester(m)
+        initialization_tester(m, fail_on_warning=True)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
@@ -962,7 +962,7 @@ class TestReverseOsmosis():
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
         assert len(unscaled_constraint_list) == 0
 
-        initialization_tester(m)
+        initialization_tester(m, fail_on_warning=True)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
@@ -1127,7 +1127,7 @@ class TestReverseOsmosis():
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
         assert len(unscaled_constraint_list) == 0
 
-        initialization_tester(m)
+        initialization_tester(m, fail_on_warning=True)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
@@ -1292,7 +1292,7 @@ class TestReverseOsmosis():
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
         assert len(unscaled_constraint_list) == 0
 
-        initialization_tester(m)
+        initialization_tester(m, fail_on_warning=True)
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
         assert badly_scaled_var_lst == []
