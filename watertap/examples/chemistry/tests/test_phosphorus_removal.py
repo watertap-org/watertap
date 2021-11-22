@@ -1031,13 +1031,10 @@ class TestSimplePhosphorusRemoval:
                     inherent_equilibrium_constraint[i[1]], 0.1)
 
         # Next, try adding scaling for species
-        min = 1e-6
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
-            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
-                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
-            else:
-                scale = min
+            # maximum scaling is 1e+4
+            scale = max(1e-3, model.fs.unit.inlet.mole_frac_comp[0, i[1]].value)
             iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
             iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
             iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
@@ -1055,13 +1052,6 @@ class TestSimplePhosphorusRemoval:
     def test_initialize_solver(self, simple_phosphorus_removal):
         model = simple_phosphorus_removal
 
-        # These might be unnecessary now with new changes in IDAES
-        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
-        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0.001)
-        model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1.001)
-
-        solver.options["bound_push"] = 1e-5
-        solver.options["mu_init"] = 1e-3
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(model) == 0
 
@@ -1104,7 +1094,7 @@ class TestSimplePhosphorusRemoval:
         phos_precip = value(model.fs.unit.outlet.mole_frac_comp[0, "FePO4(s)"])*total_molar_density
         phos_precip = phos_precip*95000
 
-        assert pytest.approx(0.3233578, rel=1e-4) == total_phosphorus
+        assert pytest.approx(0.3233578, rel=1e-3) == total_phosphorus
         assert pytest.approx(9.3786543, rel=1e-4) == phos_precip
 
         total_iron = value(model.fs.unit.outlet.mole_frac_comp[0, "Fe_3+"])*total_molar_density
@@ -1120,5 +1110,5 @@ class TestSimplePhosphorusRemoval:
         iron_precip = value(model.fs.unit.outlet.mole_frac_comp[0, "FePO4(s)"])*total_molar_density
         iron_precip = iron_precip*55800
 
-        assert pytest.approx(0.0151280, rel=1e-4) == total_iron
+        assert pytest.approx(0.0151280, rel=1e-3) == total_iron
         assert pytest.approx(5.5087254, rel=1e-4) == iron_precip
