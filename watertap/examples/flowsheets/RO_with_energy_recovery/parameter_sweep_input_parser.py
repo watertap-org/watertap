@@ -1,8 +1,26 @@
+from pyomo.environ import value
+
 from watertap.tools.parameter_sweep import (LinearSample,
                                             UniformSample,
                                             NormalSample,
-                                            LatinHypercubeSample)
+                                            LatinHypercubeSample,
+                                            _read_output_h5)
 import yaml
+import warnings
+import numpy as np
+
+def _yaml_to_dict(yaml_filename):
+    try:
+        # Open the yaml file and import the contents into a
+        # dictionary with the same structure
+        with open(yaml_filename) as fp:
+            input_dict = yaml.load(fp, Loader = yaml.FullLoader)
+
+    except:
+        raise ValueError('Could not open file %s' % (yaml_filename))
+
+    return input_dict
+
 
 def _split_pyomo_path(model_value):
     """ Splits a dot-separated string into a valid model path
@@ -103,6 +121,9 @@ def _return_child_property(m, healed_path):
                     if index_type is float:
                         key = float(found_key)
 
+                    elif index_type is str:
+                        key = found_key
+
                     elif index_type is tuple:
                         key = []
                         found_key = found_key.split(',')
@@ -170,13 +191,7 @@ def get_sweep_params_from_yaml(m, yaml_filename):
 
     """
 
-    try:
-        # Open the yaml file and import the contents into a 
-        # dictionary with the same structure
-        with open(yaml_filename) as fp:
-            input_dict = yaml.load(fp, Loader = yaml.FullLoader)
-    except:
-        raise ValueError('Could not open file %s' % (yaml_filename))
+    input_dict = _yaml_to_dict(yaml_filename)
 
     sweep_params = {}
 
@@ -190,12 +205,6 @@ def get_sweep_params_from_yaml(m, yaml_filename):
         # Follow the attribute path to the correct nested
         # property, should work with indexing!
         child = _return_child_property(m, path)
-
-        # TODO: assign the value for child based on theq
-        # value stored in the dictionary
-        # e.g., child.fix(values['fixed_val'])
-        # or,   child.set_value(values['fixed_val'])
-
 
         if values['type'] == 'LinearSample':
             sweep_params[param] = LinearSample(child,
@@ -219,3 +228,46 @@ def get_sweep_params_from_yaml(m, yaml_filename):
                                                        values['upper_limit'])
 
     return sweep_params
+
+
+
+def set_defaults_from_yaml(m, yaml_filename, verbose=False):
+
+    input_dict = _yaml_to_dict(yaml_filename)
+
+    fail_ct = 0
+
+    for key, default_value in input_dict.items():
+        # Split the dot-separated object path into a list of
+        # separate objects and attributes
+        path = _split_pyomo_path(key)
+
+        # Follow the attribute path to the correct nested
+        # property, should work with indexing!
+        child = _return_child_property(m, path)
+
+        current_value = value(child)
+
+        if verbose:
+            print('Property: %s' % (key))
+            print('New Value: %e, Old Value: %e' % (default_value, current_value))
+
+        if child.is_variable_type():
+            child.fix(default_value)
+            failed_to_set_value = False
+
+        elif child.is_parameter_type():
+            child.set_value(default_value)
+            failed_to_set_value = False
+
+        else:
+            failed_to_set_value = True
+
+        fail_ct += failed_to_set_value
+
+        if failed_to_set_value:
+            warning_msg = 'WARNING: Could not set value of parameter %s' % (key)
+            warnings.warn(warning_msg)
+
+    print('Set %d of %d options to default values (%d failures, see warnings)' %
+        (len(input_dict)-fail_ct, len(input_dict), fail_ct))
