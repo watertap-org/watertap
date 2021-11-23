@@ -520,7 +520,8 @@ def _read_output_h5(filepath):
 
 def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
         optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
-        mpi_comm=None, debugging_data_dir=None, interpolate_nan_outputs=False, num_samples=None, seed=None):
+        reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
+        interpolate_nan_outputs=False, num_samples=None, seed=None):
 
     '''
     This function offers a general way to perform repeated optimizations
@@ -569,6 +570,11 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
                                          ``model``, e.g.,
                                          ``reinitialize_function(model, **reinitialize_kwargs)``.
                                          The default uses no kwargs.
+
+        reinitialize_before_sweep (optional): Boolean option to reinitialize the flow sheet model before
+                                              every parameter sweep realization. The default is False.
+                                              Note the parameter sweep model will try to reinitialize the
+                                              solve regardless of the option if the run fails.
 
         mpi_comm (optional) : User-provided MPI communicator for parallel parameter sweeps.
                               If None COMM_WORLD will be used. The default is sufficient for most
@@ -633,6 +639,10 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
     for k in range(local_num_cases):
         # Update the model values with a single combination from the parameter space
         _update_model_values(model, sweep_params, local_values[k, :])
+
+        if reinitialize_before_sweep:
+            # Forced reinitialization of the flowsheet if enabled
+            reinitialize_function(model, **reinitialize_kwargs)
 
         try:
             # Simulate/optimize with this set of parameters
