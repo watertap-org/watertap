@@ -5,6 +5,30 @@ from watertap.tools.parameter_sweep import (LinearSample,
 import yaml
 
 def _split_pyomo_path(model_value):
+    """ Splits a dot-separated string into a valid model path
+
+    This function attempts to split a dot-separated string
+    into a list where each element is a valid string representation of
+    a flowsheet object or attribute.  Since floating point values are
+    valid indices for indexed parameters, the function joins together
+    instances in which the decimal point separates a floating point index.
+
+    For example::
+
+         a = _split_pyomo_path("m.fs.RO.flux_mass_io_phase_comp[0.0,'in','Liq','H2O']")
+         a = ["m", "fs", "RO", "flux_mass_io_phase_comp[0.0,'in','Liq','H2O']"]
+         len(a) >> 4
+
+    Args:
+        model_value (str):
+            A single dot-separated string representing the path to the model attribute.
+
+    Returns:
+        healed_path (list(str)):
+            A list of strings where each element is a valid model object/attribute
+
+    """
+
     path = model_value.split('.')
 
     healed_path = [path[0]]
@@ -113,6 +137,39 @@ def _return_child_property(m, healed_path):
 
 
 def get_sweep_params_from_yaml(m, yaml_filename):
+    """ Creates a dictionary of swept model parameters specified via yaml file
+
+    This function creates a dictionary of the items to vary during a parameter
+    sweep where the variable name, model attribute, and sweeping domain are
+    specified in a YAML file.  The YAML file should have the following format::
+
+        A_comp:
+            type: NormalSample
+            model_value: m.fs.RO.A_comp
+            mean: 4.0e-12
+            std: 0.5e-12
+
+    where the top-level keyword can be any short, easily understood identifier
+    for the parameter.  ``type`` must be one of ``LinearSample``, ``UniformSample``,
+    ``NormalSample``, or ``LatinHypercubeSample``.  ``model_value`` must be a valid
+    dot-sperated string path to the object attribute (in this case, an RO attribute
+    on the flowsheet ``m``) that you wish to vary.  The remaining arguments are
+    dependent on the sample type selected.  For ``NormalSample`` information about
+    the mean and standard deviation is required.  Consult the ``parameter_sweep``
+    help for more information on the different sample classes.
+
+    Args:
+        m (pyomo model):
+            The flowsheet containing the model to deploy with the parameter sweep
+            tool.
+        yaml_filename (str): The path to the yaml file.
+
+    Returns:
+        sweep_params (dict):
+            A dictionary containing different instances of parameter sweep samples
+
+    """
+
     try:
         # Open the yaml file and import the contents into a 
         # dictionary with the same structure
