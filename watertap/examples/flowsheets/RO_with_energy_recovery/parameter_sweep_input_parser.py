@@ -10,6 +10,19 @@ import warnings
 import numpy as np
 
 def _yaml_to_dict(yaml_filename):
+    """ Reads and stores a yaml file as a dictionary
+
+    Args:
+        yaml_filename (str):
+            The filename of the yaml file to read.
+
+    Returns:
+        input_dict (dict):
+            The result of reading the yaml file and translating
+            its structure into a dictionary.
+
+    """
+
     try:
         # Open the yaml file and import the contents into a
         # dictionary with the same structure
@@ -183,7 +196,8 @@ def get_sweep_params_from_yaml(m, yaml_filename):
         m (pyomo model):
             The flowsheet containing the model to deploy with the parameter sweep
             tool.
-        yaml_filename (str): The path to the yaml file.
+        yaml_filename (str):
+            The path to the yaml file.
 
     Returns:
         sweep_params (dict):
@@ -232,6 +246,27 @@ def get_sweep_params_from_yaml(m, yaml_filename):
 
 
 def set_defaults_from_yaml(m, yaml_filename, verbose=False):
+    """ Sets default model values using values stored in a yaml file
+
+    This function reads a yaml file with the structure::
+
+        m.fs.path.to.attribute_1: 0.123
+        m.fs.path.to.attribute_2: 1.234
+        ...
+
+    and uses the (key, default_value) pairs to set default values
+    for the attributes in model ``m``.
+
+    Args:
+        m (pyomo model):
+            The flowsheet containing the model to set default values for
+        yaml_filename (str):
+            The path to the yaml file.
+
+    Returns:
+        N/A
+
+    """
 
     input_dict = _yaml_to_dict(yaml_filename)
 
