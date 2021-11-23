@@ -20,6 +20,57 @@ def _split_pyomo_path(model_value):
 
     return healed_path
 
+
+def _return_child_property(m, healed_path):
+    """ This function returns the attribute from a dot-separated object path
+
+    This function returns an innermost nested attribute specified by a
+    dot-separated object path.  For example::
+
+        m.fs.RO.feed_side.properties_interface_out[0.0].conc_mass_phase_comp['Liq','H2O']
+
+    returns the ``conc_mass_phase_comp['Liq','H2O']`` attribute.  In instances
+    where the attribute or parameter is indexed, an attempt is made to extract
+    the correct index to continue the descent along the corrent branch.
+
+    Args:
+        m (flowsheet):
+            The Pyomo model containing the flowsheet.
+
+        healed_path (list(str)):
+            The healed path along the dot-separated specification, string attribute
+            names stored as a list.
+
+    Returns:
+        child (Pyomo attribute):
+            The innermost attribute from the specified path, e.g., ``m.fs.[...].return_attribute``.
+
+    """
+
+    for k, attr in enumerate(healed_path):
+        if k == 0:
+            parent = m
+
+        else:
+            if '[' in attr:
+                # This is an indexed parameter, we need
+                # to temporarily remove the index.
+                attr = attr.split('[')[0]
+
+            try:
+                child = getattr(parent, attr)
+            except:
+                raise ValueError('Could not acccess attribute %s' % (attr))
+
+            if child.is_indexed():
+                key = next(child.keys())
+                child = child[key]
+
+            parent = child
+
+    return child
+
+
 def get_sweep_params_from_yaml(m, yaml_filename):
     try:
         # Open the yaml file and import the contents into a 
@@ -35,14 +86,7 @@ def get_sweep_params_from_yaml(m, yaml_filename):
 
         path = _split_pyomo_path(values['model_value'])
 
-        for k, pp in enumerate(path):
-            if k == 0:
-                child = m
-            else:
-                try:
-                    child = getattr(child, pp)
-                except:
-                    raise ValueError('Could not acccess attribute %s' % (pp))
+        child = _return_child_property(m, path)
 
         if values['type'] == 'LinearSample':
             sweep_params[param] = LinearSample(child,
