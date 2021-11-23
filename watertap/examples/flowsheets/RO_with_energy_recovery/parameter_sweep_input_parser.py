@@ -55,7 +55,11 @@ def _return_child_property(m, healed_path):
             if '[' in attr:
                 # This is an indexed parameter, we need
                 # to temporarily remove the index.
-                attr = attr.split('[')[0]
+                s = attr.split('[')
+                attr = s[0]
+                found_key = s[1].split(']')[0]
+                found_key = found_key.replace('\'', '')
+                found_key = found_key.replace('\"', '')
 
             try:
                 child = getattr(parent, attr)
@@ -63,10 +67,31 @@ def _return_child_property(m, healed_path):
                 raise ValueError('Could not acccess attribute %s' % (attr))
 
             if child.is_indexed():
-                key = next(child.keys())
+                index_type = type(next(child.keys()))
+
+                # Convert the found key to the expected type
+                if index_type is float:
+                    key = float(found_key)
+
+                elif index_type is tuple:
+                    key = []
+                    found_key = found_key.split(',')
+
+                    for idx in found_key:
+                        try:
+                            key.append(float(idx))
+                        except:
+                            key.append(idx)
+
+                    key = tuple(key)
+
+                else:
+                    print('Child indexing type %s not recognized.' % (index_type))
+
                 child = child[key]
 
             parent = child
+            print(child.name)
 
     return child
 
@@ -84,9 +109,20 @@ def get_sweep_params_from_yaml(m, yaml_filename):
 
     for param, values in input_dict.items():
 
+
+        # Split the dot-separated object path into a list of
+        # separate objects and attributes
         path = _split_pyomo_path(values['model_value'])
 
+        # Follow the attribute path to the correct nested
+        # property, should work with indexing!
         child = _return_child_property(m, path)
+
+        # TODO: assign the value for child based on the
+        # value stored in the dictionary
+        # e.g., child.fix(values['fixed_val'])
+        # or,   child.set_value(values['fixed_val'])
+
 
         if values['type'] == 'LinearSample':
             sweep_params[param] = LinearSample(child,
