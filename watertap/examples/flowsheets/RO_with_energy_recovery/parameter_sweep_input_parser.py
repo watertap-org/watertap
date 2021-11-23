@@ -52,6 +52,8 @@ def _return_child_property(m, healed_path):
             parent = m
 
         else:
+            found_key = None
+
             if '[' in attr:
                 # This is an indexed parameter, we need
                 # to temporarily remove the index.
@@ -67,31 +69,45 @@ def _return_child_property(m, healed_path):
                 raise ValueError('Could not acccess attribute %s' % (attr))
 
             if child.is_indexed():
-                index_type = type(next(child.keys()))
+                if found_key is not None:
+                    # We have an indexed child, and a bracketed key specifier.
+                    # Convert the found key to the expected type and use it for child[key].
 
-                # Convert the found key to the expected type
-                if index_type is float:
-                    key = float(found_key)
+                    index_type = type(next(child.keys()))
 
-                elif index_type is tuple:
-                    key = []
-                    found_key = found_key.split(',')
+                    # Convert the found key to the expected type
+                    if index_type is float:
+                        key = float(found_key)
 
-                    for idx in found_key:
-                        try:
-                            key.append(float(idx))
-                        except:
-                            key.append(idx)
+                    elif index_type is tuple:
+                        key = []
+                        found_key = found_key.split(',')
 
-                    key = tuple(key)
+                        for idx in found_key:
+                            try:
+                                key.append(float(idx))
+                            except:
+                                key.append(idx)
+
+                        key = tuple(key)
+
+                    else:
+                        print('Child indexing type %s not recognized.' % (index_type))
 
                 else:
-                    print('Child indexing type %s not recognized.' % (index_type))
+                    # We have an indexed child, but no bracketed index was found in the string specifier.
+                    # Iterate through the child's keys and raise an error if >1 options exist.
+                    # If only one option exists, use it as the key to descend further along the path. 
+                    ct = 0
+                    for key in child.keys():
+                        ct += 1
+
+                    if ct > 1:
+                        raise ValueError('No bracketed index found for %s path specifier but multiple options exist.')
 
                 child = child[key]
 
             parent = child
-            print(child.name)
 
     return child
 
@@ -118,7 +134,7 @@ def get_sweep_params_from_yaml(m, yaml_filename):
         # property, should work with indexing!
         child = _return_child_property(m, path)
 
-        # TODO: assign the value for child based on the
+        # TODO: assign the value for child based on theq
         # value stored in the dictionary
         # e.g., child.fix(values['fixed_val'])
         # or,   child.set_value(values['fixed_val'])
