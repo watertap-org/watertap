@@ -1,10 +1,65 @@
+from pyomo.environ import value
+
 from watertap.tools.parameter_sweep import (LinearSample,
                                             UniformSample,
                                             NormalSample,
-                                            LatinHypercubeSample)
+                                            LatinHypercubeSample,
+                                            _read_output_h5)
 import yaml
+import warnings
+import numpy as np
+
+def _yaml_to_dict(yaml_filename):
+    """ Reads and stores a yaml file as a dictionary
+
+    Args:
+        yaml_filename (str):
+            The filename of the yaml file to read.
+
+    Returns:
+        input_dict (dict):
+            The result of reading the yaml file and translating
+            its structure into a dictionary.
+
+    """
+
+    try:
+        # Open the yaml file and import the contents into a
+        # dictionary with the same structure
+        with open(yaml_filename) as fp:
+            input_dict = yaml.load(fp, Loader = yaml.FullLoader)
+
+    except:
+        raise ValueError('Could not open file %s' % (yaml_filename))
+
+    return input_dict
+
 
 def _split_pyomo_path(model_value):
+    """ Splits a dot-separated string into a valid model path
+
+    This function attempts to split a dot-separated string
+    into a list where each element is a valid string representation of
+    a flowsheet object or attribute.  Since floating point values are
+    valid indices for indexed parameters, the function joins together
+    instances in which the decimal point separates a floating point index.
+
+    For example::
+
+         a = _split_pyomo_path("m.fs.RO.flux_mass_io_phase_comp[0.0,'in','Liq','H2O']")
+         a = ["m", "fs", "RO", "flux_mass_io_phase_comp[0.0,'in','Liq','H2O']"]
+         len(a) >> 4
+
+    Args:
+        model_value (str):
+            A single dot-separated string representing the path to the model attribute.
+
+    Returns:
+        healed_path (list(str)):
+            A list of strings where each element is a valid model object/attribute
+
+    """
+
     path = model_value.split('.')
 
     healed_path = [path[0]]
@@ -79,6 +134,9 @@ def _return_child_property(m, healed_path):
                     if index_type is float:
                         key = float(found_key)
 
+                    elif index_type is str:
+                        key = found_key
+
                     elif index_type is tuple:
                         key = []
                         found_key = found_key.split(',')
@@ -113,13 +171,41 @@ def _return_child_property(m, healed_path):
 
 
 def get_sweep_params_from_yaml(m, yaml_filename):
-    try:
-        # Open the yaml file and import the contents into a 
-        # dictionary with the same structure
-        with open(yaml_filename) as fp:
-            input_dict = yaml.load(fp, Loader = yaml.FullLoader)
-    except:
-        raise ValueError('Could not open file %s' % (yaml_filename))
+    """ Creates a dictionary of swept model parameters specified via yaml file
+
+    This function creates a dictionary of the items to vary during a parameter
+    sweep where the variable name, model attribute, and sweeping domain are
+    specified in a YAML file.  The YAML file should have the following format::
+
+        A_comp:
+            type: NormalSample
+            model_value: m.fs.RO.A_comp
+            mean: 4.0e-12
+            std: 0.5e-12
+
+    where the top-level keyword can be any short, easily understood identifier
+    for the parameter.  ``type`` must be one of ``LinearSample``, ``UniformSample``,
+    ``NormalSample``, or ``LatinHypercubeSample``.  ``model_value`` must be a valid
+    dot-sperated string path to the object attribute (in this case, an RO attribute
+    on the flowsheet ``m``) that you wish to vary.  The remaining arguments are
+    dependent on the sample type selected.  For ``NormalSample`` information about
+    the mean and standard deviation is required.  Consult the ``parameter_sweep``
+    help for more information on the different sample classes.
+
+    Args:
+        m (pyomo model):
+            The flowsheet containing the model to deploy with the parameter sweep
+            tool.
+        yaml_filename (str):
+            The path to the yaml file.
+
+    Returns:
+        sweep_params (dict):
+            A dictionary containing different instances of parameter sweep samples
+
+    """
+
+    input_dict = _yaml_to_dict(yaml_filename)
 
     sweep_params = {}
 
@@ -133,12 +219,6 @@ def get_sweep_params_from_yaml(m, yaml_filename):
         # Follow the attribute path to the correct nested
         # property, should work with indexing!
         child = _return_child_property(m, path)
-
-        # TODO: assign the value for child based on theq
-        # value stored in the dictionary
-        # e.g., child.fix(values['fixed_val'])
-        # or,   child.set_value(values['fixed_val'])
-
 
         if values['type'] == 'LinearSample':
             sweep_params[param] = LinearSample(child,
@@ -162,3 +242,67 @@ def get_sweep_params_from_yaml(m, yaml_filename):
                                                        values['upper_limit'])
 
     return sweep_params
+
+
+
+def set_defaults_from_yaml(m, yaml_filename, verbose=False):
+    """ Sets default model values using values stored in a yaml file
+
+    This function reads a yaml file with the structure::
+
+        m.fs.path.to.attribute_1: 0.123
+        m.fs.path.to.attribute_2: 1.234
+        ...
+
+    and uses the (key, default_value) pairs to set default values
+    for the attributes in model ``m``.
+
+    Args:
+        m (pyomo model):
+            The flowsheet containing the model to set default values for
+        yaml_filename (str):
+            The path to the yaml file.
+
+    Returns:
+        N/A
+
+    """
+
+    input_dict = _yaml_to_dict(yaml_filename)
+
+    fail_ct = 0
+
+    for key, default_value in input_dict.items():
+        # Split the dot-separated object path into a list of
+        # separate objects and attributes
+        path = _split_pyomo_path(key)
+
+        # Follow the attribute path to the correct nested
+        # property, should work with indexing!
+        child = _return_child_property(m, path)
+
+        current_value = value(child)
+
+        if verbose:
+            print('Property: %s' % (key))
+            print('New Value: %e, Old Value: %e' % (default_value, current_value))
+
+        if child.is_variable_type():
+            child.fix(default_value)
+            failed_to_set_value = False
+
+        elif child.is_parameter_type():
+            child.set_value(default_value)
+            failed_to_set_value = False
+
+        else:
+            failed_to_set_value = True
+
+        fail_ct += failed_to_set_value
+
+        if failed_to_set_value:
+            warning_msg = 'WARNING: Could not set value of parameter %s' % (key)
+            warnings.warn(warning_msg)
+
+    print('Set %d of %d options to default values (%d failures, see warnings)' %
+        (len(input_dict)-fail_ct, len(input_dict), fail_ct))

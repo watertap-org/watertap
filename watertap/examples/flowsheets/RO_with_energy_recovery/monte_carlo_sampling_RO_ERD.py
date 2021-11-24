@@ -20,7 +20,8 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
     solve,
     optimize)
 
-from watertap.examples.flowsheets.RO_with_energy_recovery.parameter_sweep_input_parser import get_sweep_params_from_yaml
+from watertap.examples.flowsheets.RO_with_energy_recovery.parameter_sweep_input_parser import (get_sweep_params_from_yaml,
+    set_defaults_from_yaml)
 
 def get_sweep_params(m, use_LHS=False):
     sweep_params = {}
@@ -38,7 +39,7 @@ def get_sweep_params(m, use_LHS=False):
 
     return sweep_params
 
-def run_parameter_sweep(results_file, seed=None, use_LHS=False, read_from_file=False):
+def run_parameter_sweep(results_file, seed=None, use_LHS=False, read_from_file=True):
 
     # Set up the solver
     solver = get_solver(options={'bound_push': 1e-8})
@@ -50,6 +51,8 @@ def run_parameter_sweep(results_file, seed=None, use_LHS=False, read_from_file=F
 
     # Simulate once outside the parameter sweep to ensure everything is appropriately initialized
     solve(m, solver=solver)
+
+    set_defaults_from_yaml(m, 'output_dict.yaml')
 
     # Define the sampling type and ranges for three different variables
     if read_from_file:
