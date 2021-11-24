@@ -178,7 +178,6 @@ def test_build_with_mass_transfer():
     # 2 variables for mass tranfer fractions (solute,solvent)
     # 4 extra vars for mass_transfer_term on LP and HP side, and solute, solvent
     # 4 extra constraints for mass transsfer from HP side (soute, solvent)
-    # + constraint for equal solute and solvent transfer
     test_build(has_mass_transfer=True,\
     extra_variables=6,\
     extra_constraint=4)
