@@ -145,13 +145,13 @@ def set_optimization_components(m, system_recovery, **kwargs):
     # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
     m.fs.RO.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
     if kwargs['RO_type'] == '0D':
-        m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(m.fs.RO.A_comp[0, 'H2O']
-                                                                      * m.fs.RO.dens_solvent
-                                                                      * m.fs.RO.NDPmin)
+        m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(value(m.fs.RO.A_comp[0, 'H2O']
+                                                                            * m.fs.RO.dens_solvent
+                                                                            * m.fs.RO.NDPmin))
     elif kwargs['RO_type'] == '1D':
-        m.fs.RO.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'].setlb(m.fs.RO.A_comp[0, 'H2O']
-                                                               * m.fs.RO.dens_solvent
-                                                               * m.fs.RO.NDPmin)
+        m.fs.RO.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'].setlb(value(m.fs.RO.A_comp[0, 'H2O']
+                                                                     * m.fs.RO.dens_solvent
+                                                                     * m.fs.RO.NDPmin))
 
     # saturation index
     m.fs.max_saturation_index = Param(initialize=1.0, mutable=True)
