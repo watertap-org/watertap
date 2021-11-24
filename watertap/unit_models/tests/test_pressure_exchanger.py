@@ -296,11 +296,20 @@ class TestPressureExchanger():
         assert (pytest.approx(-4.899e3, rel=1e-3) ==
                 value(m.fs.unit.high_pressure_side.work[0]))
 
-        #testing mass transfer
+        #testing solvent transfer
         assert (pytest.approx(-0.9767*0.1, rel=1e-3) ==
                 value(m.fs.unit.high_pressure_side.mass_transfer_term[0,'Liq','H2O']))
+        assert (pytest.approx(0.9767-0.9767*0.1, rel=1e-3) ==
+                value(m.fs.unit.high_pressure_outlet.flow_mass_phase_comp[0,'Liq','H2O']))
+        assert (pytest.approx(0.9877+0.9767*0.1, rel=1e-3) ==
+                value(m.fs.unit.low_pressure_outlet.flow_mass_phase_comp[0,'Liq','H2O']))
+        #testing solute transfer
         assert (pytest.approx(-7.352e-2*0.05, rel=1e-3) ==
                 value(m.fs.unit.high_pressure_side.mass_transfer_term[0,'Liq','TDS']))
+        assert (pytest.approx(7.352e-2-7.352e-2*0.05, rel=1e-3) ==
+                value(m.fs.unit.high_pressure_outlet.flow_mass_phase_comp[0,'Liq','TDS']))
+        assert (pytest.approx(3.582e-2+7.352e-2*0.05, rel=1e-3) ==
+                value(m.fs.unit.low_pressure_outlet.flow_mass_phase_comp[0,'Liq','TDS']))
 
     @pytest.mark.unit
     def test_report(self, unit_frame):
