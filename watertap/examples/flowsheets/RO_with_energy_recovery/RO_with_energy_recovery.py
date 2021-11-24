@@ -257,7 +257,9 @@ def solve(blk, solver=None, tee=False):
     if solver is None:
         solver = get_solver(options={'bound_push': 1e-8})
     results = solver.solve(blk, tee=tee)
-    assert_optimal_termination(results)
+    assert_optimal_termination(results) # TODO: Come up with a better way of handling this exception.
+
+    return results
 
 
 def initialize_system(m, solver=None):
@@ -349,7 +351,8 @@ def optimize_set_up(m):
 
 def optimize(m, solver=None):
     # --solve---
-    solve(m, solver=solver)
+    results = solve(m, solver=solver)
+    return results
 
 def display_system(m):
     print('---system metrics---')
