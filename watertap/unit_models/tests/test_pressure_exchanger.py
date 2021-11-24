@@ -135,6 +135,7 @@ def test_build(has_mass_transfer=False,extra_variables=0,extra_constraint=0):
     if has_mass_transfer:
         cv_var_lst.append('mass_transfer_term')
     cv_con_lst = ['eq_isothermal_temperature']
+    cv_exp_lst = ['work']
     for cv_str in cv_list:
         assert hasattr(m.fs.unit, cv_str)
         cv = getattr(m.fs.unit, cv_str)
@@ -144,6 +145,9 @@ def test_build(has_mass_transfer=False,extra_variables=0,extra_constraint=0):
         for cv_con_str in cv_con_lst:
             cv_con = getattr(cv, cv_con_str)
             assert isinstance(cv_con, Constraint)
+        for cv_exp_str in cv_exp_lst:
+            cv_exp = getattr(cv, cv_exp_str)
+            assert isinstance(cv_exp, Expression)
 
     # test state blocks, only terms directly used by pressure exchanger
     cv_stateblock_lst = ['properties_in', 'properties_out']
@@ -185,7 +189,8 @@ class TestPressureExchanger():
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={'dynamic': False})
         m.fs.properties = props.SeawaterParameterBlock()
-        m.fs.unit = PressureExchanger(default={'property_package': m.fs.properties})
+        m.fs.unit = PressureExchanger(default={'property_package': m.fs.properties,\
+         'has_mass_transfer': True})
 
         # Specify inlet conditions
         temperature = 25 + 273.15
@@ -194,6 +199,11 @@ class TestPressureExchanger():
         lowP_pressure = 101325
         highP_mass_frac_TDS = 0.07
         highP_pressure = 50e5
+
+        solute_transfer=0.05
+        solvent_transfer=0.1
+        m.fs.unit.solute_transfer_fraction.fix(solute_transfer)
+        m.fs.unit.solvent_transfer_fraction.fix(solvent_transfer)
 
         m.fs.unit.low_pressure_side.properties_in[0].flow_vol_phase['Liq'].fix(flow_vol)
         m.fs.unit.low_pressure_side.properties_in[0].mass_frac_phase_comp['Liq', 'TDS'].fix(lowP_mass_frac_TDS)
@@ -280,11 +290,17 @@ class TestPressureExchanger():
         assert (pytest.approx(4.654e6, rel=1e-3) ==
                 value(m.fs.unit.low_pressure_side.deltaP[0]))
         assert (pytest.approx(4.654e3, rel=1e-3) ==
-                value(m.fs.unit.low_pressure_side.energy_transfer[0]))
+                value(m.fs.unit.low_pressure_side.work[0]))
         assert (pytest.approx(-4.899e6, rel=1e-3) ==
                 value(m.fs.unit.high_pressure_side.deltaP[0]))
         assert (pytest.approx(-4.899e3, rel=1e-3) ==
                 value(m.fs.unit.high_pressure_side.work[0]))
+
+        #testing mass transfer
+        assert (pytest.approx(-0.9767*0.1, rel=1e-3) ==
+                value(m.fs.unit.high_pressure_side.mass_transfer_term[0,'Liq','H2O']))
+        assert (pytest.approx(-7.352e-2*0.05, rel=1e-3) ==
+                value(m.fs.unit.high_pressure_side.mass_transfer_term[0,'Liq','TDS']))
 
     @pytest.mark.unit
     def test_report(self, unit_frame):
