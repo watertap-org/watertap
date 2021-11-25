@@ -112,11 +112,10 @@ def test_build(has_mass_transfer=False,extra_variables=0,extra_constraint=0):
     assert hasattr(m.fs.unit, 'efficiency_pressure_exchanger')
     assert isinstance(m.fs.unit.efficiency_pressure_exchanger, Var)
     if not has_mass_transfer:
-        assert not hasattr(m.fs.unit, 'solvent_transfer_fraction')
-        assert not hasattr(m.fs.unit, 'solute_transfer_fraction')
+        assert not hasattr(m.fs.unit, 'solution_transfer_fraction')
     else:
-        assert isinstance(m.fs.unit.solute_transfer_fraction, Var)
-        assert isinstance(m.fs.unit.solvent_transfer_fraction, Var)
+        assert isinstance(m.fs.unit.solution_transfer_fraction, Var)
+
     # test unit constraints
     unit_cons_lst = ['eq_pressure_transfer', 'eq_equal_flow_vol', 'eq_equal_low_pressure']
 
@@ -201,8 +200,8 @@ class TestPressureExchanger():
 
         solute_transfer=0.05
         solvent_transfer=0.1
-        m.fs.unit.solute_transfer_fraction.fix(solute_transfer)
-        m.fs.unit.solvent_transfer_fraction.fix(solvent_transfer)
+        m.fs.unit.solution_transfer_fraction[0,'H2O'].fix(solvent_transfer)
+        m.fs.unit.solution_transfer_fraction[0,'TDS'].fix(solute_transfer)
 
         m.fs.unit.low_pressure_side.properties_in[0].flow_vol_phase['Liq'].fix(flow_vol)
         m.fs.unit.low_pressure_side.properties_in[0].mass_frac_phase_comp['Liq', 'TDS'].fix(lowP_mass_frac_TDS)
