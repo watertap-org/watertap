@@ -122,7 +122,7 @@ class PressureExchangerData(UnitModelBlockData):
         default=False,
         domain=In([True, False]),
         description="Defines if there is mass trnasport between high and low pressure sides",
-        doc="""Indicates whether pressure exchange solute and solvent mass transfer terms should be constructed or not.
+        doc="""Indicates whether pressure exchanger solution mass transfer terms should be constructed or not.
     **default** - False."""))
     def build(self):
         super().build()
