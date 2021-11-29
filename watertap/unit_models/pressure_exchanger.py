@@ -121,7 +121,7 @@ class PressureExchangerData(UnitModelBlockData):
     CONFIG.declare("has_mass_transfer", ConfigValue(
         default=False,
         domain=In([True, False]),
-        description="Defines if there is mass trnasport between high and low pressure sides",
+        description="Defines if there is mass transport between high- and low-pressure sides",
         doc="""Indicates whether pressure exchanger solution mass transfer terms should be constructed or not.
     **default** - False."""))
     def build(self):
