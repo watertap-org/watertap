@@ -174,7 +174,7 @@ def test_build(has_mass_transfer=False,extra_variables=0,extra_constraint=0):
 
 @pytest.mark.unit
 def test_build_with_mass_transfer():
-    # 2 variables for mass tranfer fractions (solute,solvent)
+    # 2 variables for mass transfer fractions (solute,solvent)
     # 4 extra vars for mass_transfer_term on LP and HP side, and solute, solvent
     # 4 extra constraints for mass transsfer from HP side (soute, solvent)
     test_build(has_mass_transfer=True,\
