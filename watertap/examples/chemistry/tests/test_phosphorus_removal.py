@@ -1040,7 +1040,6 @@ class TestSimplePhosphorusRemoval:
             iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
             iscale.constraint_scaling_transform(
                 model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
         iscale.calculate_scaling_factors(model.fs.unit)
 
@@ -1094,7 +1093,7 @@ class TestSimplePhosphorusRemoval:
         phos_precip = value(model.fs.unit.outlet.mole_frac_comp[0, "FePO4(s)"])*total_molar_density
         phos_precip = phos_precip*95000
 
-        assert pytest.approx(0.3233578, rel=1e-3) == total_phosphorus
+        assert pytest.approx(0.3233578, rel=1e-4) == total_phosphorus
         assert pytest.approx(9.3786543, rel=1e-4) == phos_precip
 
         total_iron = value(model.fs.unit.outlet.mole_frac_comp[0, "Fe_3+"])*total_molar_density
@@ -1110,5 +1109,5 @@ class TestSimplePhosphorusRemoval:
         iron_precip = value(model.fs.unit.outlet.mole_frac_comp[0, "FePO4(s)"])*total_molar_density
         iron_precip = iron_precip*55800
 
-        assert pytest.approx(0.0151280, rel=1e-3) == total_iron
+        assert pytest.approx(0.0151280, rel=1e-4) == total_iron
         assert pytest.approx(5.5087254, rel=1e-4) == iron_precip
