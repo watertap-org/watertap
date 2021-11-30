@@ -17,7 +17,7 @@ Usage
   from idaes.core import declare_process_block_class
 
   # Import base class
-  from watertap.core.zero_order_unit import SITOBaseData
+  from watertap.core.zero_order_sito import SITOBaseData
 
   # Create derived class with decorator
   @declare_process_block_class("DerivedModel")
