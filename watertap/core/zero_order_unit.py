@@ -34,9 +34,9 @@ class SITOBaseData(UnitModelBlockData):
 
     This class is intended to be used for creating derived model classes and
     cannot be instantiated by itself. When creating derived classes,
-    developers must set the '_has_deltaP_outlet` and `_has_deltaP_waste`
+    developers must set the '_has_deltaP_treated` and `_has_deltaP_byproduct`
     attributes on the model before calling `super().build()`. These attributes
-    determine whether the deltaP terms for the outlet and waste streams are
+    determine whether the deltaP terms for the treated and byproduct streams are
     added to the model and included in the pressure constraints.
     """
 
@@ -71,14 +71,14 @@ class SITOBaseData(UnitModelBlockData):
         super().build()
 
         # Check that derived class has implemented flags for pressure change
-        if not hasattr(self, "_has_deltaP_outlet"):
+        if not hasattr(self, "_has_deltaP_treated"):
             raise NotImplementedError(
                 f"{self.name} derived class has not been implemented "
-                f"_has_deltaP_outlet.")
-        if not hasattr(self, "_has_deltaP_waste"):
+                f"_has_deltaP_treated.")
+        if not hasattr(self, "_has_deltaP_byproduct"):
             raise NotImplementedError(
                 f"{self.name} derived class has not been implemented "
-                f"_has_deltaP_waste.")
+                f"_has_deltaP_byproduct.")
 
         # Check that property package meets requirements
         if self.config.property_package.phase_list != ["Liq"]:
@@ -121,19 +121,25 @@ class SITOBaseData(UnitModelBlockData):
         tmp_dict_2 = dict(**tmp_dict)
         tmp_dict_2["defined_state"] = False
 
-        self.properties_out = self.config.property_package.build_state_block(
-            self.flowsheet().time,
-            doc="Material properties at outlet",
-            default=tmp_dict_2)
-        self.properties_waste = self.config.property_package.build_state_block(
-            self.flowsheet().time,
-            doc="Material properties at waste outlet",
-            default=tmp_dict_2)
+        self.properties_treated = \
+            self.config.property_package.build_state_block(
+                self.flowsheet().time,
+                doc="Material properties of treated water",
+                default=tmp_dict_2)
+        self.properties_byproduct = \
+            self.config.property_package.build_state_block(
+                self.flowsheet().time,
+                doc="Material properties of byproduct stream",
+                default=tmp_dict_2)
 
         # Create Ports
         self.add_port("inlet", self.properties_in, doc="Inlet port")
-        self.add_port("outlet", self.properties_out, doc="Outlet port")
-        self.add_port("waste", self.properties_waste, doc="Waste port")
+        self.add_port("treated",
+                      self.properties_treated,
+                      doc="Treated water outlet port")
+        self.add_port("byproduct",
+                      self.properties_byproduct,
+                      doc="Byproduct outlet port")
 
         # Add performance variables
         self.recovery_vol = Var(
@@ -142,7 +148,7 @@ class SITOBaseData(UnitModelBlockData):
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             bounds=(1E-8, 1.0000001),
-            doc='Volumetric recovery fraction of water in the outlet stream')
+            doc='Volumetric recovery fraction of water in the treated stream')
         self.removal_mass_solute = Var(
             self.flowsheet().time,
             self.config.property_package.solute_set,
@@ -151,32 +157,32 @@ class SITOBaseData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc='Solute removal fraction on a mass basis')
 
-        if self._has_deltaP_outlet:
-            self.deltaP_outlet = Var(
+        if self._has_deltaP_treated:
+            self.deltaP_treated = Var(
                 self.flowsheet().time,
                 initialize=0,
                 units=units_meta('pressure'),
-                doc='Pressure change between inlet and outlet')
-        if self._has_deltaP_waste:
-            self.deltaP_waste = Var(
+                doc='Pressure change between inlet and treated outlet')
+        if self._has_deltaP_byproduct:
+            self.deltaP_byproduct = Var(
                 self.flowsheet().time,
                 initialize=0,
                 units=units_meta('pressure'),
-                doc='Pressure change between inlet and waste')
+                doc='Pressure change between inlet and byproduct outlet')
 
         # Add performance constraints
         # Water recovery
         @self.Constraint(self.flowsheet().time, doc='Water recovery equation')
         def water_recovery_equation(b, t):
             return (b.recovery_vol[t] * b.properties_in[t].flow_vol ==
-                    b.properties_out[t].flow_vol)
+                    b.properties_treated[t].flow_vol)
 
         # Flow balance
         @self.Constraint(self.flowsheet().time, doc='Overall flow balance')
         def flow_balance(b, t):
             return (b.properties_in[t].flow_vol ==
-                    b.properties_out[t].flow_vol +
-                    b.properties_waste[t].flow_vol)
+                    b.properties_treated[t].flow_vol +
+                    b.properties_byproduct[t].flow_vol)
 
         # Solute removal
         @self.Constraint(self.flowsheet().time,
@@ -186,48 +192,52 @@ class SITOBaseData(UnitModelBlockData):
             return (b.removal_mass_solute[t, j] *
                     b.properties_in[t].conc_mass_comp[j] ==
                     (1 - b.recovery_vol[t]) *
-                    b.properties_waste[t].conc_mass_comp[j])
+                    b.properties_byproduct[t].conc_mass_comp[j])
 
-        # Solute concentration at outlet
+        # Solute concentration of treated stream
         @self.Constraint(self.flowsheet().time,
                          self.config.property_package.solute_set,
-                         doc='Constraint for solute concentration at outlet')
-        def solute_outlet_equation(b, t, j):
+                         doc='Constraint for solute concentration in treated '
+                         'stream.')
+        def solute_treated_equation(b, t, j):
             return ((1 - b.removal_mass_solute[t, j]) *
                     b.properties_in[t].conc_mass_comp[j] ==
-                    b.recovery_vol[t]*b.properties_out[t].conc_mass_comp[j])
+                    b.recovery_vol[t] *
+                    b.properties_treated[t].conc_mass_comp[j])
 
         # Pressure drop
-        @self.Constraint(self.flowsheet().time, doc='Outlet pressure equation')
-        def outlet_pressure_constraint(b, t):
-            if self._has_deltaP_outlet:
-                dp = b.deltaP_outlet[t]
+        @self.Constraint(self.flowsheet().time,
+                         doc='Treated stream pressure equation')
+        def treated_pressure_constraint(b, t):
+            if self._has_deltaP_treated:
+                dp = b.deltaP_treated[t]
             else:
                 dp = 0
             return (b.properties_in[t].pressure + dp ==
-                    b.properties_out[t].pressure)
+                    b.properties_treated[t].pressure)
 
-        @self.Constraint(self.flowsheet().time, doc='Waste pressure equation')
-        def waste_pressure_constraint(b, t):
-            if self._has_deltaP_waste:
-                dp = b.deltaP_waste[t]
+        @self.Constraint(self.flowsheet().time,
+                         doc='Byproduct stream pressure equation')
+        def byproduct_pressure_constraint(b, t):
+            if self._has_deltaP_byproduct:
+                dp = b.deltaP_byproduct[t]
             else:
                 dp = 0
             return (b.properties_in[t].pressure + dp ==
-                    b.properties_waste[t].pressure)
+                    b.properties_byproduct[t].pressure)
 
         # Temperature equality
         @self.Constraint(self.flowsheet().time,
-                         doc='Outlet temperature equality')
-        def outlet_temperature_equality(b, t):
+                         doc='Treated stream temperature equality')
+        def treated_temperature_equality(b, t):
             return (b.properties_in[t].temperature ==
-                    b.properties_out[t].temperature)
+                    b.properties_treated[t].temperature)
 
         @self.Constraint(self.flowsheet().time,
-                         doc='Waste temperature equality')
-        def waste_temperature_equality(b, t):
+                         doc='Byproduct stream temperature equality')
+        def byproduct_temperature_equality(b, t):
             return (b.properties_in[t].temperature ==
-                    b.properties_waste[t].temperature)
+                    b.properties_byproduct[t].temperature)
 
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
@@ -282,14 +292,14 @@ class SITOBaseData(UnitModelBlockData):
             state_args=state_args,
             hold_state=True
         )
-        blk.properties_out.initialize(
+        blk.properties_treated.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args,
             hold_state=False
         )
-        blk.properties_waste.initialize(
+        blk.properties_byproduct.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -342,37 +352,37 @@ class SITOBaseData(UnitModelBlockData):
                     warning=True,
                     hint=" for solute removal"))
 
-        for (t, j), v in self.solute_outlet_equation.items():
+        for (t, j), v in self.solute_treated_equation.items():
             iscale.constraint_scaling_transform(
                 v, iscale.get_scaling_factor(
                     self.properties_in[t].flow_mass_comp[j],
                     default=1,
                     warning=False))  # would just be a duplicate of above
 
-        for t, v in self.outlet_pressure_constraint.items():
+        for t, v in self.treated_pressure_constraint.items():
             iscale.constraint_scaling_transform(
                 v, iscale.get_scaling_factor(
                     self.properties_in[t].pressure,
                     default=1e-5,
                     warning=True,
-                    hint=" for outlet pressure constraint"))
+                    hint=" for treated pressure constraint"))
 
-        for t, v in self.waste_pressure_constraint.items():
+        for t, v in self.byproduct_pressure_constraint.items():
             iscale.constraint_scaling_transform(
                 v, iscale.get_scaling_factor(
                     self.properties_in[t].pressure,
                     default=1e-5,
                     warning=False))  # would just be a duplicate of above
 
-        for t, v in self.outlet_temperature_equality.items():
+        for t, v in self.treated_temperature_equality.items():
             iscale.constraint_scaling_transform(
                 v, iscale.get_scaling_factor(
                     self.properties_in[t].temperature,
                     default=1e-2,
                     warning=True,
-                    hint=" for outlet temperature equality"))
+                    hint=" for treated temperature equality"))
 
-        for t, v in self.waste_temperature_equality.items():
+        for t, v in self.byproduct_temperature_equality.items():
             iscale.constraint_scaling_transform(
                 v, iscale.get_scaling_factor(
                     self.properties_in[t].temperature,
