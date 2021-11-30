@@ -1033,13 +1033,14 @@ class TestSimplePhosphorusRemoval:
         # Next, try adding scaling for species
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
-            # maximum scaling is 1e+4
-            scale = max(1e-3, model.fs.unit.inlet.mole_frac_comp[0, i[1]].value)
+            # maximum scaling is 1e+5
+            scale = max(1e-4, model.fs.unit.inlet.mole_frac_comp[0, i[1]].value)
             iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
             iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
             iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
             iscale.constraint_scaling_transform(
                 model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
         iscale.calculate_scaling_factors(model.fs.unit)
 
@@ -1050,6 +1051,10 @@ class TestSimplePhosphorusRemoval:
     @pytest.mark.component
     def test_initialize_solver(self, simple_phosphorus_removal):
         model = simple_phosphorus_removal
+
+        # if the initialization is sufficiently good, it may be
+        # a better idea to do this manually before the solve
+        iscale.constraint_autoscale_large_jac(model.fs.unit)
 
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(model) == 0
