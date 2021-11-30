@@ -31,7 +31,7 @@ from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
 
-from watertap.core.zero_order_unit import SITOBaseData
+from watertap.core.zero_order_sito import SITOBaseData
 from watertap.core.zero_order_properties import \
     WaterParameterBlock, WaterStateBlock
 
