@@ -36,8 +36,8 @@ class SITOBaseData(UnitModelBlockData):
     cannot be instantiated by itself. When creating derived classes,
     developers must set the '_has_deltaP_treated` and `_has_deltaP_byproduct`
     attributes on the model before calling `super().build()`. These attributes
-    determine whether the deltaP terms for the treated and byproduct streams are
-    added to the model and included in the pressure constraints.
+    determine whether the deltaP terms for the treated and byproduct streams
+    are added to the model and included in the pressure constraints.
     """
 
     CONFIG = ConfigBlock()
