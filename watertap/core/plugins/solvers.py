@@ -27,6 +27,10 @@ _log = getLogger("watertap.core")
         doc="The Ipopt NLP solver, with user-based variable and automatic Jacobian constraint scaling")
 class IpoptWaterTAP(IPOPT):
 
+    def __init__(self, **kwds):
+        kwds["name"] = "ipopt-watertap"
+        super().__init__(**kwds)
+
     def _presolve(self, *args, **kwds):
         if len(args) > 1 or len(args) == 0:
             raise TypeError(f"IpoptWaterTAP.solve takes 1 positional argument but {len(args)} were given")
