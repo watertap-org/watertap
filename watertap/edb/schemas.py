@@ -91,7 +91,7 @@ schemas = {
             },
             "phase_equilibrium_form": {
                 "type": "object",
-                "properties": {"Vap": {"type": "string"}, "Liq": {"type": "string"}},
+                "properties": {phase: {"type": "string"} for phase in Reaction.PHASES},
             },
             "parameter_data": {
                 "type": "object",
@@ -125,13 +125,20 @@ schemas = {
                 "description": "Type of reaction",
             },
             "name": {"type": "string", "description": "Name of reaction"},
+            "compnents": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "description": "Name of a component of the reaction",
+                },
+            },
             Reaction.NAMES.stoich: {
                 "type": "object",
                 "description": "Moles for the given species in the reaction. "
                 "Grouped by phase.",
                 "properties": {
-                    "Liq": {"$ref": "#/definitions/stoichiometry"},
-                    "Vap": {"$ref": "#/definitions/stoichiometry"},
+                    phase: {"$ref": "#/definitions/stoichiometry"}
+                    for phase in Reaction.PHASES
                 },
                 "additionalProperties": False,
             },
@@ -139,22 +146,25 @@ schemas = {
             Reaction.NAMES.eq_const: {"type": "string"},
             Reaction.NAMES.eq_form: {"type": "string"},
             Reaction.NAMES.conc_form: {"type": "string"},
-            "parameter_data": {
+            Reaction.NAMES.param: {
                 "type": "object",
                 "patternProperties": {
                     "_ref": {"$ref": "#/definitions/parameter"},
-                    "reaction_order": {
+                },
+                "properties": {
+                    Reaction.NAMES.reaction_order: {
                         "type": "object",
                         "properties": {
-                            "Liq": {"$ref": "#/definitions/reaction_order"},
-                            "Vap": {"$ref": "#/definitions/reaction_order"},
+                            phase: {"$ref": "#/definitions/stoichiometry"}
+                            for phase in Reaction.PHASES
                         },
                         "additionalProperties": False,
                     },
                 },
+                "required": [Reaction.NAMES.reaction_order],
             },
         },
-        "required": ["name", "parameter_data", "type"],
+        "required": ["name", "parameter_data", "type", "components"],
         "definitions": {
             "parameter": _parameter_def,
             "stoichiometry": {

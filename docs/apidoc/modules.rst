@@ -1,5 +1,5 @@
 watertap
-==========
+========
 
 .. toctree::
    :maxdepth: 4
