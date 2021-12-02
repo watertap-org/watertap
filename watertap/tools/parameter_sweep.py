@@ -40,7 +40,7 @@ class TerminationConditionMapping:
         This class contains a one-to-one mapping between the string value and an
         equivalent integer for gathering the solve status across all MPI ranks.
         The mapping string values are obtained from TerminationCondition within
-        solver.py in pyomo. 
+        solver.py in pyomo.
         '''
         self.mapping = {# UNKNOWN
                         'unknown' : 0,                     # An unitialized value
@@ -612,6 +612,189 @@ def _numeric_termination_condition_translation(termination_condition):
 
 # ================================================================
 
+def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_function, optimize_kwargs,
+        reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep, comm):
+
+    # Initialize space to hold results
+    local_num_cases = np.shape(local_values)[0]
+    local_results = np.zeros((local_num_cases, len(outputs)))
+    local_solve_status_list = []
+    fail_counter = 0
+
+    output_variable_type = "unfixed"
+    # Create the output skeleton for storing detailed data
+    local_output_dict = _create_local_output_skeleton(model, sweep_params, local_num_cases,
+                                                      variable_type=output_variable_type)
+
+    # ================================================================
+    # Run all optimization cases
+    # ================================================================
+
+    for k in range(local_num_cases):
+        # Update the model values with a single combination from the parameter space
+        _update_model_values(model, sweep_params, local_values[k, :])
+        if reinitialize_before_sweep:
+            assert reinitialize_function is not None
+            # Forced reinitialization of the flowsheet if enabled
+            reinitialize_function(model, **reinitialize_kwargs)
+
+        try:
+            # Simulate/optimize with this set of parameter
+            results = optimize_function(model, **optimize_kwargs)
+            # print("status = ", results.solver.termination_condition.name)
+            pyo.assert_optimal_termination(results)
+
+        except:
+            # If the run is infeasible, report nan
+            local_results[k, :] = np.nan
+            previous_run_failed = True
+
+        else:
+            # If the simulation suceeds, report stats
+            local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
+            previous_run_failed = False
+            # store the values of the optimization
+            _update_local_output_dict(model, sweep_params, k, local_values[k, :],
+                local_output_dict, output_variable_type)
+
+        # If the initial attempt failed and additional conditions are met, try
+        # to reinitialize and resolve.
+        if reinitialize_before_sweep == False and previous_run_failed and (reinitialize_function is not None):
+            try:
+                reinitialize_function(model, **reinitialize_kwargs)
+                results = optimize_function(model, **optimize_kwargs)
+            except:
+                # do we raise an error here?
+                # nothing to do
+                fail_counter += 1
+            else:
+                local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
+        elif reinitialize_before_sweep and previous_run_failed:
+            fail_counter += 1
+
+        local_solve_status_list.append(results.solver.termination_condition.name) # We will store status as a string
+
+    local_output_dict["solve_status"] = local_solve_status_list
+
+    return local_results, local_output_dict, fail_counter
+
+# ================================================================
+
+def _aggregate_local_results(global_values, local_results, local_output_dict,
+        num_samples, local_num_cases, fail_counter, comm):
+
+    num_procs = comm.Get_size()
+    global_results = _aggregate_results(local_results, global_values, comm, num_procs)
+    global_output_dict = _create_global_output(local_output_dict, local_num_cases,
+                                               num_samples, comm)
+
+    return global_results, global_output_dict
+
+# ================================================================
+
+def _save_results(sweep_params, outputs, global_values, global_results, global_output_dict,
+        results_file, debugging_data_dir, comm, interpolate_nan_outputs):
+
+    rank = comm.Get_rank()
+    num_procs = comm.Get_size()
+
+    # Make a directory for saved outputs
+    if rank == 0:
+        if results_file is not None:
+            dirname = os.path.dirname(results_file)
+            if dirname != '':
+                os.makedirs(dirname, exist_ok=True)
+
+        if debugging_data_dir is not None:
+            os.makedirs(debugging_data_dir, exist_ok=True)
+
+    if num_procs > 1:
+        comm.Barrier()
+
+    # Write a header string for all data files
+    data_header = ','.join(itertools.chain(sweep_params,outputs))
+
+    if debugging_data_dir is not None:
+        # Create the local filename and data
+        fname = os.path.join(debugging_data_dir, f'local_results_{rank:03}.csv')
+        local_save_data = np.hstack((local_values, local_results))
+
+        # Save the local data
+        np.savetxt(fname, local_save_data, header=data_header, delimiter=', ', fmt='%.6e')
+
+    # Create the global filename and data
+    global_save_data = np.hstack((global_values, global_results))
+
+    if rank == 0 and results_file is not None:
+        # Save the global data
+        np.savetxt(results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
+
+        # Save the data of output dictionary
+        _write_outputs(global_output_dict, txt_options="keys")
+        # _read_output_h5("./output/output_dict.h5")
+
+
+        if interpolate_nan_outputs:
+            global_results_clean = _interp_nan_values(global_values, global_results)
+            global_save_data_clean = np.hstack((global_values, global_results_clean))
+
+            head, tail = os.path.split(results_file)
+
+            if head == '':
+                interp_file = 'interpolated_%s' % (tail)
+            else:
+                interp_file = '%s/interpolated_%s' % (head, tail)
+
+            np.savetxt(interp_file, global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
+
+    return global_save_data
+
+
+# ================================================================
+
+def parameter_sweep2(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
+        optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
+        reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
+        interpolate_nan_outputs=False, num_samples=None, seed=None):
+
+    # Get an MPI communicator
+    comm, rank, num_procs = _init_mpi(mpi_comm)
+
+    # Convert sweep_params to LinearSamples
+    sweep_params, sampling_type = _process_sweep_params(sweep_params)
+
+    # Set the seed before sampling
+    np.random.seed(seed)
+
+    # Enumerate/Sample the parameter space
+    global_values = _build_combinations(sweep_params, sampling_type, num_samples, comm, rank, num_procs)
+
+    # divide the workload between processors
+    local_values = _divide_combinations(global_values, rank, num_procs)
+    local_num_cases = np.shape(local_values)[0]
+
+    # Set up optimize_kwargs
+    if optimize_kwargs is None:
+        optimize_kwargs = dict()
+    # Set up reinitialize_kwargs
+    if reinitialize_kwargs is None:
+        reinitialize_kwargs = dict()
+
+    # Do the Loop
+    local_results, local_output_dict, fail_counter = _do_param_sweep(model, sweep_params, outputs, local_values,
+        optimize_function, optimize_kwargs, reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep, comm)
+
+    # Aggregate results on Master
+    global_results, global_output_dict = _aggregate_local_results(global_values, local_results, local_output_dict,
+            num_samples, local_num_cases, fail_counter, comm)
+
+    # Save to file
+    global_save_data = _save_results(sweep_params, outputs, global_values, global_results, global_output_dict,
+        results_file, debugging_data_dir, comm, interpolate_nan_outputs)
+
+    return global_save_data
+
+# ================================================================
 
 def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
         optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
@@ -745,7 +928,8 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
             # Simulate/optimize with this set of parameters
             results = optimize_function(model, **optimize_kwargs)
             local_solve_status_list.append(results.solver.termination_condition.name) # We will store status as a string
-            # print("status = ", type(results.solver.termination_condition.name))
+            print("status = ", results.solver.termination_condition.name)
+            pyo.assert_optimal_termination(results)
 
             # store the values of the optimization
             _update_local_output_dict(model, sweep_params, k, local_values[k, :],
@@ -755,6 +939,8 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
             # If the run is infeasible, report nan
             local_results[k, :] = np.nan
             previous_run_failed = True
+
+            fail_counter += 1
 
         else:
             # If the simulation suceeds, report stats
