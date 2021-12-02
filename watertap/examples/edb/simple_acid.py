@@ -140,7 +140,7 @@ def get_components_and_add_to_idaes_config(db, base_obj, comp_list):
 #
 # TODO:  NOTE: The 'get_reactions' object does NOT have the correct behavior
 def add_equilibrium_reactions_to_react_base(db, react_base_obj, comp_list):
-    react_obj = db.get_reactions(component_names=comp_list, any_components=False)
+    react_obj = db.get_reactions(component_names=comp_list)
     for r in react_obj:
         print("Found reaction: " + str(r.name))
         r._data["type"] = "equilibrium"

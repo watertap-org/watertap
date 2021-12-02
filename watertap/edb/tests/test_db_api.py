@@ -157,8 +157,8 @@ data2 = data1.copy() + [{
 @pytest.mark.unit
 @pytest.mark.parametrize("components,data,any_num,all_num", [
     (["H2O", "CO2", "H2CO3"], data1, 2, 1),
-    (["H2O", "H +", "OH -", "H2CO3", "HCO3 -"], data2, 3, 0),
-    (["H2CO3"], data2, 2, 2),
+    (["H2O", "H +", "OH -", "H2CO3", "HCO3 -"], data2, 3, 2),
+    (["H2CO3"], data2, 2, 0),
 ])
 def test_get_reactions(mockdb, components, data, any_num, all_num):
     insert_reactions(mockdb._db.reaction, data)
