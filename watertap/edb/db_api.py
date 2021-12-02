@@ -310,12 +310,27 @@ class ElectrolyteDB:
 
     @staticmethod
     def _process_component(rec):
-        rec["elements"] = get_elements([rec["name"]])
+        rec["elements"] = get_elements_from_components([rec["name"]])
         return rec
 
     @staticmethod
     def _process_reaction(rec):
-        rec["reactant_elements"] = get_elements(rec["components"])
+        rec["reactant_elements"] = get_elements_from_components(
+            rec.get("components", []))
+
+        # If reaction_order is not present in parameters, create it by
+        # copying the stoichiometry (or empty for each phase, if stoich. not found)
+        if Reaction.NAMES.param in rec:
+            param = rec[Reaction.NAMES.param]
+            if Reaction.NAMES.reaction_order not in param:
+                if Reaction.NAMES.stoich in rec:
+                    param[Reaction.NAMES.reaction_order] = rec[
+                        Reaction.NAMES.stoich].copy()
+                else:
+                    param[Reaction.NAMES.reaction_order] = {
+                        phase: {} for phase in Reaction.PHASES
+                    }
+
         return rec
 
     @staticmethod
@@ -341,7 +356,8 @@ class ElectrolyteDB:
         # print(f"{s} -> {symbols}{charge}")
         return f"{symbols}{charge}"
 
-def get_elements(components):
+
+def get_elements_from_components(components):
     elements = set()
     for comp in components:
         # print(f"Get elements from: {comp}")
