@@ -35,14 +35,8 @@
 
     (4) Invoke the 'ElectrolyteDB' object to connect to the database
 
-        [# WARNING: A feature of 'ElectrolyteDB' appears to be missing from WaterTAP main
-        that is preventing us from following the tutorial verbatim.]
-
 
     (5) Grab a 'base' for a configuration dictionary, and place it into a class object
-
-        [# WARNING: There are a number of ways to do this. Behavior is inconsistent with
-        some of the tutorials currently.]
 
 
     (6) Get the chemcial species/components for a simulation case. There are a number of ways
@@ -57,7 +51,7 @@
         That 'base' can be either a 'thermo' base (as in this example) or a 'reaction'
         base. IF you are adding reactions to a 'thermo' base, they should be added
         as 'inherent' reactions. IF you are adding reactions to a 'reaction' base,
-        they should be added as 'equilibrium' (or other) reactions. 
+        they should be added as 'equilibrium' (or other) reactions.
 
 """
 
@@ -71,18 +65,19 @@ from watertap.edb import ElectrolyteDB
 #   check the connection by calling the 'can_connect' function
 #   and passing the 'host' and 'port' as args. If no 'host' or
 #   'port' are given, then it uses the defaults.
-def connect_to_edb():
+def connect_to_edb(test_invalid_host=False):
     print("connecting to " + str(ElectrolyteDB.DEFAULT_URL))
     db = ElectrolyteDB()
     connected = db.can_connect()
 
-    # Supposedly, we should be able to pass a check_connection arg to the
-    #   initialization of the 'ElectrolyteDB' object. However, that does
-    #   not appear to be a feature that exists in WaterTAP main.
-    try:
-        db2 = ElectrolyteDB("mongodb://some.other.host", check_connection=False)
-    except:
-        print("\tWARNING: If you are here, that means that the EDB code is not up-to-date")
+    # You can also attempt to connect to another host by giving the URL.
+    #   If you do, you can also add the 'check_connection' flag to see if
+    #   that host is valid or not. An invalid host will cause an exception.
+    if (test_invalid_host == True):
+        try:
+            db2 = ElectrolyteDB("mongodb://some.other.host", check_connection=True)
+        except:
+            print("\tHost was invalid")
 
     return (db, connected)
 
@@ -96,32 +91,21 @@ def connect_to_edb():
 #   data assocated with that 'base' dictionary.
 #
 # In the EDB, there are several different 'base' structures to start
-#   from. In this example, we will build from the default 'thermo'
+#   from. In this example, we will build from the 'default_thermo'
 #   configuration base.
-#
-#   NOTE: There is a difference between the 'get_base' function and
-#       the 'get_one_base' function. The 'get_base' function will
-#       return a 'Result' object that contains an iterator for each
-#       base requested. This means that in order to access the config
-#       you just created, you would need to iterate through that
-#       result object and look at the 'idaes_config' for each obj
-#       in the 'result'. Alternatively, you can use the 'get_one_base'
-#       function, which will directly return a single object that
-#       can be directly queried for the 'idaes_config'.
 def grab_base_thermo_config(db):
+    # Get the base and place into a result object
+    base = db.get_base("default_thermo")
 
-    # Get the base and place into a result object that
-    #   needs to be iterated through to access data at
-    #   each object held in the result
-    res_it_obj = db.get_base("thermo")
-    for obj in res_it_obj:
-        obj.idaes_config  # This is where you access the data
-
-    # Get the base and place into a singular object
-    #   with no need to iterate through
-    base_obj = db.get_one_base("thermo")
-    base_obj.idaes_config  # This gives more direct access to the information
-    return base_obj
+    # This base object SHOULD contain an 'idaes_config' object
+    #   that we build upon to create the valid 'thermo_config'
+    #   required by IDAES.
+    try:
+        base.idaes_config
+    except:
+        print("Error! Object does NOT contain 'idaes_config' dict!")
+        exit()
+    return base
 
 # ========================== (6) ================================
 # Get chemical components/species for a simulation case
@@ -129,7 +113,7 @@ def grab_base_thermo_config(db):
 #           components that it finds. This is not a built in
 #           feature of the EDB, but is very useful because
 #           getting reactions is dependent on the component list.
-def get_components_and_add_to_idaes_config(db, base_obj, by_elements=True):
+def get_components_and_add_to_idaes_config(db, base_obj, by_elements=False):
     # Going to grab all components that contain ONLY "H" and "O"
     #   Expected behavior = Will get "H2O", "H_+", and "OH_-"
     element_list = ["H","O"]
@@ -182,16 +166,9 @@ if __name__ == "__main__":
         print("\n...connected\n")
 
     base_obj = grab_base_thermo_config(db)
-    try:
-        base_obj.idaes_config
-    except:
-        print("Error! Object does NOT contain 'idaes_config' dict!")
-        exit()
 
     (base_obj, comp_list) = get_components_and_add_to_idaes_config(db, base_obj)
 
     base_obj = get_reactions_return_object(db, base_obj, comp_list)
 
     print(base_obj.idaes_config)
-
-    # At this point, we should have a valid dict...
