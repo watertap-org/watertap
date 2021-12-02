@@ -24,10 +24,10 @@
         that WaterTAP is bundled with.
 
         [NOTE: If you need to 'reload' the database, simply use the command 'edb drop -d electrolytedb'
-        in the command line. The database on MongoDB is named "electrolytedb"]
+                in the command line. The database on MongoDB is named "electrolytedb"]
 
         [NOTE 2: You can invoke the command line utility with the "help" keyword to
-        get more information on funtionality. Command: 'edb --help' or 'edb [arg] --help']
+                get more information on funtionality. Command: 'edb --help' or 'edb [arg] --help']
 
 
     (3) To use EDB in python, start by importing the interface class object 'ElectrolyteDB'
@@ -47,13 +47,43 @@
         [NOTE: An alternative method is to provide a list of the names of components you want]
 
 
-    (7-a) Get the set of reactions you want in your system and put into a 'base' object.
+    (7) Get the set of reactions you want in your system and put into a 'base' object.
         That 'base' can be either a 'thermo' base (as in this example) or a 'reaction'
         base. IF you are adding reactions to a 'thermo' base, they should be added
         as 'inherent' reactions. IF you are adding reactions to a 'reaction' base,
         they should be added as 'equilibrium' (or other) reactions.
 
+
+    (8) When using an reactor object in IDAES, you must always provide a 'reaction_config'
+        to match with the 'thermo_config'. We can create a base 'reaction' config from
+        the database and add reactions to that config in the same way we do for the
+        'thermo_config' when adding reactions as inherent.
+
+        [NOTE: If a reaction is added to a 'thermo_config' as 'inherent', this it should
+               NOT be added to a 'reaction_config' as 'equilibrium']
+
 """
+
+# ========= These imports (below) are for testing the configs from EDB ===============
+# Import specific pyomo objects
+from pyomo.environ import (
+    ConcreteModel,
+)
+# Import the idaes objects for Generic Properties and Reactions
+from idaes.generic_models.properties.core.generic.generic_property import (
+    GenericParameterBlock,
+)
+from idaes.generic_models.properties.core.generic.generic_reaction import (
+    GenericReactionParameterBlock,
+)
+
+# Import the idaes object for the EquilibriumReactor unit model
+from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
+
+# Import the core idaes objects for Flowsheets and types of balances
+from idaes.core import FlowsheetBlock
+# ========= These imports (above) are for testing the configs from EDB ===============
+
 
 # ========================== (3) ================================
 # Import ElectrolyteDB object
@@ -142,7 +172,7 @@ def get_components_and_add_to_idaes_config(db, base_obj, by_elements=False):
     print()
     return (base_obj, db_comp_list)
 
-# ========================== (7-a) ================================
+# ========================== (7) ================================
 # Grab the reactions associated with the list of components and add
 #   them to a base object (which could be a 'thermo' base or 'reaction' base)
 #
@@ -157,6 +187,50 @@ def get_reactions_return_object(db, base_obj, comp_list, is_inherent=True):
         base_obj.add(r)
     return base_obj
 
+# ========================== (8) ================================
+# Create a base config for reactions.
+def grab_base_reaction_config(db):
+    # Get the base and place into a result object
+    base = db.get_base("reaction")
+
+    # This base object SHOULD contain an 'idaes_config' object
+    #   that we build upon to create the valid 'thermo_config'
+    #   required by IDAES.
+    try:
+        base.idaes_config
+    except:
+        print("Error! Object does NOT contain 'idaes_config' dict!")
+        exit()
+    return base
+
+# This function will produce an error if the thermo config is not correct
+def is_thermo_config_valid(thermo_config):
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(default={"dynamic": False})
+    try:
+        model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+    except:
+        return False
+    return True
+
+# This function will produce an error if the thermo config is not correct
+#   or if the pairing of the thermo and reaction config are invalid
+def is_thermo_reaction_pair_valid(thermo_config, reaction_config):
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(default={"dynamic": False})
+    try:
+        model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+    except:
+        return False
+    try:
+        model.fs.rxn_params = GenericReactionParameterBlock(
+            default={"property_package": model.fs.thermo_params, **reaction_config}
+        )
+    except:
+        return False
+    return True
+
+# Run this file as standalone script
 if __name__ == "__main__":
     (db, connected) = connect_to_edb()
     if (connected == False):
@@ -169,6 +243,16 @@ if __name__ == "__main__":
 
     (base_obj, comp_list) = get_components_and_add_to_idaes_config(db, base_obj)
 
-    base_obj = get_reactions_return_object(db, base_obj, comp_list)
+    # At this point, the thermo config should be valid
+    if (is_thermo_config_valid(base_obj.idaes_config) == False):
+        print("\nError! Thermo config generated is invalid!")
 
-    print(base_obj.idaes_config)
+    # Create a reaction config
+    react_base = grab_base_reaction_config(db)
+
+    # Add reactions to the reaction base as 'equilibrium'
+    react_base = get_reactions_return_object(db, react_base, comp_list, is_inherent=False)
+
+    # At this point, the thermo config should be valid
+    if (is_thermo_reaction_pair_valid(base_obj.idaes_config, react_base.idaes_config) == False):
+        print("\nError! Thermo config and/or reaction config generated is/are invalid!")
