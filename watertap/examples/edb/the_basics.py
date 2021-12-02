@@ -101,16 +101,6 @@ def connect_to_edb(test_invalid_host=False):
     print("connecting to " + str(ElectrolyteDB.DEFAULT_URL))
     db = ElectrolyteDB()
     connected = db.can_connect()
-
-    # You can also attempt to connect to another host by giving the URL.
-    #   If you do, you can also add the 'check_connection' flag to see if
-    #   that host is valid or not. An invalid host will cause an exception.
-    if (test_invalid_host == True):
-        try:
-            db2 = ElectrolyteDB("mongodb://some.other.host", check_connection=True)
-        except:
-            print("\tHost was invalid")
-
     return (db, connected)
 
 # ========================== (5) ================================
@@ -128,15 +118,6 @@ def connect_to_edb(test_invalid_host=False):
 def grab_base_thermo_config(db):
     # Get the base and place into a result object
     base = db.get_base("default_thermo")
-
-    # This base object SHOULD contain an 'idaes_config' object
-    #   that we build upon to create the valid 'thermo_config'
-    #   required by IDAES.
-    try:
-        base.idaes_config
-    except:
-        print("Error! Object does NOT contain 'idaes_config' dict!")
-        exit()
     return base
 
 # ========================== (6) ================================
@@ -194,15 +175,6 @@ def get_reactions_return_object(db, base_obj, comp_list, is_inherent=True):
 def grab_base_reaction_config(db):
     # Get the base and place into a result object
     base = db.get_base("reaction")
-
-    # This base object SHOULD contain an 'idaes_config' object
-    #   that we build upon to create the valid 'thermo_config'
-    #   required by IDAES.
-    try:
-        base.idaes_config
-    except:
-        print("Error! Object does NOT contain 'idaes_config' dict!")
-        exit()
     return base
 
 # This function will produce an error if the thermo config is not correct
@@ -254,16 +226,10 @@ def run_the_basics_with_mockdb(db):
         print("\nError! Thermo config and/or reaction config generated is/are invalid!")
         return False
     # If all goes well, this function returns true
-    return True 
+    return True
 
 
 # Run this file as standalone script
 if __name__ == "__main__":
     (db, connected) = connect_to_edb()
-    if (connected == False):
-        print("\nFailed to connect!!!\n")
-        exit()
-    else:
-        print("\n...connected\n")
-
     run_the_basics_with_mockdb(db)

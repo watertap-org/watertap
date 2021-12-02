@@ -110,15 +110,6 @@ __author__ = "Austin Ladshaw"
 def grab_thermo_Liq_FpcTP_base(db):
     # Get the base and place into a result object
     base = db.get_base("thermo_Liq_FpcTP")
-
-    # This base object SHOULD contain an 'idaes_config' object
-    #   that we build upon to create the valid 'thermo_config'
-    #   required by IDAES.
-    try:
-        base.idaes_config
-    except:
-        print("Error! Object does NOT contain 'idaes_config' dict!")
-        exit()
     return base
 
 # ========================== (6) ================================
@@ -214,10 +205,4 @@ def run_simple_acid_with_mockdb(db):
 # Run this file as standalone script
 if __name__ == "__main__":
     (db, connected) = connect_to_edb()
-    if (connected == False):
-        print("\nFailed to connect!!!\n")
-        exit()
-    else:
-        print("\n...connected\n")
-
     model = run_simple_acid_with_mockdb(db)
