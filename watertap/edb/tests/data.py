@@ -166,6 +166,12 @@ bicarbonate_reaction_config = {
             "parameter_data": {
                 "dh_rxn_ref": (14.9, pyunits.kJ / pyunits.mol),
                 "ds_rxn_ref": (-148.1, pyunits.J / pyunits.mol / pyunits.K),
+                # this gets added by the preprocessor
+                "reaction_order": {
+                    ("Liq", "HCO3 -"): -1,
+                    ("Liq", "H +"): 1,
+                    ("Liq", "CO3 2-"): 1,
+                },
                 # "T_eq_ref": (300, pyunits.K),
             },
         }

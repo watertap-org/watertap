@@ -3,10 +3,10 @@
     "valid_phase_types": [
       "PT.aqueousPhase"
     ],
-    "dens_mol_liq_comp": "Perrys",
-    "enth_mol_liq_comp": "Perrys",
-    "cp_mol_liq_comp": "Perrys",
-    "entr_mol_liq_comp": "Perrys",
+    "dens_mol_liq_comp": "Constant",
+    "enth_mol_liq_comp": "Constant",
+    "cp_mol_liq_comp": "Constant",
+    "entr_mol_liq_comp": "Constant",
     "parameter_data": {
       "mw": [
         {
@@ -17,24 +17,9 @@
       ],
       "dens_mol_liq_comp_coeff": [
         {
-          "v": 13.5,
+          "v": 55.2,
           "u": "kmol*m**-3",
-          "i": "1"
-        },
-        {
-          "v": 1,
-          "u": "dimensionless",
-          "i": "2"
-        },
-        {
-          "v": 1,
-          "u": "K",
-          "i": "3"
-        },
-        {
-          "v": 1,
-          "u": "dimensionless",
-          "i": "4"
+          "i": 0
         }
       ],
       "enth_mol_form_liq_comp_ref": [
@@ -46,29 +31,9 @@
       ],
       "cp_mol_liq_comp_coeff": [
         {
-          "v": 276370.0,
-          "u": "J/kmol/K",
-          "i": "1"
-        },
-        {
-          "v": -2090.1,
-          "u": "J/kmol/K**2",
-          "i": "2"
-        },
-        {
-          "v": 8.125,
-          "u": "J/kmol/K**3",
-          "i": "3"
-        },
-        {
-          "v": -0.014116,
-          "u": "J/kmol/K**4",
-          "i": "4"
-        },
-        {
-          "v": 9.3701e-06,
-          "u": "J/kmol/K**5",
-          "i": "5"
+          "v": 75.312,
+          "u": "J/mol/K",
+          "i": 0
         }
       ],
       "entr_mol_form_liq_comp_ref": [
@@ -83,9 +48,6 @@
     "name": "Ca[OH]2"
   },
   {
-    "valid_phase_types": [
-      "PT.aqueousPhase"
-    ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
@@ -167,9 +129,6 @@
     "charge": 1
   },
   {
-    "valid_phase_types": [
-      "PT.aqueousPhase"
-    ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
@@ -251,9 +210,6 @@
     "charge": 2
   },
   {
-    "valid_phase_types": [
-      "PT.aqueousPhase"
-    ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
@@ -335,9 +291,6 @@
     "charge": -1
   },
   {
-    "valid_phase_types": [
-      "PT.aqueousPhase"
-    ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
@@ -502,9 +455,6 @@
     "type": "solute"
   },
   {
-    "valid_phase_types": [
-      "PT.aqueousPhase"
-    ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
@@ -752,9 +702,6 @@
     "type": "solute"
   },
   {
-    "valid_phase_types": [
-      "PT.aqueousPhase"
-    ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
@@ -919,9 +866,6 @@
     "type": "solute"
   },
   {
-    "valid_phase_types": [
-      "PT.aqueousPhase"
-    ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
@@ -1003,9 +947,6 @@
      "charge": -2
   },
   {
-    "valid_phase_types": [
-      "PT.aqueousPhase"
-    ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
@@ -1087,9 +1028,6 @@
     "charge": -1
   },
   {
-    "valid_phase_types": [
-      "PT.aqueousPhase"
-    ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
@@ -1254,9 +1192,6 @@
     "type": "solute"
   },
   {
-    "valid_phase_types": [
-      "PT.aqueousPhase"
-    ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
@@ -1504,9 +1439,6 @@
     "type": "solute"
   },
   {
-    "valid_phase_types": [
-      "PT.aqueousPhase"
-    ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
@@ -1671,9 +1603,6 @@
     "type": "solute"
   },
   {
-    "valid_phase_types": [
-      "PT.aqueousPhase"
-    ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
@@ -1755,9 +1684,6 @@
     "charge": -1
   },
   {
-    "valid_phase_types": [
-      "PT.aqueousPhase"
-    ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
@@ -1839,9 +1765,6 @@
     "charge": -1
   },
   {
-    "valid_phase_types": [
-      "PT.aqueousPhase"
-    ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",
@@ -1923,9 +1846,6 @@
     "charge": -3
   },
   {
-    "valid_phase_types": [
-      "PT.aqueousPhase"
-    ],
     "dens_mol_liq_comp": "Perrys",
     "enth_mol_liq_comp": "Perrys",
     "cp_mol_liq_comp": "Perrys",

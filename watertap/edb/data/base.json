@@ -33,7 +33,113 @@
       "amount": "mol",
       "temperature": "K"
     },
-    "name": "thermo"
+    "name": "default_thermo"
+  },
+  {
+    "phases": {
+      "Liq": {
+        "type": "AqueousPhase",
+        "equation_of_state": "Ideal"
+      }
+    },
+    "state_definition": "FpcTP",
+    "state_bounds": {
+      "temperature": [
+        273.15,
+        300,
+        650
+      ],
+      "pressure": [
+        50000,
+        100000,
+        1000000
+      ]
+    },
+    "pressure_ref": 100000,
+    "temperature_ref": 300,
+    "base_units": {
+      "time": "s",
+      "length": "m",
+      "mass": "kg",
+      "amount": "mol",
+      "temperature": "K"
+    },
+    "name": "thermo_Liq_FpcTP"
+  },
+  {
+    "phases": {
+      "Liq": {
+        "type": "AqueousPhase",
+        "equation_of_state": "Ideal"
+      },
+      "Sol": {
+        "type": "SolidPhase",
+        "equation_of_state": "Ideal"
+      }
+    },
+    "state_definition": "FpcTP",
+    "state_bounds": {
+      "temperature": [
+        273.15,
+        300,
+        650
+      ],
+      "pressure": [
+        50000,
+        100000,
+        1000000
+      ]
+    },
+    "pressure_ref": 100000,
+    "temperature_ref": 300,
+    "base_units": {
+      "time": "s",
+      "length": "m",
+      "mass": "kg",
+      "amount": "mol",
+      "temperature": "K"
+    },
+    "name": "thermo_Liq_Sol_FpcTP"
+  },
+  {
+    "phases": {
+      "Liq": {
+        "type": "AqueousPhase",
+        "equation_of_state": "Ideal"
+      },
+      "Vap": {
+        "type": "VaporPhase",
+        "equation_of_state": "Ideal"
+      }
+    },
+    "state_definition": "FpcTP",
+    "state_bounds": {
+      "temperature": [
+        273.15,
+        300,
+        650
+      ],
+      "pressure": [
+        50000,
+        100000,
+        1000000
+      ]
+    },
+    "pressure_ref": 100000,
+    "temperature_ref": 300,
+
+    "phases_in_equilibrium": ["('Vap','Liq')"],
+    "phase_equilibrium_state": {"('Vap','Liq')": "SmoothVLE"},
+    "bubble_dew_method": "IdealBubbleDew",
+
+    "base_units": {
+      "time": "s",
+      "length": "m",
+      "mass": "kg",
+      "amount": "mol",
+      "temperature": "K"
+    },
+    "name": "thermo_Liq_Vap_FpcTP"
   },
   {
     "base_units": {
@@ -43,19 +149,6 @@
       "amount": "mol",
       "temperature": "K"
     },
-    "phases": {
-        "Liq": {
-          "type": "AqueousPhase",
-          "equation_of_state": "Ideal"}
-    },
-    "state_definition": "FTPx",
-    "state_bounds": {
-        "flow_mol": [0, 50, 100],
-        "temperature": [273.15, 300, 650],
-        "pressure": [5e4, 1e5, 1e6]
-    },
-    "pressure_ref": 1e5,
-    "temperature_ref": 300,
-    "name": "water_reaction"
-    }
+    "name": "reaction"
+  }
 ]
