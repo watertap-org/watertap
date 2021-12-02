@@ -230,6 +230,26 @@ def is_thermo_reaction_pair_valid(thermo_config, reaction_config):
         return False
     return True
 
+# Run script for testing
+def run_with_mockdb(db):
+    base_obj = grab_base_thermo_config(db)
+
+    (base_obj, comp_list) = get_components_and_add_to_idaes_config(db, base_obj)
+
+    # At this point, the thermo config should be valid
+    if (is_thermo_config_valid(base_obj.idaes_config) == False):
+        print("\nError! Thermo config generated is invalid!")
+
+    # Create a reaction config
+    react_base = grab_base_reaction_config(db)
+
+    # Add reactions to the reaction base as 'equilibrium'
+    react_base = get_reactions_return_object(db, react_base, comp_list, is_inherent=False)
+
+    # At this point, the thermo config should be valid
+    if (is_thermo_reaction_pair_valid(base_obj.idaes_config, react_base.idaes_config) == False):
+        print("\nError! Thermo config and/or reaction config generated is/are invalid!")
+
 # Run this file as standalone script
 if __name__ == "__main__":
     (db, connected) = connect_to_edb()
