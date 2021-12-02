@@ -89,6 +89,8 @@ from idaes.core import FlowsheetBlock
 # Import ElectrolyteDB object
 from watertap.edb import ElectrolyteDB
 
+__author__ = "Austin Ladshaw"
+
 # ========================== (4) ================================
 # By default, invoking the 'ElectrolyteDB' object (with no args)
 #   will attempt to connect to the local host database. You can
@@ -231,7 +233,7 @@ def is_thermo_reaction_pair_valid(thermo_config, reaction_config):
     return True
 
 # Run script for testing
-def run_with_mockdb(db):
+def run_the_basics_with_mockdb(db):
     base_obj = grab_base_thermo_config(db)
 
     (base_obj, comp_list) = get_components_and_add_to_idaes_config(db, base_obj)

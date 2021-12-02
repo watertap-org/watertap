@@ -11,8 +11,10 @@
 #
 ###############################################################################
 import pytest
-from watertap.examples.edb.the_basics import run_with_mockdb
+from watertap.examples.edb.the_basics import run_the_basics_with_mockdb
+
+__author__ = "Austin Ladshaw"
 
 @pytest.mark.component
 def test_the_basics(edb):
-    run_with_mockdb(edb)
+    run_the_basics_with_mockdb(edb)
