@@ -37,9 +37,17 @@ class IpoptWaterTAP(IPOPT):
         if not isinstance(args[0], (_BlockData, IBlock)):
             raise TypeError("IpoptWaterTAP.solve takes 1 positional argument: a Pyomo ConcreteModel or Block")
 
-        self._set_user_scaling()
-
         self._tee = kwds.get("tee", False)
+
+        # Set the IDAES-default tol
+        if "tol" not in self.options:
+            self.options["tol"] = 1e-6
+
+        if not self._is_user_scaling():
+            self._reset_needed = False
+            super()._presolve(*args, **kwds)
+            return
+
         if self._tee:
             print("ipopt-watertap: Ipopt with user variable scaling and IDAES jacobian constraint scaling")
 
@@ -56,12 +64,9 @@ class IpoptWaterTAP(IPOPT):
         ignore_variable_scaling = self._get_option("ignore_variable_scaling", False)
         ignore_constraint_scaling = self._get_option("ignore_constraint_scaling", False)
 
-        # Set the IDAES-default tol
-        if "tol" not in self.options:
-            self.options["tol"] = 1e-6
-
         self._model = args[0]
         self._cache_scaling_factors()
+        self._reset_needed = True
 
         # NOTE: This function sets the scaling factors on the
         #       constraints. Hence we cache the constraint scaling
@@ -91,9 +96,11 @@ class IpoptWaterTAP(IPOPT):
         super()._presolve(*args, **kwds)
 
     def _postsolve(self):
-        self._reset_scaling_factors()
-        # remove our reference to the model
-        del self._model
+        if self._reset_needed:
+            self._reset_scaling_factors()
+            # remove our reference to the model
+            del self._model
+        del self._reset_needed
         return super()._postsolve()
 
     def _cache_scaling_factors(self):
@@ -122,11 +129,15 @@ class IpoptWaterTAP(IPOPT):
                 print(f"ipopt-watertap: {option_name}={option_value}")
         return option_value
 
-    def _set_user_scaling(self):
-        if "nlp_scaling_method" in self.options and self.options["nlp_scaling_method"] != "user-scaling":
-            _log.warning("The ipopt-watertap solver is designed to be run with user-scaling. "
-                    f"Provided nlp_scaling_method {self.options['nlp_scaling_method']} will be ignored")
-        self.options["nlp_scaling_method"] = "user-scaling"
+    def _is_user_scaling(self):
+        if "nlp_scaling_method" not in self.options:
+            self.options["nlp_scaling_method"] = "user-scaling"
+        if self.options["nlp_scaling_method"] != "user-scaling":
+            if self._tee:
+                print("The ipopt-watertap solver is designed to be run with user-scaling. "
+                        f"Ipopt with nlp_scaling_method={self.options['nlp_scaling_method']} will be used instead")
+            return False
+        return True
 
 
 ## reconfigure IDAES to use the ipopt-watertap solver

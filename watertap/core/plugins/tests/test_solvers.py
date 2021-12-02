@@ -14,6 +14,7 @@
 import pytest
 import pyomo.environ as pyo
 
+from pyomo.common.errors import ApplicationError
 from idaes.core.util.scaling import (set_scaling_factor, get_scaling_factor,
         constraints_with_scale_factor_generator, unscaled_constraints_generator)
 from idaes.core.util import get_solver
@@ -68,7 +69,7 @@ class TestIpoptWaterTAP:
         assert s._model is m
 
     @pytest.mark.unit
-    def test_postsolve_unscaled_constraints_cleansup(self, m, s):
+    def test_postsolve_unscaled_constraints_cleanup(self, m, s):
         assert hasattr(s, '_postsolve')
         # for the Pyomo implementation
         try:
@@ -84,13 +85,11 @@ class TestIpoptWaterTAP:
         assert not hasattr(s, '_model')
 
     @pytest.mark.unit
-    def test_nlp_scaling_method(self, m, s):
-        assert s.options['nlp_scaling_method'] == 'user-scaling'
-
-        s.options['nlp_scaling_method'] = 'gradient-based'
-        s.options['nlp_scaling_min_value'] = 1e-6
-        s._presolve(m, tee=True)
-        assert s.options['nlp_scaling_method'] == 'user-scaling'
+    def test_option_absorption(self, m, s):
+        s.options['ignore_variable_scaling'] = True
+        results = s.solve(m, tee=True)
+        pyo.assert_optimal_termination(results)
+        del s.options['ignore_variable_scaling']
 
     @pytest.mark.unit
     def test_get_option(self, s):
@@ -99,6 +98,28 @@ class TestIpoptWaterTAP:
         assert s._get_option('ignore_constraint_scaling', False) is True
         assert 'ignore_constraint_scaling' not in s.options
         assert s._get_option('ignore_constraint_scaling', False) is False
+
+    @pytest.mark.unit
+    def test_presolve_passthrough(self, m, s):
+        s.options["nlp_scaling_method"] = "gradient-based"
+        s._presolve(m, tee=True)
+        assert not hasattr(s, "_scaling_cache")
+        s.options["nlp_scaling_method"] = "user-scaling"
+
+    @pytest.mark.unit
+    def test_passthrough_positive(self, m, s):
+        s.options["nlp_scaling_method"] = "gradient-based"
+        pyo.assert_optimal_termination(s.solve(m, tee=True))
+        del s.options["nlp_scaling_method"]
+
+    @pytest.mark.unit
+    def test_passthrough_negative(self, m, s):
+        s.options["nlp_scaling_method"] = "gradient-based"
+        s.options["ignore_variable_scaling"] = True
+        with pytest.raises(ApplicationError):
+            pyo.assert_optimal_termination(s.solve(m, tee=True))
+        del s.options["nlp_scaling_method"]
+        del s.options['ignore_variable_scaling']
 
     @pytest.mark.unit
     def test_presolve_incorrect_number_of_arguments(self, m, s):
