@@ -49,10 +49,11 @@
 
 
     (7) Get the set of reactions you want in your system and put into a 'base' object.
-        That 'base' can be either a 'thermo' base (as in this example) or a 'reaction'
-        base. IF you are adding reactions to a 'thermo' base, they should be added
-        as 'inherent' reactions. IF you are adding reactions to a 'reaction' base,
-        they should be added as 'equilibrium' (or other) reactions.
+        In this case, we are getting all reactions associated with a system of water
+        and carbonic acid. We should get three reactions:
+            H2O <--> H_+ + OH_-
+            H2CO3 <--> H_+ + HCO3_-
+            HCO3_- <--> H_+ + CO3_2-
 
 
     (8) When using an reactor object in IDAES, you must always provide a 'reaction_config'
@@ -62,6 +63,10 @@
 
         [NOTE: If a reaction is added to a 'thermo_config' as 'inherent', this it should
                NOT be added to a 'reaction_config' as 'equilibrium']
+
+
+    (9) [NEW Step] Build an equilibrium reactor from the 'thermo_config' and 'reaction_config'
+        that were generated from the EDB.
 
 """
 
@@ -93,7 +98,7 @@ from watertap.examples.edb.the_basics import (
     connect_to_edb,
     is_thermo_config_valid,
     grab_base_reaction_config,
-
+    is_thermo_reaction_pair_valid,
 )
 
 __author__ = "Austin Ladshaw"
@@ -138,7 +143,6 @@ def get_components_and_add_to_idaes_config(db, base_obj, comp_list):
 # Grab the reactions associated with the list of components and add
 #   them to a reaction base as equilibrium reactions
 #
-# TODO:  NOTE: The 'get_reactions' object does NOT have the correct behavior
 def add_equilibrium_reactions_to_react_base(db, react_base_obj, comp_list):
     react_obj = db.get_reactions(component_names=comp_list)
     for r in react_obj:
@@ -147,15 +151,36 @@ def add_equilibrium_reactions_to_react_base(db, react_base_obj, comp_list):
         react_base_obj.add(r)
     return react_base_obj
 
-# Run this file as standalone script
-if __name__ == "__main__":
-    (db, connected) = connect_to_edb()
-    if (connected == False):
-        print("\nFailed to connect!!!\n")
-        exit()
-    else:
-        print("\n...connected\n")
 
+# ========================== (9) ================================
+# Create the Pyomo model by using the thermo_config and reaction_config
+#   that were generated from the EDB.
+#
+def build_equilibrium_model(thermo_config, reaction_config):
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+    model.fs.rxn_params = GenericReactionParameterBlock(
+            default={"property_package": model.fs.thermo_params, **reaction_config}
+        )
+
+    model.fs.unit = EquilibriumReactor(
+        default={
+            "property_package": model.fs.thermo_params,
+            "reaction_package": model.fs.rxn_params,
+            "has_rate_reactions": False,
+            "has_equilibrium_reactions": True,
+            "has_heat_transfer": False,
+            "has_heat_of_reaction": False,
+            "has_pressure_change": False,
+        }
+    )
+
+    return model
+
+
+# Run script for testing
+def run_simple_acid_with_mockdb(db):
     base_obj = grab_thermo_Liq_FpcTP_base(db)
 
     # Our components for this problem are as follows:
@@ -172,3 +197,27 @@ if __name__ == "__main__":
 
     # Add reactions to the reaction base as 'equilibrium'
     react_base = add_equilibrium_reactions_to_react_base(db, react_base, comp_list)
+
+    # At this point, the thermo config should be valid
+    if (is_thermo_reaction_pair_valid(base_obj.idaes_config, react_base.idaes_config) == False):
+        print("\nError! Thermo config and/or reaction config generated is/are invalid!")
+
+    # Now, we can actually see if we created a correct model by looking
+    #       for degrees of freedom, state variables, etc.
+    thermo_config = base_obj.idaes_config
+    reaction_config = react_base.idaes_config
+    model = build_equilibrium_model(thermo_config, reaction_config)
+
+    return model
+
+
+# Run this file as standalone script
+if __name__ == "__main__":
+    (db, connected) = connect_to_edb()
+    if (connected == False):
+        print("\nFailed to connect!!!\n")
+        exit()
+    else:
+        print("\n...connected\n")
+
+    model = run_simple_acid_with_mockdb(db)

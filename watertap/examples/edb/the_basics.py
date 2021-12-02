@@ -48,7 +48,7 @@
 
 
     (7) Get the set of reactions you want in your system and put into a 'base' object.
-        That 'base' can be either a 'thermo' base (as in this example) or a 'reaction'
+        That 'base' can be either a 'thermo' base or a 'reaction' (as in this case)
         base. IF you are adding reactions to a 'thermo' base, they should be added
         as 'inherent' reactions. IF you are adding reactions to a 'reaction' base,
         they should be added as 'equilibrium' (or other) reactions.
@@ -241,6 +241,7 @@ def run_the_basics_with_mockdb(db):
     # At this point, the thermo config should be valid
     if (is_thermo_config_valid(base_obj.idaes_config) == False):
         print("\nError! Thermo config generated is invalid!")
+        return False
 
     # Create a reaction config
     react_base = grab_base_reaction_config(db)
@@ -251,6 +252,10 @@ def run_the_basics_with_mockdb(db):
     # At this point, the thermo config should be valid
     if (is_thermo_reaction_pair_valid(base_obj.idaes_config, react_base.idaes_config) == False):
         print("\nError! Thermo config and/or reaction config generated is/are invalid!")
+        return False
+    # If all goes well, this function returns true
+    return True 
+
 
 # Run this file as standalone script
 if __name__ == "__main__":
@@ -261,20 +266,4 @@ if __name__ == "__main__":
     else:
         print("\n...connected\n")
 
-    base_obj = grab_base_thermo_config(db)
-
-    (base_obj, comp_list) = get_components_and_add_to_idaes_config(db, base_obj)
-
-    # At this point, the thermo config should be valid
-    if (is_thermo_config_valid(base_obj.idaes_config) == False):
-        print("\nError! Thermo config generated is invalid!")
-
-    # Create a reaction config
-    react_base = grab_base_reaction_config(db)
-
-    # Add reactions to the reaction base as 'equilibrium'
-    react_base = get_reactions_return_object(db, react_base, comp_list, is_inherent=False)
-
-    # At this point, the thermo config should be valid
-    if (is_thermo_reaction_pair_valid(base_obj.idaes_config, react_base.idaes_config) == False):
-        print("\nError! Thermo config and/or reaction config generated is/are invalid!")
+    run_the_basics_with_mockdb(db)
