@@ -457,7 +457,7 @@
       "dh_rxn_ref": [
         {
           "v": 0,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -502,7 +502,7 @@
       "dh_rxn_ref": [
         {
           "v": 0,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -547,7 +547,7 @@
       "dh_rxn_ref": [
         {
           "v": 0,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -591,7 +591,7 @@
       "dh_rxn_ref": [
         {
           "v": 55.83,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -636,7 +636,7 @@
       "dh_rxn_ref": [
         {
           "v": 0,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -674,7 +674,7 @@
       "dh_rxn_ref": [
         {
           "v": 0,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -712,7 +712,7 @@
       "dh_rxn_ref": [
         {
           "v": 0,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -750,7 +750,7 @@
       "dh_rxn_ref": [
         {
           "v": 0,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -790,7 +790,7 @@
       "dh_rxn_ref": [
         {
           "v": 0,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -829,8 +829,8 @@
     "parameter_data": {
       "dh_rxn_ref": [
         {
-          "v": 0,
-          "u": "J/mol",
+          "v": -20.91,
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -870,7 +870,7 @@
       "dh_rxn_ref": [
         {
           "v": 0,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -890,6 +890,84 @@
       "FePO4",
       "Fe_3+",
       "PO4_3-"
+    ]
+  },
+  {
+    "stoichiometry": {
+      "Liq": {
+        "Mg_2+": 1,
+        "OH_-": 2
+      },
+      "Sol": {
+        "Mg[OH]2": -1
+      }
+    },
+    "heat_of_reaction": "constant_dh_rxn",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_solubility_product",
+    "concentration_form": "ConcentrationForm.moleFraction",
+    "parameter_data": {
+      "dh_rxn_ref": [
+        {
+          "v": -2.3,
+          "u": "kJ/mol",
+          "i": 0
+        }
+      ],
+      "k_eq_ref": [
+        { "v":  3.5071278E-17,
+        "u": "dimensionless",
+        "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {"v": 298, "u": "K", "i": 0}
+      ]
+    },
+    "type": "equilibrium",
+    "name": "MgOH2_Ksp",
+    "components": [
+      "Mg[OH]2",
+      "Mg_2+",
+      "OH_-"
+    ]
+  },
+  {
+    "stoichiometry": {
+      "Liq": {
+        "B[OH]4_-": -1,
+        "B[OH]3": 1,
+        "OH_-": 1
+      }
+    },
+    "heat_of_reaction": "constant_dh_rxn",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
+    "parameter_data": {
+      "dh_rxn_ref": [
+        {
+          "v": 42,
+          "u": "kJ/mol",
+          "i": 0
+        }
+      ],
+      "k_eq_ref": [
+        { "v":  2.9430797E-7,
+        "u": "dimensionless",
+        "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {"v": 298, "u": "K", "i": 0}
+      ]
+    },
+    "type": "equilibrium",
+    "name": "FeOH4_K",
+    "components": [
+      "B[OH]4_-",
+      "B[OH]3",
+      "OH_-"
     ]
   }
 
