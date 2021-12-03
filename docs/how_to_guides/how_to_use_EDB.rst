@@ -1,3 +1,5 @@
+.. _how_to_use_edb:
+
 How to use the Electrolyte Database (EDB)
 =========================================
 
@@ -8,3 +10,4 @@ For information on how to install and set up the EDB, see :ref:`install-edb`.
 
     ../examples/edb/edb_example
     edb_cli
+    edb_api
