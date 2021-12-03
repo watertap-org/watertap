@@ -10,3 +10,4 @@ For information on how to install and set up the EDB, see :ref:`install-edb`.
 
     ../examples/edb/edb_example
     edb_cli
+    edb_api
