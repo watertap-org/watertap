@@ -78,6 +78,8 @@ schemas = {
                     "Solute",
                     "Anion",
                     "Cation",
+                    "Component",
+                    "component",
                 ],
             },
             "valid_phase_types": {

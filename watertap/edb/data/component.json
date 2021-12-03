@@ -1,12 +1,12 @@
 [
   {
     "valid_phase_types": [
-      "PT.aqueousPhase"
+      "PT.solidPhase"
     ],
-    "dens_mol_liq_comp": "Constant",
-    "enth_mol_liq_comp": "Constant",
-    "cp_mol_liq_comp": "Constant",
-    "entr_mol_liq_comp": "Constant",
+    "dens_mol_sol_comp": "Constant",
+    "enth_mol_sol_comp": "Constant",
+    "cp_mol_sol_comp": "Constant",
+    "entr_mol_sol_comp": "Constant",
     "parameter_data": {
       "mw": [
         {
@@ -15,36 +15,36 @@
           "i": 0
         }
       ],
-      "dens_mol_liq_comp_coeff": [
+      "dens_mol_sol_comp_coeff": [
         {
           "v": 55.2,
           "u": "kmol*m**-3",
           "i": 0
         }
       ],
-      "enth_mol_form_liq_comp_ref": [
+      "enth_mol_form_sol_comp_ref": [
         {
-          "v": -1003,
+          "v": -986,
           "u": "kJ/mol",
           "i": 0
         }
       ],
-      "cp_mol_liq_comp_coeff": [
+      "cp_mol_sol_comp_coeff": [
         {
-          "v": 75.312,
-          "u": "J/mol/K",
+          "v": 167039,
+          "u": "J/kmol/K",
           "i": 0
         }
       ],
-      "entr_mol_form_liq_comp_ref": [
+      "entr_mol_form_sol_comp_ref": [
         {
-          "v": -74.5,
+          "v": 83,
           "u": "J/K/mol",
           "i": 0
         }
       ]
     },
-    "type": "solute",
+    "type": "component",
     "name": "Ca[OH]2"
   },
   {
