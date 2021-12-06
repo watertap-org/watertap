@@ -175,6 +175,7 @@ class ElectrolyteDB:
         component_names: Optional[List] = None,
         phases: Union[List[str], str] = None,
         any_components: bool = False,
+        include_new_components: bool = False,
         reaction_names: Optional[List] = None,
     ) -> Result:
         """Get reaction information.
@@ -187,6 +188,9 @@ class ElectrolyteDB:
                one side of the reaction has all components provided.
                If true, return the (potentially larger) set of reactions where
                any of the components listed are present.
+            include_new_components: If False, the default, only return reactions where
+               all given components are found in that reaction (and no new components)
+               are used in that reaction.
             reaction_names: List of reaction names instead of component names
 
         Returns:
@@ -228,11 +232,20 @@ class ElectrolyteDB:
                             found.append(item)
                         # also ok if it matches everything on one side
                         else:
-                            for side in -1, 1:
-                                side_keys = (k for k, v in stoich.items() if v == side)
-                                if set(side_keys) == cnames:
+                            # Add a reaction if all the products/reactants
+                            #   can be formed. This allows addition of reactions
+                            #   that may include species not yet considered.
+                            if (include_new_components == True):
+                                for side in -1, 1:
+                                    side_keys = (k for k, v in stoich.items() if abs(v)/v == side)
+                                    if set(side_keys).issubset(cnames):
+                                        found.append(item)
+                                        break  # found; stop
+                            # Otherwise, only include reactions that are subsets of
+                            #   the given component list
+                            else:
+                                if set(stoich.keys()).issubset(cnames):
                                     found.append(item)
-                                    break  # found; stop
             it = iter(found)
         elif reaction_names:
             query = {"name": {"$in": reaction_names}}
