@@ -61,7 +61,7 @@
         the database and add reactions to that config in the same way we do for the
         'thermo_config' when adding reactions as inherent.
 
-        [NOTE: If a reaction is added to a 'thermo_config' as 'inherent', this it should
+        [NOTE: If a reaction is added to a 'thermo_config' as 'inherent', it should
                NOT be added to a 'reaction_config' as 'equilibrium']
 
 
