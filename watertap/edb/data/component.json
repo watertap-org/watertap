@@ -1202,8 +1202,7 @@
     "enth_mol_ig_comp": "NIST",
     "pressure_sat_comp": "NIST",
     "phase_equilibrium_form": {
-      "Vap": "fugacity",
-      "Liq": "fugacity"
+      "Vap-Liq": "fugacity"
     },
     "parameter_data": {
       "mw": [
@@ -1378,8 +1377,7 @@
     "enth_mol_ig_comp": "NIST",
     "pressure_sat_comp": "NIST",
     "phase_equilibrium_form": {
-      "Vap": "fugacity",
-      "Liq": "fugacity"
+      "Vap-Liq": "fugacity"
     },
     "parameter_data": {
       "mw": [
@@ -1547,8 +1545,7 @@
     "enth_mol_ig_comp": "NIST",
     "pressure_sat_comp": "NIST",
     "phase_equilibrium_form": {
-      "Vap": "fugacity",
-      "Liq": "fugacity"
+      "Vap-Liq": "fugacity"
     },
     "parameter_data": {
       "mw": [

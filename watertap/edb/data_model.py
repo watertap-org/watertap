@@ -525,11 +525,6 @@ class BaseConfig(ConfigGenerator):
         "phase_equilibrium_state.*": {
             "SmoothVLE": SmoothVLE,
         },
-        # TODO: NOTE: I'm not sure how to handle the following...
-        #
-        # "phase_equilibrium_state": {"('Vap','Liq')": "SmoothVLE"},
-        #
-        #   The above are options used in base configs for Vapor and Liquid systems
         "base_units.*": ConfigGenerator.SUBST_UNITS,
     }
 
