@@ -878,10 +878,7 @@ class Component(DataWrapper):
                     d[fld] = {}
                     for key, value in c[fld].items():
                         break
-                    for phase in key:
-                        cls._method_to_str(
-                            phase, {phase: value}, d[fld], subst_strings, caller=whoami
-                        )
+                    cls._method_to_str(fld, c[fld], d, subst_strings, caller=whoami)
             # extract elements from name
             d["elements"] = re.findall(r"[A-Z][a-z]?", name)
             cls._convert_parameter_data(c, d)

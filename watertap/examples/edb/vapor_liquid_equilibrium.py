@@ -161,9 +161,9 @@ def run_vap_liq_with_mockdb(db):
     # Correct form
     #"phase_equilibrium_form": {("Vap", "Liq"): fugacity},
 
-    #model = build_equilibrium_model(thermo_config, reaction_config)
+    model = build_equilibrium_model(thermo_config, reaction_config)
 
-    #return model
+    return model
 
 # Run this file as standalone script
 if __name__ == "__main__":
