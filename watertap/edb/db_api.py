@@ -20,8 +20,12 @@ import re
 from typing import Dict, List, Optional, Union
 
 # third-party
+try:
+    import certifi
+except ImportError:
+    certifi = None
 from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, PyMongoError
 
 # package
 from .data_model import Result, Component, Reaction, Base, DataWrapper
@@ -73,17 +77,29 @@ class ElectrolyteDB:
             pymongo.errors.ConnectionFailure: if check_connection is True,
                  and the connection fails
         """
-        self._client = MongoClient(host=url, **self.timeout_args)
-        # check connection immediately
-        if check_connection:
-            try:
-                self._client.admin.command("ismaster")
-            except ConnectionFailure as err:
-                _log.error(f"Cannot connect to MongoDB server: {err}")
-                raise
+        self._mongoclient_connect_status = {"initial": "untried", "retry": "untried"}
+        self._client = self._mongoclient(url, check_connection, **self.timeout_args)
+        if self._client is None:
+            msg = self.connect_status_str
+            _log.error(msg)
+            raise ConnectionFailure(msg)
+        self._db = getattr(self._client, db)
         self._db = getattr(self._client, db)
         self._database_name = db
         self._server_url = url
+
+    def is_empty(self) -> bool:
+        if self._database_name not in self._client.list_database_names():
+            return True
+        collections = set(self._db.list_collection_names())
+        if not collections:
+            return True
+        if not {"base", "component", "reaction"}.intersection(collections):
+            _log.warning(
+                "Bootstrapping into non-empty database, but without any EDB collections"
+            )
+            return True
+        return False
 
     @staticmethod
     def drop_database(url, db):
@@ -103,29 +119,71 @@ class ElectrolyteDB:
         client.drop_database(db)
 
     @classmethod
-    def can_connect(cls, host=None, port=None, **kwargs):
+    def can_connect(cls, url=None, db=None) -> bool:
+        """Convenience method to check if a connection can be made without having
+           to instantiate the database object.
+
+        Args:
+            url: Same as constructor
+            db: Same as constructor
+
+        Returns:
+            True, yes can connect; False: cannot connect
+        """
+        url = url or f"mongodb://{cls.DEFAULT_HOST}:{cls.DEFAULT_PORT}"
+        db = db or cls.DEFAULT_DB
         result = True
-
-        if host is None:
-            host = cls.DEFAULT_HOST
-        if port is None:
-            port = cls.DEFAULT_PORT
-
-        # add timeouts (probably shorter than defaults)
-        kwargs.update(cls.timeout_args)
-
-        client = MongoClient(host=host, port=port, **kwargs)
-
-        # This approach is taken directly from MongoClient docstring -dang
         try:
-            # The ismaster command is cheap and does not require auth.
-            client.admin.command("ismaster")
-            _log.debug(f"MongoDB server at {host}:{port} is available")
+            _ = cls(url=url, db=db, check_connection=True)
         except ConnectionFailure:
-            _log.error(f"MongoDB server at {host}:{port} is NOT available")
             result = False
-
         return result
+
+    def _mongoclient(self, url: str, check, **client_kw) -> Union[MongoClient, None]:
+        _log.debug(f"Begin: Create MongoDB client. url={url}")
+        mc = MongoClient(url, **client_kw)
+        if not check:
+            _log.info(f"Skipping connection check for MongoDB client. url={url}")
+            _log.debug(f"End: Create MongoDB client. url={url}")
+            return mc
+        # check that client actually works
+        _log.info(f"Connection check MongoDB client url={url}")
+        try:
+            mc.admin.command("ismaster")
+            self._mongoclient_connect_status["initial"] = "ok"
+            _log.info("MongoDB connection succeeded")
+        except ConnectionFailure as conn_err:
+            mc = None
+            self._mongoclient_connect_status["initial"] = str(conn_err)
+            if "CERTIFICATE_VERIFY_FAILED" in str(conn_err):
+                _log.warning(f"MongoDB connection failed due to certificate "
+                             f"verification.")
+                if certifi is not None:
+                    _log.info("Retrying MongoDB connection with explicit location "
+                              f"for client certificates ({certifi.where()})")
+                    try:
+                        mc = MongoClient(url, tlsCAFile=certifi.where(), **client_kw)
+                        mc.admin.command("ismaster")
+                        _log.info("Retried MongoDB connection succeeded")
+                    except ConnectionFailure as err:
+                        mc = None
+                        self._mongoclient_connect_status["retry"] = str(err)
+                        _log.error(self.connect_status_str)
+        _log.debug(f"End: Create MongoDB client. url={url}")
+        return mc
+
+    @property
+    def connect_status(self) -> Dict:
+        return self._mongoclient_connect_status.copy()
+
+    @property
+    def connect_status_str(self) -> str:
+        e = self._mongoclient_connect_status
+        if e["initial"] == "ok":
+            return "Connection succeeded"
+        if e["retry"] == "ok":
+            return "Initial connection failed, but retry succeeded"
+        return f"Initial connection error ({e['initial']}), retry error ({e['retry']})"
 
     @property
     def database(self):
@@ -277,6 +335,9 @@ class ElectrolyteDB:
                 raise IndexError("No bases found in DB")
         else:
             return result
+
+    # older method name
+    get_one_base = get_base
 
     def load(
         self,
