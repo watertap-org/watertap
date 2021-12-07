@@ -440,6 +440,23 @@ class ThermoConfig(ConfigGenerator):
                 data[fld] = data[fld][0]
         del data["elements"]
         cls._wrap_section("components", data)
+        for name in data["components"]:
+            cls._key_to_tuple(data["components"][name], "phase_equilibrium_form")
+
+
+    @classmethod
+    def _key_to_tuple(cls, data, section):
+        """Change all key values separated by '-' in the given section to tuples of those values."""
+        if section not in data:
+            return
+        temp = {}
+        for key in data[section]:
+            item_list = key.split("-")
+            if (len(item_list)!=2):
+                raise BadConfiguration("BaseConfig._key_to_tuple", data,
+                    missing=None,why="\n"+section+" tuple key must be only 2 items\n")
+            temp[tuple(item_list)] = data[section][key]
+        data[section] = temp
 
 
 class ReactionConfig(ConfigGenerator):
