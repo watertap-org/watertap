@@ -11,7 +11,8 @@
 #
 ###############################################################################
 """
-    This file demonstrates how to use EDB to create a simple acid problem.
+    This file demonstrates how to use EDB to create a chemical reactor that
+    involves vapor-liquid equilibrium.
 
     (1) Before we can start, you must install MongoDB (which is installed separately)
 
@@ -36,7 +37,7 @@
 
 
     (5) Grab a 'base' for a configuration dictionary, and place it into a class object
-        This time, we will grab a base that is for a Liq only problem using FpcTP
+        This time, we will grab a base that is for a Liq-Vap problem using FpcTP
         state variables.
 
 
@@ -50,10 +51,11 @@
 
     (7) Get the set of reactions you want in your system and put into a 'base' object.
         In this case, we are getting all reactions associated with a system of water
-        and carbonic acid. We should get three reactions:
+        and carbonic acid. We should get four reactions now:
             H2O <--> H_+ + OH_-
             H2CO3 <--> H_+ + HCO3_-
             HCO3_- <--> H_+ + CO3_2-
+            CO2 + H2O <--> H2CO3
 
 
     (8) When using an reactor object in IDAES, you must always provide a 'reaction_config'
@@ -65,7 +67,7 @@
                NOT be added to a 'reaction_config' as 'equilibrium']
 
 
-    (9) [NEW Step] Build an equilibrium reactor from the 'thermo_config' and 'reaction_config'
+    (9) Build an equilibrium reactor from the 'thermo_config' and 'reaction_config'
         that were generated from the EDB.
 
 """
@@ -100,82 +102,30 @@ from watertap.examples.edb.the_basics import (
     grab_base_reaction_config,
     is_thermo_reaction_pair_valid,
 )
+from watertap.examples.edb.simple_acid import (
+    get_components_and_add_to_idaes_config,
+    add_equilibrium_reactions_to_react_base,
+    build_equilibrium_model,
+)
 
 __author__ = "Austin Ladshaw"
 
 # ========================== (5) ================================
 # Grab a new base config for our thermo, but this time we will use
 #   one of the newer bases that will use the FpcTP state vars and
-#   a Liq only system.
-def grab_thermo_Liq_FpcTP_base(db):
+#   a Liq-Vap system. This base automatically includes phase equilibrium
+#   arguments that IDAES will need to resolve the Liq-Vap problem.
+def grab_thermo_Liq_Vap_FpcTP_base(db):
     # Get the base and place into a result object
-    base = db.get_base("thermo_Liq_FpcTP")
+    base = db.get_base("thermo_Liq_Vap_FpcTP")
     return base
 
-# ========================== (6) ================================
-# Get chemical components/species for a simulation case
-#       NOTE: This function here also returns a 'list' of the
-#           components that it finds. This is not a built in
-#           feature of the EDB, but is very useful because
-#           getting reactions is dependent on the component list.
-def get_components_and_add_to_idaes_config(db, base_obj, comp_list):
-    res_obj_comps = db.get_components(component_names=comp_list)
-
-    # Iterate through the results object and add the components
-    #   to the base_obj
-    for comp_obj in res_obj_comps:
-        print("Adding " + str(comp_obj.name) + "" )
-        base_obj.add(comp_obj)
-    print()
-    return base_obj
-
-
-# ========================== (7) ================================
-# Grab the reactions associated with the list of components and add
-#   them to a reaction base as equilibrium reactions
-#
-def add_equilibrium_reactions_to_react_base(db, react_base_obj, comp_list):
-    react_obj = db.get_reactions(component_names=comp_list)
-    for r in react_obj:
-        print("Found reaction: " + str(r.name))
-        r._data["type"] = "equilibrium"
-        react_base_obj.add(r)
-    return react_base_obj
-
-
-# ========================== (9) ================================
-# Create the Pyomo model by using the thermo_config and reaction_config
-#   that were generated from the EDB.
-#
-def build_equilibrium_model(thermo_config, reaction_config):
-    model = ConcreteModel()
-    model.fs = FlowsheetBlock(default={"dynamic": False})
-    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
-    model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params, **reaction_config}
-        )
-
-    model.fs.unit = EquilibriumReactor(
-        default={
-            "property_package": model.fs.thermo_params,
-            "reaction_package": model.fs.rxn_params,
-            "has_rate_reactions": False,
-            "has_equilibrium_reactions": True,
-            "has_heat_transfer": False,
-            "has_heat_of_reaction": False,
-            "has_pressure_change": False,
-        }
-    )
-
-    return model
-
-
 # Run script for testing
-def run_simple_acid_with_mockdb(db):
-    base_obj = grab_thermo_Liq_FpcTP_base(db)
+def run_vap_liq_with_mockdb(db):
+    base_obj = grab_thermo_Liq_Vap_FpcTP_base(db)
 
     # Our components for this problem are as follows:
-    comp_list = ["H2O", "H_+", "OH_-", "H2CO3", "HCO3_-", "CO3_2-"]
+    comp_list = ["H2O", "H_+", "OH_-", "H2CO3", "HCO3_-", "CO3_2-", "CO2"]
 
     base_obj = get_components_and_add_to_idaes_config(db, base_obj, comp_list)
 
@@ -197,12 +147,25 @@ def run_simple_acid_with_mockdb(db):
     #       for degrees of freedom, state variables, etc.
     thermo_config = base_obj.idaes_config
     reaction_config = react_base.idaes_config
-    model = build_equilibrium_model(thermo_config, reaction_config)
 
-    return model
+    # These are not brought in correctly
+    print(thermo_config["phases_in_equilibrium"])
+    print(thermo_config["phase_equilibrium_state"])
 
+    # This may also be wrong...?
+    print(thermo_config["components"]["H2O"]["phase_equilibrium_form"])
+
+    # Wrong Form
+    #"phase_equilibrium_form": {"Vap": fugacity, "Liq": fugacity}
+
+    # Correct form
+    #"phase_equilibrium_form": {("Vap", "Liq"): fugacity},
+
+    #model = build_equilibrium_model(thermo_config, reaction_config)
+
+    #return model
 
 # Run this file as standalone script
 if __name__ == "__main__":
     (db, connected) = connect_to_edb()
-    model = run_simple_acid_with_mockdb(db)
+    model = run_vap_liq_with_mockdb(db)
