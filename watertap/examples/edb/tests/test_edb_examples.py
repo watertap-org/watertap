@@ -18,6 +18,10 @@ from watertap.examples.edb.the_basics import (
 )
 from watertap.examples.edb.simple_acid import run_simple_acid_with_mockdb
 from watertap.examples.edb.vapor_liquid_equilibrium import run_vap_liq_with_mockdb
+from watertap.examples.edb.solid_precipitation_reactions import (
+    run_sol_liq_with_mockdb,
+    run_liq_only_with_mockdb,
+)
 
 # Import pyomo methods to check the system units
 from pyomo.util.check_units import assert_units_consistent
@@ -25,7 +29,7 @@ from idaes.core.util.model_statistics import (
     degrees_of_freedom,
 )
 from idaes.core import AqueousPhase, VaporPhase, SolidPhase
-from idaes.core.components import Solvent, Solute, Cation, Anion
+from idaes.core.components import Solvent, Solute, Cation, Anion, Component
 
 __author__ = "Austin Ladshaw"
 
@@ -71,6 +75,11 @@ def test_simple_acid(edb):
     assert len(model.fs.thermo_params.phase_list) == 1
     assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
 
+    # Check for correct reactions
+    assert len(model.fs.rxn_params.reaction_idx) == 3
+    assert 'H2O_Kw' in model.fs.rxn_params.reaction_idx
+    assert 'H2CO3_Ka1' in model.fs.rxn_params.reaction_idx
+    assert 'H2CO3_Ka2' in model.fs.rxn_params.reaction_idx
 
 @pytest.mark.component
 def test_vapor_liquid_equilibrium(edb):
@@ -102,3 +111,79 @@ def test_vapor_liquid_equilibrium(edb):
     assert len(model.fs.thermo_params.phase_list) == 2
     assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
     assert isinstance(model.fs.thermo_params.Vap, VaporPhase)
+
+    # Check for correct reactions
+    assert len(model.fs.rxn_params.reaction_idx) == 4
+    assert 'H2O_Kw' in model.fs.rxn_params.reaction_idx
+    assert 'H2CO3_Ka1' in model.fs.rxn_params.reaction_idx
+    assert 'H2CO3_Ka2' in model.fs.rxn_params.reaction_idx
+    assert 'CO2_to_H2CO3' in model.fs.rxn_params.reaction_idx
+
+@pytest.mark.component
+def test_solid_precipitation_reactions(edb):
+    model = run_sol_liq_with_mockdb(edb)
+
+    # Check model stats
+    assert_units_consistent(model)
+    assert degrees_of_freedom(model) == 8
+
+    # Check for correct species and phases
+    assert hasattr(model.fs.thermo_params, 'component_list')
+    assert len(model.fs.thermo_params.component_list) == 6
+    assert 'H2O' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.H2O, Solvent)
+    assert 'H_+' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.component('H_+'), Cation)
+    assert 'OH_-' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.component('OH_-'), Anion)
+    assert 'Ca_2+' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.component('Ca_2+'), Cation)
+    assert 'CaOH_+' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.component('CaOH_+'), Cation)
+    assert 'Ca[OH]2' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.component('Ca[OH]2'), Component)
+
+    assert hasattr(model.fs.thermo_params, 'phase_list')
+    assert len(model.fs.thermo_params.phase_list) == 2
+    assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
+    assert isinstance(model.fs.thermo_params.Sol, SolidPhase)
+
+    # Check for correct reactions
+    assert len(model.fs.rxn_params.reaction_idx) == 3
+    assert 'H2O_Kw' in model.fs.rxn_params.reaction_idx
+    assert 'CaOH_K' in model.fs.rxn_params.reaction_idx
+    assert 'CaOH2_Ksp' in model.fs.rxn_params.reaction_idx
+
+@pytest.mark.component
+def test_solid_precipitation_reactions_liq_only(edb):
+    model = run_liq_only_with_mockdb(edb)
+
+    # Check model stats
+    assert_units_consistent(model)
+    assert degrees_of_freedom(model) == 8
+
+    # Check for correct species and phases
+    assert hasattr(model.fs.thermo_params, 'component_list')
+    assert len(model.fs.thermo_params.component_list) == 6
+    assert 'H2O' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.H2O, Solvent)
+    assert 'H_+' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.component('H_+'), Cation)
+    assert 'OH_-' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.component('OH_-'), Anion)
+    assert 'Ca_2+' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.component('Ca_2+'), Cation)
+    assert 'CaOH_+' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.component('CaOH_+'), Cation)
+    assert 'Ca[OH]2' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.component('Ca[OH]2'), Component)
+
+    assert hasattr(model.fs.thermo_params, 'phase_list')
+    assert len(model.fs.thermo_params.phase_list) == 2
+    assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
+    assert isinstance(model.fs.thermo_params.Sol, SolidPhase)
+
+    # Check for correct reactions
+    assert len(model.fs.rxn_params.reaction_idx) == 2
+    assert 'H2O_Kw' in model.fs.rxn_params.reaction_idx
+    assert 'CaOH_K' in model.fs.rxn_params.reaction_idx

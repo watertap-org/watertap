@@ -140,7 +140,7 @@
       ]
     },
     "type": "equilibrium",
-    "name": "Ca[OH]2_Kb2",
+    "name": "CaOH_K",
     "components": [
       "CaOH_+",
       "OH_-",
@@ -963,7 +963,7 @@
       ]
     },
     "type": "equilibrium",
-    "name": "FeOH4_K",
+    "name": "BOH4_K",
     "components": [
       "B[OH]4_-",
       "B[OH]3",
