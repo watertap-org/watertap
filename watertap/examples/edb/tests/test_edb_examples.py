@@ -13,13 +13,14 @@
 import pytest
 from watertap.examples.edb.the_basics import run_the_basics_with_mockdb
 from watertap.examples.edb.simple_acid import run_simple_acid_with_mockdb
+from watertap.examples.edb.vapor_liquid_equilibrium import run_vap_liq_with_mockdb
 
 # Import pyomo methods to check the system units
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
 )
-from idaes.core import AqueousPhase
+from idaes.core import AqueousPhase, VaporPhase, SolidPhase
 from idaes.core.components import Solvent, Solute, Cation, Anion
 
 __author__ = "Austin Ladshaw"
@@ -57,3 +58,35 @@ def test_simple_acid(edb):
     assert hasattr(model.fs.thermo_params, 'phase_list')
     assert len(model.fs.thermo_params.phase_list) == 1
     assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
+
+
+@pytest.mark.component
+def test_vapor_liquid_equilibrium(edb):
+    model = run_vap_liq_with_mockdb(edb)
+
+    # Check model stats
+    assert_units_consistent(model)
+    assert degrees_of_freedom(model) == 11
+
+    # Check for correct species and phases
+    assert hasattr(model.fs.thermo_params, 'component_list')
+    assert len(model.fs.thermo_params.component_list) == 7
+    assert 'H2O' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.H2O, Solvent)
+    assert 'CO2' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.CO2, Solute)
+    assert 'H_+' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.component('H_+'), Cation)
+    assert 'OH_-' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.component('OH_-'), Anion)
+    assert 'HCO3_-' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.component('HCO3_-'), Anion)
+    assert 'CO3_2-' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.component('CO3_2-'), Anion)
+    assert 'H2CO3' in model.fs.thermo_params.component_list
+    assert isinstance(model.fs.thermo_params.H2CO3, Solute)
+
+    assert hasattr(model.fs.thermo_params, 'phase_list')
+    assert len(model.fs.thermo_params.phase_list) == 2
+    assert isinstance(model.fs.thermo_params.Liq, AqueousPhase)
+    assert isinstance(model.fs.thermo_params.Vap, VaporPhase)
