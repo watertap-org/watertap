@@ -11,7 +11,11 @@
 #
 ###############################################################################
 import pytest
-from watertap.examples.edb.the_basics import run_the_basics_with_mockdb
+from watertap.examples.edb.the_basics import (
+    run_the_basics_with_mockdb,
+    run_the_basics_alt_with_mockdb,
+    run_the_basics_dummy_rxn_with_mockdb,
+)
 from watertap.examples.edb.simple_acid import run_simple_acid_with_mockdb
 from watertap.examples.edb.vapor_liquid_equilibrium import run_vap_liq_with_mockdb
 
@@ -28,6 +32,14 @@ __author__ = "Austin Ladshaw"
 @pytest.mark.component
 def test_the_basics(edb):
     assert run_the_basics_with_mockdb(edb) == True
+
+@pytest.mark.component
+def test_the_basics_inherent(edb):
+    assert run_the_basics_alt_with_mockdb(edb) == True
+
+@pytest.mark.component
+def test_the_basics_inherent_with_dummy(edb):
+    assert run_the_basics_dummy_rxn_with_mockdb(edb) == True
 
 @pytest.mark.component
 def test_simple_acid(edb):

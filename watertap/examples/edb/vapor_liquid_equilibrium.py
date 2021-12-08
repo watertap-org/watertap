@@ -142,8 +142,3 @@ def run_vap_liq_with_mockdb(db):
     model = build_equilibrium_model(thermo_config, reaction_config)
 
     return model
-
-# Run this file as standalone script
-if __name__ == "__main__":
-    (db, connected) = connect_to_edb()
-    model = run_vap_liq_with_mockdb(db)

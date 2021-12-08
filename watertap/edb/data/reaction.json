@@ -969,6 +969,17 @@
       "B[OH]3",
       "OH_-"
     ]
+  },
+  {
+    "stoichiometry": {
+    },
+    "equilibrium_form": "log_power_law_equil",
+    "parameter_data": {
+    },
+    "type": "equilibrium",
+    "name": "dummy",
+    "components": [
+    ]
   }
 
 ]

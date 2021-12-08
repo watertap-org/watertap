@@ -165,8 +165,6 @@ def get_reactions_return_object(db, base_obj, comp_list, is_inherent=True):
         print("Found reaction: " + str(r.name))
         if (is_inherent == True):
             r._data["type"] = "inherent"
-        else:
-            r._data["type"] = "equilibrium"
         base_obj.add(r)
     return base_obj
 
@@ -210,8 +208,58 @@ def run_the_basics_with_mockdb(db):
     # If all goes well, this function returns true
     return is_thermo_reaction_pair_valid(base_obj.idaes_config, react_base.idaes_config)
 
+# Run script for testing
+def run_the_basics_alt_with_mockdb(db):
+    base_obj = grab_base_thermo_config(db)
 
-# Run this file as standalone script
-if __name__ == "__main__":
-    (db, connected) = connect_to_edb()
-    run_the_basics_with_mockdb(db)
+    (base_obj, comp_list) = get_components_and_add_to_idaes_config(db, base_obj, by_elements=True)
+
+    # Add reactions to the thermo base as 'inherent'
+    base_obj = get_reactions_return_object(db, base_obj, comp_list, is_inherent=True)
+
+    # If all goes well, this function returns true
+    return is_thermo_config_valid(base_obj.idaes_config)
+
+# Run script for testing
+def run_the_basics_dummy_rxn_with_mockdb(db):
+    base_obj = grab_base_thermo_config(db)
+
+    (base_obj, comp_list) = get_components_and_add_to_idaes_config(db, base_obj, by_elements=True)
+
+    # Add reactions to the thermo base as 'inherent'
+    base_obj = get_reactions_return_object(db, base_obj, comp_list, is_inherent=True)
+
+    # Create a reaction config
+    react_base = grab_base_reaction_config(db)
+
+    # If no reactions are in the reaction base, this will cause an error in IDAES.
+    #   However, we can add a 'dummy' reaction just to satisfy the IDAES code base.
+    react_obj = db.get_reactions(reaction_names=["dummy"])
+    for r in react_obj:
+        print("Found reaction: " + str(r.name))
+        react_base.add(r)
+
+    # IDAES will throw an exception when we try to do this if something is wrong
+    thermo_config = base_obj.idaes_config
+    reaction_config = react_base.idaes_config
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
+    model.fs.rxn_params = GenericReactionParameterBlock(
+            default={"property_package": model.fs.thermo_params, **reaction_config}
+        )
+
+    model.fs.unit = EquilibriumReactor(
+        default={
+            "property_package": model.fs.thermo_params,
+            "reaction_package": model.fs.rxn_params,
+            "has_rate_reactions": False,
+            "has_equilibrium_reactions": False,
+            "has_heat_transfer": False,
+            "has_heat_of_reaction": False,
+            "has_pressure_change": False,
+        }
+    )
+
+    # If all goes well, this function returns true
+    return is_thermo_reaction_pair_valid(base_obj.idaes_config, react_base.idaes_config)

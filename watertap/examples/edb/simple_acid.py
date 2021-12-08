@@ -138,7 +138,6 @@ def add_equilibrium_reactions_to_react_base(db, react_base_obj, comp_list):
     react_obj = db.get_reactions(component_names=comp_list)
     for r in react_obj:
         print("Found reaction: " + str(r.name))
-        r._data["type"] = "equilibrium"
         react_base_obj.add(r)
     return react_base_obj
 
@@ -192,9 +191,3 @@ def run_simple_acid_with_mockdb(db):
     model = build_equilibrium_model(thermo_config, reaction_config)
 
     return model
-
-
-# Run this file as standalone script
-if __name__ == "__main__":
-    (db, connected) = connect_to_edb()
-    model = run_simple_acid_with_mockdb(db)
