@@ -101,7 +101,8 @@ class Database:
             except OSError:
                 raise KeyError(
                     f"Could not find entry for {technology} in database.")
-            f.close()
+            finally:
+                f.close()
 
             fdata = yaml.load(lines)
 
