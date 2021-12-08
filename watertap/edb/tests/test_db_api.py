@@ -154,15 +154,19 @@ data2 = data1.copy() + [{
 #   With these 'components' and this 'data' in the DB,
 #   getting reactions with *any* component should return 'any_num' records,
 #   and getting reactions with *all* components should return 'all_num' records
+#   and getting reactions with *all* components and *new* components should
+#   return 'new_num' records
 @pytest.mark.unit
-@pytest.mark.parametrize("components,data,any_num,all_num", [
-    (["H2O", "CO2", "H2CO3"], data1, 2, 1),
-    (["H2O", "H +", "OH -", "H2CO3", "HCO3 -"], data2, 3, 0),
-    (["H2CO3"], data2, 2, 2),
+@pytest.mark.parametrize("components,data,any_num,all_num,new_num", [
+    (["H2O", "CO2", "H2CO3"], data1, 2, 1, 2),
+    (["H2O", "H +", "OH -", "H2CO3", "HCO3 -"], data2, 3, 2, 3),
+    (["H2CO3"], data2, 2, 0, 2),
 ])
-def test_get_reactions(mockdb, components, data, any_num, all_num):
+def test_get_reactions(mockdb, components, data, any_num, all_num, new_num):
     insert_reactions(mockdb._db.reaction, data)
     reactions = mockdb.get_reactions(components, any_components=True)
     assert len(list(reactions)) == any_num
     reactions = mockdb.get_reactions(components, any_components=False)
     assert len(list(reactions)) == all_num
+    reactions = mockdb.get_reactions(components, any_components=False, include_new_components = True)
+    assert len(list(reactions)) == new_num

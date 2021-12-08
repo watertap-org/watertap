@@ -13,15 +13,15 @@
 
 """
     Ideal NaOCl Chlorination posttreatment process
-    ----------------------------------------------
+
     This will build an ideal NaOCl pretreatment block as a combination of a
     Mixer (where NaOCl is added) and an EquilibriumReactor (where pH and free
-    chlorine is calculated)
+    chlorine is calculated)::
 
                     NaOCl stream
                         |
                         V
-    inlet stream ---> [Mixer] --- outlet stream ---> [EquilibriumReactor] ---> exit stream (to distribution)
+        inlet stream ---> [Mixer] --- outlet stream ---> [EquilibriumReactor] ---> exit stream (to distribution)
 """
 
 # Importing the object for units from pyomo

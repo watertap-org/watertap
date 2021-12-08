@@ -1,5 +1,5 @@
 watertap package
-==================
+================
 
 Subpackages
 -----------
@@ -7,10 +7,24 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   watertap.core
+   watertap.data
    watertap.edb
-   watertap.examples.flowsheets
+   watertap.examples
    watertap.property_models
+   watertap.tools
+   watertap.ui
    watertap.unit_models
+
+Submodules
+----------
+
+watertap.conftest module
+------------------------
+
+.. automodule:: watertap.conftest
+   :members:
+   :show-inheritance:
 
 Module contents
 ---------------
