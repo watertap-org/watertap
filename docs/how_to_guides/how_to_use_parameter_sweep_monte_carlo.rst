@@ -4,7 +4,7 @@ Monte Carlo testing with the Parameter Sweep
 Overview
 --------
 
-This guide introduces two important features of the parameter sweep tool: (1) the ability to prescribe random model values and (2) the ability to take advantage of parallel computing resources for large runs.  It is recommended that new users start with the :ref:`beginner parameter sweep guide<how_to_use_parameter_sweep>` before proceeding.
+This guide introduces two important features of the parameter sweep tool: (1) the ability to prescribe random model values and (2) the ability to take advantage of parallel computing resources for large runs.  It is recommended that new users familiarize themselves with the :ref:`beginner parameter sweep guide<how_to_use_parameter_sweep>` before proceeding.
 
 .. shows you how to use the parameter sweep tool to explore the effect of changing model parameters or decision variables within your WaterTAP model.
 
@@ -30,7 +30,7 @@ As before, we begin by importing or explicitly programming any functions relatin
     # import my_flowsheet_module as mfm
     import watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery as RO_flowsheet
 
-Once this is done, import the parameter sweep tool and two different random sampling classes
+Once this is done, we import the parameter sweep tool and two different random sampling classes
 
 .. testcode::
 
@@ -38,7 +38,7 @@ Once this is done, import the parameter sweep tool and two different random samp
 
 The parameter sweep tool currently offers three random classes:
 
-* ``UniformSample``: Draw random samples uniformly from an upper and lower range.
+* ``UniformSample``: Draw samples uniformly from a given upper and lower range.
 * ``NormalSample``: Draw samples from a normal distribution given a mean and standard deviation.
 * ``LatinHypercubeSample``: Draw samples using a Latin Hypercube algorithm which may yield a more complete exploration of high-dimensional parameter spaces. Note that currently this sample type may not be combined with other sampling types.
 
@@ -69,16 +69,16 @@ Once the model has been setup, we specify the variables to randomly sample using
     sweep_params['A_comp'] = NormalSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
     sweep_params['B_comp'] = NormalSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
 
-where the ``spacer_porosity`` attribute will be randomly selected from a uniform distribution of values in the range :math:`[0.95, 0.99]` and model values ``A_comp`` and ``B_comp`` will be drawn from normal distributions centered at :math:`4.0\times10^{-12}` and :math:`3.5\times10^{-8}` with standard deviations of :math:`12-14\%`, respectively.  For this example, we'll extract outputs associated with cost, the levelized cost of water (LCOW) and energy consumption (EC), defined via another dictionary
+where the ``spacer_porosity`` attribute will be randomly selected from a uniform distribution of values in the range :math:`[0.95, 0.99]` and model values ``A_comp`` and ``B_comp`` will be drawn from normal distributions centered at :math:`4.0\times10^{-12}` and :math:`3.5\times10^{-8}` with standard deviations of :math:`12-14\%`, respectively.  For this example, we'll extract flowsheet outputs associated with cost, the levelized cost of water (LCOW) and energy consumption (EC), defined via another dictionary
 
 .. testcode::
 
-    outputs = {}
+    outputs = dict()
     outputs['EC'] = m.fs.specific_energy_consumption
     outputs['LCOW'] = m.fs.costing.LCOW
 
 
-With the flowsheet defined and suitably initalized and the definitions of ``sweep_params`` and ``outputs`` on hand, we can call the ``parameter_sweep`` function as before, where we exercise four new keyword arguments: (1) The ability to pass in custom optimization routines to be executed for each sample, (2) the ability to save per-process results for parallel debugging, (3) the specification of the number of samples to draw, and (4) the ability to set a seed for the randomly-generated values which allows consistency to be enforced between runs.
+With the flowsheet defined and suitably initalized and definitions for ``sweep_params`` and ``outputs`` on hand, we can call the ``parameter_sweep`` function as before, where we exercise four new keyword arguments: (1) the ability to pass in custom optimization routines to be executed for each sample, (2) the ability to save per-process results for parallel debugging, (3) the specification of the number of samples to draw, and (4) the ability to set a seed for the randomly-generated values which allows consistency to be enforced between runs.
 
 .. testcode::
 
@@ -91,7 +91,7 @@ With the flowsheet defined and suitably initalized and the definitions of ``swee
     global_results = parameter_sweep(m, sweep_params, outputs, results_file='monte_carlo_results.csv', 
         optimize_function=RO_flowsheet.optimize, debugging_data_dir=debugging_data_dir, num_samples=num_samples, seed=seed)
 
-Note that ``num_samples`` must be provided for any of the random sample classes.  For the very small problem size shown here, parallel hardware is almost certainly not necessary.  However, for larger total numbers of samples, a significant speedup may be attained on a multi-core workstation or high performance computing (HPC) cluster.  To distribute the workload between more than one worker, simply call the scipt using the ``mpirun`` command from the command line
+Note that ``num_samples`` must be provided for any of the random sample classes.  For the very small problem size and simple model used here, parallel hardware is almost certainly not necessary.  However, for larger total numbers of samples or more computationally demanding models, a significant speedup may be attained on a multi-core workstation or high performance computing (HPC) cluster.  To distribute the workload between more than one worker, simply call the scipt using the ``mpirun`` command from the command line
 
 .. code:: bash
 
