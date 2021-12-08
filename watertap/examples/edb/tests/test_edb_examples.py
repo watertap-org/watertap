@@ -154,6 +154,9 @@ def test_solid_precipitation_reactions(edb):
     assert 'CaOH_K' in model.fs.rxn_params.reaction_idx
     assert 'CaOH2_Ksp' in model.fs.rxn_params.reaction_idx
 
+    # Check for correct reaction order on solid species 
+    assert model.fs.rxn_params.reaction_CaOH2_Ksp.reaction_order[('Sol', 'Ca[OH]2')].value == 0
+
 @pytest.mark.component
 def test_solid_precipitation_reactions_liq_only(edb):
     model = run_liq_only_with_mockdb(edb)

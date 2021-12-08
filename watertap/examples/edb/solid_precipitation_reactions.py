@@ -156,6 +156,10 @@ def run_sol_liq_with_mockdb(db):
 
     thermo_config = base_obj.idaes_config
     reaction_config = react_base.idaes_config
+
+    #Prior to sending the config to the IDAES objects, we will manually modifiy the
+    #   reaction order for the solubility equation.
+    reaction_config["equilibrium_reactions"]["CaOH2_Ksp"]["parameter_data"]["reaction_order"][('Sol', 'Ca[OH]2')] = 0
     model = build_equilibrium_model(thermo_config, reaction_config)
     return model
 
