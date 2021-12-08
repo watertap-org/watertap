@@ -9,5 +9,7 @@ For information on how to install and set up the EDB, see :ref:`install-edb`.
     :maxdepth: 1
 
     ../examples/edb/edb_example
+    ../examples/edb/simple_acid_example
+    ../examples/edb/multiple_phases_example
     edb_cli
     edb_api
