@@ -1,3 +1,5 @@
+.. _how_to_use_parameter_sweep:
+
 How to explore a model with parameter sweep
 ===========================================
 
