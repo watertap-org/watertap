@@ -14,7 +14,7 @@ This guide introduces two important features of the parameter sweep tool: (1) th
 How To
 ------
 
-As before, we begin by importing or explicitly programming any functions relating to flowsheet building/specification, simulation, and optimization setup steps.  We'll use the same RO with energy recovery flowsheet for this example.
+As before, we begin by importing or explicitly programming any functions relating to flowsheet building/specification, simulation, and optimization setup steps.  We will use the same RO with energy recovery flowsheet for this example.
 
 .. testsetup::
 
@@ -42,7 +42,7 @@ The parameter sweep tool currently offers three random classes:
 * ``NormalSample``: Draw samples from a normal distribution given a mean and standard deviation.
 * ``LatinHypercubeSample``: Draw samples using a Latin Hypercube algorithm which may yield a more complete exploration of high-dimensional parameter spaces. Note that currently this sample type may not be combined with other sampling types.
 
-We'll use the :ref:`same setup steps as before<how_to_use_parameter_sweep>` which return a flowsheet model ``m``, and perform some initialization
+We will use the :ref:`same setup steps as before<how_to_use_parameter_sweep>` which returns a flowsheet model ``m``, and performs some initialization
 
 .. testcode::
    
@@ -78,7 +78,7 @@ where the ``spacer_porosity`` attribute will be randomly selected from a uniform
     outputs['LCOW'] = m.fs.costing.LCOW
 
 
-With the flowsheet defined and suitably initalized and definitions for ``sweep_params`` and ``outputs`` on hand, we can call the ``parameter_sweep`` function as before, where we exercise four new keyword arguments: (1) the ability to pass in custom optimization routines to be executed for each sample, (2) the ability to save per-process results for parallel debugging, (3) the specification of the number of samples to draw, and (4) the ability to set a seed for the randomly-generated values which allows consistency to be enforced between runs.
+With the flowsheet defined and suitably initialized, along with the definitions for ``sweep_params`` and ``outputs`` on hand, we can call the ``parameter_sweep`` function as before, where we exercise four new keyword arguments: (1) the ability to pass in custom optimization routines to be executed for each sample, (2) the ability to save per-process results for parallel debugging, (3) the specification of the number of samples to draw, and (4) the ability to set a seed for the randomly-generated values which allows consistency to be enforced between runs.
 
 .. testcode::
 
