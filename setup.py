@@ -43,7 +43,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse[prerelease] @ https://github.com/watertap-org/idaes-pse/archive/1.11.0.watertap.2021.10.27.zip",
+    "idaes-pse[prerelease] @ https://github.com/watertap-org/idaes-pse/archive/1.11.0.watertap.2021.11.29.zip",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -91,7 +91,7 @@ setup(
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
         *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
-        "pyomo",  # (also needed for units in electrolyte database (edb))
+        "pyomo>=6.2",  # (also needed for units in electrolyte database (edb))
         # the following requirements are for the electrolyte database (edb)
         "pymongo>3",  # database interface
         "fastjsonschema",  # schema validation

@@ -361,7 +361,7 @@ class TestWaterStoich(object):
         m = water_stoich
 
         # Next, try adding scaling for species
-        min = 1e-6
+        min = 1e-3
         for i in m.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
             if m.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
@@ -391,9 +391,6 @@ class TestWaterStoich(object):
         orig_fixed_vars = fixed_variables_set(m)
         orig_act_consts = activated_constraints_set(m)
 
-        solver.options['bound_push'] = 1e-10
-        solver.options['mu_init'] = 1e-6
-        solver.options['nlp_scaling_method'] = 'user-scaling'
         m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
         fin_fixed_vars = fixed_variables_set(m)
