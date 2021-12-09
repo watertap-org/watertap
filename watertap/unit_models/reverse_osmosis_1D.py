@@ -722,9 +722,6 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
-        if optarg is None:
-            optarg = {'bound_push': 1e-8}
-
         opt = get_solver(solver, optarg)
 
         init_log.info('Starting Initialization Step 1: initialize blocks.')
