@@ -36,7 +36,7 @@ for active use by water treatment researchers and engineers.""".replace(
 
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse==1.12.0rc0,>=1.12",  # from PyPI
+    "idaes-pse>=1.12.0rc0",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
