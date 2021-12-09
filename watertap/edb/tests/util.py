@@ -7,7 +7,6 @@ from watertap.edb.db_api import ElectrolyteDB
 
 
 class MockDB(ElectrolyteDB):
-
     def __init__(self, db="foo", **kwargs):
         self._client = mongomock.MongoClient()
         self._db = getattr(self._client, db)
@@ -32,7 +31,7 @@ def dict_diff(d1, d2, result=[], pfx=""):
             same = None
             try:
                 same = d1 == d2
-            except:   # cannot compare them
+            except:  # cannot compare them
                 pass  # good enough
             if same is False:
                 result.append(f"value at {pfx} first != second")
@@ -51,4 +50,3 @@ def dict_diff(d1, d2, result=[], pfx=""):
                 pfx += f"{k}."
                 dict_diff(d1[k], d2[k], result=result, pfx=pfx)
     return result
-

@@ -74,13 +74,10 @@
 
 # ========= These imports (below) are for testing the configs from EDB ===============
 # Import specific pyomo objects
-from pyomo.environ import (
-    ConcreteModel,
-)
+from pyomo.environ import ConcreteModel
+
 # Import the idaes objects for Generic Properties and Reactions
-from idaes.generic_models.properties.core.generic.generic_property import (
-    GenericParameterBlock,
-)
+from idaes.generic_models.properties.core.generic.generic_property import GenericParameterBlock
 from idaes.generic_models.properties.core.generic.generic_reaction import (
     GenericReactionParameterBlock,
 )
@@ -90,6 +87,7 @@ from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReac
 
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock
+
 # ========= These imports (above) are for testing the configs from EDB ===============
 
 
@@ -119,6 +117,7 @@ def grab_thermo_Liq_Vap_FpcTP_base(db):
     # Get the base and place into a result object
     base = db.get_base("thermo_Liq_Vap_FpcTP")
     return base
+
 
 # Run script for testing
 def run_vap_liq_with_mockdb(db):

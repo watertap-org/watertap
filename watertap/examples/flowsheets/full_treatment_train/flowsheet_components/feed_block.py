@@ -19,7 +19,7 @@ from watertap.examples.flowsheets.full_treatment_train.model_components import p
 from idaes.core.util.scaling import calculate_scaling_factors
 
 
-def build_feed(m, base='TDS'):
+def build_feed(m, base="TDS"):
     """
     Build a feed block for a specified property base. The state vars are fixed to the standard condition.
     Property bases include: 'TDS', 'ion', 'salt'
@@ -29,10 +29,8 @@ def build_feed(m, base='TDS'):
     prop = property_models.get_prop(m, base=base)
 
     # build
-    m.fs.feed = Feed(default={'property_package': prop})
+    m.fs.feed = Feed(default={"property_package": prop})
 
     # specify
     property_models.specify_feed(m.fs.feed.properties[0], base=base)
     m.fs.feed.properties[0].mass_frac_phase_comp  # touch so the block can be initialized
-
-

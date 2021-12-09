@@ -92,20 +92,14 @@ from idaes.core import AqueousPhase, LiquidPhase, SolidPhase, VaporPhase
 from idaes.core.phases import PhaseType
 from idaes.core import Component as IComponent
 from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.generic.generic_reaction import (
-    ConcentrationForm,
-)
+from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.generic_models.properties.core.pure import Perrys
 from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
 from idaes.generic_models.properties.core.pure.NIST import NIST
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.pure.electrolyte import (
-    relative_permittivity_constant,
-)
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
-    van_t_hoff,
-)
+from idaes.generic_models.properties.core.pure.electrolyte import relative_permittivity_constant
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
     power_law_equil,
     log_power_law_equil,
@@ -287,11 +281,7 @@ class ConfigGenerator:
                 _log.debug(f"substitute value: d={d} subst={subst} key={key}")
             # make a scalar into a list of length 1, but remember whether
             # it's a list or not
-            if (
-                isinstance(d[key], str)
-                or isinstance(d[key], int)
-                or isinstance(d[key], float)
-            ):
+            if isinstance(d[key], str) or isinstance(d[key], int) or isinstance(d[key], float):
                 str_values = [d[key]]
                 is_list = False
             else:
@@ -311,9 +301,7 @@ class ConfigGenerator:
                     elif str_value.lower() in subst:
                         new_value = subst[str_value.lower()]
                 elif subst == cls.SUBST_UNITS:
-                    if isinstance(
-                        str_value, str
-                    ):  # make sure it's not already evaluated
+                    if isinstance(str_value, str):  # make sure it's not already evaluated
                         _log.debug(
                             f"Substituting units: set {{'{key}': units('{str_value}')}} in {d}"
                         )
@@ -356,18 +344,14 @@ class ConfigGenerator:
             #  if found, perform substitution(s)
             if dicty(data_section):
                 sv_key = key_list.pop()
-                _log.debug(
-                    f"perform substitutions in data={data_section} for key='{sv_key}'"
-                )
+                _log.debug(f"perform substitutions in data={data_section} for key='{sv_key}'")
                 # if it is a wildcard, allow multiple substitutions
                 if "*" in sv_key:
                     matches = [k for k in data_section if fnmatchcase(k, sv_key)]
                     for match_key in matches:
                         if not stringish(data_section[match_key]):
                             continue  # don't try to substitute non strings/string-lists
-                        did_subst = substitute_value(
-                            data_section, sv[sv_section], match_key
-                        )
+                        did_subst = substitute_value(data_section, sv[sv_section], match_key)
                         if not did_subst:
                             _log.warning(
                                 f"Could not find substitution: section={sv_section} match={match_key} "
@@ -400,9 +384,7 @@ class ThermoConfig(ConfigGenerator):
             "nist": NIST,
             "relative_permittivity_constant": relative_permittivity_constant,
         },
-        "phase_equilibrium_form.*": {
-            "fugacity": fugacity,
-        },
+        "phase_equilibrium_form.*": {"fugacity": fugacity,},
         "type": {
             "solvent": Solvent,
             "solute": Solute,
@@ -443,7 +425,6 @@ class ThermoConfig(ConfigGenerator):
         for name in data["components"]:
             cls._key_to_tuple(data["components"][name], "phase_equilibrium_form")
 
-
     @classmethod
     def _key_to_tuple(cls, data, section):
         """Change all key values separated by '-' in the given section to tuples of those values."""
@@ -452,9 +433,13 @@ class ThermoConfig(ConfigGenerator):
         temp = {}
         for key in data[section]:
             item_list = key.split("-")
-            if (len(item_list)!=2):
-                raise BadConfiguration("BaseConfig._key_to_tuple", data,
-                    missing=None,why="\n"+section+" tuple key must be only 2 items\n")
+            if len(item_list) != 2:
+                raise BadConfiguration(
+                    "BaseConfig._key_to_tuple",
+                    data,
+                    missing=None,
+                    why="\n" + section + " tuple key must be only 2 items\n",
+                )
             temp[tuple(item_list)] = data[section][key]
         data[section] = temp
 
@@ -472,9 +457,7 @@ class ReactionConfig(ConfigGenerator):
             "concentrationform.molefraction": ConcentrationForm.moleFraction,
             "concentrationform.activity": ConcentrationForm.activity,
         },
-        "*_constant": {
-            "van_t_hoff": van_t_hoff,
-        },
+        "*_constant": {"van_t_hoff": van_t_hoff,},
     }
 
     def __init__(self, data, name="unknown", validation=True):
@@ -539,9 +522,7 @@ class BaseConfig(ConfigGenerator):
         "phases.Sol.equation_of_state": {"Ideal": Ideal},
         "phases.Vap.equation_of_state": {"Ideal": Ideal},
         "bubble_dew_method": {"IdealBubbleDew": IdealBubbleDew},
-        "phase_equilibrium_state.*": {
-            "SmoothVLE": SmoothVLE,
-        },
+        "phase_equilibrium_state.*": {"SmoothVLE": SmoothVLE,},
         "base_units.*": ConfigGenerator.SUBST_UNITS,
     }
 
@@ -581,9 +562,13 @@ class BaseConfig(ConfigGenerator):
         temp = {}
         for key in data[section]:
             item_list = key.split("-")
-            if (len(item_list)!=2):
-                raise BadConfiguration("BaseConfig._key_to_tuple", data,
-                    missing=None,why="\n"+section+" tuple key must be only 2 items\n")
+            if len(item_list) != 2:
+                raise BadConfiguration(
+                    "BaseConfig._key_to_tuple",
+                    data,
+                    missing=None,
+                    why="\n" + section + " tuple key must be only 2 items\n",
+                )
             temp[tuple(item_list)] = data[section][key]
         data[section] = temp
 
@@ -611,10 +596,7 @@ class DataWrapper:
     NAMES = DataWrapperNames
 
     def __init__(
-        self,
-        data: Dict,
-        config_gen_class: Type[ConfigGenerator] = None,
-        validate_as_type=None,
+        self, data: Dict, config_gen_class: Type[ConfigGenerator] = None, validate_as_type=None,
     ):
         """Ctor.
 
@@ -726,9 +708,7 @@ class DataWrapper:
         pass  # subclasses need to define this, using helper functions in this class
 
     @classmethod
-    def _method_to_str(
-        cls, fld, src, tgt, subst, required=False, default=None, caller: str = None
-    ):
+    def _method_to_str(cls, fld, src, tgt, subst, required=False, default=None, caller: str = None):
         """Convert a method object to a string representation.
 
         Raises:
@@ -742,9 +722,7 @@ class DataWrapper:
                 if default is not None:
                     str_value = default
                 else:
-                    raise BadConfiguration(
-                        caller, config=src, why=f"Unknown value for {fld}"
-                    )
+                    raise BadConfiguration(caller, config=src, why=f"Unknown value for {fld}")
             tgt[fld] = str_value
         elif required:
             raise BadConfiguration(caller, config=src, missing=fld)
@@ -951,9 +929,7 @@ class Reaction(DataWrapper):
             ro = self.data[self.NAMES.param][self.NAMES.reaction_order]
 
         if phase not in self.PHASES:
-            raise ValueError(
-                f"Invalid phase '{phase}'. Valid values: " f"{', '.join(self.PHASES)}"
-            )
+            raise ValueError(f"Invalid phase '{phase}'. Valid values: " f"{', '.join(self.PHASES)}")
         if phase not in ro:
             raise KeyError(f"Phase '{phase}' not found")
         ro = ro[phase]

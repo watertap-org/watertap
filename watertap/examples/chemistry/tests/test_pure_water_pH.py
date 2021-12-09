@@ -34,17 +34,13 @@ from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 
 # Importing the enum for concentration unit basis used in the 'get_concentration_term' function
-from idaes.generic_models.properties.core.generic.generic_reaction import (
-    ConcentrationForm,
-)
+from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
 
 # Import the object/function for heat of reaction
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
 
 # Import safe log power law equation
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
-    log_power_law_equil,
-)
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
 
 # Import k-value functions
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
@@ -78,9 +74,7 @@ from idaes.core.util.model_statistics import (
 )
 
 # Import the idaes objects for Generic Properties and Reactions
-from idaes.generic_models.properties.core.generic.generic_property import (
-    GenericParameterBlock,
-)
+from idaes.generic_models.properties.core.generic.generic_property import GenericParameterBlock
 from idaes.generic_models.properties.core.generic.generic_reaction import (
     GenericReactionParameterBlock,
 )
@@ -108,21 +102,14 @@ class Variant(str, enum.Enum):
     inherent = "inherent"
 
     def __str__(self):
-        return f'{self.__class__.__name__}.{self.name}'
+        return f"{self.__class__.__name__}.{self.name}"
 
     @property
     def is_equilibrium(self):
         return self is Variant.equilibrium
 
 
-@pytest.fixture(
-    scope="module",
-    params=[
-        Variant.equilibrium,
-        Variant.inherent
-    ],
-    ids=str
-)
+@pytest.fixture(scope="module", params=[Variant.equilibrium, Variant.inherent], ids=str)
 def variant(request) -> Variant:
     return request.param
 
@@ -183,40 +170,25 @@ def thermo_config(base_units):
                         "A": (30.09200, pyunits.J / pyunits.mol / pyunits.K),
                         "B": (
                             6.832514,
-                            pyunits.J
-                            * pyunits.mol ** -1
-                            * pyunits.K ** -1
-                            * pyunits.kiloK ** -1,
+                            pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -1,
                         ),
                         "C": (
                             6.793435,
-                            pyunits.J
-                            * pyunits.mol ** -1
-                            * pyunits.K ** -1
-                            * pyunits.kiloK ** -2,
+                            pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -2,
                         ),
                         "D": (
                             -2.534480,
-                            pyunits.J
-                            * pyunits.mol ** -1
-                            * pyunits.K ** -1
-                            * pyunits.kiloK ** -3,
+                            pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -3,
                         ),
                         "E": (
                             0.082139,
-                            pyunits.J
-                            * pyunits.mol ** -1
-                            * pyunits.K ** -1
-                            * pyunits.kiloK ** 2,
+                            pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** 2,
                         ),
                         "F": (-250.8810, pyunits.kJ / pyunits.mol),
                         "G": (223.3967, pyunits.J / pyunits.mol / pyunits.K),
                         "H": (0, pyunits.kJ / pyunits.mol),
                     },
-                    "entr_mol_form_liq_comp_ref": (
-                        69.95,
-                        pyunits.J / pyunits.K / pyunits.mol,
-                    ),
+                    "entr_mol_form_liq_comp_ref": (69.95, pyunits.J / pyunits.K / pyunits.mol,),
                     "pressure_sat_comp_coeff": {
                         "A": (4.6543, None),  # [1], temperature range 255.9 K - 373 K
                         "B": (1435.264, pyunits.K),
@@ -250,10 +222,7 @@ def thermo_config(base_units):
                         "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
                         "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
                     },
-                    "entr_mol_form_liq_comp_ref": (
-                        -10.75,
-                        pyunits.J / pyunits.K / pyunits.mol,
-                    ),
+                    "entr_mol_form_liq_comp_ref": (-10.75, pyunits.J / pyunits.K / pyunits.mol,),
                 },
                 # End parameter_data
             },
@@ -282,18 +251,13 @@ def thermo_config(base_units):
                         "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
                         "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
                     },
-                    "entr_mol_form_liq_comp_ref": (
-                        -10.75,
-                        pyunits.J / pyunits.K / pyunits.mol,
-                    ),
+                    "entr_mol_form_liq_comp_ref": (-10.75, pyunits.J / pyunits.K / pyunits.mol,),
                 },
                 # End parameter_data
             },
         },
         # End Component list
-        "phases": {
-            "Liq": {"type": AqueousPhase, "equation_of_state": Ideal},
-        },
+        "phases": {"Liq": {"type": AqueousPhase, "equation_of_state": Ideal},},
         "state_definition": FTPx,
         "state_bounds": {
             "flow_mol": (0, 50, 100),
@@ -305,11 +269,7 @@ def thermo_config(base_units):
         "base_units": base_units,
         "inherent_reactions": {
             "H2O_Kw": {
-                "stoichiometry": {
-                    ("Liq", "H2O"): -1,
-                    ("Liq", "H_+"): 1,
-                    ("Liq", "OH_-"): 1,
-                },
+                "stoichiometry": {("Liq", "H2O"): -1, ("Liq", "H_+"): 1, ("Liq", "OH_-"): 1,},
                 "heat_of_reaction": constant_dh_rxn,
                 "equilibrium_constant": van_t_hoff,
                 "equilibrium_form": log_power_law_equil,
@@ -320,16 +280,12 @@ def thermo_config(base_units):
                     "T_eq_ref": (298, pyunits.K),
                     # By default, reaction orders follow stoichiometry
                     #    manually set reaction order here to override
-                    "reaction_order": {
-                        ("Liq", "H2O"): 0,
-                        ("Liq", "H_+"): 1,
-                        ("Liq", "OH_-"): 1,
-                    },
+                    "reaction_order": {("Liq", "H2O"): 0, ("Liq", "H_+"): 1, ("Liq", "OH_-"): 1,},
                 }
                 # End parameter_data
             }
             # End R1
-        }
+        },
     }
     return data
 
@@ -341,11 +297,7 @@ def water_reaction_config(base_units):
         "base_units": base_units,
         "equilibrium_reactions": {
             "H2O_Kw": {
-                "stoichiometry": {
-                    ("Liq", "H2O"): -1,
-                    ("Liq", "H_+"): 1,
-                    ("Liq", "OH_-"): 1,
-                },
+                "stoichiometry": {("Liq", "H2O"): -1, ("Liq", "H_+"): 1, ("Liq", "OH_-"): 1,},
                 "heat_of_reaction": constant_dh_rxn,
                 "equilibrium_constant": van_t_hoff,
                 "equilibrium_form": log_power_law_equil,
@@ -356,11 +308,7 @@ def water_reaction_config(base_units):
                     "T_eq_ref": (298, pyunits.K),
                     # By default, reaction orders follow stoichiometry
                     #    manually set reaction order here to override
-                    "reaction_order": {
-                        ("Liq", "H2O"): 0,
-                        ("Liq", "H_+"): 1,
-                        ("Liq", "OH_-"): 1,
-                    },
+                    "reaction_order": {("Liq", "H2O"): 0, ("Liq", "H_+"): 1, ("Liq", "OH_-"): 1,},
                 }
                 # End parameter_data
             }
@@ -370,14 +318,14 @@ def water_reaction_config(base_units):
     }
     # End reaction_config definition
 
+
 def _get_without_inherent_reactions(config_dict: dict, key="inherent_reactions") -> dict:
     data = dict(config_dict)
     del data[key]
     return data
 
+
 class TestPureWater:
-
-
     @pytest.fixture
     def model(self, thermo_config, variant: Variant, water_reaction_config):
         if variant.is_equilibrium:
@@ -445,8 +393,8 @@ class TestPureWater:
             Variant.equilibrium: {
                 number_variables: 75,
                 number_total_constraints: 28,
-                number_unused_variables: 6
-            }
+                number_unused_variables: 6,
+            },
         }
         return expected[variant]
 
@@ -458,17 +406,14 @@ class TestPureWater:
 
     def _do_inherent_reaction_scaling(self, model):
         for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
-            scale = value(
-                model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr
-            )
+            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
             iscale.set_scaling_factor(
-                model.fs.unit.control_volume.inherent_reaction_extent[0.0, i[1]],
-                10 / scale,
+                model.fs.unit.control_volume.inherent_reaction_extent[0.0, i[1]], 10 / scale,
             )
             iscale.constraint_scaling_transform(
-                model.fs.unit.control_volume.properties_out[
-                    0.0
-                ].inherent_equilibrium_constraint[i[1]],
+                model.fs.unit.control_volume.properties_out[0.0].inherent_equilibrium_constraint[
+                    i[1]
+                ],
                 0.1,
             )
         return model
@@ -477,14 +422,10 @@ class TestPureWater:
         for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
             scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
             iscale.set_scaling_factor(
-                model.fs.unit.control_volume.equilibrium_reaction_extent[0.0, i[1]],
-                10 / scale,
+                model.fs.unit.control_volume.equilibrium_reaction_extent[0.0, i[1]], 10 / scale,
             )
             iscale.constraint_scaling_transform(
-                model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint[
-                    i[1]
-                ],
-                0.1,
+                model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 0.1,
             )
         return model
 
@@ -507,23 +448,17 @@ class TestPureWater:
             else:
                 scale = min
             iscale.set_scaling_factor(
-                model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]],
+                model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10 / scale,
+            )
+            iscale.set_scaling_factor(
+                model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i],
                 10 / scale,
             )
             iscale.set_scaling_factor(
-                model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[
-                    i
-                ],
-                10 / scale,
-            )
-            iscale.set_scaling_factor(
-                model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i],
-                10 / scale,
+                model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10 / scale,
             )
             iscale.constraint_scaling_transform(
-                model.fs.unit.control_volume.properties_out[
-                    0.0
-                ].component_flow_balances[i[1]],
+                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]],
                 10 / scale,
             )
             iscale.constraint_scaling_transform(
@@ -539,28 +474,18 @@ class TestPureWater:
 
         assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
 
-        assert isinstance(
-            model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix
-        )
+        assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
 
-        assert isinstance(
-            model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix
-        )
+        assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
         if variant.is_equilibrium:
             # When using equilibrium reactions, there is another set of scaling factors calculated
-            assert isinstance(
-                model.fs.unit.control_volume.reactions[0.0].scaling_factor, Suffix
-            )
+            assert isinstance(model.fs.unit.control_volume.reactions[0.0].scaling_factor, Suffix)
 
     @pytest.fixture
     def state_args(self):
         return {
-            "mole_frac_comp": {
-                "H2O": 1,
-                "H_+": 10 ** -7 / 55.6,
-                "OH_-": 10 ** -7 / 55.6,
-            },
+            "mole_frac_comp": {"H2O": 1, "H_+": 10 ** -7 / 55.6, "OH_-": 10 ** -7 / 55.6,},
             "pressure": 101325,
             "temperature": 298,
             "flow_mol": 10,
@@ -571,8 +496,9 @@ class TestPureWater:
         def _collect_data_to_check(m):
             return {
                 fixed_variables_set: fixed_variables_set(m),
-                activated_constraints_set: activated_constraints_set(m)
+                activated_constraints_set: activated_constraints_set(m),
             }
+
         data_before = _collect_data_to_check(model)
 
         model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
@@ -611,28 +537,17 @@ class TestPureWater:
     def test_solution(self, model_solve):
         model, _ = model_solve
 
-        assert pytest.approx(298, rel=1e-5) == value(
-            model.fs.unit.outlet.temperature[0]
-        )
+        assert pytest.approx(298, rel=1e-5) == value(model.fs.unit.outlet.temperature[0])
         assert pytest.approx(10, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
-        assert pytest.approx(101325, rel=1e-5) == value(
-            model.fs.unit.outlet.pressure[0]
-        )
+        assert pytest.approx(101325, rel=1e-5) == value(model.fs.unit.outlet.pressure[0])
 
         total_molar_density = (
-            value(
-                model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase["Liq"]
-            )
-            / 1000
+            value(model.fs.unit.control_volume.properties_out[0.0].dens_mol_phase["Liq"]) / 1000
         )
         assert pytest.approx(55.2336, rel=1e-5) == total_molar_density
 
-        pH = -value(
-            log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"] * total_molar_density)
-        )
-        pOH = -value(
-            log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"] * total_molar_density)
-        )
+        pH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"] * total_molar_density))
+        pOH = -value(log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"] * total_molar_density))
         assert pytest.approx(6.9997414, rel=1e-5) == pH
         assert pytest.approx(6.9997414, rel=1e-5) == pOH
         assert pytest.approx(0.99999, rel=1e-5) == value(
@@ -641,7 +556,6 @@ class TestPureWater:
 
 
 class TestPureWaterEDB(TestPureWater):
-
     @pytest.fixture
     def thermo_config(self, edb):
         base = edb.get_base("default_thermo")
@@ -664,7 +578,6 @@ class TestPureWaterEDB(TestPureWater):
             r._data["type"] = "inherent"
             base.add(r)
         return base.idaes_config
-
 
     @pytest.fixture
     def water_reaction_config(self, edb):

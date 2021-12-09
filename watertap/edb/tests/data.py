@@ -17,19 +17,14 @@ from pyomo.environ import units as pyunits
 from idaes.core.phases import PhaseType as PT
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
+from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
+from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
+    gibbs_energy,
     van_t_hoff,
 )
-from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.generic.generic_reaction import (
-    ConcentrationForm,
-)
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
-    gibbs_energy, van_t_hoff
-)
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
-    log_power_law_equil,
-)
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
 
 _reaction = {
     "stoichiometry": {"Liq": {"NH4 +": -1, "H +": 1, "NH3": 1}},
@@ -44,13 +39,7 @@ _reaction = {
     "type": "equilibrium",
     "name": "NH4_Ka",
     "components": ["NH4", "Ka"],
-    "base_units": {
-        "time": "s",
-        "length": "m",
-        "mass": "kg",
-        "amount": "mol",
-        "temperature": "K",
-    },
+    "base_units": {"time": "s", "length": "m", "mass": "kg", "amount": "mol", "temperature": "K",},
 }
 _component = {
     "valid_phase_types": ["PT.aqueousPhase"],
@@ -78,7 +67,7 @@ _component = {
     },
     "name": "Ca[OH]2",
     "type": "solute",
-    "elements": ["Ca", "O", "H"]
+    "elements": ["Ca", "O", "H"],
 }
 
 reaction_data = [_reaction, _reaction]
@@ -112,10 +101,7 @@ Ca_thermo_config = {
                     "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
                     "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
                 },
-                "entr_mol_form_liq_comp_ref": (
-                    -53,
-                    pyunits.J / pyunits.K / pyunits.mol,
-                ),
+                "entr_mol_form_liq_comp_ref": (-53, pyunits.J / pyunits.K / pyunits.mol,),
             },
         }
     }
@@ -153,11 +139,7 @@ Ca_thermo_data = {
 bicarbonate_reaction_config = {
     "equilibrium_reactions": {
         "H2CO3_Ka2": {
-            "stoichiometry": {
-                ("Liq", "HCO3 -"): -1,
-                ("Liq", "H +"): 1,
-                ("Liq", "CO3 2-"): 1,
-            },
+            "stoichiometry": {("Liq", "HCO3 -"): -1, ("Liq", "H +"): 1, ("Liq", "CO3 2-"): 1,},
             "heat_of_reaction": constant_dh_rxn,
             "equilibrium_constant": van_t_hoff,
             # "equilibrium_constant": gibbs_energy,
@@ -167,11 +149,7 @@ bicarbonate_reaction_config = {
                 "dh_rxn_ref": (14.9, pyunits.kJ / pyunits.mol),
                 "ds_rxn_ref": (-148.1, pyunits.J / pyunits.mol / pyunits.K),
                 # this gets added by the preprocessor
-                "reaction_order": {
-                    ("Liq", "HCO3 -"): -1,
-                    ("Liq", "H +"): 1,
-                    ("Liq", "CO3 2-"): 1,
-                },
+                "reaction_order": {("Liq", "HCO3 -"): -1, ("Liq", "H +"): 1, ("Liq", "CO3 2-"): 1,},
                 # "T_eq_ref": (300, pyunits.K),
             },
         }
@@ -192,13 +170,14 @@ bicarbonate_reaction_data = {
     "name": "H2CO3_Ka2",
     "components": ["H2CO3", "Ka2"],
     "reactant_elements": ["H", "O", "C"],
-    "type": "equilibrium"
+    "type": "equilibrium",
 }
 
 # ==========================================================
 
 from idaes.generic_models.properties.core.pure.Perrys import Perrys
 from idaes.generic_models.properties.core.pure.NIST import NIST
+
 # Import statements to be used in the starter config dict
 from idaes.core import VaporPhase, AqueousPhase
 from idaes.core.components import Solvent, Solute, Cation, Anion
@@ -247,40 +226,25 @@ recarbonation_thermo_config = {
                     "A": (30.09200, pyunits.J / pyunits.mol / pyunits.K),
                     "B": (
                         6.832514,
-                        pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -1,
+                        pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -1,
                     ),
                     "C": (
                         6.793435,
-                        pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -2,
+                        pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -2,
                     ),
                     "D": (
                         -2.534480,
-                        pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -3,
+                        pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -3,
                     ),
                     "E": (
                         0.082139,
-                        pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** 2,
+                        pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** 2,
                     ),
                     "F": (-250.8810, pyunits.kJ / pyunits.mol),
                     "G": (223.3967, pyunits.J / pyunits.mol / pyunits.K),
                     "H": (0, pyunits.kJ / pyunits.mol),
                 },
-                "entr_mol_form_liq_comp_ref": (
-                    69.95,
-                    pyunits.J / pyunits.K / pyunits.mol,
-                ),
+                "entr_mol_form_liq_comp_ref": (69.95, pyunits.J / pyunits.K / pyunits.mol,),
                 "pressure_sat_comp_coeff": {
                     "A": (4.6543, None),  # [1], temperature range 255.9 K - 373 K
                     "B": (1435.264, pyunits.K),
@@ -311,31 +275,19 @@ recarbonation_thermo_config = {
                     "A": (24.99735, pyunits.J / pyunits.mol / pyunits.K),
                     "B": (
                         55.18696,
-                        pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -1,
+                        pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -1,
                     ),
                     "C": (
                         -33.69137,
-                        pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -2,
+                        pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -2,
                     ),
                     "D": (
                         7.948387,
-                        pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -3,
+                        pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -3,
                     ),
                     "E": (
                         -0.136638,
-                        pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** 2,
+                        pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** 2,
                     ),
                     "F": (-403.6075, pyunits.kJ / pyunits.mol),
                     "G": (228.2431, pyunits.J / pyunits.mol / pyunits.K),
@@ -384,10 +336,7 @@ recarbonation_thermo_config = {
                     "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
                     "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
                 },
-                "entr_mol_form_liq_comp_ref": (
-                    -10.75,
-                    pyunits.J / pyunits.K / pyunits.mol,
-                ),
+                "entr_mol_form_liq_comp_ref": (-10.75, pyunits.J / pyunits.K / pyunits.mol,),
             },
         },
         "OH_-": {
@@ -415,10 +364,7 @@ recarbonation_thermo_config = {
                     "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
                     "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
                 },
-                "entr_mol_form_liq_comp_ref": (
-                    -10.75,
-                    pyunits.J / pyunits.K / pyunits.mol,
-                ),
+                "entr_mol_form_liq_comp_ref": (-10.75, pyunits.J / pyunits.K / pyunits.mol,),
             },
         },
         "H2CO3": {
@@ -446,10 +392,7 @@ recarbonation_thermo_config = {
                     "4": (0, pyunits.J / pyunits.kmol / pyunits.K ** 4),
                     "5": (0, pyunits.J / pyunits.kmol / pyunits.K ** 5),
                 },
-                "entr_mol_form_liq_comp_ref": (
-                    187,
-                    pyunits.J / pyunits.K / pyunits.mol,
-                ),
+                "entr_mol_form_liq_comp_ref": (187, pyunits.J / pyunits.K / pyunits.mol,),
             },
         },
         "HCO3_-": {
@@ -477,10 +420,7 @@ recarbonation_thermo_config = {
                     "4": (0, pyunits.J / pyunits.kmol / pyunits.K ** 4),
                     "5": (0, pyunits.J / pyunits.kmol / pyunits.K ** 5),
                 },
-                "entr_mol_form_liq_comp_ref": (
-                    91.2,
-                    pyunits.J / pyunits.K / pyunits.mol,
-                ),
+                "entr_mol_form_liq_comp_ref": (91.2, pyunits.J / pyunits.K / pyunits.mol,),
             },
         },
         "CO3_2-": {
@@ -508,10 +448,7 @@ recarbonation_thermo_config = {
                     "4": (0, pyunits.J / pyunits.kmol / pyunits.K ** 4),
                     "5": (0, pyunits.J / pyunits.kmol / pyunits.K ** 5),
                 },
-                "entr_mol_form_liq_comp_ref": (
-                    -56.9,
-                    pyunits.J / pyunits.K / pyunits.mol,
-                ),
+                "entr_mol_form_liq_comp_ref": (-56.9, pyunits.J / pyunits.K / pyunits.mol,),
             },
         },
     },
@@ -552,11 +489,7 @@ recarbonation_reaction_config = {
     },
     "equilibrium_reactions": {
         "H2O_Kw": {
-            "stoichiometry": {
-                ("Liq", "H2O"): -1,
-                ("Liq", "H_+"): 1,
-                ("Liq", "OH_-"): 1,
-            },
+            "stoichiometry": {("Liq", "H2O"): -1, ("Liq", "H_+"): 1, ("Liq", "OH_-"): 1,},
             "heat_of_reaction": constant_dh_rxn,
             "equilibrium_constant": gibbs_energy,
             "equilibrium_form": log_power_law_equil,
@@ -567,21 +500,13 @@ recarbonation_reaction_config = {
                 "T_eq_ref": (300, pyunits.K),
                 # By default, reaction orders follow stoichiometry
                 #    manually set reaction order here to override
-                "reaction_order": {
-                    ("Liq", "H2O"): 0,
-                    ("Liq", "H_+"): 1,
-                    ("Liq", "OH_-"): 1,
-                },
+                "reaction_order": {("Liq", "H2O"): 0, ("Liq", "H_+"): 1, ("Liq", "OH_-"): 1,},
             }
             # End parameter_data
         },
         # End R1
         "CO2_to_H2CO3": {
-            "stoichiometry": {
-                ("Liq", "H2O"): -1,
-                ("Liq", "CO2"): -1,
-                ("Liq", "H2CO3"): 1,
-            },
+            "stoichiometry": {("Liq", "H2O"): -1, ("Liq", "CO2"): -1, ("Liq", "H2CO3"): 1,},
             "heat_of_reaction": constant_dh_rxn,
             "equilibrium_constant": van_t_hoff,
             "equilibrium_form": log_power_law_equil,
@@ -592,21 +517,13 @@ recarbonation_reaction_config = {
                 "T_eq_ref": (300, pyunits.K),
                 # By default, reaction orders follow stoichiometry
                 #    manually set reaction order here to override
-                "reaction_order": {
-                    ("Liq", "H2CO3"): 1,
-                    ("Liq", "CO2"): -1,
-                    ("Liq", "H2O"): 0,
-                },
+                "reaction_order": {("Liq", "H2CO3"): 1, ("Liq", "CO2"): -1, ("Liq", "H2O"): 0,},
             }
             # End parameter_data
         },
         # End R2
         "H2CO3_Ka1": {
-            "stoichiometry": {
-                ("Liq", "H2CO3"): -1,
-                ("Liq", "H_+"): 1,
-                ("Liq", "HCO3_-"): 1,
-            },
+            "stoichiometry": {("Liq", "H2CO3"): -1, ("Liq", "H_+"): 1, ("Liq", "HCO3_-"): 1,},
             "heat_of_reaction": constant_dh_rxn,
             "equilibrium_constant": gibbs_energy,
             "equilibrium_form": log_power_law_equil,
@@ -617,21 +534,13 @@ recarbonation_reaction_config = {
                 "T_eq_ref": (300, pyunits.K),
                 # By default, reaction orders follow stoichiometry
                 #    manually set reaction order here to override
-                "reaction_order": {
-                    ("Liq", "H2CO3"): -1,
-                    ("Liq", "H_+"): 1,
-                    ("Liq", "HCO3_-"): 1,
-                },
+                "reaction_order": {("Liq", "H2CO3"): -1, ("Liq", "H_+"): 1, ("Liq", "HCO3_-"): 1,},
             }
             # End parameter_data
         },
         # End R3
         "H2CO3_Ka2": {
-            "stoichiometry": {
-                ("Liq", "HCO3_-"): -1,
-                ("Liq", "H_+"): 1,
-                ("Liq", "CO3_2-"): 1,
-            },
+            "stoichiometry": {("Liq", "HCO3_-"): -1, ("Liq", "H_+"): 1, ("Liq", "CO3_2-"): 1,},
             "heat_of_reaction": constant_dh_rxn,
             "equilibrium_constant": gibbs_energy,
             "equilibrium_form": log_power_law_equil,
@@ -642,11 +551,7 @@ recarbonation_reaction_config = {
                 "T_eq_ref": (300, pyunits.K),
                 # By default, reaction orders follow stoichiometry
                 #    manually set reaction order here to override
-                "reaction_order": {
-                    ("Liq", "HCO3_-"): -1,
-                    ("Liq", "H_+"): 1,
-                    ("Liq", "CO3_2-"): 1,
-                },
+                "reaction_order": {("Liq", "HCO3_-"): -1, ("Liq", "H_+"): 1, ("Liq", "CO3_2-"): 1,},
             }
             # End parameter_data
         }

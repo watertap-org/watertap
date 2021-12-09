@@ -24,17 +24,11 @@ from pyomo.environ import units as pyunits
 from idaes.generic_models.properties.core.pure import Perrys
 from idaes.generic_models.properties.core.pure.NIST import NIST
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
-    log_power_law_equil,
-)
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
 from idaes.core import Component as IComponent
-from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
-    van_t_hoff,
-)
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import van_t_hoff
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
-from idaes.generic_models.properties.core.generic.generic_reaction import (
-    ConcentrationForm,
-)
+from idaes.generic_models.properties.core.generic.generic_reaction import ConcentrationForm
 from idaes.core.components import Solvent, Solute, Cation, Anion
 
 
@@ -79,9 +73,7 @@ def assert_configuration_equal(a: Dict, b: Dict, fld: str):
             if key == "parameter_data":
                 for key2, value2 in a_data[key].items():
                     assert key2 in b_data[key]
-                    if (
-                        isinstance(value2, tuple) and len(value2) == 2
-                    ):  # number, unit pair
+                    if isinstance(value2, tuple) and len(value2) == 2:  # number, unit pair
                         assert b_data[key][key2][0] == pytest.approx(value2[0])
 
 
@@ -102,9 +94,7 @@ def test_component_ca_thermo():
     print("Expected idaes_config:")
     pprint(testdata.Ca_thermo_config)
 
-    assert_configuration_equal(
-        comp.idaes_config, testdata.Ca_thermo_config, "components"
-    )
+    assert_configuration_equal(comp.idaes_config, testdata.Ca_thermo_config, "components")
     logging.getLogger("idaes.watertap.edb.data_model").setLevel(logging.INFO)
 
 
@@ -141,18 +131,10 @@ def test_result():
 @pytest.mark.parametrize(
     "data_wrapper_class,required",
     [
-        (
-            Component,
-            {"name": "foo", "elements": ["H"], "type": "solvent", "parameter_data": {}},
-        ),
+        (Component, {"name": "foo", "elements": ["H"], "type": "solvent", "parameter_data": {}},),
         (
             Reaction,
-            {
-                "name": "foo",
-                "type": "equilibrium",
-                "parameter_data": {},
-                "components": ["H2O"],
-            },
+            {"name": "foo", "type": "equilibrium", "parameter_data": {}, "components": ["H2O"],},
         ),
     ],
 )
@@ -234,12 +216,7 @@ def test_config_generator_substitute(debug_logging):
     print(f"after: {data}")
     assert data == {
         "a": {"b": "foo_obj"},
-        "x": {
-            "one_bla": "bar_obj",
-            "two_bla": "hello",
-            "three_bla": "foo_obj",
-            "ignore": "me",
-        },
+        "x": {"one_bla": "bar_obj", "two_bla": "hello", "three_bla": "foo_obj", "ignore": "me",},
         "y": 1,
         "z": {"time": pyunits.s, "ignored_due_to_value": 0.123},
         "d": {"e": {"e": {"p": 1}}},
@@ -248,9 +225,7 @@ def test_config_generator_substitute(debug_logging):
 
 def test_substitute_phases(debug_logging):
     data = {"phases": {"Liq": {"type": "LiquidPhase"}}}
-    SubstituteTestGenerator.substitute_values = {
-        "phases.Liq.type": {"LiquidPhase": NIST}
-    }
+    SubstituteTestGenerator.substitute_values = {"phases.Liq.type": {"LiquidPhase": NIST}}
     print(f"before: {data}")
     SubstituteTestGenerator._substitute(data)
     print(f"after: {data}")
@@ -296,40 +271,25 @@ def test_component_from_idaes_config(debug_logging):
                         "A": (30.09200, pyunits.J / pyunits.mol / pyunits.K),
                         "B": (
                             6.832514,
-                            pyunits.J
-                            * pyunits.mol ** -1
-                            * pyunits.K ** -1
-                            * pyunits.kiloK ** -1,
+                            pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -1,
                         ),
                         "C": (
                             6.793435,
-                            pyunits.J
-                            * pyunits.mol ** -1
-                            * pyunits.K ** -1
-                            * pyunits.kiloK ** -2,
+                            pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -2,
                         ),
                         "D": (
                             -2.534480,
-                            pyunits.J
-                            * pyunits.mol ** -1
-                            * pyunits.K ** -1
-                            * pyunits.kiloK ** -3,
+                            pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -3,
                         ),
                         "E": (
                             0.082139,
-                            pyunits.J
-                            * pyunits.mol ** -1
-                            * pyunits.K ** -1
-                            * pyunits.kiloK ** 2,
+                            pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** 2,
                         ),
                         "F": (-250.8810, pyunits.kJ / pyunits.mol),
                         "G": (223.3967, pyunits.J / pyunits.mol / pyunits.K),
                         "H": (0, pyunits.kJ / pyunits.mol),
                     },
-                    "entr_mol_form_liq_comp_ref": (
-                        69.95,
-                        pyunits.J / pyunits.K / pyunits.mol,
-                    ),
+                    "entr_mol_form_liq_comp_ref": (69.95, pyunits.J / pyunits.K / pyunits.mol,),
                     "pressure_sat_comp_coeff": {
                         "A": (4.6543, None),  # [1], temperature range 255.9 K - 373 K
                         "B": (1435.264, pyunits.K),
@@ -362,11 +322,7 @@ def test_reaction_from_idaes_config(debug_logging):
         },
         "equilibrium_reactions": {
             "CO2_to_H2CO3": {
-                "stoichiometry": {
-                    ("Liq", "H2O"): -1,
-                    ("Liq", "CO2"): -1,
-                    ("Liq", "H2CO3"): 1,
-                },
+                "stoichiometry": {("Liq", "H2O"): -1, ("Liq", "CO2"): -1, ("Liq", "H2CO3"): 1,},
                 "heat_of_reaction": constant_dh_rxn,
                 "equilibrium_constant": van_t_hoff,
                 # "equilibrium_constant": gibbs_energy,
@@ -378,11 +334,7 @@ def test_reaction_from_idaes_config(debug_logging):
                     # "ds_rxn_ref": (-53.0, pyunits.J/pyunits.mol/pyunits.K),
                     "k_eq_ref": (1.7 * 10 ** -3, None),
                     "T_eq_ref": (300, pyunits.K),
-                    "reaction_order": {
-                        ("Liq", "H2CO3"): 1,
-                        ("Liq", "CO2"): -1,
-                        ("Liq", "H2O"): 0,
-                    },
+                    "reaction_order": {("Liq", "H2CO3"): 1, ("Liq", "CO2"): -1, ("Liq", "H2O"): 0,},
                 },
             }
         },
@@ -397,9 +349,9 @@ def test_reaction_from_idaes_config(debug_logging):
     # in the generated config 'reaction_order' will be dropped since it is a
     # runtime addition, not something we store in the DB. So for comparison
     # purposes drop it from the original config as well
-    del carbonation_reaction_config["equilibrium_reactions"]["CO2_to_H2CO3"][
-        "parameter_data"
-    ]["reaction_order"]
+    del carbonation_reaction_config["equilibrium_reactions"]["CO2_to_H2CO3"]["parameter_data"][
+        "reaction_order"
+    ]
 
     # create a config from the Reaction, i.e. round-trip, and compare
     assert_configuration_equal(
@@ -414,9 +366,7 @@ def test_thermoconfig_set_type():
 
     # water -> solvent
     data = {
-        "parameter_data": {
-            "mw": [{"v": 18.0153, "u": "g/mol", "i": 0}],
-        },
+        "parameter_data": {"mw": [{"v": 18.0153, "u": "g/mol", "i": 0}],},
         "name": "H2O",
         "elements": ["O", "H"],
     }
@@ -426,9 +376,7 @@ def test_thermoconfig_set_type():
 
     # neutral non-water -> solute
     data = {
-        "parameter_data": {
-            "mw": [{"v": 96.994, "u": "g/mol", "i": 0}],
-        },
+        "parameter_data": {"mw": [{"v": 96.994, "u": "g/mol", "i": 0}],},
         "name": "H2PO4",
         "elements": ["O", "H", "P"],
     }
@@ -438,9 +386,7 @@ def test_thermoconfig_set_type():
 
     # positive charge -> cation
     data = {
-        "parameter_data": {
-            "mw": [{"v": 57.002, "u": "g/mol", "i": 0}],
-        },
+        "parameter_data": {"mw": [{"v": 57.002, "u": "g/mol", "i": 0}],},
         "name": "CaOH +",
         "elements": ["Ca", "O", "H"],
     }
@@ -450,9 +396,7 @@ def test_thermoconfig_set_type():
 
     # negative charge -> anion
     data = {
-        "parameter_data": {
-            "mw": [{"v": 17.008, "u": "g/mol", "i": 0}],
-        },
+        "parameter_data": {"mw": [{"v": 17.008, "u": "g/mol", "i": 0}],},
         "name": "OH -",
         "elements": ["O", "H"],
     }
@@ -463,9 +407,7 @@ def test_thermoconfig_set_type():
     # already present, even if wrong, leave alone
     data = {
         "type": "solvent",
-        "parameter_data": {
-            "mw": [{"v": 17.008, "u": "g/mol", "i": 0}],
-        },
+        "parameter_data": {"mw": [{"v": 17.008, "u": "g/mol", "i": 0}],},
         "name": "OH -",
         "elements": ["O", "H"],
     }
@@ -479,20 +421,20 @@ def test_reaction_order():
     # minimal Reaction object to work with
     def reaction():
         return Reaction(
-        {
-            "name": "foo",
-            "components": [],
-            "elements": ["Ca", "O", "H"],
-            # valid chemistry? no. useful? yes.
-            Reaction.NAMES.param: {
-                "reaction_order": {
-                    "Liq": {"B": 2, "C": 1, "H": 1},
-                    "Vap": {"B": 1, "C": -2, "H": 1},
-                    "Sol": {"B": -1, "C": 2, "H": 0},
-                }
-            },
-            "type": "equilibrium",
-        }
+            {
+                "name": "foo",
+                "components": [],
+                "elements": ["Ca", "O", "H"],
+                # valid chemistry? no. useful? yes.
+                Reaction.NAMES.param: {
+                    "reaction_order": {
+                        "Liq": {"B": 2, "C": 1, "H": 1},
+                        "Vap": {"B": 1, "C": -2, "H": 1},
+                        "Sol": {"B": -1, "C": 2, "H": 0},
+                    }
+                },
+                "type": "equilibrium",
+            }
         )
 
     # the error you get when the input doesn't pass JSON schema validation
@@ -503,9 +445,15 @@ def test_reaction_order():
     # Reaction missing reaction_order, still OK handled in pre-processing
     # but empty input list causes an error
     with pytest.raises(ValueError):
-        Reaction({"components": [], "elements": ["H"], Reaction.NAMES.param: {},
-                  "type": "equilibrium", "name": "Foo"}).set_reaction_order(
-                    "Foo", {})
+        Reaction(
+            {
+                "components": [],
+                "elements": ["H"],
+                Reaction.NAMES.param: {},
+                "type": "equilibrium",
+                "name": "Foo",
+            }
+        ).set_reaction_order("Foo", {})
     # Invalid phase
     r = reaction()
     with pytest.raises(ValueError):  # bad phase

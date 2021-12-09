@@ -14,21 +14,29 @@
 from pyomo.environ import check_optimal_termination, TransformationFactory
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.scaling import (unscaled_variables_generator,
-                                     unscaled_constraints_generator,
-                                     calculate_scaling_factors)
+from idaes.core.util.scaling import (
+    unscaled_variables_generator,
+    unscaled_constraints_generator,
+    calculate_scaling_factors,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 
 # NOTE: In a full flowsheet, you will want to leave the default values for
 #       bound_push and mu_init as is!!! However, if your flowsheet or block
 #       contains ONLY chemistry, then setting bound_push = 1e-10 and mu_init = 1e-6
-#       works ver well. 
-def solve_with_user_scaling(blk, solver=None, tee=False, fail_flag=True, bound_push=0.1, mu_init=1e-1):
+#       works ver well.
+def solve_with_user_scaling(
+    blk, solver=None, tee=False, fail_flag=True, bound_push=0.1, mu_init=1e-1
+):
     if solver is None:
-        solver = get_solver(options={'nlp_scaling_method': 'user-scaling',
-                                     'bound_push': bound_push,
-                                     'mu_init': mu_init})
+        solver = get_solver(
+            options={
+                "nlp_scaling_method": "user-scaling",
+                "bound_push": bound_push,
+                "mu_init": mu_init,
+            }
+        )
     results = solver.solve(blk, tee=tee)
     if fail_flag:
         check_solve(results)
@@ -36,16 +44,21 @@ def solve_with_user_scaling(blk, solver=None, tee=False, fail_flag=True, bound_p
 
 def check_dof(blk, dof_expected=0):
     if degrees_of_freedom(blk) != dof_expected:
-        raise RuntimeError("The degrees of freedom on {blk} were {dof} but {dof_e} "
-                           "were expected, check the fixed variables on that block".format(
-            blk=blk, dof=degrees_of_freedom(blk), dof_e=dof_expected))
+        raise RuntimeError(
+            "The degrees of freedom on {blk} were {dof} but {dof_e} "
+            "were expected, check the fixed variables on that block".format(
+                blk=blk, dof=degrees_of_freedom(blk), dof_e=dof_expected
+            )
+        )
 
 
 def check_solve(results):
     if not check_optimal_termination(results):
-        raise RuntimeError("The solver failed to converge to an optimal solution. "
-                           "This suggests that the user provided infeasible inputs "
-                           "or that the model is poorly scaled.")
+        raise RuntimeError(
+            "The solver failed to converge to an optimal solution. "
+            "This suggests that the user provided infeasible inputs "
+            "or that the model is poorly scaled."
+        )
 
 
 def check_build(m, build_func=None, **kwargs):

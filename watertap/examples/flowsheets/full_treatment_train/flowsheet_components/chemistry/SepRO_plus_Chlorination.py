@@ -105,9 +105,7 @@ def build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0):
     total_molar_density += total_chlorine_inlet
 
     # May need to change this build interface
-    build_simple_naocl_chlorination_unit(
-        model, mg_per_L_NaOCl_added=mg_per_L_NaOCl_added
-    )
+    build_simple_naocl_chlorination_unit(model, mg_per_L_NaOCl_added=mg_per_L_NaOCl_added)
 
     # Translator inlet from RO and outlet goes to chlorination
     # NOTE: May need to come up with a way to set state_args for Translator for
@@ -122,12 +120,10 @@ def build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0):
 
     # Add constraints to define how the translator will function
     model.fs.RO_to_Chlor.eq_equal_temperature = Constraint(
-        expr=model.fs.RO_to_Chlor.inlet.temperature[0]
-        == model.fs.RO_to_Chlor.outlet.temperature[0]
+        expr=model.fs.RO_to_Chlor.inlet.temperature[0] == model.fs.RO_to_Chlor.outlet.temperature[0]
     )
     model.fs.RO_to_Chlor.eq_equal_pressure = Constraint(
-        expr=model.fs.RO_to_Chlor.inlet.pressure[0]
-        == model.fs.RO_to_Chlor.outlet.pressure[0]
+        expr=model.fs.RO_to_Chlor.inlet.pressure[0] == model.fs.RO_to_Chlor.outlet.pressure[0]
     )
 
     model.fs.RO_to_Chlor.total_flow_cons = Constraint(
@@ -174,9 +170,7 @@ def build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0):
     )
 
     # Add the connecting arcs
-    model.fs.S1 = Arc(
-        source=model.fs.RO.permeate, destination=model.fs.RO_to_Chlor.inlet
-    )
+    model.fs.S1 = Arc(source=model.fs.RO.permeate, destination=model.fs.RO_to_Chlor.inlet)
     model.fs.S2 = Arc(
         source=model.fs.RO_to_Chlor.outlet, destination=model.fs.simple_naocl_unit.inlet
     )
@@ -187,9 +181,7 @@ def build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0):
     # Calculate scaling factors and setup each block
     iscale.calculate_scaling_factors(model.fs.RO_to_Chlor)
     state_args, stoich_extents = approximate_chemical_state_args(
-        model.fs.simple_naocl_unit,
-        model.fs.simple_naocl_rxn_params,
-        simple_naocl_reaction_config,
+        model.fs.simple_naocl_unit, model.fs.simple_naocl_rxn_params, simple_naocl_reaction_config,
     )
     calculate_chemical_scaling_factors(
         model.fs.simple_naocl_unit,

@@ -23,9 +23,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 import watertap.examples.flowsheets.full_treatment_train.flowsheet_components.financials as financials
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
-    feed_block,
-)
+from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import feed_block
 from watertap.examples.flowsheets.full_treatment_train.model_components import (
     unit_separator,
     unit_0DRO,
@@ -100,21 +98,15 @@ def build_costing(m, module=financials, **kwargs):
 
     # Pump
     if hasattr(m.fs, "pump_RO"):
-        m.fs.pump_RO.get_costing(
-            module=module, section="primary", pump_type="high pressure"
-        )
+        m.fs.pump_RO.get_costing(module=module, section="primary", pump_type="high pressure")
 
     # Stage 2 pump
     if hasattr(m.fs, "pump_RO2"):
-        m.fs.pump_RO2.get_costing(
-            module=module, section="primary", pump_type="high pressure"
-        )
+        m.fs.pump_RO2.get_costing(module=module, section="primary", pump_type="high pressure")
 
     # ERD
     if hasattr(m.fs, "ERD"):
-        m.fs.ERD.get_costing(
-            module=module, section="primary", pump_type="pressure exchanger"
-        )
+        m.fs.ERD.get_costing(module=module, section="primary", pump_type="pressure exchanger")
 
     # Pretreatment
     if hasattr(m.fs, "stoich_softening_mixer_unit"):
@@ -152,8 +144,7 @@ def build_costing(m, module=financials, **kwargs):
             * crf
         )
         m.fs.chlorination_unit_opex = Expression(
-            expr=m.fs.ideal_naocl_mixer_unit.costing.operating_cost
-            / m.fs.annual_water_production
+            expr=m.fs.ideal_naocl_mixer_unit.costing.operating_cost / m.fs.annual_water_production
         )
     else:
         m.fs.chlorination_unit_capex = Expression(expr=0)
@@ -207,9 +198,7 @@ def display_costing(m):
         "Direct CAPEX": m.fs.costing.capital_cost_total
         * crf
         / m.fs.annual_water_production,  # Direct CAPEX for all system components
-        "Indirect CAPEX": (
-            m.fs.costing.investment_cost_total - m.fs.costing.capital_cost_total
-        )
+        "Indirect CAPEX": (m.fs.costing.investment_cost_total - m.fs.costing.capital_cost_total)
         * crf
         / m.fs.annual_water_production,  # Indirect CAPEX for miscellaneous items
         "Total OPEX": m.fs.costing.operating_cost_total
@@ -226,8 +215,7 @@ def display_costing(m):
         / m.fs.annual_water_production,
         "Total Pretreatment Cost": m.fs.costing.pretreatment_cost_total
         / m.fs.annual_water_production,
-        "Total Primary Cost": m.fs.costing.primary_cost_total
-        / m.fs.annual_water_production,
+        "Total Primary Cost": m.fs.costing.primary_cost_total / m.fs.annual_water_production,
         "Total Post-treatment Cost": m.fs.costing.post_treatment_cost_total
         / m.fs.annual_water_production,
         "Lime softener CAPEX": m.fs.lime_softening_unit_capex,

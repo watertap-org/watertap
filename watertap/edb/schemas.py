@@ -60,10 +60,7 @@ schemas = {
             "elements": {
                 "description": "List of elements",
                 "type": "array",
-                "items": {
-                    "type": "string",
-                    "description": "Name of an individual element",
-                },
+                "items": {"type": "string", "description": "Name of an individual element",},
             },
             "type": {
                 "description": "Component type",
@@ -93,7 +90,11 @@ schemas = {
             },
             "phase_equilibrium_form": {
                 "type": "object",
-                "properties": {phase1+"-"+phase2: {"type": "string"} for phase1 in Reaction.PHASES for phase2 in Reaction.PHASES},
+                "properties": {
+                    phase1 + "-" + phase2: {"type": "string"}
+                    for phase1 in Reaction.PHASES
+                    for phase2 in Reaction.PHASES
+                },
             },
             "parameter_data": {
                 "type": "object",
@@ -129,18 +130,13 @@ schemas = {
             "name": {"type": "string", "description": "Name of reaction"},
             "compnents": {
                 "type": "array",
-                "items": {
-                    "type": "string",
-                    "description": "Name of a component of the reaction",
-                },
+                "items": {"type": "string", "description": "Name of a component of the reaction",},
             },
             Reaction.NAMES.stoich: {
                 "type": "object",
-                "description": "Moles for the given species in the reaction. "
-                "Grouped by phase.",
+                "description": "Moles for the given species in the reaction. " "Grouped by phase.",
                 "properties": {
-                    phase: {"$ref": "#/definitions/stoichiometry"}
-                    for phase in Reaction.PHASES
+                    phase: {"$ref": "#/definitions/stoichiometry"} for phase in Reaction.PHASES
                 },
                 "additionalProperties": False,
             },
@@ -150,9 +146,7 @@ schemas = {
             Reaction.NAMES.conc_form: {"type": "string"},
             Reaction.NAMES.param: {
                 "type": "object",
-                "patternProperties": {
-                    "_ref": {"$ref": "#/definitions/parameter"},
-                },
+                "patternProperties": {"_ref": {"$ref": "#/definitions/parameter"},},
                 "properties": {
                     Reaction.NAMES.reaction_order: {
                         "type": "object",

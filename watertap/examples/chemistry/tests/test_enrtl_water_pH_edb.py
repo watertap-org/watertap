@@ -30,9 +30,7 @@ if ElectrolyteDB.can_connect():
 
 def get_thermo_config(edb):
     from idaes.generic_models.properties.core.eos.enrtl import ENRTL
-    from idaes.generic_models.properties.core.eos.enrtl_reference_states import (
-        Unsymmetric,
-    )
+    from idaes.generic_models.properties.core.eos.enrtl_reference_states import Unsymmetric
 
     base = edb.get_base("default_thermo")
     elements = ["H", "O"]
@@ -65,9 +63,7 @@ def get_thermo_config(edb):
 
 
 def get_water_reaction_config(edb):
-    from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
-        log_power_law_equil,
-    )
+    from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
 
     elements = ["H", "O"]
     components = [c.name for c in edb.get_components(element_names=elements)]
@@ -76,10 +72,7 @@ def get_water_reaction_config(edb):
     cfg = {
         "base_units": base.idaes_config["base_units"],
         "equilibrium_reactions": {
-            "dummy": {
-                "stoichiometry": {},
-                "equilibrium_form": log_power_law_equil,
-            }
+            "dummy": {"stoichiometry": {}, "equilibrium_form": log_power_law_equil,}
         },
     }
     return cfg
@@ -90,16 +83,14 @@ def get_water_reaction_config(edb):
 
 def get_carbonic_thermo_config(edb):
     from idaes.generic_models.properties.core.eos.enrtl import ENRTL
-    from idaes.generic_models.properties.core.eos.enrtl_reference_states import (
-        Unsymmetric,
-    )
+    from idaes.generic_models.properties.core.eos.enrtl_reference_states import Unsymmetric
 
     base = edb.get_base("default_thermo")
     # The 'right' way to fetch all components
     # elements = ["H", "O", "C", "Na"]
     components = []
     # Add the components
-    component_names = ("Na_+", "CO3_2-",  "HCO3_-", "H2CO3", "OH_-", "H_+", "H2O")
+    component_names = ("Na_+", "CO3_2-", "HCO3_-", "H2CO3", "OH_-", "H_+", "H2O")
     for c in edb.get_components(component_names=component_names):
         # Need to remove these to avoid errors when using the generated config
         if c.name != "H2CO3":

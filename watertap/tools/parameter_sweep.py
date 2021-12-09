@@ -19,22 +19,24 @@ import warnings
 
 from scipy.interpolate import griddata
 from enum import Enum, auto
-from abc import abstractmethod, ABC 
+from abc import abstractmethod, ABC
 from idaes.core.util import get_solver
 
 from idaes.surrogate.pysmo import sampling
 
 # ================================================================
 
+
 class SamplingType(Enum):
     FIXED = auto()
     RANDOM = auto()
     RANDOM_LHS = auto()
 
+
 # ================================================================
 
-class _Sample(ABC): 
 
+class _Sample(ABC):
     def __init__(self, pyomo_object, *args, **kwargs):
         # Check for indexed with single value
         if pyomo_object.is_indexed() and len(pyomo_object) == 1:
@@ -43,31 +45,37 @@ class _Sample(ABC):
 
         # Make sure we are a Var() or Param()
         if not (pyomo_object.is_parameter_type() or pyomo_object.is_variable_type()):
-            raise ValueError(f"The sweep parameter needs to be a pyomo Param or Var but {type(pyomo_object)} was provided instead.")
-        self.pyomo_object = pyomo_object 
+            raise ValueError(
+                f"The sweep parameter needs to be a pyomo Param or Var but {type(pyomo_object)} was provided instead."
+            )
+        self.pyomo_object = pyomo_object
         self.setup(*args, **kwargs)
 
-    @abstractmethod 
-    def sample(self, num_samples): 
-        pass 
+    @abstractmethod
+    def sample(self, num_samples):
+        pass
 
-    @abstractmethod 
-    def setup(self, *args, **kwargs): 
-        pass 
+    @abstractmethod
+    def setup(self, *args, **kwargs):
+        pass
+
 
 # ================================================================
+
 
 class RandomSample(_Sample):
     sampling_type = SamplingType.RANDOM
 
+
 class FixedSample(_Sample):
     sampling_type = SamplingType.FIXED
 
+
 # ================================================================
 
-class LinearSample(FixedSample):
 
-    def sample(self, num_samples): 
+class LinearSample(FixedSample):
+    def sample(self, num_samples):
         return np.linspace(self.lower_limit, self.upper_limit, self.num_samples)
 
     def setup(self, lower_limit, upper_limit, num_samples):
@@ -75,41 +83,47 @@ class LinearSample(FixedSample):
         self.upper_limit = upper_limit
         self.num_samples = num_samples
 
+
 # ================================================================
 
-class UniformSample(RandomSample):
 
-    def sample(self, num_samples): 
+class UniformSample(RandomSample):
+    def sample(self, num_samples):
         return np.random.uniform(self.lower_limit, self.upper_limit, num_samples)
 
     def setup(self, lower_limit, upper_limit):
         self.lower_limit = lower_limit
         self.upper_limit = upper_limit
 
+
 # ================================================================
 
-class NormalSample(RandomSample):
 
-    def sample(self, num_samples): 
+class NormalSample(RandomSample):
+    def sample(self, num_samples):
         return np.random.normal(self.mean, self.sd, num_samples)
 
     def setup(self, mean, sd):
         self.mean = mean
         self.sd = sd
 
+
 # ================================================================
+
 
 class LatinHypercubeSample(_Sample):
     sampling_type = SamplingType.RANDOM_LHS
 
-    def sample(self, num_samples): 
+    def sample(self, num_samples):
         return [self.lower_limit, self.upper_limit]
 
     def setup(self, lower_limit, upper_limit):
         self.lower_limit = lower_limit
         self.upper_limit = upper_limit
 
+
 # ================================================================
+
 
 def _init_mpi(mpi_comm=None):
 
@@ -117,7 +131,9 @@ def _init_mpi(mpi_comm=None):
         try:
             from mpi4py import MPI
         except:
-            warnings.warn("Could not import mpi4py from current environment (defaulting to serial).")
+            warnings.warn(
+                "Could not import mpi4py from current environment (defaulting to serial)."
+            )
             return None, 0, 1
 
         else:
@@ -125,7 +141,9 @@ def _init_mpi(mpi_comm=None):
 
     return mpi_comm, mpi_comm.Get_rank(), mpi_comm.Get_size()
 
+
 # ================================================================
+
 
 def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
     num_var_params = len(d)
@@ -151,7 +169,9 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
         elif sampling_type == SamplingType.RANDOM_LHS:
             lb = [val[0] for val in param_values]
             ub = [val[1] for val in param_values]
-            lhs = sampling.LatinHypercubeSampling([lb, ub], number_of_samples=num_samples, sampling_type='creation')
+            lhs = sampling.LatinHypercubeSampling(
+                [lb, ub], number_of_samples=num_samples, sampling_type="creation"
+            )
             global_combo_array = lhs.sample_points()
             sorting = np.argsort(global_combo_array[:, 0])
             global_combo_array = global_combo_array[sorting, :]
@@ -187,7 +207,9 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
 
     return global_combo_array
 
+
 # ================================================================
+
 
 def _divide_combinations(global_combo_array, rank, num_procs):
 
@@ -201,7 +223,9 @@ def _divide_combinations(global_combo_array, rank, num_procs):
 
     return local_combo_array
 
+
 # ================================================================
+
 
 def _update_model_values(m, param_dict, values):
 
@@ -220,14 +244,18 @@ def _update_model_values(m, param_dict, values):
         else:
             raise RuntimeError(f"Unrecognized Pyomo object {param}")
 
+
 # ================================================================
+
 
 def _aggregate_results(local_results, global_values, comm, num_procs):
 
     if num_procs > 1:
         local_results = local_results.astype(np.float64)
 
-        global_results = np.zeros((np.shape(global_values)[0], np.shape(local_results)[1]), dtype=np.float64)
+        global_results = np.zeros(
+            (np.shape(global_values)[0], np.shape(local_results)[1]), dtype=np.float64
+        )
 
         # Collect the number of result values to be sent from each process
         send_counts = np.zeros(num_procs, dtype=np.int64)
@@ -244,10 +272,12 @@ def _aggregate_results(local_results, global_values, comm, num_procs):
 
     return global_results
 
+
 # ================================================================
 
+
 def _default_optimize(model, options=None, tee=False):
-    '''
+    """
     Default optimization function used in parameter_sweep.
     Optimizes ``model`` using the IDAES default solver.
     Raises a RuntimeError if the TerminationCondition is not optimal
@@ -260,16 +290,20 @@ def _default_optimize(model, options=None, tee=False):
                              Default is None
         tee (options) : To display the solver log. Default it False
 
-    '''
+    """
     solver = get_solver(options=options)
     results = solver.solve(m, tee=tee)
 
     if results.solver.termination_condition != pyo.TerminationCondition.optimal:
-        raise RuntimeError("The solver failed to converge to an optimal solution. "
-                           "This suggests that the user provided infeasible inputs "
-                           "or that the model is poorly scaled.")
+        raise RuntimeError(
+            "The solver failed to converge to an optimal solution. "
+            "This suggests that the user provided infeasible inputs "
+            "or that the model is poorly scaled."
+        )
+
 
 # ================================================================
+
 
 def _process_sweep_params(sweep_params):
 
@@ -293,7 +327,9 @@ def _process_sweep_params(sweep_params):
 
     return sweep_params, sampling_type
 
+
 # ================================================================
+
 
 def _interp_nan_values(global_values, global_results):
 
@@ -312,18 +348,32 @@ def _interp_nan_values(global_values, global_results):
     # Interpolate to get a value for nan points where possible
     for k in range(n_outs):
         y0 = global_results[mask, k]
-        yi = griddata(x0, y0, global_values, method='linear', rescale=True).reshape(-1)
+        yi = griddata(x0, y0, global_values, method="linear", rescale=True).reshape(-1)
         global_results_clean[~mask, k] = yi[~mask]
 
     return global_results_clean
 
+
 # ================================================================
 
-def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
-        optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
-        mpi_comm=None, debugging_data_dir=None, interpolate_nan_outputs=False, num_samples=None, seed=None):
 
-    '''
+def parameter_sweep(
+    model,
+    sweep_params,
+    outputs,
+    results_file=None,
+    optimize_function=_default_optimize,
+    optimize_kwargs=None,
+    reinitialize_function=None,
+    reinitialize_kwargs=None,
+    mpi_comm=None,
+    debugging_data_dir=None,
+    interpolate_nan_outputs=False,
+    num_samples=None,
+    seed=None,
+):
+
+    """
     This function offers a general way to perform repeated optimizations
     of a model for the purposes of exploring a parameter space while
     monitoring multiple outputs. 
@@ -394,7 +444,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
         save_data : A list were the first N columns are the values of the parameters passed
                     by ``sweep_params`` and the remaining columns are the values of the 
                     simulation identified by the ``outputs`` argument.
-    '''
+    """
 
     # Get an MPI communicator
     comm, rank, num_procs = _init_mpi(mpi_comm)
@@ -402,11 +452,13 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
     # Convert sweep_params to LinearSamples
     sweep_params, sampling_type = _process_sweep_params(sweep_params)
 
-    # Set the seed before sampling 
+    # Set the seed before sampling
     np.random.seed(seed)
 
     # Enumerate/Sample the parameter space
-    global_values = _build_combinations(sweep_params, sampling_type, num_samples, comm, rank, num_procs)
+    global_values = _build_combinations(
+        sweep_params, sampling_type, num_samples, comm, rank, num_procs
+    )
 
     # divide the workload between processors
     local_values = _divide_combinations(global_values, rank, num_procs)
@@ -456,7 +508,6 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
             else:
                 local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
 
-
     # ================================================================
     # Save results
     # ================================================================
@@ -467,9 +518,9 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
     if rank == 0:
         if results_file is not None:
             dirname = os.path.dirname(results_file)
-            if dirname != '':
+            if dirname != "":
                 os.makedirs(dirname, exist_ok=True)
-                
+
         if debugging_data_dir is not None:
             os.makedirs(debugging_data_dir, exist_ok=True)
 
@@ -477,22 +528,22 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
         comm.Barrier()
 
     # Write a header string for all data files
-    data_header = ','.join(itertools.chain(sweep_params,outputs))
+    data_header = ",".join(itertools.chain(sweep_params, outputs))
 
     if debugging_data_dir is not None:
         # Create the local filename and data
-        fname = os.path.join(debugging_data_dir, f'local_results_{rank:03}.csv')
+        fname = os.path.join(debugging_data_dir, f"local_results_{rank:03}.csv")
         local_save_data = np.hstack((local_values, local_results))
 
         # Save the local data
-        np.savetxt(fname, local_save_data, header=data_header, delimiter=', ', fmt='%.6e')
+        np.savetxt(fname, local_save_data, header=data_header, delimiter=", ", fmt="%.6e")
 
     # Create the global filename and data
     global_save_data = np.hstack((global_values, global_results))
 
     if rank == 0 and results_file is not None:
         # Save the global data
-        np.savetxt(results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
+        np.savetxt(results_file, global_save_data, header=data_header, delimiter=",", fmt="%.6e")
 
         if interpolate_nan_outputs:
             global_results_clean = _interp_nan_values(global_values, global_results)
@@ -500,13 +551,16 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
 
             head, tail = os.path.split(results_file)
 
-            if head == '':
-                interp_file = 'interpolated_%s' % (tail)
+            if head == "":
+                interp_file = "interpolated_%s" % (tail)
             else:
-                interp_file = '%s/interpolated_%s' % (head, tail)
+                interp_file = "%s/interpolated_%s" % (head, tail)
 
-            np.savetxt(interp_file, global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
-    
+            np.savetxt(
+                interp_file, global_save_data_clean, header=data_header, delimiter=",", fmt="%.6e"
+            )
+
     return global_save_data
+
 
 # ================================================================

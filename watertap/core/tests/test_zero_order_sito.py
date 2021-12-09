@@ -21,19 +21,13 @@ from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
-from pyomo.environ import (ConcreteModel,
-                           Constraint,
-                           SolverStatus,
-                           TerminationCondition,
-                           value,
-                           Var)
+from pyomo.environ import ConcreteModel, Constraint, SolverStatus, TerminationCondition, value, Var
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
 
 from watertap.core.zero_order_sito import SITOBaseData
-from watertap.core.zero_order_properties import \
-    WaterParameterBlock, WaterStateBlock
+from watertap.core.zero_order_properties import WaterParameterBlock, WaterStateBlock
 
 solver = get_solver()
 
@@ -43,8 +37,7 @@ class TestSITOConfigurationErrors:
     def model(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
         m.fs.params.del_component(m.fs.params.phase_list)
         m.fs.params.del_component(m.fs.params.solvent_set)
@@ -64,50 +57,52 @@ class TestSITOConfigurationErrors:
     def test_phase_list(self, model):
         model.fs.params.phase_list = ["foo"]
 
-        with pytest.raises(ConfigurationError,
-                           match="fs.unit configured with invalid property "
-                           "package. Zero-order models only support property "
-                           "packages with a single phase named 'Liq'."):
-            model.fs.unit = DerivedSITO0(
-                default={"property_package": model.fs.params})
+        with pytest.raises(
+            ConfigurationError,
+            match="fs.unit configured with invalid property "
+            "package. Zero-order models only support property "
+            "packages with a single phase named 'Liq'.",
+        ):
+            model.fs.unit = DerivedSITO0(default={"property_package": model.fs.params})
 
     @pytest.mark.unit
     def test_no_solvent_set(self, model):
         model.fs.params.phase_list = ["Liq"]
 
-        with pytest.raises(ConfigurationError,
-                           match="fs.unit configured with invalid property "
-                           "package. Zero-order models only support property "
-                           "packages which include 'H2O' as the only Solvent."
-                           ):
-            model.fs.unit = DerivedSITO0(
-                default={"property_package": model.fs.params})
+        with pytest.raises(
+            ConfigurationError,
+            match="fs.unit configured with invalid property "
+            "package. Zero-order models only support property "
+            "packages which include 'H2O' as the only Solvent.",
+        ):
+            model.fs.unit = DerivedSITO0(default={"property_package": model.fs.params})
 
     @pytest.mark.unit
     def test_invalid_solvent_set(self, model):
         model.fs.params.phase_list = ["Liq"]
         model.fs.params.solvent_set = ["foo"]
 
-        with pytest.raises(ConfigurationError,
-                           match="fs.unit configured with invalid property "
-                           "package. Zero-order models only support property "
-                           "packages which include 'H2O' as the only Solvent."
-                           ):
-            model.fs.unit = DerivedSITO0(
-                default={"property_package": model.fs.params})
+        with pytest.raises(
+            ConfigurationError,
+            match="fs.unit configured with invalid property "
+            "package. Zero-order models only support property "
+            "packages which include 'H2O' as the only Solvent.",
+        ):
+            model.fs.unit = DerivedSITO0(default={"property_package": model.fs.params})
 
     @pytest.mark.unit
     def test_no_solute_set(self, model):
         model.fs.params.phase_list = ["Liq"]
         model.fs.params.solvent_set = ["H2O"]
 
-        with pytest.raises(ConfigurationError,
-                           match="fs.unit configured with invalid property "
-                           "package. Zero-order models require property "
-                           "packages to declare all dissolved species as "
-                           "Solutes."):
-            model.fs.unit = DerivedSITO0(
-                default={"property_package": model.fs.params})
+        with pytest.raises(
+            ConfigurationError,
+            match="fs.unit configured with invalid property "
+            "package. Zero-order models require property "
+            "packages to declare all dissolved species as "
+            "Solutes.",
+        ):
+            model.fs.unit = DerivedSITO0(default={"property_package": model.fs.params})
 
     @pytest.mark.unit
     def test_non_solvent_or_solute(self, model):
@@ -116,12 +111,13 @@ class TestSITOConfigurationErrors:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C", "foo"]
 
-        with pytest.raises(ConfigurationError,
-                           match="fs.unit configured with invalid property "
-                           "package. Zero-order models only support `H2O` as "
-                           "a solvent and all other species as Solutes."):
-            model.fs.unit = DerivedSITO0(
-                default={"property_package": model.fs.params})
+        with pytest.raises(
+            ConfigurationError,
+            match="fs.unit configured with invalid property "
+            "package. Zero-order models only support `H2O` as "
+            "a solvent and all other species as Solutes.",
+        ):
+            model.fs.unit = DerivedSITO0(default={"property_package": model.fs.params})
 
 
 @pytest.mark.unit
@@ -136,14 +132,13 @@ def test_no_has_deltaP_treated():
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.water_props = WaterParameterBlock(
-        default={"solute_list": ["A", "B", "C"]})
+    m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
-    with pytest.raises(NotImplementedError,
-                       match="fs.unit derived class has not been implemented "
-                       "_has_deltaP_treated."):
-        m.fs.unit = DerivedSITO1(
-            default={"property_package": m.fs.water_props})
+    with pytest.raises(
+        NotImplementedError,
+        match="fs.unit derived class has not been implemented " "_has_deltaP_treated.",
+    ):
+        m.fs.unit = DerivedSITO1(default={"property_package": m.fs.water_props})
 
 
 @pytest.mark.unit
@@ -158,18 +153,16 @@ def test_no_has_deltaP_byproduct():
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.water_props = WaterParameterBlock(
-        default={"solute_list": ["A", "B", "C"]})
+    m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
-    with pytest.raises(NotImplementedError,
-                       match="fs.unit derived class has not been implemented "
-                       "_has_deltaP_byproduct."):
-        m.fs.unit = DerivedSITO2(
-            default={"property_package": m.fs.water_props})
+    with pytest.raises(
+        NotImplementedError,
+        match="fs.unit derived class has not been implemented " "_has_deltaP_byproduct.",
+    ):
+        m.fs.unit = DerivedSITO2(default={"property_package": m.fs.water_props})
 
 
 class TestPressureChange:
-
     @declare_process_block_class("DerivedSITO3")
     class DerivedSITOData3(SITOBaseData):
         def build(self):
@@ -183,11 +176,9 @@ class TestPressureChange:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
-        m.fs.unit = DerivedSITO3(
-            default={"property_package": m.fs.water_props})
+        m.fs.unit = DerivedSITO3(default={"property_package": m.fs.water_props})
 
         m.fs.unit.inlet.flow_vol.fix(42)
         m.fs.unit.inlet.conc_mass_comp[0, "A"].fix(10)
@@ -232,17 +223,13 @@ class TestPressureChange:
         assert len(model.fs.unit.solute_removal_equation) == 3
         assert isinstance(model.fs.unit.solute_treated_equation, Constraint)
         assert len(model.fs.unit.solute_treated_equation) == 3
-        assert isinstance(model.fs.unit.treated_pressure_constraint,
-                          Constraint)
+        assert isinstance(model.fs.unit.treated_pressure_constraint, Constraint)
         assert len(model.fs.unit.treated_pressure_constraint) == 1
-        assert isinstance(model.fs.unit.byproduct_pressure_constraint,
-                          Constraint)
+        assert isinstance(model.fs.unit.byproduct_pressure_constraint, Constraint)
         assert len(model.fs.unit.byproduct_pressure_constraint) == 1
-        assert isinstance(model.fs.unit.treated_temperature_equality,
-                          Constraint)
+        assert isinstance(model.fs.unit.treated_temperature_equality, Constraint)
         assert len(model.fs.unit.treated_temperature_equality) == 1
-        assert isinstance(model.fs.unit.byproduct_temperature_equality,
-                          Constraint)
+        assert isinstance(model.fs.unit.byproduct_temperature_equality, Constraint)
         assert len(model.fs.unit.byproduct_temperature_equality) == 1
 
     @pytest.mark.unit
@@ -257,30 +244,76 @@ class TestPressureChange:
     def test_scaling(self, model):
         iscale.calculate_scaling_factors(model)
 
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.water_recovery_equation[0]) == 1e3
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.flow_balance[0]) == 1e3
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_removal_equation[0, "A"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_removal_equation[0, "B"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_removal_equation[0, "C"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_treated_equation[0, "A"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_treated_equation[0, "B"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_treated_equation[0, "C"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.treated_pressure_constraint[0]) == 1e-5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.byproduct_pressure_constraint[0]) == 1e-5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.treated_temperature_equality[0]) == 1e-2
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.treated_temperature_equality[0]) == 1e-2
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.water_recovery_equation[0]
+            )
+            == 1e3
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(model.fs.unit.flow_balance[0])
+            == 1e3
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_removal_equation[0, "A"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_removal_equation[0, "B"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_removal_equation[0, "C"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_treated_equation[0, "A"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_treated_equation[0, "B"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_treated_equation[0, "C"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.treated_pressure_constraint[0]
+            )
+            == 1e-5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.byproduct_pressure_constraint[0]
+            )
+            == 1e-5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.treated_temperature_equality[0]
+            )
+            == 1e-2
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.treated_temperature_equality[0]
+            )
+            == 1e-2
+        )
 
     @pytest.mark.component
     def test_initialization(self, model):
@@ -291,58 +324,56 @@ class TestPressureChange:
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
+        assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(33.6, rel=1e-5) ==
-                value(model.fs.unit.treated.flow_vol[0]))
-        assert (pytest.approx(8.4, rel=1e-5) ==
-                value(model.fs.unit.byproduct.flow_vol[0]))
+        assert pytest.approx(33.6, rel=1e-5) == value(model.fs.unit.treated.flow_vol[0])
+        assert pytest.approx(8.4, rel=1e-5) == value(model.fs.unit.byproduct.flow_vol[0])
 
-        assert (pytest.approx(11.25, rel=1e-5) ==
-                value(model.fs.unit.treated.conc_mass_comp[0, "A"]))
-        assert (pytest.approx(5, rel=1e-5) ==
-                value(model.fs.unit.byproduct.conc_mass_comp[0, "A"]))
-        assert (pytest.approx(20, rel=1e-5) ==
-                value(model.fs.unit.treated.conc_mass_comp[0, "B"]))
-        assert (pytest.approx(20, rel=1e-5) ==
-                value(model.fs.unit.byproduct.conc_mass_comp[0, "B"]))
-        assert (pytest.approx(26.25, rel=1e-5) ==
-                value(model.fs.unit.treated.conc_mass_comp[0, "C"]))
-        assert (pytest.approx(45, rel=1e-5) ==
-                value(model.fs.unit.byproduct.conc_mass_comp[0, "C"]))
+        assert pytest.approx(11.25, rel=1e-5) == value(model.fs.unit.treated.conc_mass_comp[0, "A"])
+        assert pytest.approx(5, rel=1e-5) == value(model.fs.unit.byproduct.conc_mass_comp[0, "A"])
+        assert pytest.approx(20, rel=1e-5) == value(model.fs.unit.treated.conc_mass_comp[0, "B"])
+        assert pytest.approx(20, rel=1e-5) == value(model.fs.unit.byproduct.conc_mass_comp[0, "B"])
+        assert pytest.approx(26.25, rel=1e-5) == value(model.fs.unit.treated.conc_mass_comp[0, "C"])
+        assert pytest.approx(45, rel=1e-5) == value(model.fs.unit.byproduct.conc_mass_comp[0, "C"])
 
-        assert (pytest.approx(151000, rel=1e-5) ==
-                value(model.fs.unit.treated.pressure[0]))
-        assert (pytest.approx(152000, rel=1e-5) ==
-                value(model.fs.unit.byproduct.pressure[0]))
+        assert pytest.approx(151000, rel=1e-5) == value(model.fs.unit.treated.pressure[0])
+        assert pytest.approx(152000, rel=1e-5) == value(model.fs.unit.byproduct.pressure[0])
 
-        assert (pytest.approx(303.15, rel=1e-5) ==
-                value(model.fs.unit.treated.temperature[0]))
-        assert (pytest.approx(303.15, rel=1e-5) ==
-                value(model.fs.unit.byproduct.temperature[0]))
+        assert pytest.approx(303.15, rel=1e-5) == value(model.fs.unit.treated.temperature[0])
+        assert pytest.approx(303.15, rel=1e-5) == value(model.fs.unit.byproduct.temperature[0])
 
     @pytest.mark.component
     def test_conservation(self, model):
-        assert abs(value(model.fs.unit.inlet.flow_vol[0] -
-                         model.fs.unit.treated.flow_vol[0] -
-                         model.fs.unit.byproduct.flow_vol[0])) <= 1e-6
+        assert (
+            abs(
+                value(
+                    model.fs.unit.inlet.flow_vol[0]
+                    - model.fs.unit.treated.flow_vol[0]
+                    - model.fs.unit.byproduct.flow_vol[0]
+                )
+            )
+            <= 1e-6
+        )
 
         for j in model.fs.water_props.solute_set:
-            assert (abs(value(model.fs.unit.inlet.flow_vol[0] *
-                              model.fs.unit.inlet.conc_mass_comp[0, j] -
-                              model.fs.unit.treated.flow_vol[0] *
-                              model.fs.unit.treated.conc_mass_comp[0, j] -
-                              model.fs.unit.byproduct.flow_vol[0] *
-                              model.fs.unit.byproduct.conc_mass_comp[0, j]))
-                    <= 1e-6)
+            assert (
+                abs(
+                    value(
+                        model.fs.unit.inlet.flow_vol[0] * model.fs.unit.inlet.conc_mass_comp[0, j]
+                        - model.fs.unit.treated.flow_vol[0]
+                        * model.fs.unit.treated.conc_mass_comp[0, j]
+                        - model.fs.unit.byproduct.flow_vol[0]
+                        * model.fs.unit.byproduct.conc_mass_comp[0, j]
+                    )
+                )
+                <= 1e-6
+            )
 
 
 class TestNoPressureChangeTreated:
-
     @declare_process_block_class("DerivedSITO4")
     class DerivedSITOData4(SITOBaseData):
         def build(self):
@@ -356,11 +387,9 @@ class TestNoPressureChangeTreated:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
-        m.fs.unit = DerivedSITO4(
-            default={"property_package": m.fs.water_props})
+        m.fs.unit = DerivedSITO4(default={"property_package": m.fs.water_props})
 
         m.fs.unit.inlet.flow_vol.fix(42)
         m.fs.unit.inlet.conc_mass_comp[0, "A"].fix(10)
@@ -404,17 +433,13 @@ class TestNoPressureChangeTreated:
         assert len(model.fs.unit.solute_removal_equation) == 3
         assert isinstance(model.fs.unit.solute_treated_equation, Constraint)
         assert len(model.fs.unit.solute_treated_equation) == 3
-        assert isinstance(model.fs.unit.treated_pressure_constraint,
-                          Constraint)
+        assert isinstance(model.fs.unit.treated_pressure_constraint, Constraint)
         assert len(model.fs.unit.treated_pressure_constraint) == 1
-        assert isinstance(model.fs.unit.byproduct_pressure_constraint,
-                          Constraint)
+        assert isinstance(model.fs.unit.byproduct_pressure_constraint, Constraint)
         assert len(model.fs.unit.byproduct_pressure_constraint) == 1
-        assert isinstance(model.fs.unit.treated_temperature_equality,
-                          Constraint)
+        assert isinstance(model.fs.unit.treated_temperature_equality, Constraint)
         assert len(model.fs.unit.treated_temperature_equality) == 1
-        assert isinstance(model.fs.unit.byproduct_temperature_equality,
-                          Constraint)
+        assert isinstance(model.fs.unit.byproduct_temperature_equality, Constraint)
         assert len(model.fs.unit.byproduct_temperature_equality) == 1
 
     @pytest.mark.unit
@@ -429,30 +454,76 @@ class TestNoPressureChangeTreated:
     def test_scaling(self, model):
         iscale.calculate_scaling_factors(model)
 
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.water_recovery_equation[0]) == 1e3
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.flow_balance[0]) == 1e3
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_removal_equation[0, "A"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_removal_equation[0, "B"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_removal_equation[0, "C"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_treated_equation[0, "A"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_treated_equation[0, "B"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_treated_equation[0, "C"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.treated_pressure_constraint[0]) == 1e-5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.byproduct_pressure_constraint[0]) == 1e-5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.treated_temperature_equality[0]) == 1e-2
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.treated_temperature_equality[0]) == 1e-2
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.water_recovery_equation[0]
+            )
+            == 1e3
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(model.fs.unit.flow_balance[0])
+            == 1e3
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_removal_equation[0, "A"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_removal_equation[0, "B"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_removal_equation[0, "C"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_treated_equation[0, "A"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_treated_equation[0, "B"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_treated_equation[0, "C"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.treated_pressure_constraint[0]
+            )
+            == 1e-5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.byproduct_pressure_constraint[0]
+            )
+            == 1e-5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.treated_temperature_equality[0]
+            )
+            == 1e-2
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.treated_temperature_equality[0]
+            )
+            == 1e-2
+        )
 
     @pytest.mark.component
     def test_initialization(self, model):
@@ -463,58 +534,56 @@ class TestNoPressureChangeTreated:
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
+        assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(33.6, rel=1e-5) ==
-                value(model.fs.unit.treated.flow_vol[0]))
-        assert (pytest.approx(8.4, rel=1e-5) ==
-                value(model.fs.unit.byproduct.flow_vol[0]))
+        assert pytest.approx(33.6, rel=1e-5) == value(model.fs.unit.treated.flow_vol[0])
+        assert pytest.approx(8.4, rel=1e-5) == value(model.fs.unit.byproduct.flow_vol[0])
 
-        assert (pytest.approx(11.25, rel=1e-5) ==
-                value(model.fs.unit.treated.conc_mass_comp[0, "A"]))
-        assert (pytest.approx(5, rel=1e-5) ==
-                value(model.fs.unit.byproduct.conc_mass_comp[0, "A"]))
-        assert (pytest.approx(20, rel=1e-5) ==
-                value(model.fs.unit.treated.conc_mass_comp[0, "B"]))
-        assert (pytest.approx(20, rel=1e-5) ==
-                value(model.fs.unit.byproduct.conc_mass_comp[0, "B"]))
-        assert (pytest.approx(26.25, rel=1e-5) ==
-                value(model.fs.unit.treated.conc_mass_comp[0, "C"]))
-        assert (pytest.approx(45, rel=1e-5) ==
-                value(model.fs.unit.byproduct.conc_mass_comp[0, "C"]))
+        assert pytest.approx(11.25, rel=1e-5) == value(model.fs.unit.treated.conc_mass_comp[0, "A"])
+        assert pytest.approx(5, rel=1e-5) == value(model.fs.unit.byproduct.conc_mass_comp[0, "A"])
+        assert pytest.approx(20, rel=1e-5) == value(model.fs.unit.treated.conc_mass_comp[0, "B"])
+        assert pytest.approx(20, rel=1e-5) == value(model.fs.unit.byproduct.conc_mass_comp[0, "B"])
+        assert pytest.approx(26.25, rel=1e-5) == value(model.fs.unit.treated.conc_mass_comp[0, "C"])
+        assert pytest.approx(45, rel=1e-5) == value(model.fs.unit.byproduct.conc_mass_comp[0, "C"])
 
-        assert (pytest.approx(150000, rel=1e-5) ==
-                value(model.fs.unit.treated.pressure[0]))
-        assert (pytest.approx(152000, rel=1e-5) ==
-                value(model.fs.unit.byproduct.pressure[0]))
+        assert pytest.approx(150000, rel=1e-5) == value(model.fs.unit.treated.pressure[0])
+        assert pytest.approx(152000, rel=1e-5) == value(model.fs.unit.byproduct.pressure[0])
 
-        assert (pytest.approx(303.15, rel=1e-5) ==
-                value(model.fs.unit.treated.temperature[0]))
-        assert (pytest.approx(303.15, rel=1e-5) ==
-                value(model.fs.unit.byproduct.temperature[0]))
+        assert pytest.approx(303.15, rel=1e-5) == value(model.fs.unit.treated.temperature[0])
+        assert pytest.approx(303.15, rel=1e-5) == value(model.fs.unit.byproduct.temperature[0])
 
     @pytest.mark.component
     def test_conservation(self, model):
-        assert abs(value(model.fs.unit.inlet.flow_vol[0] -
-                         model.fs.unit.treated.flow_vol[0] -
-                         model.fs.unit.byproduct.flow_vol[0])) <= 1e-6
+        assert (
+            abs(
+                value(
+                    model.fs.unit.inlet.flow_vol[0]
+                    - model.fs.unit.treated.flow_vol[0]
+                    - model.fs.unit.byproduct.flow_vol[0]
+                )
+            )
+            <= 1e-6
+        )
 
         for j in model.fs.water_props.solute_set:
-            assert (abs(value(model.fs.unit.inlet.flow_vol[0] *
-                              model.fs.unit.inlet.conc_mass_comp[0, j] -
-                              model.fs.unit.treated.flow_vol[0] *
-                              model.fs.unit.treated.conc_mass_comp[0, j] -
-                              model.fs.unit.byproduct.flow_vol[0] *
-                              model.fs.unit.byproduct.conc_mass_comp[0, j]))
-                    <= 1e-6)
+            assert (
+                abs(
+                    value(
+                        model.fs.unit.inlet.flow_vol[0] * model.fs.unit.inlet.conc_mass_comp[0, j]
+                        - model.fs.unit.treated.flow_vol[0]
+                        * model.fs.unit.treated.conc_mass_comp[0, j]
+                        - model.fs.unit.byproduct.flow_vol[0]
+                        * model.fs.unit.byproduct.conc_mass_comp[0, j]
+                    )
+                )
+                <= 1e-6
+            )
 
 
 class TestNoPressureChangeByproduct:
-
     @declare_process_block_class("DerivedSITO5")
     class DerivedSITOData5(SITOBaseData):
         def build(self):
@@ -528,11 +597,9 @@ class TestNoPressureChangeByproduct:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
-        m.fs.unit = DerivedSITO5(
-            default={"property_package": m.fs.water_props})
+        m.fs.unit = DerivedSITO5(default={"property_package": m.fs.water_props})
 
         m.fs.unit.inlet.flow_vol.fix(42)
         m.fs.unit.inlet.conc_mass_comp[0, "A"].fix(10)
@@ -576,17 +643,13 @@ class TestNoPressureChangeByproduct:
         assert len(model.fs.unit.solute_removal_equation) == 3
         assert isinstance(model.fs.unit.solute_treated_equation, Constraint)
         assert len(model.fs.unit.solute_treated_equation) == 3
-        assert isinstance(model.fs.unit.treated_pressure_constraint,
-                          Constraint)
+        assert isinstance(model.fs.unit.treated_pressure_constraint, Constraint)
         assert len(model.fs.unit.treated_pressure_constraint) == 1
-        assert isinstance(model.fs.unit.byproduct_pressure_constraint,
-                          Constraint)
+        assert isinstance(model.fs.unit.byproduct_pressure_constraint, Constraint)
         assert len(model.fs.unit.byproduct_pressure_constraint) == 1
-        assert isinstance(model.fs.unit.treated_temperature_equality,
-                          Constraint)
+        assert isinstance(model.fs.unit.treated_temperature_equality, Constraint)
         assert len(model.fs.unit.treated_temperature_equality) == 1
-        assert isinstance(model.fs.unit.byproduct_temperature_equality,
-                          Constraint)
+        assert isinstance(model.fs.unit.byproduct_temperature_equality, Constraint)
         assert len(model.fs.unit.byproduct_temperature_equality) == 1
 
     @pytest.mark.unit
@@ -601,30 +664,76 @@ class TestNoPressureChangeByproduct:
     def test_scaling(self, model):
         iscale.calculate_scaling_factors(model)
 
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.water_recovery_equation[0]) == 1e3
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.flow_balance[0]) == 1e3
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_removal_equation[0, "A"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_removal_equation[0, "B"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_removal_equation[0, "C"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_treated_equation[0, "A"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_treated_equation[0, "B"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_treated_equation[0, "C"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.treated_pressure_constraint[0]) == 1e-5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.byproduct_pressure_constraint[0]) == 1e-5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.treated_temperature_equality[0]) == 1e-2
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.treated_temperature_equality[0]) == 1e-2
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.water_recovery_equation[0]
+            )
+            == 1e3
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(model.fs.unit.flow_balance[0])
+            == 1e3
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_removal_equation[0, "A"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_removal_equation[0, "B"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_removal_equation[0, "C"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_treated_equation[0, "A"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_treated_equation[0, "B"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_treated_equation[0, "C"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.treated_pressure_constraint[0]
+            )
+            == 1e-5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.byproduct_pressure_constraint[0]
+            )
+            == 1e-5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.treated_temperature_equality[0]
+            )
+            == 1e-2
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.treated_temperature_equality[0]
+            )
+            == 1e-2
+        )
 
     @pytest.mark.component
     def test_initialization(self, model):
@@ -635,51 +744,50 @@ class TestNoPressureChangeByproduct:
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
+        assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(33.6, rel=1e-5) ==
-                value(model.fs.unit.treated.flow_vol[0]))
-        assert (pytest.approx(8.4, rel=1e-5) ==
-                value(model.fs.unit.byproduct.flow_vol[0]))
+        assert pytest.approx(33.6, rel=1e-5) == value(model.fs.unit.treated.flow_vol[0])
+        assert pytest.approx(8.4, rel=1e-5) == value(model.fs.unit.byproduct.flow_vol[0])
 
-        assert (pytest.approx(11.25, rel=1e-5) ==
-                value(model.fs.unit.treated.conc_mass_comp[0, "A"]))
-        assert (pytest.approx(5, rel=1e-5) ==
-                value(model.fs.unit.byproduct.conc_mass_comp[0, "A"]))
-        assert (pytest.approx(20, rel=1e-5) ==
-                value(model.fs.unit.treated.conc_mass_comp[0, "B"]))
-        assert (pytest.approx(20, rel=1e-5) ==
-                value(model.fs.unit.byproduct.conc_mass_comp[0, "B"]))
-        assert (pytest.approx(26.25, rel=1e-5) ==
-                value(model.fs.unit.treated.conc_mass_comp[0, "C"]))
-        assert (pytest.approx(45, rel=1e-5) ==
-                value(model.fs.unit.byproduct.conc_mass_comp[0, "C"]))
+        assert pytest.approx(11.25, rel=1e-5) == value(model.fs.unit.treated.conc_mass_comp[0, "A"])
+        assert pytest.approx(5, rel=1e-5) == value(model.fs.unit.byproduct.conc_mass_comp[0, "A"])
+        assert pytest.approx(20, rel=1e-5) == value(model.fs.unit.treated.conc_mass_comp[0, "B"])
+        assert pytest.approx(20, rel=1e-5) == value(model.fs.unit.byproduct.conc_mass_comp[0, "B"])
+        assert pytest.approx(26.25, rel=1e-5) == value(model.fs.unit.treated.conc_mass_comp[0, "C"])
+        assert pytest.approx(45, rel=1e-5) == value(model.fs.unit.byproduct.conc_mass_comp[0, "C"])
 
-        assert (pytest.approx(151000, rel=1e-5) ==
-                value(model.fs.unit.treated.pressure[0]))
-        assert (pytest.approx(150000, rel=1e-5) ==
-                value(model.fs.unit.byproduct.pressure[0]))
+        assert pytest.approx(151000, rel=1e-5) == value(model.fs.unit.treated.pressure[0])
+        assert pytest.approx(150000, rel=1e-5) == value(model.fs.unit.byproduct.pressure[0])
 
-        assert (pytest.approx(303.15, rel=1e-5) ==
-                value(model.fs.unit.treated.temperature[0]))
-        assert (pytest.approx(303.15, rel=1e-5) ==
-                value(model.fs.unit.byproduct.temperature[0]))
+        assert pytest.approx(303.15, rel=1e-5) == value(model.fs.unit.treated.temperature[0])
+        assert pytest.approx(303.15, rel=1e-5) == value(model.fs.unit.byproduct.temperature[0])
 
     @pytest.mark.component
     def test_conservation(self, model):
-        assert abs(value(model.fs.unit.inlet.flow_vol[0] -
-                         model.fs.unit.treated.flow_vol[0] -
-                         model.fs.unit.byproduct.flow_vol[0])) <= 1e-6
+        assert (
+            abs(
+                value(
+                    model.fs.unit.inlet.flow_vol[0]
+                    - model.fs.unit.treated.flow_vol[0]
+                    - model.fs.unit.byproduct.flow_vol[0]
+                )
+            )
+            <= 1e-6
+        )
 
         for j in model.fs.water_props.solute_set:
-            assert (abs(value(model.fs.unit.inlet.flow_vol[0] *
-                              model.fs.unit.inlet.conc_mass_comp[0, j] -
-                              model.fs.unit.treated.flow_vol[0] *
-                              model.fs.unit.treated.conc_mass_comp[0, j] -
-                              model.fs.unit.byproduct.flow_vol[0] *
-                              model.fs.unit.byproduct.conc_mass_comp[0, j]))
-                    <= 1e-6)
+            assert (
+                abs(
+                    value(
+                        model.fs.unit.inlet.flow_vol[0] * model.fs.unit.inlet.conc_mass_comp[0, j]
+                        - model.fs.unit.treated.flow_vol[0]
+                        * model.fs.unit.treated.conc_mass_comp[0, j]
+                        - model.fs.unit.byproduct.flow_vol[0]
+                        * model.fs.unit.byproduct.conc_mass_comp[0, j]
+                    )
+                )
+                <= 1e-6
+            )

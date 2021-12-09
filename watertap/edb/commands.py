@@ -85,8 +85,7 @@ def command_base(verbose, quiet):
         raise click.BadArgumentUsage("Options for verbosity and quietness conflict")
     if verbose > 0:
         _h = logging.StreamHandler()
-        _h.setFormatter(
-            logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s"))
+        _h.setFormatter(logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s"))
         log_root.addHandler(_h)
         log_root.setLevel(level_from_verbosity(verbose))
     else:
@@ -97,16 +96,9 @@ def command_base(verbose, quiet):
 # LOAD command
 # Load JSON records into the database.
 #################################################################################
-@command_base.command(
-    name="load", help="Load JSON records into the Electrolyte Database"
-)
+@command_base.command(name="load", help="Load JSON records into the Electrolyte Database")
 @click.option(
-    "-f",
-    "--file",
-    "input_file",
-    help="File to load",
-    type=click.File("r"),
-    default=None,
+    "-f", "--file", "input_file", help="File to load", type=click.File("r"), default=None,
 )
 @click.option(
     "-t",
@@ -116,17 +108,10 @@ def command_base(verbose, quiet):
     type=click.Choice(["component", "reaction", "base"], case_sensitive=False),
     default=None,
 )
+@click.option("-u", "--url", help="Database connection URL", default=ElectrolyteDB.DEFAULT_URL)
+@click.option("-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB)
 @click.option(
-    "-u", "--url", help="Database connection URL", default=ElectrolyteDB.DEFAULT_URL
-)
-@click.option(
-    "-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB
-)
-@click.option(
-    "--validate/--no-validate",
-    " /-n",
-    help="Turn on or off validation of input",
-    default=True,
+    "--validate/--no-validate", " /-n", help="Turn on or off validation of input", default=True,
 )
 @click.option(
     "-b",
@@ -212,9 +197,7 @@ def _load_bootstrap(edb, **kwargs):
 #################################################################################
 
 
-@command_base.command(
-    name="dump", help="Dump JSON records from the Electrolyte Database"
-)
+@command_base.command(name="dump", help="Dump JSON records from the Electrolyte Database")
 @click.option(
     "-f",
     "--file",
@@ -232,12 +215,8 @@ def _load_bootstrap(edb, **kwargs):
     type=click.Choice(["component", "reaction", "base"], case_sensitive=False),
     default=None,
 )
-@click.option(
-    "-u", "--url", help="Database connection URL", default=ElectrolyteDB.DEFAULT_URL
-)
-@click.option(
-    "-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB
-)
+@click.option("-u", "--url", help="Database connection URL", default=ElectrolyteDB.DEFAULT_URL)
+@click.option("-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB)
 def dump_data(output_file, data_type, url, database):
     print_messages = _log.isEnabledFor(logging.ERROR)
     filename = output_file.name
@@ -260,9 +239,7 @@ def dump_data(output_file, data_type, url, database):
     n = len(record_list)
     json.dump(record_list, output_file)
     if print_messages:
-        click.echo(
-            f"Wrote {n} record(s) from collection '{data_type}' to file '{filename}'"
-        )
+        click.echo(f"Wrote {n} record(s) from collection '{data_type}' to file '{filename}'")
 
 
 #################################################################################
@@ -277,15 +254,10 @@ def abort_drop_db(ctx, param, value):
 
 
 @command_base.command(name="drop", help="Drop a database in the Electrolyte Database")
+@click.option("-u", "--url", help="Database connection URL", default=ElectrolyteDB.DEFAULT_URL)
+@click.option("-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB)
 @click.option(
-    "-u", "--url", help="Database connection URL", default=ElectrolyteDB.DEFAULT_URL
-)
-@click.option(
-    "-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB
-)
-@click.option(
-    "--yes",
-    is_flag=True,
+    "--yes", is_flag=True,
 )
 def drop_database(url, database, yes):
     print_messages = _log.isEnabledFor(logging.ERROR)
@@ -340,12 +312,8 @@ def drop_database(url, database, yes):
     type=click.Choice(["component", "reaction"], case_sensitive=False),
     default=None,
 )
-@click.option(
-    "-u", "--url", help="Database connection URL", default=ElectrolyteDB.DEFAULT_URL
-)
-@click.option(
-    "-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB
-)
+@click.option("-u", "--url", help="Database connection URL", default=ElectrolyteDB.DEFAULT_URL)
+@click.option("-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB)
 def schema(output_file, output_format, data_type, url, database):
     print_messages = _log.isEnabledFor(logging.ERROR)
     if output_file:

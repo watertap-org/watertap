@@ -25,9 +25,7 @@ from idaes.core.util.scaling import (
 )
 from idaes.core.util.initialization import propagate_state
 from watertap.unit_models.pump_isothermal import Pump
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
-    feed_block,
-)
+from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import feed_block
 from watertap.examples.flowsheets.full_treatment_train.model_components import (
     unit_separator,
     unit_0DRO,
@@ -109,9 +107,7 @@ def build_desalination(
 
         # connect models
         if has_desal_feed:
-            m.fs.s_desal_feed_RO = Arc(
-                source=m.fs.feed.outlet, destination=m.fs.RO.inlet
-            )
+            m.fs.s_desal_feed_RO = Arc(source=m.fs.feed.outlet, destination=m.fs.RO.inlet)
 
         # specify (RO already specified)
 
@@ -130,21 +126,13 @@ def build_desalination(
 
         # connect models
         if has_desal_feed:
-            m.fs.s_desal_feed_pumpRO = Arc(
-                source=m.fs.feed.outlet, destination=m.fs.pump_RO.inlet
-            )
+            m.fs.s_desal_feed_pumpRO = Arc(source=m.fs.feed.outlet, destination=m.fs.pump_RO.inlet)
 
-        m.fs.s_desal_pumpRO_RO = Arc(
-            source=m.fs.pump_RO.outlet, destination=m.fs.RO.inlet
-        )
+        m.fs.s_desal_pumpRO_RO = Arc(source=m.fs.pump_RO.outlet, destination=m.fs.RO.inlet)
 
         if is_twostage:
-            m.fs.s_desal_RO_pumpRO2 = Arc(
-                source=m.fs.RO.retentate, destination=m.fs.pump_RO2.inlet
-            )
-            m.fs.s_desal_pumpRO2_RO2 = Arc(
-                source=m.fs.pump_RO2.outlet, destination=m.fs.RO2.inlet
-            )
+            m.fs.s_desal_RO_pumpRO2 = Arc(source=m.fs.RO.retentate, destination=m.fs.pump_RO2.inlet)
+            m.fs.s_desal_pumpRO2_RO2 = Arc(source=m.fs.pump_RO2.outlet, destination=m.fs.RO2.inlet)
             m.fs.s_desal_permeateRO_mixer = Arc(
                 source=m.fs.RO.permeate, destination=m.fs.mixer_permeate.RO
             )
@@ -154,13 +142,9 @@ def build_desalination(
 
         if has_ERD:
             if is_twostage:
-                m.fs.s_desal_RO2_ERD = Arc(
-                    source=m.fs.RO2.retentate, destination=m.fs.ERD.inlet
-                )
+                m.fs.s_desal_RO2_ERD = Arc(source=m.fs.RO2.retentate, destination=m.fs.ERD.inlet)
             else:
-                m.fs.s_desal_RO_ERD = Arc(
-                    source=m.fs.RO.retentate, destination=m.fs.ERD.inlet
-                )
+                m.fs.s_desal_RO_ERD = Arc(source=m.fs.RO.retentate, destination=m.fs.ERD.inlet)
 
         # specify (RO already specified, Pump 2 DOF, ERD 2 DOF)
         m.fs.pump_RO.efficiency_pump.fix(0.80)

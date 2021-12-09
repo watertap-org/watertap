@@ -12,6 +12,7 @@
 ###############################################################################
 
 from pyomo.environ import Constraint
+
 # Import IDAES cores
 from idaes.generic_models.unit_models.pressure_changer import PumpData
 from idaes.core import declare_process_block_class
@@ -20,6 +21,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
+
 
 @declare_process_block_class("Pump")
 class PumpIsothermalData(PumpData):
@@ -32,9 +34,7 @@ class PumpIsothermalData(PumpData):
 
         self.control_volume.del_component(self.control_volume.enthalpy_balances)
 
-        @self.control_volume.Constraint(
-            self.flowsheet().config.time,
-            doc="Isothermal constraint")
+        @self.control_volume.Constraint(self.flowsheet().config.time, doc="Isothermal constraint")
         def isothermal_balance(b, t):
             return b.properties_in[t].temperature == b.properties_out[t].temperature
 

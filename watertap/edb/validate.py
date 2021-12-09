@@ -25,9 +25,11 @@ import json
 import logging
 from pathlib import Path
 from typing import Union, Dict, TextIO
+
 # 3rd party
 import fastjsonschema
 from fastjsonschema import compile
+
 # package
 from .schemas import schemas
 from . import data_model
@@ -73,8 +75,10 @@ _schema_map = {
 class _Validator:
     """Module internal class to do validation.
     """
-    def __init__(self, schema: Dict = None, schema_file: Union[Path, str] = None,
-                 obj_type: str = None):
+
+    def __init__(
+        self, schema: Dict = None, schema_file: Union[Path, str] = None, obj_type: str = None
+    ):
         if schema is not None:
             self._schema = schema  # use provided dictionary
         else:
@@ -105,8 +109,7 @@ class _Validator:
         elif isinstance(instance, str):
             f = open(instance)
         else:
-            raise TypeError("validate: input object is not file-like, dict-like, "
-                            "or string")
+            raise TypeError("validate: input object is not file-like, dict-like, " "or string")
         if f is not None:
             d = json.load(f)
 
