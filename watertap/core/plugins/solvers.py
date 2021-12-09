@@ -51,9 +51,9 @@ class IpoptWaterTAP(IPOPT):
         if self._tee:
             print("ipopt-watertap: Ipopt with user variable scaling and IDAES jacobian constraint scaling")
 
-        # These options are typically available with grandient-scaling, and they
+        # These options are typically available with gradient-scaling, and they
         # have corresponding options in the IDAES constraint_autoscale_large_jac
-        # function. Here we use there Ipopt names and default values, see
+        # function. Here we use their Ipopt names and default values, see
         # https://coin-or.github.io/Ipopt/OPTIONS.html#OPT_NLP_Scaling
         max_grad = self._get_option("nlp_scaling_max_gradient", 100)
         min_scale = self._get_option("nlp_scaling_min_value", 1e-8)
