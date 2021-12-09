@@ -128,8 +128,10 @@
     "pressure_ref": 100000,
     "temperature_ref": 300,
 
-    "phases_in_equilibrium": ["('Vap','Liq')"],
-    "phase_equilibrium_state": {"('Vap','Liq')": "SmoothVLE"},
+    "phases_in_equilibrium": [["Vap","Liq"]],
+    "phase_equilibrium_state": {
+      "Vap-Liq": "SmoothVLE"
+    },
     "bubble_dew_method": "IdealBubbleDew",
 
     "base_units": {

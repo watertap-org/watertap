@@ -240,8 +240,7 @@ class ElectrolyteDB:
 
         Args:
             component_names: List of component names
-            phases: Phase(s) to include; if not given allow any. Currently implemented
-                    only when `any_components` is False.
+            phases: Phase(s) to include; if not given allow any.
             any_components: If False, the default, only return reactions where
                one side of the reaction has all components provided.
                If true, return the (potentially larger) set of reactions where
@@ -276,34 +275,43 @@ class ElectrolyteDB:
             # {$not: {$elemMatch: { $nin: [<components>] } } } on that array
             stoich_field = Reaction.NAMES.stoich
             for item in collection.find():
+                stoich = {}
+                disallow = False
                 for phase in item[stoich_field].keys():
                     if allow_phases is not None and phase not in allow_phases:
-                        continue
-                    stoich = item[stoich_field][phase]
-                    if any_components:
-                        # look for non-empty intersection
-                        if set(stoich.keys()) & cnames:
-                            found.append(item)
+                        disallow = True
+                    for n in item[stoich_field][phase]:
+                        stoich[n] = item[stoich_field][phase][n]
+                #If the item involves a phase that is not allowed, then move on to next item
+                if (disallow):
+                    continue
+                #If stoich is empty, then move on to next item
+                if (stoich == {}):
+                    continue
+                if any_components:
+                    # look for non-empty intersection
+                    if set(stoich.keys()) & cnames:
+                        found.append(item)
+                else:
+                    # ok if it matches both sides
+                    if set(stoich.keys()) == cnames:
+                        found.append(item)
+                    # also ok if it matches everything on one side
                     else:
-                        # ok if it matches both sides
-                        if set(stoich.keys()) == cnames:
-                            found.append(item)
-                        # also ok if it matches everything on one side
-                        else:
-                            # Add a reaction if all the products/reactants
-                            #   can be formed. This allows addition of reactions
-                            #   that may include species not yet considered.
-                            if (include_new_components == True):
-                                for side in -1, 1:
-                                    side_keys = (k for k, v in stoich.items() if abs(v)/v == side)
-                                    if set(side_keys).issubset(cnames):
-                                        found.append(item)
-                                        break  # found; stop
-                            # Otherwise, only include reactions that are subsets of
-                            #   the given component list
-                            else:
-                                if set(stoich.keys()).issubset(cnames):
+                        # Add a reaction if all the products/reactants
+                        #   can be formed. This allows addition of reactions
+                        #   that may include species not yet considered.
+                        if (include_new_components == True):
+                            for side in -1, 1:
+                                side_keys = (k for k, v in stoich.items() if abs(v)/v == side)
+                                if set(side_keys).issubset(cnames):
                                     found.append(item)
+                                    break  # found; stop
+                        # Otherwise, only include reactions that are subsets of
+                        #   the given component list
+                        else:
+                            if set(stoich.keys()).issubset(cnames):
+                                found.append(item)
             it = iter(found)
         elif reaction_names:
             query = {"name": {"$in": reaction_names}}
