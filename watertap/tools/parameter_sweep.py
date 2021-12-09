@@ -1049,3 +1049,47 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
     return global_save_data
 
 # ================================================================
+
+def recursive_parameter_sweep():
+
+    # Get an MPI communicator
+    comm, rank, num_procs = _init_mpi(mpi_comm)
+
+    # Convert sweep_params to LinearSamples
+    sweep_params, sampling_type = _process_sweep_params(sweep_params)
+
+    # Set the seed before sampling
+    np.random.seed(seed)
+
+    # Set up optimize_kwargs
+    if optimize_kwargs is None:
+        optimize_kwargs = dict()
+    # Set up reinitialize_kwargs
+    if reinitialize_kwargs is None:
+        reinitialize_kwargs = dict()
+
+    n_samples_remaining = copy.deepcopy(req_num_samples)
+    num_total_samples = copy.deepcopy(n_samples_remaining)
+
+    local_output_collection = {}
+    loop_ctr = 0
+    while n_samples_remaining > 0 :
+        # Enumerate/Sample the parameter space
+        global_values = _build_combinations(sweep_params, sampling_type, num_total_samples, comm, rank, num_procs)
+
+        # divide the workload between processors
+        local_values = _divide_combinations(global_values, rank, num_procs)
+        local_num_cases = np.shape(local_values)[0]
+
+        _, local_output_collection[loop_ctr], fail_counter = _do_param_sweep(model, sweep_params, outputs, local_values,
+            optimize_function, optimize_kwargs, reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep, comm)
+
+        n_successful_solves = num_total_samples - fail_counter
+        n_samples_remaining -= n_successful_solves
+        num_total_samples = int(np.ceil(1.2 * n_samples_remaining))
+
+        loop_ctr += 1
+
+    # Now that we have all of the local output dictionaries, we need to construct
+    # a consolidated dictionary of successful solves.
+    successful_outputs = copy.deepcopy(local_output_collection[0])
