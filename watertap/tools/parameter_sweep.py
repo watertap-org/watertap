@@ -525,7 +525,8 @@ def _write_outputs(output_dict, output_directory="./output/",
         if write_txt:
             txt_fname = fname_no_extension + ".txt"
             txt_fpath = os.path.join(output_directory, txt_fname)
-            output_dict.pop("solve_status")
+            if "solve_status" in output_dict.keys():
+                output_dict.pop("solve_status")
             if txt_options == "metadata":
                 my_dict = copy.deepcopy(output_dict)
                 for key, value in my_dict.items():
@@ -562,6 +563,8 @@ def _write_output_to_h5(output_dict, output_directory="./output/",
                         subgrp.create_dataset(subsubkey, data=output_dict[key][subkey][subsubkey])
         elif key == 'solve_status':
             grp.create_dataset(key, data=output_dict[key])
+        else:
+            pass
 
     f.close()
 
@@ -1050,7 +1053,10 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
 
 # ================================================================
 
-def recursive_parameter_sweep():
+def recursive_parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
+        optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
+        reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
+        interpolate_nan_outputs=False, req_num_samples=None, seed=None):
 
     # Get an MPI communicator
     comm, rank, num_procs = _init_mpi(mpi_comm)
@@ -1068,6 +1074,7 @@ def recursive_parameter_sweep():
     if reinitialize_kwargs is None:
         reinitialize_kwargs = dict()
 
+    global_num_samples = copy.deepcopy(req_num_samples)
     n_samples_remaining = copy.deepcopy(req_num_samples)
     num_total_samples = copy.deepcopy(n_samples_remaining)
 
@@ -1092,4 +1099,29 @@ def recursive_parameter_sweep():
 
     # Now that we have all of the local output dictionaries, we need to construct
     # a consolidated dictionary of successful solves.
-    successful_outputs = copy.deepcopy(local_output_collection[0])
+    output_variable_type = "unfixed"
+    local_successful_dict = _create_local_output_skeleton(model, sweep_params, local_num_cases,
+                                                      variable_type=output_variable_type)
+
+    # Populate local_successful_outputs
+    offset = 0
+    for keys, case in local_output_collection.items():
+        # Filter all of the sucessful solves
+        optimal_indices = [idx for idx, status in enumerate(case["solve_status"]) if status == "optimal"]
+        n_successful_solves = len(optimal_indices)
+        for key, item in case.items():
+            if key != "solve_status":
+                for subkey, subitem in item.items():
+                    local_successful_dict[key][subkey]['value'][offset:n_successful_solves] = subitem['value'][optimal_indices]
+        offset += n_successful_solves - 1 # TODO: Check if this -1 is needed
+
+    # Not that we have all of the successful outputs in a consolidated dictionary locally,
+    # we can now construct a global dictionary of successful solves.
+    global_successful_dict = _create_global_output(local_successful_dict, req_num_samples, global_num_samples, comm)
+
+    # Now we can save this
+    if rank == 0:
+        _write_outputs(global_successful_dict, txt_options="keys")
+
+
+    return None
