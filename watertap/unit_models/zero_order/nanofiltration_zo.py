@@ -40,10 +40,10 @@ class NanofiltrationZOData(SITOBaseData):
 
         # Add electricity consumption to model
         self.electricity = Var(self.flowsheet().time,
-                               units=pyunits.kW/pyunits.hour,
+                               units=pyunits.kW,
                                doc="Electricity consumption of unit")
         self.electricity_intensity = Var(
-            units=pyunits.kW/pyunits.m**3,
+            units=pyunits.kWh/pyunits.m**3,
             doc="Electricity intensity of unit")
 
         def electricity_consumption(b, t):
@@ -59,14 +59,12 @@ class NanofiltrationZOData(SITOBaseData):
         pdict = self.config.database.get_unit_operation_parameters(
             "nanofiltration", subtype=self.config.process_subtype)
 
-        # TODO: Need to add unit conversion/checking
-        self.recovery_vol.fix(pdict["recovery_vol"]["value"])
-        # TODO: Need to check exact units of electricity intensity.
-        self.electricity_intensity.fix(pdict["electricity_intensity"]["value"])
+        self.set_param_from_data(self.recovery_vol, pdict)
+        self.set_param_from_data(self.electricity_intensity, pdict)
 
         for t, j in self.removal_mass_solute:
-            self.removal_mass_solute[t, j].fix(
-                pdict["removal_mass_solute"][j]["value"])
+            self.set_param_from_data(
+                self.removal_mass_solute[t, j], pdict, index=j)
 
         # TODO: Do not have parameters for these yet - need to add to datafile
         self.deltaP_treated.fix(0)

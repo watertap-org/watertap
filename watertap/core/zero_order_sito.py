@@ -394,3 +394,39 @@ class SITOBaseData(UnitModelBlockData):
                     self.properties_in[t].temperature,
                     default=1e-2,
                     warning=False))  # would just be a duplicate of above
+
+    def load_parameters_from_database(self):
+        raise NotImplementedError()
+
+    def set_param_from_data(self, parameter, data, index=None):
+        pname = parameter.parent_component().local_name
+
+        try:
+            pdata = data[pname]
+        except KeyError:
+            raise KeyError(
+                f"{self.name} - database provided does not contain an entry "
+                f"for {pname} for technology.")
+
+        if index is not None:
+            try:
+                pdata = pdata[index]
+            except KeyError:
+                raise KeyError(
+                    f"{self.name} - database provided does not contain an "
+                    f"entry for {pname} with index {index} for technology.")
+
+        try:
+            val = pdata["value"]
+        except KeyError:
+            raise KeyError(
+                f"{self.name} - no value provided for {pname} (index: "
+                f"{index}) in database.")
+        try:
+            units = getattr(pyunits, pdata["units"])
+        except KeyError:
+            raise KeyError(
+                f"{self.name} - no units provided for {pname} (index: "
+                f"{index}) in database.")
+
+        parameter.fix(val*units)
