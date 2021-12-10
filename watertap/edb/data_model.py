@@ -440,6 +440,23 @@ class ThermoConfig(ConfigGenerator):
                 data[fld] = data[fld][0]
         del data["elements"]
         cls._wrap_section("components", data)
+        for name in data["components"]:
+            cls._key_to_tuple(data["components"][name], "phase_equilibrium_form")
+
+
+    @classmethod
+    def _key_to_tuple(cls, data, section):
+        """Change all key values separated by '-' in the given section to tuples of those values."""
+        if section not in data:
+            return
+        temp = {}
+        for key in data[section]:
+            item_list = key.split("-")
+            if (len(item_list)!=2):
+                raise BadConfiguration("BaseConfig._key_to_tuple", data,
+                    missing=None,why="\n"+section+" tuple key must be only 2 items\n")
+            temp[tuple(item_list)] = data[section][key]
+        data[section] = temp
 
 
 class ReactionConfig(ConfigGenerator):
@@ -522,12 +539,9 @@ class BaseConfig(ConfigGenerator):
         "phases.Sol.equation_of_state": {"Ideal": Ideal},
         "phases.Vap.equation_of_state": {"Ideal": Ideal},
         "bubble_dew_method": {"IdealBubbleDew": IdealBubbleDew},
-        # TODO: NOTE: I'm not sure how to handle the following...
-        #
-        # "phases_in_equilibrium": ["('Vap','Liq')"],
-        # "phase_equilibrium_state": {"('Vap','Liq')": "SmoothVLE"},
-        #
-        #   The above are options used in base configs for Vapor and Liquid systems
+        "phase_equilibrium_state.*": {
+            "SmoothVLE": SmoothVLE,
+        },
         "base_units.*": ConfigGenerator.SUBST_UNITS,
     }
 
@@ -536,6 +550,8 @@ class BaseConfig(ConfigGenerator):
         cls._substitute(data)
         cls._remove_special(data)
         cls._list_to_tuple(data, "state_bounds")
+        cls._list_of_lists_to_tuple(data, "phases_in_equilibrium")
+        cls._key_to_tuple(data, "phase_equilibrium_state")
 
     @classmethod
     def _list_to_tuple(cls, data, section):
@@ -545,6 +561,31 @@ class BaseConfig(ConfigGenerator):
         for key in data[section]:
             if isinstance(data[section][key], list):
                 data[section][key] = tuple(data[section][key])
+
+    @classmethod
+    def _list_of_lists_to_tuple(cls, data, section):
+        """Change all list of list values in the given section to tuples."""
+        if section not in data:
+            return
+        temp = []
+        for item in data[section]:
+            if isinstance(item, list):
+                temp.append(tuple(item))
+        data[section] = temp
+
+    @classmethod
+    def _key_to_tuple(cls, data, section):
+        """Change all key values separated by '-' in the given section to tuples of those values."""
+        if section not in data:
+            return
+        temp = {}
+        for key in data[section]:
+            item_list = key.split("-")
+            if (len(item_list)!=2):
+                raise BadConfiguration("BaseConfig._key_to_tuple", data,
+                    missing=None,why="\n"+section+" tuple key must be only 2 items\n")
+            temp[tuple(item_list)] = data[section][key]
+        data[section] = temp
 
 
 class DataWrapperNames:
@@ -837,10 +878,7 @@ class Component(DataWrapper):
                     d[fld] = {}
                     for key, value in c[fld].items():
                         break
-                    for phase in key:
-                        cls._method_to_str(
-                            phase, {phase: value}, d[fld], subst_strings, caller=whoami
-                        )
+                    cls._method_to_str(fld, c[fld], d, subst_strings, caller=whoami)
             # extract elements from name
             d["elements"] = re.findall(r"[A-Z][a-z]?", name)
             cls._convert_parameter_data(c, d)
