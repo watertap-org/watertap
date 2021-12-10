@@ -60,7 +60,7 @@ class TestDatabase():
         assert "default" in data
         assert "constituent_removals" in data["default"]
         assert "electricity_intensity" in data["default"]
-        assert "recovery" in data["default"]
+        assert "recovery_vol" in data["default"]
 
     @pytest.mark.unit
     def test_get_technology_invalid(self, db):
@@ -80,7 +80,7 @@ class TestDatabase():
         # Check for a few expected keys to check what we got back looks right
         assert "constituent_removals" in data
         assert "electricity_intensity" in data
-        assert "recovery" in data
+        assert "recovery_vol" in data
 
     @pytest.mark.unit
     def test_get_unit_operation_parameters_invalid_subtype(self, db):
@@ -93,7 +93,7 @@ class TestDatabase():
     def test_get_unit_operation_parameters_single_subtype(self, db):
         # First, insert some data for a subtype into nanofiltration entry
         db._cached_files["nanofiltration"]["subtype1"] = {
-            "recovery": "overloaded",
+            "recovery_vol": "overloaded",
             "new_param": True}
 
         # Load data for subtype
@@ -102,7 +102,7 @@ class TestDatabase():
 
         # Check data
         for k, v in data.items():
-            if k == "recovery":
+            if k == "recovery_vol":
                 assert v == "overloaded"
             elif k == "new_param":
                 assert v is True
@@ -122,7 +122,7 @@ class TestDatabase():
     def test_get_unit_operation_parameters_multi_subtype(self, db):
         # First, insert some data for a 2nd subtype into nanofiltration entry
         db._cached_files["nanofiltration"]["subtype2"] = {
-            "recovery": "overloaded_again",
+            "recovery_vol": "overloaded_again",
             "new_param_2": False}
 
         # Load data for subtype
@@ -131,7 +131,7 @@ class TestDatabase():
 
         # Check data
         for k, v in data.items():
-            if k == "recovery":
+            if k == "recovery_vol":
                 assert v == "overloaded_again"
             elif k == "new_param":
                 assert v is True

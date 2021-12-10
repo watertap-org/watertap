@@ -66,6 +66,12 @@ class SITOBaseData(UnitModelBlockData):
         doc='''A ConfigBlock with arguments to be passed to a property block(s)
         and used when constructing these, **default** - None.
         **Valid values:** {see property package for documentation.}'''))
+    CONFIG.declare('database', ConfigValue(
+        description='An instance of a WaterTAP Database to use for parameters.'
+        ))
+    CONFIG.declare('process_subtype', ConfigValue(
+        description=
+        'Process subtype to use when looking up parameters from database.'))
 
     def build(self):
         super().build()
