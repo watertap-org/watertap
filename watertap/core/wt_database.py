@@ -25,12 +25,12 @@ class Database:
         if dbpath is None:
             self._dbpath = os.path.join("watertap", "data", "techno_economic")
         else:
-            self.dbpath = dbpath
+            self._dbpath = dbpath
 
             # Confirm valid path
-            if not os.path.isdir(self.dbpath):
+            if not os.path.isdir(self._dbpath):
                 raise OSError(
-                    f"Could not find requested path {self.dbpath}. Please "
+                    f"Could not find requested path {self._dbpath}. Please "
                     f"check that this path exists.")
 
     def get_unit_operation_parameters(self, technology, subtype=None):
@@ -59,7 +59,7 @@ class Database:
         if subtype is None:
             # Return default values
             pass
-        elif isinstance(subtype, "str"):
+        elif isinstance(subtype, str):
             try:
                 sparams.update(params[subtype])
             except KeyError:
@@ -82,7 +82,7 @@ class Database:
             except TypeError:
                 raise TypeError(
                     f"Unexpected type for subtype {subtype}: must be string "
-                    f"list like.")
+                    f"or list like.")
 
         return sparams
 
@@ -90,19 +90,19 @@ class Database:
         self._cached_files = {}
 
     def _get_technology(self, technology):
-        if technology in self.cached_files:
+        if technology in self._cached_files:
             # If data is already in cached files, return
-            return self.cached_files[technology]
+            return self._cached_files[technology]
         else:
             # Else load data from required file
             try:
-                with open(technology+".yml", "r") as f:
-                    lines = f.readlines()
+                with open(os.path.join(self._dbpath, technology+".yml"),
+                          "r") as f:
+                    lines = f.read()
+                    f.close()
             except OSError:
                 raise KeyError(
                     f"Could not find entry for {technology} in database.")
-            finally:
-                f.close()
 
             fdata = yaml.load(lines)
 
