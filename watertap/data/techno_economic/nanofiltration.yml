@@ -2,88 +2,88 @@ default:
   removal_mass_solute:
     eeq:
       constituent_longform: Estradiol Equivalency (EEQ)
-      unit: kg/m3
+      unit: kg/kg
       value: 0.75
     endothall:
       constituent_longform: Endothall
-      unit: kg/m3
+      unit: kg/kg
       value: 0.8
     endrin:
       constituent_longform: Endrin
-      unit: kg/m3
+      unit: kg/kg
       value: 0.8
     hardness:
       constituent_longform: Hardness
-      unit: kg/m3
+      unit: kg/kg
       value: 0.97
     hydroxide_alkalinity_as_caco3:
       constituent_longform: Hydroxide Alkalinity as CaCO3
-      unit: kg/m3
+      unit: kg/kg
       value: 0.97
     iron:
       constituent_longform: Iron
-      unit: kg/m3
+      unit: kg/kg
       value: 0.8
     magnesium:
       constituent_longform: Magnesium, Dissolved
-      unit: kg/m3
+      unit: kg/kg
       value: 0.99
     manganese:
       constituent_longform: Manganese
-      unit: kg/m3
+      unit: kg/kg
       value: 0.8
     ndma:
       constituent_longform: N-nitrosodimethylamine (NDMA)
-      unit: kg/m3
+      unit: kg/kg
       value: 0.05
     nonvolatile_toc:
       constituent_longform: Nonvolatile TOC
-      unit: kg/m3
+      unit: kg/kg
       value: 0.93
     perfluorooctane_sulfonate_pfos:
       constituent_longform: Perfluorooctane sulfonate (PFOS)
-      unit: kg/m3
+      unit: kg/kg
       value: 0.9
     perfluorootanoate_pfoa:
       constituent_longform: Perfluorootanoate (PFOA)
-      unit: kg/m3
+      unit: kg/kg
       value: 0.9
     phosphates:
       constituent_longform: Phosphates, Dissolved
-      unit: kg/m3
+      unit: kg/kg
       value: 0.99
     potassium:
       constituent_longform: Potassium
-      unit: kg/m3
+      unit: kg/kg
       value: 0.99
     sodium:
       constituent_longform: Sodium, Dissolved
-      unit: kg/m3
+      unit: kg/kg
       value: 0.97
     sulfate:
       constituent_longform: Sulfate, Dissolved
-      unit: kg/m3
+      unit: kg/kg
       value: 0.97
     sulfur:
       constituent_longform: Sulfur
-      unit: kg/m3
+      unit: kg/kg
       value: 0.97
     toc:
       constituent_longform: Total Organic Carbon (TOC)
-      unit: kg/m3
+      unit: kg/kg
       value: 0.75
     tss:
       constituent_longform: Total Suspended Solids (TSS)
-      unit: kg/m3
+      unit: kg/kg
       value: 0.97
     ultraviolet_transmittance_uvt:
       constituent_longform: Ultraviolet Transmittance (UVT)
       unit: '%'
       value: 90.0
   electricity_intensity:
-    unit: '?'
+    unit: kW/m3
     value: 0.231344952
   recovery_vol:
     reference: Based on Vogtle case study data. No costs for WT3 treatment.
-    unit: '%'
+    unit: m3/m3
     value: 0.85
