@@ -1087,6 +1087,8 @@ def recursive_parameter_sweep(model, sweep_params, outputs, results_file=None, o
         # divide the workload between processors
         local_values = _divide_combinations(global_values, rank, num_procs)
         local_num_cases = np.shape(local_values)[0]
+        if loop_ctr == 0:
+            true_local_num_cases = local_num_cases
 
         _, local_output_collection[loop_ctr], fail_counter = _do_param_sweep(model, sweep_params, outputs, local_values,
             optimize_function, optimize_kwargs, reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep, comm)
@@ -1094,6 +1096,7 @@ def recursive_parameter_sweep(model, sweep_params, outputs, results_file=None, o
         n_successful_solves = num_total_samples - fail_counter
         n_samples_remaining -= n_successful_solves
         num_total_samples = int(np.ceil(1.2 * n_samples_remaining))
+        print("n_samples_remaining = ", n_samples_remaining)
 
         loop_ctr += 1
 
@@ -1117,11 +1120,16 @@ def recursive_parameter_sweep(model, sweep_params, outputs, results_file=None, o
 
     # Not that we have all of the successful outputs in a consolidated dictionary locally,
     # we can now construct a global dictionary of successful solves.
-    global_successful_dict = _create_global_output(local_successful_dict, req_num_samples, global_num_samples, comm)
+    # for i in range(num_procs):
+    #     if i == rank:
+    #         print("rank = {0}, true_local_num_cases = {1}, global_num_samples = {2}".format(rank, true_local_num_cases, global_num_samples))
+
+    global_successful_dict = _create_global_output(local_successful_dict, true_local_num_cases, global_num_samples, comm)
 
     # Now we can save this
+    comm.Barrier()
+
     if rank == 0:
         _write_outputs(global_successful_dict, txt_options="keys")
 
-
-    return None
+    return
