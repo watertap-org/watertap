@@ -262,7 +262,6 @@ class TestNanofiltration():
 
         initialization_tester(m)
 
-        solver.options = {'bound_push': 1e-8}
         results = solver.solve(m)
 
         # Check for optimal solution
