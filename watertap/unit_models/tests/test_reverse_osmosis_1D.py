@@ -45,7 +45,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_variables_generator,
                                      unscaled_constraints_generator,
                                      badly_scaled_var_generator,
-                                     set_scaling_factor)
+                                     )
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -339,9 +339,7 @@ class TestReverseOsmosis():
     def test_var_scaling(self, RO_frame):
         m = RO_frame
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        for v, val in badly_scaled_var_generator(m):
-            print(v.name, val)
-            assert False
+        assert badly_scaled_var_lst == []
 
     @pytest.mark.component
     def test_solve(self, RO_frame):
@@ -488,8 +486,6 @@ class TestReverseOsmosis():
         # Scaling
         m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e1, index=('Liq', 'H2O'))
         m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'NaCl'))
-
-        set_scaling_factor(m.fs.unit.mass_transfer_phase_comp[0, 0, 'Liq', 'NaCl'], 1e3)
 
         calculate_scaling_factors(m)
 
