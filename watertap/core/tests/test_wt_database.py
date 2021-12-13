@@ -40,9 +40,13 @@ def test_invalid_path():
 @pytest.mark.unit
 def test_custom_path():
     # Pick a path we know will exist, even if it isn't a data folder
-    db = Database(dbpath=os.path.join("watertap", "core"))
+    db = Database(dbpath=os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..", "..", "core"))
 
-    assert db._dbpath == os.path.join("watertap", "core")
+    assert db._dbpath == os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..", "..", "core")
 
 
 class TestDatabase():
