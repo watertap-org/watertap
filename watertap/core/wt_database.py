@@ -106,7 +106,7 @@ class Database:
                 raise KeyError(
                     f"Could not find entry for {technology} in database.")
 
-            fdata = yaml.load(lines)
+            fdata = yaml.load(lines, yaml.Loader)
 
             # Store data in cache and return
             self._cached_files[technology] = fdata
