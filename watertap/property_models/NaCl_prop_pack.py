@@ -404,7 +404,7 @@ class NaClStateBlockData(StateBlockData):
 
         self.pressure = Var(
             initialize=101325,
-            bounds=(1e5, 5e7),
+            bounds=(1e4, 5e7),
             domain=NonNegativeReals,
             units=pyunits.Pa,
             doc='State pressure')
