@@ -126,6 +126,7 @@ setup(
     package_data={  # Optional
         "": [
             "*.json",
+            "*.yml",
         ],
     },
     entry_points={
