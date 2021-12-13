@@ -1031,13 +1031,10 @@ class TestSimplePhosphorusRemoval:
                     inherent_equilibrium_constraint[i[1]], 0.1)
 
         # Next, try adding scaling for species
-        min = 1e-6
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
-            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
-                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
-            else:
-                scale = min
+            # maximum scaling is 1e+5
+            scale = max(1e-4, model.fs.unit.inlet.mole_frac_comp[0, i[1]].value)
             iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
             iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
             iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
@@ -1055,13 +1052,10 @@ class TestSimplePhosphorusRemoval:
     def test_initialize_solver(self, simple_phosphorus_removal):
         model = simple_phosphorus_removal
 
-        # These might be unnecessary now with new changes in IDAES
-        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
-        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0.001)
-        model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1.001)
+        # if the initialization is sufficiently good, it may be
+        # a better idea to do this manually before the solve
+        iscale.constraint_autoscale_large_jac(model.fs.unit)
 
-        solver.options["bound_push"] = 1e-5
-        solver.options["mu_init"] = 1e-3
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(model) == 0
 

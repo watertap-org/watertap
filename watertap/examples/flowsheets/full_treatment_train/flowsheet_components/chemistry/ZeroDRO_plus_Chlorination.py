@@ -13,13 +13,13 @@
 
 """
     Simple example of a flowsheet containing an RO separator unit model and
-    a simple NaOCl chlorination post-treatment unit model.
+    a simple NaOCl chlorination post-treatment unit model::
 
-    inlet ---> [  0D RO  ] ---> permeate ---> (Translator) ---> [Chlorination] ---> outlet
-                    |
-                    |
-                    v
-                retentate (i.e., waste)
+        inlet ---> [  0D RO  ] ---> permeate ---> (Translator) ---> [Chlorination] ---> outlet
+                        |
+                        |
+                        v
+                    retentate (i.e., waste)
 
 
     NOTE: The 2 unit models use a different set of state_vars. Thus, this will need to be
@@ -41,7 +41,9 @@
 
     Molefraction of Na --> Based on TDS
                 =  [m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'TDS']/(MW TDS)] / (Total Molar Flow)
+
     Molefraction of Cl = Molefraction of Na (1:1 ratio in the salt)
+
     Molefraction of H2O --> Whatever is remaining
 
     ---------- NOTE: This is only an example ---------

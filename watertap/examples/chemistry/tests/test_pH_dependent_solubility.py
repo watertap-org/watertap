@@ -315,10 +315,11 @@ def _set_eps_vals(rxn_params, rxn_config):
 
 def _set_equ_rxn_scaling(unit, rxn_config):
     #Add scaling factors for reactions (changes depending on if it is a log form or not)
+    min_scale = 1e-3
     for i in unit.control_volume.equilibrium_reaction_extent_index:
         # i[0] = time, i[1] = reaction
 
-        scale = rxn_config["equilibrium_reactions"][i[1]]["parameter_data"]["k_eq_ref"][0]
+        scale = max(min_scale, rxn_config["equilibrium_reactions"][i[1]]["parameter_data"]["k_eq_ref"][0])
 
         # this may also need to be different for solubility_product
         if rxn_config["equilibrium_reactions"][i[1]]["equilibrium_form"] == solubility_product:
@@ -332,7 +333,7 @@ def _set_equ_rxn_scaling(unit, rxn_config):
 
 def _set_mat_bal_scaling_FpcTP(unit):
     # For species
-    min = 1e-6
+    min = 1e-3
     for i in unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
         # i[0] = phase, i[1] = species
         if unit.inlet.flow_mol_phase_comp[0, i[0], i[1]].value > min:
@@ -431,16 +432,10 @@ def run_case1(xOH=1e-7/55.2, xH=1e-7/55.2, xCaOH2=1e-20, xCa=1e-20,
 
     ## ==================== END Scaling for this problem ===========================
 
-    # NOTE: Small bound_push at initialization works very well
-    solver.options['bound_push'] = 1e-8
-    solver.options['mu_init'] = 1e-3
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
-    # Solve full model (can use larger bound_push value at full solve)
-    solver.options['bound_push'] = 1e-5
-    solver.options['mu_init'] = 1e-3
     results = solver.solve(model, tee=True)
 
     assert results.solver.termination_condition == TerminationCondition.optimal
@@ -845,16 +840,10 @@ def run_case2(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCa=1e-20, xH2CO3=1e-20
 
     ## ==================== END Scaling for this problem ===========================
 
-    # NOTE: Small bound_push at initialization works very well
-    solver.options['bound_push'] = 1e-8
-    solver.options['mu_init'] = 1e-3
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
-    # Solve full model (can use larger bound_push value at full solve)
-    solver.options['bound_push'] = 1e-5
-    solver.options['mu_init'] = 1e-3
     results = solver.solve(model, tee=True)
 
     assert results.solver.termination_condition == TerminationCondition.optimal
@@ -1301,18 +1290,10 @@ def run_case3(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCaOH2 = 1e-20, xCa=1e-
 
     ## ==================== END Scaling for this problem ===========================
 
-    # NOTE: Small bound_push at initialization works very well
-    solver.options['bound_push'] = 1e-8
-    #solver.options['bound_frac'] = 1e-8
-    solver.options['mu_init'] = 1e-3
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
-    # Solve full model (can use larger bound_push value at full solve)
-    solver.options['bound_push'] = 1e-5
-    #solver.options['bound_frac'] = 1e-5
-    solver.options['mu_init'] = 1e-3
     results = solver.solve(model, tee=True)
 
     assert results.solver.termination_condition == TerminationCondition.optimal
@@ -1999,19 +1980,10 @@ def run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
 
     ## ==================== END Scaling for this problem ===========================
 
-    # NOTE: Small bound_push at initialization works very well
-    solver.options['bound_push'] = 1e-8
-    #solver.options['bound_frac'] = 1e-8
-    solver.options['mu_init'] = 1e-3
-    #solver.options['max_iter'] = 300
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
-    # Solve full model (can use larger bound_push value at full solve)
-    solver.options['bound_push'] = 1e-5
-    #solver.options['bound_frac'] = 1e-5
-    solver.options['mu_init'] = 1e-3
     results = solver.solve(model, tee=True)
 
     assert results.solver.termination_condition == TerminationCondition.optimal

@@ -3,20 +3,21 @@
     "name": "NH4_Ka",
     "type": "equilibrium",
     "components": [
-      "NH4",
-      "Ka"
+      "NH4_+",
+      "NH3",
+      "H_+"
     ],
     "stoichiometry": {
       "Liq": {
-        "NH4": -1,
+        "NH4_+": -1,
         "H_+": 1,
         "NH3": 1
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
-    "equilibrium_constant": "van_t_hoff_aqueous",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
     "parameter_data": {
       "dh_rxn_ref": [
         {
@@ -31,6 +32,19 @@
           "u": "J/mol/K",
           "i": 0
         }
+      ],
+      "k_eq_ref": [
+        {
+          "v": 9.57989882e-12,
+          "u": "dimensionless",
+          "i": 0
+        }
+      ],
+      "T_eq_ref": [{
+          "v": 298,
+          "u": "K",
+          "i": 0
+        }
       ]
     }
   },
@@ -43,9 +57,9 @@
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
-    "equilibrium_constant": "van_t_hoff_aqueous",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
     "parameter_data": {
       "dh_rxn_ref": [
         {
@@ -63,13 +77,13 @@
       ],
       "k_eq_ref": [
         {
-          "v": 8.09209406070586e-16,
-          "u": "mol/L",
+          "v": 8.4734627e-13,
+          "u": "dimensionless",
           "i": 0
         }
       ],
       "T_eq_ref": [{
-          "v": 300,
+          "v": 298,
           "u": "K",
           "i": 0
         }
@@ -78,43 +92,9 @@
     "type": "equilibrium",
     "name": "H2CO3_Ka2",
     "components": [
-      "H2CO3",
-      "Ka2"
-    ]
-  },
-  {
-    "stoichiometry": {
-      "Liq": {
-        "Ca[OH]2": -1,
-        "OH_-": 1,
-        "CaOH_+": 1
-      }
-    },
-    "heat_of_reaction": "constant_dh_rxn",
-    "equilibrium_constant": "van_t_hoff_aqueous",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
-    "parameter_data": {
-      "dh_rxn_ref": [
-        {
-          "v": 16.82,
-          "u": "kJ/mol",
-          "i": 0
-        }
-      ],
-      "ds_rxn_ref": [
-        {
-          "v": 80.7,
-          "u": "J/mol/K",
-          "i": 0
-        }
-      ]
-    },
-    "type": "equilibrium",
-    "name": "Ca[OH]2_Kb1",
-    "components": [
-      "Ca[OH]2",
-      "Kb1"
+      "HCO3_-",
+      "H_+",
+      "CO3_2-"
     ]
   },
   {
@@ -126,9 +106,9 @@
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
-    "equilibrium_constant": "van_t_hoff_aqueous",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
     "parameter_data": {
       "dh_rxn_ref": [
         {
@@ -143,13 +123,28 @@
           "u": "J/mol/K",
           "i": 0
         }
+      ],
+      "k_eq_ref": [
+        {
+          "v": 9.146094259e-4,
+          "u": "dimensionless",
+          "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {
+          "v": 298,
+          "u": "K",
+          "i": 0
+        }
       ]
     },
     "type": "equilibrium",
-    "name": "Ca[OH]2_Kb2",
+    "name": "CaOH_K",
     "components": [
-      "Ca[OH]2",
-      "Kb2"
+      "CaOH_+",
+      "OH_-",
+      "Ca_2+"
     ]
   },
   {
@@ -162,8 +157,8 @@
     },
     "heat_of_reaction": "constant_dh_rxn",
     "equilibrium_constant": "van_t_hoff",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
     "parameter_data": {
       "dh_rxn_ref": [
         {
@@ -181,7 +176,7 @@
       ],
       "T_eq_ref": [
         {
-          "v": 300,
+          "v": 298,
           "u": "K",
           "i": 0
         }
@@ -191,7 +186,8 @@
     "name": "CO2_to_H2CO3",
     "components": [
       "CO2",
-      "H2CO3"
+      "H2CO3",
+      "H2O"
     ]
   },
   {
@@ -203,9 +199,9 @@
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
-    "equilibrium_constant": "van_t_hoff_aqueous",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
     "parameter_data": {
       "dh_rxn_ref": [
         {
@@ -223,23 +219,25 @@
       ],
       "k_eq_ref": [
         {
-          "v": 8.473462704478226e-12,
-          "u": "mol/L",
+          "v": 8.092094061e-9,
+          "u": "dimensionless",
           "i": 0
         }
-        ],
-        "T_eq_ref": [{
-          "v": 300,
+      ],
+        "T_eq_ref": [
+        {
+          "v": 298,
           "u": "K",
           "i": 0
         }
-        ]
+      ]
     },
     "type": "equilibrium",
     "name": "H2CO3_Ka1",
     "components": [
       "H2CO3",
-      "Ka1"
+      "H_+",
+      "HCO3_-"
     ]
   },
   {
@@ -251,9 +249,9 @@
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
-    "equilibrium_constant": "van_t_hoff_aqueous",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
     "parameter_data": {
       "dh_rxn_ref": [
         {
@@ -268,13 +266,28 @@
           "u": "J/mol/K",
           "i": 0
         }
+      ],
+      "k_eq_ref": [
+        {
+          "v": 3.373346262e-8,
+          "u": "dimensionless",
+          "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {
+          "v": 298,
+          "u": "K",
+          "i": 0
+        }
       ]
     },
     "type": "equilibrium",
     "name": "H3PO4_Ka2",
     "components": [
-      "H3PO4",
-      "Ka2"
+      "H2PO4_-",
+      "H_+",
+      "HPO4_2-"
     ]
   },
   {
@@ -286,9 +299,9 @@
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
-    "equilibrium_constant": "van_t_hoff_aqueous",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
     "parameter_data": {
       "dh_rxn_ref": [
         {
@@ -303,13 +316,28 @@
           "u": "J/mol/K",
           "i": 0
         }
+      ],
+      "k_eq_ref": [
+        {
+          "v": 1.346860475e-4,
+          "u": "dimensionless",
+          "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {
+          "v": 298,
+          "u": "K",
+          "i": 0
+        }
       ]
     },
     "type": "equilibrium",
     "name": "H3PO4_Ka1",
     "components": [
       "H3PO4",
-      "Ka1"
+      "H_+",
+      "H2PO4_-"
     ]
   },
   {
@@ -321,9 +349,9 @@
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
-    "equilibrium_constant": "van_t_hoff_aqueous",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
     "parameter_data": {
       "dh_rxn_ref": [
         {
@@ -338,13 +366,28 @@
           "u": "J/mol/K",
           "i": 0
         }
+      ],
+      "k_eq_ref": [
+        {
+          "v": 9.61747182e-10,
+          "u": "dimensionless",
+          "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {
+          "v": 298,
+          "u": "K",
+          "i": 0
+        }
       ]
     },
     "type": "equilibrium",
     "name": "H3PO4_Ka3",
     "components": [
-      "H3PO4",
-      "Ka3"
+      "HPO4_2-",
+      "H_+",
+      "PO4_3-"
     ]
   },
   {
@@ -356,9 +399,9 @@
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
-    "equilibrium_constant": "van_t_hoff_aqueous",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
     "parameter_data": {
       "dh_rxn_ref": [
         {
@@ -373,13 +416,28 @@
           "u": "J/mol/K",
           "i": 0
         }
+      ],
+      "k_eq_ref": [
+        {
+          "v": 4.1291525e-10,
+          "u": "dimensionless",
+          "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {
+          "v": 298,
+          "u": "K",
+          "i": 0
+        }
       ]
     },
     "type": "equilibrium",
     "name": "HOCl_Ka",
     "components": [
       "HOCl",
-      "Ka"
+      "H_+",
+      "OCl_-"
     ]
   },
   {
@@ -393,26 +451,26 @@
     },
     "heat_of_reaction": "constant_dh_rxn",
     "equilibrium_constant": "van_t_hoff",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
     "parameter_data": {
       "dh_rxn_ref": [
         {
           "v": 0,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
       "k_eq_ref": [
         {
-          "v": 501187233.6272715,
-          "u": "L/mol",
+          "v": 2.76655e12,
+          "u": "dimensionless",
           "i": 0
         }
       ],
       "T_eq_ref": [
         {
-          "v": 300,
+          "v": 298,
           "u": "K",
           "i": 0
         }
@@ -421,8 +479,10 @@
     "type": "equilibrium",
     "name": "NCl3_K",
     "components": [
+      "NHCl2",
+      "HOCl",
       "NCl3",
-      "K"
+      "H2O"
     ]
   },
   {
@@ -436,26 +496,26 @@
     },
     "heat_of_reaction": "constant_dh_rxn",
     "equilibrium_constant": "van_t_hoff",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
     "parameter_data": {
       "dh_rxn_ref": [
         {
           "v": 0,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
       "k_eq_ref": [
         {
-          "v": 251188643150.95822,
-          "u": "L/mol",
+          "v": 1.3865e13,
+          "u": "dimensionless",
           "i": 0
         }
       ],
       "T_eq_ref": [
         {
-          "v": 300,
+          "v": 298,
           "u": "K",
           "i": 0
         }
@@ -464,8 +524,10 @@
     "type": "equilibrium",
     "name": "NH2Cl_K",
     "components": [
+      "NH3",
+      "HOCl",
       "NH2Cl",
-      "K"
+      "H2O"
     ]
   },
   {
@@ -479,26 +541,26 @@
     },
     "heat_of_reaction": "constant_dh_rxn",
     "equilibrium_constant": "van_t_hoff",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
     "parameter_data": {
       "dh_rxn_ref": [
         {
           "v": 0,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
       "k_eq_ref": [
         {
-          "v": 50118723362.72715,
-          "u": "L/mol",
+          "v": 2.76655e12,
+          "u": "dimensionless",
           "i": 0
         }
       ],
       "T_eq_ref": [
         {
-          "v": 300,
+          "v": 298,
           "u": "K",
           "i": 0
         }
@@ -507,8 +569,10 @@
     "type": "equilibrium",
     "name": "NHCl2_K",
     "components": [
+      "NH2Cl",
+      "HOCl",
       "NHCl2",
-      "K"
+      "H2O"
     ]
   },
   {
@@ -520,14 +584,14 @@
       }
     },
     "heat_of_reaction": "constant_dh_rxn",
-    "equilibrium_constant": "van_t_hoff_aqueous",
-    "equilibrium_form": "log_power_law",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_power_law_equil",
     "concentration_form": "ConcentrationForm.moleFraction",
     "parameter_data": {
       "dh_rxn_ref": [
         {
           "v": 55.83,
-          "u": "J/mol",
+          "u": "kJ/mol",
           "i": 0
         }
       ],
@@ -551,7 +615,370 @@
     "type": "equilibrium",
     "name": "H2O_Kw",
     "components": [
-      "H2O"
+      "H2O",
+      "H_+",
+      "OH_-"
+    ]
+  },
+  {
+    "stoichiometry": {
+      "Liq": {
+        "FeOH_2+": -1,
+        "Fe_3+": 1,
+        "OH_-": 1
+      }
+    },
+    "heat_of_reaction": "constant_dh_rxn",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
+    "parameter_data": {
+      "dh_rxn_ref": [
+        {
+          "v": 0,
+          "u": "kJ/mol",
+          "i": 0
+        }
+      ],
+      "k_eq_ref": [
+        { "v":  3.20289855E-14,
+        "u": "dimensionless",
+        "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {"v": 298, "u": "K", "i": 0}
+      ]
+    },
+    "type": "equilibrium",
+    "name": "FeOH_K",
+    "components": [
+      "FeOH_2+",
+      "Fe_3+",
+      "OH_-"
+    ]
+  },
+  {
+    "stoichiometry": {
+      "Liq": {
+        "Fe[OH]2_+": -1,
+        "FeOH_2+": 1,
+        "OH_-": 1
+      }
+    },
+    "heat_of_reaction": "constant_dh_rxn",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
+    "parameter_data": {
+      "dh_rxn_ref": [
+        {
+          "v": 0,
+          "u": "kJ/mol",
+          "i": 0
+        }
+      ],
+      "k_eq_ref": [
+        { "v":  6.80615942E-13,
+        "u": "dimensionless",
+        "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {"v": 298, "u": "K", "i": 0}
+      ]
+    },
+    "type": "equilibrium",
+    "name": "FeOH2_K",
+    "components": [
+      "Fe[OH]2_+",
+      "FeOH_2+",
+      "OH_-"
+    ]
+  },
+  {
+    "stoichiometry": {
+      "Liq": {
+        "Fe[OH]3": -1,
+        "Fe[OH]2_+": 1,
+        "OH_-": 1
+      }
+    },
+    "heat_of_reaction": "constant_dh_rxn",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
+    "parameter_data": {
+      "dh_rxn_ref": [
+        {
+          "v": 0,
+          "u": "kJ/mol",
+          "i": 0
+        }
+      ],
+      "k_eq_ref": [
+        { "v":  1.769021739E-8,
+        "u": "dimensionless",
+        "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {"v": 298, "u": "K", "i": 0}
+      ]
+    },
+    "type": "equilibrium",
+    "name": "FeOH3_K",
+    "components": [
+      "Fe[OH]3",
+      "Fe[OH]2_+",
+      "OH_-"
+    ]
+  },
+  {
+    "stoichiometry": {
+      "Liq": {
+        "Fe[OH]4_-": -1,
+        "Fe[OH]3": 1,
+        "OH_-": 1
+      }
+    },
+    "heat_of_reaction": "constant_dh_rxn",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
+    "parameter_data": {
+      "dh_rxn_ref": [
+        {
+          "v": 0,
+          "u": "kJ/mol",
+          "i": 0
+        }
+      ],
+      "k_eq_ref": [
+        { "v":  1.987318841E-8,
+        "u": "dimensionless",
+        "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {"v": 298, "u": "K", "i": 0}
+      ]
+    },
+    "type": "equilibrium",
+    "name": "FeOH4_K",
+    "components": [
+      "Fe[OH]4_-",
+      "Fe[OH]3",
+      "OH_-"
+    ]
+  },
+  {
+    "stoichiometry": {
+      "Liq": {
+        "Ca_2+": 1,
+        "OH_-": 2
+      },
+      "Sol": {
+        "Ca[OH]2": -1
+      }
+    },
+    "heat_of_reaction": "constant_dh_rxn",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_solubility_product",
+    "concentration_form": "ConcentrationForm.moleFraction",
+    "parameter_data": {
+      "dh_rxn_ref": [
+        {
+          "v": 0,
+          "u": "kJ/mol",
+          "i": 0
+        }
+      ],
+      "k_eq_ref": [
+        { "v":  3.26725301E-11,
+        "u": "dimensionless",
+        "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {"v": 298, "u": "K", "i": 0}
+      ]
+    },
+    "type": "equilibrium",
+    "name": "CaOH2_Ksp",
+    "components": [
+      "Ca[OH]2",
+      "Ca_2+",
+      "OH_-"
+    ]
+  },
+  {
+    "stoichiometry": {
+      "Liq": {
+        "Ca_2+": 1,
+        "CO3_2-": 1
+      },
+      "Sol": {
+        "CaCO3": -1
+      }
+    },
+    "heat_of_reaction": "constant_dh_rxn",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_solubility_product",
+    "concentration_form": "ConcentrationForm.moleFraction",
+    "parameter_data": {
+      "dh_rxn_ref": [
+        {
+          "v": -20.91,
+          "u": "kJ/mol",
+          "i": 0
+        }
+      ],
+      "k_eq_ref": [
+        { "v":  3.28187356E-16,
+        "u": "dimensionless",
+        "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {"v": 298, "u": "K", "i": 0}
+      ]
+    },
+    "type": "equilibrium",
+    "name": "CaO3_Ksp",
+    "components": [
+      "CaCO3",
+      "Ca_2+",
+      "CO3_2-"
+    ]
+  },
+  {
+    "stoichiometry": {
+      "Liq": {
+        "Fe_3+": 1,
+        "PO4_3-": 1
+      },
+      "Sol": {
+        "FePO4": -1
+      }
+    },
+    "heat_of_reaction": "constant_dh_rxn",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_solubility_product",
+    "concentration_form": "ConcentrationForm.moleFraction",
+    "parameter_data": {
+      "dh_rxn_ref": [
+        {
+          "v": 0,
+          "u": "kJ/mol",
+          "i": 0
+        }
+      ],
+      "k_eq_ref": [
+        { "v":  3.28187356E-27,
+        "u": "dimensionless",
+        "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {"v": 298, "u": "K", "i": 0}
+      ]
+    },
+    "type": "equilibrium",
+    "name": "FePO4_Ksp",
+    "components": [
+      "FePO4",
+      "Fe_3+",
+      "PO4_3-"
+    ]
+  },
+  {
+    "stoichiometry": {
+      "Liq": {
+        "Mg_2+": 1,
+        "OH_-": 2
+      },
+      "Sol": {
+        "Mg[OH]2": -1
+      }
+    },
+    "heat_of_reaction": "constant_dh_rxn",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_solubility_product",
+    "concentration_form": "ConcentrationForm.moleFraction",
+    "parameter_data": {
+      "dh_rxn_ref": [
+        {
+          "v": -2.3,
+          "u": "kJ/mol",
+          "i": 0
+        }
+      ],
+      "k_eq_ref": [
+        { "v":  3.5071278E-17,
+        "u": "dimensionless",
+        "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {"v": 298, "u": "K", "i": 0}
+      ]
+    },
+    "type": "equilibrium",
+    "name": "MgOH2_Ksp",
+    "components": [
+      "Mg[OH]2",
+      "Mg_2+",
+      "OH_-"
+    ]
+  },
+  {
+    "stoichiometry": {
+      "Liq": {
+        "B[OH]4_-": -1,
+        "B[OH]3": 1,
+        "OH_-": 1
+      }
+    },
+    "heat_of_reaction": "constant_dh_rxn",
+    "equilibrium_constant": "van_t_hoff",
+    "equilibrium_form": "log_power_law_equil",
+    "concentration_form": "ConcentrationForm.moleFraction",
+    "parameter_data": {
+      "dh_rxn_ref": [
+        {
+          "v": 42,
+          "u": "kJ/mol",
+          "i": 0
+        }
+      ],
+      "k_eq_ref": [
+        { "v":  2.9430797E-7,
+        "u": "dimensionless",
+        "i": 0
+        }
+      ],
+      "T_eq_ref": [
+        {"v": 298, "u": "K", "i": 0}
+      ]
+    },
+    "type": "equilibrium",
+    "name": "BOH4_K",
+    "components": [
+      "B[OH]4_-",
+      "B[OH]3",
+      "OH_-"
+    ]
+  },
+  {
+    "stoichiometry": {
+    },
+    "equilibrium_form": "log_power_law_equil",
+    "parameter_data": {
+    },
+    "type": "equilibrium",
+    "name": "dummy",
+    "components": [
     ]
   }
 
