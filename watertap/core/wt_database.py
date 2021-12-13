@@ -23,7 +23,9 @@ class Database:
         self._cached_files = {}
 
         if dbpath is None:
-            self._dbpath = os.path.join("watertap", "data", "techno_economic")
+            self._dbpath = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "..", "data", "techno_economic")
         else:
             self._dbpath = dbpath
 

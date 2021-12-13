@@ -23,7 +23,10 @@ from watertap.core.wt_database import Database
 def test_default_path():
     db = Database()
 
-    assert db._dbpath == os.path.join("watertap", "data", "techno_economic")
+    assert os.path.normpath(db._dbpath) == os.path.normpath(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "..", "..", "data", "techno_economic"))
 
 
 @pytest.mark.unit
@@ -58,7 +61,7 @@ class TestDatabase():
 
         # Check for a few expected keys to check what we got back looks right
         assert "default" in data
-        assert "constituent_removals" in data["default"]
+        assert "removal_mass_solute" in data["default"]
         assert "electricity_intensity" in data["default"]
         assert "recovery_vol" in data["default"]
 
@@ -78,7 +81,7 @@ class TestDatabase():
         assert data == db._cached_files["nanofiltration"]["default"]
 
         # Check for a few expected keys to check what we got back looks right
-        assert "constituent_removals" in data
+        assert "removal_mass_solute" in data
         assert "electricity_intensity" in data
         assert "recovery_vol" in data
 
