@@ -724,32 +724,8 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         # Create solver
         opt = get_solver(solver, optarg)
 
-        # assumptions
-        if initialize_guess is None:
-            initialize_guess = {}
-        if 'deltaP' not in initialize_guess:
-            initialize_guess['deltaP'] = -1e4
-        if 'solvent_recovery' not in initialize_guess:
-            initialize_guess['solvent_recovery'] = 0.5
-        if 'solute_recovery' not in initialize_guess:
-            initialize_guess['solute_recovery'] = 0.01
-        if 'cp_modulus' not in initialize_guess:
-            initialize_guess['cp_modulus'] = 1.1
-
-        init_log.info('Starting Initialization Step 1: initialize blocks.')
         source = blk.feed_side.properties[blk.flowsheet().config.time.first(), blk.feed_side.length_domain.first()]
-        if state_args is None:
-            state_args = {}
-            state_dict = source.define_port_members()
-
-            for k in state_dict.keys():
-                if state_dict[k].is_indexed():
-                    state_args[k] = {}
-                    for m in state_dict[k].keys():
-                        state_args[k][m] = state_dict[k][m].value
-                else:
-                    state_args[k] = state_dict[k].value
-            feed_side_args = state_args
+        state_args = blk._get_state_args(source, blk.mixed_permeate[0], initialize_guess, state_args)
 
         # ---------------------------------------------------------------------
         # Step 1: Initialize feed_side, permeate_side, and mixed_permeate blocks
@@ -757,7 +733,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args,
+            state_args=state_args['feed_side'],
             hold_state=True)
 
         init_log.info("Initialization Step 1 Complete")
@@ -767,61 +743,38 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         # Initialize other state blocks
         # base properties on inlet state block
 
-        if 'flow_mass_phase_comp' not in state_args.keys():
-            raise ConfigurationError('ReverseOsmosis1D initialization routine expects '
-                                     'flow_mass_phase_comp as a state variable. Check '
-                                     'that the property package supports this state '
-                                     'variable or that the state_args provided to the '
-                                     'initialize call includes this state variable')
-
-        # slightly modify initial values for other state blocks
-        state_args_retentate = deepcopy(state_args)
-        state_args_permeate = deepcopy(state_args)
-
-        state_args_retentate['pressure'] += initialize_guess['deltaP']
-        state_args_permeate['pressure'] = blk.mixed_permeate[0].pressure
-        for j in blk.config.property_package.solvent_set:
-            state_args_retentate['flow_mass_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solvent_recovery'])
-            state_args_permeate['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['solvent_recovery']
-        for j in blk.config.property_package.solute_set:
-            state_args_retentate['flow_mass_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solute_recovery'])
-            state_args_permeate['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['solute_recovery']
-
-        state_args_interface_in = deepcopy(state_args)
-        state_args_interface_out = deepcopy(state_args_retentate)
-
-        for j in blk.config.property_package.solute_set:
-            state_args_interface_in['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
-            state_args_interface_out['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
-
         flag_feed_side_properties_interface = blk.feed_side.properties_interface.initialize(
                 outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
-                state_args=state_args_interface_out)
+                state_args=state_args['interface_out'])
         flags_permeate_side = blk.permeate_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args_permeate)
+            state_args=state_args['permeate'])
         flags_mixed_permeate = blk.mixed_permeate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args_permeate)
-
-        if not ignore_dof:
-           check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
+            state_args=state_args['permeate'])
         init_log.info("Initialization Step 2 Complete.")
-        #with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        res = opt.solve(blk, tee=True)
-        # occasionally it might be worth retrying a solve
-        if not check_optimal_termination(res):
-            init_log.warn("Trouble solving ReverseOsmosis1D unit model, trying one more time")
-            res = opt.solve(blk, tee=True)
-        check_solve(res, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 3: final solve')
+
+        # ---------------------------------------------------------------------
+        # Solve unit
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+            # occasionally it might be worth retrying a solve
+            if not check_optimal_termination(res):
+                init_log.warn("Trouble solving ReverseOsmosis1D unit model, trying one more time")
+                res = opt.solve(blk, tee=slc.tee)
+        check_solve(res, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 3')
+        # ---------------------------------------------------------------------
         # Release Inlet state
         blk.feed_side.release_state(flags_feed_side, outlvl)
+        init_log.info(
+            "Initialization Complete: {}".format(idaeslog.condition(res))
+        )
 
     def _get_performance_contents(self, time_point=0):
         x_in = self.feed_side.length_domain.first()
