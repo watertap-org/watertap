@@ -423,14 +423,17 @@ def _create_component_output_skeleton(component, num_samples):
 
 # ================================================================
 
-# def _get_parent_name_list(variable):
-#     # Check if the variable has a parent component
-#     parent_component = variable.parent_component()
-#     if variable.name == parent_component.name:
-#         parent_block = variable.parent_block()
-#         grand_parent = _get_parent_name_list()
-#     else:
-#         grand_parent = _grand
+def _force_exception(ctr):
+
+    random_number = np.random.rand()
+    # if (ctr % 2) == 0:
+    #     return 1/0
+    # else:
+    #     return 1
+    if random_number < 0.5:
+        return 1/0
+    else:
+        return 1
 
 # ================================================================
 
@@ -636,16 +639,18 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
     for k in range(local_num_cases):
         # Update the model values with a single combination from the parameter space
         _update_model_values(model, sweep_params, local_values[k, :])
+
+        # Forced reinitialization of the flowsheet if enabled
         if reinitialize_before_sweep:
             assert reinitialize_function is not None
-            # Forced reinitialization of the flowsheet if enabled
             reinitialize_function(model, **reinitialize_kwargs)
 
         try:
             # Simulate/optimize with this set of parameter
             results = optimize_function(model, **optimize_kwargs)
-            # print("status = ", results.solver.termination_condition.name)
             pyo.assert_optimal_termination(results)
+
+            _force_exception(k) # DELETE_ME!!!
 
         except:
             # If the run is infeasible, report nan
@@ -659,6 +664,7 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
             # store the values of the optimization
             _update_local_output_dict(model, sweep_params, k, local_values[k, :],
                 local_output_dict, output_variable_type)
+            solver_termination_condition = results.solver.termination_condition.name
 
         # If the initial attempt failed and additional conditions are met, try
         # to reinitialize and resolve.
@@ -666,16 +672,22 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
             try:
                 reinitialize_function(model, **reinitialize_kwargs)
                 results = optimize_function(model, **optimize_kwargs)
+                pyo.assert_optimal_termination(results)
+
+                _force_exception(k) # DELETE_ME!!!
             except:
-                # do we raise an error here?
-                # nothing to do
                 fail_counter += 1
+                solver_termination_condition = "other" # Delete Me
             else:
                 local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
+                solver_termination_condition = results.solver.termination_condition.name
         elif reinitialize_before_sweep and previous_run_failed:
             fail_counter += 1
 
-        local_solve_status_list.append(results.solver.termination_condition.name) # We will store status as a string
+        # We will store status as a string
+        # UNCOMMENT BELOW
+        # local_solve_status_list.append(results.solver.termination_condition.name)
+        local_solve_status_list.append(solver_termination_condition)
 
     local_output_dict["solve_status"] = local_solve_status_list
 
@@ -1093,43 +1105,85 @@ def recursive_parameter_sweep(model, sweep_params, outputs, results_file=None, o
         _, local_output_collection[loop_ctr], fail_counter = _do_param_sweep(model, sweep_params, outputs, local_values,
             optimize_function, optimize_kwargs, reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep, comm)
 
-        n_successful_solves = num_total_samples - fail_counter
-        n_samples_remaining -= n_successful_solves
-        num_total_samples = int(np.ceil(1.2 * n_samples_remaining))
-        print("n_samples_remaining = ", n_samples_remaining)
-
+        n_successful_solves = local_num_cases - fail_counter
+        for i in range(comm.Get_size()):
+            if i == comm.Get_rank():
+                print("rank = {0}".format(rank))
+                print(" num_total_samples = {0}".format(num_total_samples))
+                print(" n_successful_solves = {0}".format(n_successful_solves))
+                print(" fail_counter = {0}".format(fail_counter))
+                print(" list = {0}".format(local_output_collection[loop_ctr]["solve_status"]))
+            comm.Barrier()
+        # n_samples_remaining -= n_successful_solves
+        n_successful_list = comm.allgather(n_successful_solves)
+        n_samples_remaining -= sum(n_successful_list)
+        # n_remainig_arr = comm.allgather(n_samples_remaining)
+        # num_total_samples = int(np.ceil(1.2 * sum(n_remainig_arr)))
+        num_total_samples = int(np.ceil(2 * n_samples_remaining))
         loop_ctr += 1
 
     # Now that we have all of the local output dictionaries, we need to construct
-    # a consolidated dictionary of successful solves.
-    output_variable_type = "unfixed"
-    local_successful_dict = _create_local_output_skeleton(model, sweep_params, local_num_cases,
-                                                      variable_type=output_variable_type)
-
-    # Populate local_successful_outputs
-    offset = 0
-    for keys, case in local_output_collection.items():
-        # Filter all of the sucessful solves
-        optimal_indices = [idx for idx, status in enumerate(case["solve_status"]) if status == "optimal"]
-        n_successful_solves = len(optimal_indices)
-        for key, item in case.items():
-            if key != "solve_status":
-                for subkey, subitem in item.items():
-                    local_successful_dict[key][subkey]['value'][offset:n_successful_solves] = subitem['value'][optimal_indices]
-        offset += n_successful_solves - 1 # TODO: Check if this -1 is needed
+    # a consolidated dictionary based on a filter, e.g., optimal solves.
+    local_filtered_dict = _filter_recursive_solves(model, sweep_params, local_output_collection,
+                                                   true_local_num_cases, comm, "optimal")
 
     # Not that we have all of the successful outputs in a consolidated dictionary locally,
     # we can now construct a global dictionary of successful solves.
-    # for i in range(num_procs):
-    #     if i == rank:
-    #         print("rank = {0}, true_local_num_cases = {1}, global_num_samples = {2}".format(rank, true_local_num_cases, global_num_samples))
-
-    global_successful_dict = _create_global_output(local_successful_dict, true_local_num_cases, global_num_samples, comm)
+    global_filtered_dict = _create_global_output(local_filtered_dict, true_local_num_cases, global_num_samples, comm)
 
     # Now we can save this
     comm.Barrier()
 
     if rank == 0:
-        _write_outputs(global_successful_dict, txt_options="keys")
+        _write_outputs(global_filtered_dict, txt_options="keys")
 
     return
+
+# ================================================================
+
+def _filter_recursive_solves(model, sweep_params, recursive_local_dict, true_local_num_cases, comm, filter_keyword="optimal"):
+
+    pyomo_termination_condition = TerminationConditionMapping()
+    try:
+        assert filter_keyword in pyomo_termination_condition.mapping.keys()
+    except:
+        warnings.warn("Invalid filtering option specified. Filtering optimal values")
+        filter_keyword = "optimal"
+
+    # Now that we have all of the local output dictionaries, we need to construct
+    # a consolidated dictionary of successful solves.
+    local_filtered_dict = _create_local_output_skeleton(model, sweep_params, true_local_num_cases,
+                                                          variable_type="unfixed")
+
+    # Populate local_successful_outputs
+    offset = 0
+    for keys, case in recursive_local_dict.items():
+        # Filter all of the sucessful solves
+        optimal_indices = [idx for idx, status in enumerate(case["solve_status"]) if status == "optimal"]
+        n_successful_solves = len(optimal_indices)
+        stop = offset+n_successful_solves
+        if stop > true_local_num_cases:
+            optimal_indices = optimal_indices[:-(stop-true_local_num_cases)]
+            stop = true_local_num_cases
+
+        for i in range(comm.Get_size()):
+            if i == comm.Get_rank():
+                print("\nkeys = ", recursive_local_dict.keys())
+                print(" rank = {0}".format(comm.Get_rank()))
+                print(" offset = ", offset)
+                print(" n_successful_solves = ", n_successful_solves)
+                print(" range = ", np.arange(offset, stop))
+                print(" optimal_indices = ", optimal_indices)
+            comm.Barrier()
+
+        for key, item in case.items():
+            if key != "solve_status":
+                for subkey, subitem in item.items():
+                    # print(subitem['value'][optimal_indices])
+                    # print(local_successful_dict[key][subkey]['value'][offset:n_successful_solves])
+                    local_filtered_dict[key][subkey]['value'][offset:stop] = subitem['value'][optimal_indices]
+        offset += n_successful_solves # TODO: Check if this -1 is needed
+
+    return local_filtered_dict
+
+# ================================================================
