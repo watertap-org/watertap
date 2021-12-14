@@ -87,3 +87,6 @@ default:
     reference: Based on Vogtle case study data. No costs for WT3 treatment.
     units: m^3/m^3
     value: 0.85
+  default_removal_mass_solute:
+    units: kg/kg
+    value: 0.00

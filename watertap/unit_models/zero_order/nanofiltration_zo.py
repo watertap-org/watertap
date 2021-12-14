@@ -54,7 +54,7 @@ class NanofiltrationZOData(SITOBaseData):
         self.electricity_consumption = Constraint(self.flowsheet().time,
                                                   rule=electricity_consumption)
 
-    def load_parameters_from_database(self):
+    def load_parameters_from_database(self, use_default_removal=False):
         # Get parameter dict from database
         pdict = self.config.database.get_unit_operation_parameters(
             "nanofiltration", subtype=self.config.process_subtype)
@@ -64,7 +64,10 @@ class NanofiltrationZOData(SITOBaseData):
 
         for t, j in self.removal_mass_solute:
             self.set_param_from_data(
-                self.removal_mass_solute[t, j], pdict, index=j)
+                self.removal_mass_solute[t, j],
+                pdict,
+                index=j,
+                use_default_removal=use_default_removal)
 
         # TODO: Do not have parameters for these yet - need to add to datafile
         self.deltaP_treated.fix(0)

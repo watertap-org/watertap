@@ -398,7 +398,8 @@ class SITOBaseData(UnitModelBlockData):
     def load_parameters_from_database(self):
         raise NotImplementedError()
 
-    def set_param_from_data(self, parameter, data, index=None):
+    def set_param_from_data(
+            self, parameter, data, index=None, use_default_removal=False):
         pname = parameter.parent_component().local_name
 
         try:
@@ -412,9 +413,21 @@ class SITOBaseData(UnitModelBlockData):
             try:
                 pdata = pdata[index]
             except KeyError:
-                raise KeyError(
-                    f"{self.name} - database provided does not contain an "
-                    f"entry for {pname} with index {index} for technology.")
+                if pname == "removal_mass_solute" and use_default_removal:
+                    try:
+                        pdata = data["default_removal_mass_solute"]
+                        index = "default"
+                    except KeyError:
+                        raise KeyError(
+                            f"{self.name} - database provided does not "
+                            f"contain an entry for {pname} with index {index} "
+                            f"for technology and no default removal was "
+                            f"specified.")
+                else:
+                    raise KeyError(
+                        f"{self.name} - database provided does not contain "
+                        f"an entry for {pname} with index {index} for "
+                        f"technology.")
 
         try:
             val = pdata["value"]

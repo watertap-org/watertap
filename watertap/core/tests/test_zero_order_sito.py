@@ -241,6 +241,72 @@ class TestSITOConfigurationErrors:
                 {"removal_mass_solute": {}},
                 index="A")
 
+    @pytest.mark.unit
+    def test_set_param_from_data_indexed_default_not_removal(self, model):
+        model.fs.params.phase_list = ["Liq"]
+        model.fs.params.solvent_set = ["H2O"]
+        model.fs.params.solute_set = ["A", "B", "C"]
+        model.fs.params.component_list = ["H2O", "A", "B", "C"]
+
+        model.fs.unit = DerivedSITO0(
+            default={"property_package": model.fs.params})
+
+        model.fs.unit.test = Var()
+
+        with pytest.raises(KeyError,
+                           match="fs.unit - database provided does not "
+                           "contain an entry for test with "
+                           "index A for technology."):
+            model.fs.unit.set_param_from_data(
+                model.fs.unit.test,
+                {"test": {}},
+                index="A",
+                use_default_removal=True)
+
+    @pytest.mark.unit
+    def test_set_param_from_data_indexed_use_default(self, model):
+        model.fs.params.phase_list = ["Liq"]
+        model.fs.params.solvent_set = ["H2O"]
+        model.fs.params.solute_set = ["A", "B", "C"]
+        model.fs.params.component_list = ["H2O", "A", "B", "C"]
+
+        model.fs.unit = DerivedSITO0(
+            default={"property_package": model.fs.params})
+
+        model.fs.unit.set_param_from_data(
+            model.fs.unit.removal_mass_solute[0, "A"],
+            {"removal_mass_solute": {"A": {
+                "value": 0.42, "units": "m^3/m^3"}},
+             "default_removal_mass_solute": {
+                "value": 0.70, "units": "kg/kg"}},
+            index="D",
+            use_default_removal=True)
+
+        assert model.fs.unit.removal_mass_solute[0, "A"].value == 0.70
+        assert model.fs.unit.removal_mass_solute[0, "A"].fixed
+
+    @pytest.mark.unit
+    def test_set_param_from_data_indexed_use_default_undefined(self, model):
+        model.fs.params.phase_list = ["Liq"]
+        model.fs.params.solvent_set = ["H2O"]
+        model.fs.params.solute_set = ["A", "B", "C"]
+        model.fs.params.component_list = ["H2O", "A", "B", "C"]
+
+        model.fs.unit = DerivedSITO0(
+            default={"property_package": model.fs.params})
+
+        with pytest.raises(KeyError,
+                           match="fs.unit - database provided does not "
+                           "contain an entry for removal_mass_solute with "
+                           "index D for technology and no default removal was "
+                           "specified."):
+            model.fs.unit.set_param_from_data(
+                model.fs.unit.removal_mass_solute[0, "A"],
+                {"removal_mass_solute": {"A": {
+                    "value": 0.42, "units": "m^3/m^3"}}},
+                index="D",
+                use_default_removal=True)
+
 
 @pytest.mark.unit
 def test_no_has_deltaP_treated():

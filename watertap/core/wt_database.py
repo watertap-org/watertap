@@ -16,6 +16,7 @@ with zero-order model parameter data.
 """
 import os
 import yaml
+from copy import deepcopy
 
 
 class Database:
@@ -56,7 +57,7 @@ class Database:
         params = self._get_technology(technology)
 
         # Get default parameter set
-        sparams = params["default"]
+        sparams = deepcopy(params["default"])
 
         if subtype is None:
             # Return default values
@@ -76,7 +77,7 @@ class Database:
                     # Note that this will overwrite previous parameters if
                     # there is overlap, so we might need to be careful in use.
                     try:
-                        sparams.update(params[s])
+                        sparams.update(deepcopy(params[s]))
                     except KeyError:
                         raise KeyError(
                             f"Received unrecognised subtype {s} for "
