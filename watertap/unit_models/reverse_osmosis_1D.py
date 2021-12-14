@@ -11,7 +11,7 @@
 #
 ###############################################################################
 
-
+from copy import deepcopy
 # Import Pyomo libraries
 from pyomo.environ import (Var,
                            Param,
@@ -21,6 +21,7 @@ from pyomo.environ import (Var,
                            exp,
                            value,
                            Constraint,
+                           check_optimal_termination,
                           )
 from pyomo.common.config import ConfigValue, In
 # Import IDAES cores
@@ -203,7 +204,6 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != MomentumBalanceType.none):
             add_object_reference(self, 'deltaP', feed_side.deltaP)
-            self.deltaP.setub(0)
 
         self._make_performance()
 
@@ -683,10 +683,8 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                    bulk.flow_vol_phase['Liq']
 
     def initialize(blk,
-                   feed_side_args=None,
-                   feed_side_membrane_args=None,
-                   permeate_side_args=None,
-                   permeate_block_args=None,
+                   initialize_guess=None,
+                   state_args=None,
                    outlvl=idaeslog.NOTSET,
                    solver=None,
                    optarg=None,
@@ -696,22 +694,19 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         Initialization routine for 1D-RO unit.
 
         Keyword Arguments:
-            feed_side_args : a dict of arguments to be passed to the property
-             package(s) of the feed_side to provide an initial state for
-             initialization (see documentation of the specific
-             property package)
-            feed_side_membrane_args : a dict of arguments to be passed to the property
-             package(s) of the feed_side of the membrane interface to provide an initial
-             state for initialization (see documentation of the specific
-             property package)
-            permeate_side_args : a dict of arguments to be passed to the property
-             package(s) of the permeate_side to provide an initial state for
-             initialization (see documentation of the specific
-             property package)
-            permeate_block_args : a dict of arguments to be passed to the property
-             package(s) of the final permeate StateBlock to provide an initial state for
-             initialization (see documentation of the specific
-             property package)
+            initialize_guess : a dict of guesses for solvent_recovery, solute_recovery,
+                               and cp_modulus. These guesses offset the initial values
+                               for the retentate, permeate, and membrane interface
+                               state blocks from the inlet feed
+                               (default =
+                               {'deltaP': -1e4,
+                               'solvent_recovery': 0.5,
+                               'solute_recovery': 0.01,
+                               'cp_modulus': 1.1})
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for the inlet
+                         feed side state block (see documentation of the specific
+                         property package) (default = None).
             outlvl : sets output level of initialization routine
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
@@ -729,46 +724,101 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         # Create solver
         opt = get_solver(solver, optarg)
 
+        # assumptions
+        if initialize_guess is None:
+            initialize_guess = {}
+        if 'deltaP' not in initialize_guess:
+            initialize_guess['deltaP'] = -1e4
+        if 'solvent_recovery' not in initialize_guess:
+            initialize_guess['solvent_recovery'] = 0.5
+        if 'solute_recovery' not in initialize_guess:
+            initialize_guess['solute_recovery'] = 0.01
+        if 'cp_modulus' not in initialize_guess:
+            initialize_guess['cp_modulus'] = 1.1
+
         init_log.info('Starting Initialization Step 1: initialize blocks.')
+        source = blk.feed_side.properties[blk.flowsheet().config.time.first(), blk.feed_side.length_domain.first()]
+        if state_args is None:
+            state_args = {}
+            state_dict = source.define_port_members()
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = state_dict[k][m].value
+                else:
+                    state_args[k] = state_dict[k].value
+            feed_side_args = state_args
+
         # ---------------------------------------------------------------------
         # Step 1: Initialize feed_side, permeate_side, and mixed_permeate blocks
         flags_feed_side = blk.feed_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=feed_side_args)
+            state_args=state_args,
+            hold_state=True)
+
+        init_log.info("Initialization Step 1 Complete")
+        if not ignore_dof:
+            check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
+        # ---------------------------------------------------------------------
+        # Initialize other state blocks
+        # base properties on inlet state block
+
+        if 'flow_mass_phase_comp' not in state_args.keys():
+            raise ConfigurationError('ReverseOsmosis1D initialization routine expects '
+                                     'flow_mass_phase_comp as a state variable. Check '
+                                     'that the property package supports this state '
+                                     'variable or that the state_args provided to the '
+                                     'initialize call includes this state variable')
+
+        # slightly modify initial values for other state blocks
+        state_args_retentate = deepcopy(state_args)
+        state_args_permeate = deepcopy(state_args)
+
+        state_args_retentate['pressure'] += initialize_guess['deltaP']
+        state_args_permeate['pressure'] = blk.mixed_permeate[0].pressure
+        for j in blk.config.property_package.solvent_set:
+            state_args_retentate['flow_mass_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solvent_recovery'])
+            state_args_permeate['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['solvent_recovery']
+        for j in blk.config.property_package.solute_set:
+            state_args_retentate['flow_mass_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solute_recovery'])
+            state_args_permeate['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['solute_recovery']
+
+        state_args_interface_in = deepcopy(state_args)
+        state_args_interface_out = deepcopy(state_args_retentate)
+
+        for j in blk.config.property_package.solute_set:
+            state_args_interface_in['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
+            state_args_interface_out['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
+
         flag_feed_side_properties_interface = blk.feed_side.properties_interface.initialize(
                 outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
-                state_args=feed_side_membrane_args)
-        init_log.info('Feed-side initialization complete. Initialize permeate-side. ')
+                state_args=state_args_interface_out)
         flags_permeate_side = blk.permeate_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=permeate_side_args)
-        init_log.info('Permeate-side initialization complete. Initialize permeate outlet. ')
+            state_args=state_args_permeate)
         flags_mixed_permeate = blk.mixed_permeate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=permeate_block_args)
-        init_log.info('Permeate outlet initialization complete. Initialize permeate outlet. ')
+            state_args=state_args_permeate)
 
         if not ignore_dof:
            check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
-        # ---------------------------------------------------------------------
-        # Step 2: Solve unit
-        init_log.info('Initialization Step 1 complete: all state blocks initialized.'
-                      'Starting Initialization Step 2: solve indexed blocks.')
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        # only fail on the final solve
-        check_solve(results, logger=init_log, fail_flag=False, checkpoint='Initialization Step 2: solve indexed blocks')
-        init_log.info('Starting Initialization Step 3: perform final solve.')
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+        init_log.info("Initialization Step 2 Complete.")
+        #with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        res = opt.solve(blk, tee=True)
+        # occasionally it might be worth retrying a solve
+        if not check_optimal_termination(res):
+            init_log.warn("Trouble solving ReverseOsmosis1D unit model, trying one more time")
+            res = opt.solve(blk, tee=True)
         check_solve(res, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 3: final solve')
         # Release Inlet state
         blk.feed_side.release_state(flags_feed_side, outlvl)
@@ -850,6 +900,15 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
+        # these variables should have user input, if not there will be a warning
+        if iscale.get_scaling_factor(self.width) is None:
+            sf = iscale.get_scaling_factor(self.width, default=1, warning=True)
+            iscale.set_scaling_factor(self.width, sf)
+
+        if iscale.get_scaling_factor(self.length) is None:
+            sf = iscale.get_scaling_factor(self.length, default=10, warning=True)
+            iscale.set_scaling_factor(self.length, sf)
+
         # setting scaling factors for variables
         for v in self.permeate_side[0, 0].flow_mass_phase_comp['Liq',:]:
             iscale.set_scaling_factor(v, 1e+5)
@@ -869,16 +928,6 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                 if blk.is_property_constructed('pressure_osm'):
                     self._rescale_permeate_variable(blk.pressure_osm)
 
-        # these variables should have user input, if not there will be a warning
-
-        if iscale.get_scaling_factor(self.width) is None:
-            sf = iscale.get_scaling_factor(self.width, default=1, warning=True)
-            iscale.set_scaling_factor(self.width, sf)
-
-        if iscale.get_scaling_factor(self.length) is None:
-            sf = iscale.get_scaling_factor(self.length, default=10, warning=True)
-            iscale.set_scaling_factor(self.length, sf)
-
         # will not override if the user provides the scaling factor
         ## default of 1 set by ControlVolume1D
         if iscale.get_scaling_factor(self.area_cross) == 1:
@@ -889,8 +938,8 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             iscale.set_scaling_factor(self.dens_solvent, sf)
 
         for (t, x, p, j), v in self.mass_transfer_phase_comp.items():
-            sf = iscale.get_scaling_factor(self.feed_side.properties[t, x].get_material_flow_terms(p, j)) \
-                 / iscale.get_scaling_factor(self.feed_side.length)
+            sf = (iscale.get_scaling_factor(self.feed_side.properties[t, x].get_material_flow_terms(p, j)) /
+                  iscale.get_scaling_factor(self.feed_side.length)) * value(self.nfe)
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
             v = self.feed_side.mass_transfer_term[t,x,p,j]
