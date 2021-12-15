@@ -18,6 +18,7 @@ from pyomo.environ import (Block,
                            Param,
                            Suffix,
                            NonNegativeReals,
+                           Reals,
                            Reference,
                            units as pyunits)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -47,6 +48,12 @@ class NanofiltrationData(UnitModelBlockData):
     """
     Nanofiltration model based on Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE).
 
+    Assumptions
+        - Membrane electric potential at membrane interface is taken as reference (i.e., equal to 0)
+
+    References:
+        Geraldes and Alves, 2008 (https://doi.org/10.1016/j.memsci.2008.04.054)
+        Roy et al., 2015 (http://dx.doi.org/10.1016/j.memsci.2015.06.030)
     """
     CONFIG = ConfigBlock()
 
@@ -142,8 +149,8 @@ class NanofiltrationData(UnitModelBlockData):
         if len(self.config.property_package.solvent_set) == 0:
             raise ConfigurationError("The NF model was expecting a solvent and did not receive it.")
 
-        if len(self.config.property_package.solute_set) == 0 and len(self.config.property_package.ion_set) == 0:
-            raise ConfigurationError("The NF model was expecting at least one solute or ion and did not receive any.")
+        if len(self.config.property_package.ion_set) == 0:
+            raise ConfigurationError("This NF model was expecting ions and did not receive any.")
 
     def build(self):
         # Call UnitModel.build to setup dynamics
@@ -153,6 +160,8 @@ class NanofiltrationData(UnitModelBlockData):
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
+        self.io_list = io_list = Set(initialize=[0, 1])  # inlet/outlet set
+
         self._process_config()
 
         if hasattr(self.config.property_package,'ion_set'):
@@ -160,25 +169,127 @@ class NanofiltrationData(UnitModelBlockData):
         elif hasattr(self.config.property_package,'solute_set'):
             solute_set = self.config.property_package.solute_set
 
-        solvent_solute_set = self.config.property_package.solvent_set | solute_set
-
+        solvent_set = self.config.property_package.solvent_set
+        solvent_solute_set = solvent_set | solute_set
+        phase_list = self.config.property_package.phase_list
 
         # Add unit parameters
-        self.flux_vol_solvent = Var(
+        self.flux_mass_phase_comp = Var(
             self.flowsheet().config.time,
-            self.config.property_package.solvent_set,
-            initialize=1.67e-6,
-            bounds=(1e-8, 1e-4),
-            units=units_meta('length') * units_meta('time') ** -1,
-            doc='Solvent volumetric flux')
-        # self.rejection_phase_comp = Var(
-        #     self.flowsheet().config.time,
-        #     self.config.property_package.phase_list,
-        #     solute_set,
-        #     initialize=0.9,
-        #     bounds=(-1 + 1e-6, 1 - 1e-6),
-        #     units=pyunits.dimensionless,
-        #     doc='Observed solute rejection')
+            io_list,
+            phase_list,
+            solvent_solute_set,
+            initialize=lambda b,t,x,p,j : 5e-4 if j in solvent_set else 1e-6, #TODO: using lambda function from RO_0D for now; update as needed
+            bounds=lambda b,t,x,p,j : (1e-4, 3e-2) if j in solvent_set else (1e-8, 1e-3), #TODO: using lambda function from RO_0D for now; update as needed
+            units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
+            doc='Component mass flux at inlet and outlet of membrane')
+        self.flux_mol_phase_comp = Var(
+            self.flowsheet().config.time,
+            io_list,
+            phase_list,
+            solvent_solute_set,
+            initialize=lambda b,t,x,p,j : 2.5e-2 if j in solvent_set else 1e-5, #TODO: divide solvent by .02 and solute by .1
+            bounds=lambda b,t,x,p,j : (5e-3, 1.5) if j in solvent_set else (1e-7, 1e-2), #TODO: divide solvent by .02 and solute by .1
+            units=units_meta('mol')*units_meta('length')**-2*units_meta('time')**-1,
+            doc='Component molar flux at inlet and outlet of membrane')
+        self.rejection_phase_comp = Var(
+            self.flowsheet().config.time,
+            phase_list,
+            solute_set,
+            initialize=0.9,
+            bounds=(-1 + 1e-6, 1 - 1e-6),
+            units=pyunits.dimensionless,
+            doc='Observed solute rejection')
+        self.diffus_pore_comp = Var(
+            self.flowsheet().config.time,
+            solute_set,
+            initialize=1, #TODO: revisit
+            bounds=(1e-6, 1), # TODO: revisit
+            units= units_meta('length')**2/units_meta('time'),
+            doc='Pore diffusivity of ion')
+        self.hindrance_factor_convective_comp = Var(
+            self.flowsheet().config.time,
+            solute_set,
+            initialize=1, #TODO: revisit
+            bounds=(1e-6, 1), #TODO: revisit
+            units=pyunits.dimensionless,
+            doc='Convective hindrance coefficient of ion')
+        self.hindrance_factor_diffusive_comp = Var(
+            self.flowsheet().config.time,
+            solute_set,
+            initialize=1, #TODO: revisit
+            bounds=(1e-6, 1), #TODO: revisit
+            units=pyunits.dimensionless,
+            doc='Diffusive hindrance coefficient of ion')
+        self.lambda_comp = Var(
+            self.flowsheet().config.time,
+            solute_set,
+            initialize=0.5, #TODO:revisit
+            domain=NonNegativeReals,
+            bounds=(None, 1-1e-6), #TODO: revisit
+            units=pyunits.dimensionless,
+            doc='Ratio of Stokes radius to membrane pore radius')
+        self.radius_pore = Var(
+            self.flowsheet().config.time,
+            initialize=0.5e-9, #TODO: revisit
+            domain=NonNegativeReals,
+            units=units_meta('length'),
+            doc='Membrane pore radius')
+        self.membrane_thickness_effective = Var(
+            initialize=1e-6,
+            domain=NonNegativeReals,
+            units=units_meta('length'),
+            doc='Effective membrane thickness')
+        self.electric_potential = Var(
+            self.flowsheet().config.time,
+            ['pore_in','pore_out','permeate'], #TODO: revisit - build in property model w/o constraint?
+            initialize=1, #TODO:revisit
+            units=pyunits.V,
+            doc='Electric potential of pore entrance/exit, and permeate')
+        self.electric_potential_grad_feed_interface = Var(
+            self.flowsheet().config.time,
+            initialize=1, #TODO: revisit
+            units= pyunits.V*pyunits.m**-1, # TODO: revisit- Geraldes and Alves give unitless while Roy et al. give V/m
+            doc='Electric potential gradient of feed-membrane interface')
+        self.partitioning_factor_steric_comp = Var(
+            self.flowsheet().config.time,
+            solute_set,
+            initialize= 0.5, #TODO:revisit
+            bounds=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc='Steric partitioning factor for each ion')
+        self.partitioning_factor_born_comp = Var(
+            self.flowsheet().config.time,
+            solute_set,
+            initialize= 0.5, #TODO:revisit
+            bounds=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc='Born solvation contribution to partitioning for each ion')
+        self.gibbs_solvation_comp = Var(
+            self.flowsheet().config.time, #TODO:revisit- function of pore dielectric constant, which might vary with time
+            solute_set,
+            initialize= 1, #TODO: revisit
+            units= pyunits.J,
+            doc='Gibbs free energy of solvation for each ion')
+        self.membrane_charge_density = Var(
+            self.flowsheet().config.time,
+            initialize=-50, # near value used in Roy et al.
+            domain= Reals,
+            units= pyunits.mol*pyunits.length**-3,
+            doc='Membrane charge density')
+        self.dielectric_constant_pore = Var(
+            self.flowsheet().config.time,
+            initialize=42, # near value used in Roy et al.
+            bounds=(1, None),
+            units=pyunits.dimensionless, # TODO: revisit bounds/domain
+            doc='Pore dielectric constant')
+        self.dielectric_constant_feed = Var(
+            self.flowsheet().config.time,
+            initialize=80.4, # dielectric constant of pure water at 20C; TODO: move to property model?
+            bounds=(1, None),
+            units=pyunits.dimensionless, # TODO: revisit bounds/domain
+            doc='Pore dielectric constant')
+
         # self.dens_solvent = Param(
         #     initialize=1000,
         #     units=units_meta('mass')*units_meta('length')**-3,
