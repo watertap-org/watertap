@@ -11,7 +11,6 @@
 #
 ###############################################################################
 
-from copy import deepcopy
 # Import Pyomo libraries
 from pyomo.environ import (Var,
                            Param,
