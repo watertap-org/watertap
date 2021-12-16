@@ -701,7 +701,7 @@ class TestRemineralization():
                     inherent_equilibrium_constraint[i[1]], 0.1)
 
         # Next, try adding scaling for species
-        min = 1e-6
+        min = 1e-3
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
             if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
@@ -730,12 +730,6 @@ class TestRemineralization():
     def test_initialize_solver_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
 
-        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
-        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0)
-        model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1)
-
-        solver.options['bound_push'] = 1e-10
-        solver.options['mu_init'] = 1e-6
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(model) == 0
 
@@ -743,10 +737,6 @@ class TestRemineralization():
     def test_solve_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
 
-        # NOTE: With new methods, after initialization the 'bound_push' and 'mu_init'
-        #       options can be relaxed from what they were before.
-        solver.options['bound_push'] = 1e-5
-        solver.options['mu_init'] = 1e-3
         results = solver.solve(model, tee=True)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
@@ -1399,7 +1389,7 @@ class TestRemineralizationCSTR():
             iscale.set_scaling_factor(model.fs.unit.control_volume.rate_reaction_extent[0.0,i], 10/scale)
 
         # Next, try adding scaling for species
-        min = 1e-6
+        min = 1e-3
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
             if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
@@ -1435,15 +1425,6 @@ class TestRemineralizationCSTR():
     def test_initialize_solver_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
 
-        # Set upper and lower bounds for lnx_i and x_i params
-        #       Doing this helps to restrict the search area of ipopt and
-        #       seems to lead to better convergence behavior
-        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
-        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0)
-        model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1)
-
-        solver.options['bound_push'] = 1e-10
-        solver.options['mu_init'] = 1e-6
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
         assert degrees_of_freedom(model) == 0
@@ -1451,11 +1432,6 @@ class TestRemineralizationCSTR():
     @pytest.mark.component
     def test_solve_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
-
-        # NOTE: With new methods, after initialization the 'bound_push' and 'mu_init'
-        #       options can be relaxed from what they were before.
-        solver.options['bound_push'] = 1e-5
-        solver.options['mu_init'] = 1e-3
         solver.options['halt_on_ampl_error'] = 'yes'
         results = solver.solve(model, tee=True, symbolic_solver_labels=True)
         print(results.solver.termination_condition)

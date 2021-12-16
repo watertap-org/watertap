@@ -331,7 +331,7 @@ class TestENRTLwater():
                     inherent_equilibrium_constraint[i[1]], 0.1)
 
         # Next, try adding scaling for species
-        min = 1e-6
+        min = 1e-3
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
             if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
@@ -359,12 +359,6 @@ class TestENRTLwater():
     @pytest.mark.component
     def test_initialize_solver_water(self, water_model):
         model = water_model
-        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
-        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0.001)
-        model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1.001)
-
-        solver.options['bound_push'] = 1e-5
-        solver.options['mu_init'] = 1e-3
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(model) == 0
 
@@ -372,8 +366,6 @@ class TestENRTLwater():
     def test_solve_water(self, water_model):
         model = water_model
         solver.options['max_iter'] = 200
-        solver.options['bound_push'] = 1e-5
-        solver.options['mu_init'] = 1e-3
         solver.options['halt_on_ampl_error'] = 'yes'
         results = solver.solve(model, tee=True, symbolic_solver_labels=True)
         print(results.solver.termination_condition)
@@ -785,7 +777,7 @@ class TestENRTLcarbonicAcid():
                     inherent_equilibrium_constraint[i[1]], 0.1)
 
         # Next, try adding scaling for species
-        min = 1e-6
+        min = 1e-3
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
             if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
@@ -813,8 +805,6 @@ class TestENRTLcarbonicAcid():
     @pytest.mark.component
     def test_initialize_solver_carbonic_acid(self, carbonic_acid_model):
         model = carbonic_acid_model
-        solver.options['bound_push'] = 1e-5
-        solver.options['mu_init'] = 1e-3
         solver.options['max_iter'] = 100
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(model) == 0

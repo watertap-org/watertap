@@ -145,14 +145,19 @@ def assert_no_initialization_perturbation(blk, optarg=None, solver=None):
         optarg = {}
     if solver is None:
         solver = get_solver(options=optarg)
-    if solver.name != 'ipopt':
+    if solver.name not in ('ipopt',
+            'ipopt-watertap',
+            ):
         raise ValueError(f"Solver {solver.name} is not supported")
 
     options = solver.options
     bound_push = options.get('bound_push', 1e-2)
     bound_frac = options.get('bound_frac', 1e-2)
     bound_relax_factor = options.get('bound_relax_factor', 1e-8)
-    user_scaling = (options.get('nlp_scaling_method', 'gradient-based') == 'user-scaling')
+    if solver.name == 'ipopt-watertap':
+        user_scaling = True
+    else:
+        user_scaling = (options.get('nlp_scaling_method', 'gradient-based') == 'user-scaling')
 
     for v, val, result in generate_initialization_perturbation(blk, bound_push, bound_frac, bound_relax_factor, user_scaling):
         raise ValueError(f"IPOPT will move scaled initial value for variable {v.name} from {val:e} to {result:e}")

@@ -499,7 +499,7 @@ class TestPureWater:
         scale_func(model)
 
         # Next, try adding scaling for species
-        min = 1e-6
+        min = 1e-3
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
             if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
@@ -574,13 +574,6 @@ class TestPureWater:
                 activated_constraints_set: activated_constraints_set(m)
             }
         data_before = _collect_data_to_check(model)
-
-        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
-        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0.001)
-        model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1.001)
-
-        solver.options["bound_push"] = 1e-5
-        solver.options["mu_init"] = 1e-3
         model.fs.unit.initialize(state_args=state_args, optarg=solver.options)
 
         data_after = _collect_data_to_check(model)
@@ -659,9 +652,8 @@ class TestPureWaterEDB(TestPureWater):
             components.append(c.name)
         # Add the reactions
         for r in edb.get_reactions(component_names=components):
-            #Removed call to function 'set_reaction_order' because that function behavior is incorrect
-            #r.set_reaction_order('Liq', ('H2O',), ('H_+', 'OH_-'))
-            r._data["parameter_data"]["reaction_order"] = {'Liq': {'H2O': 0, 'H_+': 1, 'OH_-': 1}}
+            # Set a custom reaction order
+            r.set_reaction_order("Liq", {"H2O": 0, "H_+": 1, "OH_-": 1})
             r._data["type"] = "inherent"
             base.add(r)
         return base.idaes_config
@@ -675,9 +667,7 @@ class TestPureWaterEDB(TestPureWater):
         # Add the reactions
         for r in edb.get_reactions(component_names=components):
             # Set a custom reaction order
-            #Removed call to function 'set_reaction_order' because that function behavior is incorrect
-            #r.set_reaction_order('Liq', ('H2O',), ('H_+', 'OH_-'))
-            r._data["parameter_data"]["reaction_order"] = {'Liq': {'H2O': 0, 'H_+': 1, 'OH_-': 1}}
+            r.set_reaction_order("Liq", {"H2O": 0, "H_+": 1, "OH_-": 1})
             # Need to remove this to avoid errors when using the generated config
             r.remove_parameter("ds_rxn_ref")
             base.add(r)

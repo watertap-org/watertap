@@ -43,7 +43,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver(options={'bound_push':1e-8})
+solver = get_solver()
 
 
 # # -----------------------------------------------------------------------------
@@ -251,9 +251,7 @@ class TestPressureExchanger():
     @pytest.mark.component
     def test_initialize(self, unit_frame):
         m = unit_frame
-        kwargs = {'solver': 'ipopt',
-                  'optarg': {'bound_push': 1e-8}}
-        initialization_tester(unit_frame, **kwargs)
+        initialization_tester(unit_frame)
 
 
     @pytest.mark.component
