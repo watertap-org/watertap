@@ -457,8 +457,7 @@ def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, outp
 
 # ================================================================
 
-def _create_global_output(local_output_dict, local_num_cases,
-        num_total_samples, comm):
+def _create_global_output(local_output_dict, req_num_samples, comm):
 
     my_mpi_rank = comm.Get_rank()
     comm_size = comm.Get_size()
@@ -469,9 +468,13 @@ def _create_global_output(local_output_dict, local_num_cases,
         # We make the assumption that the parameter sweep is running the same
         # flowsheet num_samples number of times, i.e., the structure of the
         # local_output_dict remains the same across all mpi_ranks
+        local_num_cases = len(local_output_dict["solve_status"])
+        print("local_num_cases = {0}".format(local_num_cases))
 
         # Gather the size of the value array on each MPI rank
-        sample_split_arr = comm.gather(local_num_cases, root=0)
+        sample_split_arr = comm.allgather(local_num_cases)
+        num_total_samples = sum(sample_split_arr)
+        print("num_total_samples = {0}".format(num_total_samples))
 
         # Create the global value array on rank 0
         if my_mpi_rank == 0:
@@ -492,6 +495,15 @@ def _create_global_output(local_output_dict, local_num_cases,
                     comm.Gatherv(sendbuf=subitem["value"],
                                  recvbuf=(global_output_dict[key][subkey]["value"], sample_split_arr),
                                  root=0)
+
+                    # Trim to the exact number
+                    global_output_dict[key][subkey]["value"] = global_output_dict[key][subkey]["value"][0:req_num_samples]
+
+                for i in range(comm.Get_size()):
+                    if i == comm.Get_rank():
+                        print("rank = {0}, Finished alter".format(my_mpi_rank))
+                    comm.Barrier()
+
             elif key == "solve_status":
                 # There may be a smarter implementation using pyomo tools for this,
                 # but the current implementation converts the termination condition
@@ -499,6 +511,12 @@ def _create_global_output(local_output_dict, local_num_cases,
                 # converts it back to a string.
                 local_tc_int = [_numeric_termination_condition_translation(i) for i in item]
                 local_tc_int = np.asarray(local_tc_int, dtype=np.int)
+
+                for i in range(comm.Get_size()):
+                    if i == comm.Get_rank():
+                        print("rank = {0}, local_tc_int = {1}".format(my_mpi_rank, local_tc_int))
+                    comm.Barrier()
+
                 if my_mpi_rank == 0:
                     global_tc_int = np.zeros(num_total_samples, dtype=np.int)
                 else:
@@ -509,8 +527,9 @@ def _create_global_output(local_output_dict, local_num_cases,
                              root=0)
 
                 if my_mpi_rank == 0:
+                    print(global_tc_int, num_total_samples)
                     global_tc_str = [_numeric_termination_condition_translation(i) for i in global_tc_int]
-                    global_output_dict[key] = global_tc_str
+                    global_output_dict[key] = global_tc_str[0:req_num_samples]
 
     return global_output_dict
 
@@ -625,7 +644,7 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
     local_num_cases = np.shape(local_values)[0]
     local_results = np.zeros((local_num_cases, len(outputs)))
     local_solve_status_list = []
-    fail_counter = 0
+    # fail_counter = 0
 
     output_variable_type = "unfixed"
     # Create the output skeleton for storing detailed data
@@ -653,6 +672,8 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
             _force_exception(k) # DELETE_ME!!!
 
         except:
+            # fail_counter += 1
+            solver_termination_condition = "other" # Delete Me
             # If the run is infeasible, report nan
             local_results[k, :] = np.nan
             previous_run_failed = True
@@ -669,6 +690,7 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
         # If the initial attempt failed and additional conditions are met, try
         # to reinitialize and resolve.
         if reinitialize_before_sweep == False and previous_run_failed and (reinitialize_function is not None):
+            # fail_counter -= 1
             try:
                 reinitialize_function(model, **reinitialize_kwargs)
                 results = optimize_function(model, **optimize_kwargs)
@@ -676,19 +698,22 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
 
                 _force_exception(k) # DELETE_ME!!!
             except:
-                fail_counter += 1
+                # fail_counter += 1
                 solver_termination_condition = "other" # Delete Me
             else:
                 local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
                 solver_termination_condition = results.solver.termination_condition.name
         elif reinitialize_before_sweep and previous_run_failed:
-            fail_counter += 1
+            # fail_counter += 1
+            pass
 
         # We will store status as a string
         # UNCOMMENT BELOW
         # local_solve_status_list.append(results.solver.termination_condition.name)
         local_solve_status_list.append(solver_termination_condition)
 
+    n_optimal = local_solve_status_list.count("optimal")
+    fail_counter = local_num_cases - n_optimal
     local_output_dict["solve_status"] = local_solve_status_list
 
     return local_results, local_output_dict, fail_counter
@@ -1086,13 +1111,18 @@ def recursive_parameter_sweep(model, sweep_params, outputs, results_file=None, o
     if reinitialize_kwargs is None:
         reinitialize_kwargs = dict()
 
-    global_num_samples = copy.deepcopy(req_num_samples)
     n_samples_remaining = copy.deepcopy(req_num_samples)
-    num_total_samples = copy.deepcopy(n_samples_remaining)
+    num_total_samples = copy.deepcopy(req_num_samples)
 
     local_output_collection = {}
     loop_ctr = 0
     while n_samples_remaining > 0 :
+
+        for i in range(comm.Get_size()):
+            if i == comm.Get_rank():
+                print("rank = {0}, loop_ctr = {1}".format(comm.Get_rank(), loop_ctr))
+            comm.Barrier()
+
         # Enumerate/Sample the parameter space
         global_values = _build_combinations(sweep_params, sampling_type, num_total_samples, comm, rank, num_procs)
 
@@ -1106,19 +1136,8 @@ def recursive_parameter_sweep(model, sweep_params, outputs, results_file=None, o
             optimize_function, optimize_kwargs, reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep, comm)
 
         n_successful_solves = local_num_cases - fail_counter
-        for i in range(comm.Get_size()):
-            if i == comm.Get_rank():
-                print("rank = {0}".format(rank))
-                print(" num_total_samples = {0}".format(num_total_samples))
-                print(" n_successful_solves = {0}".format(n_successful_solves))
-                print(" fail_counter = {0}".format(fail_counter))
-                print(" list = {0}".format(local_output_collection[loop_ctr]["solve_status"]))
-            comm.Barrier()
-        # n_samples_remaining -= n_successful_solves
         n_successful_list = comm.allgather(n_successful_solves)
         n_samples_remaining -= sum(n_successful_list)
-        # n_remainig_arr = comm.allgather(n_samples_remaining)
-        # num_total_samples = int(np.ceil(1.2 * sum(n_remainig_arr)))
         num_total_samples = int(np.ceil(2 * n_samples_remaining))
         loop_ctr += 1
 
@@ -1127,15 +1146,31 @@ def recursive_parameter_sweep(model, sweep_params, outputs, results_file=None, o
     local_filtered_dict = _filter_recursive_solves(model, sweep_params, local_output_collection,
                                                    true_local_num_cases, comm, "optimal")
 
+    print()
+    for i in range(comm.Get_size()):
+        if i == comm.Get_rank():
+            print("rank = {0}".format(comm.Get_rank()))
+            print("local_filtered_dict[solve_status] = {0}".format(local_filtered_dict['solve_status']) )
+        comm.Barrier()
+    print()
     # Not that we have all of the successful outputs in a consolidated dictionary locally,
     # we can now construct a global dictionary of successful solves.
-    global_filtered_dict = _create_global_output(local_filtered_dict, true_local_num_cases, global_num_samples, comm)
+    global_filtered_dict = _create_global_output(local_filtered_dict, req_num_samples, comm)
+
+    print()
+    for i in range(comm.Get_size()):
+        if i == comm.Get_rank():
+            print("rank = {0}, Finished global".format(comm.Get_rank()))
+        comm.Barrier()
 
     # Now we can save this
     comm.Barrier()
 
     if rank == 0:
         _write_outputs(global_filtered_dict, txt_options="keys")
+
+    print("here!")
+    comm.Barrier()
 
     return
 
@@ -1150,38 +1185,54 @@ def _filter_recursive_solves(model, sweep_params, recursive_local_dict, true_loc
         warnings.warn("Invalid filtering option specified. Filtering optimal values")
         filter_keyword = "optimal"
 
+
+
+    # Figure out how many filtered solves did this rank actually do
+    filter_counter = 0
+    for case, content in recursive_local_dict.items():
+        filter_counter += content["solve_status"].count(filter_keyword)
+    print("filter_counter = {0}".format(filter_counter))
+
+
     # Now that we have all of the local output dictionaries, we need to construct
     # a consolidated dictionary of successful solves.
-    local_filtered_dict = _create_local_output_skeleton(model, sweep_params, true_local_num_cases,
+    local_filtered_dict = _create_local_output_skeleton(model, sweep_params, filter_counter,
                                                           variable_type="unfixed")
+    local_filtered_dict["solve_status"] = []
 
     # Populate local_successful_outputs
     offset = 0
-    for keys, case in recursive_local_dict.items():
+    for case_number, content in recursive_local_dict.items():
         # Filter all of the sucessful solves
-        optimal_indices = [idx for idx, status in enumerate(case["solve_status"]) if status == "optimal"]
+        optimal_indices = [idx for idx, status in enumerate(content["solve_status"]) if status == "optimal"]
         n_successful_solves = len(optimal_indices)
         stop = offset+n_successful_solves
-        if stop > true_local_num_cases:
-            optimal_indices = optimal_indices[:-(stop-true_local_num_cases)]
-            stop = true_local_num_cases
+        # if stop > true_local_num_cases:
+        #     optimal_indices = optimal_indices[:-(stop-true_local_num_cases)]
+        #     stop = true_local_num_cases
 
-        for i in range(comm.Get_size()):
-            if i == comm.Get_rank():
-                print("\nkeys = ", recursive_local_dict.keys())
-                print(" rank = {0}".format(comm.Get_rank()))
-                print(" offset = ", offset)
-                print(" n_successful_solves = ", n_successful_solves)
-                print(" range = ", np.arange(offset, stop))
-                print(" optimal_indices = ", optimal_indices)
-            comm.Barrier()
+        # for i in range(comm.Get_size()):
+        #     if i == comm.Get_rank():
+        #         print("\nkeys = ", recursive_local_dict.keys())
+        #         print(" rank = {0}".format(comm.Get_rank()))
+        #         print(" offset = ", offset)
+        #         print(" n_successful_solves = ", n_successful_solves)
+        #         print(" range = ", np.arange(offset, stop))
+        #         print(" optimal_indices = ", optimal_indices)
+        #     comm.Barrier()
 
-        for key, item in case.items():
+        for key, item in content.items():
             if key != "solve_status":
                 for subkey, subitem in item.items():
-                    # print(subitem['value'][optimal_indices])
-                    # print(local_successful_dict[key][subkey]['value'][offset:n_successful_solves])
+                    # if subkey == "fs.RO.A_comp[0.0,H2O]":
+                    #     print(subitem['value'][optimal_indices])
+                    #     print(local_filtered_dict[key][subkey]['value'][offset:n_successful_solves])
                     local_filtered_dict[key][subkey]['value'][offset:stop] = subitem['value'][optimal_indices]
+
+        # Place the solve status
+        local_filtered_dict["solve_status"].extend([content["solve_status"][i] for i in optimal_indices])
+        # print(" local_filtered_dict['solve_status'] = ", local_filtered_dict['solve_status'])
+
         offset += n_successful_solves # TODO: Check if this -1 is needed
 
     return local_filtered_dict
