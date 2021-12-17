@@ -74,7 +74,7 @@ from idaes.core import VaporPhase, AqueousPhase
 from idaes.core.components import Solvent, Solute, Cation, Anion
 from idaes.core.phases import PhaseType as PT
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
-from idaes.generic_models.properties.core.state_definitions import FTPx
+from idaes.generic_models.properties.core.state_definitions import FpcTP
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import IdealBubbleDew
@@ -84,7 +84,20 @@ from pyomo.environ import log10
 
 import idaes.logger as idaeslog
 
-__author__ = "Srikanth Allu"
+# Import scaling helper functions
+from watertap.examples.chemistry.chem_scaling_utils import (
+    _set_eps_vals,
+    _set_equ_rxn_scaling,
+    _set_mat_bal_scaling_FpcTP,
+    _set_mat_bal_scaling_FTPx,
+    _set_ene_bal_scaling,
+)
+
+__authors__ = [
+    "Srikanth Allu",
+    "Austin Ladshaw",
+]
+__author__ = __authors__[0]
 
 # Create a thermo_config dictionary
 thermo_config = {
@@ -406,9 +419,8 @@ thermo_config = {
         "temperature": pyunits.K,
     },
     # Specifying state definition
-    "state_definition": FTPx,
+    "state_definition": FpcTP,
     "state_bounds": {
-        "flow_mol": (0, 100, 20, pyunits.mol / pyunits.s),
         "temperature": (273.15, 300, 500, pyunits.K),
         "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
     },
@@ -561,18 +573,19 @@ class TestCarbonationProcess:
             }
         )
 
-        model.fs.unit.inlet.flow_mol.fix(10)
         model.fs.unit.inlet.pressure.fix(101325.0)
         model.fs.unit.inlet.temperature.fix(298.0)
-        model.fs.unit.inlet.mole_frac_comp[0, "H_+"].fix(0.0)
-        model.fs.unit.inlet.mole_frac_comp[0, "OH_-"].fix(0.0)
-        model.fs.unit.inlet.mole_frac_comp[0, "H2CO3"].fix(0.0)
-        model.fs.unit.inlet.mole_frac_comp[0, "HCO3_-"].fix(0.0)
-        model.fs.unit.inlet.mole_frac_comp[0, "CO3_2-"].fix(0.0)
-        model.fs.unit.inlet.mole_frac_comp[0, "CO2"].fix(0.0005)
-        model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix(1 - 0.0005)
 
-        print(model.fs.thermo_params.component_list)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H_+"].fix( 0.0 )
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "OH_-"].fix( 0.0 )
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2CO3"].fix( 0.0 )
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "HCO3_-"].fix( 0.0 )
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO3_2-"].fix( 0.0 )
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Vap", "CO2"].fix( 0.0005*10 )
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO2"].fix( 0.0 )
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Vap", "H2O"].fix( 0.0 )
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix( (1 - 0.0005)*10 )
+
         return model
 
     @pytest.mark.unit
@@ -607,26 +620,10 @@ class TestCarbonationProcess:
     def test_scaling_equilibrium(self, equilibrium_config):
         model = equilibrium_config
 
-        for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
-            scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10/scale)
-            iscale.constraint_scaling_transform(model.fs.unit.control_volume.reactions[0.0].
-                    equilibrium_constraint[i[1]], 0.1)
-
-        # Next, try adding scaling for species
-        min = 1e-3
-        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
-            # i[0] = phase, i[1] = species
-            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
-                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
-            else:
-                scale = min
-            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-            iscale.constraint_scaling_transform(
-                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
+        # Call scaling factor helper functions
+        _set_equ_rxn_scaling(model.fs.unit, reaction_config)
+        _set_mat_bal_scaling_FpcTP(model.fs.unit)
+        _set_ene_bal_scaling(model.fs.unit)
 
         iscale.calculate_scaling_factors(model.fs.unit)
 
@@ -665,11 +662,10 @@ class TestCarbonationProcess:
     def test_solution_equilibrium(self, equilibrium_config):
         model = equilibrium_config
 
-        assert pytest.approx(298, rel=1e-5) == value(
+        assert pytest.approx(298.2, rel=1e-4) == value(
             model.fs.unit.outlet.temperature[0]
         )
-        assert pytest.approx(10, rel=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
-        assert pytest.approx(101325, rel=1e-5) == value(
+        assert pytest.approx(101325, rel=1e-4) == value(
             model.fs.unit.outlet.pressure[0]
         )
 
@@ -679,12 +675,14 @@ class TestCarbonationProcess:
             )
             / 1000
         )
-        assert pytest.approx(55.165246, rel=1e-5) == total_molar_density
+        assert pytest.approx(55.165246, rel=1e-4) == total_molar_density
         pH = -value(
-            log10(model.fs.unit.outlet.mole_frac_comp[0, "H_+"] * total_molar_density)
+            log10(value(model.fs.unit.control_volume.properties_out[0.0].
+                mole_frac_phase_comp["Liq","H_+"]) * total_molar_density)
         )
         pOH = -value(
-            log10(model.fs.unit.outlet.mole_frac_comp[0, "OH_-"] * total_molar_density)
+            log10(value(model.fs.unit.control_volume.properties_out[0.0].
+                mole_frac_phase_comp["Liq","OH_-"])  * total_molar_density)
         )
         assert pytest.approx(5.339891, rel=1e-4) == pH
         assert pytest.approx(8.660655, rel=1e-4) == pOH
