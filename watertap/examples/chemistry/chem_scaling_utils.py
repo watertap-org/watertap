@@ -21,7 +21,7 @@ __author__ = "Austin Ladshaw"
 
 ## Helper function for setting eps values associated with solubility_product functions
 # NOTE: Function does nothing if no solubility reactions are present
-def _set_eps_vals(rxn_params, rxn_config):
+def _set_eps_vals(rxn_params, rxn_config, factor=1e-2):
     # For solubility reactions, have to set the eps value
     try:
         for rid in rxn_params.equilibrium_reaction_idx:
@@ -32,18 +32,17 @@ def _set_eps_vals(rxn_params, rxn_config):
             try:
                 # Want to set eps in some fashion similar to this
                 if scale < 1e-16:
-                    rxn_params.component("reaction_"+rid).eps.value = scale*1e-2
+                    rxn_params.component("reaction_"+rid).eps.value = scale*factor
                 else:
-                    rxn_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
+                    rxn_params.component("reaction_"+rid).eps.value = 1e-16*factor
             except:
                 pass
     except:
         pass
 
 ## Helper function for setting scaling factors for equilibrium reactions
-def _set_equ_rxn_scaling(unit, rxn_config):
+def _set_equ_rxn_scaling(unit, rxn_config, min_scale=1e-3):
     #Add scaling factors for reactions (changes depending on if it is a log form or not)
-    min_scale = 1e-3
     for i in unit.control_volume.equilibrium_reaction_extent_index:
         # i[0] = time, i[1] = reaction
 
@@ -54,9 +53,8 @@ def _set_equ_rxn_scaling(unit, rxn_config):
             unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 0.1)
 
 ## Helper function for setting scaling factors for inherent reactions
-def _set_inherent_rxn_scaling(unit, thermo_config):
+def _set_inherent_rxn_scaling(unit, thermo_config, min_scale=1e-3):
     #Add scaling factors for reactions (changes depending on if it is a log form or not)
-    min_scale = 1e-3
     for i in unit.control_volume.inherent_reaction_extent_index:
         # i[0] = time, i[1] = reaction
 
@@ -66,10 +64,15 @@ def _set_inherent_rxn_scaling(unit, thermo_config):
         iscale.constraint_scaling_transform(unit.control_volume.properties_out[0.0].
                 inherent_equilibrium_constraint[i[1]], 0.1)
 
+## Helper function for setting scaling factors for rate reactions
+def _set_rate_rxn_scaling(rxn_params, unit, min_scale=1e-3):
+    for i in rxn_params.rate_reaction_idx:
+        scale = value(unit.control_volume.reactions[0.0].reaction_rate[i].expr)
+        iscale.set_scaling_factor(unit.control_volume.rate_reaction_extent[0.0,i], 1000/scale)
+
 ## Helper function for setting scaling factors for the mass balance for FpcTP state vars
-def _set_mat_bal_scaling_FpcTP(unit):
+def _set_mat_bal_scaling_FpcTP(unit, min=1e-3):
     # For species
-    min = 1e-3
     for i in unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
         # i[0] = phase, i[1] = species
         if unit.inlet.flow_mol_phase_comp[0, i[0], i[1]].value > min:
@@ -82,10 +85,14 @@ def _set_mat_bal_scaling_FpcTP(unit):
         iscale.set_scaling_factor(unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
         iscale.constraint_scaling_transform(unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
+    try:
+        iscale.set_scaling_factor(unit.control_volume.volume, 10/unit.volume[0.0].value)
+    except:
+        pass
+
 ## Helper function for setting scaling factors for the mass balance for FTPx state vars
-def _set_mat_bal_scaling_FTPx(unit):
+def _set_mat_bal_scaling_FTPx(unit, min=1e-3):
     # For species
-    min = 1e-3
     for i in unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
         # i[0] = phase, i[1] = species
         if unit.inlet.mole_frac_comp[0, i[1]].value > min:
@@ -98,6 +105,11 @@ def _set_mat_bal_scaling_FTPx(unit):
         iscale.constraint_scaling_transform(
             unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
         iscale.constraint_scaling_transform(unit.control_volume.material_balances[0.0,i[1]], 10/scale)
+
+    try:
+        iscale.set_scaling_factor(unit.control_volume.volume, 10/unit.volume[0.0].value)
+    except:
+        pass
 
 ## Helper function for setting energy balance scaling factors
 def _set_ene_bal_scaling(unit):
