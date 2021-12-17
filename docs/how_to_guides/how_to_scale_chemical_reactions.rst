@@ -46,7 +46,8 @@ Types of Reactions
 2. Equilibrium Reactions using **log_power_law_equil** form
 3. Rate Reactions using **power_law_rate** form
 4. Solubility/Precipitation Reaction using **log_solubility_product** form
-4. Stoichiometric Reactions
+5. Stoichiometric Reactions
+
 
 
 Inherent Reactions using **log_power_law_equil** form
@@ -196,7 +197,7 @@ The sample below just gives a brief demo of how to scale a stoichiometric reacti
 named 'R1' by a given factor. All stoichiometric reactions are located in the
 'control_volume' of the model and named 'rate_reaction_extent'. This is because
 **Rate Reactions** and **Stoichiometric Reactions** have very similar implementations
-in the IDAES framework. 
+in the IDAES framework.
 
 .. code-block::
 
