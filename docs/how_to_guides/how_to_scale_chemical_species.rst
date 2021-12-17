@@ -16,7 +16,7 @@ system should also be scaled.
     due to the dilute nature of aqueous chemistry. See
     :ref:`How to scale chemical reactions<how_to_scale_chemical_reactions>`. Additionally,
     user's MUST also scale the energy balance equations. See also
-    :ref:`How to scale energy balance for chemistry<_how_to_scale_chemical_process_energy_balance>`.
+    :ref:`How to scale energy balance for chemistry<how_to_scale_chemical_process_energy_balance>`.
 
 After you have set all scaling factors for reactions, species, energy balances, etc.,
 you need to call the 'calculate_scaling_factors' function on the entire model before
