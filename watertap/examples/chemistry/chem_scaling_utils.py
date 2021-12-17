@@ -23,22 +23,18 @@ __author__ = "Austin Ladshaw"
 # NOTE: Function does nothing if no solubility reactions are present
 def _set_eps_vals(rxn_params, rxn_config, factor=1e-2):
     # For solubility reactions, have to set the eps value
-    try:
+    if (hasattr(rxn_params,"equilibrium_reaction_idx")):
         for rid in rxn_params.equilibrium_reaction_idx:
             # Grab the 'k_eq_ref' value from the reaction config
             scale = rxn_config["equilibrium_reactions"][rid]["parameter_data"]["k_eq_ref"][0]
 
-            # NOTE: ONLY the solubility_product function has an eps value that we need to set
-            try:
-                # Want to set eps in some fashion similar to this
+            # NOTE: ONLY certain functions have an eps value that we need to set
+            if (hasattr(rxn_params.component("reaction_"+rid),"eps")):
+                # highest allowable value for setting eps based on k_eq_ref
                 if scale < 1e-16:
                     rxn_params.component("reaction_"+rid).eps.value = scale*factor
                 else:
                     rxn_params.component("reaction_"+rid).eps.value = 1e-16*factor
-            except:
-                pass
-    except:
-        pass
 
 ## Helper function for setting scaling factors for equilibrium reactions
 def _set_equ_rxn_scaling(unit, rxn_config, min_scale=1e-3):
@@ -85,10 +81,8 @@ def _set_mat_bal_scaling_FpcTP(unit, min=1e-3):
         iscale.set_scaling_factor(unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
         iscale.constraint_scaling_transform(unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
-    try:
+    if (hasattr(unit.control_volume,"volume")):
         iscale.set_scaling_factor(unit.control_volume.volume, 10/unit.volume[0.0].value)
-    except:
-        pass
 
 ## Helper function for setting scaling factors for the mass balance for FTPx state vars
 def _set_mat_bal_scaling_FTPx(unit, min=1e-3):
@@ -106,10 +100,8 @@ def _set_mat_bal_scaling_FTPx(unit, min=1e-3):
             unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
         iscale.constraint_scaling_transform(unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
-    try:
+    if (hasattr(unit.control_volume,"volume")):
         iscale.set_scaling_factor(unit.control_volume.volume, 10/unit.volume[0.0].value)
-    except:
-        pass
 
 ## Helper function for setting energy balance scaling factors
 def _set_ene_bal_scaling(unit):
