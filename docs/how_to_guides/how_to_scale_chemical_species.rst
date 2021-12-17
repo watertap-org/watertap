@@ -3,11 +3,6 @@
 How to scale chemical species
 =============================
 
-.. warning::
-    This scaling methods are meant to be used with the 'gradient-based' scaling
-    functionality built into ipopt. It is not advised to use 'user-scaling' with
-    the chemical modules, as this tends to have poor convergence.
-
 In :ref:`How to scale chemical reactions<how_to_scale_chemical_reactions>`, we
 discussed at length how you need to apply scaling factors to variables and constraints
 associated with all the different types of reactions your system may have. Here,

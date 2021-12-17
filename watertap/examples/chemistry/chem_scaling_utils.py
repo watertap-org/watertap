@@ -54,7 +54,7 @@ def _set_inherent_rxn_scaling(unit, thermo_config, min_scale=1e-3):
     for i in unit.control_volume.inherent_reaction_extent_index:
         # i[0] = time, i[1] = reaction
 
-        # Grab the 'k_eq_ref' value from the reaction config
+        # Grab the 'k_eq_ref' value from the thermo config
         scale = max(min_scale, thermo_config["inherent_reactions"][i[1]]["parameter_data"]["k_eq_ref"][0])
         iscale.set_scaling_factor(unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
         iscale.constraint_scaling_transform(unit.control_volume.properties_out[0.0].
