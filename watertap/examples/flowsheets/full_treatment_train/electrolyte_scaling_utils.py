@@ -14,10 +14,7 @@
 """
     Scaling utilities for flowsheets involving electrolyte chemistry
 
-    NOTE: Some of these scaling methods will likely need to be updated or
-    changed after the new log form for electrolytes is added to IDAES.
-
-    ALSO NOTE: These scaling methods assume you will be using the FTPx state definition.
+    NOTE: These are specific for the demonstration flowsheet examples 
 """
 
 from idaes.core.util import scaling as iscale
@@ -98,46 +95,9 @@ def approximate_chemical_state_args(unit, rxn_params, reaction_config, contains_
 
     return state_args, stoich_extents
 
-
-# Perform scaling transformations for inherent reactions (if they exist)
-def calculate_chemical_scaling_factors_for_inherent_log_reactions(unit, thermo_params):
-    try:
-        '''
-        # Iterate through the reactions to set appropriate eps values
-        factor = 1e-4
-        for rid in thermo_params.inherent_reaction_idx:
-            scale = value(unit.control_volume.properties_out[0.0].k_eq[rid].expr)
-            # Want to set eps in some fashion similar to this
-            if scale < 1e-16:
-                thermo_params.component("reaction_"+rid).eps.value = scale*factor
-            else:
-                thermo_params.component("reaction_"+rid).eps.value = 1e-16*factor
-        '''
-
-        for i in unit.control_volume.inherent_reaction_extent_index:
-            scale = value(unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
-            iscale.set_scaling_factor(unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
-            iscale.constraint_scaling_transform(unit.control_volume.properties_out[0.0].
-                    inherent_equilibrium_constraint[i[1]], 0.1)
-    except:
-        pass
-
 # Perform scaling transformations for equilibrium reactions (if they exist)
 def calculate_chemical_scaling_factors_for_equilibrium_log_reactions(unit, rxn_params):
     try:
-        '''
-        # Equilibrium reactions have eps in the 'simple_naocl_rxn_params'
-        factor = 1e-4
-        for rid in rxn_params.equilibrium_reaction_idx:
-            if rid != "dummy":
-                scale = value(unit.control_volume.reactions[0.0].k_eq[rid].expr)
-                # Want to set eps in some fashion similar to this
-                if scale < 1e-16:
-                    rxn_params.component("reaction_"+rid).eps.value = scale*factor
-                else:
-                    rxn_params.component("reaction_"+rid).eps.value = 1e-16*factor
-        '''
-
         for i in unit.control_volume.equilibrium_reaction_extent_index:
             if i[1] != "dummy":
                 scale = value(unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
@@ -183,9 +143,7 @@ def calculate_chemical_scaling_factors_for_energy_balances(unit):
         pass
 
 # Serially calculate all scaling factors needed
-# # TODO: Add more scaling calculations as needed for (i) stoich reactions, (ii) rate reactions, etc.
 def calculate_chemical_scaling_factors(unit, thermo_params, rxn_params, state_args, output_jac=False):
-    calculate_chemical_scaling_factors_for_inherent_log_reactions(unit, thermo_params)
     calculate_chemical_scaling_factors_for_equilibrium_log_reactions(unit, rxn_params)
     calculate_chemical_scaling_factors_for_energy_balances(unit)
     calculate_chemical_scaling_factors_for_material_balances(unit)
