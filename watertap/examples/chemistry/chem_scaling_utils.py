@@ -53,6 +53,19 @@ def _set_equ_rxn_scaling(unit, rxn_config):
         iscale.constraint_scaling_transform(
             unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 0.1)
 
+## Helper function for setting scaling factors for inherent reactions
+def _set_inherent_rxn_scaling(unit, thermo_config):
+    #Add scaling factors for reactions (changes depending on if it is a log form or not)
+    min_scale = 1e-3
+    for i in unit.control_volume.inherent_reaction_extent_index:
+        # i[0] = time, i[1] = reaction
+
+        # Grab the 'k_eq_ref' value from the reaction config
+        scale = max(min_scale, thermo_config["inherent_reactions"][i[1]]["parameter_data"]["k_eq_ref"][0])
+        iscale.set_scaling_factor(unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
+        iscale.constraint_scaling_transform(unit.control_volume.properties_out[0.0].
+                inherent_equilibrium_constraint[i[1]], 0.1)
+
 ## Helper function for setting scaling factors for the mass balance for FpcTP state vars
 def _set_mat_bal_scaling_FpcTP(unit):
     # For species
@@ -73,20 +86,20 @@ def _set_mat_bal_scaling_FpcTP(unit):
 def _set_mat_bal_scaling_FTPx(unit):
     # For species
     min = 1e-3
-    for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
+    for i in unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
         # i[0] = phase, i[1] = species
-        if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
-            scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
+        if unit.inlet.mole_frac_comp[0, i[1]].value > min:
+            scale = unit.inlet.mole_frac_comp[0, i[1]].value
         else:
             scale = min
-        iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-        iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-        iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+        iscale.set_scaling_factor(unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
+        iscale.set_scaling_factor(unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
+        iscale.set_scaling_factor(unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
         iscale.constraint_scaling_transform(
-            model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-        iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
+            unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
+        iscale.constraint_scaling_transform(unit.control_volume.material_balances[0.0,i[1]], 10/scale)
 
-## Helper function for setting energy balance scaling factors 
+## Helper function for setting energy balance scaling factors
 def _set_ene_bal_scaling(unit):
     max = 1
     min = 1
