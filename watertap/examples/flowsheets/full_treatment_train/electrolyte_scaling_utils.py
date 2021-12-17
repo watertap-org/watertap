@@ -14,7 +14,7 @@
 """
     Scaling utilities for flowsheets involving electrolyte chemistry
 
-    NOTE: These are specific for the demonstration flowsheet examples 
+    NOTE: These are specific for the demonstration flowsheet examples
 """
 
 from idaes.core.util import scaling as iscale
@@ -55,43 +55,6 @@ def approximate_chemical_state_args(unit, rxn_params, reaction_config, contains_
         if unit.outlet.mole_frac_comp[i, species].is_fixed():
             fixed[species] = True
             state_args['mole_frac_comp'][species] = unit.outlet.mole_frac_comp[0, species].value
-
-    # Checking stoich reactions
-    was_OH_changed = False
-    was_H_changed = False
-    if contains_stoich_reactions == True:
-        for rid in rxn_params.rate_reaction_idx:
-            #First loop establishes reaction extent
-            extent = 0
-            for phase, species in reaction_config["rate_reactions"][rid]["stoichiometry"]:
-                # If a species here has its outlet fixed, then the difference between
-                #   that species outlet and inlet values should serve as the basis for
-                #   setting the values of the other species used in that reaction
-                if species in fixed:
-                    extent = unit.inlet.mole_frac_comp[0, species].value \
-                            - unit.outlet.mole_frac_comp[0, species].value
-                stoich_extents[rid] = extent
-
-            # Loop again to set values based on extent
-            for phase, species in reaction_config["rate_reactions"][rid]["stoichiometry"]:
-                state_args['mole_frac_comp'][species] = unit.inlet.mole_frac_comp[0, species].value \
-                        + extent*reaction_config["rate_reactions"][rid]["stoichiometry"][phase, species]
-                if species == "H_+" and extent != 0.0:
-                    was_H_changed = True
-                if species == "OH_-" and extent != 0.0:
-                    was_OH_changed = True
-
-    # Lastly, we need for correct OH and/or H if they are changed by a stoich reaction
-    if was_H_changed == False and was_OH_changed == False:
-        state_args['mole_frac_comp']['H_+'] = 10**-7/55.6
-        state_args['mole_frac_comp']['OH_-'] = 10**-7/55.6
-    elif was_H_changed == False and was_OH_changed == True:
-        state_args['mole_frac_comp']['H_+'] = 10**-14/(state_args['mole_frac_comp']['OH_-']*55.6)/55.6
-    elif was_H_changed == True and was_OH_changed == False:
-        state_args['mole_frac_comp']['OH_-'] = 10**-14/(state_args['mole_frac_comp']['H_+']*55.6)/55.6
-    else:
-        # Uncertain what to do at this point
-        pass
 
     return state_args, stoich_extents
 
@@ -160,19 +123,3 @@ def calculate_chemical_scaling_factors(unit, thermo_params, rxn_params, state_ar
     revert_state_vars(unit.control_volume.properties_out, flags)
 
     iscale.constraint_autoscale_large_jac(unit)
-
-    if output_jac == True:
-        jac, nlp = iscale.get_jacobian(unit, scaled=True)
-        print("Extreme Jacobian entries:")
-        for i in iscale.extreme_jacobian_entries(jac=jac, nlp=nlp, large=100):
-            print(f"    {i[0]:.2e}, [{i[1]}, {i[2]}]")
-        print("Unscaled constraints:")
-        for c in iscale.unscaled_constraints_generator(unit):
-            print(f"    {c}")
-        print("Scaled constraints by factor:")
-        for c, s in iscale.constraints_with_scale_factor_generator(unit):
-            print(f"    {c}, {s}")
-        print("Badly scaled variables:")
-        for v, sv in iscale.badly_scaled_var_generator(unit, large=1e2, small=1e-2, zero=1e-12):
-            print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}")
-        print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
