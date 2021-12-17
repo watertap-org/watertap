@@ -3,6 +3,14 @@
 How to scale chemical reactions
 ===============================
 
+.. note::
+
+    The following guide and examples assume that your **GenericParameterBlock**
+    is named **thermo_params**, your **GenericReactionParameterBlock** is named
+    **rxn_params**, your unit model is named **unit**, and your **FlowsheetBlock**
+    is named **fs**. For information on setup of the basic chemistry modules,
+    see :ref:`How to setup simple chemistry<how_to_setup_simple_chemistry>`.
+
 No model in WaterTAP can solve without proper scaling of the constraints
 and variables within that model. This can be a difficult task for aqueous
 chemistry systems as these systems must deal with extremely dilute or trace
@@ -14,29 +22,24 @@ arguments to be invoked depending on: (i) where the reactions are located
 in the model and (ii) what types of reactions are called for. Each of these
 different scenarios will be discussed and demonstrated below.
 
-
-.. note::
-
-    The following guide and examples assume that your **GenericParameterBlock**
-    is named **thermo_params**, your **GenericReactionParameterBlock** is named
-    **rxn_params**, your unit model is named **unit**, and your **FlowsheetBlock**
-    is named **fs**. For information on setup of the basic chemistry modules,
-    see :ref:`How to setup simple chemistry<how_to_setup_simple_chemistry>`.
-
-
-.. note::
-
-    The scaling factor constants used in these demonstrations are the best found
-    for these types of problems based on numerical testing of a variety of problems.
-    These values can and may need to change for your particular problem.
-
-
 .. note::
 
     IMPORTANT: Scaling of just the chemical reactions is insufficient for solving
     a chemistry module. User's MUST also scale the chemical species in the system
     due to the dilute nature of aqueous chemistry. See
-    :ref:`How to scale chemical species<how_to_scale_chemical_species>`.
+    :ref:`How to scale chemical species<how_to_scale_chemical_species>`. Additionally,
+    user's MUST also scale the energy balance equations. See also
+    :ref:`How to scale energy balance for chemistry<_how_to_scale_chemical_process_energy_balance>`.
+
+After you have set all scaling factors for reactions, species, energy balances, etc.,
+you need to call the 'calculate_scaling_factors' function on the entire model before
+attempting to solve. See below:
+
+.. code-block::
+
+    # After all scaling factors and constraint transformations are complete,
+    # call the following function on the model.
+    iscale.calculate_scaling_factors(model.fs.unit)
 
 
 Types of Reactions
