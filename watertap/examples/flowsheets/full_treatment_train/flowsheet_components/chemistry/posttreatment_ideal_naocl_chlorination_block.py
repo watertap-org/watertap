@@ -21,7 +21,7 @@
                     NaOCl stream
                         |
                         V
-        inlet stream ---> [Mixer] --- outlet stream ---> [EquilibriumReactor] ---> exit stream (to distribution)
+    inlet stream ---> [Mixer] --- outlet stream ---> [EquilibriumReactor] ---> exit stream (to distribution)
 """
 
 # Importing the object for units from pyomo
@@ -107,6 +107,9 @@ from watertap.examples.flowsheets.full_treatment_train.electrolyte_scaling_utils
 from watertap.examples.flowsheets.full_treatment_train.chemical_flowsheet_util import (
     set_H2O_molefraction, zero_out_non_H2O_molefractions, fix_all_molefractions,
     unfix_all_molefractions, seq_decomp_initializer )
+
+from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import desalination
+from idaes.core.util.initialization import propagate_state
 
 __author__ = "Austin Ladshaw"
 
@@ -795,9 +798,3 @@ def run_chlorination_block_example(fix_free_chlorine=False):
     display_results_of_chlorination_unit(model.fs.ideal_naocl_chlorination_unit)
 
     return model
-
-if __name__ == "__main__":
-    model = run_chlorination_block_example(fix_free_chlorine=True)
-    property_models.build_prop(model, base='TDS')
-    build_translator_from_RO_to_chlorination_block(model)
-    #costing.display_costing(model)

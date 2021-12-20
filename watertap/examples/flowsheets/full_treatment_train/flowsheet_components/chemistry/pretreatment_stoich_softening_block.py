@@ -1115,7 +1115,3 @@ def run_softening_block_example(include_feed=False, fix_hardness=False):
     display_results_of_stoich_softening_separator(model.fs.stoich_softening_separator_unit)
 
     return model
-
-if __name__ == "__main__":
-    model = run_softening_block_example()
-    #costing.display_costing(model)
