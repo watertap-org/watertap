@@ -501,6 +501,12 @@ def fix_ideal_naocl_mixer_inlets(model):
     model.fs.ideal_naocl_mixer_unit.naocl_stream.temperature[0].fix()
     fix_all_molefractions(model.fs.ideal_naocl_mixer_unit.naocl_stream)
 
+def fix_ideal_naocl_dosing_inlets(model):
+    model.fs.ideal_naocl_mixer_unit.naocl_stream.flow_mol[0].fix()
+    model.fs.ideal_naocl_mixer_unit.naocl_stream.pressure[0].fix()
+    model.fs.ideal_naocl_mixer_unit.naocl_stream.temperature[0].fix()
+    fix_all_molefractions(model.fs.ideal_naocl_mixer_unit.naocl_stream)
+
 def unfix_ideal_naocl_mixer_inlet_stream(model):
     model.fs.ideal_naocl_mixer_unit.inlet_stream.flow_mol[0].unfix()
     model.fs.ideal_naocl_mixer_unit.inlet_stream.pressure[0].unfix()
@@ -592,6 +598,7 @@ def display_results_of_chlorination_unit(unit):
         value(unit.control_volume.properties_out[0.0].dens_mol_phase['Liq'])/1000
     pH = -value(log10(unit.outlet.mole_frac_comp[0, "H_+"]*total_molar_density))
     print("pH at Outlet:             \t" + str(pH))
+    total_salt = value(unit.outlet.mole_frac_comp[0, "Na_+"])*total_molar_density*23
     total_salt = value(unit.outlet.mole_frac_comp[0, "Na_+"])*total_molar_density*23
     total_salt += value(unit.outlet.mole_frac_comp[0, "Cl_-"])*total_molar_density*35.4
     psu = total_salt/(total_molar_density*18)*1000
@@ -746,13 +753,13 @@ def run_chlorination_block_example(fix_free_chlorine=False):
     build_ideal_naocl_chlorination_block(model, expand_arcs=True)
 
     # Commented section below was implemented for quick test of chlorination costing
-    # # need load factor from costing_param_block for annual_water_production
-    # financials.add_costing_param_block(model.fs)
-    # # annual water production
-    # model.fs.annual_water_production = Expression(
-    #     expr=pyunits.convert(0.85 * pyunits.m**3 / pyunits.s, to_units=pyunits.m ** 3 / pyunits.year)
-    #          * model.fs.costing_param.load_factor)
-    # costing.build_costing(model, module=financials)
+    # need load factor from costing_param_block for annual_water_production
+    financials.add_costing_param_block(model.fs)
+    # annual water production
+    model.fs.annual_water_production = Expression(
+        expr=pyunits.convert(0.5 / 1000 * pyunits.m**3 / pyunits.s, to_units=pyunits.m ** 3 / pyunits.year)
+             * model.fs.costing_param.load_factor)
+    costing.build_costing(model, module=financials)
 
 
     # set some values (using defaults for testing)
@@ -799,4 +806,5 @@ if __name__ == "__main__":
     model = run_chlorination_block_example(fix_free_chlorine=True)
     property_models.build_prop(model, base='TDS')
     build_translator_from_RO_to_chlorination_block(model)
+    model.fs.costing.display()
     # costing.display_costing(model)
