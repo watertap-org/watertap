@@ -21,7 +21,7 @@
                     NaOCl stream
                         |
                         V
-    inlet stream ---> [Mixer] --- outlet stream ---> [EquilibriumReactor] ---> exit stream (to distribution)
+       inlet stream ---> [Mixer] --- outlet stream ---> [EquilibriumReactor] ---> exit stream (to distribution)
 """
 
 # Importing the object for units from pyomo
