@@ -476,6 +476,10 @@ def display_system(m):
     prod_mass_frac_NaCl = m.fs.product.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / prod_flow_mass
     print('Product: %.3f kg/s, %.0f ppm' % (prod_flow_mass, prod_mass_frac_NaCl * 1e6))
 
+    brine_flow_mass = sum(m.fs.disposal.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
+    brine_mass_frac_NaCl = m.fs.disposal.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / brine_flow_mass
+    print('Brine: %.3f kg/s, %.0f ppm' % (brine_flow_mass, brine_mass_frac_NaCl * 1e6))
+
     print('Volumetric water recovery: %.1f%%' % (value(m.fs.water_recovery) * 100))
     print('Energy Consumption: %.1f kWh/m3' % value(m.fs.specific_energy_consumption))
     print('Levelized cost of water: %.2f $/m3' % value(m.fs.costing.LCOW))
