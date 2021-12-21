@@ -36,7 +36,7 @@ import watertap.property_models.NaCl_prop_pack as props
 
 
 
-def main(number_of_stages, water_recovery=None):
+def main(number_of_stages, water_recovery=0.5):
     m = build(number_of_stages)
     set_operating_conditions(m)
     initialize(m)
@@ -183,7 +183,7 @@ def build(number_of_stages=2):
     for b in m.component_data_objects(Block, descend_into=True):
         # NaCl solubility limit
         if hasattr(b, 'mass_frac_phase_comp'):
-            b.mass_frac_phase_comp['Liq', 'NaCl'].setub(0.26)
+            b.mass_frac_phase_comp['Liq', 'NaCl'].setub(0.2614)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -198,8 +198,8 @@ def set_operating_conditions(m):
     erd_efi = 0.8  # energy recovery device efficiency [-]
     mem_A = 4.2e-12  # membrane water permeability coefficient [m/s-Pa]
     mem_B = 3.5e-8  # membrane salt permeability coefficient [m/s]
-    height = 1e-3  # channel height in membrane stage [m]
-    spacer_porosity = 0.97  # spacer porosity in membrane stage [-]
+    height = 2e-3  # channel height in membrane stage [m]
+    spacer_porosity = 0.75  # spacer porosity in membrane stage [-]
     width = 5 # membrane width factor [m]
     area = 100 # membrane area [m^2]
     pressure_atm = 101325  # atmospheric pressure [Pa]
@@ -207,7 +207,7 @@ def set_operating_conditions(m):
     # feed
     feed_flow_mass = 1*pyunits.kg/pyunits.s
     feed_mass_frac_NaCl = 70.0/1000.0
-    feed_temperature = 273.15 + 25
+    feed_temperature = 273.15 + 20
 
     # initialize feed
     m.fs.feed.pressure[0].fix(pressure_atm)
@@ -380,14 +380,17 @@ def solve(m, solver=None, tee=False, raise_on_failure=False):
 
 def optimize_set_up(m, water_recovery=None):
 
-    for pump in m.fs.PrimaryPumps.values():
+    for idx, pump in m.fs.PrimaryPumps.items():
         pump.control_volume.properties_out[0].pressure.unfix()
         pump.control_volume.properties_out[0].pressure.setlb(10e5)
-        pump.control_volume.properties_out[0].pressure.setub(85e5)
         pump.deltaP.setlb(0)
+        if idx > m.fs.StageSet.first():
+            pump.control_volume.properties_out[0].pressure.setub(65e5)
+        else:
+            pump.control_volume.properties_out[0].pressure.setub(85e5)
 
     # unfix eq pumps
-    for pump in m.fs.BoosterPumps.values():
+    for idx, pump in m.fs.BoosterPumps.items():
         pump.control_volume.properties_out[0].pressure.unfix()
         pump.control_volume.properties_out[0].pressure.setlb(10e5)
         pump.control_volume.properties_out[0].pressure.setub(85e5)
@@ -406,7 +409,10 @@ def optimize_set_up(m, water_recovery=None):
         if idx > m.fs.StageSet.first():
             stage.B_comp.unfix()
             stage.B_comp.setlb(3.5e-8)
-            stage.B_comp.setub(3.5e-8 * 1e3)
+            stage.B_comp.setub(3.5e-8 * 1e2)
+            stage.A_comp.unfix()
+            stage.A_comp.setlb(2.78e-12)
+            stage.A_comp.setub(4.2e-11)
 
     min_avg_flux = 1  # minimum average water flux [kg/m2-h]
     min_avg_flux = min_avg_flux / 3600 * pyunits.kg / pyunits.m**2 / pyunits.s  # [kg/m2-s]
@@ -414,10 +420,14 @@ def optimize_set_up(m, water_recovery=None):
     # additional constraints
     if water_recovery is not None:
         m.fs.water_recovery.fix(water_recovery) # product mass flow rate fraction of feed [-]
-
+    # add upper bound for permeate concentration
+    m.fs.ROUnits[1].permeate_side.properties_mixed[0].conc_mass_phase_comp['Liq','NaCl'].setub(0.5)
     # ---checking model---
     assert_units_consistent(m)
-    assert_degrees_of_freedom(m, 4 * m.fs.NumberOfStages - (1 if (water_recovery is None) else 2))
+    if m.fs.ROUnits[2].A_comp[0,'H2O'].fixed:
+        assert_degrees_of_freedom(m, 4 * m.fs.NumberOfStages - (1 if (water_recovery is None) else 2))
+    else:
+        assert_degrees_of_freedom(m, 5 * m.fs.NumberOfStages - (2 if (water_recovery is None) else 3))
 
     return m
 
@@ -427,6 +437,7 @@ def display_design(m):
     for stage in m.fs.StageSet:
         print('Stage %d operating pressure %.1f bar' % (stage, m.fs.ROUnits[stage].inlet.pressure[0].value/1e5))
         print('Stage %d membrane area      %.1f m2'  % (stage, m.fs.ROUnits[stage].area.value))
+        print('Stage %d water perm. coeff.  %.1f LMH/bar' % (stage, m.fs.ROUnits[stage].A_comp[0,'H2O'].value*(3.6e11)))
         print('Stage %d salt perm. coeff.  %.1f LMH' % (stage, m.fs.ROUnits[stage].B_comp[0,'NaCl'].value*(1000.*3600.)))
 
 

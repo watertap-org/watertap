@@ -25,7 +25,7 @@ def add_costing_param_block(self):
         initialize=0.9,
         doc='Load factor [fraction of uptime]')
     b.factor_total_investment = Var(
-        initialize=2,
+        initialize=1.6,
         doc='Total investment factor [investment cost/equipment cost]')
     b.factor_MLC = Var(
         initialize=0.03,
@@ -34,7 +34,7 @@ def add_costing_param_block(self):
         initialize=0.1,
         doc='Capital annualization factor [fraction of investment cost/year]')
     b.factor_membrane_replacement = Var(
-        initialize=0.2,
+        initialize=0.15,
         doc='Membrane replacement factor [fraction of membrane replaced/year]')
     b.electricity_cost = Var(
         initialize=0.07,
