@@ -25,7 +25,7 @@ from idaes.generic_models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 
-from watertap.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
+from watertap.unit_models.reverse_osmosis_1D import (ReverseOsmosis1D,
                                                        ConcentrationPolarizationType,
                                                        MassTransferCoefficient,
                                                        PressureChangeType)
@@ -94,12 +94,17 @@ def build(number_of_stages=2):
         total_pump_work += pump.work_mechanical[0]
 
     # Add the stages ROs
-    m.fs.ROUnits = ReverseOsmosis0D(m.fs.StageSet, default={
+    m.fs.ROUnits = ReverseOsmosis1D(m.fs.StageSet, default={
             "property_package": m.fs.properties,
             "has_pressure_change": True,
             "pressure_change_type": PressureChangeType.calculated,
             "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-            "concentration_polarization_type": ConcentrationPolarizationType.calculated})
+            "concentration_polarization_type": ConcentrationPolarizationType.calculated,
+            "transformation_scheme": "BACKWARD",
+            "transformation_method": "dae.finite_difference",
+            "finite_elements": 3,
+            "has_full_reporting": True
+        })
     for ro_unit in m.fs.ROUnits.values():
         ro_unit.get_costing(module=financials)
 
@@ -244,6 +249,9 @@ def set_operating_conditions(m, Cin=None):
         stage.area.fix(area/float(idx))
         stage.width.fix(width)
         stage.permeate.pressure[0].fix(pressure_atm)
+
+        stage.N_Re[0, 0].fix(400)
+        stage.recovery_mass_phase_comp[0, 'Liq', 'H2O'].fix(0.5)
 
     # energy recovery device
     m.fs.EnergyRecoveryDevice.efficiency_pump.fix(erd_efi)
