@@ -36,9 +36,9 @@ import watertap.property_models.NaCl_prop_pack as props
 
 
 
-def main(number_of_stages, water_recovery=0.75):
+def main(number_of_stages, water_recovery=None, Cin=None, A_case=None,B_case=None,AB_tradeoff=None, A_fixed=None):
     m = build(number_of_stages)
-    set_operating_conditions(m)
+    set_operating_conditions(m, Cin)
     initialize(m)
     solve(m)
     print('\n***---Simulation results---***')
@@ -46,12 +46,13 @@ def main(number_of_stages, water_recovery=0.75):
     display_design(m)
     display_state(m)
 
-    optimize_set_up(m, water_recovery)
+    optimize_set_up(m, water_recovery, A_case, B_case, AB_tradeoff, A_fixed)
     solve(m)
     print('\n***---Optimization results---***')
     display_system(m)
     display_design(m)
     display_state(m)
+    display_RO_reports(m)
 
     return m
 
@@ -190,7 +191,7 @@ def build(number_of_stages=2):
     return m
 
 
-def set_operating_conditions(m):
+def set_operating_conditions(m, Cin=None):
 
     # ---specifications---
     # parameters
@@ -206,7 +207,10 @@ def set_operating_conditions(m):
 
     # feed
     feed_flow_mass = 1*pyunits.kg/pyunits.s
-    feed_mass_frac_NaCl = 70.0/1000.0
+    if Cin is None:
+        feed_mass_frac_NaCl = 70.0/1000.0
+    elif Cin is not None and isinstance(Cin,(int,float)):
+        feed_mass_frac_NaCl = Cin/1000.0
     feed_temperature = 273.15 + 20
 
     # initialize feed
@@ -378,14 +382,14 @@ def solve(m, solver=None, tee=False, raise_on_failure=False):
         return None
 
 
-def optimize_set_up(m, water_recovery=None):
+def optimize_set_up(m, water_recovery=None, A_case=None, B_case=None, AB_tradeoff=None, A_fixed=None):
 
     for idx, pump in m.fs.PrimaryPumps.items():
         pump.control_volume.properties_out[0].pressure.unfix()
         pump.control_volume.properties_out[0].pressure.setlb(10e5)
         pump.deltaP.setlb(0)
         if idx > m.fs.StageSet.first():
-            pump.control_volume.properties_out[0].pressure.setub(40e5)
+            pump.control_volume.properties_out[0].pressure.setub(65e5)
         else:
             pump.control_volume.properties_out[0].pressure.setub(85e5)
 
@@ -396,6 +400,14 @@ def optimize_set_up(m, water_recovery=None):
         pump.control_volume.properties_out[0].pressure.setub(85e5)
         pump.deltaP.setlb(0)
 
+    if B_case == 'single optimum':
+        m.fs.B_comp_system = Var(
+            domain=NonNegativeReals,
+            units=pyunits.m*pyunits.s**-1,
+            doc='Solute permeability coeff. constant in all LSR stages')
+        m.fs.B_comp_system.set_value(m.fs.ROUnits[2].B_comp[0, 'NaCl'])
+        m.fs.B_comp_system.setlb(3.5e-8)
+        m.fs.B_comp_system.setub(3.5e-8 * 1e2)
     # unfix stages
     for idx, stage in m.fs.ROUnits.items():
         stage.area.unfix()
@@ -403,20 +415,55 @@ def optimize_set_up(m, water_recovery=None):
         stage.area.setlb(1)
         stage.area.setub(1000)
         stage.width.setlb(0.1)
-        stage.width.setub(100)
+        stage.width.setub(1000)
         stage.N_Re_io[0, 'in'].unfix()
+        #TODO: Pressure drop results are unreasonably high; set upper bound on deltaP or velocity?
+        stage.deltaP.setlb(-8e5)
+        stage.spacer_porosity.unfix()
+        stage.spacer_porosity.setlb(0.75)
+        stage.spacer_porosity.setub(0.9)
+        stage.channel_height.unfix()
+        stage.channel_height.setlb(0.75e-3)
+        stage.channel_height.setub(2e-3)
+        # stage.dP_dx_io.setlb(-1e5)
+        # stage.length.setub(8)
+        # stage.velocity_io[0,'in'].setub(0.25)
+        # stage.velocity_io[0,'out'].setlb(0.05)
 
         if idx > m.fs.StageSet.first():
             stage.B_comp.unfix()
             stage.B_comp.setlb(3.5e-8)
             stage.B_comp.setub(3.5e-8 * 1e2)
-            # stage.A_comp.unfix()
-            # stage.A_comp.setlb(2.78e-12)
-            # stage.A_comp.setub(4.2e-11)
-            stage.ABtradeoff = Constraint(expr=pyunits.convert(stage.B_comp[0,'NaCl'], to_units=pyunits.L*pyunits.m**-2*pyunits.hour**-1)
-                                               >= 0.01333*pyunits.convert(stage.A_comp[0, 'H2O'],
-                                               to_units=pyunits.L*pyunits.m**-2*pyunits.bar**-1*pyunits.hour**-1)**3
-                                               * pyunits.L**-2*pyunits.m**4*pyunits.hour**2*pyunits.bar**3 )
+            if B_case == 'single optimum':
+                stage.B_comp_equal = Constraint(expr=stage.B_comp[0, 'NaCl'] == m.fs.B_comp_system)
+            else:
+                pass
+
+            if A_case == 'optimize':
+                stage.A_comp.unfix()
+                stage.A_comp.setlb(2.78e-12)
+                stage.A_comp.setub(4.2e-11)
+            elif A_case == 'fix' and A_fixed is not None:
+                if not isinstance(A_fixed, (int, float)):
+                    raise ('A_fixed must be a numeric value')
+                stage.A_comp.unfix()
+                stage.A_comp.fix(A_fixed)
+            else:
+                pass
+
+            if AB_tradeoff == 'equality constraint':
+                stage.ABtradeoff = Constraint(expr=pyunits.convert(stage.B_comp[0,'NaCl'], to_units=pyunits.L*pyunits.m**-2*pyunits.hour**-1)
+                                                   == 0.01333*pyunits.convert(stage.A_comp[0, 'H2O'],
+                                                   to_units=pyunits.L*pyunits.m**-2*pyunits.bar**-1*pyunits.hour**-1)**3
+                                                   * pyunits.L**-2*pyunits.m**4*pyunits.hour**2*pyunits.bar**3 )
+            elif AB_tradeoff == 'inequality constraint':
+                stage.ABtradeoff = Constraint(expr=pyunits.convert(stage.B_comp[0, 'NaCl'],
+                                                                   to_units=pyunits.L * pyunits.m ** -2 * pyunits.hour ** -1)
+                                                   >= 0.01333 * pyunits.convert(stage.A_comp[0, 'H2O'],
+                                                                                to_units=pyunits.L * pyunits.m ** -2 * pyunits.bar ** -1 * pyunits.hour ** -1) ** 3
+                                                   * pyunits.L ** -2 * pyunits.m ** 4 * pyunits.hour ** 2 * pyunits.bar ** 3)
+            else:
+                pass
 
     min_avg_flux = 1  # minimum average water flux [kg/m2-h]
     min_avg_flux = min_avg_flux / 3600 * pyunits.kg / pyunits.m**2 / pyunits.s  # [kg/m2-s]
@@ -497,13 +544,25 @@ def display_system(m):
     print('Energy Consumption: %.1f kWh/m3' % value(m.fs.specific_energy_consumption))
     print('Levelized cost of water: %.2f $/m3' % value(m.fs.costing.LCOW))
 
+def display_RO_reports(m):
+    for stage in m.fs.ROUnits.values():
+        stage.report()
+
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) not in (2,3):
-        print("Usage 1: python lsrro.py number_of_stages")
-        print("Usage 2: python lsrro.py number_of_stages target_water_recovery_fraction")
-    elif len(sys.argv) == 2:
-        main(int(sys.argv[1]))
-    else:
-        main(int(sys.argv[1]), float(sys.argv[2]))
+    # import sys
+    # if len(sys.argv) not in (2,3):
+    #     print("Usage 1: python lsrro.py number_of_stages")
+    #     print("Usage 2: python lsrro.py number_of_stages target_water_recovery_fraction")
+    # elif len(sys.argv) == 2:
+    #     m = main(int(sys.argv[1]))
+    #
+    # else:
+    #     m = main(int(sys.argv[1]), float(sys.argv[2]))
+    m = main(number_of_stages=3,
+             water_recovery=0.75,
+             Cin=70,
+             A_case="fix A",
+             B_case="single optimum",
+             AB_tradeoff="inequality constraint",
+             A_fixed=1.5/3.6e11)
