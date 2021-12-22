@@ -30,13 +30,13 @@ from watertap.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
                                                        MassTransferCoefficient,
                                                        PressureChangeType)
 from watertap.unit_models.pump_isothermal import Pump
-from watertap.core.util.initialization import assert_degrees_of_freedom, assert_no_degrees_of_freedom
+from watertap.core.util.initialization import assert_degrees_of_freedom, assert_no_degrees_of_freedom, check_dof
 import watertap.examples.flowsheets.lsrro.financials as financials
 import watertap.property_models.NaCl_prop_pack as props
 
 
 
-def main(number_of_stages, water_recovery=0.5):
+def main(number_of_stages, water_recovery=0.75):
     m = build(number_of_stages)
     set_operating_conditions(m)
     initialize(m)
@@ -183,7 +183,7 @@ def build(number_of_stages=2):
     for b in m.component_data_objects(Block, descend_into=True):
         # NaCl solubility limit
         if hasattr(b, 'mass_frac_phase_comp'):
-            b.mass_frac_phase_comp['Liq', 'NaCl'].setub(0.2614)
+            b.mass_frac_phase_comp['Liq', 'NaCl'].setub(0.30)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -385,7 +385,7 @@ def optimize_set_up(m, water_recovery=None):
         pump.control_volume.properties_out[0].pressure.setlb(10e5)
         pump.deltaP.setlb(0)
         if idx > m.fs.StageSet.first():
-            pump.control_volume.properties_out[0].pressure.setub(65e5)
+            pump.control_volume.properties_out[0].pressure.setub(40e5)
         else:
             pump.control_volume.properties_out[0].pressure.setub(85e5)
 
@@ -410,9 +410,13 @@ def optimize_set_up(m, water_recovery=None):
             stage.B_comp.unfix()
             stage.B_comp.setlb(3.5e-8)
             stage.B_comp.setub(3.5e-8 * 1e2)
-            stage.A_comp.unfix()
-            stage.A_comp.setlb(2.78e-12)
-            stage.A_comp.setub(4.2e-11)
+            # stage.A_comp.unfix()
+            # stage.A_comp.setlb(2.78e-12)
+            # stage.A_comp.setub(4.2e-11)
+            stage.ABtradeoff = Constraint(expr=pyunits.convert(stage.B_comp[0,'NaCl'], to_units=pyunits.L*pyunits.m**-2*pyunits.hour**-1)
+                                               >= 0.01333*pyunits.convert(stage.A_comp[0, 'H2O'],
+                                               to_units=pyunits.L*pyunits.m**-2*pyunits.bar**-1*pyunits.hour**-1)**3
+                                               * pyunits.L**-2*pyunits.m**4*pyunits.hour**2*pyunits.bar**3 )
 
     min_avg_flux = 1  # minimum average water flux [kg/m2-h]
     min_avg_flux = min_avg_flux / 3600 * pyunits.kg / pyunits.m**2 / pyunits.s  # [kg/m2-s]
@@ -424,10 +428,8 @@ def optimize_set_up(m, water_recovery=None):
     m.fs.ROUnits[1].permeate_side.properties_mixed[0].conc_mass_phase_comp['Liq','NaCl'].setub(0.5)
     # ---checking model---
     assert_units_consistent(m)
-    if m.fs.ROUnits[2].A_comp[0,'H2O'].fixed:
-        assert_degrees_of_freedom(m, 4 * m.fs.NumberOfStages - (1 if (water_recovery is None) else 2))
-    else:
-        assert_degrees_of_freedom(m, 5 * m.fs.NumberOfStages - (2 if (water_recovery is None) else 3))
+
+    check_dof(m, fail_flag=False, expected_dof=4 * m.fs.NumberOfStages - (1 if (water_recovery is None) else 2))
 
     return m
 

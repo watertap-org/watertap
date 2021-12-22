@@ -40,7 +40,7 @@ def add_costing_param_block(self):
         initialize=0.07,
         doc='Electricity cost [$/kWh]')
     b.mem_cost = Var(
-        initialize=30,
+        initialize=50,
         doc='Membrane cost [$/m2]')
     b.hp_pump_cost = Var(
         initialize=53 / 1e5 * 3600,
