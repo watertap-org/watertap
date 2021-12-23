@@ -92,9 +92,9 @@ def build(number_of_stages=2):
     for pump in m.fs.BoosterPumps.values():
         pump.get_costing(module=financials, pump_type="High pressure")
         total_pump_work += pump.work_mechanical[0]
-
+    m.fs.ROUnits = Block(m.fs.StageSet)
     # Add the stages ROs
-    m.fs.ROUnits = ReverseOsmosis1D(m.fs.StageSet, default={
+    m.fs.ROUnits[1].transfer_attributes_from(ReverseOsmosis1D(default={
             "property_package": m.fs.properties,
             "has_pressure_change": True,
             "pressure_change_type": PressureChangeType.calculated,
@@ -104,10 +104,26 @@ def build(number_of_stages=2):
             "transformation_method": "dae.finite_difference",
             "finite_elements": 3,
             "has_full_reporting": True
-        })
+        }))
+    m.fs.ROUnits[2].transfer_attributes_from(ReverseOsmosis1D(default={
+        "property_package": m.fs.properties,
+        "has_pressure_change": True,
+        "pressure_change_type": PressureChangeType.calculated,
+        "mass_transfer_coefficient": MassTransferCoefficient.calculated,
+        "concentration_polarization_type": ConcentrationPolarizationType.calculated,
+        "transformation_scheme": "BACKWARD",
+        "transformation_method": "dae.finite_difference",
+        "finite_elements": 3,
+        "has_full_reporting": True
+    }))
+    print(type(m.fs.ROUnits))
+    print(dir(m.fs.ROUnits))
     for ro_unit in m.fs.ROUnits.values():
+        ro_unit.display()
+        print(ro_unit)
         ro_unit.get_costing(module=financials)
-
+    m.fs.ROUnits.display()
+    assert False
 
     # Add EnergyRecoveryDevice
     m.fs.EnergyRecoveryDevice = Pump(default={"property_package": m.fs.properties})
@@ -425,7 +441,7 @@ def optimize_set_up(m, water_recovery=None, A_case=None, B_case=None, AB_tradeof
         stage.area.setub(1000)
         stage.width.setlb(0.1)
         stage.width.setub(1000)
-        stage.N_Re_io[0, 'in'].unfix()
+        stage.N_Re[0, 0].unfix()
         #TODO: Pressure drop results are unreasonably high; set upper bound on deltaP or velocity?
         stage.deltaP.setlb(-8e5)
         stage.spacer_porosity.unfix()
@@ -481,7 +497,7 @@ def optimize_set_up(m, water_recovery=None, A_case=None, B_case=None, AB_tradeof
     if water_recovery is not None:
         m.fs.water_recovery.fix(water_recovery) # product mass flow rate fraction of feed [-]
     # add upper bound for permeate concentration
-    m.fs.ROUnits[1].permeate_side.properties_mixed[0].conc_mass_phase_comp['Liq','NaCl'].setub(0.5)
+    m.fs.ROUnits[1].mixed_permeate[0].conc_mass_phase_comp['Liq','NaCl'].setub(0.5)
     # ---checking model---
     assert_units_consistent(m)
 
@@ -568,8 +584,8 @@ if __name__ == "__main__":
     #
     # else:
     #     m = main(int(sys.argv[1]), float(sys.argv[2]))
-    m = main(number_of_stages=3,
-             water_recovery=0.75,
+    m = main(number_of_stages=2,
+             water_recovery=0.5,
              Cin=70,
              A_case="fix A",
              B_case="single optimum",

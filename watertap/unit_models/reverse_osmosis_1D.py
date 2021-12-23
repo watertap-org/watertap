@@ -753,11 +753,11 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         # Step 2: Solve unit
         init_log.info('Initialization Step 1 complete: all state blocks initialized.'
                       'Starting Initialization Step 2: solve indexed blocks.')
-        if not isinstance(blk, Block):
-            new_blk = blk.parent_block()
+        # if not isinstance(blk, Block):
+        #     new_blk = blk.parent_block()
         try:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                results = solve_indexed_blocks(opt, [new_blk], tee=slc.tee)
+                results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
             # only fail on the final solve
             check_solve(results, logger=init_log, fail_flag=False, checkpoint='Initialization Step 2: solve indexed blocks')
         # else:
@@ -765,9 +765,18 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             init_log.warning(f'Initialization Step 2 skipped because solve_indexed_blocks received '
                              f'{type(blk)} instead of a Block')
         init_log.info('Starting Initialization Step 3: perform final solve.')
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
-        check_solve(res, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 3: final solve')
+        try:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(blk, tee=slc.tee)
+                check_solve(res, logger=init_log, fail_flag=fail_on_warning,
+                            checkpoint='Initialization Step 3: final solve')
+
+        except:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(blk, tee=slc.tee)
+                check_solve(res, logger=init_log, fail_flag=fail_on_warning,
+                            checkpoint='Initialization Step 3: final solve')
+        # check_solve(res, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 3: final solve')
         # Release Inlet state
         blk.feed_side.release_state(flags_feed_side, outlvl)
 
@@ -844,6 +853,10 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
 
         # TODO: add more vars
         return {"vars": var_dict, "exprs": expr_dict}
+
+    def get_costing(self, module=None, **kwargs):
+        self.costing = Block()
+        module.ReverseOsmosis_costing(self.costing, **kwargs)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
