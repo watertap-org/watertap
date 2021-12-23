@@ -5,9 +5,10 @@ name: Checks
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - '*_rel'
   pull_request:
-    branches: [main]
 
 defaults:
   run:
