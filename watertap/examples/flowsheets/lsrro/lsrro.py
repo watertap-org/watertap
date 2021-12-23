@@ -107,8 +107,7 @@ def build(number_of_stages=2):
         })
     for ro_unit in m.fs.ROUnits.values():
         ro_unit.get_costing(module=financials)
-        print(type(ro_unit))
-        assert isinstance(ro_unit, Block)
+
 
     # Add EnergyRecoveryDevice
     m.fs.EnergyRecoveryDevice = Pump(default={"property_package": m.fs.properties})
@@ -524,8 +523,8 @@ def display_state(m):
         print_state(f'RO {stage} permeate', m.fs.ROUnits[stage].permeate)
         print_state(f'RO {stage} retentate', m.fs.ROUnits[stage].retentate)
         wr = m.fs.ROUnits[stage].recovery_vol_phase[0, 'Liq'].value
-        sr = m.fs.ROUnits[stage].rejection_phase_comp[0, 'Liq', 'NaCl'].value
-        print(f"Stage {stage} Volumetric water recovery: {wr*100:.2f}%, Salt rejection: {sr*100:.2f}%")
+        # sr = m.fs.ROUnits[stage].rejection_phase_comp[0, 'Liq', 'NaCl'].value
+        # print(f"Stage {stage} Volumetric water recovery: {wr*100:.2f}%, Salt rejection: {sr*100:.2f}%")
 
         if stage == first_stage:
             pass

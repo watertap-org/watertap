@@ -21,6 +21,7 @@ from pyomo.environ import (Var,
                            exp,
                            value,
                            Constraint,
+                           Block
                           )
 from pyomo.common.config import ConfigValue, In
 # Import IDAES cores
@@ -752,10 +753,17 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         # Step 2: Solve unit
         init_log.info('Initialization Step 1 complete: all state blocks initialized.'
                       'Starting Initialization Step 2: solve indexed blocks.')
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        # only fail on the final solve
-        check_solve(results, logger=init_log, fail_flag=False, checkpoint='Initialization Step 2: solve indexed blocks')
+        if not isinstance(blk, Block):
+            new_blk = blk.parent_block()
+        try:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                results = solve_indexed_blocks(opt, [new_blk], tee=slc.tee)
+            # only fail on the final solve
+            check_solve(results, logger=init_log, fail_flag=False, checkpoint='Initialization Step 2: solve indexed blocks')
+        # else:
+        except:
+            init_log.warning(f'Initialization Step 2 skipped because solve_indexed_blocks received '
+                             f'{type(blk)} instead of a Block')
         init_log.info('Starting Initialization Step 3: perform final solve.')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
