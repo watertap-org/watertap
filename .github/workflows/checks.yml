@@ -162,7 +162,7 @@ jobs:
     - name: Define install URL (default)
       env:
         _repo_full_name: watertap-org/watertap
-        _ref_to_install: main
+        _ref_to_install: ${{ env.GITHUB_REF_NAME }}
       run: |
         echo "_install_url=https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip" >> $GITHUB_ENV
     - name: Define install URL (for PRs)
