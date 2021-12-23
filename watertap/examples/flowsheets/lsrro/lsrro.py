@@ -107,6 +107,8 @@ def build(number_of_stages=2):
         })
     for ro_unit in m.fs.ROUnits.values():
         ro_unit.get_costing(module=financials)
+        print(type(ro_unit))
+        assert isinstance(ro_unit, Block)
 
     # Add EnergyRecoveryDevice
     m.fs.EnergyRecoveryDevice = Pump(default={"property_package": m.fs.properties})
