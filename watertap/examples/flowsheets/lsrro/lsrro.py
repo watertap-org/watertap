@@ -573,6 +573,6 @@ if __name__ == "__main__":
              water_recovery=0.5,
              Cin=70,
              A_case="fix A",
-             B_case="single optimum",
+             B_case=None,#"single optimum",
              AB_tradeoff="inequality constraint",
              A_fixed=1.5/3.6e11)
