@@ -11,8 +11,10 @@
 #
 ###############################################################################
 
+from copy import deepcopy
 from enum import Enum, auto
 from pyomo.environ import Block, NonNegativeReals, Param, Suffix, Var, units as pyunits
+from pyomo.common.collections import ComponentSet
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core import UnitModelBlockData, useDefault, MaterialBalanceType,\
         EnergyBalanceType, MomentumBalanceType
@@ -248,6 +250,9 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
+        # For permeate-specific scaling in calculate_scaling_factors
+        self._permeate_scaled_properties = ComponentSet()
+
         solvent_set = self.config.property_package.solvent_set
         solute_set = self.config.property_package.solute_set
 
@@ -351,6 +356,91 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
         self.costing = Block()
         module.ReverseOsmosis_costing(self.costing, **kwargs)
 
+    def _get_state_args(self, source, mixed_permeate_properties, initialize_guess, state_args): 
+        '''
+        Arguments:
+            source : property model containing inlet feed
+            mixed_permeate_properties : mixed permeate property block
+            initialize_guess : a dict of guesses for solvent_recovery, solute_recovery,
+                               and cp_modulus. These guesses offset the initial values
+                               for the retentate, permeate, and membrane interface
+                               state blocks from the inlet feed
+                               (default =
+                               {'deltaP': -1e4,
+                               'solvent_recovery': 0.5,
+                               'solute_recovery': 0.01,
+                               'cp_modulus': 1.1})
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for the inlet
+                         feed side state block (see documentation of the specific
+                         property package).
+        '''
+
+        # assumptions
+        if initialize_guess is None:
+            initialize_guess = {}
+        if 'deltaP' not in initialize_guess:
+            initialize_guess['deltaP'] = -1e4
+        if 'solvent_recovery' not in initialize_guess:
+            initialize_guess['solvent_recovery'] = 0.5
+        if 'solute_recovery' not in initialize_guess:
+            initialize_guess['solute_recovery'] = 0.01
+        if 'cp_modulus' not in initialize_guess:
+            initialize_guess['cp_modulus'] = 1.1
+
+        if state_args is None:
+            state_args = {}
+            state_dict = source.define_port_members()
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = state_dict[k][m].value
+                else:
+                    state_args[k] = state_dict[k].value
+
+        if 'flow_mass_phase_comp' not in state_args.keys():
+            raise ConfigurationError(f'{self.__class__.__name__} initialization routine expects '
+                                     'flow_mass_phase_comp as a state variable. Check '
+                                     'that the property package supports this state '
+                                     'variable or that the state_args provided to the '
+                                     'initialize call includes this state variable')
+
+        # slightly modify initial values for other state blocks
+        state_args_retentate = deepcopy(state_args)
+        state_args_permeate = deepcopy(state_args)
+
+        state_args_retentate['pressure'] += initialize_guess['deltaP']
+        state_args_permeate['pressure'] = mixed_permeate_properties.pressure.value
+        for j in self.config.property_package.solvent_set:
+            state_args_retentate['flow_mass_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solvent_recovery'])
+            state_args_permeate['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['solvent_recovery']
+        for j in self.config.property_package.solute_set:
+            state_args_retentate['flow_mass_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solute_recovery'])
+            state_args_permeate['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['solute_recovery']
+
+        state_args_interface_in = deepcopy(state_args)
+        state_args_interface_out = deepcopy(state_args_retentate)
+
+        for j in self.config.property_package.solute_set:
+            state_args_interface_in['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
+            state_args_interface_out['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
+
+        return {'feed_side' : state_args,
+                'retentate' : state_args_retentate,
+                'permeate' : state_args_permeate,
+                'interface_in' : state_args_interface_in,
+                'interface_out' : state_args_interface_out,
+               }
+
+    # permeate properties need to rescale solute values by 100
+    def _rescale_permeate_variable(self, var, factor=100):
+        if var not in self._permeate_scaled_properties:
+            sf = iscale.get_scaling_factor(var)
+            iscale.set_scaling_factor(var, sf * factor)
+            self._permeate_scaled_properties.add(var)
+
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
@@ -391,4 +481,3 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
         if hasattr(self, 'eq_dh'):
             sf = iscale.get_scaling_factor(self.dh)
             iscale.constraint_scaling_transform(self.eq_dh, sf)
-
