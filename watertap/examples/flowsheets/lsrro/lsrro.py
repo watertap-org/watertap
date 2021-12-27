@@ -206,8 +206,8 @@ def set_operating_conditions(m, Cin=None):
     erd_efi = 0.8  # energy recovery device efficiency [-]
     mem_A = 4.2e-12  # membrane water permeability coefficient [m/s-Pa]
     mem_B = 3.5e-8  # membrane salt permeability coefficient [m/s]
-    height = 2e-3  # channel height in membrane stage [m]
-    spacer_porosity = 0.75  # spacer porosity in membrane stage [-]
+    height = 1e-3  # channel height in membrane stage [m]
+    spacer_porosity = 0.97  # spacer porosity in membrane stage [-]
     width = 5 # membrane width factor [m]
     area = 100 # membrane area [m^2]
     pressure_atm = 101325  # atmospheric pressure [Pa]
@@ -244,16 +244,20 @@ def set_operating_conditions(m, Cin=None):
             B_scale = 100.0
         else:
             B_scale = 1.0
+
+        # stage.inlet.temperature[0].fix()
+        # stage.inlet.pressure[0].fix()
         stage.A_comp.fix(mem_A)
         stage.B_comp.fix(mem_B*B_scale)
         stage.channel_height.fix(height)
         stage.spacer_porosity.fix(spacer_porosity)
         stage.area.fix(area/float(idx))
         stage.width.fix(width)
-        stage.permeate.pressure[0].fix(pressure_atm)
+        stage.mixed_permeate[0].pressure.fix(pressure_atm)
+        # stage.velocity[0, 0].fix(0.25)
+        stage.N_Re[0, 0].fix(500)
+        stage.recovery_vol_phase[0, 'Liq'].fix(0.5)
 
-        stage.N_Re[0, 0].fix(400)
-        stage.recovery_mass_phase_comp[0, 'Liq', 'H2O'].fix(0.5)
 
     # energy recovery device
     m.fs.EnergyRecoveryDevice.efficiency_pump.fix(erd_efi)
@@ -428,13 +432,14 @@ def optimize_set_up(m, water_recovery=None, A_case=None, B_case=None, AB_tradeof
         stage.width.setub(1000)
         stage.N_Re[0, 0].unfix()
         #TODO: Pressure drop results are unreasonably high; set upper bound on deltaP or velocity?
-        stage.deltaP.setlb(-8e5)
-        stage.spacer_porosity.unfix()
-        stage.spacer_porosity.setlb(0.75)
-        stage.spacer_porosity.setub(0.9)
-        stage.channel_height.unfix()
-        stage.channel_height.setlb(0.75e-3)
-        stage.channel_height.setub(2e-3)
+        # stage.deltaP.setlb(-8e5)
+        # stage.spacer_porosity.unfix()
+        # stage.spacer_porosity.setlb(0.75)
+        # stage.spacer_porosity.setub(0.9)
+        # stage.channel_height.unfix()
+        # stage.channel_height.setlb(0.75e-3)
+        # stage.channel_height.setub(2e-3)
+
         # stage.dP_dx_io.setlb(-1e5)
         # stage.length.setub(8)
         # stage.velocity_io[0,'in'].setub(0.25)
@@ -569,7 +574,7 @@ if __name__ == "__main__":
     #
     # else:
     #     m = main(int(sys.argv[1]), float(sys.argv[2]))
-    m = main(number_of_stages=2,
+    m = main(number_of_stages=3,
              water_recovery=0.5,
              Cin=70,
              A_case="fix A",
