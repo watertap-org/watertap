@@ -21,6 +21,7 @@ from pyomo.environ import (Var,
                            value,
                            Constraint,
                            check_optimal_termination,
+                           Block
                           )
 from pyomo.common.config import ConfigValue, In
 # Import IDAES cores
