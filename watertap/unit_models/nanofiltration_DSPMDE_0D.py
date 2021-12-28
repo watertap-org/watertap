@@ -230,7 +230,6 @@ class NanofiltrationData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc='Ratio of Stokes radius to membrane pore radius')
         self.radius_pore = Var(
-            self.flowsheet().config.time,
             initialize=0.5e-9, #TODO: revisit
             domain=NonNegativeReals,
             units=units_meta('length'),
@@ -289,19 +288,27 @@ class NanofiltrationData(UnitModelBlockData):
             bounds=(1, None),
             units=pyunits.dimensionless, # TODO: revisit bounds/domain
             doc='Pore dielectric constant')
-
+        self.Kf_comp = Var(
+            self.flowsheet().config.time,
+            self.io_list,
+            solute_set,
+            initialize=5e-5,
+            bounds=(1e-6, 1e-3),
+            domain=NonNegativeReals,
+            units=units_meta('length') * units_meta('time') ** -1,
+            doc='Component mass transfer coefficient in feed channel at inlet and outlet')
         # self.dens_solvent = Param(
         #     initialize=1000,
         #     units=units_meta('mass')*units_meta('length')**-3,
         #     doc='Pure water density')
         #
         # # Add unit variables
-        # self.area = Var(
-        #     initialize=1,
-        #     bounds=(1e-8, 1e6),
-        #     domain=NonNegativeReals,
-        #     units=units_meta('length') ** 2,
-        #     doc='Membrane area')
+        self.area = Var(
+            initialize=1,
+            bounds=(1e-8, 1e6),
+            domain=NonNegativeReals,
+            units=units_meta('length') ** 2,
+            doc='Membrane area')
         #
         # def recovery_mass_phase_comp_initialize(b, t, p, j):
         #     if j in b.config.property_package.solvent_set:
@@ -336,50 +343,76 @@ class NanofiltrationData(UnitModelBlockData):
         #     units=pyunits.dimensionless,
         #     doc='Volumetric-based recovery')
         #
-        # # Build control volume for feed side
-        # self.feed_side = ControlVolume0DBlock(default={
-        #     "dynamic": False,
-        #     "has_holdup": False,
-        #     "property_package": self.config.property_package,
-        #     "property_package_args": self.config.property_package_args})
-        #
-        # self.feed_side.add_state_blocks(
-        #     has_phase_equilibrium=False)
-        #
-        # self.feed_side.add_material_balances(
-        #     balance_type=self.config.material_balance_type,
-        #     has_mass_transfer=True)
-        #
+        # Build control volume for feed side
+        self.feed_side = ControlVolume0DBlock(default={
+            "dynamic": False,
+            "has_holdup": False,
+            "property_package": self.config.property_package,
+            "property_package_args": self.config.property_package_args})
+
+        self.feed_side.add_state_blocks(
+            has_phase_equilibrium=False)
+
+        self.feed_side.add_material_balances(
+            balance_type=self.config.material_balance_type,
+            has_mass_transfer=True)
+
+        self.feed_side.add_momentum_balances(
+            balance_type=self.config.momentum_balance_type,
+            has_pressure_change=self.config.has_pressure_change)
+
+        # Make indexed stateblock and separate stateblock for permeate-side and permeate outlet, respectively.
+        tmp_dict = dict(**self.config.property_package_args)
+        tmp_dict["has_phase_equilibrium"] = False
+        tmp_dict["parameters"] = self.config.property_package
+        tmp_dict["defined_state"] = False  # these blocks are not inlets
+
+        # # Add permeate block
+        self.permeate_side = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            io_list,
+            doc="Material properties of permeate along permeate channel",
+            default=tmp_dict)
+        self.mixed_permeate = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties of mixed permeate exiting the module",
+            default=tmp_dict)
+
+        # Add Ports
+        self.add_inlet_port(name='inlet', block=self.feed_side)
+        self.add_outlet_port(name='retentate', block=self.feed_side)
+        self.add_port(name='permeate', block=self.mixed_permeate)
+
+        # Membrane interface: indexed state block
+        self.feed_side.properties_interface = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            io_list,
+            doc="Material properties of feed-side membrane interface",
+            default=tmp_dict)
+        # Pore entrance: indexed state block
+        self.pore_entrance = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            io_list,
+            doc="Fluid properties within the membrane pore entrance",
+            default=tmp_dict)
+        # Pore exit: indexed state block
+        self.pore_exit = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            io_list,
+            doc="Fluid properties within the membrane pore exit",
+            default=tmp_dict)
+
+        # References for control volume
+        # pressure change
+        if (self.config.has_pressure_change is True and
+                self.config.momentum_balance_type != 'none'):
+            self.deltaP = Reference(self.feed_side.deltaP)
+
         # @self.feed_side.Constraint(self.flowsheet().config.time,
         #                  doc='isothermal energy balance for feed_side')
         # def eq_isothermal(b, t):
         #     return b.properties_in[t].temperature == b.properties_out[t].temperature
-        #
-        # self.feed_side.add_momentum_balances(
-        #     balance_type=self.config.momentum_balance_type,
-        #     has_pressure_change=self.config.has_pressure_change)
-        #
-        # # Add permeate block
-        # tmp_dict = dict(**self.config.property_package_args)
-        # tmp_dict["has_phase_equilibrium"] = False
-        # tmp_dict["parameters"] = self.config.property_package
-        # tmp_dict["defined_state"] = False  # permeate block is not an inlet
-        # self.properties_permeate = self.config.property_package.state_block_class(
-        #     self.flowsheet().config.time,
-        #     doc="Material properties of permeate",
-        #     default=tmp_dict)
-        #
-        # # Add Ports
-        # self.add_inlet_port(name='inlet', block=self.feed_side)
-        # self.add_outlet_port(name='retentate', block=self.feed_side)
-        # self.add_port(name='permeate', block=self.properties_permeate)
-        #
-        # # References for control volume
-        # # pressure change
-        # if (self.config.has_pressure_change is True and
-        #         self.config.momentum_balance_type != 'none'):
-        #     self.deltaP = Reference(self.feed_side.deltaP)
-        #
+
         # # mass transfer
         # self.mass_transfer_phase_comp = Var(
         #     self.flowsheet().config.time,
