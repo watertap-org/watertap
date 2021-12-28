@@ -20,7 +20,8 @@ from pyomo.environ import (Block,
                            NonNegativeReals,
                            Reals,
                            Reference,
-                           units as pyunits)
+                           units as pyunits,
+                           log)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -408,6 +409,26 @@ class NanofiltrationData(UnitModelBlockData):
                 self.config.momentum_balance_type != 'none'):
             self.deltaP = Reference(self.feed_side.deltaP)
 
+
+        @self.Constraint(self.flowsheet().config.time,
+                         solute_set,
+                         doc="Diffusive hindered transport coefficient equation")
+        def eq_hindrance_factor_diffusive(b, t, j):
+            return (b.hindrance_factor_diffusive_comp[t, j] *  (1 - b.lambda_comp[t, j])**2 ==
+                    1 + 9. / 8. * b.lambda_comp[t, j] * log(b.lambda_comp[t, j])
+                    - 1.56034 * b.lambda_comp[t, j]
+                    + 0.528155 * b.lambda_comp[t, j]**2
+                    + 1.91521 * b.lambda_comp[t, j]**3
+                    - 2.81903 * b.lambda_comp[t, j]**4
+                    + 0.270788 * b.lambda_comp[t, j]**5
+                    - 1.10115 * b.lambda_comp[t, j]**6
+                    - 0.435933 * b.lambda_comp[t, j]**7)
+
+
+
+
+
+
         # @self.feed_side.Constraint(self.flowsheet().config.time,
         #                  doc='isothermal energy balance for feed_side')
         # def eq_isothermal(b, t):
@@ -505,6 +526,7 @@ class NanofiltrationData(UnitModelBlockData):
             outlvl=idaeslog.NOTSET,
             solver=None,
             optarg=None):
+        pass
         # """
         # General wrapper for pressure changer initialization routines
         #
@@ -576,6 +598,7 @@ class NanofiltrationData(UnitModelBlockData):
         # )
 
     def _get_performance_contents(self, time_point=0):
+        pass
         # for k in ('ion_set', 'solute_set'):
         #     if hasattr(self.config.property_package, k):
         #         solute_set = getattr(self.config.property_package, k)
@@ -617,14 +640,15 @@ class NanofiltrationData(UnitModelBlockData):
         # return {"vars": var_dict, "exprs": expr_dict}
 
     def _get_stream_table_contents(self, time_point=0):
-        return create_stream_table_dataframe(
-            {
-                "Feed Inlet": self.inlet,
-                "Feed Outlet": self.retentate,
-                "Permeate Outlet": self.permeate,
-            },
-            time_point=time_point,
-        )
+        pass
+        # return create_stream_table_dataframe(
+        #     {
+        #         "Feed Inlet": self.inlet,
+        #         "Feed Outlet": self.retentate,
+        #         "Permeate Outlet": self.permeate,
+        #     },
+        #     time_point=time_point,
+        # )
 
     def get_costing(self, module=None, **kwargs):
         self.costing = Block()
