@@ -933,6 +933,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
                                                       variable_type=output_variable_type)
 
     local_solve_status_list = []
+    fail_counter = 0
 
     # ================================================================
     # Run all optimization cases
@@ -1016,8 +1017,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
     global_results = _aggregate_results(local_results, global_values, comm, num_procs)
 
     local_output_dict["solve_status"] = local_solve_status_list
-    global_output_dict = _create_global_output(local_output_dict, local_num_cases,
-                                               num_samples, comm)
+    global_output_dict = _create_global_output(local_output_dict, num_samples, comm)
 
     # Make a directory for saved outputs
     if rank == 0:
