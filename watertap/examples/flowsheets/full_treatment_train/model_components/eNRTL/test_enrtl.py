@@ -30,6 +30,7 @@ def simulate_enrtl_FTPx(state_var_args):
     for (v_name, ind), val in state_var_args.items():
         var = getattr(m.fs.state[0], v_name)
         var[ind].fix(val)
+    m.fs.state[0].flow_mol_phase['Liq'].value = 1
 
     # scale model
     calculate_scaling_factors(m)

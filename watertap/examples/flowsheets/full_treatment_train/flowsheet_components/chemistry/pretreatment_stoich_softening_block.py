@@ -12,10 +12,10 @@
 ###############################################################################
 
 """
-    Stoichiometric Softening pretreatment process
-    ----------------------------------------------
-    This will build a stoichiometric pretreatment process unit by unit. The
-    overall process is diagrammed below.
+Stoichiometric Softening pretreatment process
+
+This will build a stoichiometric pretreatment process unit by unit. The
+overall process is diagrammed below::
 
                     Lime stream
                         |
@@ -28,9 +28,10 @@
                            V
                        waste stream
 
-    Stoich Reactions:
-         Ca(HCO3)2 +   Ca(OH)2 --> 2 CaCO3 +  2 H2O
-         Mg(HCO3)2 + 2 Ca(OH)2 --> 2 CaCO3 + Mg(OH)2 +  2 H2O
+Stoich Reactions::
+
+     Ca(HCO3)2 +   Ca(OH)2 --> 2 CaCO3 +  2 H2O
+     Mg(HCO3)2 + 2 Ca(OH)2 --> 2 CaCO3 + Mg(OH)2 +  2 H2O
 """
 
 # Importing the object for units from pyomo

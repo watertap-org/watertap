@@ -82,7 +82,7 @@ from fnmatch import fnmatchcase
 import logging
 from pprint import pformat
 import re
-from typing import Dict, Type, List
+from typing import Dict, Type, List, Union, Tuple
 
 # 3rd party
 from pyomo.environ import units as pyunits
@@ -178,7 +178,8 @@ class ConfigGenerator:
             return
         for param_key in params:
             val = params[param_key]
-            if param_key == "reaction_order":
+            if param_key == Reaction.NAMES.reaction_order:
+                # change form of reaction_order, just like stoichiometry
                 reaction_order_table = {}
                 for phase in val:
                     for species, num in val[phase].items():
@@ -439,6 +440,23 @@ class ThermoConfig(ConfigGenerator):
                 data[fld] = data[fld][0]
         del data["elements"]
         cls._wrap_section("components", data)
+        for name in data["components"]:
+            cls._key_to_tuple(data["components"][name], "phase_equilibrium_form")
+
+
+    @classmethod
+    def _key_to_tuple(cls, data, section):
+        """Change all key values separated by '-' in the given section to tuples of those values."""
+        if section not in data:
+            return
+        temp = {}
+        for key in data[section]:
+            item_list = key.split("-")
+            if (len(item_list)!=2):
+                raise BadConfiguration("BaseConfig._key_to_tuple", data,
+                    missing=None,why="\n"+section+" tuple key must be only 2 items\n")
+            temp[tuple(item_list)] = data[section][key]
+        data[section] = temp
 
 
 class ReactionConfig(ConfigGenerator):
@@ -521,13 +539,9 @@ class BaseConfig(ConfigGenerator):
         "phases.Sol.equation_of_state": {"Ideal": Ideal},
         "phases.Vap.equation_of_state": {"Ideal": Ideal},
         "bubble_dew_method": {"IdealBubbleDew": IdealBubbleDew},
-
-        # TODO: NOTE: I'm not sure how to handle the following...
-        #
-        #"phases_in_equilibrium": ["('Vap','Liq')"],
-        #"phase_equilibrium_state": {"('Vap','Liq')": "SmoothVLE"},
-        #
-        #   The above are options used in base configs for Vapor and Liquid systems
+        "phase_equilibrium_state.*": {
+            "SmoothVLE": SmoothVLE,
+        },
         "base_units.*": ConfigGenerator.SUBST_UNITS,
     }
 
@@ -536,6 +550,8 @@ class BaseConfig(ConfigGenerator):
         cls._substitute(data)
         cls._remove_special(data)
         cls._list_to_tuple(data, "state_bounds")
+        cls._list_of_lists_to_tuple(data, "phases_in_equilibrium")
+        cls._key_to_tuple(data, "phase_equilibrium_state")
 
     @classmethod
     def _list_to_tuple(cls, data, section):
@@ -546,9 +562,35 @@ class BaseConfig(ConfigGenerator):
             if isinstance(data[section][key], list):
                 data[section][key] = tuple(data[section][key])
 
+    @classmethod
+    def _list_of_lists_to_tuple(cls, data, section):
+        """Change all list of list values in the given section to tuples."""
+        if section not in data:
+            return
+        temp = []
+        for item in data[section]:
+            if isinstance(item, list):
+                temp.append(tuple(item))
+        data[section] = temp
+
+    @classmethod
+    def _key_to_tuple(cls, data, section):
+        """Change all key values separated by '-' in the given section to tuples of those values."""
+        if section not in data:
+            return
+        temp = {}
+        for key in data[section]:
+            item_list = key.split("-")
+            if (len(item_list)!=2):
+                raise BadConfiguration("BaseConfig._key_to_tuple", data,
+                    missing=None,why="\n"+section+" tuple key must be only 2 items\n")
+            temp[tuple(item_list)] = data[section][key]
+        data[section] = temp
+
 
 class DataWrapperNames:
     param = "parameter_data"
+    reaction_order = "reaction_order"
 
 
 class DataWrapper:
@@ -836,10 +878,7 @@ class Component(DataWrapper):
                     d[fld] = {}
                     for key, value in c[fld].items():
                         break
-                    for phase in key:
-                        cls._method_to_str(
-                            phase, {phase: value}, d[fld], subst_strings, caller=whoami
-                        )
+                    cls._method_to_str(fld, c[fld], d, subst_strings, caller=whoami)
             # extract elements from name
             d["elements"] = re.findall(r"[A-Z][a-z]?", name)
             cls._convert_parameter_data(c, d)
@@ -860,6 +899,7 @@ class Reaction(DataWrapper):
     merge_keys = ("equilibrium_reactions", "rate_reactions", "inherent_reactions")
 
     NAMES = ReactionNames
+    PHASES = ("Liq", "Vap", "Sol")
 
     def __init__(self, data: Dict, validation=True):
         """Constructor.
@@ -875,61 +915,74 @@ class Reaction(DataWrapper):
     def reaction_type(self):
         return self.data.get("type", "")
 
-    # # TODO: This function behavior is WRONG!!!
-    #
-    #           Reaction order must be set by individual species
-    #           and not by whether or not a species is on one side
-    #           or another. Reaction orders can also be different
-    #           for different phases.
-    #
-    #           What we should do is pass a dictionary to this
-    #           function that gives the order value for each
-    #           corresponding phase-species pair in the reaction
-    #
-    #           i.e., order = {('Liq','H2O'): 0, ('Sol','CaCO3'): -1, ('Vap','CO2'): 1}
-    #
-    #           The above example should be valid if those phase-species pairs are
-    #           valid within the reaction stoichiometry
     def set_reaction_order(
         self,
         phase: str,
-        lhs: List[str],
-        rhs: List[str],
-        lhs_value: int = 0,
-        rhs_value: int = 1,
-    ) -> Dict:
-        """Set the reaction order (if it differs from stoichiometry).
+        order: Union[List[Tuple[str, float]], Dict[str, float]],
+        require_all: bool = False,
+    ) -> None:
+        """Set the reaction order for the given phase.
 
         Args:
-            phase: 'Liq' or 'Vap'
-            lhs: Left-hand side of equation components
-            rhs: Right-hand side of equation components
-            lhs_value: Integer value for LHS components
-            rhs_value: Integer value for RHS components
+            phase: a value from self.PHASES
+            order: Either a dict or list of (element, value) pairs
+            require_all: If True, require that all components in the reaction be
+               given an order. If False, it is OK if some components are missing.
 
         Returns:
-            Reaction order for all phases, which can be modified further in-place
+            None. Reaction order is modified in place.
 
         Raises:
-            KeyError: something is missing in the data structure
+            KeyError: something is missing in the data structure, or unknown
+                      component provided
+            ValueError: Wrong or incomplete components provided
         """
-        with field(self.NAMES.param) as param:
-            if param not in self.data:
-                raise KeyError(f"Reaction missing '{param}'")
-            with field("reaction_order") as ro:
-                # create a blank 'reaction_order' section if not present
-                if ro not in self.data[param]:
-                    self.data[param][ro] = {}
-                ro_section = self.data[param][ro]
-                # replace reaction_order value for key 'phase' with new value
-                reaction_order = {}
-                for comp in lhs:
-                    reaction_order[comp] = lhs_value
-                for comp in rhs:
-                    reaction_order[comp] = rhs_value
-                ro_section[phase] = reaction_order
+        if bool(order) is False:
+            raise ValueError("No components provided for reaction order")
+        # schema validation should guarantee this structure
 
-        return ro_section
+        # If 'reaction_order' key does not exist, then create one as a copy of stoich
+        if self.NAMES.reaction_order in self.data[self.NAMES.param]:
+            ro = self.data[self.NAMES.param][self.NAMES.reaction_order]
+        else:
+            self.data[self.NAMES.param][self.NAMES.reaction_order] = self.data[
+                self.NAMES.stoich
+            ].copy()
+            ro = self.data[self.NAMES.param][self.NAMES.reaction_order]
+
+        if phase not in self.PHASES:
+            raise ValueError(
+                f"Invalid phase '{phase}'. Valid values: " f"{', '.join(self.PHASES)}"
+            )
+        if phase not in ro:
+            raise KeyError(f"Phase '{phase}' not found")
+        ro = ro[phase]
+        # normalize input to dict form
+        if not hasattr(order, "keys"):
+            order = dict(order)
+        # additional checks for 'require_all' flag
+        if require_all:
+            if len(order) != len(ro):
+                why = "not enough" if len(order) < len(ro) else "too many"
+                raise ValueError(
+                    f"{why.title()} components provided for new reaction "
+                    f"order, with 'require_all' flag set to True"
+                )
+            if set(order.keys()) != set(ro.keys()):
+                raise ValueError(
+                    "Components in new reaction order do not match "
+                    "components in reaction, with 'require_all' flag "
+                    "set to True"
+                )
+        # Replace one component at a time, raising a KeyError if unknown component
+        # Ensure that the instance is not modified if there are any errors.
+        ro_tmp = ro.copy()
+        for key, value in order.items():
+            if key not in ro:
+                raise KeyError(f"Component '{key}' not found in reaction")
+            ro_tmp[key] = value
+        # Update reaction order in this object
+        self.data[self.NAMES.param][self.NAMES.reaction_order][phase] = ro_tmp
 
     @classmethod
     def from_idaes_config(cls, config: Dict) -> List["Reaction"]:

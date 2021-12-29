@@ -13,6 +13,7 @@ import click
 from json_schema_for_humans import generate as schema_gen
 from json_schema_for_humans.generation_configuration import GenerationConfiguration
 from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure
 
 # package
 from .db_api import ElectrolyteDB
@@ -20,10 +21,6 @@ from .validate import validate, ValidationError
 from .schemas import schemas as edb_schemas
 
 _log = logging.getLogger(__name__)
-_h = logging.StreamHandler()
-_h.setFormatter(logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s"))
-_log.addHandler(_h)
-_log.propagate = False
 
 
 def get_edb_data(filename: str) -> pathlib.Path:
@@ -83,12 +80,17 @@ def _connect(url, db):
     "given twice, show no messages.",
 )
 def command_base(verbose, quiet):
+    log_root = logging.getLogger("watertap")
     if quiet > 0 and verbose > 0:
         raise click.BadArgumentUsage("Options for verbosity and quietness conflict")
     if verbose > 0:
-        _log.setLevel(level_from_verbosity(verbose))
+        _h = logging.StreamHandler()
+        _h.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s"))
+        log_root.addHandler(_h)
+        log_root.setLevel(level_from_verbosity(verbose))
     else:
-        _log.setLevel(level_from_verbosity(-quiet))
+        log_root.setLevel(level_from_verbosity(-quiet))
 
 
 #################################################################################
@@ -134,16 +136,19 @@ def command_base(verbose, quiet):
     default=False,
 )
 def load_data(input_file, data_type, url, database, validate, bootstrap):
+    try:
+        edb = ElectrolyteDB(url, database)
+    except ConnectionFailure as err:
+        click.echo(f"Database connection failure: {err}")
+        return -1
     if bootstrap:
-        if _db_is_empty(url, database):
-            edb = _connect(url, database)
-            _load_bootstrap(edb, do_validate=validate)
-        else:
+        if not edb.is_empty():
             click.echo(
                 f"Cannot bootstrap: database {database} at {url} already exists "
                 f"and has one or more of the EDB collections"
             )
             return -1
+        _load_bootstrap(edb, do_validate=validate)
     else:
         if input_file is None:
             click.echo("Error: -f/--file is required")
@@ -151,7 +156,6 @@ def load_data(input_file, data_type, url, database, validate, bootstrap):
         if data_type is None:
             click.echo("Error: -t/--type is required")
             return -2
-        edb = _connect(url, database)
         _load(input_file, data_type, edb, do_validate=validate)
 
 
@@ -190,22 +194,6 @@ def _load(input_file, data_type, edb, do_validate=True):
     n = edb.load(data, rec_type=data_type)
     if print_messages:
         click.echo(f"Loaded {n} record(s) into collection '{data_type}'")
-
-
-def _db_is_empty(url, database):
-    client = MongoClient(host=url)
-    if database not in client.list_database_names():
-        return True
-    db = getattr(client, database)
-    collections = set(db.list_collection_names())
-    if not collections:
-        return True
-    if not {"base", "component", "reaction"}.intersection(collections):
-        _log.warning(
-            "Bootstrapping into non-empty database," "but without any EDB collections"
-        )
-        return True
-    return False
 
 
 def _load_bootstrap(edb, **kwargs):

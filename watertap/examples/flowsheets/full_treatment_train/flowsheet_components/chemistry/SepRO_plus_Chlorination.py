@@ -13,13 +13,13 @@
 
 """
     Simple example of a flowsheet containing an RO separator unit model and
-    a simple NaOCl chlorination post-treatment unit model.
+    a simple NaOCl chlorination post-treatment unit model::
 
-    inlet ---> [RO Separator] ---> permeate ---> (Translator) ---> [Chlorination] ---> outlet
-                    |
-                    |
-                    v
-                retentate (i.e., waste)
+        inlet ---> [RO Separator] ---> permeate ---> (Translator) ---> [Chlorination] ---> outlet
+                        |
+                        |
+                        v
+                    retentate (i.e., waste)
 
 
     NOTE: The 2 unit models use a different set of state_vars. Thus, this will need to be
@@ -27,7 +27,7 @@
 
     Both inlet and outlet streams use K for temperature and Pa for pressure (no change needed)
 
-    The flow from RO Separator uses kg/s for individual "species" [H2O and TDS]
+    The flow from RO Separator uses kg/s for individual "species" (H2O and TDS)
 
     The inlet for Chlorination uses a total molar flow rate in mol/s and mole fractions
     of individual species. To make the appropriate conversions, we will have to start
@@ -41,23 +41,27 @@
 
     Molefraction of Na --> Based on TDS
                 =  [m.fs.RO.permeate.flow_mass_phase_comp[0, 'Liq', 'TDS']/(MW TDS)] / (Total Molar Flow)
+
     Molefraction of Cl = Molefraction of Na (1:1 ratio in the salt)
+
     Molefraction of H2O --> Whatever is remaining
 
     ---------- NOTE: This is only an example ---------
 """
 
-from watertap.examples.flowsheets.full_treatment_train.model_components import unit_separator, property_models
+from watertap.examples.flowsheets.full_treatment_train.model_components import (
+    unit_separator,
+    property_models,
+)
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components.chemistry.PostTreatment_SimpleNaOCl_Chlorination import (
     build_simple_naocl_chlorination_unit,
     initialize_chlorination_example,
     display_results_of_chlorination,
-    simple_naocl_reaction_config)
+    simple_naocl_reaction_config,
+)
 
 # Import specific pyomo objects
-from pyomo.environ import (ConcreteModel,
-                           Constraint,
-                           TransformationFactory)
+from pyomo.environ import ConcreteModel, Constraint, TransformationFactory
 
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock
@@ -65,13 +69,19 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models.translator import Translator
 from pyomo.network import Arc
 
-from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.util import (
+    solve_with_user_scaling,
+    check_dof,
+)
 
 from watertap.examples.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
     approximate_chemical_state_args,
-    calculate_chemical_scaling_factors)
+    calculate_chemical_scaling_factors,
+)
 
-from watertap.examples.flowsheets.full_treatment_train.chemical_flowsheet_util import seq_decomp_initializer
+from watertap.examples.flowsheets.full_treatment_train.chemical_flowsheet_util import (
+    seq_decomp_initializer,
+)
 
 from idaes.core.util import scaling as iscale
 
@@ -84,77 +94,109 @@ solver = get_solver()
 
 
 def build_SepRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0):
-    property_models.build_prop(model, base='TDS')
+    property_models.build_prop(model, base="TDS")
     unit_separator.build_SepRO(model)
     iscale.calculate_scaling_factors(model.fs.RO)
-    property_models.specify_feed(model.fs.RO.mixed_state[0], base='TDS')
+    property_models.specify_feed(model.fs.RO.mixed_state[0], base="TDS")
 
-    total_molar_density = 1/18*1000 #mol/L
-    free_chlorine_added = mg_per_L_NaOCl_added/74.44/1000*70900 #mg/L as NaOCl
-    total_chlorine_inlet = free_chlorine_added/70900 # mol/L
-    total_molar_density+=total_chlorine_inlet
+    total_molar_density = 1 / 18 * 1000  # mol/L
+    free_chlorine_added = mg_per_L_NaOCl_added / 74.44 / 1000 * 70900  # mg/L as NaOCl
+    total_chlorine_inlet = free_chlorine_added / 70900  # mol/L
+    total_molar_density += total_chlorine_inlet
 
     # May need to change this build interface
-    build_simple_naocl_chlorination_unit(model, mg_per_L_NaOCl_added = mg_per_L_NaOCl_added)
+    build_simple_naocl_chlorination_unit(
+        model, mg_per_L_NaOCl_added=mg_per_L_NaOCl_added
+    )
 
     # Translator inlet from RO and outlet goes to chlorination
     # NOTE: May need to come up with a way to set state_args for Translator for
     #       better convergence behavior. This block seems to be the trouble maker
     #       for the full solve.
     model.fs.RO_to_Chlor = Translator(
-        default={"inlet_property_package": model.fs.prop_TDS,
-                 "outlet_property_package": model.fs.simple_naocl_thermo_params})
+        default={
+            "inlet_property_package": model.fs.prop_TDS,
+            "outlet_property_package": model.fs.simple_naocl_thermo_params,
+        }
+    )
 
     # Add constraints to define how the translator will function
     model.fs.RO_to_Chlor.eq_equal_temperature = Constraint(
         expr=model.fs.RO_to_Chlor.inlet.temperature[0]
-        == model.fs.RO_to_Chlor.outlet.temperature[0])
+        == model.fs.RO_to_Chlor.outlet.temperature[0]
+    )
     model.fs.RO_to_Chlor.eq_equal_pressure = Constraint(
         expr=model.fs.RO_to_Chlor.inlet.pressure[0]
-        == model.fs.RO_to_Chlor.outlet.pressure[0])
+        == model.fs.RO_to_Chlor.outlet.pressure[0]
+    )
 
     model.fs.RO_to_Chlor.total_flow_cons = Constraint(
-        expr=model.fs.RO_to_Chlor.outlet.flow_mol[0] ==
-            (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']/18e-3) +
-            (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']/58.4e-3) )
+        expr=model.fs.RO_to_Chlor.outlet.flow_mol[0]
+        == (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, "Liq", "H2O"] / 18e-3)
+        + (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, "Liq", "TDS"] / 58.4e-3)
+    )
 
-    model.fs.RO_to_Chlor.H_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "H_+"] == 0 )
-    model.fs.RO_to_Chlor.OH_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OH_-"] == 0 )
-    model.fs.RO_to_Chlor.HOCl_con = Constraint( expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "HOCl"] == 0 )
-
+    model.fs.RO_to_Chlor.H_con = Constraint(
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "H_+"] == 0
+    )
+    model.fs.RO_to_Chlor.OH_con = Constraint(
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OH_-"] == 0
+    )
+    model.fs.RO_to_Chlor.HOCl_con = Constraint(
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "HOCl"] == 0
+    )
 
     model.fs.RO_to_Chlor.OCl_con = Constraint(
-        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OCl_-"] == total_chlorine_inlet/total_molar_density )
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OCl_-"]
+        == total_chlorine_inlet / total_molar_density
+    )
 
     model.fs.RO_to_Chlor.Cl_con = Constraint(
-        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "Cl_-"] ==
-            (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']/58.4e-3) /
-             model.fs.RO_to_Chlor.outlet.flow_mol[0] )
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "Cl_-"]
+        == (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, "Liq", "TDS"] / 58.4e-3)
+        / model.fs.RO_to_Chlor.outlet.flow_mol[0]
+    )
 
     model.fs.RO_to_Chlor.Na_con = Constraint(
-        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "Na_+"] ==
-            (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS']/58.4e-3) /
-             model.fs.RO_to_Chlor.outlet.flow_mol[0] + model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OCl_-"])
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "Na_+"]
+        == (model.fs.RO_to_Chlor.inlet.flow_mass_phase_comp[0, "Liq", "TDS"] / 58.4e-3)
+        / model.fs.RO_to_Chlor.outlet.flow_mol[0]
+        + model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "OCl_-"]
+    )
 
     model.fs.RO_to_Chlor.H2O_con = Constraint(
-        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "H2O"] == 1 -
-            sum(model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, j] for j in ["H_+", "OH_-",
-                "HOCl", "OCl_-", "Cl_-", "Na_+"]) )
+        expr=model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, "H2O"]
+        == 1
+        - sum(
+            model.fs.RO_to_Chlor.outlet.mole_frac_comp[0, j]
+            for j in ["H_+", "OH_-", "HOCl", "OCl_-", "Cl_-", "Na_+"]
+        )
+    )
 
     # Add the connecting arcs
-    model.fs.S1 = Arc(source=model.fs.RO.permeate, destination=model.fs.RO_to_Chlor.inlet)
-    model.fs.S2 = Arc(source=model.fs.RO_to_Chlor.outlet, destination=model.fs.simple_naocl_unit.inlet)
+    model.fs.S1 = Arc(
+        source=model.fs.RO.permeate, destination=model.fs.RO_to_Chlor.inlet
+    )
+    model.fs.S2 = Arc(
+        source=model.fs.RO_to_Chlor.outlet, destination=model.fs.simple_naocl_unit.inlet
+    )
     TransformationFactory("network.expand_arcs").apply_to(model)
 
     # Inlet conditions for RO unit already set from the build function
 
     # Calculate scaling factors and setup each block
     iscale.calculate_scaling_factors(model.fs.RO_to_Chlor)
-    state_args, stoich_extents = approximate_chemical_state_args(model.fs.simple_naocl_unit,
-                                model.fs.simple_naocl_rxn_params, simple_naocl_reaction_config)
-    calculate_chemical_scaling_factors(model.fs.simple_naocl_unit,
-                                model.fs.simple_naocl_thermo_params,
-                                model.fs.simple_naocl_rxn_params, state_args)
+    state_args, stoich_extents = approximate_chemical_state_args(
+        model.fs.simple_naocl_unit,
+        model.fs.simple_naocl_rxn_params,
+        simple_naocl_reaction_config,
+    )
+    calculate_chemical_scaling_factors(
+        model.fs.simple_naocl_unit,
+        model.fs.simple_naocl_thermo_params,
+        model.fs.simple_naocl_rxn_params,
+        state_args,
+    )
 
     # initialize each chemical block (REQUIRED)
     initialize_chlorination_example(model.fs.simple_naocl_unit, state_args)
@@ -205,6 +247,7 @@ def run_SepRO_Chlorination_flowsheet_example():
 
     return model
 
+
 def run_SepRO_Chlorination_flowsheet_with_outlet_constraint_example():
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
@@ -216,7 +259,7 @@ def run_SepRO_Chlorination_flowsheet_with_outlet_constraint_example():
     # Call the sequential decomposition initializer tool
     seq_decomp_initializer(model)
 
-    #Redefine the constraints and fixed vars here
+    # Redefine the constraints and fixed vars here
     # Here we fix the exit free chlorine then remove the
     #   constraint the defines the amount of OCl from the translator
     #   block to the chlorination process. We are essentially using
@@ -237,6 +280,7 @@ def run_SepRO_Chlorination_flowsheet_with_outlet_constraint_example():
     display_results_of_chlorination(model.fs.simple_naocl_unit)
 
     return model
+
 
 if __name__ == "__main__":
     model = run_SepRO_Chlorination_flowsheet_example()

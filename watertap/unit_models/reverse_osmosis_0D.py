@@ -618,8 +618,6 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver and options
-        if optarg is None:
-            optarg = {'bound_push': 1e-8}
         opt = get_solver(solver, optarg)
 
         # assumptions

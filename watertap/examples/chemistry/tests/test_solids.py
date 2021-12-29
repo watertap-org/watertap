@@ -347,7 +347,7 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
             pass
 
         # For species
-        min = 1e-6
+        min = 1e-3
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
             if model.fs.unit.inlet.flow_mol_phase_comp[0, i[0], i[1]].value > min:
@@ -375,15 +375,11 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
         assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
     #End scaling if statement
 
-    solver.options['bound_push'] = 1e-5
-    solver.options['mu_init'] = 1e-3
     solver.options['max_iter'] = 200
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
-    solver.options['bound_push'] = 1e-5
-    solver.options['mu_init'] = 1e-3
     results = solver.solve(model, tee=True)
 
     assert results.solver.termination_condition == TerminationCondition.optimal
@@ -524,7 +520,7 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None, state="FpcTP"):
             pass
 
         # For species
-        min = 1e-6
+        min = 1e-3
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
             if case1_thermo_config["state_definition"] == FpcTP:
@@ -593,21 +589,16 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None, state="FpcTP"):
     flags = fix_state_vars(model.fs.unit.control_volume.properties_out, state_args)
     revert_state_vars(model.fs.unit.control_volume.properties_out, flags)
 
-    solver.options['bound_push'] = 1e-10
-    solver.options['mu_init'] = 1e-6
-
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
     # NOTE: Calling initialize 2x times helped resolve some issues, but why???
+    #       Likely reason: the jacobian gets re-scaled and the dual values re-set
+    #       on the subsequent call to solve.
 
-    solver.options['bound_push'] = 1e-5
-    solver.options['mu_init'] = 1e-3
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
     #model.fs.unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
-    solver.options['bound_push'] = 1e-5
-    solver.options['mu_init'] = 1e-3
     results = solver.solve(model, tee=True)
 
     assert results.solver.termination_condition == TerminationCondition.optimal

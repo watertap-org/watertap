@@ -24,7 +24,9 @@ from pyomo.environ import units as pyunits
 from idaes.generic_models.properties.core.pure import Perrys
 from idaes.generic_models.properties.core.pure.NIST import NIST
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+    log_power_law_equil,
+)
 from idaes.core import Component as IComponent
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
     van_t_hoff,
@@ -143,15 +145,22 @@ def test_result():
             Component,
             {"name": "foo", "elements": ["H"], "type": "solvent", "parameter_data": {}},
         ),
-        (Reaction, {"name": "foo", "type": "equilibrium", "parameter_data": {},
-                    "components": ["H2O"]}),
+        (
+            Reaction,
+            {
+                "name": "foo",
+                "type": "equilibrium",
+                "parameter_data": {},
+                "components": ["H2O"],
+            },
+        ),
     ],
 )
 def test_config_generator_required(data_wrapper_class, required):
     # make sure it fails with any missing required field(s)
     all_fields = list(required.keys())
     for i in range(len(all_fields)):
-        except_i = all_fields[:i] + all_fields[i+1:]
+        except_i = all_fields[:i] + all_fields[i + 1 :]
         missing_a_field = {f: required[f] for f in except_i}
         print(f"Data missing field '{all_fields[i]}': {missing_a_field}")
         if data_wrapper_class is Component and all_fields[i] in ("elements", "type"):
@@ -183,7 +192,11 @@ def test_base(starting_value):
     assert b.idaes_config[mk0]["foo"] == starting[mk0]["foo"]
     # Add a non-empty component
     name = "baz"
-    component_data = {"name": name, "elements": [], "parameter_data": {"foo_coeff": [{"i": 0, "v": 1, "u": "g"}]}}
+    component_data = {
+        "name": name,
+        "elements": [],
+        "parameter_data": {"foo_coeff": [{"i": 0, "v": 1, "u": "g"}]},
+    }
     c = Component(component_data)
     b.add(c)
     print(f"b.idaes_config={b.idaes_config} component_data={component_data}")
@@ -459,3 +472,74 @@ def test_thermoconfig_set_type():
     thermo = Component(data)
     config = thermo.idaes_config
     assert _type(config) == Solvent
+
+
+@pytest.mark.unit
+def test_reaction_order():
+    # minimal Reaction object to work with
+    def reaction():
+        return Reaction(
+        {
+            "name": "foo",
+            "components": [],
+            "elements": ["Ca", "O", "H"],
+            # valid chemistry? no. useful? yes.
+            Reaction.NAMES.param: {
+                "reaction_order": {
+                    "Liq": {"B": 2, "C": 1, "H": 1},
+                    "Vap": {"B": 1, "C": -2, "H": 1},
+                    "Sol": {"B": -1, "C": 2, "H": 0},
+                }
+            },
+            "type": "equilibrium",
+        }
+        )
+
+    # the error you get when the input doesn't pass JSON schema validation
+    bad_input_error = ValidationError
+    # Reaction missing param
+    with pytest.raises(bad_input_error):
+        Reaction({"elements": ["H"]}).set_reaction_order("Foo", {})
+    # Reaction missing reaction_order, still OK handled in pre-processing
+    # but empty input list causes an error
+    with pytest.raises(ValueError):
+        Reaction({"components": [], "elements": ["H"], Reaction.NAMES.param: {},
+                  "type": "equilibrium", "name": "Foo"}).set_reaction_order(
+                    "Foo", {})
+    # Invalid phase
+    r = reaction()
+    with pytest.raises(ValueError):  # bad phase
+        r.set_reaction_order("Plasma", {"B": 1, "C": 1, "H": 1})
+    # No components
+    with pytest.raises(ValueError):
+        r.set_reaction_order("Liq", {})
+    with pytest.raises(ValueError):
+        r.set_reaction_order("Liq", [])
+    # Bad components
+    with pytest.raises(KeyError):
+        r.set_reaction_order("Liq", {"X": 3})
+    with pytest.raises(KeyError):
+        r.set_reaction_order("Liq", [("X", 3)])
+    with pytest.raises(ValueError):
+        r.set_reaction_order("Liq", {"B": 1}, require_all=True)
+    with pytest.raises(ValueError):
+        r.set_reaction_order("Liq", [("B", 0), ("C", 0), ("X", 0)], require_all=True)
+    # check happy path
+    values = [{"B": 0.5, "C": 1.5}, [("B", -2), ("C", 2)]]
+    for i in range(2):
+        r = reaction()
+        v = values[i]
+        r.set_reaction_order("Liq", v)
+        ro = r.data[Reaction.NAMES.param][Reaction.NAMES.reaction_order]["Liq"]
+        for k in v:
+            if i == 0:
+                assert ro[k] == v[k]
+            else:
+                assert ro[k[0]] == dict(v)[k[0]]
+        r.set_reaction_order("Sol", v)
+        ro = r.data[Reaction.NAMES.param][Reaction.NAMES.reaction_order]["Sol"]
+        for k in v:
+            if i == 0:
+                assert ro[k] == v[k]
+            else:
+                assert ro[k[0]] == dict(v)[k[0]]
