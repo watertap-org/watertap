@@ -85,7 +85,7 @@ from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from pyomo.util.check_units import assert_units_consistent
 
 
-from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.util import solve_block, check_dof
 from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
 from idaes.core.util import get_solver
 
@@ -750,49 +750,28 @@ def unfix_stoich_softening_separator_inlets(model):
     unfix_all_molefractions(model.fs.stoich_softening_separator_unit.inlet)
 
 
-def scale_stoich_softening_mixer(unit):
-    iscale.constraint_autoscale_large_jac(unit)
-
-
-def scale_stoich_softening_reactor(unit):
-    iscale.constraint_autoscale_large_jac(unit)
-
-
-def scale_stoich_softening_separator(unit):
-    iscale.constraint_autoscale_large_jac(unit)
-
-
 def initialize_stoich_softening_mixer(unit, debug_out=False):
-    solver.options['bound_push'] = 1e-10
-    solver.options['mu_init'] = 1e-6
-    solver.options["nlp_scaling_method"] = "user-scaling"
     was_fixed = False
-    if unit.lime_stream.flow_mol[0].is_fixed() == False:
+    if not unit.lime_stream.flow_mol[0].is_fixed():
         unit.lime_stream.flow_mol[0].fix()
         was_fixed = True
-    if debug_out == True:
+    if debug_out:
         unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
     else:
         unit.initialize(optarg=solver.options)
-    if was_fixed == True:
+    if was_fixed:
         unit.lime_stream.flow_mol[0].unfix()
 
 
 def initialize_stoich_softening_reactor(unit, debug_out=False):
-    solver.options['bound_push'] = 1e-10
-    solver.options['mu_init'] = 1e-6
-    solver.options["nlp_scaling_method"] = "user-scaling"
-    if debug_out == True:
+    if debug_out:
         unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
     else:
         unit.initialize(optarg=solver.options)
 
 
 def initialize_stoich_softening_separator(unit, debug_out=False):
-    solver.options['bound_push'] = 1e-10
-    solver.options['mu_init'] = 1e-6
-    solver.options["nlp_scaling_method"] = "user-scaling"
-    if debug_out == True:
+    if debug_out:
         unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
     else:
         unit.initialize(optarg=solver.options)
@@ -947,14 +926,11 @@ def run_stoich_softening_mixer_example():
 
     check_dof(model)
 
-    # scale the mixer
-    scale_stoich_softening_mixer(model.fs.stoich_softening_mixer_unit)
-
     # initializer mixer
     initialize_stoich_softening_mixer(model.fs.stoich_softening_mixer_unit, debug_out=False)
 
     # solve with user scaling
-    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+    solve_block(model, tee=True)
 
     model.fs.stoich_softening_mixer_unit.outlet.mole_frac_comp.pprint()
     model.fs.stoich_softening_mixer_unit.dosing_rate.pprint()
@@ -990,14 +966,11 @@ def run_stoich_softening_reactor_example():
 
     check_dof(model)
 
-    # scale the reactor
-    scale_stoich_softening_reactor(model.fs.stoich_softening_reactor_unit)
-
     # initializer reactor
     initialize_stoich_softening_reactor(model.fs.stoich_softening_reactor_unit, debug_out=False)
 
     # solve with user scaling
-    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+    solve_block(model, tee=True)
 
     display_results_of_stoich_softening_reactor(model.fs.stoich_softening_reactor_unit)
     model.fs.stoich_softening_reactor_unit.outlet.mole_frac_comp.pprint()
@@ -1023,14 +996,11 @@ def run_stoich_softening_separator_example():
 
     check_dof(model)
 
-    # scale the separator
-    scale_stoich_softening_separator(model.fs.stoich_softening_separator_unit)
-
     # initializer separator
     initialize_stoich_softening_separator(model.fs.stoich_softening_separator_unit, debug_out=False)
 
     # solve with user scaling
-    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+    solve_block(model, tee=True)
 
     display_results_of_stoich_softening_separator(model.fs.stoich_softening_separator_unit)
 
@@ -1090,13 +1060,6 @@ def run_softening_block_example(include_feed=False, fix_hardness=False):
         # # TODO: build and test feed unit
         raise RuntimeError("Feed not available yet...")
 
-    # scale the mixer
-    scale_stoich_softening_mixer(model.fs.stoich_softening_mixer_unit)
-    # scale the reactor
-    scale_stoich_softening_reactor(model.fs.stoich_softening_reactor_unit)
-    # scale the separator
-    scale_stoich_softening_separator(model.fs.stoich_softening_separator_unit)
-
     # --------- Initialize: Works best to manually initialize with state propogation
     if include_feed == True:
         # initialize the feed and propogate the state
@@ -1112,13 +1075,10 @@ def run_softening_block_example(include_feed=False, fix_hardness=False):
     propagate_state(model.fs.stoich_softening_arc_reactor_to_separator)
     initialize_stoich_softening_separator(model.fs.stoich_softening_separator_unit, debug_out=False)
 
-    # Call scaling for full model (always after initialization)
-    iscale.constraint_autoscale_large_jac(model)
-
     # Solve the flowsheet
     if fix_hardness==True:
         setup_block_to_solve_lime_dosing_rate(model, target_hardness_mg_per_L = 50)
-    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+    solve_block(model, tee=True)
 
     # display results
     display_results_of_stoich_softening_mixer(model.fs.stoich_softening_mixer_unit)

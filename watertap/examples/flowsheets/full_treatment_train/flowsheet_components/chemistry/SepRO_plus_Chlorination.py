@@ -70,7 +70,7 @@ from idaes.generic_models.unit_models.translator import Translator
 from pyomo.network import Arc
 
 from watertap.examples.flowsheets.full_treatment_train.util import (
-    solve_with_user_scaling,
+    solve_block,
     check_dof,
 )
 
@@ -234,7 +234,7 @@ def run_SepRO_Chlorination_flowsheet_example():
     seq_decomp_initializer(model)
 
     # run the full solve
-    solve_with_user_scaling(model, tee=True, bound_push=1e-5, mu_init=1e-3)
+    solve_block(model, tee=True)
 
     model.fs.RO.inlet.display()
     model.fs.RO.permeate.display()
@@ -268,7 +268,7 @@ def run_SepRO_Chlorination_flowsheet_with_outlet_constraint_example():
     model.fs.RO_to_Chlor.OCl_con.deactivate()
 
     # run the full solve
-    solve_with_user_scaling(model, tee=True, bound_push=1e-5, mu_init=1e-3)
+    solve_block(model, tee=True)
 
     model.fs.RO.inlet.display()
     model.fs.RO.permeate.display()

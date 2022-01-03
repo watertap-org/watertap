@@ -26,7 +26,7 @@ from idaes.core.util.initialization import propagate_state
 from watertap.unit_models.pump_isothermal import Pump
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import feed_block
 from watertap.examples.flowsheets.full_treatment_train.model_components import unit_separator, unit_ZONF, property_models
-from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.util import solve_block, check_dof
 
 
 def build_pretreatment_NF(m, has_bypass=True, NF_type='ZO', NF_base='ion'):
@@ -190,7 +190,7 @@ def solve_pretreatment_NF(**kwargs):
     initialize_pretreatment_NF(m, **kwargs)
 
     check_dof(m)
-    solve_with_user_scaling(m, tee=True, fail_flag=True)
+    solve_block(m, tee=True, fail_flag=True)
 
     display_pretreatment_NF(m, **kwargs)
 

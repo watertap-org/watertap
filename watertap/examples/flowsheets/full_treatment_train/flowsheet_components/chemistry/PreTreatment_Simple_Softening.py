@@ -46,7 +46,7 @@ from idaes.core.util import scaling as iscale
 # Import pyomo methods to check the system units
 
 
-from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.util import solve_block, check_dof
 from idaes.core.util import get_solver
 
 # Import the idaes objects for Generic Properties and Reactions
@@ -64,7 +64,7 @@ from idaes.core import (AqueousPhase,
                         FlowsheetBlock,
                         EnergyBalanceType)
 
-# Import log10 function from pyomo
+import idaes.logger as idaeslog
 
 # Grab the scaling utilities
 from watertap.examples.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
@@ -319,26 +319,16 @@ def build_simple_softening_unit(model,
 
     check_dof(model)
 
-def initialize_softening_example(unit, state_args, user_scaling=True, debug_out=True):
+def initialize_softening_example(unit, state_args, debug_out=True):
     check_dof(unit)
-    solver.options['bound_push'] = 1e-5
-    solver.options['mu_init'] = 1e-3
-
-    if user_scaling == True:
-        solver.options["nlp_scaling_method"] = "user-scaling"
-
     #unit.inlet.mole_frac_comp[0, "Ca(OH)2"].fix()
 
-    if debug_out == True:
-        solve_with_user_scaling(unit, tee=True, bound_push=1e-5, mu_init=1e-3)
-    #    unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
+    if debug_out:
+        unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
     else:
-        solve_with_user_scaling(unit, tee=False, bound_push=1e-5, mu_init=1e-3)
-    #    unit.initialize(state_args=state_args, optarg=solver.options)
+        unit.initialize(state_args=state_args, optarg=solver.options)
 
     #unit.inlet.mole_frac_comp[0, "Ca(OH)2"].unfix()
-
-    iscale.constraint_autoscale_large_jac(unit)
     check_dof(unit)
 
 def display_results_of_softening(softening_unit):
@@ -373,7 +363,7 @@ def run_softening_example():
 
     initialize_softening_example(model.fs.softening_unit, state_args)
 
-    solve_with_user_scaling(model, tee=True, bound_push=1e-5, mu_init=1e-3)
+    solve_block(model, tee=True)
 
     display_results_of_softening(model.fs.softening_unit)
 
@@ -393,7 +383,7 @@ def run_softening_constrained_outlet_example():
 
     initialize_softening_example(model.fs.softening_unit, state_args)
 
-    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+    solve_block(model, tee=True)
 
     display_results_of_softening(model.fs.softening_unit)
 

@@ -71,7 +71,7 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models.translator import Translator
 from pyomo.network import Arc
 
-from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.util import solve_block, check_dof
 
 from watertap.examples.flowsheets.full_treatment_train.electrolyte_scaling_utils import (
     approximate_chemical_state_args,
@@ -172,7 +172,6 @@ def build_0DRO_Chlorination_flowsheet(model, mg_per_L_NaOCl_added=0, RO_level='d
     model.fs.RO_to_Chlor.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
 
     iscale.calculate_scaling_factors(model.fs.RO_to_Chlor)
-    iscale.constraint_autoscale_large_jac(model.fs.RO_to_Chlor)
 
     state_args, stoich_extents = approximate_chemical_state_args(model.fs.simple_naocl_unit,
                                 model.fs.simple_naocl_rxn_params, simple_naocl_reaction_config)
@@ -216,27 +215,18 @@ def run_0DRO_Chlorination_flowsheet_example(with_seq_decomp=True, RO_level='deta
     # Manually initialize the blocks sequentially
     else:
         propagate_state(model.fs.S1)
-        model.fs.RO_to_Chlor.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
+        model.fs.RO_to_Chlor.initialize()
         propagate_state(model.fs.S2)
 
         # Use propogated state (which updated chlorination unit inlet port) to initialize
-        model.fs.simple_naocl_unit.initialize(optarg={'nlp_scaling_method': 'user-scaling',
-                                     'bound_push': 1e-10,
-                                     'mu_init': 1e-6})
-
-        # Recall the auto scaling after initialization
-        ##  NOTE: There is a bug in the autoscaling or RO unit which does not allow
-        #           us to use autoscaling on that unit if using the 'detailed' version
-        #iscale.constraint_autoscale_large_jac(model.fs.RO)
-        iscale.constraint_autoscale_large_jac(model.fs.simple_naocl_unit)
-        iscale.constraint_autoscale_large_jac(model.fs.RO_to_Chlor)
+        model.fs.simple_naocl_unit.initialize()
 
     #End manual seq decomp
 
     model.fs.simple_naocl_unit.free_chlorine.fix(2)
     model.fs.RO_to_Chlor.OCl_con.deactivate()
 
-    solve_with_user_scaling(model, tee=True, bound_push=1e-5, mu_init=1e-3)
+    solve_block(model, tee=True)
 
     model.fs.RO.inlet.display()
     model.fs.RO.permeate.display()
@@ -282,16 +272,7 @@ def run_0DRO_Chlorination_flowsheet_optimization_example(with_seq_decomp=True, R
     # Add an objective function (something to minimize)
     model.fs.objective = Objective(expr=model.fs.simple_naocl_unit.dosing_rate*10 + model.fs.RO.area*1)
 
-    iscale.constraint_autoscale_large_jac(model.fs.simple_naocl_unit)
-    iscale.constraint_autoscale_large_jac(model.fs.RO_to_Chlor)
-
-    #   Can't use this tool because of issues in detailed RO
-    try:
-        iscale.constraint_autoscale_large_jac(model)
-    except:
-        pass
-
-    solve_with_user_scaling(model, tee=True, bound_push=1e-5, mu_init=1e-3)
+    solve_block(model, tee=True)
 
     model.fs.RO.area.display()
     model.fs.RO.permeate_side.properties_mixed[0].flow_vol.display()

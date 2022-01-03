@@ -54,7 +54,7 @@ from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from pyomo.util.check_units import assert_units_consistent
 
 
-from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.util import solve_block, check_dof
 from idaes.core.util import get_solver
 
 # Import the idaes objects for Generic Properties and Reactions
@@ -378,10 +378,6 @@ def build_simple_naocl_chlorination_unit(model,
             "has_heat_of_reaction": False,
             "has_pressure_change": False})
 
-    model.fs.simple_naocl_unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
-    model.fs.simple_naocl_unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0.001)
-    model.fs.simple_naocl_unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1.001)
-
     model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "H_+"].fix( 0. )
     model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "OH_-"].fix( 0. )
     model.fs.simple_naocl_unit.inlet.mole_frac_comp[0, "HOCl"].fix( 0. )
@@ -434,19 +430,13 @@ def build_simple_naocl_chlorination_unit(model,
                                     * 70900
     model.fs.simple_naocl_unit.chlorine_cons = Constraint( rule=_free_chlorine_cons )
 
-def initialize_chlorination_example(unit, state_args, user_scaling=True, debug_out=False):
-    solver.options['bound_push'] = 1e-10
-    solver.options['mu_init'] = 1e-6
-
-    if user_scaling == True:
-        solver.options["nlp_scaling_method"] = "user-scaling"
-
+def initialize_chlorination_example(unit, state_args, debug_out=False):
     unit.inlet.mole_frac_comp[0, "OCl_-"].fix()
     unit.free_chlorine.fix()
     unit.chlorine_cons.deactivate()
     unit.dosing_cons.deactivate()
 
-    if debug_out == True:
+    if debug_out:
         unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
     else:
         unit.initialize(state_args=state_args, optarg=solver.options)
@@ -455,8 +445,6 @@ def initialize_chlorination_example(unit, state_args, user_scaling=True, debug_o
     unit.free_chlorine.unfix()
     unit.chlorine_cons.activate()
     unit.dosing_cons.activate()
-
-    iscale.constraint_autoscale_large_jac(unit)
 
 def display_results_of_chlorination(chlorination_unit):
     print()
@@ -497,7 +485,7 @@ def run_chlorination_example():
 
     initialize_chlorination_example(model.fs.simple_naocl_unit, state_args)
 
-    solve_with_user_scaling(model, tee=True, bound_push=1e-1, mu_init=1e-1)
+    solve_block(model, tee=True)
 
     display_results_of_chlorination(model.fs.simple_naocl_unit)
 
@@ -524,8 +512,7 @@ def run_chlorination_constrained_outlet_example():
     model.fs.simple_naocl_unit.dosing_rate.unfix()
     model.fs.simple_naocl_unit.free_chlorine.fix(2)
 
-    # After intialized, setup model with higher bound push (when solving in opt mode)
-    solve_with_user_scaling(model, tee=True, bound_push=1e-1, mu_init=1e-1)
+    solve_block(model, tee=True)
 
     display_results_of_chlorination(model.fs.simple_naocl_unit)
 
