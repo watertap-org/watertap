@@ -34,6 +34,7 @@ from pyomo.util.check_units import assert_units_consistent
 from watertap.core.zero_order_sito import SITOBaseData
 from watertap.core.zero_order_properties import \
     WaterParameterBlock, WaterStateBlock
+import idaes.logger as idaeslog
 
 solver = get_solver()
 
@@ -137,7 +138,11 @@ class TestSITOConfigurationErrors:
             model.fs.unit.load_parameters_from_database()
 
     @pytest.mark.unit
-    def test_set_param_from_data(self, model):
+    def test_set_param_from_data(self, model, caplog):
+        caplog.set_level(idaeslog.DEBUG, logger="watertap")
+        log = idaeslog.getLogger("idaes.watertap.core.zero_order_sito")
+        log.setLevel(idaeslog.DEBUG)
+
         model.fs.params.phase_list = ["Liq"]
         model.fs.params.solvent_set = ["H2O"]
         model.fs.params.solute_set = ["A", "B", "C"]
@@ -152,6 +157,9 @@ class TestSITOConfigurationErrors:
 
         assert model.fs.unit.recovery_vol[0].value == 0.42
         assert model.fs.unit.recovery_vol[0].fixed
+
+        assert ("fs.unit.recovery_vol fixed to value 0.42 dimensionless" in
+                caplog.text)
 
     @pytest.mark.unit
     def test_set_param_from_data_no_entry(self, model):
@@ -867,3 +875,37 @@ class TestNoPressureChangeByproduct:
                               model.fs.unit.byproduct.flow_vol[0] *
                               model.fs.unit.byproduct.conc_mass_comp[0, j]))
                     <= 1e-6)
+
+    @pytest.mark.component
+    def test_report(self, model, capsys):
+        model.fs.unit.report()
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                : Value   : Fixed : Bounds
+     Delta P - Treated :  1000.0 :  True : (None, None)
+    Solute Removal [A] : 0.10000 :  True : (0, None)
+    Solute Removal [B] : 0.20000 :  True : (0, None)
+    Solute Removal [C] : 0.30000 :  True : (0, None)
+        Water Recovery : 0.80000 :  True : (1e-08, 1.0000001)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                            Inlet     Treated   Byproduct
+    Volumetric Flowrate      42.000     33.600     8.4000
+    Mass Concentration A     10.000     11.250     5.0000
+    Mass Concentration B     20.000     20.000     20.000
+    Mass Concentration C     30.000     26.250     45.000
+    Temperature              303.15     303.15     303.15
+    Pressure             1.5000e+05 1.5100e+05 1.5000e+05
+====================================================================================
+"""
+
+        captured = capsys.readouterr()
+        assert output in captured.out

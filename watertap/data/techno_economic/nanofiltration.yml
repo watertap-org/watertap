@@ -76,15 +76,11 @@ default:
       constituent_longform: Total Suspended Solids (TSS)
       units: kg/kg
       value: 0.97
-    ultraviolet_transmittance_uvt:
-      constituent_longform: Ultraviolet Transmittance (UVT)
-      units: '%'
-      value: 90.0
   electricity_intensity:
     units: kWh/m^3
     value: 0.231344952
   recovery_vol:
-    reference: Based on Vogtle case study data. No costs for WT3 treatment.
+    reference: Based on Vogtle case study data.
     units: m^3/m^3
     value: 0.85
   default_removal_mass_solute:

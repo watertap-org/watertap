@@ -20,12 +20,16 @@ import idaes.logger as idaeslog
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.tables import create_stream_table_dataframe
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.environ import NonNegativeReals, Var, units as pyunits
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 class SITOBaseData(UnitModelBlockData):
@@ -443,3 +447,24 @@ class SITOBaseData(UnitModelBlockData):
                 f"{index}) in database.")
 
         parameter.fix(val*units)
+        _log.info_high(f"{parameter.name} fixed to value {val} {str(units)}")
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {"Inlet": self.inlet,
+             "Treated": self.treated,
+             "Byproduct": self.byproduct},
+            time_point=time_point)
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {"Water Recovery": self.recovery_vol[time_point]}
+        for (t, j), v in self.removal_mass_solute.items():
+            if t == time_point:
+                var_dict[f"Solute Removal [{j}]"] = v
+
+        if self._has_deltaP_treated:
+            var_dict["Delta P - Treated"] = self.deltaP_treated[time_point]
+        if self._has_deltaP_byproduct:
+            var_dict["Delta P - Byproduct"] = self.deltaP_byproduct[time_point]
+
+        return {"vars": var_dict}

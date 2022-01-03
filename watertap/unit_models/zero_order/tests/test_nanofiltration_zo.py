@@ -299,3 +299,42 @@ class TestNFZO_w_default_removal:
                 model.fs.unit.treated.conc_mass_comp[0, j] -
                 model.fs.unit.byproduct.flow_vol[0] *
                 model.fs.unit.byproduct.conc_mass_comp[0, j]))
+
+    @pytest.mark.component
+    def test_report(self, model, capsys):
+        model.fs.unit.report()
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                     : Value   : Fixed : Bounds
+        Delta P - Byproduct :  0.0000 :  True : (None, None)
+          Delta P - Treated :  0.0000 :  True : (None, None)
+         Electricity Demand :  8328.4 : False : (None, None)
+      Electricity Intensity : 0.23134 :  True : (None, None)
+       Solute Removal [foo] :  0.0000 :  True : (0, None)
+    Solute Removal [sulfur] : 0.97000 :  True : (0, None)
+       Solute Removal [toc] : 0.75000 :  True : (0, None)
+       Solute Removal [tss] : 0.97000 :  True : (0, None)
+             Water Recovery : 0.85000 :  True : (1e-08, 1.0000001)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                 Inlet     Treated   Byproduct
+    Volumetric Flowrate           10.000     8.5000     1.5000
+    Mass Concentration sulfur     1.0000   0.035294     6.4667
+    Mass Concentration toc        2.0000    0.58824     10.000
+    Mass Concentration tss        3.0000    0.10588     19.400
+    Mass Concentration foo        4.0000     4.7059 9.9000e-07
+    Temperature                   300.00     300.00     300.00
+    Pressure                  1.0000e+05 1.0000e+05 1.0000e+05
+====================================================================================
+"""
+
+        captured = capsys.readouterr()
+        assert output in captured.out
