@@ -72,6 +72,10 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         default={},
         domain=dict,
         description="Dict of component names and component density data"))
+    CONFIG.declare("charge", ConfigValue(
+        default={},
+        domain=dict,
+        description="Ion charge"))
 
     def build(self):
         '''
@@ -121,6 +125,13 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             units=pyunits.m,
             doc="Stokes radius of solute")
 
+        self.charge_comp = Param(
+            self.solute_set,
+            mutable=True,
+            initialize=extract_data(self.config.charge),
+            units=pyunits.dimensionless,
+            doc="Ion charge")
+
 
         # ---default scaling---
         self.set_default_scaling('temperature', 1e-2)
@@ -152,7 +163,9 @@ class DSPMDEParameterData(PhysicalParameterBlock):
              # 'osm_coeff': {'method': '_osm_coeff'},
              # 'pressure_osm': {'method': '_pressure_osm'},
              'radius_stokes_comp': {'method': '_radius_stokes_comp'},
-             'mw_comp': {'method': '_mw_comp'}
+             'mw_comp': {'method': '_mw_comp'},
+             'dens_mass_comp': {'method': '_dens_mass_comp'},
+             'charge_comp': {'method': '_charge_comp'}
              # 'enth_mass_phase': {'method': '_enth_mass_phase'},
              # 'enth_flow': {'method': '_enth_flow'}
              })
@@ -360,7 +373,8 @@ class _DSPMDEStateBlock(StateBlock):
 
         return results
 
-@declare_process_block_class("DSPMDEStateBlock")
+@declare_process_block_class("DSPMDEStateBlock",
+                             block_class=_DSPMDEStateBlock)
 class DSPMDEStateBlockData(StateBlockData):
     def build(self):
         """Callable method for Block construction."""
@@ -392,6 +406,10 @@ class DSPMDEStateBlockData(StateBlockData):
             units=pyunits.Pa,
             doc='State pressure')
 
+        def rule_electroneutrality(b):
+            return sum(b.charge_comp[j] * b.flow_mol_phase_comp['Liq', j] for j in b.params.solute_set) == 0
+
+        self.eq_electroneutrality = Constraint(rule=rule_electroneutrality)
     # -----------------------------------------------------------------------------
     # Property Methods
     def _mass_frac_phase_comp(self):
@@ -507,6 +525,18 @@ class DSPMDEStateBlockData(StateBlockData):
     def _diffus_phase_comp(self):
         add_object_reference(self, "diffus_phase_comp", self.params.diffus_phase_comp)
 
+    def _mw_comp(self):
+        add_object_reference(self, "mw_comp", self.params.mw_comp)
+
+    def _dens_mass_comp(self):
+        add_object_reference(self, "dens_mass_comp", self.params.dens_mass_comp)
+
+    def _charge_comp(self):
+        add_object_reference(self, "charge_comp", self.params.charge_comp)
+
+
+
+
     #TODO: change osmotic pressure calc
 
     # def _pressure_osm(self):
@@ -527,6 +557,8 @@ class DSPMDEStateBlockData(StateBlockData):
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must
     # return a pyomo Var or Expression
+
+
 
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
@@ -549,7 +581,7 @@ class DSPMDEStateBlockData(StateBlockData):
     # def default_energy_balance_type(self):
     #     return EnergyBalanceType.enthalpyTotal
 
-    def get_material_flow_basis(b):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.molar
 
     def define_state_vars(self):
@@ -571,13 +603,14 @@ class DSPMDEStateBlockData(StateBlockData):
         # temperature, dens_mass, visc_d, diffus, osm_coeff, and enth_mass
 
         # these variables should have user input
-        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'], default=1e0, warning=True)
-            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'], sf)
+        if iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O']) is None:
+            sf = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O'], default=1e0, warning=True)
+            iscale.set_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O'], sf)
 
-        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'NaCl']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'NaCl'], default=1e2, warning=True)
-            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'NaCl'], sf)
+        # for j in self.config.solute_list:
+        #     if iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j]) is None:
+        #         sf = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j], default=1e2, warning=True)
+        #         iscale.set_scaling_factor(self.flow_mol_phase_comp['Liq', 'NaCl'], sf)
 
         # scaling factors for parameters
         for j, v in self.params.mw_comp.items():
@@ -625,8 +658,8 @@ class DSPMDEStateBlockData(StateBlockData):
         if self.is_property_constructed('flow_mol_phase_comp'):
             for j in self.params.component_list:
                 if iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j]) is None:
-                    sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', j])
-                    sf *= iscale.get_scaling_factor(self.params.mw_comp[j])
+                    sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', j], default=1)
+                    sf *= iscale.get_scaling_factor(self.params.mw_comp[j], default=1/self.params.mw_comp[j])
                     iscale.set_scaling_factor(self.flow_mol_phase_comp['Liq', j], sf)
 
         if self.is_property_constructed('mole_frac_phase_comp'):
