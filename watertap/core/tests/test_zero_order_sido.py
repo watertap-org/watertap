@@ -31,7 +31,7 @@ from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
 
-from watertap.core.zero_order_sito import SITOBaseData
+from watertap.core.zero_order_sido import SIDOBaseData
 from watertap.core.zero_order_properties import \
     WaterParameterBlock, WaterStateBlock
 import idaes.logger as idaeslog
@@ -39,7 +39,7 @@ import idaes.logger as idaeslog
 solver = get_solver()
 
 
-class TestSITOConfigurationErrors:
+class TestSIDOConfigurationErrors:
     @pytest.fixture
     def model(self):
         m = ConcreteModel()
@@ -54,8 +54,8 @@ class TestSITOConfigurationErrors:
 
         return m
 
-    @declare_process_block_class("DerivedSITO0")
-    class DerivedSITOData0(SITOBaseData):
+    @declare_process_block_class("DerivedSIDO0")
+    class DerivedSIDOData0(SIDOBaseData):
         def build(self):
             self._has_deltaP_treated = True
             self._has_deltaP_byproduct = True
@@ -69,7 +69,7 @@ class TestSITOConfigurationErrors:
                            match="fs.unit configured with invalid property "
                            "package. Zero-order models only support property "
                            "packages with a single phase named 'Liq'."):
-            model.fs.unit = DerivedSITO0(
+            model.fs.unit = DerivedSIDO0(
                 default={"property_package": model.fs.params})
 
     @pytest.mark.unit
@@ -81,7 +81,7 @@ class TestSITOConfigurationErrors:
                            "package. Zero-order models only support property "
                            "packages which include 'H2O' as the only Solvent."
                            ):
-            model.fs.unit = DerivedSITO0(
+            model.fs.unit = DerivedSIDO0(
                 default={"property_package": model.fs.params})
 
     @pytest.mark.unit
@@ -94,7 +94,7 @@ class TestSITOConfigurationErrors:
                            "package. Zero-order models only support property "
                            "packages which include 'H2O' as the only Solvent."
                            ):
-            model.fs.unit = DerivedSITO0(
+            model.fs.unit = DerivedSIDO0(
                 default={"property_package": model.fs.params})
 
     @pytest.mark.unit
@@ -107,7 +107,7 @@ class TestSITOConfigurationErrors:
                            "package. Zero-order models require property "
                            "packages to declare all dissolved species as "
                            "Solutes."):
-            model.fs.unit = DerivedSITO0(
+            model.fs.unit = DerivedSIDO0(
                 default={"property_package": model.fs.params})
 
     @pytest.mark.unit
@@ -121,7 +121,7 @@ class TestSITOConfigurationErrors:
                            match="fs.unit configured with invalid property "
                            "package. Zero-order models only support `H2O` as "
                            "a solvent and all other species as Solutes."):
-            model.fs.unit = DerivedSITO0(
+            model.fs.unit = DerivedSIDO0(
                 default={"property_package": model.fs.params})
 
     @pytest.mark.unit
@@ -131,7 +131,7 @@ class TestSITOConfigurationErrors:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedSITO0(
+        model.fs.unit = DerivedSIDO0(
             default={"property_package": model.fs.params})
 
         with pytest.raises(NotImplementedError):
@@ -140,7 +140,7 @@ class TestSITOConfigurationErrors:
     @pytest.mark.unit
     def test_set_param_from_data(self, model, caplog):
         caplog.set_level(idaeslog.DEBUG, logger="watertap")
-        log = idaeslog.getLogger("idaes.watertap.core.zero_order_sito")
+        log = idaeslog.getLogger("idaes.watertap.core.zero_order_sido")
         log.setLevel(idaeslog.DEBUG)
 
         model.fs.params.phase_list = ["Liq"]
@@ -148,7 +148,7 @@ class TestSITOConfigurationErrors:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedSITO0(
+        model.fs.unit = DerivedSIDO0(
             default={"property_package": model.fs.params})
 
         model.fs.unit.set_param_from_data(
@@ -168,7 +168,7 @@ class TestSITOConfigurationErrors:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedSITO0(
+        model.fs.unit = DerivedSIDO0(
             default={"property_package": model.fs.params})
 
         with pytest.raises(KeyError,
@@ -184,7 +184,7 @@ class TestSITOConfigurationErrors:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedSITO0(
+        model.fs.unit = DerivedSIDO0(
             default={"property_package": model.fs.params})
 
         with pytest.raises(KeyError,
@@ -201,7 +201,7 @@ class TestSITOConfigurationErrors:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedSITO0(
+        model.fs.unit = DerivedSIDO0(
             default={"property_package": model.fs.params})
 
         with pytest.raises(KeyError,
@@ -218,7 +218,7 @@ class TestSITOConfigurationErrors:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedSITO0(
+        model.fs.unit = DerivedSIDO0(
             default={"property_package": model.fs.params})
 
         model.fs.unit.set_param_from_data(
@@ -237,7 +237,7 @@ class TestSITOConfigurationErrors:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedSITO0(
+        model.fs.unit = DerivedSIDO0(
             default={"property_package": model.fs.params})
 
         with pytest.raises(KeyError,
@@ -256,7 +256,7 @@ class TestSITOConfigurationErrors:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedSITO0(
+        model.fs.unit = DerivedSIDO0(
             default={"property_package": model.fs.params})
 
         model.fs.unit.test = Var()
@@ -278,7 +278,7 @@ class TestSITOConfigurationErrors:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedSITO0(
+        model.fs.unit = DerivedSIDO0(
             default={"property_package": model.fs.params})
 
         model.fs.unit.set_param_from_data(
@@ -300,7 +300,7 @@ class TestSITOConfigurationErrors:
         model.fs.params.solute_set = ["A", "B", "C"]
         model.fs.params.component_list = ["H2O", "A", "B", "C"]
 
-        model.fs.unit = DerivedSITO0(
+        model.fs.unit = DerivedSIDO0(
             default={"property_package": model.fs.params})
 
         with pytest.raises(KeyError,
@@ -318,8 +318,8 @@ class TestSITOConfigurationErrors:
 
 @pytest.mark.unit
 def test_no_has_deltaP_treated():
-    @declare_process_block_class("DerivedSITO1")
-    class DerivedSITOData1(SITOBaseData):
+    @declare_process_block_class("DerivedSIDO1")
+    class DerivedSIDOData1(SIDOBaseData):
         def build(self):
             self._has_deltaP_byproduct = True
             super().build()
@@ -334,14 +334,14 @@ def test_no_has_deltaP_treated():
     with pytest.raises(NotImplementedError,
                        match="fs.unit derived class has not been implemented "
                        "_has_deltaP_treated."):
-        m.fs.unit = DerivedSITO1(
+        m.fs.unit = DerivedSIDO1(
             default={"property_package": m.fs.water_props})
 
 
 @pytest.mark.unit
 def test_no_has_deltaP_byproduct():
-    @declare_process_block_class("DerivedSITO2")
-    class DerivedSITOData2(SITOBaseData):
+    @declare_process_block_class("DerivedSIDO2")
+    class DerivedSIDOData2(SIDOBaseData):
         def build(self):
             self._has_deltaP_treated = True
             super().build()
@@ -356,14 +356,14 @@ def test_no_has_deltaP_byproduct():
     with pytest.raises(NotImplementedError,
                        match="fs.unit derived class has not been implemented "
                        "_has_deltaP_byproduct."):
-        m.fs.unit = DerivedSITO2(
+        m.fs.unit = DerivedSIDO2(
             default={"property_package": m.fs.water_props})
 
 
 class TestPressureChange:
 
-    @declare_process_block_class("DerivedSITO3")
-    class DerivedSITOData3(SITOBaseData):
+    @declare_process_block_class("DerivedSIDO3")
+    class DerivedSIDOData3(SIDOBaseData):
         def build(self):
             self._has_deltaP_treated = True
             self._has_deltaP_byproduct = True
@@ -378,7 +378,7 @@ class TestPressureChange:
         m.fs.water_props = WaterParameterBlock(
             default={"solute_list": ["A", "B", "C"]})
 
-        m.fs.unit = DerivedSITO3(
+        m.fs.unit = DerivedSIDO3(
             default={"property_package": m.fs.water_props})
 
         m.fs.unit.inlet.flow_vol.fix(42)
@@ -535,8 +535,8 @@ class TestPressureChange:
 
 class TestNoPressureChangeTreated:
 
-    @declare_process_block_class("DerivedSITO4")
-    class DerivedSITOData4(SITOBaseData):
+    @declare_process_block_class("DerivedSIDO4")
+    class DerivedSIDOData4(SIDOBaseData):
         def build(self):
             self._has_deltaP_treated = False
             self._has_deltaP_byproduct = True
@@ -551,7 +551,7 @@ class TestNoPressureChangeTreated:
         m.fs.water_props = WaterParameterBlock(
             default={"solute_list": ["A", "B", "C"]})
 
-        m.fs.unit = DerivedSITO4(
+        m.fs.unit = DerivedSIDO4(
             default={"property_package": m.fs.water_props})
 
         m.fs.unit.inlet.flow_vol.fix(42)
@@ -707,8 +707,8 @@ class TestNoPressureChangeTreated:
 
 class TestNoPressureChangeByproduct:
 
-    @declare_process_block_class("DerivedSITO5")
-    class DerivedSITOData5(SITOBaseData):
+    @declare_process_block_class("DerivedSIDO5")
+    class DerivedSIDOData5(SIDOBaseData):
         def build(self):
             self._has_deltaP_treated = True
             self._has_deltaP_byproduct = False
@@ -723,7 +723,7 @@ class TestNoPressureChangeByproduct:
         m.fs.water_props = WaterParameterBlock(
             default={"solute_list": ["A", "B", "C"]})
 
-        m.fs.unit = DerivedSITO5(
+        m.fs.unit = DerivedSIDO5(
             default={"property_package": m.fs.water_props})
 
         m.fs.unit.inlet.flow_vol.fix(42)

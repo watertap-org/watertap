@@ -11,8 +11,8 @@
 #
 ###############################################################################
 """
-This module contains the base class for all zero order single inlet-two outlet
-(SITO) unit models.
+This module contains the base class for all zero order single inlet-double
+outlet (SIDO) unit models.
 """
 from idaes.core import UnitModelBlockData, useDefault
 from idaes.core.util.config import is_physical_parameter_block
@@ -32,9 +32,9 @@ __author__ = "Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 
-class SITOBaseData(UnitModelBlockData):
+class SIDOBaseData(UnitModelBlockData):
     """
-    Standard base class for single inlet-two outlet unit models.
+    Standard base class for single inlet-double outlet unit models.
 
     This class is intended to be used for creating derived model classes and
     cannot be instantiated by itself. When creating derived classes,

@@ -18,19 +18,19 @@ operation.
 from pyomo.environ import Constraint, units as pyunits, Var
 from idaes.core import declare_process_block_class
 
-from watertap.core.zero_order_sito import SITOBaseData
+from watertap.core.zero_order_sido import SIDOBaseData
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
 
 
 @declare_process_block_class("NanofiltrationZO")
-class NanofiltrationZOData(SITOBaseData):
+class NanofiltrationZOData(SIDOBaseData):
     """
     Zero-Order model for a Nanofiltration unit operation.
     """
 
-    CONFIG = SITOBaseData.CONFIG()
+    CONFIG = SIDOBaseData.CONFIG()
 
     def build(self):
         self._has_deltaP_treated = True
