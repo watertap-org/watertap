@@ -80,16 +80,6 @@ class SIDOBaseData(UnitModelBlockData):
     def build(self):
         super().build()
 
-        # Check that derived class has implemented flags for pressure change
-        if not hasattr(self, "_has_deltaP_treated"):
-            raise NotImplementedError(
-                f"{self.name} derived class has not been implemented "
-                f"_has_deltaP_treated.")
-        if not hasattr(self, "_has_deltaP_byproduct"):
-            raise NotImplementedError(
-                f"{self.name} derived class has not been implemented "
-                f"_has_deltaP_byproduct.")
-
         # Check that property package meets requirements
         if self.config.property_package.phase_list != ["Liq"]:
             raise ConfigurationError(
@@ -167,19 +157,6 @@ class SIDOBaseData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc='Solute removal fraction on a mass basis')
 
-        if self._has_deltaP_treated:
-            self.deltaP_treated = Var(
-                self.flowsheet().time,
-                initialize=0,
-                units=units_meta('pressure'),
-                doc='Pressure change between inlet and treated outlet')
-        if self._has_deltaP_byproduct:
-            self.deltaP_byproduct = Var(
-                self.flowsheet().time,
-                initialize=0,
-                units=units_meta('pressure'),
-                doc='Pressure change between inlet and byproduct outlet')
-
         # Add performance constraints
         # Water recovery
         @self.Constraint(self.flowsheet().time, doc='Water recovery equation')
@@ -214,40 +191,6 @@ class SIDOBaseData(UnitModelBlockData):
                     b.properties_in[t].conc_mass_comp[j] ==
                     b.recovery_vol[t] *
                     b.properties_treated[t].conc_mass_comp[j])
-
-        # Pressure drop
-        @self.Constraint(self.flowsheet().time,
-                         doc='Treated stream pressure equation')
-        def treated_pressure_constraint(b, t):
-            if self._has_deltaP_treated:
-                dp = b.deltaP_treated[t]
-            else:
-                dp = 0
-            return (b.properties_in[t].pressure + dp ==
-                    b.properties_treated[t].pressure)
-
-        @self.Constraint(self.flowsheet().time,
-                         doc='Byproduct stream pressure equation')
-        def byproduct_pressure_constraint(b, t):
-            if self._has_deltaP_byproduct:
-                dp = b.deltaP_byproduct[t]
-            else:
-                dp = 0
-            return (b.properties_in[t].pressure + dp ==
-                    b.properties_byproduct[t].pressure)
-
-        # Temperature equality
-        @self.Constraint(self.flowsheet().time,
-                         doc='Treated stream temperature equality')
-        def treated_temperature_equality(b, t):
-            return (b.properties_in[t].temperature ==
-                    b.properties_treated[t].temperature)
-
-        @self.Constraint(self.flowsheet().time,
-                         doc='Byproduct stream temperature equality')
-        def byproduct_temperature_equality(b, t):
-            return (b.properties_in[t].temperature ==
-                    b.properties_byproduct[t].temperature)
 
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
@@ -369,36 +312,6 @@ class SIDOBaseData(UnitModelBlockData):
                     default=1,
                     warning=False))  # would just be a duplicate of above
 
-        for t, v in self.treated_pressure_constraint.items():
-            iscale.constraint_scaling_transform(
-                v, iscale.get_scaling_factor(
-                    self.properties_in[t].pressure,
-                    default=1e-5,
-                    warning=True,
-                    hint=" for treated pressure constraint"))
-
-        for t, v in self.byproduct_pressure_constraint.items():
-            iscale.constraint_scaling_transform(
-                v, iscale.get_scaling_factor(
-                    self.properties_in[t].pressure,
-                    default=1e-5,
-                    warning=False))  # would just be a duplicate of above
-
-        for t, v in self.treated_temperature_equality.items():
-            iscale.constraint_scaling_transform(
-                v, iscale.get_scaling_factor(
-                    self.properties_in[t].temperature,
-                    default=1e-2,
-                    warning=True,
-                    hint=" for treated temperature equality"))
-
-        for t, v in self.byproduct_temperature_equality.items():
-            iscale.constraint_scaling_transform(
-                v, iscale.get_scaling_factor(
-                    self.properties_in[t].temperature,
-                    default=1e-2,
-                    warning=False))  # would just be a duplicate of above
-
     def load_parameters_from_database(self):
         raise NotImplementedError()
 
@@ -461,10 +374,5 @@ class SIDOBaseData(UnitModelBlockData):
         for (t, j), v in self.removal_mass_solute.items():
             if t == time_point:
                 var_dict[f"Solute Removal [{j}]"] = v
-
-        if self._has_deltaP_treated:
-            var_dict["Delta P - Treated"] = self.deltaP_treated[time_point]
-        if self._has_deltaP_byproduct:
-            var_dict["Delta P - Byproduct"] = self.deltaP_byproduct[time_point]
 
         return {"vars": var_dict}

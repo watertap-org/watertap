@@ -33,9 +33,6 @@ class NanofiltrationZOData(SIDOBaseData):
     CONFIG = SIDOBaseData.CONFIG()
 
     def build(self):
-        self._has_deltaP_treated = True
-        self._has_deltaP_byproduct = True
-
         super().build()
 
         # Add electricity consumption to model
@@ -68,10 +65,6 @@ class NanofiltrationZOData(SIDOBaseData):
                 pdict,
                 index=j,
                 use_default_removal=use_default_removal)
-
-        # TODO: Do not have parameters for these yet - need to add to datafile
-        self.deltaP_treated.fix(0)
-        self.deltaP_byproduct.fix(0)
 
     def _get_performance_contents(self, time_point=0):
         perf_dict = super()._get_performance_contents(time_point=0)

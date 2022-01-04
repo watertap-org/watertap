@@ -49,8 +49,6 @@ class TestNFZO:
         m.fs.unit.inlet.conc_mass_comp[0, "sulfur"].fix(1)
         m.fs.unit.inlet.conc_mass_comp[0, "toc"].fix(2)
         m.fs.unit.inlet.conc_mass_comp[0, "tss"].fix(3)
-        m.fs.unit.inlet.pressure.fix(1e5)
-        m.fs.unit.inlet.temperature.fix(300)
 
         return m
 
@@ -60,8 +58,6 @@ class TestNFZO:
 
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.electricity_intensity, Var)
-        assert isinstance(model.fs.unit.deltaP_treated, Var)
-        assert isinstance(model.fs.unit.deltaP_byproduct, Var)
 
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
 
@@ -82,11 +78,6 @@ class TestNFZO:
         assert model.fs.unit.electricity_intensity.fixed
         assert model.fs.unit.electricity_intensity.value == data[
             "electricity_intensity"]["value"]
-
-        assert model.fs.unit.deltaP_treated[0].fixed
-        assert model.fs.unit.deltaP_treated[0].value == 0
-        assert model.fs.unit.deltaP_byproduct[0].fixed
-        assert model.fs.unit.deltaP_byproduct[0].value == 0
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -123,10 +114,6 @@ class TestNFZO:
                 value(model.fs.unit.treated.conc_mass_comp[0, "toc"]))
         assert (pytest.approx(0.105882, rel=1e-5) ==
                 value(model.fs.unit.treated.conc_mass_comp[0, "tss"]))
-        assert (pytest.approx(1e5, rel=1e-5) ==
-                value(model.fs.unit.treated.pressure[0]))
-        assert (pytest.approx(300, rel=1e-5) ==
-                value(model.fs.unit.treated.temperature[0]))
 
         assert (pytest.approx(1.5, rel=1e-5) ==
                 value(model.fs.unit.byproduct.flow_vol[0]))
@@ -136,10 +123,6 @@ class TestNFZO:
                 value(model.fs.unit.byproduct.conc_mass_comp[0, "toc"]))
         assert (pytest.approx(19.4, rel=1e-5) ==
                 value(model.fs.unit.byproduct.conc_mass_comp[0, "tss"]))
-        assert (pytest.approx(1e5, rel=1e-5) ==
-                value(model.fs.unit.byproduct.pressure[0]))
-        assert (pytest.approx(300, rel=1e-5) ==
-                value(model.fs.unit.byproduct.temperature[0]))
 
         assert (pytest.approx(10*0.231344952*3600, rel=1e-5) ==
                 value(model.fs.unit.electricity[0]))
@@ -181,8 +164,6 @@ class TestNFZO_w_default_removal:
         m.fs.unit.inlet.conc_mass_comp[0, "toc"].fix(2)
         m.fs.unit.inlet.conc_mass_comp[0, "tss"].fix(3)
         m.fs.unit.inlet.conc_mass_comp[0, "foo"].fix(4)
-        m.fs.unit.inlet.pressure.fix(1e5)
-        m.fs.unit.inlet.temperature.fix(300)
 
         return m
 
@@ -192,8 +173,6 @@ class TestNFZO_w_default_removal:
 
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.electricity_intensity, Var)
-        assert isinstance(model.fs.unit.deltaP_treated, Var)
-        assert isinstance(model.fs.unit.deltaP_byproduct, Var)
 
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
 
@@ -217,11 +196,6 @@ class TestNFZO_w_default_removal:
         assert model.fs.unit.electricity_intensity.fixed
         assert model.fs.unit.electricity_intensity.value == data[
             "electricity_intensity"]["value"]
-
-        assert model.fs.unit.deltaP_treated[0].fixed
-        assert model.fs.unit.deltaP_treated[0].value == 0
-        assert model.fs.unit.deltaP_byproduct[0].fixed
-        assert model.fs.unit.deltaP_byproduct[0].value == 0
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -260,10 +234,6 @@ class TestNFZO_w_default_removal:
                 value(model.fs.unit.treated.conc_mass_comp[0, "tss"]))
         assert (pytest.approx(4.70588, rel=1e-5) ==
                 value(model.fs.unit.treated.conc_mass_comp[0, "foo"]))
-        assert (pytest.approx(1e5, rel=1e-5) ==
-                value(model.fs.unit.treated.pressure[0]))
-        assert (pytest.approx(300, rel=1e-5) ==
-                value(model.fs.unit.treated.temperature[0]))
 
         assert (pytest.approx(1.5, rel=1e-5) ==
                 value(model.fs.unit.byproduct.flow_vol[0]))
@@ -275,10 +245,6 @@ class TestNFZO_w_default_removal:
                 value(model.fs.unit.byproduct.conc_mass_comp[0, "tss"]))
         assert (pytest.approx(0, abs=1e-5) ==
                 value(model.fs.unit.byproduct.conc_mass_comp[0, "foo"]))
-        assert (pytest.approx(1e5, rel=1e-5) ==
-                value(model.fs.unit.byproduct.pressure[0]))
-        assert (pytest.approx(300, rel=1e-5) ==
-                value(model.fs.unit.byproduct.temperature[0]))
 
         assert (pytest.approx(10*0.231344952*3600, rel=1e-5) ==
                 value(model.fs.unit.electricity[0]))
@@ -313,8 +279,6 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                     : Value   : Fixed : Bounds
-        Delta P - Byproduct :  0.0000 :  True : (None, None)
-          Delta P - Treated :  0.0000 :  True : (None, None)
          Electricity Demand :  8328.4 : False : (None, None)
       Electricity Intensity : 0.23134 :  True : (None, None)
        Solute Removal [foo] :  0.0000 :  True : (0, None)
@@ -325,14 +289,12 @@ Unit : fs.unit                                                             Time:
 
 ------------------------------------------------------------------------------------
     Stream Table
-                                 Inlet     Treated   Byproduct
-    Volumetric Flowrate           10.000     8.5000     1.5000
-    Mass Concentration sulfur     1.0000   0.035294     6.4667
-    Mass Concentration toc        2.0000    0.58824     10.000
-    Mass Concentration tss        3.0000    0.10588     19.400
-    Mass Concentration foo        4.0000     4.7059 9.9000e-07
-    Temperature                   300.00     300.00     300.00
-    Pressure                  1.0000e+05 1.0000e+05 1.0000e+05
+                               Inlet  Treated  Byproduct
+    Volumetric Flowrate         10     8.5000     1.5000
+    Mass Concentration sulfur    1   0.035294     6.4667
+    Mass Concentration toc       2    0.58824     10.000
+    Mass Concentration tss       3    0.10588     19.400
+    Mass Concentration foo       4     4.7059 9.9000e-07
 ====================================================================================
 """
 
