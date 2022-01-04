@@ -24,7 +24,7 @@ from idaes.core import (FlowsheetBlock,
                         EnergyBalanceType,
                         MomentumBalanceType)
 from watertap.unit_models.nanofiltration_0D import NanoFiltration0D
-import watertap.property_models.NaCl_prop_pack as props
+import watertap.property_models.ion_DSPMDE_prop_pack as props
 
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import (degrees_of_freedom,
@@ -47,7 +47,33 @@ class TestNanoFiltration():
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        # m.fs.properties = props.NaClParameterBlock()
+        m.fs.properties = props.DSPMDEParameterBlock(default={
+            "solute_list": ["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
+            "diffusivity_data": {("Liq", "Ca_2+"): 0.792e-9,
+                                 ("Liq", "SO4_2-"): 1.06e-9,
+                                 ("Liq", "Na_+"): 1.33e-9,
+                                 ("Liq", "Cl_-"): 2.03e-9},
+                                 ("Liq", "Mg_2+"): 0.706e-9,
+            "mw_data": {"H2O": 18e-3,
+                        "Na_+": 23-3,
+                        "Ca_2+": 40e-3,
+                        "Mg_2+": 24e-3,
+                        "Cl_-": 35e-3,
+                        "SO4_2-": 96e-3},
+            "stokes_radius_data": {"A": 1e-9,
+                                   "B": 1e-9,
+                                   "C": 1e-9,
+                                   "D": 1e-10},
+            "density_data": {"H2O": 1000,
+                             "A": 1200,
+                             "B": 1100,
+                             "C": 1010,
+                             "D": 900},
+            "charge": {"A": 1,
+                       "B": -2,
+                       "C": 2,
+                       "D": -1}
+            })
         #
         # m.fs.unit = NanoFiltration0D(default={
         #     "property_package": m.fs.properties,
