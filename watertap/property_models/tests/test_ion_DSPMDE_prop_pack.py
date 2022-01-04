@@ -103,17 +103,24 @@ def test_property_ions(model):
     m = model
     m.fs.stream = m.fs.properties.build_state_block([0], default={'defined_state': True})
 
-    m.fs.stream[0].flow_mol_phase_comp['Liq', 'A'].fix(0.00407)
+    m.fs.stream[0].flow_mol_phase_comp['Liq', 'A'].fix(0.000407)
     m.fs.stream[0].flow_mol_phase_comp['Liq', 'B'].fix(0.010479)
     m.fs.stream[0].flow_mol_phase_comp['Liq', 'C'].fix(0.010479)
     m.fs.stream[0].flow_mol_phase_comp['Liq', 'D'].fix(0.000407)
-    m.fs.stream[0].flow_mol_phase_comp['Liq', 'H2O'].fix(0.979046)
+    m.fs.stream[0].flow_mol_phase_comp['Liq', 'H2O'].fix(0.99046)
     m.fs.stream[0].temperature.fix(298.15)
     m.fs.stream[0].pressure.fix(101325)
+
+    m.fs.stream[0].assert_electroneutrality()
 
     m.fs.stream[0].mole_frac_phase_comp
 
     m.fs.stream[0].flow_mass_phase_comp
+
+    m.fs.stream[0].molality_comp
+    m.fs.stream[0].pressure_osm
+    m.fs.stream[0].dens_mass_phase
+    m.fs.stream[0].conc_mol_phase_comp
 
     iscale.calculate_scaling_factors(m.fs)
 
@@ -126,12 +133,21 @@ def test_property_ions(model):
     results = solver.solve(m)
     assert_optimal_termination(results)
 
-    assert value(m.fs.stream[0].mole_frac_phase_comp['Liq', 'A']) == pytest.approx(4.068e-4,  rel=1e-3)
-    assert value(m.fs.stream[0].mole_frac_phase_comp['Liq', 'B']) == pytest.approx(1.047e-2,  rel=1e-3)
-    assert value(m.fs.stream[0].mole_frac_phase_comp['Liq', 'C']) == pytest.approx(1.047e-2,  rel=1e-3)
-    assert value(m.fs.stream[0].mole_frac_phase_comp['Liq', 'H2O']) == pytest.approx(9.786e-1,  rel=1e-3)
+    # assert value(m.fs.stream[0].mole_frac_phase_comp['Liq', 'A']) == pytest.approx(4.068e-4,  rel=1e-3)
+    # assert value(m.fs.stream[0].mole_frac_phase_comp['Liq', 'B']) == pytest.approx(1.047e-2,  rel=1e-3)
+    # assert value(m.fs.stream[0].mole_frac_phase_comp['Liq', 'C']) == pytest.approx(1.047e-2,  rel=1e-3)
+    # assert value(m.fs.stream[0].mole_frac_phase_comp['Liq', 'H2O']) == pytest.approx(9.786e-1,  rel=1e-3)
+    #
+    # assert value(m.fs.stream[0].flow_mass_phase_comp['Liq', 'A']) == pytest.approx(4.07e-6,  rel=1e-3)
+    # assert value(m.fs.stream[0].flow_mass_phase_comp['Liq', 'B']) == pytest.approx(2.6198e-4,  rel=1e-3)
+    # assert value(m.fs.stream[0].flow_mass_phase_comp['Liq', 'C']) == pytest.approx(1.048e-3,  rel=1e-3)
+    # assert value(m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O']) == pytest.approx(1.762e-2,  rel=1e-3)
 
-    assert value(m.fs.stream[0].flow_mass_phase_comp['Liq', 'A']) == pytest.approx(4.07e-6,  rel=1e-3)
-    assert value(m.fs.stream[0].flow_mass_phase_comp['Liq', 'B']) == pytest.approx(2.6198e-4,  rel=1e-3)
-    assert value(m.fs.stream[0].flow_mass_phase_comp['Liq', 'C']) == pytest.approx(1.048e-3,  rel=1e-3)
-    assert value(m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O']) == pytest.approx(1.762e-2,  rel=1e-3)
+    assert value(m.fs.stream[0].conc_mass_phase_comp['Liq','A']) == pytest.approx(2.1288e-1,  rel=1e-3)
+
+    assert value(m.fs.stream[0].conc_mol_phase_comp['Liq','A']) == pytest.approx(21.288,  rel=1e-3)
+    assert value(m.fs.stream[0].molality_comp['A']) == pytest.approx(2.2829e-2,  rel=1e-3)
+
+    assert value(m.fs.stream[0].pressure_osm) == pytest.approx(60.546e5,  rel=1e-3)
+
+    assert value(m.fs.stream[0].dens_mass_phase['Liq']) == pytest.approx(1001.76,  rel=1e-3)

@@ -122,15 +122,21 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             self.component_list,
             mutable=True,
             initialize=extract_data(self.config.density_data),
-            units=pyunits.m,
+            units=pyunits.kg/pyunits.m**3,
             doc="Stokes radius of solute")
-
+        # Ion charge
         self.charge_comp = Param(
             self.solute_set,
             mutable=True,
             initialize=extract_data(self.config.charge),
             units=pyunits.dimensionless,
             doc="Ion charge")
+        # Dielectric constant of water
+        self.dielectric_constant = Param(
+            mutable=True,
+            initialize=80.4, #todo: make a variable with parameter values for coefficients in the function of temperature
+            units=pyunits.dimensionless,
+            doc="Dielectric constant of water")
 
 
         # ---default scaling---
@@ -160,14 +166,11 @@ class DSPMDEParameterData(PhysicalParameterBlock):
              'molality_comp': {'method': '_molality_comp'},
              'diffus_phase_comp': {'method': '_diffus_phase_comp'},
              # 'visc_d_phase': {'method': '_visc_d_phase'},
-             # 'osm_coeff': {'method': '_osm_coeff'},
-             # 'pressure_osm': {'method': '_pressure_osm'},
+             'pressure_osm': {'method': '_pressure_osm'},
              'radius_stokes_comp': {'method': '_radius_stokes_comp'},
              'mw_comp': {'method': '_mw_comp'},
              'dens_mass_comp': {'method': '_dens_mass_comp'},
              'charge_comp': {'method': '_charge_comp'}
-             # 'enth_mass_phase': {'method': '_enth_mass_phase'},
-             # 'enth_flow': {'method': '_enth_flow'}
              })
 
         obj.add_default_units({'time': pyunits.s,
@@ -406,10 +409,6 @@ class DSPMDEStateBlockData(StateBlockData):
             units=pyunits.Pa,
             doc='State pressure')
 
-        def rule_electroneutrality(b):
-            return sum(b.charge_comp[j] * b.flow_mol_phase_comp['Liq', j] for j in b.params.solute_set) == 0
-
-        self.eq_electroneutrality = Constraint(rule=rule_electroneutrality)
     # -----------------------------------------------------------------------------
     # Property Methods
     def _mass_frac_phase_comp(self):
@@ -429,16 +428,16 @@ class DSPMDEStateBlockData(StateBlockData):
 
     def _dens_mass_phase(self):
         self.dens_mass_phase = Var(
-            self.params.phase_list,
+            ['Liq'],
             initialize=1e3,
             bounds=(5e2, 2e3),
             units=pyunits.kg * pyunits.m ** -3,
             doc="Mass density")
 
-        def rule_dens_mass_phase(b, p):
-            return (b.dens_mass_phase[p] == 1 /
+        def rule_dens_mass_phase(b):
+            return (b.dens_mass_phase['Liq'] == 1 /
                     sum(
-                        b.mass_frac_phase_comp['Liq', j] /b.params.dens_mass_comp[j]
+                        b.mass_frac_phase_comp['Liq', j] / b.params.dens_mass_comp[j]
                         for j in b.params.component_list))
         self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
 
@@ -461,6 +460,20 @@ class DSPMDEStateBlockData(StateBlockData):
         def rule_flow_vol(b):
             return sum(b.flow_vol_phase[p] for p in self.params.phase_list)
         self.flow_vol = Expression(rule=rule_flow_vol)
+
+    def _conc_mol_phase_comp(self):
+        self.conc_mol_phase_comp = Var(
+            self.params.phase_list,
+            self.params.component_list,
+            initialize=10,
+            bounds=(1e-6, None),
+            units=pyunits.mol * pyunits.m ** -3,
+            doc="Molar concentration")
+
+        def rule_conc_mol_phase_comp(b, j):
+            return (b.conc_mol_phase_comp['Liq', j] ==
+                    b.conc_mass_phase_comp['Liq', j] / b.mw_comp[j])
+        self.eq_conc_mol_phase_comp = Constraint(self.params.component_list, rule=rule_conc_mol_phase_comp)
 
     def _conc_mass_phase_comp(self):
         self.conc_mass_phase_comp = Var(
@@ -514,9 +527,9 @@ class DSPMDEStateBlockData(StateBlockData):
 
         def rule_molality_comp(b, j):
             return (self.molality_comp[j] ==
-                    b.mass_frac_phase_comp['Liq', j]
-                    / (1 - sum(b.mass_frac_phase_comp['Liq', j] for j in b.params.solute_set))
-                    / b.params.mw_comp[j])
+                    b.flow_mol_phase_comp['Liq', j]
+                    / b.flow_mass_phase_comp['Liq', 'H2O'])
+
         self.eq_molality_comp = Constraint(self.params.solute_set, rule=rule_molality_comp)
 
     def _radius_stokes_comp(self):
@@ -534,24 +547,20 @@ class DSPMDEStateBlockData(StateBlockData):
     def _charge_comp(self):
         add_object_reference(self, "charge_comp", self.params.charge_comp)
 
-
-
-
     #TODO: change osmotic pressure calc
+    def _pressure_osm(self):
+        self.pressure_osm = Var(
+            initialize=1e6,
+            bounds=(5e2, 5e7),
+            units=pyunits.Pa,
+            doc="van't Hoff Osmotic pressure")
 
-    # def _pressure_osm(self):
-    #     self.pressure_osm = Var(
-    #         initialize=1e6,
-    #         bounds=(5e2, 5e7),
-    #         units=pyunits.Pa,
-    #         doc="Osmotic pressure")
-    #
-    #     def rule_pressure_osm(b):
-    #         i = 2  # number of ionic species
-    #         rhow = 1000 * pyunits.kg / pyunits.m ** 3  # TODO: could make this variable based on temperature
-    #         return (b.pressure_osm ==
-    #                 i * b.osm_coeff * b.molality_comp['NaCl'] * rhow * Constants.gas_constant * b.temperature)
-    #     self.eq_pressure_osm = Constraint(rule=rule_pressure_osm)
+        def rule_pressure_osm(b):
+            i = 2  # number of ionic species
+            return (b.pressure_osm ==
+                    i * sum(b.molality_comp[j] for j in self.params.solute_set)
+                    * b.dens_mass_comp['H2O'] * Constants.gas_constant * b.temperature)
+        self.eq_pressure_osm = Constraint(rule=rule_pressure_osm)
 
     # -----------------------------------------------------------------------------
     # General Methods
@@ -589,6 +598,18 @@ class DSPMDEStateBlockData(StateBlockData):
         return {"flow_mol_phase_comp": self.flow_mol_phase_comp,
                 "temperature": self.temperature,
                 "pressure": self.pressure}
+
+    def assert_electroneutrality(self, tol=None, tee=False):
+        if tol is None:
+            tol = 1e-6
+        val = value(sum(self.charge_comp[j] * self.flow_mol_phase_comp['Liq', j]
+                     for j in self.params.solute_set))
+        if val <= tol:
+            if tee:
+                return print('Electroneutrality satisfied')
+        else:
+            raise AssertionError(f"Electroneutrality condition violated. Ion concentrations should be adjusted to bring "
+                                 f"the result of {val} closer towards 0.")
 
     # -----------------------------------------------------------------------------
     # Scaling methods
@@ -676,7 +697,7 @@ class DSPMDEStateBlockData(StateBlockData):
             for j in self.params.component_list:
                 if isinstance(getattr(self.params, j), Solute):
                     if iscale.get_scaling_factor(self.molality_comp[j]) is None:
-                        sf = iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j])
+                        sf = iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j], default=1e2)
                         sf *= iscale.get_scaling_factor(self.params.mw_comp[j])
                         iscale.set_scaling_factor(self.molality_comp[j], sf)
 
