@@ -17,15 +17,15 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            value,
-                           Var)
+                           Var,
+                           units as pyunits)
 from pyomo.network import Port
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType)
-from watertap.unit_models.nanofiltration_0D import NanoFiltration0D
 import watertap.property_models.ion_DSPMDE_prop_pack as props
-
+from watertap.unit_models.nanofiltration_DSPMDE_0D import NanofiltrationDPSMDE
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
@@ -52,30 +52,57 @@ class TestNanoFiltration():
             "diffusivity_data": {("Liq", "Ca_2+"): 0.792e-9,
                                  ("Liq", "SO4_2-"): 1.06e-9,
                                  ("Liq", "Na_+"): 1.33e-9,
-                                 ("Liq", "Cl_-"): 2.03e-9},
-                                 ("Liq", "Mg_2+"): 0.706e-9,
+                                 ("Liq", "Cl_-"): 2.03e-9,
+                                 ("Liq", "Mg_2+"): 0.706e-9},
             "mw_data": {"H2O": 18e-3,
-                        "Na_+": 23-3,
+                        "Na_+": 23e-3,
                         "Ca_2+": 40e-3,
                         "Mg_2+": 24e-3,
                         "Cl_-": 35e-3,
                         "SO4_2-": 96e-3},
-            "stokes_radius_data": {"A": 1e-9,
-                                   "B": 1e-9,
-                                   "C": 1e-9,
-                                   "D": 1e-10},
+            "stokes_radius_data": {"Na_+": 0.184e-9,
+                                   "Ca_2+": 0.309e-9,
+                                   "Mg_2+": 0.347e-9,
+                                   "Cl_-": 0.121e-9,
+                                   "SO4_2-": 0.230e-9},
             "density_data": {"H2O": 1000,
-                             "A": 1200,
-                             "B": 1100,
-                             "C": 1010,
-                             "D": 900},
-            "charge": {"A": 1,
-                       "B": -2,
-                       "C": 2,
-                       "D": -1}
+                             "Na_+": 968,
+                             "Ca_2+": 1550,
+                             "Mg_2+": 1738,
+                             "Cl_-": 3214,
+                             "SO4_2-": 2553},
+            "charge": {"Na_+": 1,
+                       "Ca_2+": 2,
+                       "Mg_2+": 2,
+                       "Cl_-": -1,
+                       "SO4_2-": -2},
             })
-        #
-        # m.fs.unit = NanoFiltration0D(default={
+
+        m.fs.unit = NanofiltrationDPSMDE(default={"property_package": m.fs.properties})
+
+        return m
+
+    @pytest.mark.component
+    def test_property_ions(self, NF_frame):
+        m = NF_frame
+        m.fs.stream = m.fs.properties.build_state_block([0], default={'defined_state': True})
+
+        mass_flow_in = 1 * pyunits.kg/pyunits.s
+        feed_mass_frac = {'Na_+': 11122e-6,
+                          'Ca_2+': 382e-6,
+                          'Mg_2+': 1394e-6,
+                          'SO4_2-': 2136e-6,
+                          'Cl_-': 20300e-6}
+        for ion, x in feed_mass_frac.items():
+            mol_comp_flow = x * pyunits.kg/pyunits.kg * mass_flow_in / m.fs.stream[0].mw_comp[ion]
+            m.fs.stream[0].flow_mol_phase_comp['Liq', ion].fix(mol_comp_flow)
+
+        m.fs.stream[0].temperature.fix(298.15)
+        m.fs.stream[0].pressure.fix(101325)
+
+        m.fs.stream[0].assert_electroneutrality(tol=1e-2)
+
+
         #     "property_package": m.fs.properties,
         #     "has_pressure_change": True, })
         #
@@ -106,23 +133,21 @@ class TestNanoFiltration():
         # m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
         # return m
 
-    # @pytest.mark.unit
-    # def test_config(self, NF_frame):
-    #     m = NF_frame
-    #     # check unit config arguments
-    #     assert len(m.fs.unit.config) == 8
-    #
-    #     assert not m.fs.unit.config.dynamic
-    #     assert not m.fs.unit.config.has_holdup
-    #     assert m.fs.unit.config.material_balance_type == \
-    #            MaterialBalanceType.useDefault
-    #     assert m.fs.unit.config.energy_balance_type == \
-    #            EnergyBalanceType.useDefault
-    #     assert m.fs.unit.config.momentum_balance_type == \
-    #            MomentumBalanceType.pressureTotal
-    #     assert m.fs.unit.config.has_pressure_change
-    #     assert m.fs.unit.config.property_package is \
-    #            m.fs.properties
+    @pytest.mark.unit
+    def test_config(self, NF_frame):
+        m = NF_frame
+        # check unit config arguments
+        assert len(m.fs.unit.config) == 7
+
+        assert not m.fs.unit.config.dynamic
+        assert not m.fs.unit.config.has_holdup
+        assert m.fs.unit.config.material_balance_type == \
+               MaterialBalanceType.useDefault
+        assert m.fs.unit.config.momentum_balance_type == \
+               MomentumBalanceType.pressureTotal
+        assert not m.fs.unit.config.has_pressure_change
+        assert m.fs.unit.config.property_package is \
+               m.fs.properties
 
     # @pytest.mark.unit
     # def test_build(self, NF_frame):
@@ -184,10 +209,10 @@ class TestNanoFiltration():
     #     assert number_total_constraints(m) == 45
     #     assert number_unused_variables(m) == 7  # vars from property package parameters
     #
-    # @pytest.mark.unit
-    # def test_dof(self, NF_frame):
-    #     m = NF_frame
-    #     assert degrees_of_freedom(m) == 0
+    @pytest.mark.unit
+    def test_dof(self, NF_frame):
+        m = NF_frame
+        assert degrees_of_freedom(m) == 0
     #
     # @pytest.mark.unit
     # def test_calculate_scaling(self, NF_frame):

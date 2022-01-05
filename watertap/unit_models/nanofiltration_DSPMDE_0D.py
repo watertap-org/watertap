@@ -150,7 +150,8 @@ class NanofiltrationData(UnitModelBlockData):
         if len(self.config.property_package.solvent_set) == 0:
             raise ConfigurationError("The NF model was expecting a solvent and did not receive it.")
 
-        if len(self.config.property_package.ion_set) == 0:
+        if (hasattr(self.config.property_package,'ion_set') and len(self.config.property_package.ion_set) == 0) \
+                or (hasattr(self.config.property_package,'solute_set') and len(self.config.property_package.solute_set) == 0):
             raise ConfigurationError("This NF model was expecting ions and did not receive any.")
 
     def build(self):
@@ -191,7 +192,7 @@ class NanofiltrationData(UnitModelBlockData):
             solvent_solute_set,
             initialize=lambda b,t,x,p,j : 2.5e-2 if j in solvent_set else 1e-5, #TODO: divide solvent by .02 and solute by .1
             bounds=lambda b,t,x,p,j : (5e-3, 1.5) if j in solvent_set else (1e-7, 1e-2), #TODO: divide solvent by .02 and solute by .1
-            units=units_meta('mol')*units_meta('length')**-2*units_meta('time')**-1,
+            units=units_meta('amount')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Component molar flux at inlet and outlet of membrane')
         self.rejection_phase_comp = Var(
             self.flowsheet().config.time,
@@ -255,14 +256,14 @@ class NanofiltrationData(UnitModelBlockData):
             self.flowsheet().config.time,
             solute_set,
             initialize= 0.5, #TODO:revisit
-            bounds=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc='Steric partitioning factor for each ion')
         self.partitioning_factor_born_comp = Var(
             self.flowsheet().config.time,
             solute_set,
             initialize= 0.5, #TODO:revisit
-            bounds=NonNegativeReals,
+            domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc='Born solvation contribution to partitioning for each ion')
         self.gibbs_solvation_comp = Var(
@@ -274,8 +275,8 @@ class NanofiltrationData(UnitModelBlockData):
         self.membrane_charge_density = Var(
             self.flowsheet().config.time,
             initialize=-50, # near value used in Roy et al.
-            domain= Reals,
-            units= pyunits.mol*pyunits.length**-3,
+            domain=Reals,
+            units=pyunits.mol*pyunits.m**-3,
             doc='Membrane charge density')
         self.dielectric_constant_pore = Var(
             self.flowsheet().config.time,
@@ -414,7 +415,7 @@ class NanofiltrationData(UnitModelBlockData):
                          solute_set,
                          doc="Diffusive hindered transport coefficient equation")
         def eq_hindrance_factor_diffusive(b, t, j):
-            return (b.hindrance_factor_diffusive_comp[t, j] *  (1 - b.lambda_comp[t, j])**2 ==
+            return (b.hindrance_factor_diffusive_comp[t, j] * (1 - b.lambda_comp[t, j])**2 ==
                     1 + 9. / 8. * b.lambda_comp[t, j] * log(b.lambda_comp[t, j])
                     - 1.56034 * b.lambda_comp[t, j]
                     + 0.528155 * b.lambda_comp[t, j]**2
