@@ -21,7 +21,7 @@ __author__ = "Austin Ladshaw"
 
 ## Helper function for setting eps values associated with solubility_product functions
 # NOTE: Function does nothing if no solubility reactions are present
-def _set_eps_vals(rxn_params, rxn_config, factor=1e-2):
+def _set_eps_vals(rxn_params, rxn_config, factor=1e-2, max_k_eq_ref=1e-16):
     # For solubility reactions, have to set the eps value
     if (hasattr(rxn_params,"equilibrium_reaction_idx")):
         for rid in rxn_params.equilibrium_reaction_idx:
@@ -31,7 +31,7 @@ def _set_eps_vals(rxn_params, rxn_config, factor=1e-2):
             # NOTE: ONLY certain functions have an eps value that we need to set
             if (hasattr(rxn_params.component("reaction_"+rid),"eps")):
                 # highest allowable value for setting eps based on k_eq_ref
-                rxn_params.component("reaction_"+rid).eps.value = min(1e-16, scale)*factor
+                rxn_params.component("reaction_"+rid).eps.value = min(max_k_eq_ref, scale)*factor
 
 ## Helper function for setting scaling factors for equilibrium reactions
 def _set_equ_rxn_scaling(unit, rxn_config, min_k_eq_ref=1e-3):
@@ -56,6 +56,7 @@ def _set_inherent_rxn_scaling(unit, thermo_config, min_k_eq_ref=1e-3):
                 inherent_equilibrium_constraint[i[1]], 0.1)
 
 ## Helper function for setting scaling factors for rate reactions
+## TODO: Need to work out better scaling for rate reactions using min_scale
 def _set_rate_rxn_scaling(rxn_params, unit, min_scale=1e-3):
     for i in rxn_params.rate_reaction_idx:
         scale = value(unit.control_volume.reactions[0.0].reaction_rate[i].expr)

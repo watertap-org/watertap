@@ -1385,7 +1385,7 @@ class TestRemineralizationCSTR():
     def test_scaling_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
 
-        _set_inherent_rxn_scaling(model.fs.unit, thermo_config_cstr, min_scale=1e-2)
+        _set_inherent_rxn_scaling(model.fs.unit, thermo_config_cstr, min_k_eq_ref=1e-2)
         _set_rate_rxn_scaling(model.fs.rxn_params, model.fs.unit)
         _set_mat_bal_scaling_FTPx(model.fs.unit)
 
