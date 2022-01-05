@@ -36,6 +36,52 @@ class Database:
                     f"Could not find requested path {self._dbpath}. Please "
                     f"check that this path exists.")
 
+    def get_solute_set(self, water_source=None):
+        """
+        Method to retrieve solute set for a given water source.
+
+        Args:
+            water_source - (optional) string indicating specific water source.
+                           If None, the default water source will be used.
+
+        Returns:
+            list of solutes contained in the database for the given source.
+
+        Raises:
+            KeyError if water source could not be found in database
+        """
+        if "water_sources" in self._cached_files:
+            # If data is already in cached files use this
+            source_data = self._cached_files["water_sources"]
+        else:
+            # Else load data from required file
+            try:
+                with open(os.path.join(self._dbpath, "water_sources.yml"),
+                          "r") as f:
+                    lines = f.read()
+                    f.close()
+            except OSError:
+                raise KeyError("Could not find water_sources.yml in database.")
+
+            source_data = yaml.load(lines, yaml.Loader)
+
+            # Store data in cache and return
+            self._cached_files["water_sources"] = source_data
+
+        # Check that water source is defined
+        if water_source is None:
+            try:
+                water_source = source_data["default"]
+            except KeyError:
+                raise KeyError(
+                    "Database has not defined a default water source and "
+                    "none was provided.")
+
+        # Get component set for water source
+        comp_set = list(source_data[water_source]["solutes"].keys())
+
+        return comp_set
+
     def get_unit_operation_parameters(self, technology, subtype=None):
         """
         Method to retrieve parameters for a given technology by subtype.

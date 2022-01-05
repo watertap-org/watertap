@@ -53,9 +53,16 @@ class WaterParameterBlockData(PhysicalParameterBlock):
     """
     CONFIG = PhysicalParameterBlock.CONFIG()
 
+    CONFIG.declare('database', ConfigValue(
+        description='An instance of a WaterTAP Database to use for parameters.'
+        ))
+    CONFIG.declare('water_source', ConfigValue(
+        description=
+        'Water source to use when looking up parameters from database.'))
     CONFIG.declare("solute_list", ConfigValue(
         domain=list,
-        description="List of solute species names"))
+        description="List of solute species of interest. If None, will use "
+        "all species defined in the water_source provied."))
 
     def build(self):
         '''
@@ -68,6 +75,19 @@ class WaterParameterBlockData(PhysicalParameterBlock):
         self.Liq = LiquidPhase()
 
         self.H2O = Solvent()
+
+        # Check definition of solute list
+        if self.config.solute_list is None:
+            # No user-provided solute list, look up list from database
+            pass
+        elif self.config.database is not None:
+            # User provided custom list and database - check that all
+            # components are supported
+            pass
+        else:
+            # User provided list but no database - assume they know what they
+            # are doing
+            pass
 
         for j in self.config.solute_list:
             self.add_component(str(j), Solute())
