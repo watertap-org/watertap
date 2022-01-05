@@ -1,0 +1,11 @@
+default:
+  default_removal_mass_solute:
+    unit: kg/kg
+    value: 0
+  energy_electric_flow_vol_inlet:
+    unit: kWh/m^3
+    value: 0.0
+  recovery_vol:
+    reference: .nan
+    unit: m^3/m^3
+    value: 0.999

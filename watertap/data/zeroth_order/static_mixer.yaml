@@ -1,0 +1,12 @@
+default:
+  default_removal_mass_solute:
+    unit: kg/kg
+    value: 0
+  energy_electric_flow_vol_inlet:
+    unit: kWh/m^3
+    value: 0.0
+  recovery_vol:
+    reference: Chemical Engineering Design, 2nd Edition. Principles, Practice and
+      Economics of Plant and Process Design, https://www.elsevier.com/books/chemical-engineering-design/towler/978-0-08-096659-5
+    unit: m^3/m^3
+    value: 0.9999

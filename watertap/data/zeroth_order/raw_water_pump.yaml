@@ -1,0 +1,26 @@
+default:
+  default_removal_mass_solute:
+    unit: kg/kg
+    value: 0
+  energy_electric_flow_vol_inlet:
+    unit: kWh/m^3
+    value: 0.102398663
+  recovery_vol:
+    reference: (1) https://www.engineeringtoolbox.com/water-pumping-costs-d_1527.html,
+      (2) https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470260036.ch5, (3) Cost
+      Estimating Manual for Water Treatment Facilities (McGivney/Kawamura)
+    unit: m^3/m^3
+    value: 0.9999
+alternative:
+  default_removal_mass_solute:
+    unit: kg/kg
+    value: 0
+  energy_electric_flow_vol_inlet:
+    unit: kWh/m^3
+    value: 0.025599666
+  recovery_vol:
+    reference: (1) https://www.engineeringtoolbox.com/water-pumping-costs-d_1527.html,
+      (2) https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470260036.ch5, (3) Cost
+      Estimating Manual for Water Treatment Facilities (McGivney/Kawamura)
+    unit: m^3/m^3
+    value: 0.9999
