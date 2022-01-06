@@ -66,10 +66,9 @@ def scale(m):
 
 
 def initialize(m):
-    optarg = {'nlp_scaling_method': 'user-scaling', 'halt_on_ampl_error': 'yes'}
     pretreatment_softening.initialize(m)
     propagate_state(m.fs.s_pretrt_tb)
-    m.fs.tb_pretrt_to_desal.initialize(optarg=optarg)
+    m.fs.tb_pretrt_to_desal.initialize()
 
 
 def report(m):

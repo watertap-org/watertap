@@ -466,12 +466,6 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None, state="FpcTP"):
     revert_state_vars(model.fs.unit.control_volume.properties_out, flags)
 
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-    # NOTE: Calling initialize 2x times helped resolve some issues, but why???
-    #       Likely reason: the jacobian gets re-scaled and the dual values re-set
-    #       on the subsequent call to solve.
-
-    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-    #model.fs.unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
