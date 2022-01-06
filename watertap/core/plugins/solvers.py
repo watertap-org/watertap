@@ -41,7 +41,8 @@ class IpoptWaterTAP(IPOPT):
 
         # Set the IDAES-default tol
         if "tol" not in self.options:
-            self.options["tol"] = 1e-6
+            self.options["tol"] = 1e-08
+            self.options["constr_viol_tol"] = 1e-08
 
         if not self._is_user_scaling():
             self._reset_needed = False
