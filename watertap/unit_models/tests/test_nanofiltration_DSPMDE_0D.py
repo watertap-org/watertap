@@ -18,7 +18,8 @@ from pyomo.environ import (ConcreteModel,
                            SolverStatus,
                            value,
                            Var,
-                           units as pyunits)
+                           units as pyunits,
+                           assert_optimal_termination)
 from pyomo.network import Port
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
@@ -26,6 +27,8 @@ from idaes.core import (FlowsheetBlock,
                         MomentumBalanceType)
 import watertap.property_models.ion_DSPMDE_prop_pack as props
 from watertap.unit_models.nanofiltration_DSPMDE_0D import NanofiltrationDPSMDE
+from watertap.core.util.initialization import check_dof
+
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
@@ -87,6 +90,7 @@ class TestNanoFiltration():
         m = NF_frame
         m.fs.stream = m.fs.properties.build_state_block([0], default={'defined_state': True})
 
+
         mass_flow_in = 1 * pyunits.kg/pyunits.s
         feed_mass_frac = {'Na_+': 11122e-6,
                           'Ca_2+': 382e-6,
@@ -99,43 +103,33 @@ class TestNanoFiltration():
 
         m.fs.stream[0].temperature.fix(298.15)
         m.fs.stream[0].pressure.fix(101325)
-
         m.fs.stream[0].assert_electroneutrality(tol=1e-2)
-
-
-        #     "property_package": m.fs.properties,
-        #     "has_pressure_change": True, })
-        #
-        # # fully specify system
-        # feed_flow_mass = 1
-        # feed_mass_frac_NaCl = 0.035
-        # feed_pressure = 6e5
-        # feed_temperature = 273.15 + 25
-        # membrane_pressure_drop = 1e5
-        # membrane_area = 50 * feed_flow_mass
-        # A = 3.77e-11
-        # B = 4.724e-5
-        # sigma = 0.28
-        # pressure_atmospheric = 101325
-        #
-        # feed_mass_frac_H2O = 1 - feed_mass_frac_NaCl
-        # m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(
-        #     feed_flow_mass * feed_mass_frac_NaCl)
-        # m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
-        #     feed_flow_mass * feed_mass_frac_H2O)
-        # m.fs.unit.inlet.pressure[0].fix(feed_pressure)
-        # m.fs.unit.inlet.temperature[0].fix(feed_temperature)
-        # m.fs.unit.deltaP.fix(-membrane_pressure_drop)
-        # m.fs.unit.area.fix(membrane_area)
-        # m.fs.unit.A_comp.fix(A)
-        # m.fs.unit.B_comp.fix(B)
-        # m.fs.unit.sigma.fix(sigma)
-        # m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
-        # return m
 
     @pytest.mark.unit
     def test_config(self, NF_frame):
         m = NF_frame
+        mass_flow_in = 1 * pyunits.kg/pyunits.s
+        feed_mass_frac = {'Na_+': 11122e-6,
+                          'Ca_2+': 382e-6,
+                          'Mg_2+': 1394e-6,
+                          'SO4_2-': 2136e-6,
+                          'Cl_-': 20300e-6}
+        for ion, x in feed_mass_frac.items():
+            mol_comp_flow = x * pyunits.kg/pyunits.kg * mass_flow_in / m.fs.stream[0].mw_comp[ion]
+            m.fs.unit.inlet.flow_mol_phase_comp[0, 'Liq', ion].fix(mol_comp_flow)
+            m.fs.unit.permeate.flow_mol_phase_comp[0, 'Liq', ion].fix(0)#TODO: remove later- temporary to eliminate dof
+
+
+        H2O_mass_frac = 1 - sum(x for x in feed_mass_frac.values())
+        H2O_mol_comp_flow = H2O_mass_frac * pyunits.kg / pyunits.kg * mass_flow_in / \
+                            m.fs.unit.feed_side.properties_in[0].mw_comp['H2O']
+
+        m.fs.unit.inlet.flow_mol_phase_comp[0, 'Liq', 'H2O'].fix(H2O_mol_comp_flow)
+        m.fs.unit.inlet.temperature[0].fix(298.15)
+        m.fs.unit.inlet.pressure[0].fix(101325)
+        m.fs.unit.radius_pore.fix(0.5e-9)
+        m.fs.unit.permeate.flow_mol_phase_comp[0, 'Liq', 'H2O'].fix(0) #TODO: remove later- temporary to eliminate dof
+
         # check unit config arguments
         assert len(m.fs.unit.config) == 7
 
@@ -212,39 +206,40 @@ class TestNanoFiltration():
     @pytest.mark.unit
     def test_dof(self, NF_frame):
         m = NF_frame
-        assert degrees_of_freedom(m) == 0
-    #
-    # @pytest.mark.unit
-    # def test_calculate_scaling(self, NF_frame):
-    #     m = NF_frame
-    #     calculate_scaling_factors(m)
-    #
-    #     # check that all variables have scaling factors
-    #     unscaled_var_list = list(unscaled_variables_generator(m))
-    #     assert len(unscaled_var_list) == 0
-    #     # check that all constraints have been scaled
-    #     unscaled_constraint_list = list(unscaled_constraints_generator(m))
-    #     assert len(unscaled_constraint_list) == 0
-    #
-    # @pytest.mark.component
-    # def test_initialize(self, NF_frame):
-    #     initialization_tester(NF_frame)
-    #
+        check_dof(m, fail_flag=True)
+
+    @pytest.mark.unit
+    def test_calculate_scaling(self, NF_frame):
+        m = NF_frame
+        # calculate_scaling_factors(m.fs.unit)
+
+        # check that all variables have scaling factors
+        # unscaled_var_list = list(unscaled_variables_generator(m))
+        # assert len(unscaled_var_list) == 0
+        # # check that all constraints have been scaled
+        # unscaled_constraint_list = list(unscaled_constraints_generator(m))
+        # assert len(unscaled_constraint_list) == 0
+
+    @pytest.mark.component
+    def test_initialize(self, NF_frame):
+        m= NF_frame
+        # initialization_tester(m)
+        m.fs.unit.initialize()
+
     # @pytest.mark.component
     # def test_var_scaling(self, NF_frame):
     #     m = NF_frame
     #     badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+    #     [print(i,j) for i, j in badly_scaled_var_lst]
     #     assert badly_scaled_var_lst == []
     #
-    # @pytest.mark.component
-    # def test_solve(self, NF_frame):
-    #     m = NF_frame
-    #     results = solver.solve(m)
-    #
-    #     # Check for optimal solution
-    #     assert results.solver.termination_condition == \
-    #            TerminationCondition.optimal
-    #     assert results.solver.status == SolverStatus.ok
+    @pytest.mark.component
+    def test_solve(self, NF_frame):
+        m = NF_frame
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
     #
     # @pytest.mark.component
     # def test_conservation(self, NF_frame):

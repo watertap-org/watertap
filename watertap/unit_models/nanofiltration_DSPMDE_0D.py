@@ -21,7 +21,8 @@ from pyomo.environ import (Block,
                            Reals,
                            Reference,
                            units as pyunits,
-                           log)
+                           log,
+                           value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -175,54 +176,54 @@ class NanofiltrationData(UnitModelBlockData):
         solvent_solute_set = solvent_set | solute_set
         phase_list = self.config.property_package.phase_list
 
-        # Add unit parameters
-        self.flux_mass_phase_comp = Var(
-            self.flowsheet().config.time,
-            io_list,
-            phase_list,
-            solvent_solute_set,
-            initialize=lambda b,t,x,p,j : 5e-4 if j in solvent_set else 1e-6, #TODO: using lambda function from RO_0D for now; update as needed
-            bounds=lambda b,t,x,p,j : (1e-4, 3e-2) if j in solvent_set else (1e-8, 1e-3), #TODO: using lambda function from RO_0D for now; update as needed
-            units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
-            doc='Component mass flux at inlet and outlet of membrane')
-        self.flux_mol_phase_comp = Var(
-            self.flowsheet().config.time,
-            io_list,
-            phase_list,
-            solvent_solute_set,
-            initialize=lambda b,t,x,p,j : 2.5e-2 if j in solvent_set else 1e-5, #TODO: divide solvent by .02 and solute by .1
-            bounds=lambda b,t,x,p,j : (5e-3, 1.5) if j in solvent_set else (1e-7, 1e-2), #TODO: divide solvent by .02 and solute by .1
-            units=units_meta('amount')*units_meta('length')**-2*units_meta('time')**-1,
-            doc='Component molar flux at inlet and outlet of membrane')
-        self.rejection_phase_comp = Var(
-            self.flowsheet().config.time,
-            phase_list,
-            solute_set,
-            initialize=0.9,
-            bounds=(-1 + 1e-6, 1 - 1e-6),
-            units=pyunits.dimensionless,
-            doc='Observed solute rejection')
-        self.diffus_pore_comp = Var(
-            self.flowsheet().config.time,
-            solute_set,
-            initialize=1, #TODO: revisit
-            bounds=(1e-6, 1), # TODO: revisit
-            units= units_meta('length')**2/units_meta('time'),
-            doc='Pore diffusivity of ion')
-        self.hindrance_factor_convective_comp = Var(
-            self.flowsheet().config.time,
-            solute_set,
-            initialize=1, #TODO: revisit
-            bounds=(1e-6, 1), #TODO: revisit
-            units=pyunits.dimensionless,
-            doc='Convective hindrance coefficient of ion')
-        self.hindrance_factor_diffusive_comp = Var(
-            self.flowsheet().config.time,
-            solute_set,
-            initialize=1, #TODO: revisit
-            bounds=(1e-6, 1), #TODO: revisit
-            units=pyunits.dimensionless,
-            doc='Diffusive hindrance coefficient of ion')
+        # # Add unit parameters
+        # self.flux_mass_phase_comp = Var(
+        #     self.flowsheet().config.time,
+        #     io_list,
+        #     phase_list,
+        #     solvent_solute_set,
+        #     initialize=lambda b,t,x,p,j : 5e-4 if j in solvent_set else 1e-6, #TODO: using lambda function from RO_0D for now; update as needed
+        #     bounds=lambda b,t,x,p,j : (1e-4, 3e-2) if j in solvent_set else (1e-8, 1e-3), #TODO: using lambda function from RO_0D for now; update as needed
+        #     units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
+        #     doc='Component mass flux at inlet and outlet of membrane')
+        # self.flux_mol_phase_comp = Var(
+        #     self.flowsheet().config.time,
+        #     io_list,
+        #     phase_list,
+        #     solvent_solute_set,
+        #     initialize=lambda b,t,x,p,j : 2.5e-2 if j in solvent_set else 1e-5, #TODO: divide solvent by .02 and solute by .1
+        #     bounds=lambda b,t,x,p,j : (5e-3, 1.5) if j in solvent_set else (1e-7, 1e-2), #TODO: divide solvent by .02 and solute by .1
+        #     units=units_meta('amount')*units_meta('length')**-2*units_meta('time')**-1,
+        #     doc='Component molar flux at inlet and outlet of membrane')
+        # self.rejection_phase_comp = Var(
+        #     self.flowsheet().config.time,
+        #     phase_list,
+        #     solute_set,
+        #     initialize=0.9,
+        #     bounds=(-1 + 1e-6, 1 - 1e-6),
+        #     units=pyunits.dimensionless,
+        #     doc='Observed solute rejection')
+        # self.diffus_pore_comp = Var(
+        #     self.flowsheet().config.time,
+        #     solute_set,
+        #     initialize=1, #TODO: revisit
+        #     bounds=(1e-6, 1), # TODO: revisit
+        #     units= units_meta('length')**2/units_meta('time'),
+        #     doc='Pore diffusivity of ion')
+        # self.hindrance_factor_convective_comp = Var(
+        #     self.flowsheet().config.time,
+        #     solute_set,
+        #     initialize=1, #TODO: revisit
+        #     bounds=(1e-6, 1), #TODO: revisit
+        #     units=pyunits.dimensionless,
+        #     doc='Convective hindrance coefficient of ion')
+        # self.hindrance_factor_diffusive_comp = Var(
+        #     self.flowsheet().config.time,
+        #     solute_set,
+        #     initialize=1, #TODO: revisit
+        #     bounds=(1e-6, 1), #TODO: revisit
+        #     units=pyunits.dimensionless,
+        #     doc='Diffusive hindrance coefficient of ion')
         self.lambda_comp = Var(
             self.flowsheet().config.time,
             solute_set,
@@ -236,115 +237,116 @@ class NanofiltrationData(UnitModelBlockData):
             domain=NonNegativeReals,
             units=units_meta('length'),
             doc='Membrane pore radius')
-        self.membrane_thickness_effective = Var(
-            initialize=1e-6,
-            domain=NonNegativeReals,
-            units=units_meta('length'),
-            doc='Effective membrane thickness')
-        self.electric_potential = Var(
-            self.flowsheet().config.time,
-            ['pore_in','pore_out','permeate'], #TODO: revisit - build in property model w/o constraint?
-            initialize=1, #TODO:revisit
-            units=pyunits.V,
-            doc='Electric potential of pore entrance/exit, and permeate')
-        self.electric_potential_grad_feed_interface = Var(
-            self.flowsheet().config.time,
-            initialize=1, #TODO: revisit
-            units= pyunits.V*pyunits.m**-1, # TODO: revisit- Geraldes and Alves give unitless while Roy et al. give V/m
-            doc='Electric potential gradient of feed-membrane interface')
-        self.partitioning_factor_steric_comp = Var(
-            self.flowsheet().config.time,
-            solute_set,
-            initialize= 0.5, #TODO:revisit
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc='Steric partitioning factor for each ion')
-        self.partitioning_factor_born_comp = Var(
-            self.flowsheet().config.time,
-            solute_set,
-            initialize= 0.5, #TODO:revisit
-            domain=NonNegativeReals,
-            units=pyunits.dimensionless,
-            doc='Born solvation contribution to partitioning for each ion')
-        self.gibbs_solvation_comp = Var(
-            self.flowsheet().config.time, #TODO:revisit- function of pore dielectric constant, which might vary with time
-            solute_set,
-            initialize= 1, #TODO: revisit
-            units= pyunits.J,
-            doc='Gibbs free energy of solvation for each ion')
-        self.membrane_charge_density = Var(
-            self.flowsheet().config.time,
-            initialize=-50, # near value used in Roy et al.
-            domain=Reals,
-            units=pyunits.mol*pyunits.m**-3,
-            doc='Membrane charge density')
-        self.dielectric_constant_pore = Var(
-            self.flowsheet().config.time,
-            initialize=42, # near value used in Roy et al.
-            bounds=(1, None),
-            units=pyunits.dimensionless, # TODO: revisit bounds/domain
-            doc='Pore dielectric constant')
-        self.dielectric_constant_feed = Var(
-            self.flowsheet().config.time,
-            initialize=80.4, # dielectric constant of pure water at 20C; TODO: move to property model?
-            bounds=(1, None),
-            units=pyunits.dimensionless, # TODO: revisit bounds/domain
-            doc='Pore dielectric constant')
-        self.Kf_comp = Var(
-            self.flowsheet().config.time,
-            self.io_list,
-            solute_set,
-            initialize=5e-5,
-            bounds=(1e-6, 1e-3),
-            domain=NonNegativeReals,
-            units=units_meta('length') * units_meta('time') ** -1,
-            doc='Component mass transfer coefficient in feed channel at inlet and outlet')
-        # self.dens_solvent = Param(
-        #     initialize=1000,
-        #     units=units_meta('mass')*units_meta('length')**-3,
-        #     doc='Pure water density')
-        #
-        # # Add unit variables
-        self.area = Var(
-            initialize=1,
-            bounds=(1e-8, 1e6),
-            domain=NonNegativeReals,
-            units=units_meta('length') ** 2,
-            doc='Membrane area')
-        #
-        # def recovery_mass_phase_comp_initialize(b, t, p, j):
-        #     if j in b.config.property_package.solvent_set:
-        #         return 0.8
-        #     elif j in solute_set:
-        #         return 0.1
-        #
-        # def recovery_mass_phase_comp_bounds(b, t, p, j):
-        #     ub = 1 - 1e-6
-        #     if j in b.config.property_package.solvent_set:
-        #         lb = 1e-2
-        #     elif j in solute_set:
-        #         lb = 1e-5
-        #     else:
-        #         lb = 1e-5
-        #
-        #     return lb, ub
-        #
-        # self.recovery_mass_phase_comp = Var(
+        # self.membrane_thickness_effective = Var(
+        #     initialize=1e-6,
+        #     domain=NonNegativeReals,
+        #     units=units_meta('length'),
+        #     doc='Effective membrane thickness')
+        # self.electric_potential = Var(
         #     self.flowsheet().config.time,
-        #     self.config.property_package.phase_list,
-        #     solvent_solute_set,
-        #     initialize=recovery_mass_phase_comp_initialize,
-        #     bounds=recovery_mass_phase_comp_bounds,
-        #     units=pyunits.dimensionless,
-        #     doc='Mass-based component recovery')
-        # self.recovery_vol_phase = Var(
+        #     ['pore_in','pore_out','permeate'], #TODO: revisit - build in property model w/o constraint?
+        #     initialize=1, #TODO:revisit
+        #     units=pyunits.V,
+        #     doc='Electric potential of pore entrance/exit, and permeate')
+        # self.electric_potential_grad_feed_interface = Var(
         #     self.flowsheet().config.time,
-        #     self.config.property_package.phase_list,
-        #     initialize=0.1,
-        #     bounds=(1e-2, 1 - 1e-6),
+        #     initialize=1, #TODO: revisit
+        #     units= pyunits.V*pyunits.m**-1, # TODO: revisit- Geraldes and Alves give unitless while Roy et al. give V/m
+        #     doc='Electric potential gradient of feed-membrane interface')
+        # self.partitioning_factor_steric_comp = Var(
+        #     self.flowsheet().config.time,
+        #     solute_set,
+        #     initialize= 0.5, #TODO:revisit
+        #     domain=NonNegativeReals,
         #     units=pyunits.dimensionless,
-        #     doc='Volumetric-based recovery')
-        #
+        #     doc='Steric partitioning factor for each ion')
+        # self.partitioning_factor_born_comp = Var(
+        #     self.flowsheet().config.time,
+        #     solute_set,
+        #     initialize= 0.5, #TODO:revisit
+        #     domain=NonNegativeReals,
+        #     units=pyunits.dimensionless,
+        #     doc='Born solvation contribution to partitioning for each ion')
+        # self.gibbs_solvation_comp = Var(
+        #     self.flowsheet().config.time, #TODO:revisit- function of pore dielectric constant, which might vary with time
+        #     solute_set,
+        #     initialize= 1, #TODO: revisit
+        #     units= pyunits.J,
+        #     doc='Gibbs free energy of solvation for each ion')
+        # self.membrane_charge_density = Var(
+        #     self.flowsheet().config.time,
+        #     initialize=-50, # near value used in Roy et al.
+        #     domain=Reals,
+        #     units=pyunits.mol*pyunits.m**-3,
+        #     doc='Membrane charge density')
+        # self.dielectric_constant_pore = Var(
+        #     self.flowsheet().config.time,
+        #     initialize=42, # near value used in Roy et al.
+        #     bounds=(1, None),
+        #     units=pyunits.dimensionless, # TODO: revisit bounds/domain
+        #     doc='Pore dielectric constant')
+        # self.dielectric_constant_feed = Var(
+        #     self.flowsheet().config.time,
+        #     initialize=80.4, # dielectric constant of pure water at 20C; TODO: move to property model?
+        #     bounds=(1, None),
+        #     units=pyunits.dimensionless, # TODO: revisit bounds/domain
+        #     doc='Pore dielectric constant')
+        # self.Kf_comp = Var(
+        #     self.flowsheet().config.time,
+        #     self.io_list,
+        #     solute_set,
+        #     initialize=5e-5,
+        #     bounds=(1e-6, 1e-3),
+        #     domain=NonNegativeReals,
+        #     units=units_meta('length') * units_meta('time') ** -1,
+        #     doc='Component mass transfer coefficient in feed channel at inlet and outlet')
+        # # self.dens_solvent = Param(
+        # #     initialize=1000,
+        # #     units=units_meta('mass')*units_meta('length')**-3,
+        # #     doc='Pure water density')
+        # #
+        # # # Add unit variables
+        # self.area = Var(
+        #     initialize=1,
+        #     bounds=(1e-8, 1e6),
+        #     domain=NonNegativeReals,
+        #     units=units_meta('length') ** 2,
+        #     doc='Membrane area')
+        # #
+        # # def recovery_mass_phase_comp_initialize(b, t, p, j):
+        # #     if j in b.config.property_package.solvent_set:
+        # #         return 0.8
+        # #     elif j in solute_set:
+        # #         return 0.1
+        # #
+        # # def recovery_mass_phase_comp_bounds(b, t, p, j):
+        # #     ub = 1 - 1e-6
+        # #     if j in b.config.property_package.solvent_set:
+        # #         lb = 1e-2
+        # #     elif j in solute_set:
+        # #         lb = 1e-5
+        # #     else:
+        # #         lb = 1e-5
+        # #
+        # #     return lb, ub
+        # #
+        # # self.recovery_mass_phase_comp = Var(
+        # #     self.flowsheet().config.time,
+        # #     self.config.property_package.phase_list,
+        # #     solvent_solute_set,
+        # #     initialize=recovery_mass_phase_comp_initialize,
+        # #     bounds=recovery_mass_phase_comp_bounds,
+        # #     units=pyunits.dimensionless,
+        # #     doc='Mass-based component recovery')
+        # # self.recovery_vol_phase = Var(
+        # #     self.flowsheet().config.time,
+        # #     self.config.property_package.phase_list,
+        # #     initialize=0.1,
+        # #     bounds=(1e-2, 1 - 1e-6),
+        # #     units=pyunits.dimensionless,
+        # #     doc='Volumetric-based recovery')
+        # #
+
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(default={
             "dynamic": False,
@@ -410,28 +412,37 @@ class NanofiltrationData(UnitModelBlockData):
                 self.config.momentum_balance_type != 'none'):
             self.deltaP = Reference(self.feed_side.deltaP)
 
-
-        @self.Constraint(self.flowsheet().config.time,
+        # #Todo: add smooth_if for lambda<= 0.95 and lambda > 0.95
+        @self.Expression(self.flowsheet().config.time,
                          solute_set,
                          doc="Diffusive hindered transport coefficient equation")
-        def eq_hindrance_factor_diffusive(b, t, j):
-            return (b.hindrance_factor_diffusive_comp[t, j] * (1 - b.lambda_comp[t, j])**2 ==
-                    1 + 9. / 8. * b.lambda_comp[t, j] * log(b.lambda_comp[t, j])
-                    - 1.56034 * b.lambda_comp[t, j]
-                    + 0.528155 * b.lambda_comp[t, j]**2
-                    + 1.91521 * b.lambda_comp[t, j]**3
-                    - 2.81903 * b.lambda_comp[t, j]**4
-                    + 0.270788 * b.lambda_comp[t, j]**5
-                    - 1.10115 * b.lambda_comp[t, j]**6
-                    - 0.435933 * b.lambda_comp[t, j]**7)
+        def hindrance_factor_diffusive(b, t, j):
+            # if value(b.lambda_comp[t, j]) <= 0.95:
+            #     return ((1 + 9. / 8. * b.lambda_comp[t, j] * log(b.lambda_comp[t, j])
+            #             - 1.56034 * b.lambda_comp[t, j]
+            #             + 0.528155 * b.lambda_comp[t, j]**2
+            #             + 1.91521 * b.lambda_comp[t, j]**3
+            #             - 2.81903 * b.lambda_comp[t, j]**4
+            #             + 0.270788 * b.lambda_comp[t, j]**5
+            #             - 1.10115 * b.lambda_comp[t, j]**6
+            #             - 0.435933 * b.lambda_comp[t, j]**7) /
+            #             (1 - b.lambda_comp[t, j]) ** 2)
+            # elif value(b.lambda_comp[t, j]) > 0.95 :
+                return (0.984 *
+                        ((1 - b.lambda_comp[t,j])
+                         /b.lambda_comp[t,j]) ** (5/2)
+                        )
 
-
-
-
+        # Todo: add smooth_min to get minimum between computed value and 1 (any value exceeding 1 should be set to 1)
+        @self.Constraint(self.flowsheet().config.time,
+                         solute_set,
+                         doc="Ratio of stokes radius to membrane pore radius equation")
+        def eq_lambda_comp(b, t, j):
+            return (b.lambda_comp[t, j] * b.radius_pore == b.feed_side.properties_in[t].radius_stokes_comp[j])
 
 
         # @self.feed_side.Constraint(self.flowsheet().config.time,
-        #                  doc='isothermal energy balance for feed_side')
+        #              doc='isothermal energy balance for feed_side')
         # def eq_isothermal(b, t):
         #     return b.properties_in[t].temperature == b.properties_out[t].temperature
 
@@ -484,13 +495,13 @@ class NanofiltrationData(UnitModelBlockData):
         #         return (b.flux_vol_solvent[t, j] * b.dens_solvent * b.area
         #                 == -b.feed_side.mass_transfer_term[t, p, j] * mw_comp)
         #
-        # @self.Constraint(self.flowsheet().config.time,
-        #                  self.config.property_package.phase_list,
-        #                  solvent_solute_set,
-        #                  doc="Permeate production")
-        # def eq_permeate_production(b, t, p, j):
-        #     return (b.properties_permeate[t].get_material_flow_terms(p, j)
-        #             == -b.feed_side.mass_transfer_term[t, p, j])
+        @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.phase_list,
+                         solvent_solute_set,
+                         doc="Permeate production")
+        def eq_permeate_production(b, t, p, j):
+            return (b.mixed_permeate[t].get_material_flow_terms(p, j)
+                    == -b.feed_side.mass_transfer_term[t, p, j])
         #
         #
         # @self.Constraint(self.flowsheet().config.time,
@@ -527,76 +538,76 @@ class NanofiltrationData(UnitModelBlockData):
             outlvl=idaeslog.NOTSET,
             solver=None,
             optarg=None):
-        pass
-        # """
-        # General wrapper for pressure changer initialization routines
-        #
-        # Keyword Arguments:
-        #     state_args : a dict of arguments to be passed to the property
-        #                  package(s) to provide an initial state for
-        #                  initialization (see documentation of the specific
-        #                  property package) (default = {}).
-        #     outlvl : sets output level of initialization routine
-        #     optarg : solver options dictionary object (default=None)
-        #     solver : str indicating which solver to use during
-        #              initialization (default = None)
-        #
-        # Returns: None
-        # """
-        # init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        # solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-        # # Set solver options
-        # if optarg is None:
-        #     optarg = {'bound_push': 1e-8}
-        #
-        # opt = get_solver(solver, optarg)
-        #
-        # # ---------------------------------------------------------------------
-        # # Initialize holdup block
-        # flags = blk.feed_side.initialize(
-        #     outlvl=outlvl,
-        #     optarg=optarg,
-        #     solver=solver,
-        #     state_args=state_args,
-        # )
-        # init_log.info_high("Initialization Step 1 Complete.")
-        # # ---------------------------------------------------------------------
-        # # Initialize permeate
-        # # Set state_args from inlet state
-        # if state_args is None:
-        #     state_args = {}
-        #     state_dict = blk.feed_side.properties_in[
-        #         blk.flowsheet().config.time.first()].define_port_members()
-        #
-        #     for k in state_dict.keys():
-        #         if state_dict[k].is_indexed():
-        #             state_args[k] = {}
-        #             for m in state_dict[k].keys():
-        #                 state_args[k][m] = state_dict[k][m].value
-        #         else:
-        #             state_args[k] = state_dict[k].value
-        #
-        # blk.properties_permeate.initialize(
-        #     outlvl=outlvl,
-        #     optarg=optarg,
-        #     solver=solver,
-        #     state_args=state_args,
-        # )
-        # init_log.info_high("Initialization Step 2 Complete.")
-        #
-        # # ---------------------------------------------------------------------
-        # # Solve unit
-        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        #     res = opt.solve(blk, tee=slc.tee)
-        # init_log.info_high(
-        #     "Initialization Step 3 {}.".format(idaeslog.condition(res)))
-        #
-        # # ---------------------------------------------------------------------
-        # # Release Inlet state
-        # blk.feed_side.release_state(flags, outlvl + 1)
-        # init_log.info(
-        #     "Initialization Complete: {}".format(idaeslog.condition(res))
-        # )
+
+        """
+        General wrapper for pressure changer initialization routines
+
+        Keyword Arguments:
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for
+                         initialization (see documentation of the specific
+                         property package) (default = {}).
+            outlvl : sets output level of initialization routine
+            optarg : solver options dictionary object (default=None)
+            solver : str indicating which solver to use during
+                     initialization (default = None)
+
+        Returns: None
+        """
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        # Set solver options
+        if optarg is None:
+            optarg = {'bound_push': 1e-8}
+
+        opt = get_solver(solver, optarg)
+
+        # ---------------------------------------------------------------------
+        # Initialize holdup block
+        flags = blk.feed_side.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+        )
+        init_log.info_high("Initialization Step 1 Complete.")
+        # ---------------------------------------------------------------------
+        # Initialize permeate
+        # Set state_args from inlet state
+        if state_args is None:
+            state_args = {}
+            state_dict = blk.feed_side.properties_in[
+                blk.flowsheet().config.time.first()].define_port_members()
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = state_dict[k][m].value
+                else:
+                    state_args[k] = state_dict[k].value
+
+        blk.mixed_permeate.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+        )
+        init_log.info_high("Initialization Step 2 Complete.")
+
+        # ---------------------------------------------------------------------
+        # Solve unit
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+        init_log.info_high(
+            "Initialization Step 3 {}.".format(idaeslog.condition(res)))
+
+        # ---------------------------------------------------------------------
+        # Release Inlet state
+        blk.feed_side.release_state(flags, outlvl + 1)
+        init_log.info(
+            "Initialization Complete: {}".format(idaeslog.condition(res))
+        )
 
     def _get_performance_contents(self, time_point=0):
         pass
@@ -641,15 +652,14 @@ class NanofiltrationData(UnitModelBlockData):
         # return {"vars": var_dict, "exprs": expr_dict}
 
     def _get_stream_table_contents(self, time_point=0):
-        pass
-        # return create_stream_table_dataframe(
-        #     {
-        #         "Feed Inlet": self.inlet,
-        #         "Feed Outlet": self.retentate,
-        #         "Permeate Outlet": self.permeate,
-        #     },
-        #     time_point=time_point,
-        # )
+        return create_stream_table_dataframe(
+            {
+                "Feed Inlet": self.inlet,
+                "Feed Outlet": self.retentate,
+                "Permeate Outlet": self.permeate,
+            },
+            time_point=time_point,
+        )
 
     def get_costing(self, module=None, **kwargs):
         self.costing = Block()
@@ -662,7 +672,10 @@ class NanofiltrationData(UnitModelBlockData):
             if hasattr(self.config.property_package, k):
                 solute_set = getattr(self.config.property_package, k)
                 break
-        #
+        # if iscale.get_scaling_factor(self.radius_pore) is None:
+        #     sf = iscale.get_scaling_factor(self.radius_pore, default=1e10, warning=True)
+        #     iscale.set_scaling_factor(self.radius_pore, sf)
+
         # # TODO: require users to set scaling factor for area or calculate it based on mass transfer and flux
         # iscale.set_scaling_factor(self.area, 1e-1)
         #
