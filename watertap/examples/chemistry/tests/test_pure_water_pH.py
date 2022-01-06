@@ -142,7 +142,6 @@ def base_units():
 def solver():
     s = get_solver()
     s.options["max_iter"] = 200
-    s.options["tol"] = 1e-12
     return s
 
 
