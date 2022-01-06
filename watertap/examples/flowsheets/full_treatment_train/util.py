@@ -22,9 +22,7 @@ from watertap.core.util.initialization import assert_degrees_of_freedom, check_s
 
 def solve_block(blk, solver=None, tee=False, fail_flag=True):
     if solver is None:
-        solver = get_solver(options={
-            'tol':1e-08
-            })
+        solver = get_solver(options={'tol':1e-11})
     results = solver.solve(blk, tee=tee)
     if fail_flag:
         check_solve(results)

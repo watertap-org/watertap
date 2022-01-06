@@ -41,7 +41,7 @@ def approximate_chemical_state_args(unit, rxn_params, reaction_config, contains_
 
     # Set species based on inlets (and outlets for stoich reaction)
     state_args['mole_frac_comp'] = {}
-    min = 1e-6
+    min = 1e-10
     for i in unit.control_volume.properties_in[0.0].mole_frac_comp:
         # Set state args to inlets on first pass
         if unit.inlet.mole_frac_comp[0, i].value > min:
@@ -73,7 +73,7 @@ def calculate_chemical_scaling_factors_for_equilibrium_log_reactions(unit, rxn_p
 # # Perform scaling transformations for mass balances
 def calculate_chemical_scaling_factors_for_material_balances(unit):
     # Next, try adding scaling for species
-    min = 1e-6
+    min = 1e-4
     for i in unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
         # i[0] = phase, i[1] = species
         if unit.inlet.mole_frac_comp[0, i[1]].value > min:
