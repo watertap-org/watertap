@@ -20,6 +20,19 @@ from copy import deepcopy
 
 
 class Database:
+    """
+    WaterTap Database class.
+
+    Used to instantiate an instnace of a database for loading parameters
+    associated with zero-order models in waterTap.
+
+    Args:
+        dbpath - (optional) path to database folder contianing yml files
+
+    Returns:
+        an instance of a Database object linked to the provided database
+    """
+
     def __init__(self, dbpath=None):
         self._cached_files = {}
 
@@ -37,6 +50,19 @@ class Database:
                     f"check that this path exists.")
 
     def get_source_data(self, water_source=None):
+        """
+        Method to retrieve water source definition from database.
+
+        Args:
+            water_source - (optional) string indicating specific water source.
+                           If None, the default water source will be used.
+
+        Returns:
+            dict of parameters defined in database for given water source
+
+        Raises:
+            KeyError if database has not defined water sources
+        """
         if "water_sources" in self._cached_files:
             # If data is already in cached files use this
             source_data = self._cached_files["water_sources"]
@@ -141,6 +167,9 @@ class Database:
         return sparams
 
     def flush_cache(self):
+        """
+        Method to flush cached files in database object.
+        """
         self._cached_files = {}
 
     def _get_technology(self, technology):

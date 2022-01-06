@@ -91,7 +91,7 @@ class TestFeedZO:
 
         model.fs.unit.load_feed_data_from_database(overwrite=True)
 
-        # THis should have reset the value of all variables
+        # This should have reset the value of all variables
         assert pytest.approx(data["default_flow"]["value"],
                              rel=1e-12) == value(
             model.fs.unit.outlet.flow_vol[0])
@@ -109,3 +109,17 @@ class TestFeedZO:
     @pytest.mark.component
     def test_unit_consistency(self, model):
         assert_units_consistent(model)
+
+    @pytest.mark.unit
+    def test_load_feed_data_from_database_missing(self, model, caplog):
+        data = model.db.get_source_data()
+
+        del data["default_flow"]
+        del data["solutes"]["tds"]
+
+        model.fs.unit.load_feed_data_from_database(overwrite=True)
+
+        assert ("fs.unit no default flowrate was definined in database water "
+                "source. Value was not fixed.") in caplog.text
+        assert ("fs.unit component tds was not defined in database water "
+                "source. Value was not fixed.") in caplog.text

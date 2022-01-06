@@ -40,6 +40,19 @@ class FeedZOData(FeedData):
         super().build()
 
     def load_feed_data_from_database(self, overwrite=False):
+        """
+        Method to load initial folwrate and concentrations from database.
+
+        Args:
+            overwrite - (default = False), indicates whether fixed values
+                        should be overwritten by values from database or not.
+
+        Returns:
+            None
+
+        Raises:
+            KeyError if flowrate or concentration values not defined in data
+        """
         # Get database and water source from property package
         db = self.config.property_package.config.database
         water_source = self.config.property_package.config.water_source
@@ -65,5 +78,5 @@ class FeedZOData(FeedData):
                     units = getattr(pyunits, data["solutes"][j]["units"])
                     v.fix(val*units)
                 except KeyError:
-                    _log.info(f"{self.name} component {j} is not defined in "
+                    _log.info(f"{self.name} component {j} was not defined in "
                               f"database water source. Value was not fixed.")
