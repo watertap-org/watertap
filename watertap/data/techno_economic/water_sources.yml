@@ -5,50 +5,50 @@ seawater:
     boron:
       constituent_longform: Boron
       value: 0.0044
-      units: kg/m3
+      units: kg/m**3
     bromide:
       constituent_longform: Bromide
       value: 0.0663
-      units: kg/m3
+      units: kg/m**3
     calcium:
       constituent_longform: Calcium
       value: 0.4096
-      units: kg/m3
+      units: kg/m**3
     chloride:
       constituent_longform: Chloride
       value: 19.162
-      units: kg/m3
+      units: kg/m**3
     magnesium:
       constituent_longform: Magnesium
       value: 1.278
-      units: kg/m3
+      units: kg/m**3
     potassium:
       constituent_longform: Potassium
       value: 0.3953
-      units: kg/m3
+      units: kg/m**3
     sodium:
       constituent_longform: Sodium
       value: 10.679
-      units: kg/m3
+      units: kg/m**3
     strontium:
       constituent_longform: Strontium
       value: 0.0013
-      units: kg/m3
+      units: kg/m**3
     sulfate:
       constituent_longform: Sulfate
       value: 2.68
-      units: kg/m3
+      units: kg/m**3
     tds:
       constituent_longform: Total Dissolved Solids (TDS)
       value: 35
-      units: kg/m3
+      units: kg/m**3
     tss:
       constituent_longform: Total Suspended Solids (TSS)
       value: 0.03
-      units: kg/m3
+      units: kg/m**3
   default_flow:
     value: 4.5833
-    units: m3/s
+    units: m**3/s
   pH:
     max: 7
     min: 7

@@ -36,20 +36,7 @@ class Database:
                     f"Could not find requested path {self._dbpath}. Please "
                     f"check that this path exists.")
 
-    def get_solute_set(self, water_source=None):
-        """
-        Method to retrieve solute set for a given water source.
-
-        Args:
-            water_source - (optional) string indicating specific water source.
-                           If None, the default water source will be used.
-
-        Returns:
-            list of solutes contained in the database for the given source.
-
-        Raises:
-            KeyError if water source could not be found in database
-        """
+    def get_source_data(self, water_source=None):
         if "water_sources" in self._cached_files:
             # If data is already in cached files use this
             source_data = self._cached_files["water_sources"]
@@ -77,8 +64,26 @@ class Database:
                     "Database has not defined a default water source and "
                     "none was provided.")
 
+        return source_data[water_source]
+
+    def get_solute_set(self, water_source=None):
+        """
+        Method to retrieve solute set for a given water source.
+
+        Args:
+            water_source - (optional) string indicating specific water source.
+                           If None, the default water source will be used.
+
+        Returns:
+            list of solutes contained in the database for the given source.
+
+        Raises:
+            KeyError if water source could not be found in database
+        """
+        source_data = self.get_source_data(water_source)
+
         # Get component set for water source
-        comp_set = list(source_data[water_source]["solutes"].keys())
+        comp_set = list(source_data["solutes"].keys())
 
         return comp_set
 

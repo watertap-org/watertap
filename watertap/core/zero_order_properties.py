@@ -99,7 +99,7 @@ class WaterParameterBlockData(PhysicalParameterBlock):
             # components are supported
             for j in solute_list:
                 if j not in comp_set:
-                    _log.warn(f"{self.name} component {j} is not defined in "
+                    _log.info(f"{self.name} component {j} is not defined in "
                               f"the water_sources database file.")
         else:
             # User provided list but no database - assume they know what they
