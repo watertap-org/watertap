@@ -2,11 +2,11 @@ Zero Order Unit Model Base Class
 ================================
 
 .. index::
-   pair: watertap.core.zero_order_sito;SITOBaseData
+   pair: watertap.core.zero_order_sido;SIDOBaseData
 
-.. currentmodule:: watertap.core.zero_order_sito
+.. currentmodule:: watertap.core.zero_order_sido
 
-The zero-order unit model base class is intended to form the basis for a library of generic single inlet-two outlet (SITO) unit models using recovery and removal fractions to partition the incoming flow between the two outlets. This base class is not intended to be used by itself and requires the user to define a derived class before it can be used in a flowsheet.
+The zero-order unit model base class is intended to form the basis for a library of generic single inlet-double outlet (SIDO) unit models using recovery and removal fractions to partition the incoming flow between the two outlets. This base class is not intended to be used by itself and requires the user to define a derived class before it can be used in a flowsheet.
 
 Usage
 -----
@@ -17,11 +17,11 @@ Usage
   from idaes.core import declare_process_block_class
 
   # Import base class
-  from watertap.core.zero_order_sito import SITOBaseData
+  from watertap.core.zero_order_sido import SIDOBaseData
 
   # Create derived class with decorator
   @declare_process_block_class("DerivedModel")
-  class DerivedModelData(SITOBaseData):
+  class DerivedModelData(SIDOBaseData):
 
     def build(self):
 
@@ -36,24 +36,24 @@ Usage
 Model Structure
 ---------------
 
-The SITO base class constructs a simple representation of unit operation with a single inlet (named `inlet`) and two outlets (named `treated` and `byproduct`). A `StateBlock` is constructed for the inlet and each outlet with a `Port` associated with each of these.
+The SIDO base class constructs a simple representation of unit operation with a single inlet (named `inlet`) and two outlets (named `treated` and `byproduct`). A `StateBlock` is constructed for the inlet and each outlet with a `Port` associated with each of these.
 
 Property Package Requirements
 -----------------------------
 
-The SITO base class makes a number of assumptions about the structure of the associated property package, and contains a number of checks to ensure the property package meets these requirements. The requirements for the property package are:
+The SIDO base class makes a number of assumptions about the structure of the associated property package, and contains a number of checks to ensure the property package meets these requirements. The requirements for the property package are:
 
 1. A single phase named `Liq`.
-2. A single `Solvent` species named `H2O` (package must define a `solvent_set` with length that contains "H2O").
+2. A single `Solvent` species named `H2O` (package must define a `solvent_set` with length one that contains "H2O").
 3. All other species are defined as `Solutes` (package must define a `solute_set` and the `component_list` must be the union of `solvent_set` and `solute_set`).
 4. The property package must define `flow_vol`, `conc_mass_comp`, `pressure` and `temperature` as properties.
 
-The SITO base class is formulated in such a way that if `flow_vol`, `conc_mass_comp`, `pressure` and `temperature` are the state variables used by the property package, then the resulting unit model will be linear if the removal and recovery fractions are fixed (or bilinear if they are not). The :ref:`ideal water <technical_reference/core/water_props:Ideal Water Properties>` property package has been designed specifically to be used with models deriving from the SITO base class and meets all of the above requirements.
+The SIDO base class is formulated in such a way that if `flow_vol`, `conc_mass_comp`, `pressure` and `temperature` are the state variables used by the property package, then the resulting unit model will be linear if the removal and recovery fractions are fixed (or bilinear if they are not). The :ref:`ideal water <technical_reference/core/water_props:Ideal Water Properties>` property package has been designed specifically to be used with models deriving from the SIDO base class and meets all of the above requirements.
 
 Variables
 ---------
 
-The SITO base class create the following variables in addition to those created by the `StateBlocks`.
+The SIDO base class create the following variables in addition to those created by the `StateBlocks`.
 
 =============================== ==================== ============== ===================================================================
 Variable                        Name                 Indices        Notes
@@ -69,7 +69,7 @@ The :math:`\Delta P_{treated,t}` and :math:`\Delta P_{byproduct,t}` terms are op
 Constraints
 -----------
 
-The SITO base class writes the following constraints which relate the inlet state to those in the treated and byproduct streams. As mentioned previously, these constraints are formulated such that they will be linear if `flow_vol`, `conc_mass_comp`, `pressure` and `temperature` are the state variables used by the property package and the recovery and removal fractions are fixed.
+The SIDO base class writes the following constraints which relate the inlet state to those in the treated and byproduct streams. As mentioned previously, these constraints are formulated such that they will be linear if `flow_vol`, `conc_mass_comp`, `pressure` and `temperature` are the state variables used by the property package and the recovery and removal fractions are fixed.
 
 First, a volumetric flow recovery equation is written to relate the flowrate at the treated to that at the inlet:
 
@@ -126,5 +126,5 @@ where :math:`T_t` is the temperature at time :math:`t`.
 Class Documentation
 -------------------
 
-.. autoclass:: SITOBaseData
+.. autoclass:: SIDOBaseData
    :members:
