@@ -25,6 +25,8 @@ from idaes.core import (FlowsheetBlock,
                         MomentumBalanceType)
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 import watertap.property_models.seawater_prop_pack as props
+import watertap.examples.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as property_seawater_ions
+from watertap.property_models.seawater_ion_generic import configuration
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
@@ -83,7 +85,6 @@ def test_config_mass_transfer():
 
     # check mass_transfer is added
     assert m.fs.unit.config.has_mass_transfer
-
 
 @pytest.mark.unit
 def test_build(has_mass_transfer=False,extra_variables=0,extra_constraint=0):
@@ -306,6 +307,187 @@ class TestPressureExchanger():
                 value(m.fs.unit.high_pressure_outlet.flow_mass_phase_comp[0,'Liq','TDS']))
         assert (pytest.approx(3.582e-2+7.352e-2*0.05, rel=1e-3) ==
                 value(m.fs.unit.low_pressure_outlet.flow_mass_phase_comp[0,'Liq','TDS']))
+
+    @pytest.mark.unit
+    def test_report(self, unit_frame):
+        unit_frame.fs.unit.report()
+
+class TestPressureExchanger_with_ion_prop_pack():
+    @pytest.fixture(scope="class")
+    def unit_frame(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={'dynamic': False})
+        m.fs.properties = property_seawater_ions.PropParameterBlock()
+        m.fs.unit = PressureExchanger(default={'property_package': m.fs.properties,\
+         'has_mass_transfer': True})
+
+        # Specify inlet conditions
+        temperature = 25 + 273.15
+
+        lowP_pressure = 101325
+        highP_mass_frac_TDS = 0.07
+        highP_pressure = 50e5
+
+        solvent_transfer=0.05
+        solute_transfer={'Na': 0.1,
+                          'Ca': 0.11,
+                          'Mg': 0.12,
+                          'SO4': 0.13,
+                          'Cl': 0.14}
+
+        feed_flow_mass = 1
+        lowP_mass_frac = {'Na': 11122e-6,
+                          'Ca': 382e-6,
+                          'Mg': 1394e-6,
+                          'SO4': 2136e-6,
+                          'Cl': 20300e-6}
+
+        highP_mass_frac = {'Na': 2*11122e-6,
+                          'Ca': 2*382e-6,
+                          'Mg': 2*1394e-6,
+                          'SO4': 2*2136e-6,
+                          'Cl':2*20300e-6}
+
+        #Specify unit
+        efficiency = 0.95
+        m.fs.unit.efficiency_pressure_exchanger.fix(efficiency)
+
+        m.fs.unit.solution_transfer_fraction[0,'H2O'].fix(solvent_transfer)
+        for s in solute_transfer:
+            m.fs.unit.solution_transfer_fraction[0, s].fix(solute_transfer[s])
+
+        m.fs.unit.low_pressure_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'].fix(
+            feed_flow_mass * (1 - sum(x for x in lowP_mass_frac.values())))
+        for s in lowP_mass_frac:
+            m.fs.unit.low_pressure_side.properties_in[0].flow_mass_phase_comp['Liq', s].fix(feed_flow_mass * lowP_mass_frac[s])
+        m.fs.unit.low_pressure_side.properties_in[0].pressure.fix(lowP_pressure)
+        m.fs.unit.low_pressure_side.properties_in[0].temperature.fix(temperature)
+        m.fs.unit.low_pressure_side.properties_in[0].mass_frac_phase_comp
+        m.fs.unit.low_pressure_side.properties_in[0].flow_mol_phase_comp
+        m.fs.unit.low_pressure_side.properties_in[0].flow_vol
+
+        ### NOTE THE PRESSURE EXHCANGER EXPECTS EQUAL VOLUMETRIC FLOW RATES so one of mass fractions on high pressure or low pressure sides
+        # should be left unfixed, as other wise you are fixing all the mass fractions, and forcing equal flow, which leaves no degrees of freedom
+        # to satisfy the equal flow constriants. This will throw a -1 DOF error and should not occur in practice where typicly at least one of
+        # the inlet mass flow rates is colaculated.
+        m.fs.unit.high_pressure_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O']=\
+           feed_flow_mass * (1 - sum(x for x in highP_mass_frac.values()))
+
+        for s in highP_mass_frac:
+            m.fs.unit.high_pressure_side.properties_in[0].flow_mass_phase_comp['Liq', s].fix(feed_flow_mass * highP_mass_frac[s])
+
+        m.fs.unit.high_pressure_side.properties_in[0].pressure.fix(highP_pressure)
+        m.fs.unit.high_pressure_side.properties_in[0].temperature.fix(temperature)
+        m.fs.unit.high_pressure_side.properties_in[0].mass_frac_phase_comp
+        m.fs.unit.high_pressure_side.properties_in[0].flow_mol_phase_comp
+        m.fs.unit.high_pressure_side.properties_in[0].flow_vol
+
+        return m
+
+    @pytest.mark.unit
+    def test_dof(self, unit_frame):
+        assert degrees_of_freedom(unit_frame) == 0
+
+    @pytest.mark.unit
+    def test_calculate_scaling(self, unit_frame):
+        m = unit_frame
+        calculate_scaling_factors(m)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
+        assert len(unscaled_var_list) == 0
+        # check that all constraints have been scaled
+        unscaled_constraint_list = list(unscaled_constraints_generator(m))
+        assert len(unscaled_constraint_list) == 0
+
+    @pytest.mark.component
+    def test_initialize(self, unit_frame):
+        m = unit_frame
+        initialization_tester(unit_frame)
+
+
+    @pytest.mark.component
+    def test_var_scaling(self, unit_frame):
+        m = unit_frame
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        assert badly_scaled_var_lst == []
+
+    @pytest.mark.component
+    def test_solve(self, unit_frame):
+        m = unit_frame
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+               TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.component
+    def test_solution(self, unit_frame):
+        m = unit_frame
+
+        solvent_transfer=0.05
+        solute_transfer={'Na': 0.1,
+                          'Ca': 0.11,
+                          'Mg': 0.12,
+                          'SO4': 0.13,
+                          'Cl': 0.14}
+
+        feed_flow_mass = 1
+        lowP_mass_frac = {'Na': 11122e-6,
+                          'Ca': 382e-6,
+                          'Mg': 1394e-6,
+                          'SO4': 2136e-6,
+                          'Cl': 20300e-6}
+        highP_mass_frac = {'Na': 2*11122e-6,
+                          'Ca': 2*382e-6,
+                          'Mg': 2*1394e-6,
+                          'SO4': 2*2136e-6,
+                          'Cl':2*20300e-6}
+
+        assert (pytest.approx(feed_flow_mass * (1 - sum(x for x in lowP_mass_frac.values())), rel=1e-3) ==
+                value(m.fs.unit.low_pressure_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']))
+
+        for s in lowP_mass_frac:
+            assert (pytest.approx(feed_flow_mass * lowP_mass_frac[s], rel=1e-3) ==
+                    value(m.fs.unit.low_pressure_inlet.flow_mass_phase_comp[0, 'Liq', s]))
+
+        assert (pytest.approx(4.755e6, rel=1e-3) ==
+                value(m.fs.unit.low_pressure_outlet.pressure[0]))
+        assert (pytest.approx(feed_flow_mass * (1 - sum(x for x in highP_mass_frac.values())), rel=1e-3) ==
+                value(m.fs.unit.high_pressure_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']))
+
+        for s in highP_mass_frac:
+                assert (pytest.approx(feed_flow_mass * highP_mass_frac[s], rel=1e-3) ==
+                    value(m.fs.unit.high_pressure_inlet.flow_mass_phase_comp[0, 'Liq', s]))
+        assert (pytest.approx(4.654e6, rel=1e-3) ==
+                value(m.fs.unit.low_pressure_side.deltaP[0]))
+        assert (pytest.approx(4.654e3, rel=1e-3) ==
+                value(m.fs.unit.low_pressure_side.work[0]))
+        assert (pytest.approx(-4.899e6, rel=1e-3) ==
+                value(m.fs.unit.high_pressure_side.deltaP[0]))
+        assert (pytest.approx(-4.899e3, rel=1e-3) ==
+                value(m.fs.unit.high_pressure_side.work[0]))
+
+        #testing solvent transfer
+        assert (pytest.approx(-feed_flow_mass * (1 - sum(x for x in highP_mass_frac.values()))*solvent_transfer, rel=1e-3) ==
+                value(m.fs.unit.high_pressure_side.mass_transfer_term[0,'Liq','H2O']))
+        assert (pytest.approx(feed_flow_mass * (1 - sum(x for x in highP_mass_frac.values()))
+                -feed_flow_mass * (1 - sum(x for x in highP_mass_frac.values()))*solvent_transfer, rel=1e-3) ==
+                value(m.fs.unit.high_pressure_outlet.flow_mass_phase_comp[0,'Liq','H2O']))
+        assert (pytest.approx(feed_flow_mass * (1 - sum(x for x in lowP_mass_frac.values()))
+                +feed_flow_mass * (1 - sum(x for x in highP_mass_frac.values()))*solvent_transfer, rel=1e-3) ==
+                value(m.fs.unit.low_pressure_outlet.flow_mass_phase_comp[0,'Liq','H2O']))
+        #testing solute transfer
+        for s in highP_mass_frac:
+            assert (pytest.approx(-feed_flow_mass * highP_mass_frac[s]*solute_transfer[s], rel=1e-3) ==
+                    value(m.fs.unit.high_pressure_side.mass_transfer_term[0,'Liq',s]))
+            assert (pytest.approx(feed_flow_mass * highP_mass_frac[s]
+                    -feed_flow_mass * highP_mass_frac[s]*solute_transfer[s], rel=1e-3) ==
+                    value(m.fs.unit.high_pressure_outlet.flow_mass_phase_comp[0,'Liq',s]))
+            assert (pytest.approx(feed_flow_mass * lowP_mass_frac[s]
+                    +feed_flow_mass * highP_mass_frac[s]*solute_transfer[s], rel=1e-3) ==
+                    value(m.fs.unit.low_pressure_outlet.flow_mass_phase_comp[0,'Liq',s]))
 
     @pytest.mark.unit
     def test_report(self, unit_frame):
