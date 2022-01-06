@@ -39,9 +39,9 @@ class IpoptWaterTAP(IPOPT):
 
         self._tee = kwds.get("tee", False)
 
-        ## Set the IDAES-default tol
-        #if "tol" not in self.options:
-        #   self.options["tol"] = 1e-06
+        # Set the IDAES-default tol
+        if "tol" not in self.options:
+            self.options["tol"] = 1e-6
 
         if not self._is_user_scaling():
             self._reset_needed = False
