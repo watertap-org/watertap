@@ -752,7 +752,7 @@ def _save_results(sweep_params, outputs, global_values, global_results, global_o
         np.savetxt(results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
 
         # Save the data of output dictionary
-        _write_outputs(global_output_dict, txt_options="keys")
+        _write_outputs(global_output_dict, output_directory=dirname, txt_options="keys")
         # _read_output_h5("./output/output_dict.h5")
 
 
@@ -1051,7 +1051,7 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
         np.savetxt(results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
 
         # Save the data of output dictionary
-        _write_outputs(global_output_dict, txt_options="keys")
+        _write_outputs(global_output_dict, output_directory=dirname, txt_options="keys")
         # _read_output_h5("./output/output_dict.h5")
 
 
