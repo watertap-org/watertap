@@ -72,7 +72,7 @@ class NanofiltrationZOData(SIDOBaseData):
         self.set_param_from_data(self.electricity_intensity, pdict)
 
     def _get_performance_contents(self, time_point=0):
-        perf_dict = super()._get_performance_contents(time_point=0)
+        perf_dict = super()._get_performance_contents(time_point)
 
         perf_dict["vars"]["Electricity Demand"] = self.electricity[time_point]
         perf_dict["vars"]["Electricity Intensity"] = self.electricity_intensity
