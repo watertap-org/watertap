@@ -52,19 +52,24 @@ class NanofiltrationZOData(SIDOBaseData):
                                                   rule=electricity_consumption)
 
     def load_parameters_from_database(self, use_default_removal=False):
+        """
+        Method to load parameters for nanofiltration models from database.
+
+        Args:
+            use_default_removal - (optional) indicate whether to use defined
+                                  default removal fraction if no specific value
+                                  defined in database
+
+        Returns:
+            None
+        """
         # Get parameter dict from database
         pdict = self.config.database.get_unit_operation_parameters(
             "nanofiltration", subtype=self.config.process_subtype)
 
-        self.set_param_from_data(self.recovery_vol, pdict)
-        self.set_param_from_data(self.electricity_intensity, pdict)
+        self.set_recovery_and_removal(pdict, use_default_removal)
 
-        for t, j in self.removal_mass_solute:
-            self.set_param_from_data(
-                self.removal_mass_solute[t, j],
-                pdict,
-                index=j,
-                use_default_removal=use_default_removal)
+        self.set_param_from_data(self.electricity_intensity, pdict)
 
     def _get_performance_contents(self, time_point=0):
         perf_dict = super()._get_performance_contents(time_point=0)

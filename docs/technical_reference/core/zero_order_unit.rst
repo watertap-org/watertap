@@ -44,7 +44,7 @@ Property Package Requirements
 The SIDO base class makes a number of assumptions about the structure of the associated property package, and contains a number of checks to ensure the property package meets these requirements. The requirements for the property package are:
 
 1. A single phase named `Liq`.
-2. A single `Solvent` species named `H2O` (package must define a `solvent_set` with length that contains "H2O").
+2. A single `Solvent` species named `H2O` (package must define a `solvent_set` with length one that contains "H2O").
 3. All other species are defined as `Solutes` (package must define a `solute_set` and the `component_list` must be the union of `solvent_set` and `solute_set`).
 4. The property package must define `flow_vol`, `conc_mass_comp`, `pressure` and `temperature` as properties.
 

@@ -313,10 +313,35 @@ class SIDOBaseData(UnitModelBlockData):
                     warning=False))  # would just be a duplicate of above
 
     def load_parameters_from_database(self):
+        """
+        Placeholder method for loading parameters from database.
+
+        All derived classes should overload this.
+        """
         raise NotImplementedError()
 
     def set_param_from_data(
             self, parameter, data, index=None, use_default_removal=False):
+        """
+        General method for setting parameter values from a dict of data
+        returned from a database.
+
+        Args:
+            parameter - a Pyomo Var to be fixed to value from database
+            data - dict of parameter values from database
+            index - (optional) index to fix if parameter is an IndexedVar
+            use_default_removal - (optional) indicate whether to use defined
+                                  default removal fraction if no specific value
+                                  defined in database
+
+        Returns:
+            None
+
+        Raises:
+            KeyError if values cannot be found for parameter in data dict
+
+        """
+
         pname = parameter.parent_component().local_name
 
         try:
@@ -362,6 +387,29 @@ class SIDOBaseData(UnitModelBlockData):
         parameter.fix(val*units)
         _log.info_high(f"{parameter.name} fixed to value {val} {str(units)}")
 
+    def set_recovery_and_removal(self, data, use_default_removal=False):
+        """
+        Common utiltiy method for setting values of recovery and removal
+        fractions.
+
+        Args:
+            data - dict of parameter values to use when fixing variables
+            use_default_removal - (optional) indicate whether to use defined
+                                  default removal fraction if no specific value
+                                  defined in database
+
+        Returns:
+            None
+        """
+        self.set_param_from_data(self.recovery_vol, data)
+
+        for t, j in self.removal_mass_solute:
+            self.set_param_from_data(
+                self.removal_mass_solute[t, j],
+                data,
+                index=j,
+                use_default_removal=use_default_removal)
+
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
             {"Inlet": self.inlet,
@@ -371,8 +419,7 @@ class SIDOBaseData(UnitModelBlockData):
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {"Water Recovery": self.recovery_vol[time_point]}
-        for (t, j), v in self.removal_mass_solute.items():
-            if t == time_point:
-                var_dict[f"Solute Removal [{j}]"] = v
+        for j, v in self.removal_mass_solute[time_point, :].wildcard_items():
+            var_dict[f"Solute Removal [{j}]"] = v
 
         return {"vars": var_dict}
