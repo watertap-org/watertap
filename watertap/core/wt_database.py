@@ -23,11 +23,11 @@ class Database:
     """
     WaterTap Database class.
 
-    Used to instantiate an instnace of a database for loading parameters
-    associated with zero-order models in waterTap.
+    Used to instantiate an instance of a database for loading parameters
+    associated with zero-order models in WaterTap.
 
     Args:
-        dbpath - (optional) path to database folder contianing yml files
+        dbpath - (optional) path to database folder containing yml files
 
     Returns:
         an instance of a Database object linked to the provided database
