@@ -11,8 +11,8 @@
 #
 ###############################################################################
 """
-This module contains the base class for all zero order single inlet-two outlet
-(SITO) unit models.
+This module contains the base class for all zero order single inlet-double
+outlet (SIDO) unit models.
 """
 from idaes.core import UnitModelBlockData, useDefault
 from idaes.core.util.config import is_physical_parameter_block
@@ -20,6 +20,7 @@ import idaes.logger as idaeslog
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.tables import create_stream_table_dataframe
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.environ import NonNegativeReals, Var, units as pyunits
@@ -27,10 +28,13 @@ from pyomo.environ import NonNegativeReals, Var, units as pyunits
 # Some more inforation about this module
 __author__ = "Andrew Lee"
 
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
-class SITOBaseData(UnitModelBlockData):
+
+class SIDOBaseData(UnitModelBlockData):
     """
-    Standard base class for single inlet-two outlet unit models.
+    Standard base class for single inlet-double outlet unit models.
 
     This class is intended to be used for creating derived model classes and
     cannot be instantiated by itself. When creating derived classes,
@@ -66,19 +70,15 @@ class SITOBaseData(UnitModelBlockData):
         doc='''A ConfigBlock with arguments to be passed to a property block(s)
         and used when constructing these, **default** - None.
         **Valid values:** {see property package for documentation.}'''))
+    CONFIG.declare('database', ConfigValue(
+        description='An instance of a WaterTAP Database to use for parameters.'
+        ))
+    CONFIG.declare('process_subtype', ConfigValue(
+        description=
+        'Process subtype to use when looking up parameters from database.'))
 
     def build(self):
         super().build()
-
-        # Check that derived class has implemented flags for pressure change
-        if not hasattr(self, "_has_deltaP_treated"):
-            raise NotImplementedError(
-                f"{self.name} derived class has not been implemented "
-                f"_has_deltaP_treated.")
-        if not hasattr(self, "_has_deltaP_byproduct"):
-            raise NotImplementedError(
-                f"{self.name} derived class has not been implemented "
-                f"_has_deltaP_byproduct.")
 
         # Check that property package meets requirements
         if self.config.property_package.phase_list != ["Liq"]:
@@ -157,19 +157,6 @@ class SITOBaseData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc='Solute removal fraction on a mass basis')
 
-        if self._has_deltaP_treated:
-            self.deltaP_treated = Var(
-                self.flowsheet().time,
-                initialize=0,
-                units=units_meta('pressure'),
-                doc='Pressure change between inlet and treated outlet')
-        if self._has_deltaP_byproduct:
-            self.deltaP_byproduct = Var(
-                self.flowsheet().time,
-                initialize=0,
-                units=units_meta('pressure'),
-                doc='Pressure change between inlet and byproduct outlet')
-
         # Add performance constraints
         # Water recovery
         @self.Constraint(self.flowsheet().time, doc='Water recovery equation')
@@ -204,40 +191,6 @@ class SITOBaseData(UnitModelBlockData):
                     b.properties_in[t].conc_mass_comp[j] ==
                     b.recovery_vol[t] *
                     b.properties_treated[t].conc_mass_comp[j])
-
-        # Pressure drop
-        @self.Constraint(self.flowsheet().time,
-                         doc='Treated stream pressure equation')
-        def treated_pressure_constraint(b, t):
-            if self._has_deltaP_treated:
-                dp = b.deltaP_treated[t]
-            else:
-                dp = 0
-            return (b.properties_in[t].pressure + dp ==
-                    b.properties_treated[t].pressure)
-
-        @self.Constraint(self.flowsheet().time,
-                         doc='Byproduct stream pressure equation')
-        def byproduct_pressure_constraint(b, t):
-            if self._has_deltaP_byproduct:
-                dp = b.deltaP_byproduct[t]
-            else:
-                dp = 0
-            return (b.properties_in[t].pressure + dp ==
-                    b.properties_byproduct[t].pressure)
-
-        # Temperature equality
-        @self.Constraint(self.flowsheet().time,
-                         doc='Treated stream temperature equality')
-        def treated_temperature_equality(b, t):
-            return (b.properties_in[t].temperature ==
-                    b.properties_treated[t].temperature)
-
-        @self.Constraint(self.flowsheet().time,
-                         doc='Byproduct stream temperature equality')
-        def byproduct_temperature_equality(b, t):
-            return (b.properties_in[t].temperature ==
-                    b.properties_byproduct[t].temperature)
 
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
@@ -359,32 +312,114 @@ class SITOBaseData(UnitModelBlockData):
                     default=1,
                     warning=False))  # would just be a duplicate of above
 
-        for t, v in self.treated_pressure_constraint.items():
-            iscale.constraint_scaling_transform(
-                v, iscale.get_scaling_factor(
-                    self.properties_in[t].pressure,
-                    default=1e-5,
-                    warning=True,
-                    hint=" for treated pressure constraint"))
+    def load_parameters_from_database(self):
+        """
+        Placeholder method for loading parameters from database.
 
-        for t, v in self.byproduct_pressure_constraint.items():
-            iscale.constraint_scaling_transform(
-                v, iscale.get_scaling_factor(
-                    self.properties_in[t].pressure,
-                    default=1e-5,
-                    warning=False))  # would just be a duplicate of above
+        All derived classes should overload this.
+        """
+        raise NotImplementedError()
 
-        for t, v in self.treated_temperature_equality.items():
-            iscale.constraint_scaling_transform(
-                v, iscale.get_scaling_factor(
-                    self.properties_in[t].temperature,
-                    default=1e-2,
-                    warning=True,
-                    hint=" for treated temperature equality"))
+    def set_param_from_data(
+            self, parameter, data, index=None, use_default_removal=False):
+        """
+        General method for setting parameter values from a dict of data
+        returned from a database.
 
-        for t, v in self.byproduct_temperature_equality.items():
-            iscale.constraint_scaling_transform(
-                v, iscale.get_scaling_factor(
-                    self.properties_in[t].temperature,
-                    default=1e-2,
-                    warning=False))  # would just be a duplicate of above
+        Args:
+            parameter - a Pyomo Var to be fixed to value from database
+            data - dict of parameter values from database
+            index - (optional) index to fix if parameter is an IndexedVar
+            use_default_removal - (optional) indicate whether to use defined
+                                  default removal fraction if no specific value
+                                  defined in database
+
+        Returns:
+            None
+
+        Raises:
+            KeyError if values cannot be found for parameter in data dict
+
+        """
+
+        pname = parameter.parent_component().local_name
+
+        try:
+            pdata = data[pname]
+        except KeyError:
+            raise KeyError(
+                f"{self.name} - database provided does not contain an entry "
+                f"for {pname} for technology.")
+
+        if index is not None:
+            try:
+                pdata = pdata[index]
+            except KeyError:
+                if pname == "removal_mass_solute" and use_default_removal:
+                    try:
+                        pdata = data["default_removal_mass_solute"]
+                        index = "default"
+                    except KeyError:
+                        raise KeyError(
+                            f"{self.name} - database provided does not "
+                            f"contain an entry for {pname} with index {index} "
+                            f"for technology and no default removal was "
+                            f"specified.")
+                else:
+                    raise KeyError(
+                        f"{self.name} - database provided does not contain "
+                        f"an entry for {pname} with index {index} for "
+                        f"technology.")
+
+        try:
+            val = pdata["value"]
+        except KeyError:
+            raise KeyError(
+                f"{self.name} - no value provided for {pname} (index: "
+                f"{index}) in database.")
+        try:
+            units = getattr(pyunits, pdata["units"])
+        except KeyError:
+            raise KeyError(
+                f"{self.name} - no units provided for {pname} (index: "
+                f"{index}) in database.")
+
+        parameter.fix(val*units)
+        _log.info_high(f"{parameter.name} fixed to value {val} {str(units)}")
+
+    def set_recovery_and_removal(self, data, use_default_removal=False):
+        """
+        Common utiltiy method for setting values of recovery and removal
+        fractions.
+
+        Args:
+            data - dict of parameter values to use when fixing variables
+            use_default_removal - (optional) indicate whether to use defined
+                                  default removal fraction if no specific value
+                                  defined in database
+
+        Returns:
+            None
+        """
+        self.set_param_from_data(self.recovery_vol, data)
+
+        for t, j in self.removal_mass_solute:
+            self.set_param_from_data(
+                self.removal_mass_solute[t, j],
+                data,
+                index=j,
+                use_default_removal=use_default_removal)
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {"Inlet": self.inlet,
+             "Treated": self.treated,
+             "Byproduct": self.byproduct},
+            time_point=time_point)
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {"Water Recovery": self.recovery_vol[time_point]}
+        for j, v in self.removal_mass_solute[time_point, :].wildcard_items():
+            var_dict[f"Solute Removal [{j}]"] = v
+
+        return {"vars": var_dict}
