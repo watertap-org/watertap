@@ -101,6 +101,15 @@ from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReac
 # Import log10 function from pyomo
 from pyomo.environ import log10
 
+# Import scaling helper functions
+from watertap.examples.chemistry.chem_scaling_utils import (
+    _set_eps_vals,
+    _set_equ_rxn_scaling,
+    _set_mat_bal_scaling_FpcTP,
+    _set_mat_bal_scaling_FTPx,
+    _set_ene_bal_scaling,
+)
+
 __author__ = "Austin Ladshaw"
 
 # Case 1 Config
@@ -301,78 +310,16 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
 
     assert_units_consistent(model)
 
-    # For equilibrium reactions
-    try:
-        for rid in model.fs.rxn_params.equilibrium_reaction_idx:
-            # NOTE: Changes in how this expression is formulated will NO LONGER
-            #       allow us to query the value in this way. Instead, we must
-            #       obtain the value directly from the
-            #scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
-            scale = rxn_config["equilibrium_reactions"][rid]["parameter_data"]["k_eq_ref"][0]
-
-            # NOTE: The solubility_product function STILL has an eps value that we need to set
-            try:
-                # Want to set eps in some fashion similar to this
-                if scale < 1e-16:
-                    model.fs.rxn_params.component("reaction_"+rid).eps.value = scale*1e-2
-                else:
-                    model.fs.rxn_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
-            except:
-                pass
-    except:
-        pass
-
     # Scaling
-    if scaling == True:
-        try:
-            #Add scaling factors for reactions
-            for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
-                # i[0] = time, i[1] = reaction
+    _set_eps_vals(model.fs.rxn_params, rxn_config)
+    # NOTE: We skip reaction scaling because we are NOT using the log_solubility_product form in this test
+    #_set_equ_rxn_scaling(model.fs.unit, rxn_config)
+    _set_mat_bal_scaling_FpcTP(model.fs.unit)
 
-                # NOTE: Changes in how this expression is formulated will NO LONGER
-                #       allow us to query the value in this way. Instead, we must
-                #       obtain the value directly from the
-                #scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
-                scale = rxn_config["equilibrium_reactions"][i[1]]["parameter_data"]["k_eq_ref"][0]
-
-                # this may also need to be different for solubility_product
-                iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 1e-1/scale)
-
-                # very different if not using log conc form
-                #       We need to set this value very high because we are not using
-                #       a well scaled constraint if we are not doing the log forms
-                iscale.constraint_scaling_transform(
-                    model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 1e-1/scale)
-        except:
-            pass
-
-        # For species
-        min = 1e-3
-        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
-            # i[0] = phase, i[1] = species
-            if model.fs.unit.inlet.flow_mol_phase_comp[0, i[0], i[1]].value > min:
-                scale = model.fs.unit.inlet.flow_mol_phase_comp[0, i[0], i[1]].value
-            else:
-                scale = min
-
-            #NOTE: Something goes wrong with this scaling for solid species
-            if i[0] == 'Liq':
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-                iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
-            #NOTE: trying to scale solids in this way is significantly worse
-            else:
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-                iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
-
-
-        iscale.calculate_scaling_factors(model.fs.unit)
-        assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
-        assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
-        assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
+    iscale.calculate_scaling_factors(model.fs.unit)
+    assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+    assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
+    assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
     #End scaling if statement
 
     solver.options['max_iter'] = 200
@@ -476,87 +423,16 @@ def run_case2(xA, xB, xAB=1e-25, scaling=True, rxn_config=None, state="FpcTP"):
 
     assert_units_consistent(model)
 
-    # For equilibrium reactions
-    try:
-        for rid in model.fs.rxn_params.equilibrium_reaction_idx:
-            # NOTE: Changes in how this expression is formulated will NO LONGER
-            #       allow us to query the value in this way. Instead, we must
-            #       obtain the value directly from the
-            #scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[rid].expr)
-            scale = rxn_config["equilibrium_reactions"][rid]["parameter_data"]["k_eq_ref"][0]
-
-            # NOTE: The solubility_product function STILL has an eps value that we need to set
-            try:
-                # Want to set eps in some fashion similar to this
-                if scale < 1e-16:
-                    model.fs.rxn_params.component("reaction_"+rid).eps.value = scale*1e-2
-                else:
-                    model.fs.rxn_params.component("reaction_"+rid).eps.value = 1e-16*1e-2
-            except:
-                pass
-    except:
-        pass
-
     # Scaling
-    if scaling == True:
-        try:
-            #Add scaling factors for reactions
-            for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
-                # i[0] = time, i[1] = reaction
+    _set_eps_vals(model.fs.rxn_params, rxn_config)
+    _set_equ_rxn_scaling(model.fs.unit, rxn_config)
+    if case1_thermo_config["state_definition"] == FpcTP:
+        _set_mat_bal_scaling_FpcTP(model.fs.unit)
+    if case1_thermo_config["state_definition"] == FTPx:
+        _set_mat_bal_scaling_FTPx(model.fs.unit)
 
-                # NOTE: Changes in how this expression is formulated will NO LONGER
-                #       allow us to query the value in this way. Instead, we must
-                #       obtain the value directly from the
-                #scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
-                scale = rxn_config["equilibrium_reactions"][i[1]]["parameter_data"]["k_eq_ref"][0]
-
-                # Not sure how much to scale here (for the new log form)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10)
-
-                # Equilibrium constraint should be 1 or 0.1 in log form
-                iscale.constraint_scaling_transform(
-                    model.fs.unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 0.1)
-        except:
-            pass
-
-        # For species
-        min = 1e-3
-        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
-            # i[0] = phase, i[1] = species
-            if case1_thermo_config["state_definition"] == FpcTP:
-                if model.fs.unit.inlet.flow_mol_phase_comp[0, i[0], i[1]].value > min:
-                    scale = model.fs.unit.inlet.flow_mol_phase_comp[0, i[0], i[1]].value
-                else:
-                    scale = min
-
-            if case1_thermo_config["state_definition"] == FTPx:
-                if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
-                    scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
-                else:
-                    scale = min
-
-            if case1_thermo_config["state_definition"] == FTPx:
-                iscale.constraint_scaling_transform(
-                    model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-
-            #NOTE: Something goes wrong with this scaling for solid species
-            if i[0] == 'Liq':
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-                iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
-            #NOTE: trying to scale solids in this way is significantly worse
-            else:
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-                iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-                iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
-
-        iscale.calculate_scaling_factors(model.fs.unit)
-        assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
-        assert isinstance(model.fs.unit.control_volume.properties_out[0.0].scaling_factor, Suffix)
-        assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
-    #End scaling if statement
+    iscale.calculate_scaling_factors(model.fs.unit)
+    assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
 
     # Initialize model
 

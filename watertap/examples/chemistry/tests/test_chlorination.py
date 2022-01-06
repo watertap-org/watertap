@@ -115,6 +115,16 @@ from pyomo.environ import log10
 
 import idaes.logger as idaeslog
 
+# Import scaling helper functions
+from watertap.examples.chemistry.chem_scaling_utils import (
+    _set_eps_vals,
+    _set_equ_rxn_scaling,
+    _set_inherent_rxn_scaling,
+    _set_mat_bal_scaling_FpcTP,
+    _set_mat_bal_scaling_FTPx,
+    _set_ene_bal_scaling,
+)
+
 __author__ = "Austin Ladshaw"
 
 # Configuration dictionary
@@ -654,32 +664,10 @@ class TestChlorination():
     def test_scaling(self, chlorination_obj):
         model = chlorination_obj
 
-        for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
-            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
-            iscale.constraint_scaling_transform(model.fs.unit.control_volume.properties_out[0.0].
-                    inherent_equilibrium_constraint[i[1]], 0.1)
-
-        for i in model.fs.unit.control_volume.equilibrium_reaction_extent_index:
-            scale = value(model.fs.unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10/scale)
-            iscale.constraint_scaling_transform(model.fs.unit.control_volume.reactions[0.0].
-                    equilibrium_constraint[i[1]], 0.1)
-
-        # Next, try adding scaling for species
-        min = 1e-3
-        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
-            # i[0] = phase, i[1] = species
-            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
-                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
-            else:
-                scale = min
-            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-            iscale.constraint_scaling_transform(
-                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
+        _set_inherent_rxn_scaling(model.fs.unit, thermo_config)
+        _set_equ_rxn_scaling(model.fs.unit, reaction_config)
+        _set_mat_bal_scaling_FTPx(model.fs.unit)
+        _set_ene_bal_scaling(model.fs.unit)
 
         iscale.calculate_scaling_factors(model.fs.unit)
 

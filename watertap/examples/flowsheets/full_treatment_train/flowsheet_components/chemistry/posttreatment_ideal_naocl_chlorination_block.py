@@ -21,7 +21,7 @@
                     NaOCl stream
                         |
                         V
-        inlet stream ---> [Mixer] --- outlet stream ---> [EquilibriumReactor] ---> exit stream (to distribution)
+       inlet stream ---> [Mixer] --- outlet stream ---> [EquilibriumReactor] ---> exit stream (to distribution)
 """
 
 # Importing the object for units from pyomo
@@ -107,6 +107,9 @@ from watertap.examples.flowsheets.full_treatment_train.electrolyte_scaling_utils
 from watertap.examples.flowsheets.full_treatment_train.chemical_flowsheet_util import (
     set_H2O_molefraction, zero_out_non_H2O_molefractions, fix_all_molefractions,
     unfix_all_molefractions, seq_decomp_initializer )
+
+from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import desalination
+from idaes.core.util.initialization import propagate_state
 
 __author__ = "Austin Ladshaw"
 
@@ -629,9 +632,6 @@ def build_ideal_naocl_chlorination_block(model, expand_arcs=False):
 # This method assumes that the flowsheet has a properties object named prop_TDS
 def build_translator_from_RO_to_chlorination_block(model):
     # Translator inlet from RO and outlet goes to chlorination
-    # NOTE: May need to come up with a way to set state_args for Translator for
-    #       better convergence behavior. This block seems to be the trouble maker
-    #       for the full solve.
     model.fs.RO_to_Chlor = Translator(
         default={"inlet_property_package": model.fs.prop_TDS,
                  "outlet_property_package": model.fs.ideal_naocl_thermo_params})
@@ -758,7 +758,6 @@ def run_chlorination_block_example(fix_free_chlorine=False):
     #          * model.fs.costing_param.load_factor)
     # costing.build_costing(model, module=financials)
 
-
     # set some values (using defaults for testing)
     set_ideal_naocl_mixer_inlets(model, dosing_rate_of_NaOCl_mg_per_s = 0.4,
                                             inlet_water_density_kg_per_L = 1,
@@ -793,19 +792,9 @@ def run_chlorination_block_example(fix_free_chlorine=False):
     if fix_free_chlorine == True:
         setup_block_to_solve_naocl_dosing_rate(model)
 
-    # NOTE: With new log conc form, it is better to NOT have a very low bound_push
-    #           inside of your flowsheet. For initialization of the block, it is
-    #           usually fine. BUT, when solving the flowsheet (wth user-scaling)
-    #           it seems to cause some issues
     solve_with_user_scaling(model, tee=True, bound_push=1e-4, mu_init=1e-1)
 
     display_results_of_ideal_naocl_mixer(model.fs.ideal_naocl_mixer_unit)
     display_results_of_chlorination_unit(model.fs.ideal_naocl_chlorination_unit)
 
     return model
-
-if __name__ == "__main__":
-    model = run_chlorination_block_example(fix_free_chlorine=True)
-    property_models.build_prop(model, base='TDS')
-    build_translator_from_RO_to_chlorination_block(model)
-    # costing.display_costing(model)
