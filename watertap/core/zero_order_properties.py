@@ -12,7 +12,7 @@
 ###############################################################################
 """
 This module contains the general purpose property package for zero-order
-unit models. Zero-order models do not track temeprature and pressure, or any
+unit models. Zero-order models do not track temperature and pressure, or any
 form of energy flow.
 """
 from idaes.core import (EnergyBalanceType,
