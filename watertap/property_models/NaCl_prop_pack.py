@@ -40,7 +40,8 @@ from idaes.core.util.misc import add_object_reference, extract_data
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom, \
     number_unfixed_variables
-from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
+from idaes.core.util.exceptions import (
+    ConfigurationError, InitializationError, PropertyPackageError)
 import idaes.core.util.scaling as iscale
 
 # Set up logger
@@ -263,6 +264,11 @@ class _NaClStateBlock(StateBlock):
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = solve_indexed_blocks(opt, [self], tee=slc.tee)
             init_log.info_high("Property initialization: {}.".format(idaeslog.condition(results)))
+
+            if not check_optimal_termination(results):
+                raise InitializationError(
+                    f"{self.name} failed to initialize successfully. Please "
+                    f"check the output logs for more information.")
 
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state
