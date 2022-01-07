@@ -22,7 +22,8 @@ from pyomo.environ import (Block,
                            Reference,
                            units as pyunits,
                            log,
-                           value)
+                           value,
+                           Expr_if)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -35,6 +36,7 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault,
                         MaterialFlowBasis)
 from idaes.core.util import get_solver
+from idaes.core.util.math import smooth_min
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
@@ -224,14 +226,14 @@ class NanofiltrationData(UnitModelBlockData):
         #     bounds=(1e-6, 1), #TODO: revisit
         #     units=pyunits.dimensionless,
         #     doc='Diffusive hindrance coefficient of ion')
-        self.lambda_comp = Var(
-            self.flowsheet().config.time,
-            solute_set,
-            initialize=0.5, #TODO:revisit
-            domain=NonNegativeReals,
-            bounds=(None, 1-1e-6), #TODO: revisit
-            units=pyunits.dimensionless,
-            doc='Ratio of Stokes radius to membrane pore radius')
+        # self.lambda_comp = Var(
+        #     self.flowsheet().config.time,
+        #     solute_set,
+        #     initialize=0.5, #TODO:revisit
+        #     domain=NonNegativeReals,
+        #     bounds=(None, 1-1e-6), #TODO: revisit
+        #     units=pyunits.dimensionless,
+        #     doc='Ratio of Stokes radius to membrane pore radius')
         self.radius_pore = Var(
             initialize=0.5e-9, #TODO: revisit
             domain=NonNegativeReals,
@@ -412,33 +414,32 @@ class NanofiltrationData(UnitModelBlockData):
                 self.config.momentum_balance_type != 'none'):
             self.deltaP = Reference(self.feed_side.deltaP)
 
+        # Todo: add smooth_min to get minimum between computed value and 1 (any value exceeding 1 should be set to 1)
+        @self.Expression(self.flowsheet().config.time,
+                         solute_set,
+                         doc="Ratio of stokes radius to membrane pore radius equation")
+        def lambda_comp(b, t, j):
+            return smooth_min(1,(b.feed_side.properties_in[t].radius_stokes_comp[j]/b.radius_pore))
+
         # #Todo: add smooth_if for lambda<= 0.95 and lambda > 0.95
         @self.Expression(self.flowsheet().config.time,
                          solute_set,
                          doc="Diffusive hindered transport coefficient equation")
         def hindrance_factor_diffusive(b, t, j):
-            # if value(b.lambda_comp[t, j]) <= 0.95:
-            #     return ((1 + 9. / 8. * b.lambda_comp[t, j] * log(b.lambda_comp[t, j])
-            #             - 1.56034 * b.lambda_comp[t, j]
-            #             + 0.528155 * b.lambda_comp[t, j]**2
-            #             + 1.91521 * b.lambda_comp[t, j]**3
-            #             - 2.81903 * b.lambda_comp[t, j]**4
-            #             + 0.270788 * b.lambda_comp[t, j]**5
-            #             - 1.10115 * b.lambda_comp[t, j]**6
-            #             - 0.435933 * b.lambda_comp[t, j]**7) /
-            #             (1 - b.lambda_comp[t, j]) ** 2)
-            # elif value(b.lambda_comp[t, j]) > 0.95 :
-                return (0.984 *
-                        ((1 - b.lambda_comp[t,j])
-                         /b.lambda_comp[t,j]) ** (5/2)
-                        )
+            eps= 1e-8
+            return Expr_if(b.lambda_comp[t,j] > 0.95,
+                        0.984 *((1 - b.lambda_comp[t,j])/(b.lambda_comp[t,j])) ** (5/2),
+                           (1 + 9. / 8. * b.lambda_comp[t, j] * log(b.lambda_comp[t, j])
+                        - 1.56034 * b.lambda_comp[t, j]
+                        + 0.528155 * b.lambda_comp[t, j]**2
+                        + 1.91521 * b.lambda_comp[t, j]**3
+                        - 2.81903 * b.lambda_comp[t, j]**4
+                        + 0.270788 * b.lambda_comp[t, j]**5
+                        - 1.10115 * b.lambda_comp[t, j]**6
+                        - 0.435933 * b.lambda_comp[t, j]**7) /
+                        (1 - b.lambda_comp[t, j]+eps) ** 2,
+                    )
 
-        # Todo: add smooth_min to get minimum between computed value and 1 (any value exceeding 1 should be set to 1)
-        @self.Constraint(self.flowsheet().config.time,
-                         solute_set,
-                         doc="Ratio of stokes radius to membrane pore radius equation")
-        def eq_lambda_comp(b, t, j):
-            return (b.lambda_comp[t, j] * b.radius_pore == b.feed_side.properties_in[t].radius_stokes_comp[j])
 
 
         # @self.feed_side.Constraint(self.flowsheet().config.time,
@@ -672,9 +673,9 @@ class NanofiltrationData(UnitModelBlockData):
             if hasattr(self.config.property_package, k):
                 solute_set = getattr(self.config.property_package, k)
                 break
-        # if iscale.get_scaling_factor(self.radius_pore) is None:
-        #     sf = iscale.get_scaling_factor(self.radius_pore, default=1e10, warning=True)
-        #     iscale.set_scaling_factor(self.radius_pore, sf)
+        if iscale.get_scaling_factor(self.radius_pore) is None:
+            sf = iscale.get_scaling_factor(self.radius_pore, default=1e10, warning=True)
+            iscale.set_scaling_factor(self.radius_pore, sf)
 
         # # TODO: require users to set scaling factor for area or calculate it based on mass transfer and flux
         # iscale.set_scaling_factor(self.area, 1e-1)
