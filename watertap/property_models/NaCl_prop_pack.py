@@ -265,10 +265,10 @@ class _NaClStateBlock(StateBlock):
                 results = solve_indexed_blocks(opt, [self], tee=slc.tee)
             init_log.info_high("Property initialization: {}.".format(idaeslog.condition(results)))
 
-        if not check_optimal_termination(results):
-            raise InitializationError(
-                f"{self.name} failed to initialize successfully. Please check "
-                f"the output logs for more information.")
+            if not check_optimal_termination(results):
+                raise InitializationError(
+                    f"{self.name} failed to initialize successfully. Please "
+                    f"check the output logs for more information.")
 
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state
