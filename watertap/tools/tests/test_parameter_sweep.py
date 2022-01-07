@@ -355,7 +355,6 @@ class TestParallelManager():
 
             # Attempt to read in the data
             data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
-
             # Compare the last row of the imported data to truth
             truth_data = [ 0.9, 0.5, 1.0, 1.0, 2.0, 2.0 - 1000.*((2.*0.9 - 1.) + (3.*0.5 - 1.))]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
@@ -450,6 +449,8 @@ def _optimization(m, relax_feasibility=False):
     assert results.solver.termination_condition == \
            pyo.TerminationCondition.optimal
     assert results.solver.status == pyo.SolverStatus.ok
+
+    return results
 
 def _reinitialize(m, slack_penalty=10.):
     m.fs.slack.setub(None)

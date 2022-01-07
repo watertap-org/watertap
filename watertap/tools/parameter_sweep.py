@@ -714,8 +714,9 @@ def _aggregate_local_results(global_values, local_results, local_output_dict,
 
 # ================================================================
 
-def _save_results(sweep_params, outputs, global_values, global_results, global_output_dict,
-        results_file, debugging_data_dir, comm, interpolate_nan_outputs):
+def _save_results(sweep_params, outputs, local_values, global_values, local_results,
+        global_results, global_output_dict, results_file, debugging_data_dir, comm,
+        interpolate_nan_outputs):
 
     rank = comm.Get_rank()
     num_procs = comm.Get_size()
@@ -774,7 +775,7 @@ def _save_results(sweep_params, outputs, global_values, global_results, global_o
 
 # ================================================================
 
-def parameter_sweep2(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
+def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
         optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
         reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
         interpolate_nan_outputs=False, num_samples=None, seed=None):
@@ -811,14 +812,14 @@ def parameter_sweep2(model, sweep_params, outputs, results_file=None, optimize_f
             num_samples, local_num_cases, fail_counter, comm)
 
     # Save to file
-    global_save_data = _save_results(sweep_params, outputs, global_values, global_results, global_output_dict,
+    global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results, global_results, global_output_dict,
         results_file, debugging_data_dir, comm, interpolate_nan_outputs)
 
     return global_save_data
 
 # ================================================================
 
-def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
+def parameter_sweep_deprecated(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
         optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
         reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
         interpolate_nan_outputs=False, num_samples=None, seed=None):
@@ -950,9 +951,8 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
         try:
             # Simulate/optimize with this set of parameters
             results = optimize_function(model, **optimize_kwargs)
-            local_solve_status_list.append(results.solver.termination_condition.name) # We will store status as a string
-            print("status = ", results.solver.termination_condition.name)
             pyo.assert_optimal_termination(results)
+            local_solve_status_list.append(results.solver.termination_condition.name) # We will store status as a string
 
             # store the values of the optimization
             _update_local_output_dict(model, sweep_params, k, local_values[k, :],
@@ -981,34 +981,6 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
                 pass
             else:
                 local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
-
-    # for var in unfixed_variables_in_activated_equalities_set(model.fs):
-    #     print(var)
-    #     print(var.is_component_type())
-    #     parent_comp = var.parent_component()
-    #     print(parent_comp)
-    #     print(dir(parent_comp))
-    #     print(parent_comp.is_component_type())
-    #     # parent_var = var.parent_block()
-    #     # grand_parent_var = parent_var.parent_block()
-    #     # ggrand_parent_var = grand_parent_var.parent_block()
-    #     # print(ggrand_parent_var.parent_block())
-    #     break
-
-    # print(dir(model.fs.CONFIG))
-    # for block in model.fs.component_data_objects(active=None,
-    #                                             descend_into=True,
-    #                                             descent_order=TraversalStrategy.BreadthFirstSearch):
-        # print(model.fs.block_data_objects())
-    # Constraint = pyo.Constraint
-    # for block in model.fs.component_data_iterindex(active=True,
-    #                                                descend_into=True,
-    #                                                ctype=Constraint):
-    #
-    #     print(block[0])
-
-    # for block in model.fs.component_map():
-    #     print(block)
 
     # ================================================================
     # Save results
