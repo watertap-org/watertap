@@ -92,7 +92,6 @@ def build(number_of_stages=2):
     for pump in m.fs.BoosterPumps.values():
         pump.get_costing(module=financials, pump_type="High pressure")
         total_pump_work += pump.work_mechanical[0]
-    # m.fs.ROUnits = Block(m.fs.StageSet)
     # Add the stages ROs
     m.fs.ROUnits = ReverseOsmosis1D(m.fs.StageSet, default={
         "property_package": m.fs.properties,
@@ -206,8 +205,8 @@ def set_operating_conditions(m, Cin=None):
     erd_efi = 0.8  # energy recovery device efficiency [-]
     mem_A = 4.2e-12  # membrane water permeability coefficient [m/s-Pa]
     mem_B = 3.5e-8  # membrane salt permeability coefficient [m/s]
-    height = 1e-3  # channel height in membrane stage [m]
-    spacer_porosity = 0.97  # spacer porosity in membrane stage [-]
+    height = 2e-3  # channel height in membrane stage [m]
+    spacer_porosity = 0.75  # spacer porosity in membrane stage [-]
     width = 5 # membrane width factor [m]
     area = 100 # membrane area [m^2]
     pressure_atm = 101325  # atmospheric pressure [Pa]
@@ -245,8 +244,6 @@ def set_operating_conditions(m, Cin=None):
         else:
             B_scale = 1.0
 
-        # stage.inlet.temperature[0].fix()
-        # stage.inlet.pressure[0].fix()
         stage.A_comp.fix(mem_A)
         stage.B_comp.fix(mem_B*B_scale)
         stage.channel_height.fix(height)
@@ -255,6 +252,9 @@ def set_operating_conditions(m, Cin=None):
         stage.width.fix(width)
         stage.mixed_permeate[0].pressure.fix(pressure_atm)
         # stage.velocity[0, 0].fix(0.25)
+        #TODO: understand why DOF increase by 2*N stages when switching from 0DRO to 1DRO; expected DOF not to
+        # change when switching from one RO to the other. Nevertheless, fixing two more vars to satisfy DOF = 0 until
+        # error/issue identified
         stage.N_Re[0, 0].fix(500)
         stage.recovery_vol_phase[0, 'Liq'].fix(0.5)
 
@@ -297,7 +297,7 @@ def _lsrro_mixer_guess_initializer( mixer, solvent_multiplier, solute_multiplier
 
 
 def do_initialization_pass(m, optarg, guess_mixers):
-
+    print('--------------------START INITIALIZATION PASS--------------------')
     # start with the feed
     m.fs.feed.initialize(optarg=optarg)
 
@@ -338,6 +338,7 @@ def do_initialization_pass(m, optarg, guess_mixers):
 
 
 def do_backwards_initialization_pass(m, optarg):
+    print('--------------------START BACKWARDS INITIALIZATION PASS--------------------')
 
     first_stage = m.fs.StageSet.first()
     for stage in reversed(m.fs.NonFinal_StageSet):
@@ -397,6 +398,14 @@ def solve(m, solver=None, tee=False, raise_on_failure=False):
 
 
 def optimize_set_up(m, water_recovery=None, A_case=None, B_case=None, AB_tradeoff=None, A_fixed=None):
+    '''
+    B_case: "single optimum" or anything else to optimize B value at every LSR stage
+    A_case: "fix" or "optimize" A at every LSR stage
+    AB_tradeoff: "inequality constraint" - B >= function of A
+                 "equality constraint" - B = function of A
+                 anything else for no constraint applied - no constraint relating B value to A value
+    A_fixed: if A_case="fix", then provide a value to fix A with
+    '''
 
     for idx, pump in m.fs.PrimaryPumps.items():
         pump.control_volume.properties_out[0].pressure.unfix()
@@ -529,6 +538,7 @@ def display_state(m):
         print_state(f'RO {stage} permeate', m.fs.ROUnits[stage].permeate)
         print_state(f'RO {stage} retentate', m.fs.ROUnits[stage].retentate)
         wr = m.fs.ROUnits[stage].recovery_vol_phase[0, 'Liq'].value
+        #TODO: add rejection_phase_comp to 1DRO; currently, only 0DRO has this variable.
         # sr = m.fs.ROUnits[stage].rejection_phase_comp[0, 'Liq', 'NaCl'].value
         # print(f"Stage {stage} Volumetric water recovery: {wr*100:.2f}%, Salt rejection: {sr*100:.2f}%")
 
@@ -577,7 +587,8 @@ if __name__ == "__main__":
     m = main(number_of_stages=3,
              water_recovery=0.5,
              Cin=70,
-             A_case="fix A",
-             B_case=None,#"single optimum",
-             AB_tradeoff="inequality constraint",
-             A_fixed=1.5/3.6e11)
+             A_case="optimize",
+             B_case="optimize",
+             AB_tradeoff="no constraint",
+             # A_fixed=1.5/3.6e11
+             )
