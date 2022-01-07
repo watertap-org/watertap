@@ -26,7 +26,7 @@ from idaes.core import (FlowsheetBlock,
                         EnergyBalanceType,
                         MomentumBalanceType)
 import watertap.property_models.ion_DSPMDE_prop_pack as props
-from watertap.unit_models.nanofiltration_DSPMDE_0D import NanofiltrationDPSMDE
+from watertap.unit_models.nanofiltration_DSPMDE_0D import NanofiltrationDSPMDE0D
 from watertap.core.util.initialization import check_dof
 
 from idaes.core.util import get_solver
@@ -81,7 +81,7 @@ class TestNanoFiltration():
                        "SO4_2-": -2},
             })
 
-        m.fs.unit = NanofiltrationDPSMDE(default={"property_package": m.fs.properties})
+        m.fs.unit = NanofiltrationDSPMDE0D(default={"property_package": m.fs.properties})
 
         return m
 

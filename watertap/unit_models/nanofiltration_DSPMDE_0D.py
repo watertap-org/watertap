@@ -41,13 +41,15 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
+from idaes.core.util.constants import Constants
+
 import idaes.logger as idaeslog
 
 
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("NanofiltrationDPSMDE")
+@declare_process_block_class("NanofiltrationDSPMDE0D")
 class NanofiltrationData(UnitModelBlockData):
     """
     Nanofiltration model based on Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE).
@@ -250,6 +252,16 @@ class NanofiltrationData(UnitModelBlockData):
         #     initialize=1, #TODO:revisit
         #     units=pyunits.V,
         #     doc='Electric potential of pore entrance/exit, and permeate')
+        self.donnan_potential_feed_interface = Var(
+            self.flowsheet().config.time,
+            initialize=1, #TODO:revisit
+            units=pyunits.V,
+            doc='Donnan potential between bulk feed and membrane interface')
+        self.donnan_potential_permeate = Var(
+            self.flowsheet().config.time,
+            initialize=1, #TODO:revisit
+            units=pyunits.V,
+            doc='Donnan potential between bulk permeate and permeate-side of membrane') #TODO:revisit
         # self.electric_potential_grad_feed_interface = Var(
         #     self.flowsheet().config.time,
         #     initialize=1, #TODO: revisit
@@ -281,12 +293,12 @@ class NanofiltrationData(UnitModelBlockData):
         #     domain=Reals,
         #     units=pyunits.mol*pyunits.m**-3,
         #     doc='Membrane charge density')
-        # self.dielectric_constant_pore = Var(
-        #     self.flowsheet().config.time,
-        #     initialize=42, # near value used in Roy et al.
-        #     bounds=(1, None),
-        #     units=pyunits.dimensionless, # TODO: revisit bounds/domain
-        #     doc='Pore dielectric constant')
+        self.dielectric_constant_pore = Var(
+            self.flowsheet().config.time,
+            initialize=42, # near value used in Roy et al.
+            bounds=(1, None),
+            units=pyunits.dimensionless, # TODO: revisit bounds/domain
+            doc='Pore dielectric constant')
         # self.dielectric_constant_feed = Var(
         #     self.flowsheet().config.time,
         #     initialize=80.4, # dielectric constant of pure water at 20C; TODO: move to property model?
@@ -414,18 +426,16 @@ class NanofiltrationData(UnitModelBlockData):
                 self.config.momentum_balance_type != 'none'):
             self.deltaP = Reference(self.feed_side.deltaP)
 
-        # Todo: add smooth_min to get minimum between computed value and 1 (any value exceeding 1 should be set to 1)
         @self.Expression(self.flowsheet().config.time,
                          solute_set,
                          doc="Ratio of stokes radius to membrane pore radius equation")
         def lambda_comp(b, t, j):
-            return smooth_min(1,(b.feed_side.properties_in[t].radius_stokes_comp[j]/b.radius_pore))
+            return smooth_min(1, b.feed_side.properties_in[t].radius_stokes_comp[j]/b.radius_pore)
 
-        # #Todo: add smooth_if for lambda<= 0.95 and lambda > 0.95
         @self.Expression(self.flowsheet().config.time,
                          solute_set,
-                         doc="Diffusive hindered transport coefficient equation")
-        def hindrance_factor_diffusive(b, t, j):
+                         doc="Diffusive hindered transport coefficient")
+        def hindrance_factor_diffusive_comp(b, t, j):
             eps= 1e-8
             return Expr_if(b.lambda_comp[t,j] > 0.95,
                         0.984 *((1 - b.lambda_comp[t,j])/(b.lambda_comp[t,j])) ** (5/2),
@@ -440,7 +450,44 @@ class NanofiltrationData(UnitModelBlockData):
                         (1 - b.lambda_comp[t, j]+eps) ** 2,
                     )
 
+        @self.Expression(self.flowsheet().config.time,
+                         solute_set,
+                         doc="Pore diffusion coefficient")
+        def diffus_pore_comp(b, t, j):
+            return b.hindrance_factor_diffusive_comp[t, j] * b.feed_side.properties_in[t].diffus_phase_comp['Liq', j]
 
+        @self.Expression(self.flowsheet().config.time,
+                         solute_set,
+                         doc="Convective hindered transport coefficient")
+        def hindrance_factor_convective_comp(b, t, j):
+            return ((1 + 3.867 * b.lambda_comp[t, j]
+                     - 1.907 * b.lambda_comp[t, j] ** 2
+                     - 0.834 * b.lambda_comp[t, j] ** 3)
+                    / (1 + 1.867 * b.lambda_comp[t, j] - 0.741 * b.lambda_comp[t, j]))
+
+        @self.Expression(self.flowsheet().config.time,
+                         solute_set,
+                         doc="Steric partitioning factor")
+        def partition_factor_steric_comp(b, t, j):
+            return (1 - b.lambda_comp[t, j]) ** 2
+
+        @self.Expression(self.flowsheet().config.time,
+                         solute_set,
+                         doc="Gibbs free energy of solvation for each ion")
+        def gibbs_solvation_comp(b, t, j):
+            return (b.feed_side.properties_in[t].charge_comp[j] ** 2
+                    * Constants.elemental_charge ** 2
+                    / (8 * Constants.pi
+                       * Constants.vacuum_electric_permittivity
+                       * b.feed_side.properties_in[t].radius_stokes_comp[j])
+                    * (1 / b.config.property_package.dielectric_constant - 1 / b.dielectric_constant_pore[t]))
+
+        @self.Expression(self.flowsheet().config.time,
+                         solute_set,
+                         doc="Born solvation contribution to partitioning")
+        def partition_factor_born_solvation_comp(b, t, j):
+            return (-b.gibbs_solvation_comp[t, j]
+                    / (Constants.boltzmann_constant * b.feed_side.properties_in[t].temperature))
 
         # @self.feed_side.Constraint(self.flowsheet().config.time,
         #              doc='isothermal energy balance for feed_side')
