@@ -73,7 +73,7 @@ def calculate_chemical_scaling_factors_for_equilibrium_log_reactions(unit, rxn_p
 # # Perform scaling transformations for mass balances
 def calculate_chemical_scaling_factors_for_material_balances(unit):
     # Next, try adding scaling for species
-    min = 1e-3
+    min = 1e-2
     for i in unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
         # i[0] = phase, i[1] = species
         if unit.inlet.mole_frac_comp[0, i[1]].value > min:

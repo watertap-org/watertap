@@ -39,9 +39,10 @@ class IpoptWaterTAP(IPOPT):
 
         self._tee = kwds.get("tee", False)
 
-        # Set the IDAES-default tol
+        # Set the default watertap options
         if "tol" not in self.options:
             self.options["tol"] = 1e-08
+        if "constr_viol_tol" not in self.options:
             self.options["constr_viol_tol"] = 1e-08
 
         if not self._is_user_scaling():
