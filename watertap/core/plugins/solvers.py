@@ -45,6 +45,8 @@ class IpoptWaterTAP(IPOPT):
         # for examples/chemistry/tests/test_pure_water_pH.py
         if "constr_viol_tol" not in self.options:
             self.options["constr_viol_tol"] = 1e-08
+        if "acceptable_constr_viol_tol" not in self.options:
+            self.options["acceptable_constr_viol_tol"] = 1e-06
 
         if not self._is_user_scaling():
             self._reset_needed = False
