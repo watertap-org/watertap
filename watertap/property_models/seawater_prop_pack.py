@@ -38,7 +38,8 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
+from idaes.core.util.exceptions import (
+    ConfigurationError, InitializationError, PropertyPackageError)
 import idaes.core.util.scaling as iscale
 
 # Set up logger
@@ -486,6 +487,11 @@ class _SeawaterStateBlock(StateBlock):
             results = solve_indexed_blocks(opt, [self], tee=slc.tee)
         init_log.info("Property initialization: {}."
                       .format(idaeslog.condition(results)))
+
+        if not check_optimal_termination(results):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
 
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state
