@@ -67,7 +67,7 @@ class TestFeedZO:
             assert model.fs.unit.outlet.conc_mass_comp[0, j].fixed
 
     @pytest.mark.unit
-    def test_load_feed_data_from_database_no_overwirte(self, model):
+    def test_load_feed_data_from_database_no_overwrite(self, model):
         model.fs.unit.outlet.flow_vol[0].fix(42)
         model.fs.unit.outlet.conc_mass_comp[0, "tds"].fix(42)
 
@@ -119,7 +119,7 @@ class TestFeedZO:
 
         model.fs.unit.load_feed_data_from_database(overwrite=True)
 
-        assert ("fs.unit no default flowrate was definined in database water "
+        assert ("fs.unit no default flowrate was defined in database water "
                 "source. Value was not fixed.") in caplog.text
         assert ("fs.unit component tds was not defined in database water "
                 "source. Value was not fixed.") in caplog.text

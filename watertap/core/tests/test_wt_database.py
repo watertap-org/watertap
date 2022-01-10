@@ -174,7 +174,7 @@ class TestDatabase():
 
     @pytest.mark.unit
     def test_get_solute_set_no_default(self, db):
-        # First, delte default entry from database
+        # First, delete default entry from database
         del db._cached_files["water_sources"]["default"]
 
         with pytest.raises(KeyError,

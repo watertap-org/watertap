@@ -1,6 +1,6 @@
 default: seawater
 seawater:
-  metadata: Based on Carlsbad casestudy for seawater
+  metadata: Based on Carlsbad case study for seawater
   solutes:
     boron:
       constituent_longform: Boron

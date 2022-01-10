@@ -63,7 +63,7 @@ class WaterParameterBlockData(PhysicalParameterBlock):
     CONFIG.declare("solute_list", ConfigValue(
         domain=list,
         description="List of solute species of interest. If None, will use "
-        "all species defined in the water_source provied."))
+        "all species defined in the water_source provided."))
 
     def build(self):
         '''

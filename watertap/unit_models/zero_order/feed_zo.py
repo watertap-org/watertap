@@ -41,7 +41,7 @@ class FeedZOData(FeedData):
 
     def load_feed_data_from_database(self, overwrite=False):
         """
-        Method to load initial folwrate and concentrations from database.
+        Method to load initial flowrate and concentrations from database.
 
         Args:
             overwrite - (default = False), indicates whether fixed values
@@ -68,7 +68,7 @@ class FeedZOData(FeedData):
                     self.outlet.flow_vol[t].fix(val*units)
                 except KeyError:
                     _log.info(
-                        f"{self.name} no default flowrate was definined "
+                        f"{self.name} no default flowrate was defined "
                         f"in database water source. Value was not fixed.")
 
         for (t, j), v in self.outlet.conc_mass_comp.items():
