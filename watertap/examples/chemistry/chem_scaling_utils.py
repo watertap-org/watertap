@@ -34,7 +34,7 @@ def _set_eps_vals(rxn_params, rxn_config, factor=1e-2, max_k_eq_ref=1e-16):
                 rxn_params.component("reaction_"+rid).eps.value = min(max_k_eq_ref, scale)*factor
 
 ## Helper function for setting scaling factors for equilibrium reactions
-def _set_equ_rxn_scaling(unit, rxn_config, min_k_eq_ref=1e-2):
+def _set_equ_rxn_scaling(unit, rxn_config, min_k_eq_ref=1e-3):
     #Add scaling factors for reactions (changes depending on if it is a log form or not)
     for i in unit.control_volume.equilibrium_reaction_extent_index:
         # i[0] = time, i[1] = reaction
@@ -45,7 +45,7 @@ def _set_equ_rxn_scaling(unit, rxn_config, min_k_eq_ref=1e-2):
             unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 0.1)
 
 ## Helper function for setting scaling factors for inherent reactions
-def _set_inherent_rxn_scaling(unit, thermo_config, min_k_eq_ref=1e-2):
+def _set_inherent_rxn_scaling(unit, thermo_config, min_k_eq_ref=1e-3):
     #Add scaling factors for reactions (changes depending on if it is a log form or not)
     for i in unit.control_volume.inherent_reaction_extent_index:
         # i[0] = time, i[1] = reaction
@@ -57,13 +57,13 @@ def _set_inherent_rxn_scaling(unit, thermo_config, min_k_eq_ref=1e-2):
 
 ## Helper function for setting scaling factors for rate reactions
 ## TODO: Need to work out better scaling for rate reactions using min_scale
-def _set_rate_rxn_scaling(rxn_params, unit, min_scale=1e-2):
+def _set_rate_rxn_scaling(rxn_params, unit, min_scale=1e-3):
     for i in rxn_params.rate_reaction_idx:
         scale = value(unit.control_volume.reactions[0.0].reaction_rate[i].expr)
         iscale.set_scaling_factor(unit.control_volume.rate_reaction_extent[0.0,i], 1000/scale)
 
 ## Helper function for setting scaling factors for the mass balance for FpcTP state vars
-def _set_mat_bal_scaling_FpcTP(unit, min_flow_mol_phase_comp=1e-2):
+def _set_mat_bal_scaling_FpcTP(unit, min_flow_mol_phase_comp=1e-3):
     # For species
     for i in unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
         # i[0] = phase, i[1] = species
@@ -78,7 +78,7 @@ def _set_mat_bal_scaling_FpcTP(unit, min_flow_mol_phase_comp=1e-2):
         iscale.set_scaling_factor(unit.control_volume.volume, 10/unit.volume[0.0].value)
 
 ## Helper function for setting scaling factors for the mass balance for FTPx state vars
-def _set_mat_bal_scaling_FTPx(unit, min_mole_frac_comp=1e-2):
+def _set_mat_bal_scaling_FTPx(unit, min_mole_frac_comp=1e-3):
     # For species
     for i in unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
         # i[0] = phase, i[1] = species
