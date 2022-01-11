@@ -45,11 +45,6 @@ class IpoptWaterTAP(IPOPT):
         # for examples/chemistry/tests/test_pure_water_pH.py
         if "constr_viol_tol" not in self.options:
             self.options["constr_viol_tol"] = 1e-08
-        # this was the default in Ipopt 3.13.x, setting it here for 3.14+
-        # see: https://github.com/coin-or/Ipopt/commit/7269d106018328f7893d4cc72fde1d3f0384236d
-        # and: https://github.com/coin-or/Ipopt/issues/312
-        if "honor_original_bounds" not in self.options:
-            self.options["honor_original_bounds"] = "yes"
 
         if not self._is_user_scaling():
             self._reset_needed = False
