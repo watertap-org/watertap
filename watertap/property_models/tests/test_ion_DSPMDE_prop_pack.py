@@ -16,7 +16,7 @@ from pyomo.environ import ConcreteModel, assert_optimal_termination, value, Set,
 from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
 from pyomo.util.check_units import assert_units_consistent
-from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock, DSPMDEStateBlock
+from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock, DSPMDEStateBlock, ActivityCoefficientModel
 
 from watertap.core.util.initialization import check_dof
 from idaes.core.util import get_solver
@@ -97,6 +97,8 @@ def test_parameter_block(model):
     assert model.fs.properties.radius_stokes_comp['B'].value == 1e-9
     assert model.fs.properties.radius_stokes_comp['C'].value == 1e-9
 
+    assert model.fs.properties.config.activity_coefficient_model == ActivityCoefficientModel.ideal
+
 
 @pytest.mark.component
 def test_property_ions(model):
@@ -121,6 +123,7 @@ def test_property_ions(model):
     m.fs.stream[0].pressure_osm
     m.fs.stream[0].dens_mass_phase
     m.fs.stream[0].conc_mol_phase_comp
+    m.fs.stream[0].act_coeff_phase_comp
 
     iscale.calculate_scaling_factors(m.fs)
 
@@ -151,6 +154,8 @@ def test_property_ions(model):
     assert value(m.fs.stream[0].pressure_osm) == pytest.approx(60.546e5,  rel=1e-3)
 
     assert value(m.fs.stream[0].dens_mass_phase['Liq']) == pytest.approx(1001.76,  rel=1e-3)
+
+    assert value(m.fs.stream[0].act_coeff_phase_comp['Liq', 'A']) == 1
 
 @pytest.fixture(scope="module")
 def model2():

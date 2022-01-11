@@ -142,7 +142,7 @@ class TestNanoFiltration():
         assert not m.fs.unit.config.has_pressure_change
         assert m.fs.unit.config.property_package is \
                m.fs.properties
-
+        assert isinstance(m.fs.unit.config.property_package.config, 'activity_coefficient_model')
     # @pytest.mark.unit
     # def test_build(self, NF_frame):
     #     m = NF_frame

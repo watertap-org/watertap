@@ -18,11 +18,12 @@ Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE
 # Import Python libraries
 import idaes.logger as idaeslog
 
+from enum import Enum, auto
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, \
     Var, Param, Suffix, value, check_optimal_termination
 from pyomo.environ import units as pyunits
-from pyomo.common.config import ConfigValue
+from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -48,6 +49,12 @@ import idaes.core.util.scaling as iscale
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+
+class ActivityCoefficientModel(Enum):
+    ideal = auto()                    # Ideal
+    davies = auto()                   # Davies
+    enrtl = auto()                    # eNRTL
+    pitzer = auto()                   # Pitzer-Kim
 
 @declare_process_block_class("DSPMDEParameterBlock")
 class DSPMDEParameterData(PhysicalParameterBlock):
@@ -76,6 +83,23 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         default={},
         domain=dict,
         description="Ion charge"))
+    CONFIG.declare("activity_coefficient_model", ConfigValue(
+        default=ActivityCoefficientModel.ideal,
+        domain=In(ActivityCoefficientModel),
+        description="Activity coefficient model construction flag",
+        doc="""
+           Options to account for activity coefficient model.
+    
+           **default** - ``ActivityCoefficientModel.ideal``
+    
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+    
+           "``ActivityCoefficientModel.ideal``", "Activity coefficients equal to 1 assuming ideal solution"
+           "``ActivityCoefficientModel.davies``", "Activity coefficients estimated via Davies model"
+           "``ActivityCoefficientModel.enrtl``", "Activity coefficients estimated via eNRTL model"
+           "``ActivityCoefficientModel.pitzer``", "Activity coefficients estimated via Pitzer-Kim model"
+       """))
 
     def _init_param_data(self, data, default=None):
         if default is None:
@@ -130,6 +154,12 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             initialize=self._init_param_data('diffusivity_data', default=1e-9),
             units=pyunits.m ** 2 * pyunits.s ** -1,
             doc="Bulk diffusivity of ion")
+        self.visc_d_phase = Param(
+            self.phase_list,
+            mutable=True,
+            initialize=1e-3, # revisit: assuming ~ 1e-3 Pa*s for pure water
+            units=pyunits.Pa * pyunits.s,
+            doc="Fluid viscosity")
         self.dens_mass_comp = Param(
             self.component_list,
             mutable=True,
@@ -157,7 +187,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         self.set_default_scaling('pressure', 1e-6)
         self.set_default_scaling('dens_mass_phase', 1e-3, index='Liq')
         # self.set_default_scaling('dens_mass_comp', 1e-3, index='Liq')
-        # self.set_default_scaling('visc_d_phase', 1e3, index='Liq')
+        self.set_default_scaling('visc_d_phase', 1e3, index='Liq')
         self.set_default_scaling('diffus_phase_comp', 1e10, index='Liq')
         # self.set_default_scaling('osm_coeff', 1e1)
         # self.set_default_scaling('enth_mass_phase', 1e-5, index='Liq')
@@ -179,12 +209,13 @@ class DSPMDEParameterData(PhysicalParameterBlock):
              'mole_frac_phase_comp': {'method': '_mole_frac_phase_comp'},
              'molality_comp': {'method': '_molality_comp'},
              'diffus_phase_comp': {'method': '_diffus_phase_comp'},
-             # 'visc_d_phase': {'method': '_visc_d_phase'},
+             'visc_d_phase': {'method': '_visc_d_phase'},
              'pressure_osm': {'method': '_pressure_osm'},
              'radius_stokes_comp': {'method': '_radius_stokes_comp'},
              'mw_comp': {'method': '_mw_comp'},
              'dens_mass_comp': {'method': '_dens_mass_comp'},
-             'charge_comp': {'method': '_charge_comp'}
+             'charge_comp': {'method': '_charge_comp'},
+             'act_coeff_phase_comp': {'method': '_act_coeff_phase_comp'}
              })
 
         obj.add_default_units({'time': pyunits.s,
@@ -447,7 +478,7 @@ class DSPMDEStateBlockData(StateBlockData):
             bounds=(5e2, 2e3),
             units=pyunits.kg * pyunits.m ** -3,
             doc="Mass density")
-
+        #TODO: reconsider this approach for solution density based on arbitrary solute_list
         def rule_dens_mass_phase(b):
             return (b.dens_mass_phase['Liq']
                     * sum(b.mass_frac_phase_comp['Liq', j] / b.params.dens_mass_comp[j]
@@ -539,7 +570,7 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Molality")
 
         def rule_molality_comp(b, j):
-            return (self.molality_comp[j] ==
+            return (b.molality_comp[j] ==
                     b.flow_mol_phase_comp['Liq', j]
                     / b.flow_mass_phase_comp['Liq', 'H2O'])
 
@@ -551,6 +582,9 @@ class DSPMDEStateBlockData(StateBlockData):
     def _diffus_phase_comp(self):
         add_object_reference(self, "diffus_phase_comp", self.params.diffus_phase_comp)
 
+    def _visc_d_phase(self):
+        add_object_reference(self, "visc_d_phase", self.params.visc_d_phase)
+
     def _mw_comp(self):
         add_object_reference(self, "mw_comp", self.params.mw_comp)
 
@@ -559,6 +593,27 @@ class DSPMDEStateBlockData(StateBlockData):
 
     def _charge_comp(self):
         add_object_reference(self, "charge_comp", self.params.charge_comp)
+
+    def _act_coeff_phase_comp(self):
+        self.act_coeff_phase_comp = Var(
+            self.phase_list,
+            self.params.solute_set,
+            initialize=1,
+            bounds=(1e-4, 1),
+            units=pyunits.dimensionless,
+            doc="activity coefficient of component")
+
+        def rule_act_coeff_phase_comp(b, p, j):
+            if b.params.config.activity_coefficient_model == ActivityCoefficientModel.ideal:
+                return b.act_coeff_phase_comp[p, j] == 1.0
+            elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.davies:
+                raise NotImplementedError(f"Davies model has not been implemented yet.")
+            elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.enrtl:
+                raise NotImplementedError(f"eNRTL model has not been implemented yet.")
+            elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.pitzer:
+                raise NotImplementedError(f"Pitzer-Kim model has not been implemented yet.")
+        self.eq_act_coeff_phase_comp = Constraint(self.phase_list, self.params.solute_set,
+                                                  rule=rule_act_coeff_phase_comp)
 
     #TODO: change osmotic pressure calc
     def _pressure_osm(self):
