@@ -29,7 +29,7 @@ from watertap.examples.flowsheets.full_treatment_train.flowsheet_components impo
                                                                              costing,
                                                                              financials, )
 from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
-from watertap.examples.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
+from watertap.examples.flowsheets.full_treatment_train.util import (solve_block,
                                                              check_dof)
 
 
@@ -175,7 +175,7 @@ def set_up_optimization(m, system_recovery=0.50, **kwargs):
 
 
 def optimize(m):
-    solve_with_user_scaling(m, tee=False, fail_flag=True)
+    solve_block(m, tee=False, fail_flag=True)
 
 
 def solve_flowsheet(**desal_kwargs):
@@ -197,7 +197,7 @@ def solve_flowsheet(**desal_kwargs):
     initialize(m, **desal_kwargs)
 
     check_dof(m)
-    solve_with_user_scaling(m, tee=False, fail_flag=True)
+    solve_block(m, tee=False, fail_flag=True)
 
     # report
     report(m, **desal_kwargs)
