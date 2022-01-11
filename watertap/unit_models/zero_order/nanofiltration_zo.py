@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module constians a ero-order representation of a nanofiltration unit
+This module contains a zero-order representation of a nanofiltration unit.
 operation.
 """
 

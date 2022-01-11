@@ -157,6 +157,32 @@ class TestDatabase():
                 "nanofiltration", subtype=12)
 
     @pytest.mark.unit
+    def test_get_solute_set_default(self, db):
+        comp_set = db.get_solute_set()
+
+        assert comp_set == [
+            "boron", "bromide", "calcium", "chloride", "magnesium",
+            "potassium", "sodium", "strontium", "sulfate", "tds", "tss"]
+
+    @pytest.mark.unit
+    def test_get_solute_set_specified(self, db):
+        comp_set = db.get_solute_set("seawater")
+
+        assert comp_set == [
+            "boron", "bromide", "calcium", "chloride", "magnesium",
+            "potassium", "sodium", "strontium", "sulfate", "tds", "tss"]
+
+    @pytest.mark.unit
+    def test_get_solute_set_no_default(self, db):
+        # First, delete default entry from database
+        del db._cached_files["water_sources"]["default"]
+
+        with pytest.raises(KeyError,
+                           match="Database has not defined a default water "
+                           "source and none was provided."):
+            db.get_solute_set()
+
+    @pytest.mark.unit
     def test_flush_cache(self, db):
         db.flush_cache()
 
