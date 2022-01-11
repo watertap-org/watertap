@@ -41,7 +41,7 @@ def approximate_chemical_state_args(unit, rxn_params, reaction_config, contains_
 
     # Set species based on inlets (and outlets for stoich reaction)
     state_args['mole_frac_comp'] = {}
-    min = 1e-16
+    min = 1e-10
     for i in unit.control_volume.properties_in[0.0].mole_frac_comp:
         # Set state args to inlets on first pass
         if unit.inlet.mole_frac_comp[0, i].value > min:
