@@ -222,10 +222,10 @@ jobs:
         echo '::endgroup::'
     - name: Install Ipopt from conda-forge
       run:
-        conda install --yes -c conda-forge ipopt
+        conda install --quiet --yes -c conda-forge ipopt
     - name: Build Pyomo extensions
       run: |
-        conda install --yes cmake
+        conda install --quiet --yes cmake
         # some failures are expected, but this should succeed as long as pynumero is built correctly
         pyomo build-extensions || grep '.*OK.*pynumero'
     - name: Run pytest
