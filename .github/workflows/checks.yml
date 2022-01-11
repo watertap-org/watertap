@@ -21,6 +21,8 @@ env:
 
 jobs:
   tests:
+    # FIXME disable other jobs while WIP
+    if: "false"
     name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
 # TODO: Grab cloud database password from encrypted repo secrets
@@ -139,6 +141,8 @@ jobs:
   user-mode-pytest:
     name: pytest (user mode) (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
+    # FIXME disable other jobs while WIP
+    if: "false"
     strategy:
       fail-fast: false
       matrix:
