@@ -69,7 +69,7 @@ from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from pyomo.util.check_units import assert_units_consistent
 
 
-from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.util import solve_block, check_dof
 from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
 from idaes.core.util import get_solver
 
@@ -423,10 +423,6 @@ def build_ideal_naocl_chlorination_unit(model):
             "has_heat_of_reaction": False,
             "has_pressure_change": False})
 
-    model.fs.ideal_naocl_chlorination_unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
-    model.fs.ideal_naocl_chlorination_unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0.001)
-    model.fs.ideal_naocl_chlorination_unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1.001)
-
     # new var includes an initial calculation (will be overwritten later)
     fc = model.fs.ideal_naocl_chlorination_unit.inlet.mole_frac_comp[0, "HOCl"].value*55.6
     fc += model.fs.ideal_naocl_chlorination_unit.inlet.mole_frac_comp[0, "OCl_-"].value*55.6
@@ -532,10 +528,6 @@ def unfix_ideal_naocl_chlorination_inlets(model):
     model.fs.ideal_naocl_chlorination_unit.inlet.temperature[0].unfix()
     unfix_all_molefractions(model.fs.ideal_naocl_chlorination_unit.inlet)
 
-# basic jacobian scaling for this unit
-def scale_ideal_naocl_mixer(unit):
-    iscale.constraint_autoscale_large_jac(unit)
-
 def scale_ideal_naocl_chlorination(unit, rxn_params, thermo_params, rxn_config):
     state_args, stoich_extents = approximate_chemical_state_args(unit,
                                 rxn_params, rxn_config)
@@ -545,25 +537,19 @@ def scale_ideal_naocl_chlorination(unit, rxn_params, thermo_params, rxn_config):
     return state_args
 
 def initialize_ideal_naocl_mixer(unit, debug_out=False):
-    solver.options['bound_push'] = 1e-10
-    solver.options['mu_init'] = 1e-6
-    solver.options["nlp_scaling_method"] = "user-scaling"
     was_fixed = False
-    if unit.naocl_stream.flow_mol[0].is_fixed() == False:
+    if not unit.naocl_stream.flow_mol[0].is_fixed():
         unit.naocl_stream.flow_mol[0].fix()
         was_fixed = True
-    if debug_out == True:
+    if debug_out:
         unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
     else:
         unit.initialize(optarg=solver.options)
-    if was_fixed == True:
+    if was_fixed:
         unit.naocl_stream.flow_mol[0].unfix()
 
 def initialize_ideal_naocl_chlorination(unit, state_args, debug_out=False):
-    solver.options['bound_push'] = 1e-10
-    solver.options['mu_init'] = 1e-6
-    solver.options["nlp_scaling_method"] = "user-scaling"
-    if debug_out == True:
+    if debug_out:
         unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
     else:
         unit.initialize(state_args=state_args, optarg=solver.options)
@@ -670,7 +656,6 @@ def build_translator_from_RO_to_chlorination_block(model):
                 "HOCl", "OCl_-", "Cl_-", "Na_+"]) )
 
     iscale.calculate_scaling_factors(model.fs.RO_to_Chlor)
-    iscale.constraint_autoscale_large_jac(model.fs.RO_to_Chlor)
 
 def run_ideal_naocl_mixer_example(fixed_dosage=False):
     model = ConcreteModel()
@@ -695,14 +680,10 @@ def run_ideal_naocl_mixer_example(fixed_dosage=False):
 
     check_dof(model)
 
-    # scale the mixer
-    scale_ideal_naocl_mixer(model.fs.ideal_naocl_mixer_unit)
-
     # initializer mixer
     initialize_ideal_naocl_mixer(model.fs.ideal_naocl_mixer_unit)
 
-    # solve with user scaling
-    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+    solve_block(model, tee=True)
 
     display_results_of_ideal_naocl_mixer(model.fs.ideal_naocl_mixer_unit)
 
@@ -735,8 +716,7 @@ def run_ideal_naocl_chlorination_example():
     # initialize the unit
     initialize_ideal_naocl_chlorination(model.fs.ideal_naocl_chlorination_unit, state_args, debug_out=False)
 
-    # solve with user scaling
-    solve_with_user_scaling(model, tee=True, bound_push=1e-10, mu_init=1e-6)
+    solve_block(model, tee=True)
 
     display_results_of_chlorination_unit(model.fs.ideal_naocl_chlorination_unit)
 
@@ -768,8 +748,6 @@ def run_chlorination_block_example(fix_free_chlorine=False):
 
     # fix only the inlets for the mixer
     fix_ideal_naocl_mixer_inlets(model)
-    # scale and initialize the mixer
-    scale_ideal_naocl_mixer(model.fs.ideal_naocl_mixer_unit)
     initialize_ideal_naocl_mixer(model.fs.ideal_naocl_mixer_unit)
 
     # scale and initialize the chlorination unit
@@ -786,13 +764,10 @@ def run_chlorination_block_example(fix_free_chlorine=False):
     # Scale the full model and call the seq_decomp_initializer
     seq_decomp_initializer(model)
 
-    # solve with user scaling
-    iscale.constraint_autoscale_large_jac(model)
-
-    if fix_free_chlorine == True:
+    if fix_free_chlorine:
         setup_block_to_solve_naocl_dosing_rate(model)
 
-    solve_with_user_scaling(model, tee=True, bound_push=1e-4, mu_init=1e-1)
+    solve_block(model, tee=True)
 
     display_results_of_ideal_naocl_mixer(model.fs.ideal_naocl_mixer_unit)
     display_results_of_chlorination_unit(model.fs.ideal_naocl_chlorination_unit)

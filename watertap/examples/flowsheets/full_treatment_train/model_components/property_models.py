@@ -20,7 +20,7 @@ from idaes.core.util.scaling import calculate_scaling_factors
 from watertap.property_models import seawater_prop_pack
 from watertap.examples.flowsheets.full_treatment_train.model_components import seawater_salt_prop_pack, seawater_ion_prop_pack
 from watertap.examples.flowsheets.full_treatment_train.model_components.eNRTL import entrl_config_FpcTP
-from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling
+from watertap.examples.flowsheets.full_treatment_train.util import solve_block
 
 
 def build_prop(m, base='TDS'):
@@ -136,7 +136,7 @@ def solve_specify_feed(base):
     # scale
     calculate_scaling_factors(m.fs)
     # solve
-    solve_with_user_scaling(m)
+    solve_block(m)
     # display
     m.fs.stream.display()
 
