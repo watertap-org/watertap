@@ -187,3 +187,42 @@ jobs:
     - name: Run pytest
       run: |
         pytest --pyargs watertap
+
+  macos:
+    name: macOS setup (EXPERIMENTAL)
+    runs-on: macos-10.15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.8'
+    steps:
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: watertap
+        python-version: ${{ matrix.python-version }}
+    - name: Install WaterTAP (dev) without idaes get-extensions
+      run: |
+        echo '::group::Output of "conda install" commands'
+        conda install --quiet --yes pip=21.1 wheel setuptools pandoc
+        echo '::endgroup::'
+        echo '::group::Output of "pip install" commands'
+        pip install --progress-bar off -r requirements-dev.txt
+        echo '::endgroup::'
+        echo '::group::Display installed packages'
+        conda list
+        pip list
+        pip show pyomo idaes-pse
+        echo '::endgroup::'
+    - name: Install Ipopt from conda-forge
+      run:
+        conda install --yes -c conda-forge ipopt
+    - name: Build Pyomo extensions
+      run: |
+        conda install --yes cmake
+        # some failures are expected, but this should succeed as long as pynumero is built correctly
+        pyomo build-extensions || grep '.*OK.*pynumero'
+    - name: Run pytest
+      run: |
+        pytest --pyargs watertap
