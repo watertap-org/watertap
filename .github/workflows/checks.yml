@@ -229,5 +229,6 @@ jobs:
         # some failures are expected, but this should succeed as long as pynumero is built correctly
         pyomo build-extensions || grep '.*OK.*pynumero'
     - name: Run pytest
+      if: always()
       run: |
         pytest --pyargs watertap
