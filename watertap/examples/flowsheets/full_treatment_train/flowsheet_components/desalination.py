@@ -35,7 +35,7 @@ from watertap.examples.flowsheets.full_treatment_train.model_components import (
     property_models,
 )
 from watertap.examples.flowsheets.full_treatment_train.util import (
-    solve_with_user_scaling,
+    solve_block,
     check_dof,
 )
 from idaes.core.util.model_statistics import fixed_variables_generator
@@ -334,7 +334,7 @@ def solve_desalination(**kwargs):
 
     check_dof(m)
 
-    solve_with_user_scaling(m)
+    solve_block(m)
 
     display_desalination(m, **kwargs)
 
