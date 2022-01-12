@@ -550,7 +550,7 @@ class NanofiltrationData(UnitModelBlockData):
         def electroneutrality_interface_eq(b, t, x, p):
             return (abs(sum(b.feed_side.properties_interface[t, x].conc_mol_phase_comp[p, j] *
                         b.feed_side.properties_interface[t, x].charge_comp[j] for j in solute_set))
-                    <= b.tol_electroneutrality)
+                    == b.tol_electroneutrality)
             #todo: (1) consider adding tol_electroneutrality as property pack param
             # to match assert_electroneutrality method in dspmde prop pack
             # (2) probe whether inequality constraint with tolerance improves model stability and
@@ -568,7 +568,7 @@ class NanofiltrationData(UnitModelBlockData):
                 pore_loc = b.pore_exit[t, x]
             return (abs(sum(pore_loc.conc_mol_phase_comp[p, j]
                             * pore_loc.charge_comp[j] for j in solute_set)
-                        + b.membrane_charge_density[t]) <= b.tol_electroneutrality)
+                        + b.membrane_charge_density[t]) == b.tol_electroneutrality)
 
         @self.Constraint(self.flowsheet().config.time,
                          io_list,
@@ -576,7 +576,7 @@ class NanofiltrationData(UnitModelBlockData):
                          doc="Electroneutrality in permeate")
         def electroneutrality_permeate_eq(b, t, x, p):
             return (abs(sum(b.permeate_side[t, x].conc_mol_phase_comp[p, j] *
-                            b.permeate_side[t, x].charge_comp[j] for j in solute_set)) <= b.tol_electroneutrality)
+                            b.permeate_side[t, x].charge_comp[j] for j in solute_set)) == b.tol_electroneutrality)
 
         @self.Expression(self.flowsheet().config.time,
                          io_list,
@@ -703,11 +703,11 @@ class NanofiltrationData(UnitModelBlockData):
         def eq_pressure_permeate_io(b, t, x):
             return b.permeate_side[t, x].pressure == b.mixed_permeate[t].pressure
 
-        #TODO: pressure at outlet temporarily fixed
-        @self.feed_side.Constraint(self.flowsheet().config.time,
-                                   doc="Feed channel inlet/out pressure")
-        def eq_pressure_feed_io(b, t):
-            return b.properties_in[t].pressure == b.properties_out[t].pressure
+        # #TODO: pressure at outlet temporarily fixed
+        # @self.feed_side.Constraint(self.flowsheet().config.time,
+        #                            doc="Feed channel inlet/out pressure")
+        # def eq_pressure_feed_io(b, t):
+        #     return b.properties_in[t].pressure == b.properties_out[t].pressure
 
         # #TODO: no effect on DOF - confirm+remove
         # @self.feed_side.Constraint(self.flowsheet().config.time,
