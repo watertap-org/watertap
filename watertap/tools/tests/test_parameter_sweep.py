@@ -24,6 +24,8 @@ from watertap.tools.parameter_sweep import (_init_mpi,
                                                _update_model_values,
                                                _aggregate_results,
                                                _interp_nan_values,
+                                               _write_output_to_h5,
+                                               _read_output_h5,
                                                parameter_sweep,
                                                LinearSample,
                                                UniformSample,
@@ -280,6 +282,58 @@ class TestParallelManager():
         assert(global_results_clean[8]) == pytest.approx(np.mean(global_results[0:8]))
         assert(global_results_clean[9]) == pytest.approx(global_results[7])
 
+    @pytest.mark.unit
+    def test_h5_read_write(self, tmp_path):
+        comm, rank, num_procs = _init_mpi()
+        tmp_path = _get_rank0_path(comm, tmp_path)
+
+        reference_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
+                                                      'units': 'non-dimensional',
+                                                      'upper bound': 0,
+                                                      'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                      'fs.input[b]': {'lower bound': 0,
+                                                      'units': 'non-dimensional',
+                                                      'upper bound': 0,
+                                                      'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                      'fs.output[c]': {'lower bound': 0,
+                                                       'units': 'non-dimensional',
+                                                       'upper bound': 0,
+                                                       'value': np.array([0.2, 0.2, 0. , 1. , 1. , 0. , 0. , 0. , 0. ])},
+                                      'fs.output[d]': {'lower bound': 0,
+                                                       'units': 'non-dimensional',
+                                                       'upper bound': 0,
+                                                       'value': np.array([0.  , 0.75, 0.  , 0.  , 0.75, 0.  , 0.  , 0.  , 0.  ])},
+                                      'fs.slack[ab_slack]': {'lower bound': 0,
+                                                             'units': 'non-dimensional',
+                                                             'upper bound': 0,
+                                                             'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                      'fs.slack[cd_slack]': {'lower bound': 0,
+                                                            'units': 'non-dimensional',
+                                                            'upper bound': 0,
+                                                            'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])}},
+                         'solve_status': ['optimal',
+                                          'optimal',
+                                          'optimal',
+                                          'optimal',
+                                          'optimal',
+                                          'optimal',
+                                          'optimal',
+                                          'optimal',
+                                          'optimal'],
+                         'sweep_params': {'fs.input[a]': {'lower bound': 0,
+                                                          'units': 'non-dimensional',
+                                                          'upper bound': 0,
+                                                          'value': np.array([0.1, 0.1, 0. , 0.5, 0.5, 0. , 0. , 0. , 0. ])},
+                                          'fs.input[b]': {'lower bound': 0,
+                                                          'units': 'non-dimensional',
+                                                          'upper bound': 0,
+                                                          'value': np.array([0.  , 0.25, 0.  , 0.  , 0.25, 0.  , 0.  , 0.  , 0.  ])}}}
+
+        h5_fname = "h5_test_{0}.h5".format(rank)
+        _write_output_to_h5(reference_dict, output_directory=tmp_path, fname=h5_fname)
+        read_dictionary = _read_output_h5(os.path.join(tmp_path, h5_fname))
+        _assert_dictionary_correctness(reference_dict, read_dictionary)
+
     @pytest.mark.component
     def test_parameter_sweep(self, model, tmp_path):
         comm, rank, num_procs = _init_mpi()
@@ -295,9 +349,11 @@ class TestParallelManager():
                    'output_d':m.fs.output['d'],
                    'performance':m.fs.performance}
         results_file = os.path.join(tmp_path, 'global_results.csv')
+        h5_fname = "output_dict"
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs,
-                results_file = results_file,
+                csv_results_file = results_file,
+                results_fname = h5_fname,
                 optimize_function=_optimization,
                 debugging_data_dir = tmp_path,
                 mpi_comm = comm)
@@ -320,6 +376,54 @@ class TestParallelManager():
             # Compare the last row of the imported data to truth
             truth_data = [ 0.9, 0.5, np.nan, np.nan, np.nan]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
+
+        # Check for the h5 output
+        if rank == 0:
+            truth_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
+                                                      'units': 'non-dimensional',
+                                                      'upper bound': 0,
+                                                      'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                      'fs.input[b]': {'lower bound': 0,
+                                                      'units': 'non-dimensional',
+                                                      'upper bound': 0,
+                                                      'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                      'fs.output[c]': {'lower bound': 0,
+                                                       'units': 'non-dimensional',
+                                                       'upper bound': 0,
+                                                       'value': np.array([0.2, 0.2, 0. , 1. , 1. , 0. , 0. , 0. , 0. ])},
+                                      'fs.output[d]': {'lower bound': 0,
+                                                       'units': 'non-dimensional',
+                                                       'upper bound': 0,
+                                                       'value': np.array([0.  , 0.75, 0.  , 0.  , 0.75, 0.  , 0.  , 0.  , 0.  ])},
+                                      'fs.slack[ab_slack]': {'lower bound': 0,
+                                                             'units': 'non-dimensional',
+                                                             'upper bound': 0,
+                                                             'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                      'fs.slack[cd_slack]': {'lower bound': 0,
+                                                            'units': 'non-dimensional',
+                                                            'upper bound': 0,
+                                                            'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])}},
+                         'solve_status': ['optimal',
+                                          'optimal',
+                                          'optimal',
+                                          'optimal',
+                                          'optimal',
+                                          'optimal',
+                                          'optimal',
+                                          'optimal',
+                                          'optimal'],
+                         'sweep_params': {'fs.input[a]': {'lower bound': 0,
+                                                          'units': 'non-dimensional',
+                                                          'upper bound': 0,
+                                                          'value': np.array([0.1, 0.1, 0. , 0.5, 0.5, 0. , 0. , 0. , 0. ])},
+                                          'fs.input[b]': {'lower bound': 0,
+                                                          'units': 'non-dimensional',
+                                                          'upper bound': 0,
+                                                          'value': np.array([0.  , 0.25, 0.  , 0.  , 0.25, 0.  , 0.  , 0.  , 0.  ])}}}
+
+            h5_fpath = os.path.join(tmp_path, 'output_dict.h5')
+            read_dict = _read_output_h5(h5_fpath)
+            _assert_dictionary_correctness(truth_dict, read_dict)
 
 
     @pytest.mark.component
@@ -463,3 +567,15 @@ def _get_rank0_path(comm, tmp_path):
     if comm is None:
         return tmp_path
     return comm.bcast(tmp_path, root=0)
+
+def _assert_dictionary_correctness(truth_dict, test_dictionary):
+
+    for key, item in truth_dict.items():
+        if key != 'solve_status':
+            for subkey, subitem in item.items():
+                assert subitem['lower bound'] == test_dictionary[key][subkey]['lower bound']
+                assert subitem['upper bound'] == test_dictionary[key][subkey]['upper bound']
+                assert subitem['units'] == test_dictionary[key][subkey]['units']
+                assert np.allclose(test_dictionary[key][subkey]['value'], subitem['value'], equal_nan=True)
+        elif key == "solve_status":
+            assert item == test_dictionary[key]

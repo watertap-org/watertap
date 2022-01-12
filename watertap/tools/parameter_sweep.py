@@ -520,9 +520,8 @@ def _create_global_output(local_output_dict, req_num_samples, comm):
 
 # ================================================================
 
-def _write_outputs(output_dict, output_directory="./output/",
-                   fname_no_extension="output_dict", write_h5=True,
-                   write_txt=True, txt_options="metadata"):
+def _write_outputs(output_dict, output_directory, fname_no_extension="output_dict",
+        write_h5=True, write_txt=True, txt_options="metadata"):
 
         if write_h5:
             h5_fname = fname_no_extension + ".h5"
@@ -585,20 +584,25 @@ def _read_output_h5(filepath):
     print(l1_keys)
     output_dict = {}
     for key in l1_keys: # Input or Output
-        output_dict[key] = {}
-        l2_keys = list(f[key].keys())
-        for subkey in l2_keys: # Variable name
-            output_dict[key][subkey] = {}
-            l3_keys = list(f[key][subkey].keys())
-            for subsubkey in l3_keys: # variable metadata
-                output_dict[key][subkey][subsubkey] = f[key][subkey][subsubkey][()]
-                if subsubkey == "units":
-                    # The strings are recovered in bytes. we choose to convert it to utf-8
-                    output_dict[key][subkey][subsubkey] = output_dict[key][subkey][subsubkey].decode("utf-8")
+        if key != 'solve_status':
+            output_dict[key] = {}
+            l2_keys = list(f[key].keys())
+            for subkey in l2_keys: # Variable name
+                output_dict[key][subkey] = {}
+                l3_keys = list(f[key][subkey].keys())
+                for subsubkey in l3_keys: # variable metadata
+                    output_dict[key][subkey][subsubkey] = f[key][subkey][subsubkey][()]
+                    if subsubkey == "units":
+                        # The strings are recovered in bytes. we choose to convert it to utf-8
+                        output_dict[key][subkey][subsubkey] = output_dict[key][subkey][subsubkey].decode("utf-8")
+        elif key == 'solve_status':
+            output_dict[key] = [x.decode("utf-8") for x in list(f[key]['solve_status'][()])]
+            output_dict[key] = output_dict[key]
 
     f.close()
     pprint.pprint(output_dict)
 
+    return output_dict
 
 # ================================================================
 
@@ -703,6 +707,48 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
 
 # ================================================================
 
+def _filter_recursive_solves(model, sweep_params, recursive_local_dict, true_local_num_cases, comm, filter_keyword="optimal"):
+
+    pyomo_termination_condition = TerminationConditionMapping()
+    try:
+        assert filter_keyword in pyomo_termination_condition.mapping.keys()
+    except:
+        warnings.warn("Invalid filtering option specified. Filtering optimal values")
+        filter_keyword = "optimal"
+
+    # Figure out how many filtered solves did this rank actually do
+    filter_counter = 0
+    for case, content in recursive_local_dict.items():
+        filter_counter += content["solve_status"].count(filter_keyword)
+
+    # Now that we have all of the local output dictionaries, we need to construct
+    # a consolidated dictionary of successful solves.
+    local_filtered_dict = _create_local_output_skeleton(model, sweep_params, filter_counter,
+                                                          variable_type="unfixed")
+    local_filtered_dict["solve_status"] = []
+
+    # Populate local_successful_outputs
+    offset = 0
+    for case_number, content in recursive_local_dict.items():
+        # Filter all of the sucessful solves
+        optimal_indices = [idx for idx, status in enumerate(content["solve_status"]) if status == "optimal"]
+        n_successful_solves = len(optimal_indices)
+        stop = offset+n_successful_solves
+
+        for key, item in content.items():
+            if key != "solve_status":
+                for subkey, subitem in item.items():
+                    local_filtered_dict[key][subkey]['value'][offset:stop] = subitem['value'][optimal_indices]
+
+        # Place the solve status
+        local_filtered_dict["solve_status"].extend([content["solve_status"][i] for i in optimal_indices])
+
+        offset += n_successful_solves
+
+    return local_filtered_dict
+
+# ================================================================
+
 def _aggregate_local_results(global_values, local_results, local_output_dict,
         num_samples, local_num_cases, fail_counter, comm):
 
@@ -715,16 +761,16 @@ def _aggregate_local_results(global_values, local_results, local_output_dict,
 # ================================================================
 
 def _save_results(sweep_params, outputs, local_values, global_values, local_results,
-        global_results, global_output_dict, results_file, debugging_data_dir, comm,
-        interpolate_nan_outputs):
+        global_results, global_output_dict, csv_results_file, results_fname_no_ext,
+        debugging_data_dir, comm, interpolate_nan_outputs):
 
     rank = comm.Get_rank()
     num_procs = comm.Get_size()
 
     # Make a directory for saved outputs
     if rank == 0:
-        if results_file is not None:
-            dirname = os.path.dirname(results_file)
+        if csv_results_file is not None:
+            dirname = os.path.dirname(csv_results_file)
             if dirname != '':
                 os.makedirs(dirname, exist_ok=True)
 
@@ -748,12 +794,12 @@ def _save_results(sweep_params, outputs, local_values, global_values, local_resu
     # Create the global filename and data
     global_save_data = np.hstack((global_values, global_results))
 
-    if rank == 0 and results_file is not None:
+    if rank == 0 and csv_results_file is not None:
         # Save the global data
-        np.savetxt(results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
+        np.savetxt(csv_results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
 
         # Save the data of output dictionary
-        _write_outputs(global_output_dict, output_directory=dirname, txt_options="keys")
+        _write_outputs(global_output_dict, dirname, fname_no_extension=results_fname_no_ext, txt_options="keys")
         # _read_output_h5("./output/output_dict.h5")
 
 
@@ -761,7 +807,7 @@ def _save_results(sweep_params, outputs, local_values, global_values, local_resu
             global_results_clean = _interp_nan_values(global_values, global_results)
             global_save_data_clean = np.hstack((global_values, global_results_clean))
 
-            head, tail = os.path.split(results_file)
+            head, tail = os.path.split(csv_results_file)
 
             if head == '':
                 interp_file = 'interpolated_%s' % (tail)
@@ -775,7 +821,7 @@ def _save_results(sweep_params, outputs, local_values, global_values, local_resu
 
 # ================================================================
 
-def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
+def parameter_sweep(model, sweep_params, outputs, csv_results_file=None, results_fname="output_dict", optimize_function=_default_optimize,
         optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
         reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
         interpolate_nan_outputs=False, num_samples=None, seed=None):
@@ -811,11 +857,80 @@ def parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_fu
     global_results, global_output_dict = _aggregate_local_results(global_values, local_results, local_output_dict,
             num_samples, local_num_cases, fail_counter, comm)
 
+    import pprint
+    print("global_output_dict =")
+    pprint.pprint(global_output_dict)
+
     # Save to file
     global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results, global_results, global_output_dict,
-        results_file, debugging_data_dir, comm, interpolate_nan_outputs)
+        csv_results_file, results_fname, debugging_data_dir, comm, interpolate_nan_outputs)
 
     return global_save_data
+
+# ================================================================
+
+def recursive_parameter_sweep(model, sweep_params, outputs, results_dir=None, results_fname=None,
+        optimize_function=_default_optimize, optimize_kwargs=None, reinitialize_function=None,
+        reinitialize_kwargs=None, reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
+        interpolate_nan_outputs=False, req_num_samples=None, seed=None):
+
+    # Get an MPI communicator
+    comm, rank, num_procs = _init_mpi(mpi_comm)
+
+    # Convert sweep_params to LinearSamples
+    sweep_params, sampling_type = _process_sweep_params(sweep_params)
+
+    # Set the seed before sampling
+    np.random.seed(seed)
+
+    # Set up optimize_kwargs
+    if optimize_kwargs is None:
+        optimize_kwargs = dict()
+    # Set up reinitialize_kwargs
+    if reinitialize_kwargs is None:
+        reinitialize_kwargs = dict()
+
+    n_samples_remaining = copy.deepcopy(req_num_samples)
+    num_total_samples = copy.deepcopy(req_num_samples)
+
+    local_output_collection = {}
+    loop_ctr = 0
+    while n_samples_remaining > 0 :
+        # Enumerate/Sample the parameter space
+        global_values = _build_combinations(sweep_params, sampling_type, num_total_samples, comm, rank, num_procs)
+
+        # divide the workload between processors
+        local_values = _divide_combinations(global_values, rank, num_procs)
+        local_num_cases = np.shape(local_values)[0]
+        if loop_ctr == 0:
+            true_local_num_cases = local_num_cases
+
+        _, local_output_collection[loop_ctr], fail_counter = _do_param_sweep(model, sweep_params, outputs, local_values,
+            optimize_function, optimize_kwargs, reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep, comm)
+
+        n_successful_solves = local_num_cases - fail_counter
+        n_successful_list = comm.allgather(n_successful_solves)
+        n_samples_remaining -= sum(n_successful_list)
+        num_total_samples = int(np.ceil(2 * n_samples_remaining))
+        loop_ctr += 1
+
+    # Now that we have all of the local output dictionaries, we need to construct
+    # a consolidated dictionary based on a filter, e.g., optimal solves.
+    local_filtered_dict = _filter_recursive_solves(model, sweep_params, local_output_collection,
+        true_local_num_cases, comm, "optimal")
+
+    # Not that we have all of the successful outputs in a consolidated dictionary locally,
+    # we can now construct a global dictionary of successful solves.
+    global_filtered_dict = _create_global_output(local_filtered_dict, req_num_samples, comm)
+
+
+    # Now we can save this
+    comm.Barrier()
+    if rank == 0:
+        _write_outputs(global_filtered_dict, results_dir, fname_no_extension=results_fname,
+            write_h5=True, write_txt=True, txt_options="keys")
+
+    return
 
 # ================================================================
 
@@ -1023,7 +1138,7 @@ def parameter_sweep_deprecated(model, sweep_params, outputs, results_file=None, 
         np.savetxt(results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
 
         # Save the data of output dictionary
-        _write_outputs(global_output_dict, output_directory=dirname, txt_options="keys")
+        _write_outputs(global_output_dict, dirname, txt_options="keys")
         # _read_output_h5("./output/output_dict.h5")
 
 
@@ -1041,111 +1156,5 @@ def parameter_sweep_deprecated(model, sweep_params, outputs, results_file=None, 
             np.savetxt(interp_file, global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
 
     return global_save_data
-
-# ================================================================
-
-def recursive_parameter_sweep(model, sweep_params, outputs, results_file=None, optimize_function=_default_optimize,
-        optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
-        reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
-        interpolate_nan_outputs=False, req_num_samples=None, seed=None):
-
-    # Get an MPI communicator
-    comm, rank, num_procs = _init_mpi(mpi_comm)
-
-    # Convert sweep_params to LinearSamples
-    sweep_params, sampling_type = _process_sweep_params(sweep_params)
-
-    # Set the seed before sampling
-    np.random.seed(seed)
-
-    # Set up optimize_kwargs
-    if optimize_kwargs is None:
-        optimize_kwargs = dict()
-    # Set up reinitialize_kwargs
-    if reinitialize_kwargs is None:
-        reinitialize_kwargs = dict()
-
-    n_samples_remaining = copy.deepcopy(req_num_samples)
-    num_total_samples = copy.deepcopy(req_num_samples)
-
-    local_output_collection = {}
-    loop_ctr = 0
-    while n_samples_remaining > 0 :
-        # Enumerate/Sample the parameter space
-        global_values = _build_combinations(sweep_params, sampling_type, num_total_samples, comm, rank, num_procs)
-
-        # divide the workload between processors
-        local_values = _divide_combinations(global_values, rank, num_procs)
-        local_num_cases = np.shape(local_values)[0]
-        if loop_ctr == 0:
-            true_local_num_cases = local_num_cases
-
-        _, local_output_collection[loop_ctr], fail_counter = _do_param_sweep(model, sweep_params, outputs, local_values,
-            optimize_function, optimize_kwargs, reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep, comm)
-
-        n_successful_solves = local_num_cases - fail_counter
-        n_successful_list = comm.allgather(n_successful_solves)
-        n_samples_remaining -= sum(n_successful_list)
-        num_total_samples = int(np.ceil(2 * n_samples_remaining))
-        loop_ctr += 1
-
-    # Now that we have all of the local output dictionaries, we need to construct
-    # a consolidated dictionary based on a filter, e.g., optimal solves.
-    local_filtered_dict = _filter_recursive_solves(model, sweep_params, local_output_collection,
-        true_local_num_cases, comm, "optimal")
-
-    # Not that we have all of the successful outputs in a consolidated dictionary locally,
-    # we can now construct a global dictionary of successful solves.
-    global_filtered_dict = _create_global_output(local_filtered_dict, req_num_samples, comm)
-
-
-    # Now we can save this
-    comm.Barrier()
-    if rank == 0:
-        _write_outputs(global_filtered_dict, txt_options="keys")
-
-    return
-
-# ================================================================
-
-def _filter_recursive_solves(model, sweep_params, recursive_local_dict, true_local_num_cases, comm, filter_keyword="optimal"):
-
-    pyomo_termination_condition = TerminationConditionMapping()
-    try:
-        assert filter_keyword in pyomo_termination_condition.mapping.keys()
-    except:
-        warnings.warn("Invalid filtering option specified. Filtering optimal values")
-        filter_keyword = "optimal"
-
-    # Figure out how many filtered solves did this rank actually do
-    filter_counter = 0
-    for case, content in recursive_local_dict.items():
-        filter_counter += content["solve_status"].count(filter_keyword)
-
-    # Now that we have all of the local output dictionaries, we need to construct
-    # a consolidated dictionary of successful solves.
-    local_filtered_dict = _create_local_output_skeleton(model, sweep_params, filter_counter,
-                                                          variable_type="unfixed")
-    local_filtered_dict["solve_status"] = []
-
-    # Populate local_successful_outputs
-    offset = 0
-    for case_number, content in recursive_local_dict.items():
-        # Filter all of the sucessful solves
-        optimal_indices = [idx for idx, status in enumerate(content["solve_status"]) if status == "optimal"]
-        n_successful_solves = len(optimal_indices)
-        stop = offset+n_successful_solves
-
-        for key, item in content.items():
-            if key != "solve_status":
-                for subkey, subitem in item.items():
-                    local_filtered_dict[key][subkey]['value'][offset:stop] = subitem['value'][optimal_indices]
-
-        # Place the solve status
-        local_filtered_dict["solve_status"].extend([content["solve_status"][i] for i in optimal_indices])
-
-        offset += n_successful_solves
-
-    return local_filtered_dict
 
 # ================================================================
