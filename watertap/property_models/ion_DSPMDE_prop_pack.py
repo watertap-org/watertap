@@ -56,7 +56,7 @@ class ActivityCoefficientModel(Enum):
     enrtl = auto()                    # eNRTL
     pitzer = auto()                   # Pitzer-Kim
 
-@declare_process_block_class("DSPMDEParameterBlock")
+@declare_process_block_class("DSPMDEParameterBlock") #TODO: replace w/ "PropParameterBlock"
 class DSPMDEParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
@@ -480,9 +480,10 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Mass density")
         #TODO: reconsider this approach for solution density based on arbitrary solute_list
         def rule_dens_mass_phase(b):
-            return (b.dens_mass_phase['Liq']
-                    * sum(b.mass_frac_phase_comp['Liq', j] / b.params.dens_mass_comp[j]
-                          for j in b.params.component_list) == 1)
+            return (b.dens_mass_phase['Liq'] == 1000 * pyunits.kg * pyunits.m**-3)
+            #TODO: remove commented code or replace- temporarily assigning density of 1000
+                    # * sum(b.mass_frac_phase_comp['Liq', j] / b.params.dens_mass_comp[j]
+                    #       for j in b.params.component_list) == 1)
         self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
 
     def _flow_vol_phase(self):
@@ -515,8 +516,8 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Molar concentration")
 
         def rule_conc_mol_phase_comp(b, j):
-            return (b.conc_mol_phase_comp['Liq', j] ==
-                    b.conc_mass_phase_comp['Liq', j] / b.mw_comp[j])
+            return (b.conc_mol_phase_comp['Liq', j] * b.params.mw_comp[j] ==
+                    b.dens_mass_phase['Liq'] * b.mole_frac_phase_comp['Liq', j])
         self.eq_conc_mol_phase_comp = Constraint(self.params.component_list, rule=rule_conc_mol_phase_comp)
 
     def _conc_mass_phase_comp(self):
@@ -603,17 +604,20 @@ class DSPMDEStateBlockData(StateBlockData):
             units=pyunits.dimensionless,
             doc="activity coefficient of component")
 
-        def rule_act_coeff_phase_comp(b, p, j):
-            if b.params.config.activity_coefficient_model == ActivityCoefficientModel.ideal:
-                return b.act_coeff_phase_comp[p, j] == 1.0
-            elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.davies:
-                raise NotImplementedError(f"Davies model has not been implemented yet.")
-            elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.enrtl:
-                raise NotImplementedError(f"eNRTL model has not been implemented yet.")
-            elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.pitzer:
-                raise NotImplementedError(f"Pitzer-Kim model has not been implemented yet.")
-        self.eq_act_coeff_phase_comp = Constraint(self.phase_list, self.params.solute_set,
-                                                  rule=rule_act_coeff_phase_comp)
+        if self.params.config.activity_coefficient_model == ActivityCoefficientModel.ideal:
+            for p in self.phase_list:
+                for j in self.params.solute_set:
+                    self.act_coeff_phase_comp[p, j].fix(1)
+        else:
+            def rule_act_coeff_phase_comp(b, p, j):
+                if b.params.config.activity_coefficient_model == ActivityCoefficientModel.davies:
+                    raise NotImplementedError(f"Davies model has not been implemented yet.")
+                elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.enrtl:
+                    raise NotImplementedError(f"eNRTL model has not been implemented yet.")
+                elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.pitzer:
+                    raise NotImplementedError(f"Pitzer-Kim model has not been implemented yet.")
+            self.eq_act_coeff_phase_comp = Constraint(self.phase_list, self.params.solute_set,
+                                                      rule=rule_act_coeff_phase_comp)
 
     #TODO: change osmotic pressure calc
     def _pressure_osm(self):
