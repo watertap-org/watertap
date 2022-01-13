@@ -294,7 +294,7 @@ Unit : fs.unit                                                             Time:
     Mass Concentration sulfur    1   0.035294     6.4667
     Mass Concentration toc       2    0.58824     10.000
     Mass Concentration tss       3    0.10588     19.400
-    Mass Concentration foo       4     4.7059 9.9000e-07
+    Mass Concentration foo       4     4.7059 1.0164e-20
 ====================================================================================
 """
 

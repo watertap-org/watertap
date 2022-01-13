@@ -19,7 +19,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_constraints_generator,
                                      unscaled_variables_generator,
                                      badly_scaled_var_generator,
-                                     constraint_autoscale_large_jac)
+                                     )
 from idaes.core.util.initialization import propagate_state
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (pretreatment_NF,
                                                                              desalination,
@@ -28,7 +28,7 @@ from watertap.examples.flowsheets.full_treatment_train.flowsheet_components impo
                                                                              costing,
                                                                              financials)
 from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
-from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.util import solve_block, check_dof
 
 def build_components(m, has_bypass=True):
     # build flowsheet
@@ -109,7 +109,7 @@ def solve_flowsheet(has_bypass=True):
     initialize(m, has_bypass=has_bypass)
 
     check_dof(m)
-    solve_with_user_scaling(m, tee=True, fail_flag=True)
+    solve_block(m, tee=True, fail_flag=True)
 
     # report
     report(m, has_bypass=has_bypass)
@@ -118,7 +118,7 @@ def solve_flowsheet(has_bypass=True):
 
 
 def simulate(m):
-    solve_with_user_scaling(m, tee=False, fail_flag=True)
+    solve_block(m, tee=False, fail_flag=True)
 
 
 def set_optimization_components(m, system_recovery, **kwargs):
@@ -144,7 +144,7 @@ def set_up_optimization(m, system_recovery=0.50, **kwargs):
 
 
 def optimize(m):
-    solve_with_user_scaling(m, tee=False, fail_flag=True)
+    solve_block(m, tee=False, fail_flag=True)
 
 def optimize_flowsheet(system_recovery=0.50, **kwargs):
     m = solve_flowsheet(**kwargs)
