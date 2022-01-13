@@ -1,0 +1,13 @@
+default:
+  default_removal_mass_solute:
+    unit: kg/kg
+    value: 0
+  energy_electric_flow_vol_inlet:
+    unit: kWh/m^3
+    value: 0.051199332
+  recovery_vol:
+    reference: (1) https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470260036.ch5,
+      (2) Cost Estimating Manual for Water Treatment Facilities (McGivney/Kawamura),
+      (3) https://www.lenntech.com/schema-of-an-iron-removal-system.htm, (4) https://www.osti.gov/servlets/purl/797810/
+    unit: m^3/m^3
+    value: 0.99999

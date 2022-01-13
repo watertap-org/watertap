@@ -1,0 +1,80 @@
+default:
+  default_removal_mass_solute:
+    unit: kg/kg
+    value: 0
+  energy_electric_flow_vol_inlet:
+    unit: kWh/m^3
+    value: 0.0
+  recovery_vol:
+    reference: Texas Water Development Board IT3PR User Manual
+    unit: m^3/m^3
+    value: 0.9214
+  removal_frac_mass_solute:
+    As_5+:
+      constituent_longform: Arsenic
+      unit: kg/kg
+      value: 0.000892
+    Ba_2+:
+      constituent_longform: Barium
+      unit: kg/kg
+      value: 0.000995
+    Ca_2+:
+      constituent_longform: Calcium, Dissolved
+      unit: kg/kg
+      value: 0.000927273
+    Cl_-:
+      constituent_longform: Chloride
+      unit: kg/kg
+      value: 0.0008910130000000001
+    F_-:
+      constituent_longform: Fluoride
+      unit: kg/kg
+      value: 0.0008235289999999999
+    K_+:
+      constituent_longform: Potassium
+      unit: kg/kg
+      value: 0.0008988760000000001
+    Mg_2+:
+      constituent_longform: Magnesium, Dissolved
+      unit: kg/kg
+      value: 0.0009047619999999999
+    Na_+:
+      constituent_longform: Sodium, Dissolved
+      unit: kg/kg
+      value: 0.0008694870000000001
+    SO4_2-:
+      constituent_longform: Sulfate, Dissolved
+      unit: kg/kg
+      value: 0.0009233249999999999
+    Sr_2+:
+      constituent_longform: Strontium
+      unit: kg/kg
+      value: 0.00095
+    bicarbonate_alkalinity_as_caco3:
+      constituent_longform: Bicarbonate Alkalinity as CaCO3
+      unit: kg/kg
+      value: 0.0008303469999999999
+    hardness:
+      constituent_longform: Hardness
+      unit: kg/kg
+      value: 0.000924528
+    nitrate:
+      constituent_longform: Nitrate-N, Dissolved
+      unit: kg/kg
+      value: 0.000881773
+    nitrate_as_nitrogen:
+      constituent_longform: Nitrate (measured as Nitrogen)
+      unit: kg/kg
+      value: 0.000881773
+    ph_max:
+      constituent_longform: pH_Max
+      unit: pH
+      value: -0.77
+    ph_min:
+      constituent_longform: pH_Min
+      unit: pH
+      value: -0.77
+    tds:
+      constituent_longform: Total Dissolved Solids (TDS)
+      unit: kg/kg
+      value: 0.000808696
