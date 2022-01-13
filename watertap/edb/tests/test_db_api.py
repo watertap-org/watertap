@@ -53,7 +53,6 @@ def edb():
 @requires_mongo
 def test_edb_init(edb):
     assert edb is not None
-    assert edb.is_empty()
     assert edb.connect_status_str == "Connection succeeded"
     assert type(edb.connect_status) is dict
 
@@ -66,7 +65,7 @@ def test_edb_load(edb):
     base = edb.get_base("default_thermo")
     assert type(base) is Base
     edb.list_bases()
-    
+
 
 @pytest.mark.component
 @requires_mongo
@@ -80,6 +79,7 @@ def test_edb_get_components(edb):
 
     # Drop the bootstrap database for cleaning
     edb.drop_database(edb.DEFAULT_URL, edb.DEFAULT_DB)
+    assert edb.is_empty()
 
 
 @pytest.mark.unit
