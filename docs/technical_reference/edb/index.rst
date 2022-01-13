@@ -9,17 +9,17 @@ Electrolyte Database (EDB)
 
 Overview
 --------
-The Electrolyte Database (EDB) stores metadata and data about chemical species, called here 
+The Electrolyte Database (EDB) stores metadata and data about chemical species, called here
 `components`, and `reactions`. It is accessed through a Python API to return well-defined Python objects.
 
-The data are stored in `MongoDB <https://mongodb.org>`_, so they can be queried in a number of ways, and the 
-system is extensible to new use-cases. The native storage format for MongoDB is a `JSON <https://json.org>`_ document, 
-and the expected structure and fields of the *component* and *reaction* data is defined by a 
+The data are stored in `MongoDB <https://mongodb.org>`_, so they can be queried in a number of ways, and the
+system is extensible to new use-cases. The native storage format for MongoDB is a `JSON <https://json.org>`_ document,
+and the expected structure and fields of the *component* and *reaction* data is defined by a
 `JSON Schema <https://json-schema.org>`_. Validation using those schemas is built into the API (though it can be disabled).
 
 To interface with the `IDAES Core Modeling Framework <https://idaes-pse.readthedocs.io/en/stable/user_guide/concepts.html>`_
-(IDAES-CMF, which underlies WaterTAP), add components and reactions to a "base" object and fetch the result as a Python 
-`dict`. This result can be used to configure and build IDAES objects (`ParameterBlocks`, `ReactionBlocks`, etc.). 
+(IDAES-CMF, which underlies WaterTAP), add components and reactions to a "base" object and fetch the result as a Python
+`dict`. This result can be used to configure and build IDAES objects (`ParameterBlocks`, `ReactionBlocks`, etc.).
 The API also has methods to construct component and reaction objects from IDAES configurations.
 
 Workflows
@@ -28,7 +28,7 @@ The EDB is intended to support some known workflows out of the box, with lower-l
 are not sufficient.
 
 .. note::
-    
+
     This content is not yet finished.
 
 Python API
@@ -207,3 +207,23 @@ Reaction schema
 
     .. include:: schemas/reaction.json
         :literal:
+
+
+EDB base config options
+-----------------------
+The EDB data for the most common base configs are made available in the
+standard bootstrap bundled with WaterTAP. Those bases are listed below:
+
++----------------------+-------------------------------------------------------------------------------------------+
+|     Base             |  Description                                                                              |
++======================+===========================================================================================+
+| default_thermo       | Default ThermoConfig: contains only AqueousPhase and uses FTPx state vars                 |
++----------------------+-------------------------------------------------------------------------------------------+
+| thermo_Liq_FpcTP     | ThermoConfig: contains only AqueousPhase and uses FpcTP state vars                        |
++----------------------+-------------------------------------------------------------------------------------------+
+| thermo_Liq_Sol_FpcTP | ThermoConfig: contains AqueousPhase + SolidPhase and uses FpcTP state vars                |
++----------------------+-------------------------------------------------------------------------------------------+
+| thermo_Liq_Vap_FpcTP | ThermoConfig: contains AqueousPhase + VaporPhase and uses FpcTP state vars                |
++----------------------+-------------------------------------------------------------------------------------------+
+| reaction             | ReactionConfig: Blank template for reaction configs                                       |
++----------------------+-------------------------------------------------------------------------------------------+
