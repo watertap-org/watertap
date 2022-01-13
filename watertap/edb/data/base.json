@@ -33,7 +33,8 @@
       "amount": "mol",
       "temperature": "K"
     },
-    "name": "default_thermo"
+    "name": "default_thermo",
+    "desc": "Default thermo: FTPx state variables for AqueousPhase only"
   },
   {
     "phases": {
@@ -64,7 +65,8 @@
       "amount": "mol",
       "temperature": "K"
     },
-    "name": "thermo_Liq_FpcTP"
+    "name": "thermo_Liq_FpcTP",
+    "desc": "ThermoConfig: AqueousPhase only, FpcTP state variables"
   },
   {
     "phases": {
@@ -99,7 +101,8 @@
       "amount": "mol",
       "temperature": "K"
     },
-    "name": "thermo_Liq_Sol_FpcTP"
+    "name": "thermo_Liq_Sol_FpcTP",
+    "desc": "ThermoConfig: AqueousPhase + SolidPhase, FpcTP state variables"
   },
   {
     "phases": {
@@ -141,7 +144,8 @@
       "amount": "mol",
       "temperature": "K"
     },
-    "name": "thermo_Liq_Vap_FpcTP"
+    "name": "thermo_Liq_Vap_FpcTP",
+    "desc": "ThermoConfig: AqueousPhase + VaporPhase, FpcTP state variables"
   },
   {
     "base_units": {
@@ -151,6 +155,7 @@
       "amount": "mol",
       "temperature": "K"
     },
-    "name": "reaction"
+    "name": "reaction",
+    "desc": "Blank reaction template"
   }
 ]

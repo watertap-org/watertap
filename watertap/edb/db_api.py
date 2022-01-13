@@ -344,6 +344,18 @@ class ElectrolyteDB:
         else:
             return result
 
+    def list_bases(self):
+        """List the currently loaded bases and provide brief description
+
+        Args:
+            None
+        Returns:
+            No return, just display info to console
+        """
+        for item in self.get_base():
+            desc = item._data.get("desc")
+            print(f"base name: {item.name}\t\tdescription -> {desc}")
+
     # older method name
     get_one_base = get_base
 
