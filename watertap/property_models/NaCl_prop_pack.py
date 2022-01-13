@@ -745,9 +745,6 @@ class NaClStateBlockData(StateBlockData):
         if self.is_property_constructed('pressure_osm'):
             sf = iscale.get_scaling_factor(self.pressure_osm, default=1, warning=True)
             iscale.constraint_scaling_transform(self.eq_pressure_osm, sf)
-        if self.is_property_constructed('osm_coeff'):
-            sf = iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', 'NaCl'], default=1, warning=True)
-            iscale.constraint_scaling_transform(self.eq_osm_coeff, sf**1.25)
 
         # property relationships with phase index, but simple constraint
         for v_str in ('visc_d_phase', 'enth_mass_phase', 'flow_vol_phase', 'diffus_phase'):
@@ -756,8 +753,8 @@ class NaClStateBlockData(StateBlockData):
                 iscale.constraint_scaling_transform(self.component('eq_'+v_str), sf)
 
         if self.is_property_constructed('dens_mass_phase'):
-            sf = iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', 'NaCl'])
-            iscale.constraint_scaling_transform(self.eq_dens_mass_phase, sf/self.params.dens_mass_param['1'])
+            sf = iscale.get_scaling_factor(self.dens_mass_phase['Liq'])
+            iscale.constraint_scaling_transform(self.eq_dens_mass_phase, sf)
 
         # property relationship indexed by component
         if self.is_property_constructed('molality_comp'):
