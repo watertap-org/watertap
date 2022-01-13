@@ -35,31 +35,7 @@ default:
         \ Coli)"
       unit: kg/kg
       value: 0.000998798
-    ultraviolet_transmittance_uvt:
-      constituent_longform: Ultraviolet Transmittance (UVT)
-      unit: '%'
-      value: 60.0
     viruses_enteric:
       constituent_longform: Viruses (enteric)
       unit: kg/kg
       value: 0.00099
-alternative:
-  default_removal_mass_solute:
-    unit: kg/kg
-    value: 0
-  energy_electric_flow_vol_inlet:
-    unit: kWh/m^3
-    value: 0.09219281
-  recovery_vol:
-    reference: .nan
-    unit: m^3/m^3
-    value: 0.9999
-  removal_frac_mass_solute:
-    Tl_+3:
-      constituent_longform: Thallium
-      unit: kg/kg
-      value: 0.0005
-    bod:
-      constituent_longform: Biological Oxygen Demand (BOD)
-      unit: kg/kg
-      value: 0.0005
