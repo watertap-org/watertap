@@ -745,6 +745,9 @@ class NaClStateBlockData(StateBlockData):
         if self.is_property_constructed('pressure_osm'):
             sf = iscale.get_scaling_factor(self.pressure_osm, default=1, warning=True)
             iscale.constraint_scaling_transform(self.eq_pressure_osm, sf)
+        if self.is_property_constructed('osm_coeff'):
+            sf = iscale.get_scaling_factor(self.osm_coeff, default=1, warning=True)
+            iscale.constraint_scaling_transform(self.eq_osm_coeff, sf)
 
         # property relationships with phase index, but simple constraint
         for v_str in ('visc_d_phase', 'enth_mass_phase', 'flow_vol_phase', 'diffus_phase'):
