@@ -202,14 +202,20 @@ class NanofiltrationData(UnitModelBlockData):
             bounds=lambda b,t,x,p,j : (5e-3, 1.5) if j in solvent_set else (1e-7, 1e-2), #TODO: divide solvent by .02 and solute by .1
             units=units_meta('amount')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Component molar flux at inlet and outlet of membrane')
-        # self.rejection_phase_comp = Var(
-        #     self.flowsheet().config.time,
-        #     phase_list,
-        #     solute_set,
-        #     initialize=0.9,
-        #     bounds=(-1 + 1e-6, 1 - 1e-6),
-        #     units=pyunits.dimensionless,
-        #     doc='Observed solute rejection')
+        self.flux_vol_water_avg = Var(
+            self.flowsheet().config.time,
+            initialize=1, #TODO: revisit
+            # bounds=(1e-7, None),
+            units=units_meta('length')*units_meta('time')**-1,
+            doc='Average volumetric water flux at inlet and outlet of membrane')
+        self.rejection_phase_comp = Var(
+            self.flowsheet().config.time,
+            phase_list,
+            solute_set,
+            initialize=0.9,
+            bounds=(-1 + 1e-6, 1 - 1e-6),
+            units=pyunits.dimensionless,
+            doc='Observed solute rejection')
         # self.diffus_pore_comp = Var(
         #     self.flowsheet().config.time,
         #     solute_set,
@@ -319,44 +325,52 @@ class NanofiltrationData(UnitModelBlockData):
             domain=NonNegativeReals,
             units=units_meta('length') * units_meta('time') ** -1,
             doc='Component mass transfer coefficient in feed channel at inlet and outlet')
-        # # self.dens_solvent = Param(
-        # #     initialize=1000,
-        # #     units=units_meta('mass')*units_meta('length')**-3,
-        # #     doc='Pure water density')
-        # #
-        # # # Add unit variables
+
+        # Add unit variables
         self.area = Var(
-            initialize=1,
-            bounds=(1e-8, 1e6),
+            initialize=10,
+            bounds=(1e-2, 1e3),
             domain=NonNegativeReals,
             units=units_meta('length') ** 2,
             doc='Membrane area')
+        # self.length = Var(
+        #     initialize=10,
+        #     bounds=(0.1, 5e2),
+        #     domain=NonNegativeReals,
+        #     units=units_meta('length'),
+        #     doc='Effective membrane length')
+        # self.width = Var(
+        #     initialize=1,
+        #     bounds=(0.1, 5e2),
+        #     domain=NonNegativeReals,
+        #     units=units_meta('length'),
+        #     doc='Effective feed-channel width')
         # #
-        # # def recovery_mass_phase_comp_initialize(b, t, p, j):
-        # #     if j in b.config.property_package.solvent_set:
-        # #         return 0.8
-        # #     elif j in solute_set:
-        # #         return 0.1
-        # #
-        # # def recovery_mass_phase_comp_bounds(b, t, p, j):
-        # #     ub = 1 - 1e-6
-        # #     if j in b.config.property_package.solvent_set:
-        # #         lb = 1e-2
-        # #     elif j in solute_set:
-        # #         lb = 1e-5
-        # #     else:
-        # #         lb = 1e-5
-        # #
-        # #     return lb, ub
-        # #
-        # # self.recovery_mass_phase_comp = Var(
-        # #     self.flowsheet().config.time,
-        # #     self.config.property_package.phase_list,
-        # #     solvent_solute_set,
-        # #     initialize=recovery_mass_phase_comp_initialize,
-        # #     bounds=recovery_mass_phase_comp_bounds,
-        # #     units=pyunits.dimensionless,
-        # #     doc='Mass-based component recovery')
+        def recovery_mol_phase_comp_initialize(b, t, p, j):
+            if j in b.config.property_package.solvent_set:
+                return 0.8
+            elif j in solute_set:
+                return 0.1
+
+        def recovery_mol_phase_comp_bounds(b, t, p, j):
+            ub = 1 - 1e-6
+            if j in b.config.property_package.solvent_set:
+                lb = 1e-2
+            elif j in solute_set:
+                lb = 1e-5
+            else:
+                lb = 1e-5
+
+            return lb, ub
+
+        self.recovery_mol_phase_comp = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            solvent_solute_set,
+            initialize=recovery_mol_phase_comp_initialize,
+            bounds=recovery_mol_phase_comp_bounds,
+            units=pyunits.dimensionless,
+            doc='Mole-based component recovery')
         # # self.recovery_vol_phase = Var(
         # #     self.flowsheet().config.time,
         # #     self.config.property_package.phase_list,
@@ -435,6 +449,10 @@ class NanofiltrationData(UnitModelBlockData):
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != 'none'):
             self.deltaP = Reference(self.feed_side.deltaP)
+
+        # @self.Constraint(doc="Membrane area")
+        # def eq_area(b):
+        #     return b.area == b.length * b.width
 
         @self.Expression(self.flowsheet().config.time,
                          solute_set,
@@ -580,7 +598,7 @@ class NanofiltrationData(UnitModelBlockData):
 
         @self.Expression(self.flowsheet().config.time,
                          io_list,
-                         doc="Volumetric water flux")
+                         doc="Volumetric water flux at inlet and outlet")
         def flux_vol_water(b, t, x):
             prop = b.config.property_package
             return b.flux_mol_phase_comp[t, x, 'Liq', 'H2O'] * prop.mw_comp['H2O'] / prop.dens_mass_comp['H2O']
@@ -671,11 +689,11 @@ class NanofiltrationData(UnitModelBlockData):
             return b.feed_side.properties_in[t].temperature == \
                    b.permeate_side[t, x].temperature
 
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Isothermal assumption for mixed permeate")
-        def eq_mixed_permeate_isothermal(b, t):
-            return b.feed_side.properties_in[t].temperature == \
-                   b.mixed_permeate[t].temperature
+        # @self.Constraint(self.flowsheet().config.time,
+        #                  doc="Isothermal assumption for mixed permeate")
+        # def eq_mixed_permeate_isothermal(b, t):
+        #     return b.feed_side.properties_in[t].temperature == \
+        #            b.mixed_permeate[t].temperature
 
         @self.feed_side.Constraint(self.flowsheet().config.time,
                                    io_list,
@@ -683,6 +701,12 @@ class NanofiltrationData(UnitModelBlockData):
         def eq_feed_interface_isothermal(b, t, x):
             return b.properties_in[t].temperature == \
                    b.properties_interface[t, x].temperature
+
+        @self.Constraint(self.flowsheet().config.time,
+                                   self.io_list,
+                                   doc="Permeate pressure")
+        def eq_pressure_permeate_io(b, t, x):
+            return b.permeate_side[t, x].pressure == b.mixed_permeate[t].pressure
 
         # TODO: seems stale- confirm+remove
         # @self.Constraint(self.flowsheet().config.time,
@@ -697,11 +721,7 @@ class NanofiltrationData(UnitModelBlockData):
         #     return b.feed_side.properties_in[t].temperature == \
         #            prop.temperature
 
-        @self.Constraint(self.flowsheet().config.time,
-                                   self.io_list,
-                                   doc="Permeate pressure")
-        def eq_pressure_permeate_io(b, t, x):
-            return b.permeate_side[t, x].pressure == b.mixed_permeate[t].pressure
+
 
         # #TODO: pressure at outlet temporarily fixed
         # @self.feed_side.Constraint(self.flowsheet().config.time,
@@ -751,10 +771,10 @@ class NanofiltrationData(UnitModelBlockData):
         #         return (b.mass_transfer_phase_comp[t, p, j] == -b.feed_side.mass_transfer_term[t, p, j]
         #
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().config.time,
                          doc="Average water flux")
-        def flux_vol_water_avg(b, t):
-            return sum(b.flux_vol_water[t, x] for x in io_list) * 0.5
+        def eq_flux_vol_water_avg(b, t):
+            return b.flux_vol_water_avg[t] == sum(b.flux_vol_water[t, x] for x in io_list) * 0.5
 
         @self.Expression(self.flowsheet().config.time,
                          phase_list,
@@ -775,6 +795,14 @@ class NanofiltrationData(UnitModelBlockData):
             if b.feed_side.properties_in[0].get_material_flow_basis() == MaterialFlowBasis.molar:
                 return b.flux_mol_phase_comp_avg[t, p, j] * b.area == -b.feed_side.mass_transfer_term[t, p, j]
 
+        @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.phase_list,
+                         solvent_solute_set,
+                         doc="Permeate production")
+        def eq_permeate_production(b, t, p, j):
+            return (b.mixed_permeate[t].get_material_flow_terms(p, j)
+                    == -b.feed_side.mass_transfer_term[t, p, j])
+
         # @self.Constraint(self.flowsheet().config.time,
         #                  phase_list,
         #                  solvent_solute_set,
@@ -789,14 +817,6 @@ class NanofiltrationData(UnitModelBlockData):
         #                 == b.flux_mol_phase_comp_avg[t, p, j] * b.area)
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.config.property_package.phase_list,
-                         solvent_solute_set,
-                         doc="Permeate production")
-        def eq_permeate_production(b, t, p, j):
-            return (b.mixed_permeate[t].get_material_flow_terms(p, j)
-                    == -b.feed_side.mass_transfer_term[t, p, j])
-
-        @self.Constraint(self.flowsheet().config.time,
                         self.io_list,
                         solvent_solute_set,
                         doc="Permeate mole fraction")
@@ -807,14 +827,14 @@ class NanofiltrationData(UnitModelBlockData):
                           for jj in solvent_solute_set)
                     == b.flux_mol_phase_comp[t, x, 'Liq', j])
 
-        # @self.Constraint(self.flowsheet().config.time,
-        #                  self.config.property_package.phase_list,
-        #                  solute_set,
-        #                  doc="Solute rejection")
-        # def eq_rejection_phase_comp(b, t, p, j):
-        #     return (b.properties_permeate[t].conc_mol_phase_comp['Liq', j]
-        #             == b.feed_side.properties_in[t].conc_mol_phase_comp['Liq', j]
-        #             * (1 - b.rejection_phase_comp[t, p, j]))
+        @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.phase_list,
+                         solute_set,
+                         doc="Solute rejection")
+        def eq_rejection_phase_comp(b, t, p, j):
+            return (b.mixed_permeate[t].conc_mol_phase_comp['Liq', j]
+                    == b.feed_side.properties_in[t].conc_mol_phase_comp['Liq', j]
+                    * (1 - b.rejection_phase_comp[t, p, j]))
         #
         # @self.Constraint(self.flowsheet().config.time)
         # def eq_recovery_vol_phase(b, t):
@@ -822,12 +842,12 @@ class NanofiltrationData(UnitModelBlockData):
         #             b.properties_permeate[t].flow_vol /
         #             b.feed_side.properties_in[t].flow_vol)
         #
-        # @self.Constraint(self.flowsheet().config.time,
-        #                  solvent_solute_set)
-        # def eq_recovery_mass_phase_comp(b, t, j):
-        #     return (b.recovery_mass_phase_comp[t, 'Liq', j] ==
-        #             b.properties_permeate[t].flow_mass_phase_comp['Liq', j] /
-        #             b.feed_side.properties_in[t].flow_mass_phase_comp['Liq', j])
+        @self.Constraint(self.flowsheet().config.time,
+                         solvent_solute_set)
+        def eq_recovery_mol_phase_comp(b, t, j):
+            return (b.recovery_mol_phase_comp[t, 'Liq', j] ==
+                    b.mixed_permeate[t].flow_mol_phase_comp['Liq', j] /
+                    b.feed_side.properties_in[t].flow_mol_phase_comp['Liq', j])
         #
 
 

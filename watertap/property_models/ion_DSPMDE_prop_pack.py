@@ -573,7 +573,8 @@ class DSPMDEStateBlockData(StateBlockData):
         def rule_molality_comp(b, j):
             return (b.molality_comp[j] ==
                     b.flow_mol_phase_comp['Liq', j]
-                    / b.flow_mass_phase_comp['Liq', 'H2O'])
+                    / b.flow_mol_phase_comp['Liq', 'H2O']
+                    / b.params.mw_comp['H2O'])
 
         self.eq_molality_comp = Constraint(self.params.solute_set, rule=rule_molality_comp)
 
@@ -674,8 +675,13 @@ class DSPMDEStateBlockData(StateBlockData):
     def assert_electroneutrality(self, tol=None, tee=False):
         if tol is None:
             tol = 1e-6
+            for j in self.params.solute_set:
+                if not self.flow_mol_phase_comp['Liq', j].is_fixed():
+                    raise AssertionError(
+                        f"{self.flow_mol_phase_comp['Liq', j]} was not fixed. Fix flow_mol_phase_comp for each solute"
+                        f" to check that electroneutrality is satisfied.")
         val = value(sum(self.charge_comp[j] * self.flow_mol_phase_comp['Liq', j]
-                     for j in self.params.solute_set))
+             for j in self.params.solute_set))
         if abs(val) <= tol:
             if tee:
                 return print('Electroneutrality satisfied')
