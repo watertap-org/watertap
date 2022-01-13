@@ -353,8 +353,25 @@ class ElectrolyteDB:
             No return, just display info to console
         """
         for item in self.get_base():
-            desc = item._data.get("desc")
-            print(f"base name: {item.name}\t\tdescription -> {desc}")
+            print(f"base name: {item.name}\t\tdescription -> {self._base_desc(item.name)}")
+
+    def _base_desc(self, name) -> str:
+        if name == "default_thermo":
+            desc = "ThermoConfig: Default uses FTPx state vars for Liq phase"
+        elif name == "reaction":
+            desc = "ReactionConfig: Blank reaction template"
+        else:
+            items = name.split("_")
+            if items[0] == "thermo":
+                desc = "ThermoConfig: "
+            else:
+                desc = "ReactionConfig: "
+            desc += "uses " + items[-1] + " state vars for "
+            for i in range(1,len(items)-1):
+                desc += items[i] + ","
+            desc += " phases"
+
+        return desc
 
     # older method name
     get_one_base = get_base
