@@ -356,6 +356,13 @@ class ElectrolyteDB:
             print(f"base name: {item.name}\t\tdescription -> {self._base_desc(item.name)}")
 
     def _base_desc(self, name) -> str:
+        """Creates a description of a base based on the standard naming
+
+        Args:
+            name: Name of the base to describe
+        Returns:
+            desc: String of the description of the base 
+        """
         if name == "default_thermo":
             desc = "ThermoConfig: Default uses FTPx state vars for Liq phase"
         elif name == "reaction":

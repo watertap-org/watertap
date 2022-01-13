@@ -16,7 +16,7 @@ Test of db_api module
 import pytest
 from ..db_api import ElectrolyteDB
 from ..data_model import Component, Reaction, Base
-from ..commands import _load_bootstrap, drop_database
+from ..commands import _load_bootstrap
 from pymongo import MongoClient
 from .util import MockDB
 
