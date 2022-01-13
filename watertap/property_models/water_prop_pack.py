@@ -1,5 +1,6 @@
 """
 Initial property package for pure water system (vapor or liquid)
+test_AD
 """
 
 # Import Python libraries
@@ -59,7 +60,7 @@ class WaterParameterData(PhysicalParameterBlock):
         new correlations that include pressure dependence,"Desalination, Vol.390, pp.1 - 24, 2016.
         doi: 10.1016/j.desal.2016.02.024(preprint)
 
-        - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of 
+        - Mostafa H.Sharqawy, John H.Lienhard V, and Syed M.Zubair, "Thermophysical properties of seawater: A review of
         existing correlations and data,"Desalination and Water Treatment, Vol.16, pp.354 - 380, April 2010.
         (2017 corrections provided at http://web.mit.edu/seawater)
         '''
