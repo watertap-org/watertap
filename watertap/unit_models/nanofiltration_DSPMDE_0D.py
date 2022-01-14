@@ -270,13 +270,13 @@ class NanofiltrationData(UnitModelBlockData):
             bounds=lambda b,t,x,p,j : (5e-3, 1.5) if j in solvent_set else (1e-7, 1e-2), #TODO: divide solvent by .02 and solute by .1
             units=units_meta('amount')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Component molar flux at inlet and outlet of membrane')
-        self.flux_vol_water = Var(
-            self.flowsheet().config.time,
-            io_list,
-            initialize=1e-5, #TODO: revisit
-            # bounds=(1e-7, None),
-            units=units_meta('length')*units_meta('time')**-1,
-            doc='Volumetric water flux at inlet and outlet of membrane')
+        # self.flux_vol_water = Var(
+        #     self.flowsheet().config.time,
+        #     io_list,
+        #     initialize=1e-5, #TODO: revisit
+        #     # bounds=(1e-7, None),
+        #     units=units_meta('length')*units_meta('time')**-1,
+        #     doc='Volumetric water flux at inlet and outlet of membrane')
         self.radius_pore = Var(
             initialize=0.5e-9, #TODO: revisit
             domain=NonNegativeReals,
@@ -466,6 +466,14 @@ class NanofiltrationData(UnitModelBlockData):
                     / (Constants.gas_constant * b.feed_side.properties_in[t].temperature) #todo: switch to permeate side temp
                     * (b.electric_potential[t, x, 'pore_exit'] - b.electric_potential[t, x, 'permeate'])))
 
+        # Volumetric Water Flux at inlet and outlet ------------------------------------#
+        @self.Expression(self.flowsheet().config.time,
+                         io_list,
+                         doc="Volumetric water flux at inlet and outlet")
+        def flux_vol_water(b, t, x):
+            prop = b.config.property_package
+            return b.flux_mol_phase_comp[t, x, 'Liq', 'H2O'] * prop.mw_comp['H2O'] / prop.dens_mass_comp['H2O']
+
         # Average Volumetric Water Flux ------------------------------------#
         @self.Expression(self.flowsheet().config.time,
                          doc="Average volumetric water flux")
@@ -479,6 +487,8 @@ class NanofiltrationData(UnitModelBlockData):
                          doc="Average molar component flux")
         def flux_mol_phase_comp_avg(b, t, p, j):
             return sum(b.flux_mol_phase_comp[t, x, p, j] for x in io_list) * 0.5
+
+
         ################################################################################################################
         # Constraints
         ################################################################################################################
@@ -487,6 +497,7 @@ class NanofiltrationData(UnitModelBlockData):
         # def eq_area(b):
         #     return b.area == b.length * b.width
 
+        # 1. Feed-solution/membrane equilibrium, DOF= Nj * 2 for inlet/outlet
         @self.Constraint(self.flowsheet().config.time,
                          io_list,
                          phase_list,
@@ -500,6 +511,7 @@ class NanofiltrationData(UnitModelBlockData):
                     * b.partition_factor_born_solvation_comp[t, j]
                     * b.partition_factor_donnan_comp_feed[t, x, j])
 
+        # 2. Permeate solution/membrane equilibrium, DOF= Nj * 2 for inlet/outlet
         @self.Constraint(self.flowsheet().config.time,
                          io_list,
                          phase_list,
@@ -513,6 +525,7 @@ class NanofiltrationData(UnitModelBlockData):
                     * b.partition_factor_born_solvation_comp[t, j]
                     * b.partition_factor_donnan_comp_permeate[t, x, j])
 
+        # 3. Feed-solution/membrane electroneutrality, DOF=1 *2 for inlet/outlet: DOF= 2
         @self.Constraint(self.flowsheet().config.time,
                          io_list,
                          phase_list,
@@ -526,6 +539,7 @@ class NanofiltrationData(UnitModelBlockData):
             # (2) probe whether inequality constraint with tolerance improves model stability and
             # returns optimal solution or if an equality constraint leads to more consistent solution
 
+        # 4. Charge balance inside the membrane, DOF=N nodes across membrane thickness *2 for inlet/outlet: N=2, DOF=4
         @self.Constraint(self.flowsheet().config.time,
                          io_list,
                          ['pore_entrance', 'pore_exit'],
@@ -540,6 +554,7 @@ class NanofiltrationData(UnitModelBlockData):
                             * pore_loc.charge_comp[j] for j in solute_set)
                         + b.membrane_charge_density[t]) == b.tol_electroneutrality)
 
+        # 4. Permeate electroneutrality, DOF=1 *2 for inlet/outlet:  DOF=2
         @self.Constraint(self.flowsheet().config.time,
                          io_list,
                          phase_list,
@@ -548,13 +563,8 @@ class NanofiltrationData(UnitModelBlockData):
             return (abs(sum(b.permeate_side[t, x].conc_mol_phase_comp[p, j] *
                             b.permeate_side[t, x].charge_comp[j] for j in solute_set)) == b.tol_electroneutrality)
 
-        @self.Constraint(self.flowsheet().config.time,
-                         io_list,
-                         doc="Volumetric water flux at inlet and outlet")
-        def eq_flux_vol_water(b, t, x):
-            prop = b.config.property_package
-            return (b.flux_vol_water[t, x]
-                    == b.flux_mol_phase_comp[t, x, 'Liq', 'H2O'] * prop.mw_comp['H2O'] / prop.dens_mass_comp['H2O'])
+
+
 
         @self.Constraint(self.flowsheet().config.time,
                          io_list,
