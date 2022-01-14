@@ -615,10 +615,12 @@ class DSPMDEStateBlockData(StateBlockData):
                 return b.act_coeff_phase_comp[p, j] == 1
             elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.davies:
                 raise NotImplementedError(f"Davies model has not been implemented yet.")
-            elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.enrtl:
-                raise NotImplementedError(f"eNRTL model has not been implemented yet.")
-            elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.pitzer:
-                raise NotImplementedError(f"Pitzer-Kim model has not been implemented yet.")
+            #TODO: remove these in final merge
+
+            # elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.enrtl:
+            #     raise NotImplementedError(f"eNRTL model has not been implemented yet.")
+            # elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.pitzer:
+            #     raise NotImplementedError(f"Pitzer-Kim model has not been implemented yet.")
         self.eq_act_coeff_phase_comp = Constraint(self.phase_list, self.params.solute_set,
                                                   rule=rule_act_coeff_phase_comp)
 
@@ -641,8 +643,6 @@ class DSPMDEStateBlockData(StateBlockData):
     # General Methods
     # NOTE: For scaling in the control volume to work properly, these methods must
     # return a pyomo Var or Expression
-
-
 
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
