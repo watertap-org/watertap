@@ -19,7 +19,7 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
 from idaes.core.util.scaling import calculate_scaling_factors, set_scaling_factor, constraint_scaling_transform
 from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
-from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.util import solve_block, check_dof
 from watertap.examples.flowsheets.full_treatment_train.model_components import Separator
 
 
@@ -110,7 +110,7 @@ def solve_SepRO(base='TDS'):
 
     check_dof(m)
     calculate_scaling_factors(m)
-    solve_with_user_scaling(m)
+    solve_block(m)
 
     m.fs.RO.inlet.display()
     m.fs.RO.permeate.display()
@@ -129,7 +129,7 @@ def solve_SepNF(base='ion'):
     m.fs.NF.mixed_state[0].mass_frac_phase_comp  # touching for tests
     check_dof(m)
     calculate_scaling_factors(m)
-    solve_with_user_scaling(m)
+    solve_block(m)
 
     m.fs.NF.inlet.display()
     m.fs.NF.permeate.display()

@@ -12,7 +12,8 @@
 ###############################################################################
 """
 This module contains the general purpose property package for zero-order
-unit models.
+unit models. Zero-order models do not track temperature and pressure, or any
+form of energy flow.
 """
 from idaes.core import (EnergyBalanceType,
                         MaterialBalanceType,
@@ -27,6 +28,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import ConfigurationError
 
 from pyomo.environ import (Expression,
                            Param,
@@ -52,9 +54,16 @@ class WaterParameterBlockData(PhysicalParameterBlock):
     """
     CONFIG = PhysicalParameterBlock.CONFIG()
 
+    CONFIG.declare('database', ConfigValue(
+        description='An instance of a WaterTAP Database to use for parameters.'
+        ))
+    CONFIG.declare('water_source', ConfigValue(
+        description=
+        'Water source to use when looking up parameters from database.'))
     CONFIG.declare("solute_list", ConfigValue(
         domain=list,
-        description="List of solute species names"))
+        description="List of solute species of interest. If None, will use "
+        "all species defined in the water_source provided."))
 
     def build(self):
         '''
@@ -68,20 +77,37 @@ class WaterParameterBlockData(PhysicalParameterBlock):
 
         self.H2O = Solvent()
 
-        for j in self.config.solute_list:
-            self.add_component(str(j), Solute())
+        # Get component set from database if provided
+        comp_set = None
+        if self.config.database is not None:
+            comp_set = self.config.database.get_solute_set(
+                self.config.water_source)
 
-        # Thermodynamic reference state
-        self.pressure_ref = Param(within=PositiveReals,
-                                  mutable=True,
-                                  default=101325.0,
-                                  doc='Reference pressure',
-                                  units=pyunits.Pa)
-        self.temperature_ref = Param(within=PositiveReals,
-                                     mutable=True,
-                                     default=298.15,
-                                     doc='Reference temperature',
-                                     units=pyunits.K)
+        # Check definition of solute list
+        solute_list = self.config.solute_list
+        if solute_list is None:
+            # No user-provided solute list, look up list from database
+            if comp_set is None:
+                # No solute list in database and none provided.
+                raise ConfigurationError(
+                    f"{self.name} no solute_list or database was defined. "
+                    f"Users must provide at least one of these arguments.")
+            else:
+                solute_list = comp_set
+        elif self.config.database is not None:
+            # User provided custom list and database - check that all
+            # components are supported
+            for j in solute_list:
+                if j not in comp_set:
+                    _log.info(f"{self.name} component {j} is not defined in "
+                              f"the water_sources database file.")
+        else:
+            # User provided list but no database - assume they know what they
+            # are doing
+            pass
+
+        for j in solute_list:
+            self.add_component(str(j), Solute())
 
         # ---------------------------------------------------------------------
         # Constant properties (Params)
@@ -101,9 +127,7 @@ class WaterParameterBlockData(PhysicalParameterBlock):
         # Set default scaling factors
         self.default_scaling_factor = {
             ("flow_vol"): 1e3,
-            ("conc_mass_comp"): 1e2,
-            ("pressure"): 1e-5,
-            ("temperature"): 1e-2}
+            ("conc_mass_comp"): 1e2}
 
     @classmethod
     def define_metadata(cls, obj):
@@ -118,8 +142,6 @@ class WaterParameterBlockData(PhysicalParameterBlock):
         obj.add_properties(
             {'flow_vol': {'method': None},
              'conc_mass_comp': {'method': None},
-             'pressure': {'method': None},
-             'temperature': {'method': None},
              'cp_mass': {'method': '_cp_mass'},
              'dens_mass': {'method': '_dens_mass'},
              'flow_mass_comp': {'method': None}})
@@ -229,16 +251,6 @@ class WaterStateBlockData(StateBlockData):
                             domain=PositiveReals,
                             doc='Total volumetric flowrate',
                             units=pyunits.m**3/pyunits.s)
-        self.pressure = Var(domain=PositiveReals,
-                            initialize=101325.0,
-                            bounds=(1e3, 1e6),
-                            doc='Pressure',
-                            units=pyunits.Pa)
-        self.temperature = Var(domain=PositiveReals,
-                               initialize=298.15,
-                               bounds=(298.15, 323.15),
-                               doc='Temperature',
-                               units=pyunits.K)
         self.conc_mass_comp = Var(self.params.solute_set,
                                   domain=PositiveReals,
                                   initialize=1e-5,
@@ -256,17 +268,6 @@ class WaterStateBlockData(StateBlockData):
         self.flow_mass_comp = Expression(
             self.component_list, rule=rule_flow_mass_comp)
 
-        def rule_enth_dens(blk):
-            return (blk.params.dens_mass*blk.params.cp_mass *
-                    (blk.temperature - blk.params.temperature_ref))
-        self._enth_dens_term = Expression(
-            rule=rule_enth_dens)
-
-        def rule_enth_flow(blk):
-            return blk.flow_vol*blk._enth_dens_term
-        self._enth_flow_term = Expression(
-            rule=rule_enth_flow)
-
     # -------------------------------------------------------------------------
     # Other properties
     def _cp_mass(self):
@@ -279,7 +280,7 @@ class WaterStateBlockData(StateBlockData):
         return blk.flow_mass_comp[j]
 
     def get_enthalpy_flow_terms(blk, p):
-        return blk._enth_flow_term
+        raise NotImplementedError
 
     def get_material_density_terms(blk, p, j):
         if j == "H2O":
@@ -288,25 +289,21 @@ class WaterStateBlockData(StateBlockData):
             return blk.conc_mass_comp[j]
 
     def get_energy_density_terms(blk, p):
-        return blk._enth_dens_term
+        raise NotImplementedError
 
     def default_material_balance_type(self):
         return MaterialBalanceType.componentTotal
 
     def default_energy_balance_type(self):
-        return EnergyBalanceType.enthalpyTotal
+        return EnergyBalanceType.none
 
     def define_state_vars(blk):
         return {"flow_vol": blk.flow_vol,
-                "conc_mass_comp": blk.conc_mass_comp,
-                "temperature": blk.temperature,
-                "pressure": blk.pressure}
+                "conc_mass_comp": blk.conc_mass_comp}
 
     def define_display_vars(blk):
         return {"Volumetric Flowrate": blk.flow_vol,
-                "Mass Concentration": blk.conc_mass_comp,
-                "Temperature": blk.temperature,
-                "Pressure": blk.pressure}
+                "Mass Concentration": blk.conc_mass_comp}
 
     def get_material_flow_basis(blk):
         return MaterialFlowBasis.mass
@@ -330,16 +327,6 @@ class WaterStateBlockData(StateBlockData):
                     sf_c = self.params.default_scaling_factor["conc_mass_comp"]
                 iscale.set_scaling_factor(self.conc_mass_comp[j], sf_c)
 
-        if iscale.get_scaling_factor(self.pressure) is None:
-            iscale.set_scaling_factor(
-                self.pressure,
-                self.params.default_scaling_factor["pressure"])
-
-        if iscale.get_scaling_factor(self.temperature) is None:
-            iscale.set_scaling_factor(
-                self.temperature,
-                self.params.default_scaling_factor["temperature"])
-
         for j, v in self.flow_mass_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 if j == "H2O":
@@ -348,8 +335,3 @@ class WaterStateBlockData(StateBlockData):
                     sf_c = iscale.get_scaling_factor(
                         self.conc_mass_comp[j], default=1e2, warning=True)
                 iscale.set_scaling_factor(v, sf_Q*sf_c)
-
-        if iscale.get_scaling_factor(self._enth_dens_term) is None:
-            iscale.set_scaling_factor(self._enth_dens_term, 1e-5)
-        if iscale.get_scaling_factor(self._enth_flow_term) is None:
-            iscale.set_scaling_factor(self._enth_flow_term, 1e-4)

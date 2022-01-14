@@ -94,6 +94,14 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 
 import idaes.logger as idaeslog
 
+# Import scaling helper functions
+from watertap.examples.chemistry.chem_scaling_utils import (
+    _set_inherent_rxn_scaling,
+    _set_rate_rxn_scaling,
+    _set_mat_bal_scaling_FTPx,
+    _set_ene_bal_scaling,
+)
+
 __author__ = "Austin Ladshaw"
 
 # Configuration dictionary
@@ -701,7 +709,7 @@ class TestRemineralization():
                     inherent_equilibrium_constraint[i[1]], 0.1)
 
         # Next, try adding scaling for species
-        min = 1e-6
+        min = 1e-3
         for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
             # i[0] = phase, i[1] = species
             if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
@@ -730,12 +738,6 @@ class TestRemineralization():
     def test_initialize_solver_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
 
-        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
-        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0)
-        model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1)
-
-        solver.options['bound_push'] = 1e-10
-        solver.options['mu_init'] = 1e-6
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
         assert degrees_of_freedom(model) == 0
 
@@ -743,10 +745,6 @@ class TestRemineralization():
     def test_solve_appr_equ(self, remineralization_appr_equ):
         model = remineralization_appr_equ
 
-        # NOTE: With new methods, after initialization the 'bound_push' and 'mu_init'
-        #       options can be relaxed from what they were before.
-        solver.options['bound_push'] = 1e-5
-        solver.options['mu_init'] = 1e-3
         results = solver.solve(model, tee=True)
         print(results.solver.termination_condition)
         assert results.solver.termination_condition == TerminationCondition.optimal
@@ -1387,38 +1385,9 @@ class TestRemineralizationCSTR():
     def test_scaling_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
 
-        for i in model.fs.unit.control_volume.inherent_reaction_extent_index:
-            scale = value(model.fs.unit.control_volume.properties_out[0.0].k_eq[i[1]].expr)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.inherent_reaction_extent[0.0,i[1]], 10/scale)
-            iscale.constraint_scaling_transform(model.fs.unit.control_volume.properties_out[0.0].
-                    inherent_equilibrium_constraint[i[1]], 0.1)
-
-        # Scaling for kinetic reactions
-        for i in model.fs.rxn_params.rate_reaction_idx:
-            scale = value(model.fs.unit.control_volume.reactions[0.0].reaction_rate[i].expr)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.rate_reaction_extent[0.0,i], 10/scale)
-
-        # Next, try adding scaling for species
-        min = 1e-6
-        for i in model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp:
-            # i[0] = phase, i[1] = species
-            if model.fs.unit.inlet.mole_frac_comp[0, i[1]].value > min:
-                scale = model.fs.unit.inlet.mole_frac_comp[0, i[1]].value
-            else:
-                scale = min
-            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-            iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
-            iscale.constraint_scaling_transform(
-                model.fs.unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-            iscale.constraint_scaling_transform(model.fs.unit.control_volume.material_balances[0.0,i[1]], 10/scale)
-
-        # CSTR has a volume variable that needs a scaling factor
-        #       NOTE: Volume is indexed by time
-        iscale.set_scaling_factor(model.fs.unit.control_volume.volume, 10/model.fs.unit.volume[0.0].value)
-
-        # uncertain whether or not this is needed
-        #iscale.set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true_eq,10)
+        _set_inherent_rxn_scaling(model.fs.unit, thermo_config_cstr, min_k_eq_ref=1e-2)
+        _set_rate_rxn_scaling(model.fs.rxn_params, model.fs.unit)
+        _set_mat_bal_scaling_FTPx(model.fs.unit)
 
         iscale.calculate_scaling_factors(model.fs.unit)
 
@@ -1435,15 +1404,6 @@ class TestRemineralizationCSTR():
     def test_initialize_solver_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
 
-        # Set upper and lower bounds for lnx_i and x_i params
-        #       Doing this helps to restrict the search area of ipopt and
-        #       seems to lead to better convergence behavior
-        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setlb(-50)
-        model.fs.unit.control_volume.properties_out[0.0].log_mole_frac_phase_comp_true.setub(0)
-        model.fs.unit.control_volume.properties_out[0.0].mole_frac_phase_comp.setub(1)
-
-        solver.options['bound_push'] = 1e-10
-        solver.options['mu_init'] = 1e-6
         model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
         assert degrees_of_freedom(model) == 0
@@ -1451,11 +1411,6 @@ class TestRemineralizationCSTR():
     @pytest.mark.component
     def test_solve_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
-
-        # NOTE: With new methods, after initialization the 'bound_push' and 'mu_init'
-        #       options can be relaxed from what they were before.
-        solver.options['bound_push'] = 1e-5
-        solver.options['mu_init'] = 1e-3
         solver.options['halt_on_ampl_error'] = 'yes'
         results = solver.solve(model, tee=True, symbolic_solver_labels=True)
         print(results.solver.termination_condition)

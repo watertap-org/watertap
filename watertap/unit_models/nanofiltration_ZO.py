@@ -378,9 +378,6 @@ class NanofiltrationData(UnitModelBlockData):
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-        # Set solver options
-        if optarg is None:
-            optarg = {'bound_push': 1e-8}
 
         opt = get_solver(solver, optarg)
 

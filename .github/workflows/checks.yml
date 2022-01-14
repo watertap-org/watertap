@@ -23,6 +23,10 @@ jobs:
   tests:
     name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
+# TODO: Grab cloud database password from encrypted repo secrets
+# TODO: and place in environment so tests can use it.
+#    env:
+#      EDB_CLOUD_PASSWORD: ${{ secrets.EDB_CLOUD_PASSWORD }}
     strategy:
       fail-fast: false
       matrix:

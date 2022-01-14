@@ -17,7 +17,7 @@ from idaes.generic_models.properties.core.generic.generic_property import Generi
 from idaes.core.util.scaling import calculate_scaling_factors, get_scaling_factor, constraint_scaling_transform
 from idaes.core.util import get_solver
 from watertap.examples.flowsheets.full_treatment_train.model_components.eNRTL import entrl_config_FTPx, entrl_config_FpcTP
-from watertap.examples.flowsheets.full_treatment_train.util import check_scaling, solve_with_user_scaling
+from watertap.examples.flowsheets.full_treatment_train.util import check_scaling, solve_block
 
 def simulate_enrtl_FTPx(state_var_args):
     m = ConcreteModel()
@@ -30,6 +30,7 @@ def simulate_enrtl_FTPx(state_var_args):
     for (v_name, ind), val in state_var_args.items():
         var = getattr(m.fs.state[0], v_name)
         var[ind].fix(val)
+    m.fs.state[0].flow_mol_phase['Liq'].value = 1
 
     # scale model
     calculate_scaling_factors(m)
@@ -101,8 +102,7 @@ def simulate_enrtl_FpcTP(state_var_args):
 
     check_scaling(m)
 
-    # User scaling
-    solve_with_user_scaling(m)
+    solve_block(m)
 
     ksp = 3.2e-9  # Gibbs energy gives 3.9e-8, but this fits expectations better
     saturation_index = value(m.fs.state[0].act_phase_comp["Liq", "Ca_2+"]
