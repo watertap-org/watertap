@@ -67,7 +67,9 @@ Installing solvers
 
 Windows and Linux Users: solvers distributed through IDAES Extensions
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 .. important:: Depending on your operating system, additional steps might be needed. For more information, refer to the `IDAES installation guide <https://idaes-pse.readthedocs.io/en/stable/getting_started/index.html>`_.
+
 After installing WaterTAP, the ``idaes get-extensions`` command can be used to automatically install the solvers distributed as part of the IDAES Extensions.
 
 From the same environment where WaterTAP was installed, run:
