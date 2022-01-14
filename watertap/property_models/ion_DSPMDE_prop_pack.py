@@ -611,7 +611,7 @@ class DSPMDEStateBlockData(StateBlockData):
         #             self.act_coeff_phase_comp[p, j].fix(1)
         # else:
         def rule_act_coeff_phase_comp(b, p, j):
-            if self.params.config.activity_coefficient_model == ActivityCoefficientModel.ideal:
+            if b.params.config.activity_coefficient_model == ActivityCoefficientModel.ideal:
                 return b.act_coeff_phase_comp[p, j] == 1
             elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.davies:
                 raise NotImplementedError(f"Davies model has not been implemented yet.")
