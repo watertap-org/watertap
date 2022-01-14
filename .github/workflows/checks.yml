@@ -227,7 +227,8 @@ jobs:
       run: |
         conda install --quiet --yes cmake
         # some failures are expected, but this should succeed as long as pynumero is built correctly
-        pyomo build-extensions | grep '.*OK.*pynumero'
+        pyomo build-extensions
+        python -c "from pyomo.contrib.pynumero.asl import AmplInterface; exit(0) if AmplInterface.available() else exit(1)"
     - name: Run pytest
       if: always()
       run: |
