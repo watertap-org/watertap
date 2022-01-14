@@ -45,7 +45,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
                                      unscaled_variables_generator,
                                      unscaled_constraints_generator,
                                      badly_scaled_var_generator,
-                                     set_scaling_factor)
+                                     )
 
 from idaes.config import bin_directory as idaes_bin_directory
 
@@ -329,17 +329,11 @@ class TestReverseOsmosis():
         m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e1, index=('Liq', 'H2O'))
         m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'NaCl'))
 
-        for x in m.fs.unit.feed_side.length_domain:
-            set_scaling_factor(m.fs.unit.mass_transfer_phase_comp[0, x, 'Liq', 'NaCl'], 1e3)
-
         calculate_scaling_factors(m)
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
 
     @pytest.mark.component
     def test_initialize(self, RO_frame):
@@ -499,20 +493,14 @@ class TestReverseOsmosis():
         assert degrees_of_freedom(m) == 0
 
         # Scaling
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e4, index=('Liq', 'NaCl'))
-
-        set_scaling_factor(m.fs.unit.mass_transfer_phase_comp[0, 0, 'Liq', 'NaCl'], 1e2)
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e1, index=('Liq', 'H2O'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'NaCl'))
 
         calculate_scaling_factors(m)
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
-
         assert len(unscaled_var_list) == 0
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
 
         # Test initialization
         initialization_tester(m, fail_on_warning=True)
@@ -652,17 +640,13 @@ class TestReverseOsmosis():
         assert degrees_of_freedom(m) == 0
 
         # Scaling
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e1, index=('Liq', 'H2O'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'NaCl'))
         calculate_scaling_factors(m)
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
-
         assert len(unscaled_var_list) == 0
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
 
         # Test initialization
         initialization_tester(m, fail_on_warning=True)
@@ -801,15 +785,12 @@ class TestReverseOsmosis():
 
         assert degrees_of_freedom(m) == 0
 
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e1, index=('Liq', 'H2O'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'NaCl'))
         calculate_scaling_factors(m)
 
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
 
         initialization_tester(m, fail_on_warning=True)
 
@@ -958,18 +939,14 @@ class TestReverseOsmosis():
 
         assert degrees_of_freedom(m) == 0
 
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e1, index=('Liq', 'H2O'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'NaCl'))
 
-        set_scaling_factor(m.fs.unit.feed_side.properties[0, 1].flow_mass_phase_comp['Liq', 'NaCl'], 1e4)
         calculate_scaling_factors(m)
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
 
         initialization_tester(m, fail_on_warning=True)
 
@@ -1123,18 +1100,14 @@ class TestReverseOsmosis():
 
         assert degrees_of_freedom(m) == 0
 
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e1, index=('Liq', 'H2O'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'NaCl'))
 
-        set_scaling_factor(m.fs.unit.feed_side.properties[0, 1].flow_mass_phase_comp['Liq', 'NaCl'], 1e4)
         calculate_scaling_factors(m)
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
 
         initialization_tester(m, fail_on_warning=True)
 
@@ -1288,18 +1261,14 @@ class TestReverseOsmosis():
 
         assert degrees_of_freedom(m) == 0
 
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e1, index=('Liq', 'H2O'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'NaCl'))
 
-        set_scaling_factor(m.fs.unit.feed_side.properties[0, 1].flow_mass_phase_comp['Liq', 'NaCl'], 1e4)
         calculate_scaling_factors(m)
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
 
         initialization_tester(m, fail_on_warning=True)
 
