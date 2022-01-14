@@ -605,20 +605,22 @@ class DSPMDEStateBlockData(StateBlockData):
             units=pyunits.dimensionless,
             doc="activity coefficient of component")
 
-        if self.params.config.activity_coefficient_model == ActivityCoefficientModel.ideal:
-            for p in self.phase_list:
-                for j in self.params.solute_set:
-                    self.act_coeff_phase_comp[p, j].fix(1)
-        else:
-            def rule_act_coeff_phase_comp(b, p, j):
-                if b.params.config.activity_coefficient_model == ActivityCoefficientModel.davies:
-                    raise NotImplementedError(f"Davies model has not been implemented yet.")
-                elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.enrtl:
-                    raise NotImplementedError(f"eNRTL model has not been implemented yet.")
-                elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.pitzer:
-                    raise NotImplementedError(f"Pitzer-Kim model has not been implemented yet.")
-            self.eq_act_coeff_phase_comp = Constraint(self.phase_list, self.params.solute_set,
-                                                      rule=rule_act_coeff_phase_comp)
+        # if self.params.config.activity_coefficient_model == ActivityCoefficientModel.ideal:
+        #     for p in self.phase_list:
+        #         for j in self.params.solute_set:
+        #             self.act_coeff_phase_comp[p, j].fix(1)
+        # else:
+        def rule_act_coeff_phase_comp(b, p, j):
+            if self.params.config.activity_coefficient_model == ActivityCoefficientModel.ideal:
+                return b.act_coeff_phase_comp[p, j] == 1
+            elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.davies:
+                raise NotImplementedError(f"Davies model has not been implemented yet.")
+            elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.enrtl:
+                raise NotImplementedError(f"eNRTL model has not been implemented yet.")
+            elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.pitzer:
+                raise NotImplementedError(f"Pitzer-Kim model has not been implemented yet.")
+        self.eq_act_coeff_phase_comp = Constraint(self.phase_list, self.params.solute_set,
+                                                  rule=rule_act_coeff_phase_comp)
 
     #TODO: change osmotic pressure calc
     def _pressure_osm(self):
