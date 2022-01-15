@@ -66,11 +66,9 @@ class WaterParameterData(PhysicalParameterBlock):
 
         # Parameters
         # molecular weight
-        mw_comp_data = {'H2O': 18.01528e-3}
-
         self.mw_comp = Param(self.component_list,
                              mutable=False,
-                             initialize=mw_comp_data,
+                             initialize=18.01528e-3,
                              units=pyunits.kg/pyunits.mol,
                              doc="Molecular weight")
 
@@ -230,7 +228,7 @@ class WaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling('temperature', 1e-2)
         self.set_default_scaling('pressure', 1e-6)
         self.set_default_scaling('dens_mass_phase', 1e-3, index='Liq')
-        self.set_default_scaling('dens_mass_phase', 1e1, index='Vap')
+        self.set_default_scaling('dens_mass_phase', 1, index='Vap')
         #self.set_default_scaling('dens_mass_solvent', 1e-3)
         self.set_default_scaling('enth_mass_phase', 1e-5, index='Liq')
         self.set_default_scaling('enth_mass_phase', 1e-7, index='Vap')
@@ -243,7 +241,7 @@ class WaterParameterData(PhysicalParameterBlock):
     def define_metadata(cls, obj):
         """Define properties supported and units."""
         obj.add_properties(
-            {'flow_mass_phase': {'method': None},
+            {'flow_mass_phase_comp': {'method': None},
              'temperature': {'method': None},
              'pressure': {'method': None},
              'dens_mass_phase': {'method': '_dens_mass_phase'},
@@ -251,35 +249,9 @@ class WaterParameterData(PhysicalParameterBlock):
              'flow_vol': {'method': '_flow_vol'},
              'enth_mass_phase': {'method': '_enth_mass_phase'},
              'enth_flow': {'method': '_enth_flow'},
-             'pressure_sat': {'method': '_pressure_sat'},
              'cp_phase': {'method': '_cp_phase'},
              'dh_vap': {'method': '_dh_vap'},
              })
-
-        # obj.add_properties(
-        #     {'flow_mass_phase_comp': {'method': None},
-        #      'temperature': {'method': None},
-        #      'pressure': {'method': None},
-        #      'mass_frac_phase_comp': {'method': '_mass_frac_phase_comp'},
-        #      'dens_mass_phase': {'method': '_dens_mass_phase'},
-        #      'dens_mass_solvent': {'method': '_dens_mass_solvent'},
-        #      'flow_vol_phase': {'method': '_flow_vol_phase'},
-        #      'flow_vol': {'method': '_flow_vol'},
-        #      'conc_mass_phase_comp': {'method': '_conc_mass_phase_comp'},
-        #      'flow_mol_phase_comp': {'method': '_flow_mol_phase_comp'},
-        #      'mole_frac_phase_comp': {'method': '_mole_frac_phase_comp'},
-        #      'molality_comp': {'method': '_molality_comp'},
-        #      'visc_d_phase': {'method': '_visc_d_phase'},
-        #      'osm_coeff': {'method': '_osm_coeff'},
-        #      'pressure_osm': {'method': '_pressure_osm'},
-        #      'enth_mass_phase': {'method': '_enth_mass_phase'},
-        #      'enth_flow': {'method': '_enth_flow'},
-        #      'pressure_sat': {'method': '_pressure_sat'},
-        #      'cp_phase': {'method': '_cp_phase'},
-        #      'therm_cond_phase': {'method': '_therm_cond_phase'},
-        #      'dh_vap': {'method': '_dh_vap'},
-        #      'diffus_phase': {'method': '_diffus_phase'}
-        #      })
 
         obj.add_default_units({'time': pyunits.s,
                                'length': pyunits.m,
@@ -486,9 +458,10 @@ class WaterStateBlockData(StateBlockData):
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
         # Add state variables
-        self.flow_mass_phase = Var(
+        self.flow_mass_phase_comp = Var(
             self.params.phase_list,
-            initialize={('Liq', 'H2O'): 1, ('Vap', 'H20'): 1e-8},
+            self.params.component_list,
+            initialize={('Liq', 'H2O'): 1, ('Vap', 'H2O'): 1e-8},
             bounds=(1e-8, None),
             domain=NonNegativeReals,
             units=pyunits.kg/pyunits.s,
@@ -543,8 +516,8 @@ class WaterStateBlockData(StateBlockData):
             units=pyunits.m ** 3 / pyunits.s,
             doc="Volumetric flow rate")
 
-        def rule_flow_vol_phase(b, phase):
-            return b.flow_vol_phase[phase] == b.flow_mass_phase[phase] / b.dens_mass_phase[phase]
+        def rule_flow_vol_phase(b, p):
+            return b.flow_vol_phase[p] == b.flow_mass_phase_comp[p, 'H2O'] / b.dens_mass_phase[p]
 
         self.eq_flow_vol_phase = Constraint(self.params.phase_list, rule=rule_flow_vol_phase)
 
@@ -584,7 +557,7 @@ class WaterStateBlockData(StateBlockData):
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method
         def rule_enth_flow(b):  # enthalpy flow [J/s]
-            return sum(b.flow_mass_phase_comp[p] * b.enth_mass_phase[p] for p in b.params.phase_list)
+            return sum(b.flow_mass_phase_comp[p, 'H2O'] * b.enth_mass_phase[p] for p in b.params.phase_list)
 
         self.enth_flow = Expression(rule=rule_enth_flow)
 
@@ -621,7 +594,7 @@ class WaterStateBlockData(StateBlockData):
 
     def _dh_vap(self):
         self.dh_vap = Var(
-            initialize=2.4e3,
+            initialize=2.4e6,
             bounds=(1, 1e9),
             units=pyunits.J / pyunits.kg,
             doc="Latent heat of vaporization")
@@ -663,7 +636,7 @@ class WaterStateBlockData(StateBlockData):
 
     def define_state_vars(self):
         """Define state vars."""
-        return {"flow_mass_phase": self.flow_mass_phase,
+        return {"flow_mass_phase_comp": self.flow_mass_phase_comp,
                 "temperature": self.temperature,
                 "pressure": self.pressure}
 
@@ -680,18 +653,18 @@ class WaterStateBlockData(StateBlockData):
         # temperature, dens_mass_phase, visc_d_phase, osm_coeff, and enth_mass_phase
 
         # these variables should have user input
-        if iscale.get_scaling_factor(self.flow_mass_phase['Liq']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase['Liq'], default=1e0, warning=True)
-            iscale.set_scaling_factor(self.flow_mass_phase['Liq'], sf)
+        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O']) is None:
+            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'], default=1e0, warning=True)
+            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'], sf)
 
-        if iscale.get_scaling_factor(self.flow_mass_phase['Vap']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase['Vap'], default=1e0, warning=True)
-            iscale.set_scaling_factor(self.flow_mass_phase_comp['Vap'], sf)
+        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Vap', 'H2O']) is None:
+            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Vap', 'H2O'], default=1e0, warning=True)
+            iscale.set_scaling_factor(self.flow_mass_phase_comp['Vap', 'H2O'], sf)
 
         # scaling factors for parameters
         for j, v in self.params.mw_comp.items():
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.params.mw_comp, 1e-1)
+                iscale.set_scaling_factor(self.params.mw_comp, 1e2)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
@@ -713,66 +686,26 @@ class WaterStateBlockData(StateBlockData):
         if self.is_property_constructed('flow_vol_phase'):
             for p in self.params.phase_list:
                 if iscale.get_scaling_factor(self.flow_vol_phase[p]) is None:
-                    sf = iscale.get_scaling_factor(self.flow_mass_phase[p]) / iscale.get_scaling_factor(self.dens_mass_phase[p])
+                    sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp[p, 'H2O'])
+                          / iscale.get_scaling_factor(self.dens_mass_phase[p]))
                     iscale.set_scaling_factor(self.flow_vol_phase[p], sf)
 
         if self.is_property_constructed('flow_vol'):
-            if self.flow_mass_phase['Liq'] > self.flow_mass_phase['Vap']: # flow is in Liquid phase
-                sf = iscale.get_scaling_factor(self.flow_vol_phase['Liq'])
-            else:   # flow is in Vapor phase
-                sf =  iscale.get_scaling_factor(self.flow_vol_phase['Vap'])
+            sf_liq = iscale.get_scaling_factor(self.flow_vol_phase['Liq'])
+            sf_vap = iscale.get_scaling_factor(self.flow_vol_phase['Vap'])
+            sf = min(sf_liq, sf_vap)
             iscale.set_scaling_factor(self.flow_vol, sf)
 
-        # if self.is_property_constructed('conc_mass_phase_comp'):
-        #     for j in self.params.component_list:
-        #         sf_dens = iscale.get_scaling_factor(self.dens_mass_phase['Liq'])
-        #         if iscale.get_scaling_factor(self.conc_mass_phase_comp['Liq', j]) is None:
-        #             if j == 'H2O':
-        #                 # solvents typically have a mass fraction between 0.5-1
-        #                 iscale.set_scaling_factor(self.conc_mass_phase_comp['Liq', j], sf_dens)
-        #             elif j == 'TDS':
-        #                 iscale.set_scaling_factor(
-        #                     self.conc_mass_phase_comp['Liq', j],
-        #                     sf_dens * iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j]))
-        #
-        # if self.is_property_constructed('flow_mol_phase_comp'):
-        #     for j in self.params.component_list:
-        #         if iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j]) is None:
-        #             sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', j])
-        #             sf *= iscale.get_scaling_factor(self.params.mw_comp[j])
-        #             iscale.set_scaling_factor(self.flow_mol_phase_comp['Liq', j], sf)
-
-        # if self.is_property_constructed('mole_frac_phase_comp'):
-        #     for j in self.params.component_list:
-        #         if iscale.get_scaling_factor(self.mole_frac_phase_comp['Liq', j]) is None:
-        #             if j == 'TDS':
-        #                 sf = (iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j])
-        #                       / iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O']))
-        #                 iscale.set_scaling_factor(self.mole_frac_phase_comp['Liq', j], sf)
-        #             elif j == 'H2O':
-        #                 iscale.set_scaling_factor(self.mole_frac_phase_comp['Liq', j], 1)
-        #
-        # if self.is_property_constructed('molality_comp'):
-        #     for j in self.params.component_list:
-        #         if isinstance(getattr(self.params, j), Solute):
-        #             if iscale.get_scaling_factor(self.molality_comp[j]) is None:
-        #                 sf = iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j])
-        #                 sf *= iscale.get_scaling_factor(self.params.mw_comp[j])
-        #                 iscale.set_scaling_factor(self.molality_comp[j], sf)
-
         if self.is_property_constructed('enth_flow'):
-            if self.flow_mass_phase['Liq'] > self.flow_mass_phase['Vap']: # flow is in Liquid phase
-                iscale.set_scaling_factor(self.enth_flow,
-                                      iscale.get_scaling_factor(self.flow_mass_phase['Liq'])
-                                      * iscale.get_scaling_factor(self.enth_mass_phase['Liq']))
-            else: # flow is in Vapor phase
-                iscale.set_scaling_factor(self.enth_flow,
-                                          iscale.get_scaling_factor(self.flow_mass_phase['Vap'])
-                                          * iscale.get_scaling_factor(self.enth_mass_phase['Vap']))
+            sf_liq = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'])
+                      * iscale.get_scaling_factor(self.enth_mass_phase['Liq']))
+            sf_vap = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Vap', 'H2O'])
+                      * iscale.get_scaling_factor(self.enth_mass_phase['Vap']))
+            sf = min(sf_liq, sf_vap)
+            iscale.set_scaling_factor(self.enth_flow, sf)
 
         # transforming constraints
         # property relationships with no index, simple constraint
-        #v_str_lst_simple = ['dens_mass_solvent','osm_coeff', 'pressure_osm', 'pressure_sat', 'dh_vap']
         v_str_lst_simple = ['dh_vap']
         for v_str in v_str_lst_simple:
             if self.is_property_constructed(v_str):
@@ -782,20 +715,16 @@ class WaterStateBlockData(StateBlockData):
                 iscale.constraint_scaling_transform(c, sf)
 
         # property relationships with phase index, but simple constraint
-        #v_str_lst_phase = ['dens_mass_phase', 'flow_vol_phase', 'visc_d_phase', 'enth_mass_phase',
-        #                   'diffus_phase', 'cp_phase', 'therm_cond_phase']
         v_str_lst_phase = ['dens_mass_phase', 'flow_vol_phase', 'enth_mass_phase', 'cp_phase']
         for v_str in v_str_lst_phase:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
-                c_phase = getattr(self,'eq_' + v_str)
-                for (ind,c) in c_phase.items():
+                c_phase = getattr(self, 'eq_' + v_str)
+                for (ind, c) in c_phase.items():
                     sf = iscale.get_scaling_factor(v[ind], default=1, warning=True)
-                    #c = getattr(self, 'eq_' + v_str)
                     iscale.constraint_scaling_transform(c, sf)
 
         # property relationship indexed by component
-        # v_str_lst_comp = ['molality_comp']
         v_str_lst_comp = []
         for v_str in v_str_lst_comp:
             if self.is_property_constructed(v_str):
@@ -806,8 +735,6 @@ class WaterStateBlockData(StateBlockData):
                     iscale.constraint_scaling_transform(c, sf)
 
         # property relationships indexed by component and phase
-        # v_str_lst_phase_comp = ['mass_frac_phase_comp', 'conc_mass_phase_comp', 'flow_mol_phase_comp',
-        #                        'mole_frac_phase_comp']
         v_str_lst_phase_comp = []
         for v_str in v_str_lst_phase_comp:
             if self.is_property_constructed(v_str):
