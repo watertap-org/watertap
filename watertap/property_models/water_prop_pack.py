@@ -231,7 +231,7 @@ class WaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling('dens_mass_phase', 1, index='Vap')
         #self.set_default_scaling('dens_mass_solvent', 1e-3)
         self.set_default_scaling('enth_mass_phase', 1e-5, index='Liq')
-        self.set_default_scaling('enth_mass_phase', 1e-7, index='Vap')
+        self.set_default_scaling('enth_mass_phase', 1e-6, index='Vap')
         #self.set_default_scaling('pressure_sat', 1e-5)
         self.set_default_scaling('cp_phase', 1e-3, index='Liq')
         self.set_default_scaling('cp_phase', 1e-3, index='Vap')
@@ -487,8 +487,8 @@ class WaterStateBlockData(StateBlockData):
     def _dens_mass_phase(self):
         self.dens_mass_phase = Var(
             self.params.phase_list,
-            initialize=1e3,
-            bounds=(1, 1e6),
+            initialize={'Liq': 1e3, 'Vap': 1},
+            bounds=(1e-3, 1e6),
             units=pyunits.kg*pyunits.m**-3,
             doc="Mass density of seawater")
 
