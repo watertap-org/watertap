@@ -470,7 +470,7 @@ class WaterStateBlockData(StateBlockData):
         self.flow_mass_phase_comp = Var(
             self.params.phase_list,
             self.params.component_list,
-            initialize={('Liq', 'H2O'): 1, ('Vap', 'H2O'): 1e-8},
+            initialize=0.5,
             bounds=(1e-8, None),
             domain=NonNegativeReals,
             units=pyunits.kg/pyunits.s,
@@ -702,7 +702,7 @@ class WaterStateBlockData(StateBlockData):
         # scaling factors for parameters
         for j, v in self.params.mw_comp.items():
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.params.mw_comp, 1e2)
+                iscale.set_scaling_factor(self.params.mw_comp, 1e-2)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
@@ -762,6 +762,16 @@ class WaterStateBlockData(StateBlockData):
                 c_comp = getattr(self, 'eq_' + v_str)
                 for j, c in c_comp.items():
                     sf = iscale.get_scaling_factor(v_comp[j], default=1, warning=True)
+                    iscale.constraint_scaling_transform(c, sf)
+
+        # property relationship indexed by phase
+        v_str_lst_comp = ['flow_mol_phase_comp', 'mole_frac_phase_comp']
+        for v_str in v_str_lst_comp:
+            if self.is_property_constructed(v_str):
+                v_phase = getattr(self, v_str)
+                c_phase = getattr(self, 'eq_' + v_str)
+                for p, c in c_phase.items():
+                    sf = iscale.get_scaling_factor(v_phase[p, 'H2O'], default=1, warning=True)
                     iscale.constraint_scaling_transform(c, sf)
 
         # property relationships indexed by component and phase

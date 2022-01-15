@@ -26,37 +26,30 @@ class TestSeawaterProperty_idaes(PropertyTestHarness_idaes):
         self.has_density_terms = False
 
 
-# class TestSeawaterProperty(PropertyTestHarness):
-#     def configure(self):
-#         self.prop_pack = props.WaterParameterBlock
-#         self.param_args = {}
-#         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1,
-#                              ('flow_mass_phase_comp', ('Liq', 'TDS')): 1e2}
-#         self.stateblock_statistics = {'number_variables': 25,
-#                                       'number_total_constraints': 21,
-#                                       'number_unused_variables': 1,  # pressure is unused
-#                                       'default_degrees_of_freedom': 3}  # 4 state vars, but pressure is not active
-#         self.default_solution = {('mass_frac_phase_comp', ('Liq', 'H2O')): 0.965,
-#                                  ('mass_frac_phase_comp', ('Liq', 'TDS')): 0.035,
-#                                  ('dens_mass_phase', 'Liq'): 1023.5,
-#                                  ('dens_mass_solvent', None): 996.9,
-#                                  ('flow_vol_phase', 'Liq'): 9.770e-4,
-#                                  ('conc_mass_phase_comp', ('Liq', 'H2O')): 987.7,
-#                                  ('conc_mass_phase_comp', ('Liq', 'TDS')): 35.82,
-#                                  ('flow_mol_phase_comp', ('Liq', 'H2O')): 53.57,
-#                                  ('flow_mol_phase_comp', ('Liq', 'TDS')): 1.1145,
-#                                  ('mole_frac_phase_comp', ('Liq', 'H2O')): 0.9796,
-#                                  ('mole_frac_phase_comp', ('Liq', 'TDS')): 2.038e-2,
-#                                  ('molality_comp', 'TDS'): 1.155,
-#                                  ('visc_d_phase', 'Liq'): 9.588e-4,
-#                                  ('osm_coeff', None): 0.9068,
-#                                  ('pressure_osm', None): 2.588e6,
-#                                  ('enth_mass_phase', 'Liq'): 9.9765e4,
-#                                  ('pressure_sat', None): 3111,
-#                                  ('cp_phase', 'Liq'): 4001,
-#                                  ('therm_cond_phase', 'Liq'): 0.6086,
-#                                  ('dh_vap', None): 2.356e6,
-#                                  ('diffus_phase', 'Liq'): 1.471e-9}
+class TestSeawaterProperty(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = props.WaterParameterBlock
+        self.param_args = {}
+        self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1,
+                             ('flow_mass_phase_comp', ('Vap', 'H2O')): 1}
+        self.stateblock_statistics = {'number_variables': 17,
+                                      'number_total_constraints': 13,
+                                      'number_unused_variables': 0,
+                                      'default_degrees_of_freedom': 4}  # 4 state vars
+        self.default_solution = {('dens_mass_phase', 'Liq'): 996.9,
+                                 ('dens_mass_phase', 'Vap'): 0.7363,
+                                 ('flow_vol_phase', 'Liq'): 5.016e-4,
+                                 ('flow_vol_phase', 'Vap'): 0.6790,
+                                 ('flow_mol_phase_comp', ('Liq', 'H2O')): 27.75,
+                                 ('flow_mol_phase_comp', ('Vap', 'H2O')): 27.75,
+                                 ('mole_frac_phase_comp', ('Liq', 'H2O')): 0.5,
+                                 ('mole_frac_phase_comp', ('Vap', 'H2O')): 0.5,
+                                 ('enth_mass_phase', 'Liq'): 1.049e5,
+                                 ('enth_mass_phase', 'Vap'): 2.547e6,
+                                 ('dh_vap', None): 2.442e6,
+                                 ('cp_phase', 'Liq'): 4.187e3,
+                                 ('cp_phase', 'Vap'): 1.865e3,
+                                 }
 #
 #
 # @pytest.mark.component
