@@ -26,7 +26,8 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
+from idaes.core.util.exceptions import (
+    ConfigurationError, InitializationError, PropertyPackageError)
 import idaes.core.util.scaling as iscale
 
 # Set up logger
@@ -229,6 +230,7 @@ class WaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling('pressure', 1e-6)
         self.set_default_scaling('dens_mass_phase', 1e-3, index='Liq')
         self.set_default_scaling('dens_mass_phase', 1, index='Vap')
+        self.set_default_scaling('mole_frac_phase_comp', 1)
         #self.set_default_scaling('dens_mass_solvent', 1e-3)
         self.set_default_scaling('enth_mass_phase', 1e-5, index='Liq')
         self.set_default_scaling('enth_mass_phase', 1e-6, index='Vap')
@@ -247,6 +249,8 @@ class WaterParameterData(PhysicalParameterBlock):
              'dens_mass_phase': {'method': '_dens_mass_phase'},
              'flow_vol_phase': {'method': '_flow_vol_phase'},
              'flow_vol': {'method': '_flow_vol'},
+             'flow_mol_phase_comp': {'method': '_flow_mol_phase_comp'},
+             'mole_frac_phase_comp': {'method': '_mole_frac_phase_comp'},
              'enth_mass_phase': {'method': '_enth_mass_phase'},
              'enth_flow': {'method': '_enth_flow'},
              'cp_phase': {'method': '_cp_phase'},
@@ -333,6 +337,11 @@ class _WaterStateBlock(StateBlock):
         init_log.info("Property initialization: {}."
                       .format(idaeslog.condition(results)))
 
+        if not check_optimal_termination(results):
+            raise InitializationError(
+                f"{self.name} failed to initialize successfully. Please check "
+                f"the output logs for more information.")
+
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state
         if state_vars_fixed is False:
@@ -396,13 +405,13 @@ class _WaterStateBlock(StateBlock):
                 var = getattr(sb, v_name)
                 if iscale.get_scaling_factor(var[ind]) is None:
                     _log.warning(
-                            "While using the calculate_state method on {sb_name}, variable {v_name} "
-                            "was provided as an argument in var_args, but it does not have a scaling "
-                            "factor. This suggests that the calculate_scaling_factor method has not been "
-                            "used or the variable was created on demand after the scaling factors were "
-                            "calculated. It is recommended to touch all relevant variables (i.e. call "
-                            "them or set an initial value) before using the calculate_scaling_factor "
-                            "method.".format(v_name=v_name, sb_name=sb.name))
+                        "While using the calculate_state method on {sb_name}, variable {v_name} "
+                        "was provided as an argument in var_args, but it does not have a scaling "
+                        "factor. This suggests that the calculate_scaling_factor method has not been "
+                        "used or the variable was created on demand after the scaling factors were "
+                        "calculated. It is recommended to touch all relevant variables (i.e. call "
+                        "them or set an initial value) before using the calculate_scaling_factor "
+                        "method.".format(v_name=v_name, sb_name=sb.name))
                 if var[ind].is_fixed():
                     flags[(k, v_name, ind)] = True
                     if value(var[ind]) != val:
@@ -521,13 +530,42 @@ class WaterStateBlockData(StateBlockData):
 
         self.eq_flow_vol_phase = Constraint(self.params.phase_list, rule=rule_flow_vol_phase)
 
-
     def _flow_vol(self):
 
         def rule_flow_vol(b):
             return sum(b.flow_vol_phase[p] for p in b.params.phase_list)
 
         self.flow_vol = Expression(rule=rule_flow_vol)
+
+    def _flow_mol_phase_comp(self):
+        self.flow_mol_phase_comp = Var(
+            self.params.phase_list,
+            self.params.component_list,
+            initialize=100,
+            bounds=(1e-8, None),
+            units=pyunits.mol / pyunits.s,
+            doc="Molar flowrate")
+
+        def rule_flow_mol_phase_comp(b, p):
+            return (b.flow_mol_phase_comp[p, 'H2O'] ==
+                    b.flow_mass_phase_comp[p, 'H2O'] / b.params.mw_comp['H2O'])
+
+        self.eq_flow_mol_phase_comp = Constraint(self.params.phase_list, rule=rule_flow_mol_phase_comp)
+
+    def _mole_frac_phase_comp(self):
+        self.mole_frac_phase_comp = Var(
+            self.params.phase_list,
+            self.params.component_list,
+            initialize=0.1,
+            bounds=(1e-8, None),
+            units=pyunits.dimensionless,
+            doc="Mole fraction")
+
+        def rule_mole_frac_phase_comp(b, p):
+            return (b.mole_frac_phase_comp[p, 'H2O'] == b.flow_mol_phase_comp[p, 'H2O'] /
+                    sum(b.flow_mol_phase_comp[p, 'H2O'] for p in b.params.phase_list))
+
+        self.eq_mole_frac_phase_comp = Constraint(self.params.phase_list, rule=rule_mole_frac_phase_comp)
 
     def _enth_mass_phase(self):
         self.enth_mass_phase = Var(
@@ -668,21 +706,6 @@ class WaterStateBlockData(StateBlockData):
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
-        # if self.is_property_constructed('pressure_osm'):
-        #     if iscale.get_scaling_factor(self.pressure_osm) is None:
-        #         iscale.set_scaling_factor(self.pressure_osm,
-        #                                   iscale.get_scaling_factor(self.pressure))
-
-        # if self.is_property_constructed('mass_frac_phase_comp'):
-        #     for j in self.params.component_list:
-        #         if iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j]) is None:
-        #             if j == 'TDS':
-        #                 sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', j])
-        #                       / iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O']))
-        #                 iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], sf)
-        #             elif j == 'H2O':
-        #                 iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], 1)
-
         if self.is_property_constructed('flow_vol_phase'):
             for p in self.params.phase_list:
                 if iscale.get_scaling_factor(self.flow_vol_phase[p]) is None:
@@ -695,6 +718,13 @@ class WaterStateBlockData(StateBlockData):
             sf_vap = iscale.get_scaling_factor(self.flow_vol_phase['Vap'])
             sf = min(sf_liq, sf_vap)
             iscale.set_scaling_factor(self.flow_vol, sf)
+
+        if self.is_property_constructed('flow_mol_phase_comp'):
+            for p in self.params.phase_list:
+                if iscale.get_scaling_factor(self.flow_mol_phase_comp[p, 'H2O']) is None:
+                    sf = iscale.get_scaling_factor(self.flow_mass_phase_comp[p, 'H2O'])
+                    sf *= iscale.get_scaling_factor(self.params.mw_comp['H2O'])
+                    iscale.set_scaling_factor(self.flow_mol_phase_comp[p, 'H2O'], sf)
 
         if self.is_property_constructed('enth_flow'):
             sf_liq = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'])
