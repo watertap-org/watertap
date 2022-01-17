@@ -215,7 +215,8 @@ class DSPMDEParameterData(PhysicalParameterBlock):
              'mw_comp': {'method': '_mw_comp'},
              'dens_mass_comp': {'method': '_dens_mass_comp'},
              'charge_comp': {'method': '_charge_comp'},
-             'act_coeff_phase_comp': {'method': '_act_coeff_phase_comp'}
+             'act_coeff_phase_comp': {'method': '_act_coeff_phase_comp'},
+             'dielectric_constant': {'method': '_dielectric_constant'}
              })
 
         obj.add_default_units({'time': pyunits.s,
@@ -496,7 +497,7 @@ class DSPMDEStateBlockData(StateBlockData):
 
         def rule_flow_vol_phase(b):
             return (b.flow_vol_phase['Liq']
-                    == sum(b.flow_mass_phase_comp['Liq', j] for j in self.params.component_list)
+                    == sum(b.flow_mol_phase_comp['Liq', j]*b.mw_comp[j] for j in self.params.component_list)
                     / b.dens_mass_phase['Liq'])
         self.eq_flow_vol_phase = Constraint(rule=rule_flow_vol_phase)
 
@@ -595,6 +596,9 @@ class DSPMDEStateBlockData(StateBlockData):
 
     def _charge_comp(self):
         add_object_reference(self, "charge_comp", self.params.charge_comp)
+
+    def _dielectric_constant(self):
+        add_object_reference(self, "dielectric_constant", self.params.dielectric_constant)
 
     def _act_coeff_phase_comp(self):
         self.act_coeff_phase_comp = Var(

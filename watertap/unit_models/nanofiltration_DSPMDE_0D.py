@@ -261,6 +261,7 @@ class NanofiltrationData(UnitModelBlockData):
         ###############################################################################################################
         # Variables
         ###############################################################################################################
+        #1. Component mole flux, J, DOF=Nj*2 for inlet/outlet
         self.flux_mol_phase_comp = Var(
             self.flowsheet().config.time,
             io_list,
@@ -270,23 +271,22 @@ class NanofiltrationData(UnitModelBlockData):
             bounds=lambda b,t,x,p,j : (5e-3, 1.5) if j in solvent_set else (1e-7, 1e-2), #TODO: divide solvent by .02 and solute by .1
             units=units_meta('amount')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Component molar flux at inlet and outlet of membrane')
-        # self.flux_vol_water = Var(
-        #     self.flowsheet().config.time,
-        #     io_list,
-        #     initialize=1e-5, #TODO: revisit
-        #     # bounds=(1e-7, None),
-        #     units=units_meta('length')*units_meta('time')**-1,
-        #     doc='Volumetric water flux at inlet and outlet of membrane')
+
+        # 2. Pore radius, rp, DOF = 1
         self.radius_pore = Var(
             initialize=0.5e-9, #TODO: revisit
             domain=NonNegativeReals,
             units=units_meta('length'),
             doc='Membrane pore radius')
+
+        #3. Effective thickness of membrane, Ak, DOF=1
         self.membrane_thickness_effective = Var(
             initialize=1.33e-6, # Value used by Labban et al., 2017
             domain=NonNegativeReals,
             units=units_meta('length'),
             doc='Effective membrane thickness')
+
+        #4. Effective thickness of membrane, Ak, DOF=1
         self.membrane_charge_density = Var(
             self.flowsheet().config.time,
             initialize=-50, # near value used in Roy et al.
@@ -439,7 +439,7 @@ class NanofiltrationData(UnitModelBlockData):
                     / (8 * Constants.pi
                        * Constants.vacuum_electric_permittivity
                        * b.feed_side.properties_in[t].radius_stokes_comp[j])
-                    * (1 / b.config.property_package.dielectric_constant - 1 / b.dielectric_constant_pore[t]))
+                    * (1 / b.feed_side.properties_in[t].dielectric_constant - 1 / b.dielectric_constant_pore[t]))
 
         @self.Expression(self.flowsheet().config.time,
                          solute_set,
@@ -454,7 +454,7 @@ class NanofiltrationData(UnitModelBlockData):
                          doc="Donnan exclusion contribution to partitioning on feed side")
         def partition_factor_donnan_comp_feed(b, t, x, j):
             return (exp(-b.feed_side.properties_in[t].charge_comp[j] * Constants.faraday_constant
-                    / (Constants.gas_constant * b.feed_side.properties_in[t].temperature)
+                    / (Constants.gas_constant * b.pore_entrance[t, x].temperature)
                     * b.electric_potential[t, x, 'pore_entrance']))
 
         @self.Expression(self.flowsheet().config.time,
@@ -463,7 +463,7 @@ class NanofiltrationData(UnitModelBlockData):
                          doc="Donnan exclusion contribution to partitioning on permeate side")
         def partition_factor_donnan_comp_permeate(b, t, x, j):
             return (exp(-b.feed_side.properties_in[t].charge_comp[j] * Constants.faraday_constant
-                    / (Constants.gas_constant * b.feed_side.properties_in[t].temperature) #todo: switch to permeate side temp
+                    / (Constants.gas_constant * b.pore_exit[t, x].temperature) #todo: switch to permeate side temp
                     * (b.electric_potential[t, x, 'pore_exit'] - b.electric_potential[t, x, 'permeate'])))
 
         # Volumetric Water Flux at inlet and outlet ------------------------------------#
@@ -471,7 +471,7 @@ class NanofiltrationData(UnitModelBlockData):
                          io_list,
                          doc="Volumetric water flux at inlet and outlet")
         def flux_vol_water(b, t, x):
-            prop = b.config.property_package
+            prop = b.feed_side.properties_in[t]
             return b.flux_mol_phase_comp[t, x, 'Liq', 'H2O'] * prop.mw_comp['H2O'] / prop.dens_mass_comp['H2O']
 
         # Average Volumetric Water Flux ------------------------------------#
@@ -582,7 +582,7 @@ class NanofiltrationData(UnitModelBlockData):
                     / (8 * prop_feed.visc_d_phase[p] * b.membrane_thickness_effective)
                     )
 
-        # 6. Unhindered mass transfer, DOF= Nj * 2 for inlet/outlet
+        # 6. Unhindered mass transfer; Js,i=Jw*cp,i; DOF= Nj * 2 for inlet/outlet
         @self.Constraint(self.flowsheet().config.time,
                          io_list,
                          phase_list,
@@ -590,7 +590,7 @@ class NanofiltrationData(UnitModelBlockData):
                          doc="Solute flux as function of solvent flux")
         def solute_solvent_flux_eq(b, t, x, p, j):
             return (b.flux_mol_phase_comp[t, x, p, j] ==
-            b.flux_vol_water[t, x] * b.permeate_side[t, x].conc_mol_phase_comp[p, j])
+                    b.flux_vol_water[t, x] * b.permeate_side[t, x].conc_mol_phase_comp[p, j])
 
         # 7. Extended Nernst Planck equation, DOF= Nj * 2 for inlet/outlet
         @self.Constraint(self.flowsheet().config.time,
@@ -603,11 +603,11 @@ class NanofiltrationData(UnitModelBlockData):
                     - b.diffus_pore_comp[t, j]
                     * (b.pore_exit[t, x].conc_mol_phase_comp[p, j] - b.pore_entrance[t, x].conc_mol_phase_comp[p, j])
                     / b.membrane_thickness_effective
-                    - 0.5 * b.config.property_package.charge_comp[j]
+                    - 0.5 * b.feed_side.properties_in[t].charge_comp[j]
                     * (b.pore_entrance[t, x].conc_mol_phase_comp[p, j] + b.pore_exit[t, x].conc_mol_phase_comp[p, j])
                     * b.diffus_pore_comp[t, j]
                     * Constants.faraday_constant / (Constants.gas_constant * b.feed_side.properties_in[t].temperature)
-                    * (b.electric_potential[t, x, 'pore_exit'] - b.electric_potential[t, x, 'pore_entrance']) #todo: double check- At this level, these might just be Donnan potentials.
+                    * (b.electric_potential[t, x, 'pore_exit'] - b.electric_potential[t, x, 'pore_entrance'])
                     / b.membrane_thickness_effective
                     + 0.5 * b.hindrance_factor_convective_comp[t, j]
                     * (b.pore_entrance[t, x].conc_mol_phase_comp[p, j] + b.pore_exit[t, x].conc_mol_phase_comp[p, j])
@@ -676,23 +676,38 @@ class NanofiltrationData(UnitModelBlockData):
                          solvent_solute_set,
                          doc="Component mass transfer from feed")
         def eq_mass_transfer_feed(b, t, p, j):
-            # prop = b.config.property_package
-            # if b.feed_side.properties_in[0].get_material_flow_basis() == MaterialFlowBasis.mass:
-            #     return (b.flux_vol_water_avg[t] * prop.dens_mass_comp['H2O'] * b.area
-            #             == -b.feed_side.mass_transfer_term[t, p, j])
             if b.feed_side.properties_in[0].get_material_flow_basis() == MaterialFlowBasis.molar:
                 return b.flux_mol_phase_comp_avg[t, p, j] * b.area == -b.feed_side.mass_transfer_term[t, p, j]
 
-        # 13. mole_flow,perm final = -dMf ------------------------------------#
+        # 13. Mass transfer equal to permeate flow terms; mole_flow,perm final = -dMf = Javg * area
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
                          solvent_solute_set,
-                         doc="Permeate production")
+                         doc="Permeate production/average mass transfer constraint")
         def eq_permeate_production(b, t, p, j):
             return (b.mixed_permeate[t].get_material_flow_terms(p, j)
-                    == -b.feed_side.mass_transfer_term[t, p, j])
+                    == b.flux_mol_phase_comp_avg[t, p, j] * b.area)
 
-       # 13. Mole component recovery rate
+        # 14. Mole fraction at permeate inlet/outlet, DOF= Nj* 2 for inlet/out
+        # @self.Constraint(self.flowsheet().config.time,
+        #                  io_list,
+        #                  solute_set,
+        #                  doc="Permeate mass fraction at inlet/outlet")
+        # def eq_mole_frac_permeate(b, t, x, j):
+        #     return (b.permeate_side[t, x].mole_frac_phase_comp['Liq', j]
+        #             * sum(b.flux_mol_phase_comp[t, x, 'Liq', jj]
+        #                   for jj in solvent_solute_set)
+        #             == b.flux_mol_phase_comp[t, x, 'Liq', j])
+
+        # 14. Electroneutrality of final permeate
+        @self.Constraint(self.flowsheet().config.time,
+                         phase_list,
+                         doc="Electroneutrality in mixed permeate")
+        def electroneutrality_mixed_permeate_eq(b, t, p):
+            return (abs(sum(b.mixed_permeate[t].conc_mol_phase_comp[p, j] *
+                            b.mixed_permeate[t].charge_comp[j] for j in solute_set)) == b.tol_electroneutrality)
+
+        # 15. Mole component recovery rate
         @self.Constraint(self.flowsheet().config.time,
                          solvent_solute_set)
         def eq_recovery_mol_phase_comp(b, t, j):
@@ -700,7 +715,7 @@ class NanofiltrationData(UnitModelBlockData):
                     b.mixed_permeate[t].flow_mol_phase_comp['Liq', j] /
                     b.feed_side.properties_in[t].flow_mol_phase_comp['Liq', j])
 
-        # 14. Volumetric recovery rate
+        # 16. Volumetric recovery rate
         @self.Constraint(self.flowsheet().config.time,
                          phase_list)
         def eq_recovery_vol_phase(b, t, p):
@@ -708,7 +723,7 @@ class NanofiltrationData(UnitModelBlockData):
                     * b.feed_side.properties_in[t].flow_vol_phase[p]
                     == b.mixed_permeate[t].flow_vol_phase[p])
 
-        # 15. Observed rejection rate
+        # 17. Observed rejection rate
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
                          solute_set,
@@ -733,18 +748,19 @@ class NanofiltrationData(UnitModelBlockData):
         #         return (b.mixed_permeate[t].get_material_flow_terms(p, j)
         #                 == b.flux_mol_phase_comp_avg[t, p, j] * b.area)
 
-        # TODO: seems stale since temperature unused at pore entrance/exit- confirm+remove
-        # @self.Constraint(self.flowsheet().config.time,
-        #                  io_list,
-        #                  ['pore_entrance', 'pore_exit'],
-        #                  doc="Isothermal assumption for pore inlet/outlet")
-        # def eq_pore_isothermal(b, t, x, y):
-        #     if y == 'pore_entrance':
-        #         prop = b.pore_entrance[t, x]
-        #     elif y == 'pore_exit':
-        #         prop = b.pore_exit[t, x]
-        #     return b.feed_side.properties_in[t].temperature == \
-        #            prop.temperature
+        # TODO: seems stale since temperature unused at pore entrance/exit- confirm+remove;
+        #  1/17/22: after including temp variables for pore in interfacial equilib eqns, this is relevant
+        @self.Constraint(self.flowsheet().config.time,
+                         io_list,
+                         ['pore_entrance', 'pore_exit'],
+                         doc="Isothermal assumption for pore inlet/outlet")
+        def eq_pore_isothermal(b, t, x, y):
+            if y == 'pore_entrance':
+                prop = b.pore_entrance[t, x]
+            elif y == 'pore_exit':
+                prop = b.pore_exit[t, x]
+            return b.feed_side.properties_in[t].temperature == \
+                   prop.temperature
 
         # #TODO: seems stale; probably implemented in ControlVolume if no energy balance added- confirm+remove
         # @self.feed_side.Constraint(self.flowsheet().config.time,
