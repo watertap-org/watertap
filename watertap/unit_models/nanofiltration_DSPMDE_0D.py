@@ -655,13 +655,6 @@ class NanofiltrationData(UnitModelBlockData):
             return b.properties_in[t].temperature == \
                    b.properties_interface[t, x].temperature
 
-        # Todo: since mixed permeate temp variable is unused, this constraint is unnecessary- confirm+remove
-        # @self.Constraint(self.flowsheet().config.time,
-        #                  doc="Isothermal assumption for mixed permeate")
-        # def eq_mixed_permeate_isothermal(b, t):
-        #     return b.feed_side.properties_in[t].temperature == \
-        #            b.mixed_permeate[t].temperature
-
         # 11. Isobaric conditions at permeate side, DOF= 1*2 for inlet/outlet
         # TOdo: mixed permeate pressure is currently unused variable, but fixing its value satisfies this constraint
         @self.Constraint(self.flowsheet().config.time,
@@ -687,17 +680,6 @@ class NanofiltrationData(UnitModelBlockData):
         def eq_permeate_production(b, t, p, j):
             return (b.mixed_permeate[t].get_material_flow_terms(p, j)
                     == b.flux_mol_phase_comp_avg[t, p, j] * b.area)
-
-        # 14. Mole fraction at permeate inlet/outlet, DOF= Nj* 2 for inlet/out
-        # @self.Constraint(self.flowsheet().config.time,
-        #                  io_list,
-        #                  solute_set,
-        #                  doc="Permeate mass fraction at inlet/outlet")
-        # def eq_mole_frac_permeate(b, t, x, j):
-        #     return (b.permeate_side[t, x].mole_frac_phase_comp['Liq', j]
-        #             * sum(b.flux_mol_phase_comp[t, x, 'Liq', jj]
-        #                   for jj in solvent_solute_set)
-        #             == b.flux_mol_phase_comp[t, x, 'Liq', j])
 
         # 14. Experimental constraint: Electroneutrality of final permeate
         @self.Constraint(self.flowsheet().config.time,
