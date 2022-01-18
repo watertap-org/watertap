@@ -769,21 +769,6 @@ class NanofiltrationData(UnitModelBlockData):
             return (b.mixed_permeate[t].conc_mol_phase_comp['Liq', j]
                     == b.feed_side.properties_in[t].conc_mol_phase_comp['Liq', j]
                     * (1 - b.rejection_phase_comp[t, p, j]))
-        #
-        # mole_flow,perm final = Javg * area ------------------------------------#
-        # #TODO: include or redundant?
-        # @self.Constraint(self.flowsheet().config.time,
-        #                  phase_list,
-        #                  solvent_solute_set,
-        #                  doc="Component mass transfer to permeate")
-        # def eq_mass_transfer_permeate(b, t, p, j):
-        #     # prop = b.config.property_package
-        #     # if b.feed_side.properties_in[0].get_material_flow_basis() == MaterialFlowBasis.mass:
-        #     #     return (b.flux_vol_water_avg[t] * prop.dens_mass_comp['H2O'] * b.area
-        #     #             == -b.feed_side.mass_transfer_term[t, p, j])
-        #     if b.feed_side.properties_in[0].get_material_flow_basis() == MaterialFlowBasis.molar:
-        #         return (b.mixed_permeate[t].get_material_flow_terms(p, j)
-        #                 == b.flux_mol_phase_comp_avg[t, p, j] * b.area)
 
         # TODO: seems stale since temperature unused at pore entrance/exit- confirm+remove;
         #  1/17/22: after including temp variables for pore in interfacial equilib eqns, this is relevant
@@ -798,82 +783,6 @@ class NanofiltrationData(UnitModelBlockData):
                 prop = b.pore_exit[t, x]
             return b.feed_side.properties_in[t].temperature == \
                    prop.temperature
-
-        # #TODO: seems stale; probably implemented in ControlVolume if no energy balance added- confirm+remove
-        # @self.feed_side.Constraint(self.flowsheet().config.time,
-        #              doc='isothermal energy balance for feed_side')
-        # def eq_feed_isothermal(b, t):
-        #     return b.properties_in[t].temperature == b.properties_out[t].temperature
-
-        # #TODO: pressure at outlet temporarily fixed
-        # @self.feed_side.Constraint(self.flowsheet().config.time,
-        #                            doc="Feed channel inlet/out pressure")
-        # def eq_pressure_feed_io(b, t):
-        #     return b.properties_in[t].pressure == b.properties_out[t].pressure
-
-        # #TODO: no effect on DOF - confirm+remove
-        # @self.feed_side.Constraint(self.flowsheet().config.time,
-        #                            io_list,
-        #                            doc="Pressure at interface")
-        # def eq_equal_pressure_interface_io(b, t, x):
-        #     if x == 0:
-        #         prop_io = b.properties_in[t]
-        #     elif x == 1:
-        #         prop_io = b.properties_out[t]
-        #     prop_interface_io = b.properties_interface[t, x]
-        #     return prop_interface_io.pressure == \
-        #            prop_io.pressure
-
-        # mass transfer
-        # self.mass_transfer_phase_comp = Var(
-        #     self.flowsheet().config.time,
-        #     self.config.property_package.phase_list,
-        #     solvent_solute_set,
-        #     initialize=1,
-        #     bounds=(1e-8, 1e6),
-        #     domain=NonNegativeReals,
-        #     units=units_meta('mass')*units_meta('time')**-1,
-        #     doc='Mass transfer to permeate')
-
-        # @self.Constraint(self.flowsheet().config.time,
-        #                  phase_list,
-        #                  solvent_solute_set,
-        #                  doc="Mass transfer term")
-        # def eq_mass_transfer_term(b, t, p, j):
-        #     # TODO- come up with better way to handle different locations of mw_comp in property models (generic vs simple ion prop model)
-        #     if b.feed_side.properties_in[0].get_material_flow_basis() == MaterialFlowBasis.mass:
-        #         return b.mass_transfer_phase_comp[t, p, j] == -b.feed_side.mass_transfer_term[t, p, j]
-        #     elif b.feed_side.properties_in[0].get_material_flow_basis() == MaterialFlowBasis.molar:
-        #         if hasattr(b.feed_side.properties_in[0].params, 'mw_comp'):
-        #             mw_comp = b.feed_side.properties_in[0].params.mw_comp[j]
-        #         elif hasattr(b.feed_side.properties_in[0], 'mw_comp'):
-        #             mw_comp = b.feed_side.properties_in[0].mw_comp[j]
-        #         else:
-        #             raise ConfigurationError('mw_comp was not found.')
-        #         return (b.mass_transfer_phase_comp[t, p, j] == -b.feed_side.mass_transfer_term[t, p, j]
-
-
-
-        # Mole fraction related to mole flux------------------------------------#
-        # @self.Constraint(self.flowsheet().config.time,
-        #                 self.io_list,
-        #                 solute_set,
-        #                 doc="Permeate mole fraction")
-        # def eq_mole_frac_permeate_io(b, t, x, j):
-        #     prop_io = b.permeate_side[t, x]
-        #     return (prop_io.mole_frac_phase_comp['Liq', j] #TODO:revisit- should be mole_frac_phase_comp_avg?
-        #             * sum(b.flux_mol_phase_comp[t, x, 'Liq', jj]
-        #                   for jj in solvent_solute_set)
-        #             == b.flux_mol_phase_comp[t, x, 'Liq', j])
-
-
-        # @self.Constraint(self.flowsheet().config.time)
-        # def eq_recovery_vol_phase(b, t):
-        #     return (b.recovery_vol_phase[t, 'Liq'] ==
-        #             b.properties_permeate[t].flow_vol /
-        #             b.feed_side.properties_in[t].flow_vol)
-        #
-
 
 
     def initialize(
