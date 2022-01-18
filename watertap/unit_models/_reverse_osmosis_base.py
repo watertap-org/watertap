@@ -477,3 +477,19 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
         if hasattr(self, 'dh'):
             if iscale.get_scaling_factor(self.dh) is None:
                 iscale.set_scaling_factor(self.dh, 1e3)
+
+        for sb in (self.permeate_side, self.mixed_permeate):
+            for blk in sb.values():
+                for j in self.config.property_package.solute_set:
+                    self._rescale_permeate_variable(blk.flow_mass_phase_comp['Liq', j])
+                    if blk.is_property_constructed('mass_frac_phase_comp'):
+                        self._rescale_permeate_variable(blk.mass_frac_phase_comp['Liq', j])
+                    if blk.is_property_constructed('conc_mass_phase_comp'):
+                        self._rescale_permeate_variable(blk.conc_mass_phase_comp['Liq', j])
+                    if blk.is_property_constructed('mole_frac_phase_comp'):
+                        self._rescale_permeate_variable(blk.mole_frac_phase_comp[j])
+                    if blk.is_property_constructed('molality_comp'):
+                        self._rescale_permeate_variable(blk.molality_comp[j])
+                if blk.is_property_constructed('pressure_osm'):
+                    self._rescale_permeate_variable(blk.pressure_osm)
+
