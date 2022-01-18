@@ -699,13 +699,50 @@ class NanofiltrationData(UnitModelBlockData):
         #                   for jj in solvent_solute_set)
         #             == b.flux_mol_phase_comp[t, x, 'Liq', j])
 
-        # 14. Electroneutrality of final permeate
+        # 14. Experimental constraint: Electroneutrality of final permeate
         @self.Constraint(self.flowsheet().config.time,
                          phase_list,
                          doc="Electroneutrality in mixed permeate")
         def electroneutrality_mixed_permeate_eq(b, t, p):
             return (abs(sum(b.mixed_permeate[t].conc_mol_phase_comp[p, j] *
                             b.mixed_permeate[t].charge_comp[j] for j in solute_set)) == b.tol_electroneutrality)
+
+        # Experimental constraint: feed electroneutrality
+        @self.Constraint(self.flowsheet().config.time,
+                         io_list,
+                         phase_list,
+                         doc="Electroneutrality at feed")
+        def electroneutrality_feed_eq(b, t, x, p):
+            if x == 0:
+                prop = b.feed_side.properties_in[t]
+            elif x:
+                prop = b.feed_side.properties_out[t]
+            return (abs(sum(prop.conc_mol_phase_comp[p, j] *
+                            prop.charge_comp[j] for j in solute_set))
+                    == b.tol_electroneutrality)
+
+        # Experimental constraint
+        @self.Constraint(self.flowsheet().config.time,
+                         io_list,
+                         doc="Volumetric flow at interface of inlet and outlet")
+        def eq_equal_flow_vol_interface(b, t, x):
+            if x == 0:
+                bulk = b.feed_side.properties_in[t]
+            elif x:
+                bulk = b.feed_side.properties_out[t]
+            interface = b.feed_side.properties_interface[t, x]
+            return interface.flow_vol_phase['Liq'] ==\
+                   bulk.flow_vol_phase['Liq']
+
+        # Experimental constraint
+        @self.Constraint(self.flowsheet().config.time,
+                         io_list,
+                         doc="Volumetric flow at pore exit and permeate of inlet and outlet")
+        def eq_equal_flow_vol_pore_permeate(b, t, x):
+            pore = b.pore_exit[t, x]
+            permeate = b.permeate_side[t, x]
+            return pore.flow_vol_phase['Liq'] ==\
+                   permeate.flow_vol_phase['Liq']
 
         # 15. Mole component recovery rate
         @self.Constraint(self.flowsheet().config.time,

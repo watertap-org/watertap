@@ -637,7 +637,7 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="van't Hoff Osmotic pressure")
 
         def rule_pressure_osm(b):
-            i = 2  # number of ionic species
+            i = 2  # number of ionic species #TODO: might need to remove dissociation factor if calculating for individual ions
             return (b.pressure_osm ==
                     i * sum(b.molality_comp[j] for j in self.params.solute_set)
                     * b.dens_mass_comp['H2O'] * Constants.gas_constant * b.temperature)
