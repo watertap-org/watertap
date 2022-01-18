@@ -165,6 +165,8 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                                         has_pressure_change=self.config.has_pressure_change)
         # Apply transformation to feed side
         feed_side.apply_transformation()
+        add_object_reference(self, 'length_domain', self.feed_side.length_domain)
+
         # Add inlet/outlet ports for feed side
         self.add_inlet_port(name="inlet", block=feed_side)
         self.add_outlet_port(name="retentate", block=feed_side)
@@ -175,7 +177,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         tmp_dict["defined_state"] = False  # these blocks are not inlets
         self.permeate_side = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
-            self.feed_side.length_domain,
+            self.length_domain,
             doc="Material properties of permeate along permeate channel",
             default=tmp_dict)
         self.mixed_permeate = self.config.property_package.state_block_class(
@@ -186,7 +188,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         # Membrane interface: indexed state block
         self.feed_side.properties_interface = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
-            self.feed_side.length_domain,
+            self.length_domain,
             doc="Material properties of feed-side membrane interface",
             default=tmp_dict)
 
@@ -225,21 +227,21 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                              doc="Average flux expression")
             def flux_mass_phase_comp_avg(b, t, p, j):
                 return sum(b.flux_mass_phase_comp[t, x, p, j]
-                           for x in self.feed_side.length_domain
+                           for x in self.length_domain
                            if x > 0) / self.nfe
             if hasattr(self, 'N_Re'):
                 @self.Expression(self.flowsheet().config.time,
                                  doc="Average Reynolds Number expression")
                 def N_Re_avg(b, t):
                     return sum(b.N_Re[t, x]
-                               for x in self.feed_side.length_domain) / self.nfe
+                               for x in self.length_domain) / self.nfe
             if hasattr(self, 'Kf'):
                 @self.Expression(self.flowsheet().config.time,
                                  solute_set,
                                  doc="Average mass transfer coefficient expression")
                 def Kf_avg(b, t, j):
                     return sum(b.Kf[t, x, j]
-                               for x in self.feed_side.length_domain
+                               for x in self.length_domain
                                if x > 0) / self.nfe
 
     def _make_performance(self):
@@ -261,14 +263,14 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             self.config.property_package.get_metadata().get_derived_units
 
         self.nfe = Param(
-            initialize=(len(self.feed_side.length_domain)-1),
+            initialize=(len(self.length_domain)-1),
             units=pyunits.dimensionless,
             doc="Number of finite elements")
 
         # ==========================================================================
         self.flux_mass_phase_comp = Var(
             self.flowsheet().config.time,
-            self.feed_side.length_domain,
+            self.length_domain,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=lambda b,t,x,p,j : 5e-4 if j in solvent_set else 1e-6,
@@ -291,7 +293,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
 
         self.mass_transfer_phase_comp = Var(
             self.flowsheet().config.time,
-            self.feed_side.length_domain,
+            self.length_domain,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
             initialize=mass_transfer_phase_comp_initialize,
@@ -312,7 +314,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
             self.cp_modulus = Var(
                 self.flowsheet().config.time,
-                self.feed_side.length_domain,
+                self.length_domain,
                 solute_set,
                 initialize=1.1,
                 bounds=(0.9, 3),
@@ -323,7 +325,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         if self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
             self.Kf = Var(
                 self.flowsheet().config.time,
-                self.feed_side.length_domain,
+                self.length_domain,
                 solute_set,
                 initialize=5e-5,
                 bounds=(1e-6, 1e-3),
@@ -336,7 +338,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                     and self.config.has_pressure_change)):
             self.N_Re = Var(
                 self.flowsheet().config.time,
-                self.feed_side.length_domain,
+                self.length_domain,
                 initialize=5e2,
                 bounds=(10, 5e3),
                 domain=NonNegativeReals,
@@ -345,7 +347,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
             self.N_Sc = Var(
                 self.flowsheet().config.time,
-                self.feed_side.length_domain,
+                self.length_domain,
                 initialize=5e2,
                 bounds=(1e2, 2e3),
                 domain=NonNegativeReals,
@@ -353,7 +355,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                 doc="Schmidt number in feed channel")
             self.N_Sh = Var(
                 self.flowsheet().config.time,
-                self.feed_side.length_domain,
+                self.length_domain,
                 initialize=1e2,
                 bounds=(1, 3e2),
                 domain=NonNegativeReals,
@@ -363,7 +365,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                 and self.config.has_pressure_change):
             self.velocity = Var(
                 self.flowsheet().config.time,
-                self.feed_side.length_domain,
+                self.length_domain,
                 initialize=0.5,
                 bounds=(1e-2, 5),
                 domain=NonNegativeReals,
@@ -371,7 +373,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                 doc="Crossflow velocity in feed channel")
             self.friction_factor_darcy = Var(
                 self.flowsheet().config.time,
-                self.feed_side.length_domain,
+                self.length_domain,
                 initialize=0.5,
                 bounds=(1e-2, 5),
                 domain=NonNegativeReals,
@@ -385,7 +387,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         def eq_recovery_vol_phase(b, t):
             return (b.recovery_vol_phase[t, 'Liq'] ==
                     b.mixed_permeate[t].flow_vol_phase['Liq'] /
-                    b.feed_side.properties[t, self.feed_side.length_domain.first()].flow_vol_phase['Liq'])
+                    b.feed_side.properties[t, self.length_domain.first()].flow_vol_phase['Liq'])
 
         # ==========================================================================
         # Mass-based Component Recovery rate
@@ -394,19 +396,19 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                          self.config.property_package.component_list)
         def eq_recovery_mass_phase_comp(b, t, j):
             return (b.recovery_mass_phase_comp[t, 'Liq', j]
-                    * b.feed_side.properties[t, b.feed_side.length_domain.first()].flow_mass_phase_comp['Liq', j] ==
+                    * b.feed_side.properties[t, b.length_domain.first()].flow_mass_phase_comp['Liq', j] ==
                     b.mixed_permeate[t].flow_mass_phase_comp['Liq', j])
 
         # ==========================================================================
         # Mass transfer term equation
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.feed_side.length_domain,
+                         self.length_domain,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Mass transfer term")
         def eq_mass_transfer_term(b, t, x, p, j):
-            if x == b.feed_side.length_domain.first():
+            if x == b.length_domain.first():
                 return Constraint.Skip
             else:
                 return b.mass_transfer_phase_comp[t, x, p, j] == -b.feed_side.mass_transfer_term[t, x, p, j]
@@ -420,12 +422,12 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         # Mass flux = feed mass transfer equation
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.feed_side.length_domain,
+                         self.length_domain,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Mass transfer term")
         def eq_mass_flux_equal_mass_transfer(b, t, x, p, j):
-            if x == b.feed_side.length_domain.first():
+            if x == b.length_domain.first():
                 return Constraint.Skip
             else:
                 return b.flux_mass_phase_comp[t, x, p, j] * b.width == -b.feed_side.mass_transfer_term[t, x, p, j]
@@ -433,12 +435,12 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         # Mass flux equations (Jw and Js)
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.feed_side.length_domain,
+                         self.length_domain,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Solvent and solute mass flux")
         def eq_flux_mass(b, t, x, p, j):
-            if x == b.feed_side.length_domain.first():
+            if x == b.length_domain.first():
                 return Constraint.Skip
             else:
                 prop_feed = b.feed_side.properties[t, x]
@@ -463,17 +465,17 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         def eq_permeate_production(b, t, p, j):
             return (b.mixed_permeate[t].get_material_flow_terms(p, j)
                     == sum(b.permeate_side[t, x].get_material_flow_terms(p, j)
-                           for x in b.feed_side.length_domain if x != 0))
+                           for x in b.length_domain if x != 0))
         # ==========================================================================
         # Feed and permeate-side mass transfer connection --> Mp,j = Mf,transfer = Jj * W * L/n
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.feed_side.length_domain,
+                         self.length_domain,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Mass transfer from feed to permeate")
         def eq_connect_mass_transfer(b, t, x, p, j):
-            if x == b.feed_side.length_domain.first():
+            if x == b.length_domain.first():
                 return b.permeate_side[t, x].get_material_flow_terms(p, j) == 0
             else:
                 return (b.permeate_side[t, x].get_material_flow_terms(p, j)
@@ -483,11 +485,11 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         # Concentration polarization
 
         @self.feed_side.Constraint(self.flowsheet().config.time,
-                                   self.feed_side.length_domain,
+                                   self.length_domain,
                                    solute_set,
                                    doc="Concentration polarization")
         def eq_concentration_polarization(b, t, x, j):
-            if x == self.feed_side.length_domain.first():
+            if x == self.length_domain.first():
                 return Constraint.Skip
             else:
                 bulk = b.properties[t, x]
@@ -510,11 +512,11 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         # Mass transfer coefficient calculation
         if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
             @self.Constraint(self.flowsheet().config.time,
-                             self.feed_side.length_domain,
+                             self.length_domain,
                              solute_set,
                              doc="Mass transfer coefficient in feed channel")
             def eq_Kf(b, t, x, j):
-                if x == self.feed_side.length_domain.first():
+                if x == self.length_domain.first():
                     return Constraint.Skip
                 else:
                     bulk = b.feed_side.properties[t, x]
@@ -523,14 +525,14 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                             * b.N_Sh[t, x])
 
             @self.Constraint(self.flowsheet().config.time,
-                             self.feed_side.length_domain,
+                             self.length_domain,
                              doc="Sherwood number")
             def eq_N_Sh(b, t, x):
                 return (b.N_Sh[t, x] ==
                         0.46 * (b.N_Re[t, x] * b.N_Sc[t, x])**0.36)
 
             @self.Constraint(self.flowsheet().config.time,
-                             self.feed_side.length_domain,
+                             self.length_domain,
                              doc="Schmidt number")
             def eq_N_Sc(b, t, x):
                 bulk = b.feed_side.properties[t, x]
@@ -545,7 +547,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                 return b.area_cross == b.channel_height * b.width * b.spacer_porosity
 
             @self.Constraint(self.flowsheet().config.time,
-                             self.feed_side.length_domain,
+                             self.length_domain,
                              doc="Reynolds number")
             def eq_N_Re(b, t, x):
                 bulk = b.feed_side.properties[t, x]
@@ -563,12 +565,12 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             def eq_pressure_drop(b, t):
                 return (b.deltaP_stage[t] ==
                         sum(b.deltaP[t, x] * b.length / b.nfe
-                            for x in b.feed_side.length_domain if x != 0))
+                            for x in b.length_domain if x != 0))
 
         if (self.config.pressure_change_type == PressureChangeType.fixed_per_stage
                 and self.config.has_pressure_change):
             @self.Constraint(self.flowsheet().config.time,
-                             self.feed_side.length_domain,
+                             self.length_domain,
                              doc='Fixed pressure drop across unit')
             def eq_pressure_drop(b, t, x):
                 return b.deltaP_stage[t] == b.length * b.deltaP[t, x]
@@ -578,7 +580,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             ## ==========================================================================
             # Crossflow velocity
             @self.Constraint(self.flowsheet().config.time,
-                             self.feed_side.length_domain,
+                             self.length_domain,
                              doc="Crossflow velocity constraint")
             def eq_velocity(b, t, x):
                 bulk = b.feed_side.properties[t, x]
@@ -588,7 +590,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             # TODO: this relationship for friction factor is specific to a particular spacer geometry. Add alternatives.
 
             @self.Constraint(self.flowsheet().config.time,
-                             self.feed_side.length_domain,
+                             self.length_domain,
                              doc="Darcy friction factor constraint")
             def eq_friction_factor_darcy(b, t, x):
                 return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
@@ -597,7 +599,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             # -1/2*f/dh*density*velocity^2
 
             @self.Constraint(self.flowsheet().config.time,
-                             self.feed_side.length_domain,
+                             self.length_domain,
                              doc="pressure change per unit length due to friction")
             def eq_dP_dx(b, t, x):
                 bulk = b.feed_side.properties[t, x]
@@ -608,19 +610,19 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         # Feed-side isothermal conditions
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.feed_side.length_domain,
+                         self.length_domain,
                          doc="Isothermal assumption for permeate")
         def eq_feed_isothermal(b, t, x):
-            if x == b.feed_side.length_domain.first():
+            if x == b.length_domain.first():
                 return Constraint.Skip
             else:
-                return b.feed_side.properties[t, b.feed_side.length_domain.first()].temperature == \
+                return b.feed_side.properties[t, b.length_domain.first()].temperature == \
                        b.feed_side.properties[t, x].temperature
         # # ==========================================================================
         # Feed and permeate-side isothermal conditions
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.feed_side.length_domain,
+                         self.length_domain,
                          doc="Isothermal assumption for permeate")
         def eq_permeate_isothermal(b, t, x):
             return b.feed_side.properties[t, x].temperature == \
@@ -631,13 +633,13 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         @self.Constraint(self.flowsheet().config.time,
                          doc="Isothermal assumption for permeate out")
         def eq_permeate_outlet_isothermal(b, t):
-            return b.feed_side.properties[t, b.feed_side.length_domain.first()].temperature == \
+            return b.feed_side.properties[t, b.length_domain.first()].temperature == \
                    b.mixed_permeate[t].temperature
         # ==========================================================================
         # isobaric conditions across permeate channel and at permeate outlet
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.feed_side.length_domain,
+                         self.length_domain,
                          doc="Isobaric assumption for permeate out")
         def eq_permeate_outlet_isobaric(b, t, x):
             return b.permeate_side[t, x].pressure == \
@@ -646,10 +648,10 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         # Bulk and interface connections on the feed-side
         # TEMPERATURE
         @self.feed_side.Constraint(self.flowsheet().config.time,
-                                   self.feed_side.length_domain,
+                                   self.length_domain,
                                    doc="Temperature at interface")
         def eq_equal_temp_interface(b, t, x):
-            if x == self.feed_side.length_domain.first():
+            if x == self.length_domain.first():
                 return Constraint.Skip
             else:
                 bulk = b.properties[t, x]
@@ -658,10 +660,10 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                    bulk.temperature
         # PRESSURE
         @self.feed_side.Constraint(self.flowsheet().config.time,
-                                   self.feed_side.length_domain,
+                                   self.length_domain,
                                    doc="Pressure at interface")
         def eq_equal_pressure_interface(b, t, x):
-            if x == self.feed_side.length_domain.first():
+            if x == self.length_domain.first():
                 return Constraint.Skip
             else:
                 bulk = b.properties[t, x]
@@ -670,10 +672,10 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                    bulk.pressure
         # VOLUMETRIC FLOWRATE
         @self.feed_side.Constraint(self.flowsheet().config.time,
-                                   self.feed_side.length_domain,
+                                   self.length_domain,
                                    doc="Volumetric flow at interface of inlet")
         def eq_equal_flow_vol_interface(b, t, x):
-            if x == self.feed_side.length_domain.first():
+            if x == self.length_domain.first():
                 return Constraint.Skip
             else:
                 bulk = b.properties[t, x]
@@ -723,7 +725,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         # Create solver
         opt = get_solver(solver, optarg)
 
-        source = blk.feed_side.properties[blk.flowsheet().config.time.first(), blk.feed_side.length_domain.first()]
+        source = blk.feed_side.properties[blk.flowsheet().config.time.first(), blk.length_domain.first()]
         state_args = blk._get_state_args(source, blk.mixed_permeate[0], initialize_guess, state_args)
 
         # ---------------------------------------------------------------------
@@ -776,9 +778,9 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         )
 
     def _get_performance_contents(self, time_point=0):
-        x_in = self.feed_side.length_domain.first()
-        x_interface_in = self.feed_side.length_domain.at(2)
-        x_out = self.feed_side.length_domain.last()
+        x_in = self.length_domain.first()
+        x_interface_in = self.length_domain.at(2)
+        x_out = self.length_domain.last()
         feed_inlet = self.feed_side.properties[time_point, x_in]
         feed_outlet = self.feed_side.properties[time_point, x_out]
         interface_inlet = self.feed_side.properties_interface[time_point, x_interface_in]
@@ -901,7 +903,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         for (t, x, p, j), v in self.flux_mass_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 comp = self.config.property_package.get_component(j)
-                if x == self.feed_side.length_domain.first():
+                if x == self.length_domain.first():
                     if comp.is_solvent():
                         iscale.set_scaling_factor(v, 5e4)  # inverse of initial value from flux_mass_phase_comp_initialize
                     elif comp.is_solute():

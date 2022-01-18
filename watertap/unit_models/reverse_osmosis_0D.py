@@ -58,23 +58,14 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         # Call UnitModel.build to setup dynamics
         super().build()
 
-        units_meta = self.config.property_package.get_metadata().get_derived_units
+        self.length_domain = Set(ordered=True, initialize=(0., 1.))  # inlet/outlet set
 
-        self.io_list = Set(initialize=['in', 'out'])  # inlet/outlet set
+        self._make_performance()
+
+        units_meta = self.config.property_package.get_metadata().get_derived_units
 
         solvent_set = self.config.property_package.solvent_set
         solute_set = self.config.property_package.solute_set
-
-        # Add unit variables
-        self.flux_mass_io_phase_comp = Var(
-            self.flowsheet().config.time,
-            self.io_list,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            initialize=lambda b,t,x,p,j : 5e-4 if j in solvent_set else 1e-6,
-            bounds=lambda b,t,x,p,j : (1e-4, 3e-2) if j in solvent_set else (1e-8, 1e-3),
-            units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
-            doc='Mass flux across membrane at inlet and outlet')
 
         self.rejection_phase_comp = Var(
             self.flowsheet().config.time,
