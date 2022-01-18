@@ -374,7 +374,7 @@ def _interp_nan_values(global_values, global_results):
 
 # ================================================================
 
-def _create_local_output_skeleton(model, sweep_params, num_samples, variable_type="unfixed"):
+def _create_local_output_skeleton(model, sweep_params, num_samples):
 
     output_dict = {}
     output_dict["sweep_params"] = {}
@@ -384,17 +384,12 @@ def _create_local_output_skeleton(model, sweep_params, num_samples, variable_typ
     for key in sweep_params.keys():
         var = sweep_params[key].pyomo_object
         var_str = sweep_params[key].pyomo_object.name
-        output_dict["sweep_params"][var_str] =  _create_component_output_skeleton(var, num_samples)# np.zeros(num_samples, dtype=np.float)
+        output_dict["sweep_params"][var_str] =  _create_component_output_skeleton(var, num_samples)
 
-    if variable_type == "unfixed":
-        for var in unfixed_variables_in_activated_equalities_set(model.fs):
-            var_str = var.name # or var.__str__ # Figure out which one is better
-            output_dict["outputs"][var_str] = _create_component_output_skeleton(var, num_samples)
-    elif variable_type == "fixed":
-        raise NotImplementedError
-    else:
-        raise NotImplementedError
-
+    # Now lets deal with the outputs from the pyomo model
+    for var in variables_in_activated_equalities_set(model.fs):
+        var_str = var.name
+        output_dict["outputs"][var_str] = _create_component_output_skeleton(var, num_samples)
 
     return output_dict
 
@@ -435,21 +430,17 @@ def _force_exception(ctr):
 
 # ================================================================
 
-def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, output_dict, variable_type):
+def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, output_dict):
 
+    # Get the inputs
     op_ps_dict = output_dict["sweep_params"]
     for key, item in sweep_params.items():
         var_name = item.pyomo_object.name
         op_ps_dict[var_name]['value'][case_number] = item.pyomo_object.value
 
     # Get the outputs from model
-    if variable_type == "unfixed":
-        for var in unfixed_variables_in_activated_equalities_set(model.fs):
-            output_dict["outputs"][var.name]["value"][case_number] = var.value
-    elif variable_type == "fixed":
-        raise NotImplementedError
-    else:
-        raise NotImplementedError
+    for var in variables_in_activated_equalities_set(model.fs):
+        output_dict["outputs"][var.name]["value"][case_number] = var.value
 
     return None
 
@@ -581,7 +572,6 @@ def _read_output_h5(filepath):
     f = h5py.File(filepath , 'r')
 
     l1_keys = list(f.keys())
-    print(l1_keys)
     output_dict = {}
     for key in l1_keys: # Input or Output
         if key != 'solve_status':
@@ -600,7 +590,6 @@ def _read_output_h5(filepath):
             output_dict[key] = output_dict[key]
 
     f.close()
-    pprint.pprint(output_dict)
 
     return output_dict
 
@@ -635,10 +624,8 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
     local_solve_status_list = []
     # fail_counter = 0
 
-    output_variable_type = "unfixed"
     # Create the output skeleton for storing detailed data
-    local_output_dict = _create_local_output_skeleton(model, sweep_params, local_num_cases,
-                                                      variable_type=output_variable_type)
+    local_output_dict = _create_local_output_skeleton(model, sweep_params, local_num_cases)
 
     # ================================================================
     # Run all optimization cases
@@ -672,8 +659,7 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
             local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
             previous_run_failed = False
             # store the values of the optimization
-            _update_local_output_dict(model, sweep_params, k, local_values[k, :],
-                local_output_dict, output_variable_type)
+            _update_local_output_dict(model, sweep_params, k, local_values[k, :], local_output_dict)
             solver_termination_condition = results.solver.termination_condition.name
 
         # If the initial attempt failed and additional conditions are met, try
@@ -1044,7 +1030,6 @@ def parameter_sweep_deprecated(model, sweep_params, outputs, results_file=None, 
         reinitialize_kwargs = dict()
 
     # Create the output skeleton for storing detailed data
-    output_variable_type = "unfixed"
     local_output_dict = _create_local_output_skeleton(model, sweep_params, local_num_cases,
                                                       variable_type=output_variable_type)
 
@@ -1070,8 +1055,7 @@ def parameter_sweep_deprecated(model, sweep_params, outputs, results_file=None, 
             local_solve_status_list.append(results.solver.termination_condition.name) # We will store status as a string
 
             # store the values of the optimization
-            _update_local_output_dict(model, sweep_params, k, local_values[k, :],
-                local_output_dict, output_variable_type)
+            _update_local_output_dict(model, sweep_params, k, local_values[k, :], local_output_dict)
 
         except:
             # If the run is infeasible, report nan
