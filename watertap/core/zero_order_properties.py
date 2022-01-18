@@ -28,6 +28,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import ConfigurationError
 
 from pyomo.environ import (Expression,
                            Param,
@@ -53,9 +54,16 @@ class WaterParameterBlockData(PhysicalParameterBlock):
     """
     CONFIG = PhysicalParameterBlock.CONFIG()
 
+    CONFIG.declare('database', ConfigValue(
+        description='An instance of a WaterTAP Database to use for parameters.'
+        ))
+    CONFIG.declare('water_source', ConfigValue(
+        description=
+        'Water source to use when looking up parameters from database.'))
     CONFIG.declare("solute_list", ConfigValue(
         domain=list,
-        description="List of solute species names"))
+        description="List of solute species of interest. If None, will use "
+        "all species defined in the water_source provided."))
 
     def build(self):
         '''
@@ -69,7 +77,36 @@ class WaterParameterBlockData(PhysicalParameterBlock):
 
         self.H2O = Solvent()
 
-        for j in self.config.solute_list:
+        # Get component set from database if provided
+        comp_set = None
+        if self.config.database is not None:
+            comp_set = self.config.database.get_solute_set(
+                self.config.water_source)
+
+        # Check definition of solute list
+        solute_list = self.config.solute_list
+        if solute_list is None:
+            # No user-provided solute list, look up list from database
+            if comp_set is None:
+                # No solute list in database and none provided.
+                raise ConfigurationError(
+                    f"{self.name} no solute_list or database was defined. "
+                    f"Users must provide at least one of these arguments.")
+            else:
+                solute_list = comp_set
+        elif self.config.database is not None:
+            # User provided custom list and database - check that all
+            # components are supported
+            for j in solute_list:
+                if j not in comp_set:
+                    _log.info(f"{self.name} component {j} is not defined in "
+                              f"the water_sources database file.")
+        else:
+            # User provided list but no database - assume they know what they
+            # are doing
+            pass
+
+        for j in solute_list:
             self.add_component(str(j), Solute())
 
         # ---------------------------------------------------------------------

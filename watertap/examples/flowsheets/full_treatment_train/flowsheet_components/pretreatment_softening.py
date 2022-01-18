@@ -20,11 +20,11 @@ from idaes.generic_models.unit_models import Feed, Translator
 from idaes.core.util.scaling import (calculate_scaling_factors,
                                      constraint_scaling_transform,
                                      get_scaling_factor,
-                                     constraint_autoscale_large_jac)
+                                     )
 from idaes.core.util.initialization import propagate_state
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components.chemistry import \
     pretreatment_stoich_softening_block as pssb
-from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.util import solve_block, check_dof
 
 
 def build(m):
@@ -145,10 +145,6 @@ def build_tb(m):
 def scale(m):
     # mixer
     calculate_scaling_factors(m)
-    constraint_autoscale_large_jac(m.fs.stoich_softening_mixer_unit)
-    constraint_autoscale_large_jac(m.fs.stoich_softening_reactor_unit)
-    constraint_autoscale_large_jac(m.fs.stoich_softening_separator_unit)
-
     # m.fs.feed.properties[0].scaling_factor.display()
     # assert False
 
@@ -187,7 +183,7 @@ def solve():
     check_dof(m)
 
     # solve
-    solve_with_user_scaling(m)
+    solve_block(m)
 
     # display
     display(m)

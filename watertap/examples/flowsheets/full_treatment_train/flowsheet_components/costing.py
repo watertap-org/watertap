@@ -42,10 +42,6 @@ from watertap.examples.flowsheets.full_treatment_train.flowsheet_components.desa
 )
 
 # from watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_softening_two_stage import build, scale, initialize
-from watertap.examples.flowsheets.full_treatment_train.util import (
-    solve_with_user_scaling,
-    check_dof,
-)
 import idaes.core.util.scaling as iscale
 from idaes.core import FlowsheetBlock
 
