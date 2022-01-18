@@ -20,7 +20,7 @@ from pyomo.environ import ConcreteModel, TransformationFactory
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 
-from watertap.examples.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
+from watertap.examples.flowsheets.full_treatment_train.util import (solve_block,
                                                              check_dof)
 
 import watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_softening as flowsheet_softening
@@ -74,7 +74,7 @@ def set_up_optimization(m, system_recovery=0.50, **kwargs):
 
 
 def optimize(m):
-    solve_with_user_scaling(m, tee=False, fail_flag=True, bound_push=1e-5, mu_init=1e-3)
+    solve_block(m, tee=False, fail_flag=True)
 
 
 def solve_flowsheet(**desal_kwargs):
@@ -94,7 +94,7 @@ def solve_flowsheet(**desal_kwargs):
     initialize(m, **desal_kwargs)
 
     check_dof(m)
-    solve_with_user_scaling(m, tee=False, fail_flag=True, bound_push=1e-5, mu_init=1e-3)
+    solve_block(m, tee=False, fail_flag=True)
 
     # report
     print('==================================='

@@ -105,7 +105,6 @@ def build(number_of_stages=2):
         "has_full_reporting": True
         })
 
-
     for ro_unit in m.fs.ROUnits.values():
         ro_unit.get_costing(module=financials)
 
@@ -189,7 +188,7 @@ def build(number_of_stages=2):
     # additional bounding
     for b in m.component_data_objects(Block, descend_into=True):
         # NaCl solubility limit
-        if hasattr(b, 'mass_frac_phase_comp'):
+        if hasattr(b, 'is_property_constructed') and b.is_property_constructed('mass_frac_phase_comp'):
             b.mass_frac_phase_comp['Liq', 'NaCl'].setub(0.30)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
@@ -251,13 +250,6 @@ def set_operating_conditions(m, Cin=None):
         stage.area.fix(area/float(idx))
         stage.width.fix(width)
         stage.mixed_permeate[0].pressure.fix(pressure_atm)
-        # stage.velocity[0, 0].fix(0.25)
-        #TODO: understand why DOF increase by 2*N stages when switching from 0DRO to 1DRO; expected DOF not to
-        # change when switching from one RO to the other. Nevertheless, fixing two more vars to satisfy DOF = 0 until
-        # error/issue identified
-        stage.N_Re[0, 0].fix(500)
-        stage.recovery_vol_phase[0, 'Liq'].fix(0.5)
-
 
     # energy recovery device
     m.fs.EnergyRecoveryDevice.efficiency_pump.fix(erd_efi)

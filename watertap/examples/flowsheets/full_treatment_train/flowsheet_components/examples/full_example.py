@@ -16,8 +16,7 @@ from pyomo.environ import units as pyunits
 from pyomo.network import Arc
 from pyomo.util import infeasible
 from idaes.core import FlowsheetBlock
-from idaes.core.util.scaling import (calculate_scaling_factors,
-                                     constraint_autoscale_large_jac)
+from idaes.core.util.scaling import calculate_scaling_factors
 from idaes.core.util.initialization import propagate_state
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (pretreatment_NF,
                                                                              desalination,
@@ -27,7 +26,7 @@ from watertap.examples.flowsheets.full_treatment_train.flowsheet_components impo
                                                                              costing,
                                                                              financials)
 from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
-from watertap.examples.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
+from watertap.examples.flowsheets.full_treatment_train.util import (solve_block,
                                                              check_dof,
                                                              check_build,
                                                              check_scaling)
@@ -206,11 +205,11 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
             >= m.fs.RO2.permeate_side.properties_mixed[0].flow_vol_phase['Liq'])
 
     check_dof(m, dof_expected=6 if is_twostage else 4)
-    # solve_with_user_scaling(m, tee=False, fail_flag=True)
+    # solve_block(m, tee=False, fail_flag=True)
 
 
 def optimize(m):
-    solve_with_user_scaling(m, tee=False, fail_flag=True)
+    solve_block(m, tee=False, fail_flag=True)
 
 
 def solve_flowsheet_mvp_NF(**kwargs):
@@ -239,7 +238,7 @@ def solve_flowsheet_mvp_NF(**kwargs):
     # check_scaling(m)
 
     check_dof(m)
-    solve_with_user_scaling(m, tee=False, fail_flag=True)
+    solve_block(m, tee=False, fail_flag=True)
 
     pretreatment_NF.display_pretreatment_NF(m, **kwargs)
     m.fs.tb_pretrt_to_desal.report()

@@ -25,6 +25,9 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               activated_constraints_set,
                                               unused_variables_set)
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
+
 from pyomo.environ import (ConcreteModel,
                            Expression,
                            Param,
@@ -36,6 +39,7 @@ from pyomo.util.check_units import (assert_units_consistent,
 
 from watertap.core.zero_order_properties import \
     WaterParameterBlock, WaterStateBlock
+from watertap.core.wt_database import Database
 
 
 @pytest.fixture(scope="module")
@@ -213,3 +217,54 @@ def test_CV_integration(model):
     model.fs.cv.add_material_balances(has_phase_equilibrium=True)
 
     # No energy or momentum balances, as these are not supported.
+
+
+@pytest.mark.unit
+def test_no_solute_list_defined():
+    m = ConcreteModel()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    with pytest.raises(ConfigurationError,
+                       match="water_props no solute_list or database was "
+                       "defined. Users must provide at least one of these "
+                       "arguments."):
+        m.fs.water_props = WaterParameterBlock()
+
+
+@pytest.mark.component
+def test_solute_list_from_database():
+    m = ConcreteModel()
+
+    db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.water_props = WaterParameterBlock(
+        default={"database": db})
+
+    assert m.fs.water_props.solute_set == db.get_solute_set()
+
+
+@pytest.mark.component
+def test_solute_list_with_database(caplog):
+    caplog.set_level(idaeslog.DEBUG, logger="watertap")
+    log = idaeslog.getLogger("idaes.watertap.core.zero_order_properties")
+    log.setLevel(idaeslog.DEBUG)
+
+    m = ConcreteModel()
+
+    db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.water_props = WaterParameterBlock(
+        default={"solute_list": ["A", "B", "tds"],
+                 "database": db})
+
+    assert ("fs.water_props component A is not defined in the water_sources "
+            "database file.") in caplog.text
+    assert ("fs.water_props component B is not defined in the water_sources "
+            "database file.") in caplog.text
+    assert ("fs.water_props component tds is not defined in the water_sources "
+            "database file.") not in caplog.text

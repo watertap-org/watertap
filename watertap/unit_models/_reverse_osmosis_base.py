@@ -477,7 +477,3 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
         if hasattr(self, 'dh'):
             if iscale.get_scaling_factor(self.dh) is None:
                 iscale.set_scaling_factor(self.dh, 1e3)
-
-        if hasattr(self, 'eq_dh'):
-            sf = iscale.get_scaling_factor(self.dh)
-            iscale.constraint_scaling_transform(self.eq_dh, sf)
