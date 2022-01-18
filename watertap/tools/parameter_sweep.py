@@ -26,7 +26,7 @@ from idaes.core.util import get_solver
 
 from idaes.surrogate.pysmo import sampling
 from idaes.core.util.model_statistics import (variables_in_activated_equalities_set,
-    unfixed_variables_in_activated_equalities_set)
+    expressions_set, total_objectives_set)
 from pyomo.core.base.block import TraversalStrategy
 
 np.set_printoptions(linewidth=200)
@@ -380,16 +380,26 @@ def _create_local_output_skeleton(model, sweep_params, num_samples):
     output_dict["sweep_params"] = {}
     output_dict["outputs"] = {}
 
-    # Lets deal with the inputs
+    # 1. deal with the inputs
     for key in sweep_params.keys():
         var = sweep_params[key].pyomo_object
         var_str = sweep_params[key].pyomo_object.name
         output_dict["sweep_params"][var_str] =  _create_component_output_skeleton(var, num_samples)
 
-    # Now lets deal with the outputs from the pyomo model
+    # 2. lets deal with the output variables from the pyomo model
     for var in variables_in_activated_equalities_set(model.fs):
         var_str = var.name
         output_dict["outputs"][var_str] = _create_component_output_skeleton(var, num_samples)
+
+    # 3. lets deal with expressions
+    for expr in expressions_set(model.fs):
+        expr_str = expr.name
+        output_dict["outputs"][expr_str] = _create_component_output_skeleton(var, num_samples)
+
+    # 4. Lets deal with objectives
+    for obj in total_objectives_set(model):
+        obj_str = obj.name
+        output_dict["outputs"][obj_str] = _create_component_output_skeleton(var, num_samples)
 
     return output_dict
 
@@ -430,7 +440,8 @@ def _force_exception(ctr):
 
 # ================================================================
 
-def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, output_dict):
+def _update_local_output_dict(model, sweep_params, case_number, sweep_vals,
+        solver_termination_condition, output_dict):
 
     # Get the inputs
     op_ps_dict = output_dict["sweep_params"]
@@ -439,8 +450,37 @@ def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, outp
         op_ps_dict[var_name]['value'][case_number] = item.pyomo_object.value
 
     # Get the outputs from model
-    for var in variables_in_activated_equalities_set(model.fs):
-        output_dict["outputs"][var.name]["value"][case_number] = var.value
+    if solver_termination_condition == "optimal":
+        # 1. Variables
+        for var in variables_in_activated_equalities_set(model.fs):
+            output_dict["outputs"][var.name]["value"][case_number] = var.value
+
+        # 2. Expressions
+        for expr in expressions_set(model.fs):
+            output_dict["outputs"][expr.name]["value"][case_number] = pyo.value(expr)
+
+        # 3. Objectives
+        for obj in total_objectives_set(model):
+            output_dict["outputs"][obj.name]["value"][case_number] = pyo.value(obj)
+
+    else:
+        # 1. Variables: We will set everything to NaNs unless they are an input
+        for var in variables_in_activated_equalities_set(model.fs):
+            if var.name in op_ps_dict.keys():
+                # This conditional exists so that we capture the actual input
+                # values. This is a redundancy since we already capture the
+                # inputs above.
+                output_dict["outputs"][var.name]["value"][case_number] = var.value
+            else:
+                output_dict["outputs"][var.name]["value"][case_number] = np.nan
+
+        # 2. Expressions
+        for expr in expressions_set(model.fs):
+            output_dict["outputs"][expr.name]["value"][case_number] = np.nan
+
+        # 3. Objectives
+        for obj in total_objectives_set(model):
+            output_dict["outputs"][obj.name]["value"][case_number] = np.nan
 
     return None
 
@@ -640,6 +680,7 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
             assert reinitialize_function is not None
             reinitialize_function(model, **reinitialize_kwargs)
 
+        # Attempt to actually solve the flowsheet
         try:
             # Simulate/optimize with this set of parameter
             results = optimize_function(model, **optimize_kwargs)
@@ -658,9 +699,6 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
             # If the simulation suceeds, report stats
             local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
             previous_run_failed = False
-            # store the values of the optimization
-            _update_local_output_dict(model, sweep_params, k, local_values[k, :], local_output_dict)
-            solver_termination_condition = results.solver.termination_condition.name
 
         # If the initial attempt failed and additional conditions are met, try
         # to reinitialize and resolve.
@@ -673,12 +711,19 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
                 # _force_exception(k) # DELETE_ME!!!
             except:
                 # solver_termination_condition = "other" # Delete Me
-                solver_termination_condition = results.solver.termination_condition.name
+                # solver_termination_condition = results.solver.termination_condition.name
+                pass
             else:
                 local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
-                solver_termination_condition = results.solver.termination_condition.name
+                # solver_termination_condition = results.solver.termination_condition.name
+
+
         elif reinitialize_before_sweep and previous_run_failed:
             pass
+
+        # Update the loop based on the reinitialization
+        solver_termination_condition = results.solver.termination_condition.name
+        _update_local_output_dict(model, sweep_params, k, local_values[k, :], solver_termination_condition, local_output_dict)
 
         # We will store status as a string
         # UNCOMMENT BELOW
