@@ -210,6 +210,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
 
         self._add_expressions()
 
+        # TODO: why is this here?
         self._get_performance_contents()
 
     def _add_expressions(self):
@@ -558,9 +559,8 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
 
         ## ==========================================================================
         # Pressure drop
-        if ((self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length
-             or self.config.pressure_change_type == PressureChangeType.calculated)
-                and self.config.has_pressure_change):
+        if (self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length
+                or self.config.pressure_change_type == PressureChangeType.calculated):
             @self.Constraint(self.flowsheet().config.time,
                              doc='Pressure drop across unit')
             def eq_pressure_drop(b, t):
@@ -576,8 +576,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             def eq_pressure_drop(b, t, x):
                 return b.deltaP_stage[t] == b.length * b.deltaP[t, x]
 
-        if (self.config.pressure_change_type == PressureChangeType.calculated
-                and self.config.has_pressure_change):
+        if self.config.pressure_change_type == PressureChangeType.calculated:
             ## ==========================================================================
             # Crossflow velocity
             @self.Constraint(self.flowsheet().config.time,
@@ -610,6 +609,8 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         ## ==========================================================================
         # Feed-side isothermal conditions
 
+        # NOTE: this could go on the feed_side block, but that seems to hurt initialization
+        #       in the tests for this unit
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
                          doc="Isothermal assumption for permeate")
