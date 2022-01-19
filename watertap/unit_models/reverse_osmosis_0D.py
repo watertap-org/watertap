@@ -59,9 +59,8 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         # Call UnitModel.build to setup dynamics
         super().build()
 
-        self.io_list = Set(ordered=True, initialize=('in', 'out'))  # inlet/outlet set
-        # for quacking like 1D model
-        add_object_reference(self, 'length_domain', self.io_list)
+        # for quacking like 1D model -> 0. is "in", 1. is "out"
+        self.length_domain = Set(ordered=True, initialize=(0., 1.))  # inlet/outlet set
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(default={
@@ -93,7 +92,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         # Build permeate side
         self.permeate_side = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
-            self.io_list,
+            self.length_domain,
             doc="Material properties of permeate along permeate channel",
             default=tmp_dict)
         self.mixed_permeate = self.config.property_package.state_block_class(
@@ -171,7 +170,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             # different representation in 1DRO
             self.dP_dx_io = Var(
                 self.flowsheet().config.time,
-                self.io_list,
+                self.length_domain,
                 initialize=-5e4,
                 bounds=(-2e5, -1e3),
                 domain=NegativeReals,
@@ -233,16 +232,16 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             return self.mass_transfer_phase_comp[t, p, j] == -self.feed_side.mass_transfer_term[t, p, j]
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.io_list,
+                         self.length_domain,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Water and salt flux")
         def eq_flux_io(b, t, x, p, j):
             prop_perm = b.permeate_side[t, x]
-            if x == 'in':
+            if x == 0.:
                 prop_feed = b.feed_side.properties_in[t]
                 prop_feed_inter = b.feed_side.properties_interface_in[t]
-            elif x == 'out':
+            elif x == 1.:
                 prop_feed = b.feed_side.properties_out[t]
                 prop_feed_inter = b.feed_side.properties_interface_out[t]
             comp = self.config.property_package.get_component(j)
@@ -260,7 +259,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                          self.config.property_package.component_list,
                          doc="Average flux expression")
         def flux_mass_phase_comp_avg(b, t, p, j):
-            return 0.5 * sum(b.flux_mass_phase_comp[t, x, p, j] for x in self.io_list)
+            return 0.5 * sum(b.flux_mass_phase_comp[t, x, p, j] for x in self.length_domain)
 
         # Difference expression in 1DRO
         @self.Constraint(self.flowsheet().config.time,
@@ -290,7 +289,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         # # Permeate-side stateblocks
         # Nor in 1DRO
         @self.Constraint(self.flowsheet().config.time,
-                         self.io_list,
+                         self.length_domain,
                          solute_set,
                          doc="Permeate mass fraction")
         def eq_mass_frac_permeate_io(b, t, x, j):
@@ -303,10 +302,10 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         # Feed and permeate-side isothermal conditions
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.io_list,
+                         self.length_domain,
                          doc="Isothermal assumption for permeate")
         def eq_permeate_isothermal(b, t, x):
-            prop_io = b.feed_side.properties_in[t] if x == 'in' else b.feed_side.properties_out[t]
+            prop_io = b.feed_side.properties_in[t] if x == 0. else b.feed_side.properties_out[t]
             return prop_io.temperature == \
                    b.permeate_side[t, x].temperature
         # ==========================================================================
@@ -321,7 +320,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         # isobaric conditions across permeate channel and at permeate outlet
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.io_list,
+                         self.length_domain,
                          doc="Isobaric assumption for permeate out")
         def eq_permeate_outlet_isobaric(b, t, x):
             return b.permeate_side[t, x].pressure == \
@@ -329,7 +328,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
 
         # not in 1DRO
         @self.Constraint(self.flowsheet().config.time,
-                         self.io_list,
+                         self.length_domain,
                          doc="Permeate flowrate")
         def eq_flow_vol_permeate_io(b, t, x):
             prop_io = b.permeate_side[t,x]
@@ -337,14 +336,14 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
 
         # Concentration polarization (slightly different form in 1DRO)
         @self.feed_side.Constraint(self.flowsheet().config.time,
-                                   self.io_list,
+                                   self.length_domain,
                                    solute_set,
                                    doc="Concentration polarization")
         def eq_concentration_polarization_io(b, t, x, j):
-            if x == 'in':
+            if x == 0.:
                 prop_io = b.properties_in[t]
                 prop_interface_io = b.properties_interface_in[t]
-            elif x == 'out':
+            elif x == 1.:
                 prop_io = b.properties_out[t]
                 prop_interface_io = b.properties_interface_out[t]
             if self.config.concentration_polarization_type == ConcentrationPolarizationType.none:
@@ -364,33 +363,33 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         # Mass transfer coefficient calculation
         if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
             @self.Constraint(self.flowsheet().config.time,
-                                       self.io_list,
+                                       self.length_domain,
                                        solute_set,
                                        doc="Mass transfer coefficient in feed channel")
             # no "in" in 1DRO
             def eq_Kf(b, t, x, j):
-                if x == 'in':
+                if x == 0.:
                     prop_io = b.feed_side.properties_in[t]
-                elif x == 'out':
+                elif x == 1.:
                     prop_io = b.feed_side.properties_out[t]
                 return (b.Kf[t, x, j] * b.dh ==
                         prop_io.diffus_phase['Liq']
                         * b.N_Sh[t, x])
 
             @self.Constraint(self.flowsheet().config.time,
-                                       self.io_list,
+                                       self.length_domain,
                                        doc="Sherwood number")
             def eq_N_Sh(b, t, x):
                 return (b.N_Sh[t, x] ==
                         0.46 * (b.N_Re[t, x] * b.N_Sc[t, x])**0.36)
 
             @self.Constraint(self.flowsheet().config.time,
-                                       self.io_list,
+                                       self.length_domain,
                                        doc="Schmidt number")
             def eq_N_Sc(b, t, x):
-                if x == 'in':
+                if x == 0.:
                     prop_io = b.feed_side.properties_in[t]
-                elif x == 'out':
+                elif x == 1.:
                     prop_io = b.feed_side.properties_out[t]
                 return (b.N_Sc[t, x] * prop_io.dens_mass_phase['Liq'] * prop_io.diffus_phase['Liq'] ==
                         prop_io.visc_d_phase['Liq'])
@@ -409,12 +408,12 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                 return b.channel_height * b.width * b.spacer_porosity
 
             @self.Constraint(self.flowsheet().config.time,
-                                       self.io_list,
+                                       self.length_domain,
                                        doc="Reynolds number")
             def eq_N_Re(b, t, x):
-                if x == 'in':
+                if x == 0.:
                     prop_io = b.feed_side.properties_in[t]
-                elif x == 'out':
+                elif x == 1.:
                     prop_io = b.feed_side.properties_out[t]
                 return (b.N_Re[t, x] * b.area_cross * prop_io.visc_d_phase['Liq'] ==
                         sum(prop_io.flow_mass_phase_comp['Liq', j] for j in b.config.property_package.component_list)
@@ -430,19 +429,19 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         elif self.config.pressure_change_type == PressureChangeType.calculated:
             # Crossflow velocity at inlet and outlet
             @self.Constraint(self.flowsheet().config.time,
-                             self.io_list,
+                             self.length_domain,
                              doc="Crossflow velocity constraint")
             def eq_velocity(b, t, x):
-                if x == 'in':
+                if x == 0.:
                     prop_io = b.feed_side.properties_in[t]
-                elif x == 'out':
+                elif x == 1.:
                     prop_io = b.feed_side.properties_out[t]
                 return b.velocity[t, x] * b.area_cross == prop_io.flow_vol_phase['Liq']
 
             # Darcy friction factor based on eq. S27 in SI for Cost Optimization of Osmotically Assisted Reverse Osmosis
             # TODO: this relationship for friction factor is specific to a particular spacer geometry. Add alternatives.
             @self.Constraint(self.flowsheet().config.time,
-                             self.io_list,
+                             self.length_domain,
                              doc="Darcy friction factor constraint")
             def eq_friction_factor_darcy(b, t, x):
                 return (b.friction_factor_darcy[t, x] - 0.42) * b.N_Re[t, x] == 189.3
@@ -450,12 +449,12 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             # Pressure change per unit length due to friction,
             # -1/2*f/dh*density*velocity^2
             @self.Constraint(self.flowsheet().config.time,
-                             self.io_list,
+                             self.length_domain,
                              doc="pressure change per unit length due to friction")
             def eq_dP_dx_io(b, t, x):
-                if x == 'in':
+                if x == 0.:
                     prop_io = b.feed_side.properties_in[t]
-                elif x == 'out':
+                elif x == 1.:
                     prop_io = b.feed_side.properties_out[t]
                 return (b.dP_dx_io[t, x] * b.dh ==
                         -0.5 * b.friction_factor_darcy[t, x]
@@ -465,7 +464,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             @self.Expression(self.flowsheet().config.time,
                              doc="expression for average pressure change per unit length due to friction")
             def dP_dx_avg(b, t):
-                return 0.5 * sum(b.dP_dx_io[t, x] for x in b.io_list)
+                return 0.5 * sum(b.dP_dx_io[t, x] for x in b.length_domain)
 
             # Pressure change equation
             @self.Constraint(self.flowsheet().config.time,
@@ -475,39 +474,39 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
 
         # Bulk and interface connection on the feed-side
         @self.feed_side.Constraint(self.flowsheet().config.time,
-                                   self.io_list,
+                                   self.length_domain,
                                    doc="Temperature at interface")
         def eq_equal_temp_interface_io(b, t, x):
-            if x == 'in':
+            if x == 0.:
                 prop_io = b.properties_in[t]
                 prop_interface_io = b.properties_interface_in[t]
-            elif x == 'out':
+            elif x == 1.:
                 prop_io = b.properties_out[t]
                 prop_interface_io = b.properties_interface_out[t]
             return prop_interface_io.temperature == \
                    prop_io.temperature
 
         @self.feed_side.Constraint(self.flowsheet().config.time,
-                                   self.io_list,
+                                   self.length_domain,
                                    doc="Pressure at interface")
         def eq_equal_pressure_interface_io(b, t, x):
-            if x == 'in':
+            if x == 0.:
                 prop_io = b.properties_in[t]
                 prop_interface_io = b.properties_interface_in[t]
-            elif x == 'out':
+            elif x == 1.:
                 prop_io = b.properties_out[t]
                 prop_interface_io = b.properties_interface_out[t]
             return prop_interface_io.pressure == \
                    prop_io.pressure
 
         @self.feed_side.Constraint(self.flowsheet().config.time,
-                                   self.io_list,
+                                   self.length_domain,
                                    doc="Volumetric flow at interface of inlet")
         def eq_equal_flow_vol_interface_io(b, t, x):
-            if x == 'in':
+            if x == 0.:
                 prop_io = b.properties_in[t]
                 prop_interface_io = b.properties_interface_in[t]
-            elif x == 'out':
+            elif x == 1.:
                 prop_io = b.properties_out[t]
                 prop_interface_io = b.properties_interface_out[t]
             return prop_interface_io.flow_vol_phase['Liq'] ==\
@@ -519,7 +518,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                          doc='Over pressure ratio')
         def over_pressure_ratio(b, t):
             return (b.feed_side.properties_out[t].pressure_osm
-                    - b.permeate_side[t,'out'].pressure_osm) / \
+                    - b.permeate_side[t,1.].pressure_osm) / \
                     b.feed_side.properties_out[t].pressure
 
 
@@ -641,11 +640,11 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         if hasattr(self, "deltaP"):
             var_dict["Pressure Change"] = self.deltaP[time_point]
         if hasattr(self, "N_Re"):
-            var_dict["Reynolds Number @Inlet"] = self.N_Re[time_point, 'in']
-            var_dict["Reynolds Number @Outlet"] = self.N_Re[time_point, 'out']
+            var_dict["Reynolds Number @Inlet"] = self.N_Re[time_point, 0.]
+            var_dict["Reynolds Number @Outlet"] = self.N_Re[time_point, 1.]
         if hasattr(self, "velocity"):
-            var_dict["Velocity @Inlet"] = self.velocity[time_point, 'in']
-            var_dict["Velocity @Outlet"] = self.velocity[time_point, 'out']
+            var_dict["Velocity @Inlet"] = self.velocity[time_point, 0.]
+            var_dict["Velocity @Outlet"] = self.velocity[time_point, 1.]
         for j in self.config.property_package.solute_set:
             cin_mem_name=f'{j} Concentration @Inlet,Membrane-Interface '
             var_dict[cin_mem_name] = (
@@ -712,9 +711,9 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             if iscale.get_scaling_factor(v) is None:
                 comp = self.config.property_package.get_component(j)
                 if comp.is_solvent():  # scaling based on solvent flux equation
-                    if x == 'in':
+                    if x == 0.:
                         prop_io = self.feed_side.properties_in[t]
-                    elif x == 'out':
+                    elif x == 1.:
                         prop_io = self.feed_side.properties_out[t]
                         prop_interface_io = self.feed_side.properties_interface_out[t]
                     sf = (iscale.get_scaling_factor(self.A_comp[t, j])

@@ -405,8 +405,8 @@ class TestReverseOsmosis():
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
-        m.fs.unit.Kf[0, 'in', 'NaCl'].fix(kf)
-        m.fs.unit.Kf[0, 'out', 'NaCl'].fix(kf)
+        m.fs.unit.Kf[0, 0., 'NaCl'].fix(kf)
+        m.fs.unit.Kf[0, 1., 'NaCl'].fix(kf)
 
         # test statistics
         assert number_variables(m) == 125
@@ -631,10 +631,10 @@ class TestReverseOsmosis():
         # test solution
         assert (pytest.approx(-1.661e5, rel=1e-3) == value(m.fs.unit.deltaP[0]))
         assert (pytest.approx(-1.038e4, rel=1e-3) == value(m.fs.unit.deltaP[0]/m.fs.unit.length))
-        assert (pytest.approx(395.8, rel=1e-3) == value(m.fs.unit.N_Re[0, 'in']))
-        assert (pytest.approx(0.2361, rel=1e-3) == value(m.fs.unit.velocity[0, 'in']))
-        assert (pytest.approx(191.1, rel=1e-3) == value(m.fs.unit.N_Re[0, 'out']))
-        assert (pytest.approx(0.1187, rel=1e-3) == value(m.fs.unit.velocity[0, 'out']))
+        assert (pytest.approx(395.8, rel=1e-3) == value(m.fs.unit.N_Re[0, 0.]))
+        assert (pytest.approx(0.2361, rel=1e-3) == value(m.fs.unit.velocity[0, 0.]))
+        assert (pytest.approx(191.1, rel=1e-3) == value(m.fs.unit.N_Re[0, 1.]))
+        assert (pytest.approx(0.1187, rel=1e-3) == value(m.fs.unit.velocity[0, 1.]))
         assert (pytest.approx(7.089e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
         assert (pytest.approx(2.188e-6, rel=1e-3) ==
