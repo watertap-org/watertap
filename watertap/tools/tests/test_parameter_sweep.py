@@ -350,6 +350,7 @@ class TestParallelManager():
                    'performance':m.fs.performance}
         results_file = os.path.join(tmp_path, 'global_results.csv')
         h5_fname = "output_dict"
+
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs,
                 csv_results_file = results_file,
@@ -382,48 +383,65 @@ class TestParallelManager():
             truth_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
                                                       'units': 'non-dimensional',
                                                       'upper bound': 0,
-                                                      'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                                      'value': np.array([0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9])},
                                       'fs.input[b]': {'lower bound': 0,
                                                       'units': 'non-dimensional',
                                                       'upper bound': 0,
-                                                      'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                                      'value': np.array([0.  , 0.25, 0.5 , 0.  , 0.25, 0.5 , 0.  , 0.25, 0.5 ])},
                                       'fs.output[c]': {'lower bound': 0,
                                                        'units': 'non-dimensional',
                                                        'upper bound': 0,
-                                                       'value': np.array([0.2, 0.2, 0. , 1. , 1. , 0. , 0. , 0. , 0. ])},
+                                                       'value': np.array([0.2, 0.2, np.nan, 1., 1., np.nan, np.nan, np.nan, np.nan])},
                                       'fs.output[d]': {'lower bound': 0,
                                                        'units': 'non-dimensional',
                                                        'upper bound': 0,
-                                                       'value': np.array([0.  , 0.75, 0.  , 0.  , 0.75, 0.  , 0.  , 0.  , 0.  ])},
+                                                       'value': np.array([0.  , 0.75,  np.nan, 0., 0.75,  np.nan, np.nan, np.nan, np.nan])},
+                                      'fs.performance': {'lower bound': 0,
+                                                         'units': 'non-dimensional',
+                                                         'upper bound': 0,
+                                                         'value': np.array([0.2 , 0.95,  np.nan, 1., 1.75,  np.nan, np.nan,  np.nan, np.nan])},
                                       'fs.slack[ab_slack]': {'lower bound': 0,
                                                              'units': 'non-dimensional',
                                                              'upper bound': 0,
-                                                             'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                                             'value': np.array([ 0.,  0., np.nan,  0.,  0., np.nan, np.nan, np.nan, np.nan])},
                                       'fs.slack[cd_slack]': {'lower bound': 0,
-                                                            'units': 'non-dimensional',
-                                                            'upper bound': 0,
-                                                            'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])}},
-                         'solve_status': ['optimal',
-                                          'optimal',
-                                          'optimal',
-                                          'optimal',
-                                          'optimal',
-                                          'optimal',
-                                          'optimal',
-                                          'optimal',
-                                          'optimal'],
-                         'sweep_params': {'fs.input[a]': {'lower bound': 0,
-                                                          'units': 'non-dimensional',
-                                                          'upper bound': 0,
-                                                          'value': np.array([0.1, 0.1, 0. , 0.5, 0.5, 0. , 0. , 0. , 0. ])},
-                                          'fs.input[b]': {'lower bound': 0,
-                                                          'units': 'non-dimensional',
-                                                          'upper bound': 0,
-                                                          'value': np.array([0.  , 0.25, 0.  , 0.  , 0.25, 0.  , 0.  , 0.  , 0.  ])}}}
+                                                             'units': 'non-dimensional',
+                                                             'upper bound': 0,
+                                                             'value': np.array([ 0.,  0., np.nan,  0.,  0., np.nan, np.nan, np.nan, np.nan])},
+                                      'objective': {'lower bound': 0,
+                                                    'units': 'non-dimensional',
+                                                    'upper bound': 0,
+                                                    'value': np.array([0.2 , 0.95,  np.nan, 1., 1.75, np.nan, np.nan, np.nan, np.nan])}},
+                          'solve_status': ['optimal',
+                                           'optimal',
+                                           'infeasible',
+                                           'optimal',
+                                           'optimal',
+                                           'infeasible',
+                                           'infeasible',
+                                           'infeasible',
+                                           'infeasible'],
+                          'sweep_params': {'fs.input[a]': {'lower bound': 0,
+                                                           'units': 'non-dimensional',
+                                                           'upper bound': 0,
+                                                           'value': np.array([0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9])},
+                                           'fs.input[b]': {'lower bound': 0,
+                                                           'units': 'non-dimensional',
+                                                           'upper bound': 0,
+                                                           'value': np.array([0., 0.25, 0.5 , 0., 0.25, 0.5 , 0., 0.25, 0.5 ])}}}
 
             h5_fpath = os.path.join(tmp_path, 'output_dict.h5')
             read_dict = _read_output_h5(h5_fpath)
             _assert_dictionary_correctness(truth_dict, read_dict)
+
+            # Check this new dictionary against the original logging system
+            assert np.allclose(read_dict['outputs']['fs.input[a]']['value'], data[:,0], equal_nan=True)
+            assert np.allclose(read_dict['sweep_params']['fs.input[a]']['value'], data[:,0], equal_nan=True)
+            assert np.allclose(read_dict['outputs']['fs.input[b]']['value'], data[:,1], equal_nan=True)
+            assert np.allclose(read_dict['sweep_params']['fs.input[b]']['value'], data[:,1], equal_nan=True)
+            assert np.allclose(read_dict['outputs']['fs.output[c]']['value'], data[:,2], equal_nan=True)
+            assert np.allclose(read_dict['outputs']['fs.output[d]']['value'], data[:,3], equal_nan=True)
+            assert np.allclose(read_dict['outputs']['fs.performance']['value'], data[:,4], equal_nan=True)
 
 
     @pytest.mark.component
@@ -549,10 +567,6 @@ def _optimization(m, relax_feasibility=False):
 
     solver = pyo.SolverFactory('ipopt')
     results = solver.solve(m)
-
-    assert results.solver.termination_condition == \
-           pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
 
     return results
 
