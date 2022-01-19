@@ -247,8 +247,9 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                 "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated"
                     .format(self.config.mass_transfer_coefficient, self.config.concentration_polarization_type))
 
-
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
+
+    def _make_performance(self):
 
         # For permeate-specific scaling in calculate_scaling_factors
         self._permeate_scaled_properties = ComponentSet()
