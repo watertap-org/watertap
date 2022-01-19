@@ -270,15 +270,6 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             doc="Number of finite elements")
 
         # ==========================================================================
-        self.flux_mass_phase_comp = Var(
-            self.flowsheet().config.time,
-            self.length_domain,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            initialize=lambda b,t,x,p,j : 5e-4 if j in solvent_set else 1e-6,
-            bounds=lambda b,t,x,p,j : (1e-4, 3e-2) if j in solvent_set else (1e-8, 1e-3),
-            units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
-            doc='Mass flux across membrane')
 
         self.width = Var(
             initialize=1,
@@ -323,64 +314,6 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc='Concentration polarization modulus')
-
-        if self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
-            self.Kf = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                solute_set,
-                initialize=5e-5,
-                bounds=(1e-6, 1e-3),
-                domain=NonNegativeReals,
-                units=units_meta('length') * units_meta('time')**-1,
-                doc='Mass transfer coefficient in feed channel')
-
-        if ((self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)
-                or (self.config.pressure_change_type == PressureChangeType.calculated
-                    and self.config.has_pressure_change)):
-            self.N_Re = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                initialize=5e2,
-                bounds=(10, 5e3),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc="Reynolds number in feed channel")
-        if self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated:
-            self.N_Sc = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                initialize=5e2,
-                bounds=(1e2, 2e3),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc="Schmidt number in feed channel")
-            self.N_Sh = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                initialize=1e2,
-                bounds=(1, 3e2),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc="Sherwood number in feed channel")
-        if (self.config.pressure_change_type == PressureChangeType.calculated
-                and self.config.has_pressure_change):
-            self.velocity = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                initialize=0.5,
-                bounds=(1e-2, 5),
-                domain=NonNegativeReals,
-                units=units_meta('length')/units_meta('time'),
-                doc="Crossflow velocity in feed channel")
-            self.friction_factor_darcy = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                initialize=0.5,
-                bounds=(1e-2, 5),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc="Darcy friction factor in feed channel")
 
         # ==========================================================================
         # Volumetric Recovery rate
@@ -911,40 +844,10 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1)
 
-        if hasattr(self, 'Kf'):
-            for v in self.Kf.values():
-                if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, 1e4)
-
-        if hasattr(self, 'N_Re'):
-            for t, x in self.N_Re.keys():
-                if iscale.get_scaling_factor(self.N_Re[t, x]) is None:
-                    iscale.set_scaling_factor(self.N_Re[t, x], 1e-2)
-
-        if hasattr(self, 'N_Sc'):
-            for t, x in self.N_Sc.keys():
-                if iscale.get_scaling_factor(self.N_Sc[t, x]) is None:
-                    iscale.set_scaling_factor(self.N_Sc[t, x], 1e-2)
-
-        if hasattr(self, 'N_Sh'):
-            for t, x in self.N_Sh.keys():
-                if iscale.get_scaling_factor(self.N_Sh[t, x]) is None:
-                     iscale.set_scaling_factor(self.N_Sh[t, x], 1e-2)
-
         if hasattr(self, 'deltaP_stage'):
             for v in self.deltaP_stage.values():
                 if iscale.get_scaling_factor(v) is None:
                      iscale.set_scaling_factor(v, 1e-4)
-
-        if hasattr(self, 'velocity'):
-            for v in self.velocity.values():
-                if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, 1)
-
-        if hasattr(self, 'friction_factor_darcy'):
-            for v in self.friction_factor_darcy.values():
-                if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, 1)
 
         if hasattr(self, 'deltaP'):
             for v in self.feed_side.pressure_dx.values():

@@ -117,7 +117,7 @@ def test_option_concentration_polarization_type_calculated_kf_fixed():
            ConcentrationPolarizationType.calculated
     assert m.fs.unit.config.mass_transfer_coefficient == \
            MassTransferCoefficient.fixed
-    assert isinstance(m.fs.unit.Kf_io, Var)
+    assert isinstance(m.fs.unit.Kf, Var)
 
 @pytest.mark.unit
 def test_option_concentration_polarization_type_calculated_kf_calculated():
@@ -134,15 +134,15 @@ def test_option_concentration_polarization_type_calculated_kf_calculated():
            ConcentrationPolarizationType.calculated
     assert m.fs.unit.config.mass_transfer_coefficient == \
            MassTransferCoefficient.calculated
-    assert isinstance(m.fs.unit.Kf_io, Var)
+    assert isinstance(m.fs.unit.Kf, Var)
     assert isinstance(m.fs.unit.channel_height, Var)
     assert isinstance(m.fs.unit.width, Var)
     assert isinstance(m.fs.unit.length, Var)
     assert isinstance(m.fs.unit.dh, Var)
     assert isinstance(m.fs.unit.spacer_porosity, Var)
-    assert isinstance(m.fs.unit.N_Sc_io, Var)
-    assert isinstance(m.fs.unit.N_Sh_io, Var)
-    assert isinstance(m.fs.unit.N_Re_io, Var)
+    assert isinstance(m.fs.unit.N_Sc, Var)
+    assert isinstance(m.fs.unit.N_Sh, Var)
+    assert isinstance(m.fs.unit.N_Re, Var)
 
 @pytest.mark.unit
 def test_option_pressure_change_calculated():
@@ -169,7 +169,7 @@ def test_option_pressure_change_calculated():
     assert isinstance(m.fs.unit.length, Var)
     assert isinstance(m.fs.unit.dh, Var)
     assert isinstance(m.fs.unit.spacer_porosity, Var)
-    assert isinstance(m.fs.unit.N_Re_io, Var)
+    assert isinstance(m.fs.unit.N_Re, Var)
 
 
 class TestReverseOsmosis():
@@ -228,7 +228,7 @@ class TestReverseOsmosis():
         unit_objs_type_dict = {'dens_solvent': Param,
                                'A_comp': Var,
                                'B_comp': Var,
-                               'flux_mass_io_phase_comp': Var,
+                               'flux_mass_phase_comp': Var,
                                'area': Var,
                                'recovery_vol_phase': Var,
                                'recovery_mass_phase_comp': Var,
@@ -367,7 +367,7 @@ class TestReverseOsmosis():
     def test_CP_calculation_with_kf_fixed(self):
         """ Testing 0D-RO with ConcentrationPolarizationType.calculated option enabled.
         This option makes use of an alternative constraint for the feed-side, membrane-interface concentration.
-        Additionally, two more variables are created when this option is enabled: Kf_io - feed-channel
+        Additionally, two more variables are created when this option is enabled: Kf - feed-channel
         mass transfer coefficients at the channel inlet and outlet.
         """
         m = ConcreteModel()
@@ -405,8 +405,8 @@ class TestReverseOsmosis():
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
-        m.fs.unit.Kf_io[0, 'in', 'NaCl'].fix(kf)
-        m.fs.unit.Kf_io[0, 'out', 'NaCl'].fix(kf)
+        m.fs.unit.Kf[0, 'in', 'NaCl'].fix(kf)
+        m.fs.unit.Kf[0, 'out', 'NaCl'].fix(kf)
 
         # test statistics
         assert number_variables(m) == 125
@@ -631,10 +631,10 @@ class TestReverseOsmosis():
         # test solution
         assert (pytest.approx(-1.661e5, rel=1e-3) == value(m.fs.unit.deltaP[0]))
         assert (pytest.approx(-1.038e4, rel=1e-3) == value(m.fs.unit.deltaP[0]/m.fs.unit.length))
-        assert (pytest.approx(395.8, rel=1e-3) == value(m.fs.unit.N_Re_io[0, 'in']))
-        assert (pytest.approx(0.2361, rel=1e-3) == value(m.fs.unit.velocity_io[0, 'in']))
-        assert (pytest.approx(191.1, rel=1e-3) == value(m.fs.unit.N_Re_io[0, 'out']))
-        assert (pytest.approx(0.1187, rel=1e-3) == value(m.fs.unit.velocity_io[0, 'out']))
+        assert (pytest.approx(395.8, rel=1e-3) == value(m.fs.unit.N_Re[0, 'in']))
+        assert (pytest.approx(0.2361, rel=1e-3) == value(m.fs.unit.velocity[0, 'in']))
+        assert (pytest.approx(191.1, rel=1e-3) == value(m.fs.unit.N_Re[0, 'out']))
+        assert (pytest.approx(0.1187, rel=1e-3) == value(m.fs.unit.velocity[0, 'out']))
         assert (pytest.approx(7.089e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp_avg[0, 'Liq', 'H2O']))
         assert (pytest.approx(2.188e-6, rel=1e-3) ==
