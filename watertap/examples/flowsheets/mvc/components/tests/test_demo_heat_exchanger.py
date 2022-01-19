@@ -11,36 +11,8 @@
 #
 ###############################################################################
 import pytest
-from pyomo.environ import (ConcreteModel,
-                           Block,
-                           Var,
-                           Constraint,
-                           TerminationCondition,
-                           SolverStatus,
-                           value,
-                           SolverFactory,
-                           Expression,
-                           TransformationFactory,
-                           units as pyunits)
-from watertap.examples.flowsheets.mvc.components.heat_exchanger import main as main_heat_exchanger
-from idaes.core import FlowsheetBlock
+from watertap.examples.flowsheets.mvc.components.demo_heat_exchanger import main as main_heat_exchanger
 from idaes.core.util import get_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.initialization import (solve_indexed_blocks,
-                                            propagate_state)
-from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
-from idaes.generic_models.unit_models.mixer import MomentumMixingType
-from pyomo.util.check_units import assert_units_consistent
-from idaes.core.util.scaling import (unscaled_variables_generator,
-                                     unscaled_constraints_generator)
-
-import watertap.property_models.NaCl_prop_pack as props
-from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
-from watertap.unit_models.pressure_exchanger import PressureExchanger
-from watertap.unit_models.pump_isothermal import Pump
-from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
-build, set_operating_conditions, initialize_system, solve, optimize_set_up, optimize, display_system, display_state, display_design)
-
 
 solver = get_solver()
 
