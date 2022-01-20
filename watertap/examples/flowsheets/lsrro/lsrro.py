@@ -26,18 +26,18 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslogger
 
 from watertap.unit_models.reverse_osmosis_1D import (ReverseOsmosis1D,
-                                                       ConcentrationPolarizationType,
-                                                       MassTransferCoefficient,
-                                                       PressureChangeType)
+                                                     ConcentrationPolarizationType,
+                                                     MassTransferCoefficient,
+                                                     PressureChangeType)
 from watertap.unit_models.pump_isothermal import Pump
 from watertap.core.util.initialization import assert_degrees_of_freedom, assert_no_degrees_of_freedom, check_dof
 import watertap.examples.flowsheets.lsrro.financials as financials
 import watertap.property_models.NaCl_prop_pack as props
 
 
-
-def main(number_of_stages, water_recovery=None, Cin=None, A_case=None,B_case=None,AB_tradeoff=None, A_fixed=None):
-    m = build(number_of_stages)
+def main(number_of_stages, water_recovery=None, Cin=None, A_case=None,B_case=None,AB_tradeoff=None, A_fixed=None,
+         nacl_solubility_limit=None, has_CP=None, has_Pdrop=None):
+    m = build(number_of_stages, nacl_solubility_limit, has_CP, has_Pdrop)
     set_operating_conditions(m, Cin)
     initialize(m)
     solve(m)
@@ -57,7 +57,7 @@ def main(number_of_stages, water_recovery=None, Cin=None, A_case=None,B_case=Non
     return m
 
 
-def build(number_of_stages=2):
+def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdrop=True):
     # ---building model---
     m = ConcreteModel()
 
@@ -93,12 +93,24 @@ def build(number_of_stages=2):
         pump.get_costing(module=financials, pump_type="High pressure")
         total_pump_work += pump.work_mechanical[0]
     # Add the stages ROs
+    if has_Pdrop:
+        pressure_change_type = PressureChangeType.calculated
+    else:
+        pressure_change_type = PressureChangeType.fixed_per_stage
+
+    if has_CP:
+        cp_type = ConcentrationPolarizationType.calculated
+        kf_type = MassTransferCoefficient.calculated
+    else:
+        cp_type = ConcentrationPolarizationType.none
+        kf_type = MassTransferCoefficient.none
+
     m.fs.ROUnits = ReverseOsmosis1D(m.fs.StageSet, default={
         "property_package": m.fs.properties,
-        "has_pressure_change": True,
-        "pressure_change_type": PressureChangeType.calculated,
-        "mass_transfer_coefficient": MassTransferCoefficient.calculated,
-        "concentration_polarization_type": ConcentrationPolarizationType.calculated,
+        "has_pressure_change": has_Pdrop,
+        "pressure_change_type": pressure_change_type,
+        "mass_transfer_coefficient": kf_type,
+        "concentration_polarization_type": cp_type,
         "transformation_scheme": "BACKWARD",
         "transformation_method": "dae.finite_difference",
         "finite_elements": 3,
@@ -186,10 +198,11 @@ def build(number_of_stages=2):
             destination=m.fs.disposal.inlet)
 
     # additional bounding
-    for b in m.component_data_objects(Block, descend_into=True):
-        # NaCl solubility limit
-        if hasattr(b, 'is_property_constructed') and b.is_property_constructed('mass_frac_phase_comp'):
-            b.mass_frac_phase_comp['Liq', 'NaCl'].setub(0.2614)
+    if nacl_solubility_limit:
+        for b in m.component_data_objects(Block, descend_into=True):
+            # NaCl solubility limit
+            if hasattr(b, 'is_property_constructed') and b.is_property_constructed('mass_frac_phase_comp'):
+                b.mass_frac_phase_comp['Liq', 'NaCl'].setub(0.2614)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -245,11 +258,13 @@ def set_operating_conditions(m, Cin=None):
 
         stage.A_comp.fix(mem_A)
         stage.B_comp.fix(mem_B*B_scale)
-        stage.channel_height.fix(height)
-        stage.spacer_porosity.fix(spacer_porosity)
         stage.area.fix(area/float(idx))
         stage.width.fix(width)
         stage.mixed_permeate[0].pressure.fix(pressure_atm)
+        if ((stage.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)
+                or stage.config.pressure_change_type == PressureChangeType.calculated):
+            stage.channel_height.fix(height)
+            stage.spacer_porosity.fix(spacer_porosity)
 
     # energy recovery device
     m.fs.EnergyRecoveryDevice.efficiency_pump.fix(erd_efi)
@@ -310,8 +325,6 @@ def do_initialization_pass(m, optarg, guess_mixers):
             else:
                 m.fs.Mixers[stage].initialize(optarg=optarg)
             propagate_state(m.fs.mixer_to_stage[stage])
-
-        m.fs.ROUnits[stage].initialize(optarg=optarg)
 
         if stage == first_stage:
             propagate_state(m.fs.primary_RO_to_product)
@@ -428,23 +441,26 @@ def optimize_set_up(m, water_recovery=None, A_case=None, B_case=None, AB_tradeof
         stage.area.unfix()
         stage.width.unfix()
         stage.area.setlb(1)
-        stage.area.setub(1000)
+        stage.area.setub(10000)
         stage.width.setlb(0.1)
         stage.width.setub(1000)
-        stage.N_Re[0, 0].unfix()
-        #TODO: Pressure drop results are unreasonably high; set upper bound on deltaP or velocity?
-        # stage.deltaP.setlb(-8e5)
-        # stage.spacer_porosity.unfix()
-        # stage.spacer_porosity.setlb(0.75)
-        # stage.spacer_porosity.setub(0.9)
-        # stage.channel_height.unfix()
-        # stage.channel_height.setlb(0.75e-3)
-        # stage.channel_height.setub(2e-3)
-
-        # stage.dP_dx_io.setlb(-1e5)
         # stage.length.setub(8)
-        # stage.velocity_io[0,'in'].setub(0.25)
-        # stage.velocity_io[0,'out'].setlb(0.05)
+
+        if ((stage.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)
+                or (stage.config.pressure_change_type == PressureChangeType.calculated)):
+            stage.N_Re[0, 0].unfix()
+            #TODO: Pressure drop results are unreasonably high; set upper bound on deltaP or velocity?
+            # stage.deltaP.setlb(-8e5)
+            # stage.spacer_porosity.unfix()
+            # stage.spacer_porosity.setlb(0.75)
+            # stage.spacer_porosity.setub(0.9)
+            # stage.channel_height.unfix()
+            # stage.channel_height.setlb(0.75e-3)
+            # stage.channel_height.setub(2e-3)
+            # stage.velocity_io[0,'in'].setub(0.25)
+            # stage.velocity_io[0,'out'].setlb(0.05)
+        # stage.dP_dx_io.setlb(-1e5)
+
 
         if idx > m.fs.StageSet.first():
             stage.B_comp.unfix()
@@ -565,22 +581,25 @@ def display_RO_reports(m):
     for stage in m.fs.ROUnits.values():
         stage.report()
 
-
 if __name__ == "__main__":
-    # import sys
-    # if len(sys.argv) not in (2,3):
-    #     print("Usage 1: python lsrro.py number_of_stages")
-    #     print("Usage 2: python lsrro.py number_of_stages target_water_recovery_fraction")
-    # elif len(sys.argv) == 2:
-    #     m = main(int(sys.argv[1]))
-    #
-    # else:
-    #     m = main(int(sys.argv[1]), float(sys.argv[2]))
-    m = main(number_of_stages=5,
+    import sys
+
+    if len(sys.argv) == 2:
+        print("Usage 1: python lsrro.py number_of_stages")
+        m = main(int(sys.argv[1]))
+    elif len(sys.argv) == 3:
+        print("Usage 2: python lsrro.py number_of_stages target_water_recovery_fraction")
+        m = main(int(sys.argv[1]), float(sys.argv[2]))
+    else:
+        print("Usage 3 (specify inputs in main before running): python lsrro.py")
+        m = main(number_of_stages=8,
              water_recovery=0.75,
              Cin=70,
-             A_case="optimize",
-             B_case="optimize",
-             AB_tradeoff="no constraint",
-             # A_fixed=1.5/3.6e11
+             A_case="fix",
+             B_case="single optimum",
+             AB_tradeoff="inequality constraint",
+             nacl_solubility_limit=False,
+             has_CP=True,
+             has_Pdrop=True,
+             A_fixed=1.5/3.6e11
              )

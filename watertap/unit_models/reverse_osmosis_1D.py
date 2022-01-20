@@ -794,21 +794,22 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             var_dict["Membrane Length"] = self.length
         if hasattr(self, "width") or self.config.has_full_reporting:
             var_dict["Membrane Width"] = self.width
-        if hasattr(self, "deltaP_stage") or self.config.has_full_reporting:
+        if hasattr(self, "deltaP_stage") or (self.config.has_full_reporting and hasattr(self, "deltaP_stage")):
             var_dict["Pressure Change"] = self.deltaP_stage[time_point]
-        if hasattr(self, "N_Re") or self.config.has_full_reporting:
+        if hasattr(self, "N_Re") or (self.config.has_full_reporting and hasattr(self, "N_Re")):
             var_dict["Reynolds Number @Inlet"] = self.N_Re[time_point, x_in]
             var_dict["Reynolds Number @Outlet"] = self.N_Re[time_point, x_out]
-        if hasattr(self, "velocity") or self.config.has_full_reporting:
+        if hasattr(self, "velocity") or (self.config.has_full_reporting and hasattr(self, "velocity")):
             var_dict["Velocity @Inlet"] = self.velocity[time_point, x_in]
             var_dict["Velocity @Outlet"] = self.velocity[time_point, x_out]
         for j in self.config.property_package.solute_set:
-            if interface_inlet.is_property_constructed('conc_mass_phase_comp') or self.config.has_full_reporting:
-                var_dict[f'{j} Concentration @Inlet,Membrane-Interface '] = (
-                    interface_inlet.conc_mass_phase_comp['Liq', j])
-            if interface_outlet.is_property_constructed('conc_mass_phase_comp') or self.config.has_full_reporting:
-                var_dict[f'{j} Concentration @Outlet,Membrane-Interface '] = (
-                    interface_outlet.conc_mass_phase_comp['Liq', j])
+            if self.config.concentration_polarization_type != ConcentrationPolarizationType.none:
+                if interface_inlet.is_property_constructed('conc_mass_phase_comp') or self.config.has_full_reporting:
+                    var_dict[f'{j} Concentration @Inlet,Membrane-Interface '] = (
+                        interface_inlet.conc_mass_phase_comp['Liq', j])
+                if interface_outlet.is_property_constructed('conc_mass_phase_comp') or self.config.has_full_reporting:
+                    var_dict[f'{j} Concentration @Outlet,Membrane-Interface '] = (
+                        interface_outlet.conc_mass_phase_comp['Liq', j])
             if feed_inlet.is_property_constructed('conc_mass_phase_comp') or self.config.has_full_reporting:
                 var_dict[f'{j} Concentration @Inlet,Bulk'] = (
                     feed_inlet.conc_mass_phase_comp['Liq', j])
@@ -818,15 +819,16 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             if permeate.is_property_constructed('conc_mass_phase_comp') or self.config.has_full_reporting:
                 var_dict[f'{j} Permeate Concentration'] = (
                     permeate.conc_mass_phase_comp['Liq', j])
-        if interface_outlet.is_property_constructed('pressure_osm') or self.config.has_full_reporting:
-            var_dict['Osmotic Pressure @Outlet,Membrane-Interface '] = (
-                interface_outlet.pressure_osm)
+        if self.config.concentration_polarization_type != ConcentrationPolarizationType.none:
+            if interface_inlet.is_property_constructed('pressure_osm') or self.config.has_full_reporting:
+                var_dict['Osmotic Pressure @Inlet,Membrane-Interface'] = (
+                    interface_inlet.pressure_osm)
+            if interface_outlet.is_property_constructed('pressure_osm') or self.config.has_full_reporting:
+                var_dict['Osmotic Pressure @Outlet,Membrane-Interface '] = (
+                    interface_outlet.pressure_osm)
         if feed_outlet.is_property_constructed('pressure_osm') or self.config.has_full_reporting:
             var_dict['Osmotic Pressure @Outlet,Bulk'] = (
                 feed_outlet.pressure_osm)
-        if interface_inlet.is_property_constructed('pressure_osm') or self.config.has_full_reporting:
-            var_dict['Osmotic Pressure @Inlet,Membrane-Interface'] = (
-                interface_inlet.pressure_osm)
         if feed_inlet.is_property_constructed('pressure_osm') or self.config.has_full_reporting:
             var_dict['Osmotic Pressure @Inlet,Bulk'] = (
                 feed_inlet.pressure_osm)
@@ -836,15 +838,17 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         if feed_outlet.is_property_constructed('flow_vol_phase') or self.config.has_full_reporting:
             var_dict['Volumetric Flowrate @Outlet'] = (
                 feed_outlet.flow_vol_phase['Liq'])
-        if hasattr(self, 'dh') or self.config.has_full_reporting:
+        if hasattr(self, 'dh') or (self.config.has_full_reporting and hasattr(self, 'dh')):
             var_dict["Hydraulic Diameter"] = self.dh
 
         if self.config.has_full_reporting:
             expr_dict['Average Solvent Flux (LMH)'] = self.flux_mass_phase_comp_avg[time_point, 'Liq', 'H2O'] * 3.6e3
-            expr_dict['Average Reynolds Number'] = self.N_Re_avg[time_point]
+            if hasattr(self, 'N_Re'):
+                expr_dict['Average Reynolds Number'] = self.N_Re_avg[time_point]
             for j in self.config.property_package.solute_set:
                 expr_dict[f'{j} Average Solute Flux (GMH)'] = self.flux_mass_phase_comp_avg[time_point, 'Liq', j] * 3.6e6
-                expr_dict[f'{j} Average Mass Transfer Coefficient (mm/h)'] = self.Kf_avg[time_point, j] * 3.6e6
+                if hasattr(self, 'Kf'):
+                    expr_dict[f'{j} Average Mass Transfer Coefficient (mm/h)'] = self.Kf_avg[time_point, j] * 3.6e6
 
 
         # TODO: add more vars
