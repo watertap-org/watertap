@@ -189,7 +189,7 @@ def build(number_of_stages=2):
     for b in m.component_data_objects(Block, descend_into=True):
         # NaCl solubility limit
         if hasattr(b, 'is_property_constructed') and b.is_property_constructed('mass_frac_phase_comp'):
-            b.mass_frac_phase_comp['Liq', 'NaCl'].setub(0.30)
+            b.mass_frac_phase_comp['Liq', 'NaCl'].setub(0.2614)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -576,8 +576,8 @@ if __name__ == "__main__":
     #
     # else:
     #     m = main(int(sys.argv[1]), float(sys.argv[2]))
-    m = main(number_of_stages=3,
-             water_recovery=0.5,
+    m = main(number_of_stages=5,
+             water_recovery=0.75,
              Cin=70,
              A_case="optimize",
              B_case="optimize",
