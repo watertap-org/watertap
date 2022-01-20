@@ -13,6 +13,7 @@
 from pyomo.environ import (ConcreteModel,
                            SolverFactory,
                            assert_optimal_termination)
+from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -62,6 +63,7 @@ def main():
     m.fs.unit.overall_heat_transfer_coefficient.fix(1000)
 
     # solving
+    assert_units_consistent(m)
     degrees_of_freedom(m)
 
     m.fs.unit.initialize()
