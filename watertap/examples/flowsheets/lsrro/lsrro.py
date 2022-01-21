@@ -372,9 +372,9 @@ def initialize(m, verbose=False, solver=None):
         do_backwards_initialization_pass(m, optarg=optarg)
         do_initialization_pass(m, optarg=optarg, guess_mixers=False)
 
-    # set up SD tool
+    # # set up SD tool
     seq = SequentialDecomposition()
-    seq.options.tear_method = "Wegstein"
+    seq.options.tear_method = "Direct"
     seq.options.iterLim = m.fs.NumberOfStages
     seq.options.tear_set = list(m.fs.eq_pump_to_mixer.values())
     seq.options.log_info = True
@@ -383,6 +383,7 @@ def initialize(m, verbose=False, solver=None):
     def func_initialize(unit):
         outlvl = idaeslogger.INFO if verbose else idaeslogger.CRITICAL
         unit.initialize(optarg=solver.options, outlvl=outlvl)
+
     seq.run(m, func_initialize)
 
 
@@ -465,7 +466,7 @@ def optimize_set_up(m, water_recovery=None, A_case=None, B_case=None, AB_tradeof
         if idx > m.fs.StageSet.first():
             stage.B_comp.unfix()
             stage.B_comp.setlb(3.5e-8)
-            stage.B_comp.setub(3.5e-8 * 1e2)
+            stage.B_comp.setub(3.5e-8 * 1.6e2)
             if B_case == 'single optimum':
                 stage.B_comp_equal = Constraint(expr=stage.B_comp[0, 'NaCl'] == m.fs.B_comp_system)
             else:
@@ -475,9 +476,12 @@ def optimize_set_up(m, water_recovery=None, A_case=None, B_case=None, AB_tradeof
                 stage.A_comp.unfix()
                 stage.A_comp.setlb(2.78e-12)
                 stage.A_comp.setub(4.2e-11)
-            elif A_case == 'fix' and A_fixed is not None:
-                if not isinstance(A_fixed, (int, float)):
-                    raise ('A_fixed must be a numeric value')
+            elif A_case == 'fix':
+                if A_fixed is not None:
+                    if not isinstance(A_fixed, (int, float)):
+                        raise TypeError('A_fixed must be a numeric value')
+                elif A_fixed is None:
+                    raise TypeError('A value for A_fixed must be provided')
                 stage.A_comp.unfix()
                 stage.A_comp.fix(A_fixed)
             else:
@@ -592,11 +596,11 @@ if __name__ == "__main__":
         m = main(int(sys.argv[1]), float(sys.argv[2]))
     else:
         print("Usage 3 (specify inputs in main before running): python lsrro.py")
-        m = main(number_of_stages=8,
-             water_recovery=0.75,
+        m = main(number_of_stages=5,
+             water_recovery=0.70,
              Cin=70,
-             A_case="fix",
-             B_case="single optimum",
+             A_case="optimize",
+             B_case="optimize",
              AB_tradeoff="inequality constraint",
              nacl_solubility_limit=False,
              has_CP=True,
