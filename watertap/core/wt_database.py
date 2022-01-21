@@ -179,7 +179,7 @@ class Database:
         else:
             # Else load data from required file
             try:
-                with open(os.path.join(self._dbpath, technology+".yml"),
+                with open(os.path.join(self._dbpath, technology+".yaml"),
                           "r") as f:
                     lines = f.read()
                     f.close()
