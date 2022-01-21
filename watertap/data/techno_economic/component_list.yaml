@@ -2,6 +2,8 @@ arsenic:
   constituent_longform: Arsenic
 barium:
   constituent_longform: Barium
+bicarbonate_alkalinity_as_caco3:
+  constituent_longform: Bicarbonate Alkalinity as CaCO3
 bod:
   constituent_longform: Biological Oxygen Demand (BOD)
 boron:

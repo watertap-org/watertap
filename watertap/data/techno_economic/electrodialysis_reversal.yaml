@@ -29,14 +29,6 @@ default:
     value: 0
     units: dimensionless
   removal_frac_mass_solute:
-    ph_max:
-      value: -0.77
-      units: dimensionless
-      constituent_longform: pH_Max
-    ph_min:
-      value: -0.77
-      units: dimensionless
-      constituent_longform: pH_Min
     tds:
       value: 0.808696
       units: dimensionless
@@ -56,11 +48,7 @@ default:
     nitrate:
       value: 0.881773
       units: dimensionless
-      constituent_longform: Nitrate-N, Dissolved
-    nitrate_as_nitrogen:
-      value: 0.881773
-      units: dimensionless
-      constituent_longform: Nitrate (measured as Nitrogen)
+      constituent_longform: Nitrate
     chloride:
       value: 0.891013
       units: dimensionless
