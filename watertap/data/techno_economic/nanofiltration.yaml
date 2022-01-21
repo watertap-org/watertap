@@ -24,7 +24,7 @@ default:
   recovery_vol:
     value: 0.85
     units: dimensionless
-    reference: Based on Vogtle case study data. No costs for WT3 treatment.
+    reference: Based on Vogtle case study data.
   default_removal_frac_mass_solute:
     value: 0
     units: dimensionless
