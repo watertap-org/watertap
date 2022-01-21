@@ -20,7 +20,7 @@ def pytest_addoption(parser: Parser):
     parser.addoption(
         "--edb-no-mock",
         help="Force the `edb` fixture to connect to a running MongoDB instance "
-             "instead of falling back to mongomock",
+        "instead of falling back to mongomock",
         action="store_true",
         default=False,
         dest="edb_no_mock",

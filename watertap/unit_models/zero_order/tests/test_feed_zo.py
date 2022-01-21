@@ -56,14 +56,15 @@ class TestFeedZO:
 
         model.fs.unit.load_feed_data_from_database()
 
-        assert pytest.approx(data["default_flow"]["value"],
-                             rel=1e-12) == value(
-            model.fs.unit.outlet.flow_vol[0])
+        assert pytest.approx(data["default_flow"]["value"], rel=1e-12) == value(
+            model.fs.unit.outlet.flow_vol[0]
+        )
         assert model.fs.unit.outlet.flow_vol[0].fixed
 
         for j, v in data["solutes"].items():
             assert pytest.approx(v["value"], rel=1e-12) == value(
-                model.fs.unit.outlet.conc_mass_comp[0, j])
+                model.fs.unit.outlet.conc_mass_comp[0, j]
+            )
             assert model.fs.unit.outlet.conc_mass_comp[0, j].fixed
 
     @pytest.mark.unit
@@ -92,14 +93,15 @@ class TestFeedZO:
         model.fs.unit.load_feed_data_from_database(overwrite=True)
 
         # This should have reset the value of all variables
-        assert pytest.approx(data["default_flow"]["value"],
-                             rel=1e-12) == value(
-            model.fs.unit.outlet.flow_vol[0])
+        assert pytest.approx(data["default_flow"]["value"], rel=1e-12) == value(
+            model.fs.unit.outlet.flow_vol[0]
+        )
         assert model.fs.unit.outlet.flow_vol[0].fixed
 
         for j, v in data["solutes"].items():
             assert pytest.approx(v["value"], rel=1e-12) == value(
-                model.fs.unit.outlet.conc_mass_comp[0, j])
+                model.fs.unit.outlet.conc_mass_comp[0, j]
+            )
             assert model.fs.unit.outlet.conc_mass_comp[0, j].fixed
 
     @pytest.mark.unit
@@ -119,7 +121,11 @@ class TestFeedZO:
 
         model.fs.unit.load_feed_data_from_database(overwrite=True)
 
-        assert ("fs.unit no default flowrate was defined in database water "
-                "source. Value was not fixed.") in caplog.text
-        assert ("fs.unit component tds was not defined in database water "
-                "source. Value was not fixed.") in caplog.text
+        assert (
+            "fs.unit no default flowrate was defined in database water "
+            "source. Value was not fixed."
+        ) in caplog.text
+        assert (
+            "fs.unit component tds was not defined in database water "
+            "source. Value was not fixed."
+        ) in caplog.text

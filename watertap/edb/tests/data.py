@@ -16,7 +16,9 @@ Shared input data for tests
 from pyomo.environ import units as pyunits
 from idaes.core.phases import PhaseType as PT
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
-from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
+    log_power_law_equil,
+)
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
     van_t_hoff,
 )
@@ -25,7 +27,8 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
     ConcentrationForm,
 )
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import (
-    gibbs_energy, van_t_hoff
+    gibbs_energy,
+    van_t_hoff,
 )
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import (
     log_power_law_equil,
@@ -78,7 +81,7 @@ _component = {
     },
     "name": "Ca[OH]2",
     "type": "solute",
-    "elements": ["Ca", "O", "H"]
+    "elements": ["Ca", "O", "H"],
 }
 
 reaction_data = [_reaction, _reaction]
@@ -192,13 +195,14 @@ bicarbonate_reaction_data = {
     "name": "H2CO3_Ka2",
     "components": ["H2CO3", "Ka2"],
     "reactant_elements": ["H", "O", "C"],
-    "type": "equilibrium"
+    "type": "equilibrium",
 }
 
 # ==========================================================
 
 from idaes.generic_models.properties.core.pure.Perrys import Perrys
 from idaes.generic_models.properties.core.pure.NIST import NIST
+
 # Import statements to be used in the starter config dict
 from idaes.core import VaporPhase, AqueousPhase
 from idaes.core.components import Solvent, Solute, Cation, Anion

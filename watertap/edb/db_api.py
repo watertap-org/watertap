@@ -156,11 +156,14 @@ class ElectrolyteDB:
             mc = None
             self._mongoclient_connect_status["initial"] = str(conn_err)
             if "CERTIFICATE_VERIFY_FAILED" in str(conn_err):
-                _log.warning(f"MongoDB connection failed due to certificate "
-                             f"verification.")
+                _log.warning(
+                    f"MongoDB connection failed due to certificate " f"verification."
+                )
                 if certifi is not None:
-                    _log.info("Retrying MongoDB connection with explicit location "
-                              f"for client certificates ({certifi.where()})")
+                    _log.info(
+                        "Retrying MongoDB connection with explicit location "
+                        f"for client certificates ({certifi.where()})"
+                    )
                     try:
                         mc = MongoClient(url, tlsCAFile=certifi.where(), **client_kw)
                         mc.admin.command("ismaster")
@@ -282,11 +285,11 @@ class ElectrolyteDB:
                         disallow = True
                     for n in item[stoich_field][phase]:
                         stoich[n] = item[stoich_field][phase][n]
-                #If the item involves a phase that is not allowed, then move on to next item
-                if (disallow):
+                # If the item involves a phase that is not allowed, then move on to next item
+                if disallow:
                     continue
-                #If stoich is empty, then move on to next item
-                if (stoich == {}):
+                # If stoich is empty, then move on to next item
+                if stoich == {}:
                     continue
                 if any_components:
                     # look for non-empty intersection
@@ -301,9 +304,11 @@ class ElectrolyteDB:
                         # Add a reaction if all the products/reactants
                         #   can be formed. This allows addition of reactions
                         #   that may include species not yet considered.
-                        if (include_new_components == True):
+                        if include_new_components == True:
                             for side in -1, 1:
-                                side_keys = (k for k, v in stoich.items() if abs(v)/v == side)
+                                side_keys = (
+                                    k for k, v in stoich.items() if abs(v) / v == side
+                                )
                                 if set(side_keys).issubset(cnames):
                                     found.append(item)
                                     break  # found; stop
@@ -398,7 +403,8 @@ class ElectrolyteDB:
     @staticmethod
     def _process_reaction(rec):
         rec["reactant_elements"] = get_elements_from_components(
-            rec.get("components", []))
+            rec.get("components", [])
+        )
 
         # If reaction_order is not present in parameters, create it by
         # copying the stoichiometry (or empty for each phase, if stoich. not found)
@@ -407,7 +413,8 @@ class ElectrolyteDB:
             if Reaction.NAMES.reaction_order not in param:
                 if Reaction.NAMES.stoich in rec:
                     param[Reaction.NAMES.reaction_order] = rec[
-                        Reaction.NAMES.stoich].copy()
+                        Reaction.NAMES.stoich
+                    ].copy()
                 else:
                     param[Reaction.NAMES.reaction_order] = {
                         phase: {} for phase in Reaction.PHASES

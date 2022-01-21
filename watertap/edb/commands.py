@@ -86,7 +86,8 @@ def command_base(verbose, quiet):
     if verbose > 0:
         _h = logging.StreamHandler()
         _h.setFormatter(
-            logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s"))
+            logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s")
+        )
         log_root.addHandler(_h)
         log_root.setLevel(level_from_verbosity(verbose))
     else:
@@ -284,8 +285,7 @@ def abort_drop_db(ctx, param, value):
     "-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB
 )
 @click.option(
-    "--yes",
-    is_flag=True,
+    "--yes", is_flag=True,
 )
 def drop_database(url, database, yes):
     print_messages = _log.isEnabledFor(logging.ERROR)

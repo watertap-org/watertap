@@ -36,9 +36,7 @@ from idaes.core.util import scaling as iscale
 from idaes.core.util import get_solver
 
 # Import idaes methods to check the model during construction
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-)
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import the idaes objects for Generic Properties and Reactions
 from idaes.generic_models.properties.core.generic.generic_property import (
@@ -452,8 +450,8 @@ reaction_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (55.830, pyunits.J/pyunits.mol),
-                "k_eq_ref": (10**-14/55.2/55.2, pyunits.dimensionless),
+                "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                "k_eq_ref": (10 ** -14 / 55.2 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
                 #    manually set reaction order here to override
@@ -478,7 +476,7 @@ reaction_config = {
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
                 "dh_rxn_ref": (0, pyunits.kJ / pyunits.mol),
-                "k_eq_ref": (1.7*10**-3, pyunits.dimensionless),
+                "k_eq_ref": (1.7 * 10 ** -3, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
                 #    manually set reaction order here to override
@@ -502,8 +500,8 @@ reaction_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (7.7, pyunits.kJ/pyunits.mol),
-                "k_eq_ref": (10**-6.35/55.2, pyunits.dimensionless),
+                "dh_rxn_ref": (7.7, pyunits.kJ / pyunits.mol),
+                "k_eq_ref": (10 ** -6.35 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
                 #    manually set reaction order here to override
@@ -527,8 +525,8 @@ reaction_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (14.9, pyunits.kJ/pyunits.mol),
-                "k_eq_ref": (10**-10.33/55.2, pyunits.dimensionless),
+                "dh_rxn_ref": (14.9, pyunits.kJ / pyunits.mol),
+                "k_eq_ref": (10 ** -10.33 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
                 #    manually set reaction order here to override
@@ -576,15 +574,15 @@ class TestCarbonationProcess:
         model.fs.unit.inlet.pressure.fix(101325.0)
         model.fs.unit.inlet.temperature.fix(298.0)
 
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H_+"].fix( 0.0 )
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "OH_-"].fix( 0.0 )
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2CO3"].fix( 0.0 )
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "HCO3_-"].fix( 0.0 )
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO3_2-"].fix( 0.0 )
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Vap", "CO2"].fix( 0.0005*10 )
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO2"].fix( 0.0 )
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Vap", "H2O"].fix( 0.0 )
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix( (1 - 0.0005)*10 )
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H_+"].fix(0.0)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "OH_-"].fix(0.0)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2CO3"].fix(0.0)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "HCO3_-"].fix(0.0)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO3_2-"].fix(0.0)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Vap", "CO2"].fix(0.0005 * 10)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO2"].fix(0.0)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Vap", "H2O"].fix(0.0)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix((1 - 0.0005) * 10)
 
         return model
 
@@ -677,12 +675,24 @@ class TestCarbonationProcess:
         )
         assert pytest.approx(55.165246, rel=1e-4) == total_molar_density
         pH = -value(
-            log10(value(model.fs.unit.control_volume.properties_out[0.0].
-                mole_frac_phase_comp["Liq","H_+"]) * total_molar_density)
+            log10(
+                value(
+                    model.fs.unit.control_volume.properties_out[
+                        0.0
+                    ].mole_frac_phase_comp["Liq", "H_+"]
+                )
+                * total_molar_density
+            )
         )
         pOH = -value(
-            log10(value(model.fs.unit.control_volume.properties_out[0.0].
-                mole_frac_phase_comp["Liq","OH_-"])  * total_molar_density)
+            log10(
+                value(
+                    model.fs.unit.control_volume.properties_out[
+                        0.0
+                    ].mole_frac_phase_comp["Liq", "OH_-"]
+                )
+                * total_molar_density
+            )
         )
         assert pytest.approx(5.339891, rel=1e-4) == pH
         assert pytest.approx(8.660655, rel=1e-4) == pOH

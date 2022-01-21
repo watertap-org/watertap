@@ -414,9 +414,7 @@ def test_thermoconfig_set_type():
 
     # water -> solvent
     data = {
-        "parameter_data": {
-            "mw": [{"v": 18.0153, "u": "g/mol", "i": 0}],
-        },
+        "parameter_data": {"mw": [{"v": 18.0153, "u": "g/mol", "i": 0}],},
         "name": "H2O",
         "elements": ["O", "H"],
     }
@@ -426,9 +424,7 @@ def test_thermoconfig_set_type():
 
     # neutral non-water -> solute
     data = {
-        "parameter_data": {
-            "mw": [{"v": 96.994, "u": "g/mol", "i": 0}],
-        },
+        "parameter_data": {"mw": [{"v": 96.994, "u": "g/mol", "i": 0}],},
         "name": "H2PO4",
         "elements": ["O", "H", "P"],
     }
@@ -438,9 +434,7 @@ def test_thermoconfig_set_type():
 
     # positive charge -> cation
     data = {
-        "parameter_data": {
-            "mw": [{"v": 57.002, "u": "g/mol", "i": 0}],
-        },
+        "parameter_data": {"mw": [{"v": 57.002, "u": "g/mol", "i": 0}],},
         "name": "CaOH +",
         "elements": ["Ca", "O", "H"],
     }
@@ -450,9 +444,7 @@ def test_thermoconfig_set_type():
 
     # negative charge -> anion
     data = {
-        "parameter_data": {
-            "mw": [{"v": 17.008, "u": "g/mol", "i": 0}],
-        },
+        "parameter_data": {"mw": [{"v": 17.008, "u": "g/mol", "i": 0}],},
         "name": "OH -",
         "elements": ["O", "H"],
     }
@@ -463,9 +455,7 @@ def test_thermoconfig_set_type():
     # already present, even if wrong, leave alone
     data = {
         "type": "solvent",
-        "parameter_data": {
-            "mw": [{"v": 17.008, "u": "g/mol", "i": 0}],
-        },
+        "parameter_data": {"mw": [{"v": 17.008, "u": "g/mol", "i": 0}],},
         "name": "OH -",
         "elements": ["O", "H"],
     }
@@ -479,20 +469,20 @@ def test_reaction_order():
     # minimal Reaction object to work with
     def reaction():
         return Reaction(
-        {
-            "name": "foo",
-            "components": [],
-            "elements": ["Ca", "O", "H"],
-            # valid chemistry? no. useful? yes.
-            Reaction.NAMES.param: {
-                "reaction_order": {
-                    "Liq": {"B": 2, "C": 1, "H": 1},
-                    "Vap": {"B": 1, "C": -2, "H": 1},
-                    "Sol": {"B": -1, "C": 2, "H": 0},
-                }
-            },
-            "type": "equilibrium",
-        }
+            {
+                "name": "foo",
+                "components": [],
+                "elements": ["Ca", "O", "H"],
+                # valid chemistry? no. useful? yes.
+                Reaction.NAMES.param: {
+                    "reaction_order": {
+                        "Liq": {"B": 2, "C": 1, "H": 1},
+                        "Vap": {"B": 1, "C": -2, "H": 1},
+                        "Sol": {"B": -1, "C": 2, "H": 0},
+                    }
+                },
+                "type": "equilibrium",
+            }
         )
 
     # the error you get when the input doesn't pass JSON schema validation
@@ -503,9 +493,15 @@ def test_reaction_order():
     # Reaction missing reaction_order, still OK handled in pre-processing
     # but empty input list causes an error
     with pytest.raises(ValueError):
-        Reaction({"components": [], "elements": ["H"], Reaction.NAMES.param: {},
-                  "type": "equilibrium", "name": "Foo"}).set_reaction_order(
-                    "Foo", {})
+        Reaction(
+            {
+                "components": [],
+                "elements": ["H"],
+                Reaction.NAMES.param: {},
+                "type": "equilibrium",
+                "name": "Foo",
+            }
+        ).set_reaction_order("Foo", {})
     # Invalid phase
     r = reaction()
     with pytest.raises(ValueError):  # bad phase

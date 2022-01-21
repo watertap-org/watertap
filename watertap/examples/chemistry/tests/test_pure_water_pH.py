@@ -108,21 +108,14 @@ class Variant(str, enum.Enum):
     inherent = "inherent"
 
     def __str__(self):
-        return f'{self.__class__.__name__}.{self.name}'
+        return f"{self.__class__.__name__}.{self.name}"
 
     @property
     def is_equilibrium(self):
         return self is Variant.equilibrium
 
 
-@pytest.fixture(
-    scope="module",
-    params=[
-        Variant.equilibrium,
-        Variant.inherent
-    ],
-    ids=str
-)
+@pytest.fixture(scope="module", params=[Variant.equilibrium, Variant.inherent], ids=str)
 def variant(request) -> Variant:
     return request.param
 
@@ -291,9 +284,7 @@ def thermo_config(base_units):
             },
         },
         # End Component list
-        "phases": {
-            "Liq": {"type": AqueousPhase, "equation_of_state": Ideal},
-        },
+        "phases": {"Liq": {"type": AqueousPhase, "equation_of_state": Ideal},},
         "state_definition": FTPx,
         "state_bounds": {
             "flow_mol": (0, 50, 100),
@@ -329,7 +320,7 @@ def thermo_config(base_units):
                 # End parameter_data
             }
             # End R1
-        }
+        },
     }
     return data
 
@@ -370,14 +361,16 @@ def water_reaction_config(base_units):
     }
     # End reaction_config definition
 
-def _get_without_inherent_reactions(config_dict: dict, key="inherent_reactions") -> dict:
+
+def _get_without_inherent_reactions(
+    config_dict: dict, key="inherent_reactions"
+) -> dict:
     data = dict(config_dict)
     del data[key]
     return data
 
+
 class TestPureWater:
-
-
     @pytest.fixture
     def model(self, thermo_config, variant: Variant, water_reaction_config):
         if variant.is_equilibrium:
@@ -387,7 +380,10 @@ class TestPureWater:
         model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
         print(water_reaction_config)
         model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params, **water_reaction_config}
+            default={
+                "property_package": model.fs.thermo_params,
+                **water_reaction_config,
+            }
         )
         model.fs.unit = EquilibriumReactor(
             default={
@@ -445,8 +441,8 @@ class TestPureWater:
             Variant.equilibrium: {
                 number_variables: 75,
                 number_total_constraints: 28,
-                number_unused_variables: 6
-            }
+                number_unused_variables: 6,
+            },
         }
         return expected[variant]
 
@@ -571,8 +567,9 @@ class TestPureWater:
         def _collect_data_to_check(m):
             return {
                 fixed_variables_set: fixed_variables_set(m),
-                activated_constraints_set: activated_constraints_set(m)
+                activated_constraints_set: activated_constraints_set(m),
             }
+
         data_before = _collect_data_to_check(model)
         model.fs.unit.initialize(state_args=state_args, optarg=solver.options)
 
@@ -634,7 +631,6 @@ class TestPureWater:
 
 
 class TestPureWaterEDB(TestPureWater):
-
     @pytest.fixture
     def thermo_config(self, edb):
         base = edb.get_base("default_thermo")
@@ -657,7 +653,6 @@ class TestPureWaterEDB(TestPureWater):
             r._data["type"] = "inherent"
             base.add(r)
         return base.idaes_config
-
 
     @pytest.fixture
     def water_reaction_config(self, edb):

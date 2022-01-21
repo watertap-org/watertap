@@ -65,18 +65,21 @@ class FeedZOData(FeedData):
                 try:
                     val = data["default_flow"]["value"]
                     units = getattr(pyunits, data["default_flow"]["units"])
-                    self.outlet.flow_vol[t].fix(val*units)
+                    self.outlet.flow_vol[t].fix(val * units)
                 except KeyError:
                     _log.info(
                         f"{self.name} no default flowrate was defined "
-                        f"in database water source. Value was not fixed.")
+                        f"in database water source. Value was not fixed."
+                    )
 
         for (t, j), v in self.outlet.conc_mass_comp.items():
             if overwrite or not v.fixed:
                 try:
                     val = data["solutes"][j]["value"]
                     units = getattr(pyunits, data["solutes"][j]["units"])
-                    v.fix(val*units)
+                    v.fix(val * units)
                 except KeyError:
-                    _log.info(f"{self.name} component {j} was not defined in "
-                              f"database water source. Value was not fixed.")
+                    _log.info(
+                        f"{self.name} component {j} was not defined in "
+                        f"database water source. Value was not fixed."
+                    )

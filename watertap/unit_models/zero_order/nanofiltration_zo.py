@@ -36,20 +36,26 @@ class NanofiltrationZOData(SIDOBaseData):
         super().build()
 
         # Add electricity consumption to model
-        self.electricity = Var(self.flowsheet().time,
-                               units=pyunits.kW,
-                               doc="Electricity consumption of unit")
+        self.electricity = Var(
+            self.flowsheet().time,
+            units=pyunits.kW,
+            doc="Electricity consumption of unit",
+        )
         self.electricity_intensity = Var(
-            units=pyunits.kWh/pyunits.m**3,
-            doc="Electricity intensity of unit")
+            units=pyunits.kWh / pyunits.m ** 3, doc="Electricity intensity of unit"
+        )
 
         def electricity_consumption(b, t):
             return b.electricity[t] == (
-                b.electricity_intensity *
-                pyunits.convert(b.properties_in[t].flow_vol,
-                                to_units=pyunits.m**3/pyunits.hour))
-        self.electricity_consumption = Constraint(self.flowsheet().time,
-                                                  rule=electricity_consumption)
+                b.electricity_intensity
+                * pyunits.convert(
+                    b.properties_in[t].flow_vol, to_units=pyunits.m ** 3 / pyunits.hour
+                )
+            )
+
+        self.electricity_consumption = Constraint(
+            self.flowsheet().time, rule=electricity_consumption
+        )
 
     def load_parameters_from_database(self, use_default_removal=False):
         """
@@ -65,7 +71,8 @@ class NanofiltrationZOData(SIDOBaseData):
         """
         # Get parameter dict from database
         pdict = self.config.database.get_unit_operation_parameters(
-            "nanofiltration", subtype=self.config.process_subtype)
+            "nanofiltration", subtype=self.config.process_subtype
+        )
 
         self.set_recovery_and_removal(pdict, use_default_removal)
 

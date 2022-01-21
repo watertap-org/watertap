@@ -12,6 +12,7 @@
 ###############################################################################
 
 from pyomo.environ import Constraint
+
 # Import IDAES cores
 from idaes.generic_models.unit_models.separator import SeparatorData
 from idaes.core import declare_process_block_class
@@ -20,6 +21,7 @@ from pyomo.environ import Block
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
+
 
 @declare_process_block_class("Separator")
 class SeparatorData(SeparatorData):
@@ -36,4 +38,3 @@ class SeparatorData(SeparatorData):
     def get_costing(self, module=None, **kwargs):
         self.costing = Block()
         module.Separator_costing(self.costing, **kwargs)
-

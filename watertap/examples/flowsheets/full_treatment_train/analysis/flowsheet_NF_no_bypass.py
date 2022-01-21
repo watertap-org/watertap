@@ -40,7 +40,7 @@ def solve_flowsheet():
 
 def simulate(m, **kwargs):
     if kwargs is not None:
-        if kwargs['unfix_nf_area']:
+        if kwargs["unfix_nf_area"]:
             m.fs.NF.area.unfix()
 
     flowsheet_NF.simulate(m)

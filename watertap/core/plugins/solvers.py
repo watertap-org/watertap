@@ -16,26 +16,35 @@ from pyomo.core.base.block import _BlockData
 from pyomo.core.kernel.block import IBlock
 from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
 
-from idaes.core.util.scaling import (constraint_autoscale_large_jac,
-        get_scaling_factor, set_scaling_factor, unset_scaling_factor)
+from idaes.core.util.scaling import (
+    constraint_autoscale_large_jac,
+    get_scaling_factor,
+    set_scaling_factor,
+    unset_scaling_factor,
+)
 from idaes.logger import getLogger
 
 _log = getLogger("watertap.core")
 
 
-@pyo.SolverFactory.register("ipopt-watertap",
-        doc="The Ipopt NLP solver, with user-based variable and automatic Jacobian constraint scaling")
+@pyo.SolverFactory.register(
+    "ipopt-watertap",
+    doc="The Ipopt NLP solver, with user-based variable and automatic Jacobian constraint scaling",
+)
 class IpoptWaterTAP(IPOPT):
-
     def __init__(self, **kwds):
         kwds["name"] = "ipopt-watertap"
         super().__init__(**kwds)
 
     def _presolve(self, *args, **kwds):
         if len(args) > 1 or len(args) == 0:
-            raise TypeError(f"IpoptWaterTAP.solve takes 1 positional argument but {len(args)} were given")
+            raise TypeError(
+                f"IpoptWaterTAP.solve takes 1 positional argument but {len(args)} were given"
+            )
         if not isinstance(args[0], (_BlockData, IBlock)):
-            raise TypeError("IpoptWaterTAP.solve takes 1 positional argument: a Pyomo ConcreteModel or Block")
+            raise TypeError(
+                "IpoptWaterTAP.solve takes 1 positional argument: a Pyomo ConcreteModel or Block"
+            )
 
         self._tee = kwds.get("tee", False)
 
@@ -52,7 +61,9 @@ class IpoptWaterTAP(IPOPT):
             return
 
         if self._tee:
-            print("ipopt-watertap: Ipopt with user variable scaling and IDAES jacobian constraint scaling")
+            print(
+                "ipopt-watertap: Ipopt with user variable scaling and IDAES jacobian constraint scaling"
+            )
 
         # These options are typically available with gradient-scaling, and they
         # have corresponding options in the IDAES constraint_autoscale_large_jac
@@ -77,20 +88,28 @@ class IpoptWaterTAP(IPOPT):
         #       so that repeated calls to solve change the scaling
         #       each time based on the initial values, just like in Ipopt.
         try:
-            constraint_autoscale_large_jac(self._model,
-                    ignore_constraint_scaling=ignore_constraint_scaling,
-                    ignore_variable_scaling=ignore_variable_scaling,
-                    max_grad=max_grad,
-                    min_scale=min_scale)
+            constraint_autoscale_large_jac(
+                self._model,
+                ignore_constraint_scaling=ignore_constraint_scaling,
+                ignore_variable_scaling=ignore_variable_scaling,
+                max_grad=max_grad,
+                min_scale=min_scale,
+            )
         except AssertionError as err:
             if str(err) == "Error in AMPL evaluation":
-                print("ipopt-watertap: Issue in AMPL function evaluation; Jacobian constraint scaling not applied.")
+                print(
+                    "ipopt-watertap: Issue in AMPL function evaluation; Jacobian constraint scaling not applied."
+                )
                 halt_on_ampl_error = self.options.get("halt_on_ampl_error", "yes")
-                if halt_on_ampl_error == "no" :
-                    print("ipopt-watertap: halt_on_ampl_error=no, so continuing with optimization.")
+                if halt_on_ampl_error == "no":
+                    print(
+                        "ipopt-watertap: halt_on_ampl_error=no, so continuing with optimization."
+                    )
                 else:
-                    raise RuntimeError("Error in AMPL evaluation.\n"
-                            "Run ipopt with halt_on_ampl_error=yes and symbolic_solver_labels=True to see the affected function.")
+                    raise RuntimeError(
+                        "Error in AMPL evaluation.\n"
+                        "Run ipopt with halt_on_ampl_error=yes and symbolic_solver_labels=True to see the affected function."
+                    )
             else:
                 print("Error in constraint_autoscale_large_jac")
                 raise
@@ -107,9 +126,12 @@ class IpoptWaterTAP(IPOPT):
         return super()._postsolve()
 
     def _cache_scaling_factors(self):
-        self._scaling_cache = [ (c, get_scaling_factor(c)) for c in
-                self._model.component_data_objects(
-                    pyo.Constraint, active=True, descend_into=True)]
+        self._scaling_cache = [
+            (c, get_scaling_factor(c))
+            for c in self._model.component_data_objects(
+                pyo.Constraint, active=True, descend_into=True
+            )
+        ]
 
     def _reset_scaling_factors(self):
         for c, s in self._scaling_cache:
@@ -137,14 +159,17 @@ class IpoptWaterTAP(IPOPT):
             self.options["nlp_scaling_method"] = "user-scaling"
         if self.options["nlp_scaling_method"] != "user-scaling":
             if self._tee:
-                print("The ipopt-watertap solver is designed to be run with user-scaling. "
-                        f"Ipopt with nlp_scaling_method={self.options['nlp_scaling_method']} will be used instead")
+                print(
+                    "The ipopt-watertap solver is designed to be run with user-scaling. "
+                    f"Ipopt with nlp_scaling_method={self.options['nlp_scaling_method']} will be used instead"
+                )
             return False
         return True
 
 
 ## reconfigure IDAES to use the ipopt-watertap solver
 import idaes
+
 _default_solver_config_value = idaes.cfg.get("default_solver")
 _idaes_default_solver = _default_solver_config_value._default
 

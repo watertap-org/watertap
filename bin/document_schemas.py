@@ -39,6 +39,7 @@ from json_schema_for_humans.generate import generate_from_file_object
 import json
 from pathlib import Path
 import sys
+
 # package
 from watertap.edb.schemas import schemas
 

@@ -12,13 +12,20 @@
 ###############################################################################
 
 from idaes.core.util import get_solver
-from watertap.tools.parameter_sweep import UniformSample, NormalSample, LatinHypercubeSample, parameter_sweep
+from watertap.tools.parameter_sweep import (
+    UniformSample,
+    NormalSample,
+    LatinHypercubeSample,
+    parameter_sweep,
+)
 
-from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (build,
+from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
+    build,
     set_operating_conditions,
     initialize_system,
     solve,
-    optimize)
+    optimize,
+)
 
 
 def get_sweep_params(m, use_LHS=False):
@@ -26,16 +33,21 @@ def get_sweep_params(m, use_LHS=False):
 
     # Define the sampling type and ranges for three different variables
     if use_LHS:
-        sweep_params['A_comp'] = LatinHypercubeSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
-        sweep_params['B_comp'] = LatinHypercubeSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
-        sweep_params['Spacer_porosity'] = LatinHypercubeSample(m.fs.RO.spacer_porosity, 0.95, 0.99)
+        sweep_params["A_comp"] = LatinHypercubeSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
+        sweep_params["B_comp"] = LatinHypercubeSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
+        sweep_params["Spacer_porosity"] = LatinHypercubeSample(
+            m.fs.RO.spacer_porosity, 0.95, 0.99
+        )
 
     else:
-        sweep_params['A_comp'] = NormalSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
-        sweep_params['B_comp'] = NormalSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
-        sweep_params['Spacer_porosity'] = UniformSample(m.fs.RO.spacer_porosity, 0.95, 0.99)
+        sweep_params["A_comp"] = NormalSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
+        sweep_params["B_comp"] = NormalSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
+        sweep_params["Spacer_porosity"] = UniformSample(
+            m.fs.RO.spacer_porosity, 0.95, 0.99
+        )
 
     return sweep_params
+
 
 def run_parameter_sweep(results_file, seed=None, use_LHS=False):
 
@@ -47,7 +59,7 @@ def run_parameter_sweep(results_file, seed=None, use_LHS=False):
     set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=solver)
     initialize_system(m, solver=solver)
 
-    # Simulate once outside the parameter sweep to ensure everything is appropriately initialized 
+    # Simulate once outside the parameter sweep to ensure everything is appropriately initialized
     solve(m, solver=solver)
 
     # Define the sampling type and ranges for three different variables
@@ -55,18 +67,27 @@ def run_parameter_sweep(results_file, seed=None, use_LHS=False):
 
     # Define the outputs to be saved
     outputs = {}
-    outputs['EC'] = m.fs.specific_energy_consumption
-    outputs['LCOW'] = m.fs.costing.LCOW
+    outputs["EC"] = m.fs.specific_energy_consumption
+    outputs["LCOW"] = m.fs.costing.LCOW
 
     # Run the parameter sweep study using num_samples randomly drawn from the above range
     num_samples = 10
 
     # Run the parameter sweep
-    global_results = parameter_sweep(m, sweep_params, outputs, results_file=results_file, 
-        optimize_function=optimize, optimize_kwargs={'solver':solver}, num_samples=num_samples, seed=seed)
+    global_results = parameter_sweep(
+        m,
+        sweep_params,
+        outputs,
+        results_file=results_file,
+        optimize_function=optimize,
+        optimize_kwargs={"solver": solver},
+        num_samples=num_samples,
+        seed=seed,
+    )
 
     return global_results
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # For testing this file, a seed needs to be provided as an additional argument, i.e. seed=1
-    run_parameter_sweep('output/monte_carlo_results.csv')
+    run_parameter_sweep("output/monte_carlo_results.csv")

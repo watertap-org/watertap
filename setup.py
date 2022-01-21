@@ -103,11 +103,7 @@ setup(
         'pywin32==225 ; platform_system=="Windows" and python_version>="3.8"',
     ],
     extras_require={
-        "testing": [
-            "pytest",
-            "json-schema-for-humans",
-            "mongomock",
-        ],
+        "testing": ["pytest", "json-schema-for-humans", "mongomock",],
         "dev": [
             "myst-parser",  # markdown support for Sphinx
             "nbsphinx",  # jupyter notebook support for sphinx
@@ -120,20 +116,12 @@ setup(
             # other requirements
             "pytest",  # test framework
             "pytest-cov",  # code coverage
-            "mongomock", # mongodb mocking for testing
+            "mongomock",  # mongodb mocking for testing
         ],
     },
-    package_data={  # Optional
-        "": [
-            "*.json",
-            "*.yaml",
-            "*.yml",
-        ],
-    },
+    package_data={"": ["*.json", "*.yaml", "*.yml",],},  # Optional
     entry_points={
         # add edb CLI commands
-        "console_scripts": [
-            "edb = watertap.edb.commands:command_base",
-        ]
+        "console_scripts": ["edb = watertap.edb.commands:command_base",]
     },
 )

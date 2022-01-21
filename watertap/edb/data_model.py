@@ -400,9 +400,7 @@ class ThermoConfig(ConfigGenerator):
             "nist": NIST,
             "relative_permittivity_constant": relative_permittivity_constant,
         },
-        "phase_equilibrium_form.*": {
-            "fugacity": fugacity,
-        },
+        "phase_equilibrium_form.*": {"fugacity": fugacity,},
         "type": {
             "solvent": Solvent,
             "solute": Solute,
@@ -443,7 +441,6 @@ class ThermoConfig(ConfigGenerator):
         for name in data["components"]:
             cls._key_to_tuple(data["components"][name], "phase_equilibrium_form")
 
-
     @classmethod
     def _key_to_tuple(cls, data, section):
         """Change all key values separated by '-' in the given section to tuples of those values."""
@@ -452,9 +449,13 @@ class ThermoConfig(ConfigGenerator):
         temp = {}
         for key in data[section]:
             item_list = key.split("-")
-            if (len(item_list)!=2):
-                raise BadConfiguration("BaseConfig._key_to_tuple", data,
-                    missing=None,why="\n"+section+" tuple key must be only 2 items\n")
+            if len(item_list) != 2:
+                raise BadConfiguration(
+                    "BaseConfig._key_to_tuple",
+                    data,
+                    missing=None,
+                    why="\n" + section + " tuple key must be only 2 items\n",
+                )
             temp[tuple(item_list)] = data[section][key]
         data[section] = temp
 
@@ -472,9 +473,7 @@ class ReactionConfig(ConfigGenerator):
             "concentrationform.molefraction": ConcentrationForm.moleFraction,
             "concentrationform.activity": ConcentrationForm.activity,
         },
-        "*_constant": {
-            "van_t_hoff": van_t_hoff,
-        },
+        "*_constant": {"van_t_hoff": van_t_hoff,},
     }
 
     def __init__(self, data, name="unknown", validation=True):
@@ -539,9 +538,7 @@ class BaseConfig(ConfigGenerator):
         "phases.Sol.equation_of_state": {"Ideal": Ideal},
         "phases.Vap.equation_of_state": {"Ideal": Ideal},
         "bubble_dew_method": {"IdealBubbleDew": IdealBubbleDew},
-        "phase_equilibrium_state.*": {
-            "SmoothVLE": SmoothVLE,
-        },
+        "phase_equilibrium_state.*": {"SmoothVLE": SmoothVLE,},
         "base_units.*": ConfigGenerator.SUBST_UNITS,
     }
 
@@ -581,9 +578,13 @@ class BaseConfig(ConfigGenerator):
         temp = {}
         for key in data[section]:
             item_list = key.split("-")
-            if (len(item_list)!=2):
-                raise BadConfiguration("BaseConfig._key_to_tuple", data,
-                    missing=None,why="\n"+section+" tuple key must be only 2 items\n")
+            if len(item_list) != 2:
+                raise BadConfiguration(
+                    "BaseConfig._key_to_tuple",
+                    data,
+                    missing=None,
+                    why="\n" + section + " tuple key must be only 2 items\n",
+                )
             temp[tuple(item_list)] = data[section][key]
         data[section] = temp
 

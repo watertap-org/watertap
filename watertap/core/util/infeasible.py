@@ -16,6 +16,7 @@ This module contains utility functions for infeasibility diagnostics of WaterTAP
 from math import isclose
 from pyomo.environ import Var, Constraint, value
 
+
 def print_variables_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-12):
     """
     print variables close to their bounds
@@ -28,18 +29,21 @@ def print_variables_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-12):
             print(f"No value for Var {var.name}")
         _eval_close(var, val, rel_tol, abs_tol)
 
+
 def print_constraints_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-5):
     """
     print constraints close to their bounds
     """
-    for con in m.component_data_objects(ctype=Constraint,
-            descend_into=True, active=True):
+    for con in m.component_data_objects(
+        ctype=Constraint, descend_into=True, active=True
+    ):
         if con.equality:
             continue
         val = value(con.body, exception=False)
         if val is None:
             print(f"Cannot evaluate Constraint {con.name}: missing variable value")
         _eval_close(con, val, rel_tol, abs_tol)
+
 
 def print_close_to_bounds(m, rel_tol=1e-04, abs_tol=1e-12):
     """
@@ -50,9 +54,13 @@ def print_close_to_bounds(m, rel_tol=1e-04, abs_tol=1e-12):
 
 
 def _eval_close(obj, val, rel_tol, abs_tol):
-    lb = value(obj.lb); ub = value(obj.ub)
-    if lb is not None and ub is not None and \
-            isclose(lb, ub, rel_tol=rel_tol, abs_tol=abs_tol):
+    lb = value(obj.lb)
+    ub = value(obj.ub)
+    if (
+        lb is not None
+        and ub is not None
+        and isclose(lb, ub, rel_tol=rel_tol, abs_tol=abs_tol)
+    ):
         return
     if lb is not None and isclose(lb, val, rel_tol=rel_tol, abs_tol=abs_tol):
         print(f"{obj.name} near LB of {lb}")
