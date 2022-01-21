@@ -221,8 +221,12 @@ class PressureExchangerData(UnitModelBlockData):
             self.flowsheet().config.time,
             doc="Equal volumetric flow rate")
         def eq_equal_flow_vol(b, t):
-            return (b.high_pressure_side.properties_in[t].flow_vol ==
-                    b.low_pressure_side.properties_in[t].flow_vol)
+            if self.config.has_mass_transfer:
+                return (b.high_pressure_side.properties_out[t].flow_vol ==
+                        b.low_pressure_side.properties_in[t].flow_vol)
+            else:
+                return (b.high_pressure_side.properties_in[t].flow_vol ==
+                        b.low_pressure_side.properties_in[t].flow_vol)
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -294,7 +298,6 @@ class PressureExchangerData(UnitModelBlockData):
 
         # Set solver and options
         opt = get_solver(solver, optarg)
-
         # initialize inlets
         flags_low_in = self.low_pressure_side.properties_in.initialize(
             outlvl=outlvl,
@@ -308,6 +311,7 @@ class PressureExchangerData(UnitModelBlockData):
             solver=solver,
             state_args=state_args,
             hold_state=True)
+
         init_log.info_high("Initialize inlets complete")
 
         # check that inlets are feasible
@@ -317,15 +321,19 @@ class PressureExchangerData(UnitModelBlockData):
                 "Initializing pressure exchanger failed because "
                 "the low pressure side inlet has a higher pressure "
                 "than the high pressure side inlet")
-        if (abs(value(self.low_pressure_side.properties_in[0].flow_vol)
+        # only needed when there is no mass trnasfer
+        if self.config.has_mass_transfer==False:
+            if (abs(value(self.low_pressure_side.properties_in[0].flow_vol)
                 - value(self.high_pressure_side.properties_in[0].flow_vol))
                 / value(self.high_pressure_side.properties_in[0].flow_vol)
                 > 1e-4):  # flow_vol values are not within 0.1%
-            raise ConfigurationError(
-                "Initializing pressure exchanger failed because "
-                "the volumetric flow rates are not equal for both inlets")
-        else:  # volumetric flow is equal, deactivate flow constraint for the solve
-            self.eq_equal_flow_vol.deactivate()
+                raise ConfigurationError(
+                    "Initializing pressure exchanger failed because "
+                    "the volumetric flow rates are not equal for both inlets "\
+                    +str(value(self.high_pressure_side.properties_out[0].flow_vol))+','\
+                    +str(value(self.low_pressure_side.properties_in[0].flow_vol)))
+            else:  # volumetric flow is equal, deactivate flow constraint for the solve
+                self.eq_equal_flow_vol.deactivate()
 
         # initialize outlets from inlets and update pressure
         def propogate_state(sb1, sb2):
