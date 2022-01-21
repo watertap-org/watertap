@@ -115,6 +115,9 @@ Finally, we can obtain Ipopt and CBC from conda-forge:
 
         conda install --yes -c conda-forge ipopt coincbc
 
+.. note:: The ``pyomo build-extensions`` command only needs to be run once for each system as it builds and installs the required libraries into a common, system-wide location.
+
+.. note:: After building PyNumero, you should not need cmake. You can remove it by running ``conda uninstall cmake``.
 
 .. _install-edb:
 
