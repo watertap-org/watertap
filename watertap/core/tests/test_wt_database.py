@@ -55,6 +55,14 @@ class TestDatabase():
         return Database()
 
     @pytest.mark.unit
+    def test_component_list(self, db):
+        # First, check that _component_list exists and is None
+        assert db._component_list is None
+
+        # Then check that component list retreive expected dict
+        assert isinstance(db.component_list, dict)
+
+    @pytest.mark.unit
     def test_get_technology(self, db):
         assert db._cached_files == {}
 

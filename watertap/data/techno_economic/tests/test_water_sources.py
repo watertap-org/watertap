@@ -90,3 +90,5 @@ def test_all_sources(source):
         assert pytest.approx(v["value"], rel=1e-12) == value(
             m.fs.unit.outlet.conc_mass_comp[0, j])
         assert m.fs.unit.outlet.conc_mass_comp[0, j].fixed
+
+        assert j in m.db.component_list.keys()
