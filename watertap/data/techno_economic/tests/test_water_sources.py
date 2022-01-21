@@ -27,7 +27,7 @@ from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 
 dbpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-with open(os.path.join(dbpath, "water_sources.yml"), "r") as f:
+with open(os.path.join(dbpath, "water_sources.yaml"), "r") as f:
     lines = f.read()
     f.close()
 source_data = yaml.load(lines, yaml.Loader)

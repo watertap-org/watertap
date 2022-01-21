@@ -27,7 +27,7 @@ class Database:
     associated with zero-order models in WaterTap.
 
     Args:
-        dbpath - (optional) path to database folder containing yml files
+        dbpath - (optional) path to database folder containing yaml files
 
     Returns:
         an instance of a Database object linked to the provided database
@@ -69,12 +69,12 @@ class Database:
         else:
             # Else load data from required file
             try:
-                with open(os.path.join(self._dbpath, "water_sources.yml"),
+                with open(os.path.join(self._dbpath, "water_sources.yaml"),
                           "r") as f:
                     lines = f.read()
                     f.close()
             except OSError:
-                raise KeyError("Could not find water_sources.yml in database.")
+                raise KeyError("Could not find water_sources.yaml in database.")
 
             source_data = yaml.load(lines, yaml.Loader)
 
