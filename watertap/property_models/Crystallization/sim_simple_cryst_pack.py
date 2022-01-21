@@ -31,6 +31,12 @@ m.fs.stream[0].cp_solute
 m.fs.stream[0].cp_phase
 m.fs.stream[0].flow_vol_phase
 m.fs.stream[0].flow_vol
+m.fs.stream[0].pressure_sat
+m.fs.stream[0].temperature_sat_solvent
+m.fs.stream[0].conc_mass_phase_comp
+m.fs.stream[0].enth_mass_solvent
+m.fs.stream[0].enth_mass_phase
+m.fs.stream[0].dh_crystallization
 
 # # after touching the property, the state block automatically builds it,
 # # note the mass_frac_phase_comp variable and the constraint to calculate it
@@ -48,7 +54,7 @@ m.fs.stream[0].flow_vol
 # m.fs.stream[0].flow_vol_phase
 
 # now that we have a state block, we can fix the state variables and solve for the properties
-m.fs.stream[0].temperature.fix(273.15 + 55)
+m.fs.stream[0].temperature.fix(273.15 + 60)
 m.fs.stream[0].pressure.fix(10000)
 m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'].fix(1)
 m.fs.stream[0].flow_mass_phase_comp['Liq', 'NaCl'].fix(0.27)
