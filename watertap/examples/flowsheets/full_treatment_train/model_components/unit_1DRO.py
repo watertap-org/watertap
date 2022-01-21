@@ -21,7 +21,7 @@ from watertap.unit_models.reverse_osmosis_1D import (ReverseOsmosis1D,
                                                        ConcentrationPolarizationType,
                                                        MassTransferCoefficient,
                                                        PressureChangeType)
-from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.util import solve_block, check_dof
 
 
 def build_RO(m, base='TDS', level='simple', name_str='RO'):
@@ -85,7 +85,7 @@ def solve_RO(base='TDS', level='simple'):
 
     m.fs.RO.display()
     check_dof(m)
-    solve_with_user_scaling(m)
+    solve_block(m)
 
     m.fs.RO.report()
 
