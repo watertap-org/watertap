@@ -16,7 +16,7 @@ Tests for loading water source definitions
 import pytest
 import os
 
-from pyomo.environ import units, value
+from pyomo.environ import units
 from pyomo.util.check_units import assert_units_equivalent
 
 from watertap.core.wt_database import Database
@@ -26,7 +26,7 @@ dbpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
 db = Database()
 
-exclude_files = ["water_sources.yaml"]
+exclude_files = ["water_sources.yaml", "component_list.yaml"]
 
 tech_list = []
 for f in os.listdir(dbpath):
