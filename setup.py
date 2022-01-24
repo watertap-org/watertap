@@ -43,7 +43,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse[prerelease] @ https://github.com/watertap-org/idaes-pse/archive/1.11.0.watertap.2021.11.29.zip",
+    "idaes-pse[prerelease] @ https://github.com/watertap-org/idaes-pse/archive/1.12.0.watertap.2022.01.06.zip",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -75,9 +75,9 @@ setup(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",
@@ -86,7 +86,7 @@ setup(
     ],
     keywords="water systems, chemical engineering, process modeling, filtration, desalination, nawi",
     packages=find_namespace_packages(),
-    python_requires=">=3.6, <4",
+    python_requires=">=3.7, <4",
     install_requires=[
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
@@ -126,6 +126,8 @@ setup(
     package_data={  # Optional
         "": [
             "*.json",
+            "*.yaml",
+            "*.yml",
         ],
     },
     entry_points={

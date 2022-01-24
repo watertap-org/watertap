@@ -18,7 +18,7 @@ from idaes.core import FlowsheetBlock
 from watertap.unit_models.nanofiltration_ZO import NanofiltrationZO
 from idaes.core.util.scaling import calculate_scaling_factors, constraint_scaling_transform
 from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
-from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.util import solve_block, check_dof
 
 
 def build_ZONF(m, base='ion'):
@@ -65,7 +65,7 @@ def solve_ZONF(base='ion'):
 
     check_dof(m)
     calculate_scaling_factors(m)
-    solve_with_user_scaling(m)
+    solve_block(m)
 
     m.fs.NF.inlet.display()
     m.fs.NF.permeate.display()

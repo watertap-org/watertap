@@ -22,7 +22,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util.scaling import calculate_scaling_factors
 
-from watertap.examples.flowsheets.full_treatment_train.util import (solve_with_user_scaling,
+from watertap.examples.flowsheets.full_treatment_train.util import (solve_block,
                                                              check_dof)
 
 import watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_single_stage as single_stage
@@ -84,7 +84,7 @@ def solve_flowsheet(**desal_kwargs):
     initialize(m, **desal_kwargs)
 
     check_dof(m)
-    solve_with_user_scaling(m, tee=False, fail_flag=True)
+    solve_block(m, tee=False, fail_flag=True)
 
     # report
     print('==================================='
