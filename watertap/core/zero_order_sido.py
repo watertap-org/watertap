@@ -14,16 +14,15 @@
 This module contains the base class for all zero order single inlet-double
 outlet (SIDO) unit models.
 """
-from idaes.core import UnitModelBlockData, useDefault
-from idaes.core.util.config import is_physical_parameter_block
+
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.environ import NonNegativeReals, Var, units as pyunits
+
+from watertap.core.zero_order_base import ZeroOrderBaseData
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
@@ -32,81 +31,18 @@ __author__ = "Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 
-class SIDOBaseData(UnitModelBlockData):
+class SIDOBaseData(ZeroOrderBaseData):
     """
     Standard base class for single inlet-double outlet unit models.
 
     This class is intended to be used for creating derived model classes and
-    cannot be instantiated by itself. When creating derived classes,
-    developers must set the '_has_deltaP_treated` and `_has_deltaP_byproduct`
-    attributes on the model before calling `super().build()`. These attributes
-    determine whether the deltaP terms for the treated and byproduct streams
-    are added to the model and included in the pressure constraints.
+    should not be instantiated by itself.
     """
 
-    CONFIG = ConfigBlock()
-    CONFIG.declare('dynamic', ConfigValue(
-        domain=In([False]),
-        default=False,
-        description='Dynamic model flag - must be False',
-        doc='''All zero-order models are steady-state only'''))
-    CONFIG.declare('has_holdup', ConfigValue(
-        default=False,
-        domain=In([False]),
-        description='Holdup construction flag - must be False',
-        doc='''Zero order models do not include holdup'''))
-    CONFIG.declare('property_package', ConfigValue(
-        default=useDefault,
-        domain=is_physical_parameter_block,
-        description='Property package to use for control volume',
-        doc='''Property parameter object used to define property  calculations,
-        **default** - useDefault.
-        **Valid values:** {
-        **useDefault** - use default package from parent model or flowsheet,
-        **PhysicalParameterObject** - a PhysicalParameterBlock object.}'''))
-    CONFIG.declare('property_package_args', ConfigBlock(
-        implicit=True,
-        description='Arguments to use for constructing property packages',
-        doc='''A ConfigBlock with arguments to be passed to a property block(s)
-        and used when constructing these, **default** - None.
-        **Valid values:** {see property package for documentation.}'''))
-    CONFIG.declare('database', ConfigValue(
-        description='An instance of a WaterTAP Database to use for parameters.'
-        ))
-    CONFIG.declare('process_subtype', ConfigValue(
-        description=
-        'Process subtype to use when looking up parameters from database.'))
+    CONFIG = ZeroOrderBaseData.CONFIG()
 
     def build(self):
         super().build()
-
-        # Check that property package meets requirements
-        if self.config.property_package.phase_list != ["Liq"]:
-            raise ConfigurationError(
-                f"{self.name} configured with invalid property package. "
-                f"Zero-order models only support property packages with a "
-                f"single phase named 'Liq'.")
-        if (not hasattr(self.config.property_package, "solvent_set") or
-                self.config.property_package.solvent_set != ["H2O"]):
-            raise ConfigurationError(
-                f"{self.name} configured with invalid property package. "
-                f"Zero-order models only support property packages which "
-                f"include 'H2O' as the only Solvent.")
-        if not hasattr(self.config.property_package, "solute_set"):
-            raise ConfigurationError(
-                f"{self.name} configured with invalid property package. "
-                f"Zero-order models require property packages to declare all "
-                f"dissolved species as Solutes.")
-        if (len(self.config.property_package.solute_set) !=
-                len(self.config.property_package.component_list)-1):
-            raise ConfigurationError(
-                f"{self.name} configured with invalid property package. "
-                f"Zero-order models only support `H2O` as a solvent and all "
-                f"other species as Solutes.")
-
-        # Get units metadata
-        units_meta = \
-            self.config.property_package.get_metadata().get_derived_units
 
         # Create state blocks for inlet and outlets
         tmp_dict = dict(**self.config.property_package_args)
@@ -319,73 +255,6 @@ class SIDOBaseData(UnitModelBlockData):
         All derived classes should overload this.
         """
         raise NotImplementedError()
-
-    def set_param_from_data(
-            self, parameter, data, index=None, use_default_removal=False):
-        """
-        General method for setting parameter values from a dict of data
-        returned from a database.
-
-        Args:
-            parameter - a Pyomo Var to be fixed to value from database
-            data - dict of parameter values from database
-            index - (optional) index to fix if parameter is an IndexedVar
-            use_default_removal - (optional) indicate whether to use defined
-                                  default removal fraction if no specific value
-                                  defined in database
-
-        Returns:
-            None
-
-        Raises:
-            KeyError if values cannot be found for parameter in data dict
-
-        """
-
-        pname = parameter.parent_component().local_name
-
-        try:
-            pdata = data[pname]
-        except KeyError:
-            raise KeyError(
-                f"{self.name} - database provided does not contain an entry "
-                f"for {pname} for technology.")
-
-        if index is not None:
-            try:
-                pdata = pdata[index]
-            except KeyError:
-                if pname == "removal_frac_mass_solute" and use_default_removal:
-                    try:
-                        pdata = data["default_removal_frac_mass_solute"]
-                        index = "default"
-                    except KeyError:
-                        raise KeyError(
-                            f"{self.name} - database provided does not "
-                            f"contain an entry for {pname} with index {index} "
-                            f"for technology and no default removal was "
-                            f"specified.")
-                else:
-                    raise KeyError(
-                        f"{self.name} - database provided does not contain "
-                        f"an entry for {pname} with index {index} for "
-                        f"technology.")
-
-        try:
-            val = pdata["value"]
-        except KeyError:
-            raise KeyError(
-                f"{self.name} - no value provided for {pname} (index: "
-                f"{index}) in database.")
-        try:
-            units = getattr(pyunits, pdata["units"])
-        except KeyError:
-            raise KeyError(
-                f"{self.name} - no units provided for {pname} (index: "
-                f"{index}) in database.")
-
-        parameter.fix(val*units)
-        _log.info_high(f"{parameter.name} fixed to value {val} {str(units)}")
 
     def set_recovery_and_removal(self, data, use_default_removal=False):
         """
