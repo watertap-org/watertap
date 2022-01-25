@@ -128,6 +128,23 @@ class SIDOBaseData(ZeroOrderBaseData):
                     b.recovery_vol[t] *
                     b.properties_treated[t].conc_mass_comp[j])
 
+        # Add electricity consumption to model
+        self.electricity = Var(self.flowsheet().time,
+                               units=pyunits.kW,
+                               doc="Electricity consumption of unit")
+        self.energy_electric_flow_vol_inlet = Var(
+            units=pyunits.kWh/pyunits.m**3,
+            doc="Electricity intensity with respect to inlet flowrate of unit")
+
+        @self.Constraint(self.flowsheet().time,
+                         doc='Constraint for electricity consumption base on '
+                         'feed flowrate.')
+        def electricity_consumption(b, t):
+            return b.electricity[t] == (
+                b.energy_electric_flow_vol_inlet *
+                pyunits.convert(b.properties_in[t].flow_vol,
+                                to_units=pyunits.m**3/pyunits.hour))
+
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
         '''
@@ -247,6 +264,25 @@ class SIDOBaseData(ZeroOrderBaseData):
                     self.properties_in[t].flow_mass_comp[j],
                     default=1,
                     warning=False))  # would just be a duplicate of above
+
+    def load_parameters_from_database(self, use_default_removal=False):
+        """
+        Method to load parameters for nanofiltration models from database.
+
+        Args:
+            use_default_removal - (optional) indicate whether to use defined
+                                  default removal fraction if no specific value
+                                  defined in database
+
+        Returns:
+            None
+        """
+        # Get parameter dict from database
+        pdict = self._load_parameters_from_database(use_default_removal=False)
+
+        self.set_recovery_and_removal(pdict, use_default_removal)
+
+        self.set_param_from_data(self.energy_electric_flow_vol_inlet, pdict)
 
     def set_recovery_and_removal(self, data, use_default_removal=False):
         """

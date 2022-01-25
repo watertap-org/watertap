@@ -44,10 +44,24 @@ def test_unit_parameter_files(tech):
     assert "default" in data
 
     # Iterate overall entries in tech data and check for expected contents
-    expected = ["recovery_vol", "default_removal_frac_mass_solute"]
+    expected = ["recovery_vol",
+                "default_removal_frac_mass_solute"]
+    no_electricity = ["energy_recovery",
+                      "mbr_denitrification",
+                      "mbr_nitrification"]
     for k in data.values():
 
         for e in expected:
+            assert e in k.keys()
+            assert "units" in k[e].keys()
+            assert_units_equivalent(
+                k[e]["units"], units.dimensionless)
+            assert "value" in k[e].keys()
+            assert k[e]["value"] >= 0
+            assert k[e]["value"] <= 1
+
+        if tech not in no_electricity:
+            e = "energy_electric_flow_vol_inlet"
             assert e in k.keys()
             assert "units" in k[e].keys()
             assert_units_equivalent(

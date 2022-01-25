@@ -112,7 +112,13 @@ class ZeroOrderBaseData(UnitModelBlockData):
         '''
         super().calculate_scaling_factors()
 
-    def load_parameters_from_database(self, use_default_removal=False):
+    def load_parameters_from_database(self, *args, **kwargs):
+        '''
+        Placeholder method for loading parameters, raises NotImplementedError
+        '''
+        raise NotImplementedError()
+
+    def _load_parameters_from_database(self, use_default_removal=False):
         """
         Method to load parameters for nanofiltration models from database.
 
@@ -122,7 +128,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
                                   defined in database
 
         Returns:
-            None
+            dict of loaded parameters
         """
         if self._tech_type is None:
             raise NotImplementedError(
@@ -134,9 +140,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
         pdict = self.config.database.get_unit_operation_parameters(
             self._tech_type, subtype=self.config.process_subtype)
 
-        self.set_recovery_and_removal(pdict, use_default_removal)
-
-        self.set_param_from_data(self.energy_electric_flow_vol_inlet, pdict)
+        return pdict
 
     def set_param_from_data(
             self, parameter, data, index=None, use_default_removal=False):

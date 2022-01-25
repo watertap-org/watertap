@@ -336,6 +336,7 @@ class TestFixedPerformance:
         m.fs.unit.removal_frac_mass_solute[0, "A"].fix(0.1)
         m.fs.unit.removal_frac_mass_solute[0, "B"].fix(0.2)
         m.fs.unit.removal_frac_mass_solute[0, "C"].fix(0.3)
+        m.fs.unit.energy_electric_flow_vol_inlet.fix(1)
 
         return m
 
@@ -354,6 +355,11 @@ class TestFixedPerformance:
         assert isinstance(model.fs.unit.removal_frac_mass_solute, Var)
         assert len(model.fs.unit.removal_frac_mass_solute) == 3
 
+        assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
+        assert len(model.fs.unit.energy_electric_flow_vol_inlet) == 1
+        assert isinstance(model.fs.unit.electricity, Var)
+        assert len(model.fs.unit.electricity) == 1
+
         assert isinstance(model.fs.unit.water_recovery_equation, Constraint)
         assert len(model.fs.unit.water_recovery_equation) == 1
         assert isinstance(model.fs.unit.flow_balance, Constraint)
@@ -362,6 +368,8 @@ class TestFixedPerformance:
         assert len(model.fs.unit.solute_removal_equation) == 3
         assert isinstance(model.fs.unit.solute_treated_equation, Constraint)
         assert len(model.fs.unit.solute_treated_equation) == 3
+        assert isinstance(model.fs.unit.electricity_consumption, Constraint)
+        assert len(model.fs.unit.electricity_consumption) == 1
 
     @pytest.mark.unit
     def test_degrees_of_freedom(self, model):

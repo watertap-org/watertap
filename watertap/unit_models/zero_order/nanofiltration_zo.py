@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a nanofiltration unit.
+This module contains a zero-order representation of a nanofiltration unit
 operation.
 """
 
@@ -36,22 +36,6 @@ class NanofiltrationZOData(SIDOBaseData):
         super().build()
 
         self._tech_type = "nanofiltration"
-
-        # Add electricity consumption to model
-        self.electricity = Var(self.flowsheet().time,
-                               units=pyunits.kW,
-                               doc="Electricity consumption of unit")
-        self.energy_electric_flow_vol_inlet = Var(
-            units=pyunits.kWh/pyunits.m**3,
-            doc="Electricity intensity with respect to inlet flowrate of unit")
-
-        def electricity_consumption(b, t):
-            return b.electricity[t] == (
-                b.energy_electric_flow_vol_inlet *
-                pyunits.convert(b.properties_in[t].flow_vol,
-                                to_units=pyunits.m**3/pyunits.hour))
-        self.electricity_consumption = Constraint(self.flowsheet().time,
-                                                  rule=electricity_consumption)
 
     def _get_performance_contents(self, time_point=0):
         perf_dict = super()._get_performance_contents(time_point)
