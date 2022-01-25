@@ -72,7 +72,7 @@ Unit : fs.unit                                                             Time:
 ------------------------------------------------------------------------------------
     Unit Performance
 
-    Variables:
+    Variables: 
 
     Key                                            : Value       : Fixed : Bounds
                                      Membrane Area :      50.000 :  True : (0.1, 1000.0)
@@ -99,9 +99,9 @@ Unit : fs.unit                                                             Time:
 ------------------------------------------------------------------------------------
     Stream Table
                                           Feed Inlet  Feed Outlet  Permeate Outlet
-    flow_mass_phase_comp ('Liq', 'H2O')      0.96500     0.74436        0.22064
-    flow_mass_phase_comp ('Liq', 'NaCl')    0.035000    0.034918     8.1671e-05
-    temperature                               298.15      298.15         298.15
-    pressure                              5.0000e+06  4.8230e+06     1.0132e+05
+    flow_mass_phase_comp ('Liq', 'H2O')      0.96500     0.74436        0.22064   
+    flow_mass_phase_comp ('Liq', 'NaCl')    0.035000    0.034918     8.1671e-05   
+    temperature                               298.15      298.15         298.15   
+    pressure                              5.0000e+06  4.8230e+06     1.0132e+05   
 ====================================================================================
 """
