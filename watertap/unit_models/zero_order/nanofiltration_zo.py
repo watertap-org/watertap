@@ -35,6 +35,8 @@ class NanofiltrationZOData(SIDOBaseData):
     def build(self):
         super().build()
 
+        self._tech_type = "nanofiltration"
+
         # Add electricity consumption to model
         self.electricity = Var(self.flowsheet().time,
                                units=pyunits.kW,
@@ -50,26 +52,6 @@ class NanofiltrationZOData(SIDOBaseData):
                                 to_units=pyunits.m**3/pyunits.hour))
         self.electricity_consumption = Constraint(self.flowsheet().time,
                                                   rule=electricity_consumption)
-
-    def load_parameters_from_database(self, use_default_removal=False):
-        """
-        Method to load parameters for nanofiltration models from database.
-
-        Args:
-            use_default_removal - (optional) indicate whether to use defined
-                                  default removal fraction if no specific value
-                                  defined in database
-
-        Returns:
-            None
-        """
-        # Get parameter dict from database
-        pdict = self.config.database.get_unit_operation_parameters(
-            "nanofiltration", subtype=self.config.process_subtype)
-
-        self.set_recovery_and_removal(pdict, use_default_removal)
-
-        self.set_param_from_data(self.energy_electric_flow_vol_inlet, pdict)
 
     def _get_performance_contents(self, time_point=0):
         perf_dict = super()._get_performance_contents(time_point)

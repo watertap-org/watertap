@@ -72,6 +72,9 @@ class ZeroOrderBaseData(UnitModelBlockData):
     def build(self):
         super().build()
 
+        # Set a placeholder tech_type attribute
+        self._tech_type = None
+
         # Check that property package meets requirements
         if self.config.property_package.phase_list != ["Liq"]:
             raise ConfigurationError(
@@ -109,12 +112,31 @@ class ZeroOrderBaseData(UnitModelBlockData):
         '''
         super().calculate_scaling_factors()
 
-    def load_parameters_from_database(self):
+    def load_parameters_from_database(self, use_default_removal=False):
         """
-        Placeholder method for loading parameters from database, raises
-        NotImplementedError
+        Method to load parameters for nanofiltration models from database.
+
+        Args:
+            use_default_removal - (optional) indicate whether to use defined
+                                  default removal fraction if no specific value
+                                  defined in database
+
+        Returns:
+            None
         """
-        raise NotImplementedError()
+        if self._tech_type is None:
+            raise NotImplementedError(
+                f"{self.name} derived zero order unit model has not "
+                f"implemented the _tech_type attribute. This is required "
+                f"to identify the database file to load parameters from.")
+
+        # Get parameter dict from database
+        pdict = self.config.database.get_unit_operation_parameters(
+            self._tech_type, subtype=self.config.process_subtype)
+
+        self.set_recovery_and_removal(pdict, use_default_removal)
+
+        self.set_param_from_data(self.energy_electric_flow_vol_inlet, pdict)
 
     def set_param_from_data(
             self, parameter, data, index=None, use_default_removal=False):

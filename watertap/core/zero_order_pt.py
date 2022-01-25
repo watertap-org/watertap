@@ -106,14 +106,6 @@ class PassThroughBaseData(ZeroOrderBaseData):
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
 
-    def load_parameters_from_database(self):
-        """
-        Placeholder method for loading parameters from database.
-
-        All derived classes should overload this.
-        """
-        raise NotImplementedError()
-
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
             {"Inlet": self.inlet,

@@ -248,14 +248,6 @@ class SIDOBaseData(ZeroOrderBaseData):
                     default=1,
                     warning=False))  # would just be a duplicate of above
 
-    def load_parameters_from_database(self):
-        """
-        Placeholder method for loading parameters from database.
-
-        All derived classes should overload this.
-        """
-        raise NotImplementedError()
-
     def set_recovery_and_removal(self, data, use_default_removal=False):
         """
         Common utiltiy method for setting values of recovery and removal
