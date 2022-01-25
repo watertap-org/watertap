@@ -10,9 +10,10 @@ import cryst_prop_pack as props
 m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
 # attach property package
-m.fs.properties = props.NaClParameterBlock()
+m.fs.properties = props.NaClParameterBlock(default=
+                                           {"heat_of_crystallization_model": props.HeatOfCrystallizationModel.constant})
 # build a state block, must specify a time which by convention for steady state models is just 0
-m.fs.stream = m.fs.properties.build_state_block([0], default={})
+m.fs.stream = m.fs.properties.build_state_block([0], default={'defined_state': True})
 
 # display the state block, it only has the state variables and they are all unfixed
 print('\n---first display---')
@@ -35,8 +36,10 @@ m.fs.stream[0].pressure_sat
 m.fs.stream[0].temperature_sat_solvent
 m.fs.stream[0].conc_mass_phase_comp
 m.fs.stream[0].enth_mass_solvent
+m.fs.stream[0].enth_mass_solute
 m.fs.stream[0].enth_mass_phase
 m.fs.stream[0].dh_crystallization
+m.fs.stream[0].vol_frac_phase
 
 # # after touching the property, the state block automatically builds it,
 # # note the mass_frac_phase_comp variable and the constraint to calculate it
@@ -54,7 +57,7 @@ m.fs.stream[0].dh_crystallization
 # m.fs.stream[0].flow_vol_phase
 
 # now that we have a state block, we can fix the state variables and solve for the properties
-m.fs.stream[0].temperature.fix(273.15 + 60)
+m.fs.stream[0].temperature.fix(273.15 + 50)
 m.fs.stream[0].pressure.fix(10000)
 m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'].fix(1)
 m.fs.stream[0].flow_mass_phase_comp['Liq', 'NaCl'].fix(0.27)
@@ -84,6 +87,7 @@ assert results.solver.termination_condition == TerminationCondition.optimal
 print('\n---fourth display---')
 m.fs.stream[0].display()
 m.fs.stream[0].flow_vol.display()
+m.fs.stream[0].enth_flow.display()
 # note that the properties are solved, and the body of the constraints are small (residual)
 
 # # equation oriented modeling has several advantages, one of them is that we can unfix variables and fix others

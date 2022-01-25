@@ -119,7 +119,7 @@ class NaClParameterData(PhysicalParameterBlock):
         '''
 
         ## TO-DO ##
-        # 1. Add enthalpy functions for Nacl (pure solid and liquid)
+        # 1. Fix mass fraction formulation
         # 2. Add scaling rules
 
         # Unit definitions
@@ -141,11 +141,16 @@ class NaClParameterData(PhysicalParameterBlock):
                              units=pyunits.kg/pyunits.mol,
                              doc="Molecular weight kg/mol")
 
-        # Solubility parameters from surrogate model
-        self.sol_param_A1 = Param(initialize= 526.706475, units = pyunits.g / pyunits.L, doc=' Solubility parameter A1 [g/L] for NaCl surrogate')
-        self.sol_param_A2 = Param(initialize= -1.326952, units = (pyunits.g / pyunits.L) * pyunits.K ** -1, doc=' Solubility parameter A2 [g/L] for NaCl surrogate')
-        self.sol_param_A3 = Param(initialize= 0.002574, units = (pyunits.g / pyunits.L) * pyunits.K ** -2, doc=' Solubility parameter A3 [g/L] for NaCl surrogate')
-        
+        # Solubility parameters from (1) surrogate model (2) Sparrow paper
+        # # 1. Surrogate
+        # self.sol_param_A1 = Param(initialize= 526.706475, units = pyunits.g / pyunits.L, doc=' Solubility parameter A1 [g/L] for NaCl surrogate')
+        # self.sol_param_A2 = Param(initialize= -1.326952, units = (pyunits.g / pyunits.L) * pyunits.K ** -1, doc=' Solubility parameter A2 [g/L] for NaCl surrogate')
+        # self.sol_param_A3 = Param(initialize= 0.002574, units = (pyunits.g / pyunits.L) * pyunits.K ** -2, doc=' Solubility parameter A3 [g/L] for NaCl surrogate')
+        # 2. Sparrow
+        self.sol_param_A1 = Param(initialize= 0.2628, units = pyunits.dimensionless, doc=' Solubility parameter A1 for NaCl')
+        self.sol_param_A2 = Param(initialize= 62.75e-6, units = pyunits.K ** -1, doc=' Solubility parameter A2 for NaCl')
+        self.sol_param_A3 = Param(initialize= 1.084e-6, units = pyunits.K ** -2, doc=' Solubility parameter A3 for NaCl')
+    
         # Vapour mass density parameter (approximating using ideal gas): universal gas constant
         self.dens_mass_param_R = Var(within=Reals, initialize=8.31462618, units=pyunits.J/pyunits.mol/pyunits.K,
             doc='Mass density parameter universal gas constant')
@@ -204,9 +209,9 @@ class NaClParameterData(PhysicalParameterBlock):
         self.cp_param_NaCl_solid_C = Var(within=Reals, initialize=-2.517167, units=cp_units_3/pyunits.K**2, doc='Specific heat parameter C for solid NaCl')
         self.cp_param_NaCl_solid_D = Var(within=Reals, initialize=10.15934, units=cp_units_3/pyunits.K**3, doc='Specific heat parameter D for solid NaCl')
         self.cp_param_NaCl_solid_E = Var(within=Reals, initialize=-0.200675, units=cp_units_3*pyunits.K**2, doc='Specific heat parameter E for solid NaCl')
-        # self.cp_param_NaCl_solid_F = Var(within=Reals, initialize=1.8125, units=pyunits.dimensionless, doc='Specific heat parameter A6 for liquid NaCl')
-        # self.cp_param_NaCl_solid_G = Var(within=Reals, initialize=8.7319, units=cp_units_2, doc='Specific heat parameter A5 for liquid NaCl')
-        # self.cp_param_NaCl_solid_H = Var(within=Reals, initialize=1.8125, units=pyunits.dimensionless, doc='Specific heat parameter A6 for liquid NaCl')
+        self.cp_param_NaCl_solid_F = Var(within=Reals, initialize=-427.2115, units=cp_units_3*pyunits.K, doc='Specific heat parameter F for solid NaCl')
+        # self.cp_param_NaCl_solid_G = Var(within=Reals, initialize=130.3973, units=cp_units_2, doc='Specific heat parameter G for solid NaCl')
+        self.cp_param_NaCl_solid_H = Var(within=Reals, initialize=-411.1203, units=cp_units_3*pyunits.K, doc='Specific heat parameter H for solid NaCl')
 
         # Vapour pressure parameters for NaCl solution from Sparrow (2003): 0 < T < 150 degC
         self.pressure_sat_param_A1 = Var(within=Reals, initialize=0.9083e-3, units=pyunits.MPa, doc='Vapour pressure parameter A1')
@@ -308,11 +313,14 @@ class NaClParameterData(PhysicalParameterBlock):
              'temperature_sat_solvent': {'method': '_temperature_sat_solvent'},
              'conc_mass_phase_comp': {'method': '_conc_mass_phase_comp'},
              'enth_mass_solvent': {'method': '_enth_mass_solvent'},
-             'dh_crystallization': {'method': '_dh_crystallization'},
+             'enth_mass_solute': {'method': '_enth_mass_solute'},
              'enth_mass_phase': {'method': '_enth_mass_phase'},
+             'dh_crystallization': {'method': '_dh_crystallization'},
+             'enth_flow': {'method': '_enth_flow'},
+             'vol_frac_phase': {'method': '_vol_frac_phase'},
              # 'flow_mol_phase_comp': {'method': '_flow_mol_phase_comp'},
              # 'mole_frac_phase_comp': {'method': '_mole_frac_phase_comp'},
-             # 'enth_flow': {'method': '_enth_flow'}
+             
                 })
 
 
@@ -456,8 +464,9 @@ class NaClStateBlockData(StateBlockData):
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(self.params.phase_list,
                                     self.params.component_list,
+                                    domain=NonNegativeReals,
                                     initialize={('Liq', 'H2O'): 0.965, ('Liq', 'NaCl'): 0.035},
-                                    bounds=(1e-6, None),  # upper bound set to None because of stability benefits
+                                    bounds=(0, None),  # upper bound set to None because of stability benefits
                                     units=pyunits.dimensionless,
                                     doc='Mass fraction')
 
@@ -468,23 +477,26 @@ class NaClStateBlockData(StateBlockData):
             else:
                 return Constraint.Skip ##MUST BE FIXED!##
 
+            # return (b.mass_frac_phase_comp[p, j] == b.flow_mass_phase_comp[p, j] /
+            #                             sum(b.flow_mass_phase_comp[p, j] for p in self.params.phase_list for j in self.params.component_list))
+
         self.eq_mass_frac_phase_comp = Constraint(self.params.phase_list, self.params.component_list, rule=rule_mass_frac_phase_comp)
 
 
-    # 2. Solubility: Based on regressed/surrogate model
+    # 2. Solubility in g/L: calculated from solubility mass fraction
     def _solubility_mass_phase_comp(self):
         self.solubility_mass_phase_comp = Var(['Liq'], ['NaCl'],
                                 domain = NonNegativeReals,
-                                bounds = (340, 400),
+                                bounds = (300, 1000),
                                 initialize = 356.5,
                                 units = pyunits.g / pyunits.L,
                                 doc="solubility of NaCl in water, g/L")
 
         def rule_solubility_mass_phase_comp(b, j):
-            return (b.solubility_mass_phase_comp['Liq', j] == b.params.sol_param_A1 
-                                        + b.params.sol_param_A2 * b.temperature 
-                                        + b.params.sol_param_A3 * b.temperature ** 2
-                                        )
+            return (b.solubility_mass_phase_comp['Liq', j] == 
+                b.solubility_mass_frac_phase_comp['Liq', j] * b.dens_mass_solvent['Liq'] / 
+                (1 - b.solubility_mass_frac_phase_comp['Liq', j])
+                )
 
         self.eq_solubility_mass_phase_comp = Constraint(['NaCl'], rule=rule_solubility_mass_phase_comp)
 
@@ -498,11 +510,11 @@ class NaClStateBlockData(StateBlockData):
                                 units = pyunits.dimensionless,
                                 doc="solubility (as mass fraction) of NaCl in water")
 
-        def rule_solubility_mass_frac_phase_comp(b, j):
+        def rule_solubility_mass_frac_phase_comp(b, j): # Sparrow (2003)   
+            t = b.temperature - 273.15*pyunits.K                  
             return (b.solubility_mass_frac_phase_comp['Liq', j] 
-                == b.solubility_mass_phase_comp['Liq', j] / (b.solubility_mass_phase_comp['Liq', j] + b.dens_mass_solvent['Liq'])
-                                        )
-
+                == b.params.sol_param_A1  + b.params.sol_param_A2 * t  + b.params.sol_param_A3 * t**2
+                    )
         self.eq_solubility_mass_frac_phase_comp = Constraint(['NaCl'], rule=rule_solubility_mass_frac_phase_comp)
 
 
@@ -541,7 +553,7 @@ class NaClStateBlockData(StateBlockData):
         def rule_dens_mass_solute(b, p):  
             if p == 'Sol':
                 return b.dens_mass_solute[p] == b.params.dens_mass_param_NaCl
-            elif p == 'Liq': # eq. 9 of Laliberte paper
+            elif p == 'Liq': # Apparent density in eq. 9 of Laliberte paper
                 t = b.temperature - 273.15 * pyunits.K
                 v_app = (b.mass_frac_phase_comp['Liq', 'NaCl'] + b.params.dens_mass_param_NaCl_liq_C2 + (b.params.dens_mass_param_NaCl_liq_C3 * t)) \
                     / ((b.mass_frac_phase_comp['Liq', 'NaCl'] * b.params.dens_mass_param_NaCl_liq_C0) + b.params.dens_mass_param_NaCl_liq_C1)
@@ -728,7 +740,7 @@ class NaClStateBlockData(StateBlockData):
     def _temperature_sat_solvent(self):
         self.temperature_sat_solvent = Var(
             initialize=298.15,
-            bounds=(273.15, 373.15),
+            bounds=(273.15, 1000.15),
             units=pyunits.K,
             doc="Vapour (saturation) temperature of pure solvent at boiling (i.e. crystallization) pressure")
 
@@ -740,6 +752,7 @@ class NaClStateBlockData(StateBlockData):
                 )
 
         self.eq_temperature_sat_solvent = Constraint(rule=rule_temperature_sat_solvent)
+
 
     # 15. Mass concentration
     def _conc_mass_phase_comp(self):
@@ -763,7 +776,7 @@ class NaClStateBlockData(StateBlockData):
         self.enth_mass_solvent = Var(['Liq', 'Vap'],
             initialize=1e6,
             bounds=(1, 1e9),
-            units=pyunits.J * pyunits.kg ** -1,
+            units=pyunits.kJ * pyunits.kg ** -1,
             doc="Specific saturated enthalpy of pure solvent")
 
         def rule_enth_mass_solvent(b, p):
@@ -773,11 +786,11 @@ class NaClStateBlockData(StateBlockData):
                    + b.params.enth_mass_solvent_param_A3 * t ** 2
                    + b.params.enth_mass_solvent_param_A4 * t ** 3)  
             if p == 'Liq': # enthalpy, eq. 55 in Sharqawy
-                return b.enth_mass_solvent[p] == h_w
+                return b.enth_mass_solvent[p] == h_w * (0.001 * pyunits.kJ / pyunits.J) 
             elif p =='Vap':
                 
-                return b.enth_mass_solvent[p] == h_w + b.dh_vap_solvent
-
+                return b.enth_mass_solvent[p] == (h_w + b.dh_vap_solvent) * (0.001 * pyunits.kJ / pyunits.J) 
+ 
         self.eq_enth_mass_solvent = Constraint(['Liq', 'Vap'], rule=rule_enth_mass_solvent)
 
 
@@ -840,7 +853,83 @@ class NaClStateBlockData(StateBlockData):
         self.eq_dh_crystallization = Constraint(rule=rule_dh_crystallization)
 
 
+    # 19. Heat capacity of solid-phase NaCl crystals
+    def _enth_mass_solute(self):
+        self.enth_mass_solute = Var(['Sol'],
+            initialize=1e3,
+            bounds=(1e-3, 1e6),
+            units=pyunits.kJ / pyunits.kg,
+            doc="Specific enthalpy of solid NaCl crystals")
 
+        def rule_enth_mass_solute(b, p):  
+            ############################
+            # Shomate equation for molar enthalpy ofNaCl, NIST
+            # Note: Tref is 298 K, so changing the Tref to 273 K to match IAPWS is necessary.
+            # Computation formulafor reference temperature change: 
+            #    Enthalpy at T relative to 273 K = Enthalpy change relative to 298 K + (Enthalpy at 298 K - Enthalpy at 273 K)
+            ############################
+
+            # (i) Enthalpy at original reference temperature (298 K)
+            enth_mass_solute_mol_tref_1 = 0 # Enthalpy at original temperature (298 K)
+
+            # (ii) Enthalpy at new reference temperature (273.15 K)
+            tref_2 = 273.15 * pyunits.K / 1000
+            enth_mass_solute_mol_tref_2 = (b.params.cp_param_NaCl_solid_A * tref_2) + ((1/2) * b.params.cp_param_NaCl_solid_B * tref_2 **2) + \
+                        ((1/3) * b.params.cp_param_NaCl_solid_C * tref_2 ** 3) + ((1/4) * b.params.cp_param_NaCl_solid_D * tref_2 ** 4)  - \
+                        (b.params.cp_param_NaCl_solid_E /tref_2) + b.params.cp_param_NaCl_solid_F - b.params.cp_param_NaCl_solid_H
+
+            # (iii) Compute enthalpy change at temperature t relative to old reference temperature t_ref_1
+            t = b.temperature / (1000 * pyunits.dimensionless)
+            dh_mass_solute_mol_tref_1 = (b.params.cp_param_NaCl_solid_A * t) + ((1/2) * b.params.cp_param_NaCl_solid_B * t **2) + \
+                        ((1/3) * b.params.cp_param_NaCl_solid_C * t ** 3) + ((1/4) * b.params.cp_param_NaCl_solid_D * t ** 4)  - \
+                        (b.params.cp_param_NaCl_solid_E /t) + b.params.cp_param_NaCl_solid_F - b.params.cp_param_NaCl_solid_H
+
+            # (iv) Compute enthalpy change at temperature t relative to new reference temperature t_ref_2
+            enth_mass_solute_mol = dh_mass_solute_mol_tref_1 + (enth_mass_solute_mol_tref_1 - enth_mass_solute_mol_tref_2)
+
+            # (v) Convert from molar enthalpy to mass enthalpy
+            enth_mass_solute_mol = enth_mass_solute_mol / b.params.mw_comp['NaCl']
+            return b.enth_mass_solute[p] == enth_mass_solute_mol * (pyunits.kJ/pyunits.J) 
+
+        self.eq_enth_mass_solute = Constraint(['Sol'], rule=rule_enth_mass_solute)
+
+
+    # 20. Total enthalpy flow for any stream: adds up the enthalpies for the solid, liquid and vapour phases
+    # Assumes no NaCl is vapour stream or water in crystals
+    def _enth_flow(self):
+        # enthalpy flow expression for get_enthalpy_flow_terms method
+
+        def rule_enth_flow(b):  # enthalpy flow [J/s]
+            return sum(b.flow_mass_phase_comp['Liq', j] for j in b.params.component_list) * b.enth_mass_phase['Liq'] \
+                + b.flow_mass_phase_comp['Vap', 'H2O'] * b.enth_mass_solvent['Vap'] \
+                + b.flow_mass_phase_comp['Sol', 'NaCl'] * b.enth_mass_solute['Sol']
+
+
+            return sum(b.flow_mass_phase_comp['Liq', j] for j in b.params.component_list) * b.enth_mass_phase['Liq']
+        self.enth_flow = Expression(rule=rule_enth_flow)
+
+
+    # 21. Volumetric fraction of solids in slurry (solid + liquid phase)
+    def _vol_frac_phase(self):
+        self.vol_frac_phase = Var(
+            ['Liq', 'Sol'],
+            initialize=0.5,
+            bounds=(0, 1),
+            units=pyunits.dimensionless,
+            doc="Volumetric fraction of liquid and solids in slurry")
+
+        def rule_vol_frac_phase(b, p):  
+            vol_liq = sum(b.flow_mass_phase_comp['Liq', j] for j in b.params.component_list) * b.dens_mass_phase['Liq']
+            vol_sol = b.flow_mass_phase_comp['Sol', 'NaCl'] * b.dens_mass_solute['Sol']
+            if p == 'Liq':
+                return (b.vol_frac_phase[p] == vol_liq / (vol_sol + vol_liq))
+            elif p == 'Sol':
+                return (b.vol_frac_phase[p] == 1 - vol_liq / (vol_sol + vol_liq))
+
+        self.eq_vol_frac_phase = Constraint(['Liq', 'Sol'], rule=rule_vol_frac_phase)
+
+
+    # -----------------------------------------------------------------------------
     # Boilerplate Methods
 
     def get_material_flow_terms(self, p, j):
@@ -867,9 +956,29 @@ class NaClStateBlockData(StateBlockData):
                 "pressure": self.pressure}
 
 
+    # -----------------------------------------------------------------------------
+    # Scaling methods
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
 
+        # default scaling factors have already been set with idaes.core.property_base.calculate_scaling_factors()
+        # for the following variables: flow_mass_phase_comp, pressure, temperature, dens_mass_phase, enth_mass_phase
 
+        # scaling factors for molecular weights 
+        for j, v in self.params.mw_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(self.params.mw_comp, 1e-1)
 
+        # Scaling for solubility (g/L) parameters. Values typically about 300-500, so scale by 1e-3.
+        # Use user-supplied scaling if available.
+        if self.is_property_constructed('solubility_mass_phase_comp'):
+            if iscale.get_scaling_factor(self.solubility_mass_phase_comp) is None:
+                iscale.set_scaling_factor(self.solubility_mass_phase_comp, 1e-3)
+
+        # Scaling for flow volume
+        if self.is_property_constructed('flow_vol'):
+            sf = iscale.get_scaling_factor(self.flow_vol_phase)
+            iscale.set_scaling_factor(self.flow_vol, sf)
 
 
 # def nacl_solubility_function():
