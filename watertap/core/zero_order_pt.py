@@ -15,7 +15,10 @@ This module contains the base class for all zero order pass-through unit
 models (i.e. units with a single inlet and single outlet where flow and
 composition do not change, such as pumps).
 """
+from pyomo.environ import Var, units as pyunits
+
 import idaes.logger as idaeslog
+from idaes.core.util import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 
 from watertap.core.zero_order_base import ZeroOrderBaseData
@@ -54,6 +57,23 @@ class PassThroughBaseData(ZeroOrderBaseData):
         self.add_port("inlet", self.properties, doc="Inlet port")
         self.add_port("outlet", self.properties, doc="Tutlet port")
 
+        # Add electricity consumption to model
+        self.electricity = Var(self.flowsheet().time,
+                               units=pyunits.kW,
+                               doc="Electricity consumption of unit")
+        self.energy_electric_flow_vol_inlet = Var(
+            units=pyunits.kWh/pyunits.m**3,
+            doc="Electricity intensity with respect to inlet flowrate of unit")
+
+        @self.Constraint(self.flowsheet().time,
+                         doc='Constraint for electricity consumption base on '
+                         'feed flowrate.')
+        def electricity_consumption(b, t):
+            return b.electricity[t] == (
+                b.energy_electric_flow_vol_inlet *
+                pyunits.convert(b.properties[t].flow_vol,
+                                to_units=pyunits.m**3/pyunits.hour))
+
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
         '''
@@ -74,6 +94,9 @@ class PassThroughBaseData(ZeroOrderBaseData):
             None
         '''
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+
+        solver_obj = get_solver(solver, optarg)
 
         # Get initial guesses for inlet if none provided
         if state_args is None:
@@ -93,14 +116,47 @@ class PassThroughBaseData(ZeroOrderBaseData):
 
         # ---------------------------------------------------------------------
         # Initialize control volume block
-        blk.properties.initialize(
+        flags = blk.properties.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args,
-            hold_state=False
+            hold_state=True
         )
-        init_log.info('Initialization Complete.')
+        init_log.info_high('Initialization Step 1 Complete.')
+
+        # ---------------------------------------------------------------------
+        # Solve unit
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = solver_obj.solve(blk, tee=slc.tee)
+
+        init_log.info_high(
+            "Initialization Step 2 {}.".format(idaeslog.condition(results))
+        )
+
+        # ---------------------------------------------------------------------
+        # Release Inlet state
+        blk.properties.release_state(flags, outlvl)
+
+        init_log.info('Initialization Complete: {}'
+                      .format(idaeslog.condition(results)))
+
+    def load_parameters_from_database(self, use_default_removal=False):
+        """
+        Method to load parameters from database.
+
+        Args:
+            use_default_removal - (optional) indicate whether to use defined
+                                  default removal fraction if no specific value
+                                  defined in database
+
+        Returns:
+            None
+        """
+        # Get parameter dict from database
+        pdict = self._load_parameters_from_database(use_default_removal=False)
+
+        self.set_param_from_data(self.energy_electric_flow_vol_inlet, pdict)
 
     def calculate_scaling_factors(self):
         # Get default scale factors and do calculations from base classes
@@ -111,3 +167,9 @@ class PassThroughBaseData(ZeroOrderBaseData):
             {"Inlet": self.inlet,
              "Outlet": self.outlet},
             time_point=time_point)
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {"Electricity Demand": self.electricity[time_point],
+                    "Electricity Intensity": self.energy_electric_flow_vol_inlet}
+
+        return {"vars": var_dict}

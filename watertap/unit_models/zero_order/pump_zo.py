@@ -11,27 +11,27 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a nanofiltration unit
+This module contains a zero-order representation of a pump unit
 operation.
 """
 
 from idaes.core import declare_process_block_class
 
-from watertap.core.zero_order_sido import SIDOBaseData
+from watertap.core.zero_order_pt import PassThroughBaseData
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
 
 
-@declare_process_block_class("NanofiltrationZO")
-class NanofiltrationZOData(SIDOBaseData):
+@declare_process_block_class("PumpZO")
+class PumpZOData(PassThroughBaseData):
     """
-    Zero-Order model for a Nanofiltration unit operation.
+    Zero-Order model for a pump unit operation.
     """
 
-    CONFIG = SIDOBaseData.CONFIG()
+    CONFIG = PassThroughBaseData.CONFIG()
 
     def build(self):
         super().build()
 
-        self._tech_type = "nanofiltration"
+        self._tech_type = "pump"

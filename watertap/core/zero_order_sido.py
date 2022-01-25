@@ -267,7 +267,7 @@ class SIDOBaseData(ZeroOrderBaseData):
 
     def load_parameters_from_database(self, use_default_removal=False):
         """
-        Method to load parameters for nanofiltration models from database.
+        Method to load parameters for from database.
 
         Args:
             use_default_removal - (optional) indicate whether to use defined
@@ -318,5 +318,8 @@ class SIDOBaseData(ZeroOrderBaseData):
         var_dict = {"Water Recovery": self.recovery_vol[time_point]}
         for j, v in self.removal_frac_mass_solute[time_point, :].wildcard_items():
             var_dict[f"Solute Removal [{j}]"] = v
+
+        var_dict["Electricity Demand"] = self.electricity[time_point]
+        var_dict["Electricity Intensity"] = self.energy_electric_flow_vol_inlet
 
         return {"vars": var_dict}

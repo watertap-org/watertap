@@ -19,20 +19,18 @@ from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
-import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
 from pyomo.environ import (ConcreteModel,
+                           Constraint,
                            value,
                            Var)
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
-from pyomo.environ import check_optimal_termination
 
 
 from watertap.core.zero_order_pt import PassThroughBaseData
 from watertap.core.zero_order_properties import \
     WaterParameterBlock, WaterStateBlock
-import idaes.logger as idaeslog
 
 solver = get_solver()
 
@@ -153,6 +151,8 @@ class TestFixedPerformance:
         m.fs.unit.inlet.conc_mass_comp[0, "B"].fix(20)
         m.fs.unit.inlet.conc_mass_comp[0, "C"].fix(30)
 
+        m.fs.unit.energy_electric_flow_vol_inlet.fix(10)
+
         return m
 
     @pytest.mark.unit
@@ -161,6 +161,14 @@ class TestFixedPerformance:
 
         assert isinstance(model.fs.unit.inlet, Port)
         assert isinstance(model.fs.unit.outlet, Port)
+
+        assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
+        assert len(model.fs.unit.energy_electric_flow_vol_inlet) == 1
+        assert isinstance(model.fs.unit.electricity, Var)
+        assert len(model.fs.unit.electricity) == 1
+
+        assert isinstance(model.fs.unit.electricity_consumption, Constraint)
+        assert len(model.fs.unit.electricity_consumption) == 1
 
     @pytest.mark.unit
     def test_degrees_of_freedom(self, model):
@@ -190,6 +198,9 @@ class TestFixedPerformance:
             model.fs.unit.inlet.conc_mass_comp[0, "C"]), rel=1e-5) ==
             value(model.fs.unit.outlet.conc_mass_comp[0, "C"]))
 
+        assert (pytest.approx(1512000, rel=1e-5) ==
+                value(model.fs.unit.electricity[0]))
+
     @pytest.mark.component
     def test_report(self, model, capsys):
         model.fs.unit.report()
@@ -197,6 +208,15 @@ class TestFixedPerformance:
         output = """
 ====================================================================================
 Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                   : Value      : Fixed : Bounds
+       Electricity Demand : 1.5120e+06 : False : (None, None)
+    Electricity Intensity :     10.000 :  True : (None, None)
+
 ------------------------------------------------------------------------------------
     Stream Table
                           Inlet  Outlet

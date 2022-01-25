@@ -336,7 +336,7 @@ class TestFixedPerformance:
         m.fs.unit.removal_frac_mass_solute[0, "A"].fix(0.1)
         m.fs.unit.removal_frac_mass_solute[0, "B"].fix(0.2)
         m.fs.unit.removal_frac_mass_solute[0, "C"].fix(0.3)
-        m.fs.unit.energy_electric_flow_vol_inlet.fix(1)
+        m.fs.unit.energy_electric_flow_vol_inlet.fix(10)
 
         return m
 
@@ -433,6 +433,9 @@ class TestFixedPerformance:
         assert (pytest.approx(45, rel=1e-5) ==
                 value(model.fs.unit.byproduct.conc_mass_comp[0, "C"]))
 
+        assert (pytest.approx(1512000, rel=1e-5) ==
+                value(model.fs.unit.electricity[0]))
+
     @pytest.mark.component
     def test_conservation(self, model):
         assert abs(value(model.fs.unit.inlet.flow_vol[0] -
@@ -460,11 +463,13 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                : Value   : Fixed : Bounds
-    Solute Removal [A] : 0.10000 :  True : (0, None)
-    Solute Removal [B] : 0.20000 :  True : (0, None)
-    Solute Removal [C] : 0.30000 :  True : (0, None)
-        Water Recovery : 0.80000 :  True : (1e-08, 1.0000001)
+    Key                   : Value      : Fixed : Bounds
+       Electricity Demand : 1.5120e+06 : False : (None, None)
+    Electricity Intensity :     10.000 :  True : (None, None)
+       Solute Removal [A] :    0.10000 :  True : (0, None)
+       Solute Removal [B] :    0.20000 :  True : (0, None)
+       Solute Removal [C] :    0.30000 :  True : (0, None)
+           Water Recovery :    0.80000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
