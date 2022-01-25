@@ -24,8 +24,10 @@ from watertap.tools.parameter_sweep import (_init_mpi,
                                                _update_model_values,
                                                _aggregate_results,
                                                _interp_nan_values,
+                                               _process_sweep_params,
                                                _write_output_to_h5,
                                                _read_output_h5,
+                                               _create_local_output_skeleton,
                                                parameter_sweep,
                                                LinearSample,
                                                UniformSample,
@@ -333,6 +335,69 @@ class TestParallelManager():
         _write_output_to_h5(reference_dict, output_directory=tmp_path, fname=h5_fname)
         read_dictionary = _read_output_h5(os.path.join(tmp_path, h5_fname))
         _assert_dictionary_correctness(reference_dict, read_dictionary)
+
+    @pytest.mark.unit
+    def test_create_local_output_skeleton(self, model):
+        comm, rank, num_procs = _init_mpi()
+
+        m = model
+        m.fs.slack_penalty = 1000.
+        m.fs.slack.setub(0)
+
+        sweep_params = {'input_a' : (m.fs.input['a'], 0.1, 0.9, 3),
+                        'input_b' : (m.fs.input['b'], 0.0, 0.5, 3)}
+        outputs = {'output_c':m.fs.output['c'],
+                   'output_d':m.fs.output['d'],
+                   'performance':m.fs.performance}
+
+        sweep_params, sampling_type = _process_sweep_params(sweep_params)
+        values = _build_combinations(sweep_params, sampling_type, None, comm, rank, num_procs)
+        num_cases = np.shape(values)[0]
+        output_dict = _create_local_output_skeleton(model, sweep_params, num_cases)
+
+        truth_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
+                                                  'units': 'non-dimensional',
+                                                  'upper bound': 0,
+                                                  'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                  'fs.input[b]': {'lower bound': 0,
+                                                  'units': 'non-dimensional',
+                                                  'upper bound': 0,
+                                                  'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                  'fs.output[c]': {'lower bound': 0,
+                                                   'units': 'non-dimensional',
+                                                   'upper bound': 0,
+                                                   'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                  'fs.output[d]': {'lower bound': 0,
+                                                   'units': 'non-dimensional',
+                                                   'upper bound': 0,
+                                                   'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                  'fs.performance': {'lower bound': 0,
+                                                     'units': 'non-dimensional',
+                                                     'upper bound': 0,
+                                                     'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                  'fs.slack[ab_slack]': {'lower bound': 0,
+                                                         'units': 'non-dimensional',
+                                                         'upper bound': 0,
+                                                         'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                  'fs.slack[cd_slack]': {'lower bound': 0,
+                                                         'units': 'non-dimensional',
+                                                         'upper bound': 0,
+                                                         'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                  'objective': {'lower bound': 0,
+                                                'units': 'non-dimensional',
+                                                'upper bound': 0,
+                                                'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])}},
+                      'sweep_params': {'fs.input[a]': {'lower bound': 0,
+                                                       'units': 'non-dimensional',
+                                                       'upper bound': 0,
+                                                       'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                       'fs.input[b]': {'lower bound': 0,
+                                                       'units': 'non-dimensional',
+                                                       'upper bound': 0,
+                                                       'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])}}}
+
+        _assert_dictionary_correctness(truth_dict, output_dict)
+
 
     @pytest.mark.component
     def test_parameter_sweep(self, model, tmp_path):
