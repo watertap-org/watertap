@@ -41,7 +41,7 @@ class NanofiltrationZOData(SIDOBaseData):
                                doc="Electricity consumption of unit")
         self.energy_electric_flow_vol_inlet = Var(
             units=pyunits.kWh/pyunits.m**3,
-            doc="Electricity intensity of unit")
+            doc="Electricity intensity with respect to inlet flowrate of unit")
 
         def electricity_consumption(b, t):
             return b.electricity[t] == (
