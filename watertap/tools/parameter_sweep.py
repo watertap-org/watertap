@@ -888,9 +888,9 @@ def parameter_sweep(model, sweep_params, outputs, csv_results_file=None, results
     global_results, global_output_dict = _aggregate_local_results(global_values, local_results, local_output_dict,
             num_samples, local_num_cases, fail_counter, comm)
 
-    import pprint
-    print("global_output_dict =")
-    pprint.pprint(global_output_dict)
+    # import pprint
+    # print("global_output_dict =")
+    # pprint.pprint(global_output_dict)
 
     # Save to file
     global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results, global_results, global_output_dict,
