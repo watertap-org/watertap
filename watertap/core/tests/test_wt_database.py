@@ -59,7 +59,7 @@ class TestDatabase():
         # First, check that _component_list exists and is None
         assert db._component_list is None
 
-        # Then check that component list retreive expected dict
+        # Then check that component list retrieved is a dict
         assert isinstance(db.component_list, dict)
 
     @pytest.mark.unit
