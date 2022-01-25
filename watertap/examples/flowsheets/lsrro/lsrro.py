@@ -35,8 +35,8 @@ import watertap.examples.flowsheets.lsrro.financials as financials
 import watertap.property_models.NaCl_prop_pack as props
 
 
-def main(number_of_stages, water_recovery=None, Cin=None, A_case=None,B_case=None,AB_tradeoff=None, A_fixed=None,
-         nacl_solubility_limit=None, has_CP=None, has_Pdrop=None):
+def main(number_of_stages, water_recovery=None, Cin=None, Cbrine=None,A_case=None,B_case=None,AB_tradeoff=None, A_fixed=None,
+         nacl_solubility_limit=None, has_CP=None, has_Pdrop=None, permeate_quality_limit=None):
     m = build(number_of_stages, nacl_solubility_limit, has_CP, has_Pdrop)
     set_operating_conditions(m, Cin)
     initialize(m)
@@ -46,7 +46,7 @@ def main(number_of_stages, water_recovery=None, Cin=None, A_case=None,B_case=Non
     display_design(m)
     display_state(m)
 
-    optimize_set_up(m, water_recovery, A_case, B_case, AB_tradeoff, A_fixed)
+    optimize_set_up(m, water_recovery, Cbrine, A_case, B_case, AB_tradeoff, A_fixed, permeate_quality_limit)
     solve(m)
     print('\n***---Optimization results---***')
     display_system(m)
@@ -403,7 +403,7 @@ def solve(m, solver=None, tee=False, raise_on_failure=False):
         return None
 
 
-def optimize_set_up(m, water_recovery=None, A_case=None, B_case=None, AB_tradeoff=None, A_fixed=None):
+def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=None, AB_tradeoff=None, A_fixed=None, permeate_quality_limit=True):
     '''
     B_case: "single optimum" or anything else to optimize B value at every LSR stage
     A_case: "fix" or "optimize" A at every LSR stage
@@ -485,7 +485,7 @@ def optimize_set_up(m, water_recovery=None, A_case=None, B_case=None, AB_tradeof
                 stage.A_comp.unfix()
                 stage.A_comp.fix(A_fixed)
             else:
-                pass
+                raise TypeError('A_case must be set to "fix" or "optimize"')
 
             if AB_tradeoff == 'equality constraint':
                 stage.ABtradeoff = Constraint(expr=pyunits.convert(stage.B_comp[0,'NaCl'], to_units=pyunits.L*pyunits.m**-2*pyunits.hour**-1)
@@ -507,8 +507,12 @@ def optimize_set_up(m, water_recovery=None, A_case=None, B_case=None, AB_tradeof
     # additional constraints
     if water_recovery is not None:
         m.fs.water_recovery.fix(water_recovery) # product mass flow rate fraction of feed [-]
+    if Cbrine is not None:
+        m.fs.ROUnits[m.fs.StageSet.last()].feed_side.properties[0, 1].mass_frac_phase_comp['Liq', 'NaCl'].fix(Cbrine) # product mass flow rate fraction of feed [-]
+
     # add upper bound for permeate concentration
-    m.fs.ROUnits[1].mixed_permeate[0].conc_mass_phase_comp['Liq','NaCl'].setub(0.5)
+    if permeate_quality_limit:
+        m.fs.ROUnits[1].mixed_permeate[0].mass_frac_phase_comp['Liq','NaCl'].setub(500e-6)
     # ---checking model---
     assert_units_consistent(m)
 
@@ -596,14 +600,16 @@ if __name__ == "__main__":
         m = main(int(sys.argv[1]), float(sys.argv[2]))
     else:
         print("Usage 3 (specify inputs in main before running): python lsrro.py")
-        m = main(number_of_stages=5,
-             water_recovery=0.70,
-             Cin=70,
-             A_case="optimize",
-             B_case="optimize",
-             AB_tradeoff="inequality constraint",
-             nacl_solubility_limit=False,
-             has_CP=True,
-             has_Pdrop=True,
-             A_fixed=1.5/3.6e11
-             )
+        m = main(number_of_stages=4,
+                 Cin=35,
+                 # water_recovery=0.50,
+                 Cbrine=250000e-6 ,#* pyunits.kg/pyunits.m**3,
+                 A_case="optimize",
+                 B_case="optimize",
+                 AB_tradeoff="inequality constraint",
+                 nacl_solubility_limit=True,
+                 permeate_quality_limit=True,
+                 has_CP=True,
+                 has_Pdrop=True,
+                 A_fixed=1.5/3.6e11
+                 )
