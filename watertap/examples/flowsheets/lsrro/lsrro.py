@@ -403,7 +403,7 @@ def solve(m, solver=None, tee=False, raise_on_failure=False):
         return None
 
 
-def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=None, AB_tradeoff=None, A_fixed=None, permeate_quality_limit=True):
+def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=None, AB_tradeoff=None, A_fixed=None, permeate_quality_limit=None):
     '''
     B_case: "single optimum" or anything else to optimize B value at every LSR stage
     A_case: "fix" or "optimize" A at every LSR stage
@@ -511,8 +511,11 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
         m.fs.ROUnits[m.fs.StageSet.last()].feed_side.properties[0, 1].mass_frac_phase_comp['Liq', 'NaCl'].fix(Cbrine) # product mass flow rate fraction of feed [-]
 
     # add upper bound for permeate concentration
-    if permeate_quality_limit:
-        m.fs.ROUnits[1].mixed_permeate[0].mass_frac_phase_comp['Liq','NaCl'].setub(500e-6)
+    if permeate_quality_limit is not None:
+        if isinstance(permeate_quality_limit, (int, float)):
+            m.fs.ROUnits[1].mixed_permeate[0].mass_frac_phase_comp['Liq','NaCl'].setub(permeate_quality_limit)
+        else:
+            raise TypeError('permeate_quality_limit must be None, integer, or float')
     # ---checking model---
     assert_units_consistent(m)
 
@@ -601,14 +604,14 @@ if __name__ == "__main__":
     else:
         print("Usage 3 (specify inputs in main before running): python lsrro.py")
         m = main(number_of_stages=4,
+                 water_recovery=None,
                  Cin=35,
-                 # water_recovery=0.50,
                  Cbrine=250000e-6 ,#* pyunits.kg/pyunits.m**3,
                  A_case="optimize",
                  B_case="optimize",
                  AB_tradeoff="inequality constraint",
                  nacl_solubility_limit=True,
-                 permeate_quality_limit=True,
+                 permeate_quality_limit=500e-6,
                  has_CP=True,
                  has_Pdrop=True,
                  A_fixed=1.5/3.6e11
