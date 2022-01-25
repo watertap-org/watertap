@@ -17,7 +17,8 @@ This module contains utility functions for initialization of WaterTAP models.
 
 __author__ = "Adam Atia"
 
-from pyomo.environ import check_optimal_termination, Var
+from math import fabs
+from pyomo.environ import check_optimal_termination, Var, Constraint, value
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.scaling import get_scaling_factor, __none_left_mult
 from idaes.core.util import get_solver
@@ -229,3 +230,42 @@ def generate_initialization_perturbation(blk, bound_push=1e-2, bound_frac=1e-2, 
                 pu = kappa1*max(1, abs(v_ub))
             if v_value > v_ub - pu:
                 yield (v, v_value, v_ub-pu)
+
+
+def check_constraint_status(blk, tol=1e-7):
+    c_violated_lst = []
+
+    # implementation modified from Pyomo 5.7.3, pyomo.util.infeasible.log_infeasible_constraints
+    for c in blk.component_data_objects(
+            ctype=Constraint, active=True, descend_into=True):
+        c_body_value = value(c.body, exception=False)
+        c_lb_value = value(c.lower, exception=False)
+        c_ub_value = value(c.upper, exception=False)
+
+        c_undefined = False
+        equality_violated = False
+        lb_violated = False
+        ub_violated = False
+
+        if c_body_value is None:
+            c_undefined = True
+        else:
+            if c.equality:
+                if fabs(c_lb_value - c_body_value) >= tol:
+                    equality_violated = True
+            else:
+                if c.has_lb() and c_lb_value - c_body_value >= tol:
+                    lb_violated = True
+                if c.has_ub() and c_body_value - c_ub_value >= tol:
+                    ub_violated = True
+
+        if not any((c_undefined, equality_violated, lb_violated, ub_violated)):
+            continue
+        else:
+            c_violated_lst.append(c.name)
+
+    if len(c_violated_lst) > 0:
+        raise RuntimeError(
+            "The initialization did not converge, the following constraint(s) "
+            "are undefined or violate the equality or inequality: {violated_lst}".format(
+                violated_lst=c_violated_lst))
