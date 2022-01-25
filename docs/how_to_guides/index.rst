@@ -12,6 +12,7 @@ How To Guides
    how_to_scale_a_model
    how_to_scale_chemical_reactions
    how_to_scale_chemical_species
+   how_to_scale_chemical_process_energy_balance
    how_to_use_parameter_sweep
    how_to_use_parameter_sweep_monte_carlo
    how_to_use_EDB

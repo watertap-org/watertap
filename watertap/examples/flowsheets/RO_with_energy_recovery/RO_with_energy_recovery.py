@@ -257,7 +257,6 @@ def solve(blk, solver=None, tee=False):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    # assert_optimal_termination(results) # TODO: Come up with a better way of handling this exception.
 
     return results
 

@@ -1,3 +1,5 @@
+.. _how_to_use_edb_cli:
+
 EDB CLI How-to
 ===============
 Below are some examples of using the ``edb`` command-line program.
