@@ -55,6 +55,14 @@ class TestDatabase():
         return Database()
 
     @pytest.mark.unit
+    def test_component_list(self, db):
+        # First, check that _component_list exists and is None
+        assert db._component_list is None
+
+        # Then check that component list retrieved is a dict
+        assert isinstance(db.component_list, dict)
+
+    @pytest.mark.unit
     def test_get_technology(self, db):
         assert db._cached_files == {}
 
@@ -65,8 +73,8 @@ class TestDatabase():
 
         # Check for a few expected keys to check what we got back looks right
         assert "default" in data
-        assert "removal_mass_solute" in data["default"]
-        assert "electricity_intensity" in data["default"]
+        assert "removal_frac_mass_solute" in data["default"]
+        assert "energy_electric_flow_vol_inlet" in data["default"]
         assert "recovery_vol" in data["default"]
 
     @pytest.mark.unit
@@ -85,8 +93,8 @@ class TestDatabase():
         assert data == db._cached_files["nanofiltration"]["default"]
 
         # Check for a few expected keys to check what we got back looks right
-        assert "removal_mass_solute" in data
-        assert "electricity_intensity" in data
+        assert "removal_frac_mass_solute" in data
+        assert "energy_electric_flow_vol_inlet" in data
         assert "recovery_vol" in data
 
     @pytest.mark.unit

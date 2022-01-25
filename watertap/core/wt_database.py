@@ -27,7 +27,7 @@ class Database:
     associated with zero-order models in WaterTap.
 
     Args:
-        dbpath - (optional) path to database folder containing yml files
+        dbpath - (optional) path to database folder containing yaml files
 
     Returns:
         an instance of a Database object linked to the provided database
@@ -49,6 +49,9 @@ class Database:
                     f"Could not find requested path {self._dbpath}. Please "
                     f"check that this path exists.")
 
+        # Create placeholder _component_list attribute
+        self._component_list = None
+
     def get_source_data(self, water_source=None):
         """
         Method to retrieve water source definition from database.
@@ -69,12 +72,12 @@ class Database:
         else:
             # Else load data from required file
             try:
-                with open(os.path.join(self._dbpath, "water_sources.yml"),
+                with open(os.path.join(self._dbpath, "water_sources.yaml"),
                           "r") as f:
                     lines = f.read()
                     f.close()
             except OSError:
-                raise KeyError("Could not find water_sources.yml in database.")
+                raise KeyError("Could not find water_sources.yaml in database.")
 
             source_data = yaml.load(lines, yaml.Loader)
 
@@ -172,6 +175,15 @@ class Database:
         """
         self._cached_files = {}
 
+    @property
+    def component_list(self):
+        return self._return_component_list()
+
+    def _return_component_list(self):
+        if self._component_list is None:
+            self._load_component_list()
+        return self._component_list
+
     def _get_technology(self, technology):
         if technology in self._cached_files:
             # If data is already in cached files, return
@@ -179,7 +191,7 @@ class Database:
         else:
             # Else load data from required file
             try:
-                with open(os.path.join(self._dbpath, technology+".yml"),
+                with open(os.path.join(self._dbpath, technology+".yaml"),
                           "r") as f:
                     lines = f.read()
                     f.close()
@@ -192,3 +204,21 @@ class Database:
             # Store data in cache and return
             self._cached_files[technology] = fdata
             return fdata
+
+    def _load_component_list(self):
+        """
+        Load list of supported components from component_list.yaml file and
+        store as _component_list attribute.
+
+        Returns:
+            None
+        """
+        try:
+            with open(os.path.join(self._dbpath, "component_list.yaml"),
+                      "r") as f:
+                lines = f.read()
+                f.close()
+        except OSError:
+            raise KeyError("Could not find component_list.yaml in database.")
+
+        self._component_list = yaml.load(lines, yaml.Loader)
