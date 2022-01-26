@@ -1,41 +1,41 @@
 default:
   energy_electric_flow_vol_inlet:
     value: 0.0
-    unit: kWh/m^3
+    units: kWh/m^3
   specific_capital_cost_flow_vol_inlet:
     flow_basis_par:
       value: 4731.764235
-      unit: m^3/hr
+      units: m^3/hr
     cap_basis_par:
       value: 5.5
-      unit: M$
+      units: M$
     cap_exp_par:
       value: 0.5862
-      unit: dimensionless
-    vol unit:
+      units: dimensionless
+    vol units:
       value: m^3/hr
-    capital cost unit:
+    capital cost units:
       value: M$
     year:
       value: 2014
     cost_function_form:
       function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
-      unit: $
+      units: $
   recovery_vol:
     value: 0.9999
-    unit: dimensionless
+    units: dimensionless
     reference: Voutchkov, N. (2018). Desalination Project Cost Estimating and Management.
       Taylor & Francis, a CRC title, part of the Taylor & Francis imprint, a member
       of the Taylor & Francis Group, the academic division of T&F Informa, plc.
-  default_removal_mass_solute:
+  default_removal_frac_mass_solute:
     value: 0
-    unit: dimensionless
+    units: dimensionless
   removal_frac_mass_solute:
     nonvolatile_toc:
       value: 0.2
-      unit: dimensionless
+      units: dimensionless
       constituent_longform: Nonvolatile TOC
     tss:
       value: 0.5
-      unit: dimensionless
+      units: dimensionless
       constituent_longform: Total Suspended Solids (TSS)
