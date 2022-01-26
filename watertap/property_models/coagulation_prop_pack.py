@@ -70,7 +70,8 @@ class CoagulationParameterData(PhysicalParameterBlock):
                         initialize=4.2e3,
                         units=pyunits.J / (pyunits.kg * pyunits.K))
 
-        dens_mass_param_dict = {'0': 995}
+        dens_mass_param_dict = {('Liq','H2O'): 1000,
+                                ('Liq','TSS'): 1400}
         self.dens_mass_param = Param(
             dens_mass_param_dict.keys(),
             domain=Reals,
@@ -366,9 +367,11 @@ class CoagulationStateBlockData(StateBlockData):
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density")
 
-        def rule_dens_mass_phase(b):
-            return (b.dens_mass_phase['Liq'] == b.params.dens_mass_param['0'])
-        self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
+        def rule_dens_mass_phase(b, p):
+            return (b.dens_mass_phase[p] ==
+                    sum(b.params.dens_mass_param[(p,i)] * b.mass_frac_phase_comp[p, i]
+                        for i in self.params.component_list))
+        self.eq_dens_mass_phase = Constraint(self.params.phase_list, rule=rule_dens_mass_phase)
 
 
     def _flow_vol_phase(self):
@@ -379,11 +382,11 @@ class CoagulationStateBlockData(StateBlockData):
             units=pyunits.m**3/pyunits.s,
             doc="Volumetric flow rate")
 
-        def rule_flow_vol_phase(b):
-            return (b.flow_vol_phase['Liq']
-                    == sum(b.flow_mass_phase_comp['Liq', j] for j in b.params.component_list)
-                    / b.dens_mass_phase['Liq'])
-        self.eq_flow_vol_phase = Constraint(rule=rule_flow_vol_phase)
+        def rule_flow_vol_phase(b, p):
+            return (b.flow_vol_phase[p]
+                    == sum(b.flow_mass_phase_comp[p, j] for j in b.params.component_list)
+                    / b.dens_mass_phase[p])
+        self.eq_flow_vol_phase = Constraint(self.params.phase_list, rule=rule_flow_vol_phase)
 
     def _conc_mass_phase_comp(self):
         self.conc_mass_phase_comp = Var(
@@ -394,10 +397,10 @@ class CoagulationStateBlockData(StateBlockData):
             units=pyunits.kg/pyunits.m**3,
             doc="Molar flowrate")
 
-        def rule_conc_mass_phase_comp(b, j):
-            return (b.conc_mass_phase_comp['Liq', j] ==
-                    b.mass_frac_phase_comp['Liq', j] * b.dens_mass_phase['Liq'])
-        self.eq_conc_mass_phase_comp = Constraint(self.params.component_list, rule=rule_conc_mass_phase_comp)
+        def rule_conc_mass_phase_comp(b, p, j):
+            return (b.conc_mass_phase_comp[p, j] ==
+                    b.mass_frac_phase_comp[p, j] * b.dens_mass_phase[p])
+        self.eq_conc_mass_phase_comp = Constraint(self.params.phase_list, self.params.component_list, rule=rule_conc_mass_phase_comp)
 
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method
@@ -405,7 +408,7 @@ class CoagulationStateBlockData(StateBlockData):
 
         def rule_enth_flow(b):  # enthalpy flow [J/s]
             return (b.params.cp
-                    * sum(b.flow_mass_phase_comp['Liq', j] for j in b.params.component_list)
+                    * sum(b.flow_mass_phase_comp[p, j] for (p, j) in (b.params.phase_list, b.params.component_list))
                     * (b.temperature - temperature_ref))
         self.enth_flow = Expression(rule=rule_enth_flow)
 
@@ -495,6 +498,8 @@ class CoagulationStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(self.dens_mass_phase) is None:
                 iscale.set_scaling_factor(self.dens_mass_phase, 1e-3)
 
+        # # TODO:  FIX THIS GARBAGE
+        '''
         # transforming constraints
         # property relationships with no index, simple constraint
         v_str_lst_simple = ['dens_mass_phase', 'flow_vol_phase']
@@ -502,8 +507,13 @@ class CoagulationStateBlockData(StateBlockData):
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
                 sf = iscale.get_scaling_factor(v, default=1, warning=True)
+                print("---hher")
+                print(sf)
+                print()
                 c = getattr(self, 'eq_' + v_str)
-                iscale.constraint_scaling_transform(c, sf)
+                print(c)
+                c.pprint()
+                #iscale.constraint_scaling_transform(c, sf)
 
         # property relationships indexed by component and phase
         v_str_lst_phase_comp = ['mass_frac_phase_comp', 'conc_mass_phase_comp']
@@ -514,4 +524,9 @@ class CoagulationStateBlockData(StateBlockData):
                 for p in self.params.phase_list:
                     for j in self.params.component_list:
                         sf = iscale.get_scaling_factor(v_comp[p, j], default=1, warning=True)
-                        iscale.constraint_scaling_transform(c, sf)
+                        print("====NO")
+                        c.pprint()
+                        print()
+                        iscale.constraint_scaling_transform(c[p], sf)
+        #end
+        '''
