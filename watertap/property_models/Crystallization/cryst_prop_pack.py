@@ -452,7 +452,8 @@ class NaClStateBlockData(StateBlockData):
                             doc='State temperature [K]')
 
         self.flow_mass_phase_comp = Var(self.params.phase_list, self.params.component_list,
-                            initialize={('Liq', 'H2O'): 0.965, ('Liq', 'NaCl'): 0.035},
+                            initialize={('Liq', 'H2O'): 0.965, ('Liq', 'NaCl'): 0.035}, 
+                            # ('Vap', 'H2O'): 0, ('Vap', 'NaCl'): 0, ('Sol', 'H2O'): 0, ('Sol', 'NaCl'): 0},
                             bounds=(1e-8, None),
                             domain=NonNegativeReals,
                             units=pyunits.kg/pyunits.s,
@@ -471,14 +472,14 @@ class NaClStateBlockData(StateBlockData):
                                     doc='Mass fraction')
 
         def rule_mass_frac_phase_comp(b, p, j):
-            if p =='Liq':
-                return (b.mass_frac_phase_comp[p, j] == b.flow_mass_phase_comp[p, j] /
-                                        sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list))
+            if p == 'Liq':
+                return (b.mass_frac_phase_comp['Liq', j] * sum(b.flow_mass_phase_comp['Liq', j] for j in self.params.component_list) - b.flow_mass_phase_comp['Liq', j] == 0)
+            # elif p == 'Sol':
+            #     return (b.mass_frac_phase_comp['Sol', j] * sum(b.flow_mass_phase_comp['Sol', j] for j in self.params.component_list) == b.flow_mass_phase_comp['Sol', j])
             else:
-                return Constraint.Skip ##MUST BE FIXED!##
+                 return Constraint.Skip
 
-            # return (b.mass_frac_phase_comp[p, j] == b.flow_mass_phase_comp[p, j] /
-            #                             sum(b.flow_mass_phase_comp[p, j] for p in self.params.phase_list for j in self.params.component_list))
+            # return (b.mass_frac_phase_comp[p, j] * sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list) - b.flow_mass_phase_comp[p, j] == 0)   
 
         self.eq_mass_frac_phase_comp = Constraint(self.params.phase_list, self.params.component_list, rule=rule_mass_frac_phase_comp)
 
@@ -646,7 +647,7 @@ class NaClStateBlockData(StateBlockData):
                         + (b.params.cp_param_NaCl_liq_A3 * exp(0.01 * pyunits.K**-1 * t))
                 cp_nacl_liq = b.params.cp_param_NaCl_liq_A1 * exp(alpha) + \
                         b.params.cp_param_NaCl_liq_A5 * ((1 - b.mass_frac_phase_comp['Liq', 'H2O']) ** b.params.cp_param_NaCl_liq_A6)
-                return b.cp_solute[p] == cp_nacl_liq * (1000 * pyunits.J / pyunits.kJ)
+                return b.cp_solute[p] == pyunits.convert(cp_nacl_liq, to_units=pyunits.J / pyunits.kg / pyunits.K)
 
         self.eq_cp_solute = Constraint(['Liq', 'Sol'], rule=rule_cp_solute)
 
@@ -786,10 +787,10 @@ class NaClStateBlockData(StateBlockData):
                    + b.params.enth_mass_solvent_param_A3 * t ** 2
                    + b.params.enth_mass_solvent_param_A4 * t ** 3)  
             if p == 'Liq': # enthalpy, eq. 55 in Sharqawy
-                return b.enth_mass_solvent[p] == h_w * (0.001 * pyunits.kJ / pyunits.J) 
+                return b.enth_mass_solvent[p] == pyunits.convert(h_w, to_units=pyunits.kJ * pyunits.kg ** -1) 
             elif p =='Vap':
                 
-                return b.enth_mass_solvent[p] == (h_w + b.dh_vap_solvent) * (0.001 * pyunits.kJ / pyunits.J) 
+                return b.enth_mass_solvent[p] ==pyunits.convert((h_w + b.dh_vap_solvent), to_units=pyunits.kJ * pyunits.kg ** -1) 
  
         self.eq_enth_mass_solvent = Constraint(['Liq', 'Vap'], rule=rule_enth_mass_solvent)
 
@@ -904,8 +905,6 @@ class NaClStateBlockData(StateBlockData):
                 + b.flow_mass_phase_comp['Vap', 'H2O'] * b.enth_mass_solvent['Vap'] \
                 + b.flow_mass_phase_comp['Sol', 'NaCl'] * b.enth_mass_solute['Sol']
 
-
-            return sum(b.flow_mass_phase_comp['Liq', j] for j in b.params.component_list) * b.enth_mass_phase['Liq']
         self.enth_flow = Expression(rule=rule_enth_flow)
 
 
