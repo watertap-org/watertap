@@ -488,8 +488,12 @@ def _update_local_output_dict(model, sweep_params, case_number, sweep_vals,
 
 def _create_global_output(local_output_dict, req_num_samples, comm):
 
-    my_mpi_rank = comm.Get_rank()
-    comm_size = comm.Get_size()
+    if comm is None:
+        my_mpi_rank = 0
+        comm_size = 1
+    else:
+        my_mpi_rank = comm.Get_rank()
+        comm_size = comm.Get_size()
 
     if comm_size == 1:
         global_output_dict = local_output_dict
@@ -783,7 +787,11 @@ def _filter_recursive_solves(model, sweep_params, recursive_local_dict, true_loc
 def _aggregate_local_results(global_values, local_results, local_output_dict,
         num_samples, local_num_cases, fail_counter, comm):
 
-    num_procs = comm.Get_size()
+    if comm is None:
+        num_procs = 1
+    else:
+        num_procs = comm.Get_size()
+
     global_results = _aggregate_results(local_results, global_values, comm, num_procs)
     global_output_dict = _create_global_output(local_output_dict, num_samples, comm)
 
@@ -795,8 +803,12 @@ def _save_results(sweep_params, outputs, local_values, global_values, local_resu
         global_results, global_output_dict, csv_results_file, results_fname_no_ext,
         debugging_data_dir, comm, interpolate_nan_outputs):
 
-    rank = comm.Get_rank()
-    num_procs = comm.Get_size()
+    if comm is None:
+        rank = 0
+        num_procs = 1
+    else:
+        rank = comm.Get_rank()
+        num_procs = comm.Get_size()
 
     # Make a directory for saved outputs
     if rank == 0:
