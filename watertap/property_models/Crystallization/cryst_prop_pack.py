@@ -429,7 +429,91 @@ class _NaClStateBlock(StateBlock):
         revert_state_vars(self, flags)
         init_log.info_high('{} State Released.'.format(self.name))
 
+    def calculate_state(self, var_args=None, hold_state=False, outlvl=idaeslog.NOTSET,
+                        solver=None, optarg=None):
+        """
+        Solves state blocks given a set of variables and their values. These variables can
+        be state variables or properties. This method is typically used before
+        initialization to solve for state variables because non-state variables (i.e. properties)
+        cannot be fixed in initialization routines.
+        Keyword Arguments:
+            var_args : dictionary with variables and their values, they can be state variables or properties
+                       {(VAR_NAME, INDEX): VALUE}
+            hold_state : flag indicating whether all of the state variables should be fixed after calculate state.
+                         True - State variables will be fixed.
+                         False - State variables will remain unfixed, unless already fixed.
+            outlvl : idaes logger object that sets output level of solve call (default=idaeslog.NOTSET)
+            solver : solver name string if None is provided the default solver
+                     for IDAES will be used (default = None)
+            optarg : solver options dictionary object (default={})
+        Returns:
+            results object from state block solve
+        """
+        # Get logger
+        solve_log = idaeslog.getSolveLogger(self.name, level=outlvl, tag="properties")
 
+        # Initialize at current state values (not user provided)
+        self.initialize(solver=solver, optarg=optarg, outlvl=outlvl)
+
+        # Set solver and options
+        opt = get_solver(solver, optarg)
+
+        # Fix variables and check degrees of freedom
+        flags = {}  # dictionary noting which variables were fixed and their previous state
+        for k in self.keys():
+            sb = self[k]
+            for (v_name, ind), val in var_args.items():
+                var = getattr(sb, v_name)
+                if iscale.get_scaling_factor(var[ind]) is None:
+                    _log.warning(
+                            "While using the calculate_state method on {sb_name}, variable {v_name} "
+                            "was provided as an argument in var_args, but it does not have a scaling "
+                            "factor. This suggests that the calculate_scaling_factor method has not been "
+                            "used or the variable was created on demand after the scaling factors were "
+                            "calculated. It is recommended to touch all relevant variables (i.e. call "
+                            "them or set an initial value) before using the calculate_scaling_factor "
+                            "method.".format(v_name=v_name, sb_name=sb.name))
+                if var[ind].is_fixed():
+                    flags[(k, v_name, ind)] = True
+                    if value(var[ind]) != val:
+                        raise ConfigurationError(
+                            "While using the calculate_state method on {sb_name}, {v_name} was "
+                            "fixed to a value {val}, but it was already fixed to value {val_2}. "
+                            "Unfix the variable before calling the calculate_state "
+                            "method or update var_args."
+                            "".format(sb_name=sb.name, v_name=var.name, val=val, val_2=value(var[ind])))
+                else:
+                    flags[(k, v_name, ind)] = False
+                    var[ind].fix(val)
+
+            if degrees_of_freedom(sb) != 0:
+                raise RuntimeError("While using the calculate_state method on {sb_name}, the degrees "
+                                   "of freedom were {dof}, but 0 is required. Check var_args and ensure "
+                                   "the correct fixed variables are provided."
+                                   "".format(sb_name=sb.name, dof=degrees_of_freedom(sb)))
+
+        # Solve
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = solve_indexed_blocks(opt, [self], tee=slc.tee)
+            solve_log.info_high("Calculate state: {}.".format(idaeslog.condition(results)))
+
+        if not check_optimal_termination(results):
+            _log.warning("While using the calculate_state method on {sb_name}, the solver failed "
+                         "to converge to an optimal solution. This suggests that the user provided "
+                         "infeasible inputs, or that the model is poorly scaled, poorly initialized, "
+                         "or degenerate.")
+
+        # unfix all variables fixed with var_args
+        for (k, v_name, ind), previously_fixed in flags.items():
+            if not previously_fixed:
+                var = getattr(self[k], v_name)
+                var[ind].unfix()
+
+        # fix state variables if hold_state
+        if hold_state:
+            fix_state_vars(self)
+
+        return results
 
 @declare_process_block_class("NaClStateBlock", block_class=_NaClStateBlock)
 class NaClStateBlockData(StateBlockData):
@@ -471,16 +555,10 @@ class NaClStateBlockData(StateBlockData):
                                     units=pyunits.dimensionless,
                                     doc='Mass fraction')
 
-        def rule_mass_frac_phase_comp(b, p, j):
-            if p == 'Liq':
-                return (b.mass_frac_phase_comp['Liq', j] * sum(b.flow_mass_phase_comp['Liq', j] for j in self.params.component_list) - b.flow_mass_phase_comp['Liq', j] == 0)
-            # elif p == 'Sol':
-            #     return (b.mass_frac_phase_comp['Sol', j] * sum(b.flow_mass_phase_comp['Sol', j] for j in self.params.component_list) == b.flow_mass_phase_comp['Sol', j])
-            else:
-                 return Constraint.Skip
-
-            # return (b.mass_frac_phase_comp[p, j] * sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list) - b.flow_mass_phase_comp[p, j] == 0)   
-
+        def rule_mass_frac_phase_comp(b, p, j):  
+            eps = 1e-15 * pyunits.kg/pyunits.s # Small value added to denominator ensure denominator is always greater than zero.
+            return (b.mass_frac_phase_comp[p, j] ==  b.flow_mass_phase_comp[p, j] / (eps + sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list)))
+        
         self.eq_mass_frac_phase_comp = Constraint(self.params.phase_list, self.params.component_list, rule=rule_mass_frac_phase_comp)
 
 
@@ -918,12 +996,7 @@ class NaClStateBlockData(StateBlockData):
             doc="Volumetric fraction of liquid and solids in slurry")
 
         def rule_vol_frac_phase(b, p):  
-            vol_liq = sum(b.flow_mass_phase_comp['Liq', j] for j in b.params.component_list) * b.dens_mass_phase['Liq']
-            vol_sol = b.flow_mass_phase_comp['Sol', 'NaCl'] * b.dens_mass_solute['Sol']
-            if p == 'Liq':
-                return (b.vol_frac_phase[p] == vol_liq / (vol_sol + vol_liq))
-            elif p == 'Sol':
-                return (b.vol_frac_phase[p] == 1 - vol_liq / (vol_sol + vol_liq))
+            return ( b.vol_frac_phase[p] == b.flow_vol_phase[p] / (b.flow_vol_phase['Sol'] + b.flow_vol_phase['Liq']) )
 
         self.eq_vol_frac_phase = Constraint(['Liq', 'Sol'], rule=rule_vol_frac_phase)
 
@@ -950,7 +1023,7 @@ class NaClStateBlockData(StateBlockData):
 
     def define_state_vars(self):
         """Define state vars."""
-        return {"flow_mass_phase": self.flow_mass_phase,
+        return {"flow_mass_phase_comp": self.flow_mass_phase_comp,
                 "temperature": self.temperature,
                 "pressure": self.pressure}
 
