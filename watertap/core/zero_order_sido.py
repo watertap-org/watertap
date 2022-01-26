@@ -149,7 +149,7 @@ class SIDOBaseData(UnitModelBlockData):
             units=pyunits.dimensionless,
             bounds=(1E-8, 1.0000001),
             doc='Volumetric recovery fraction of water in the treated stream')
-        self.removal_mass_solute = Var(
+        self.removal_frac_mass_solute = Var(
             self.flowsheet().time,
             self.config.property_package.solute_set,
             domain=NonNegativeReals,
@@ -176,7 +176,7 @@ class SIDOBaseData(UnitModelBlockData):
                          self.config.property_package.solute_set,
                          doc='Solute removal equations')
         def solute_removal_equation(b, t, j):
-            return (b.removal_mass_solute[t, j] *
+            return (b.removal_frac_mass_solute[t, j] *
                     b.properties_in[t].conc_mass_comp[j] ==
                     (1 - b.recovery_vol[t]) *
                     b.properties_byproduct[t].conc_mass_comp[j])
@@ -187,7 +187,7 @@ class SIDOBaseData(UnitModelBlockData):
                          doc='Constraint for solute concentration in treated '
                          'stream.')
         def solute_treated_equation(b, t, j):
-            return ((1 - b.removal_mass_solute[t, j]) *
+            return ((1 - b.removal_frac_mass_solute[t, j]) *
                     b.properties_in[t].conc_mass_comp[j] ==
                     b.recovery_vol[t] *
                     b.properties_treated[t].conc_mass_comp[j])
@@ -355,9 +355,9 @@ class SIDOBaseData(UnitModelBlockData):
             try:
                 pdata = pdata[index]
             except KeyError:
-                if pname == "removal_mass_solute" and use_default_removal:
+                if pname == "removal_frac_mass_solute" and use_default_removal:
                     try:
-                        pdata = data["default_removal_mass_solute"]
+                        pdata = data["default_removal_frac_mass_solute"]
                         index = "default"
                     except KeyError:
                         raise KeyError(
@@ -403,9 +403,9 @@ class SIDOBaseData(UnitModelBlockData):
         """
         self.set_param_from_data(self.recovery_vol, data)
 
-        for t, j in self.removal_mass_solute:
+        for t, j in self.removal_frac_mass_solute:
             self.set_param_from_data(
-                self.removal_mass_solute[t, j],
+                self.removal_frac_mass_solute[t, j],
                 data,
                 index=j,
                 use_default_removal=use_default_removal)
@@ -419,7 +419,7 @@ class SIDOBaseData(UnitModelBlockData):
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {"Water Recovery": self.recovery_vol[time_point]}
-        for j, v in self.removal_mass_solute[time_point, :].wildcard_items():
+        for j, v in self.removal_frac_mass_solute[time_point, :].wildcard_items():
             var_dict[f"Solute Removal [{j}]"] = v
 
         return {"vars": var_dict}

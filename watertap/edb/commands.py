@@ -244,7 +244,11 @@ def dump_data(output_file, data_type, url, database):
     _log.debug(f"Writing records to output file '{filename}'")
 
     _log.info(f"Connecting to MongoDB at: {url}/{database}")
-    db = ElectrolyteDB(url=url, db=database)
+    try:
+        edb = ElectrolyteDB(url, database)
+    except ConnectionFailure as err:
+        click.echo(f"Database connection failure: {err}")
+        return -1
 
     _log.debug("Retrieving records")
     if data_type == "component":
@@ -369,3 +373,59 @@ def schema(output_file, output_format, data_type, url, database):
                 json.dump(schema_data, schema_file)
                 schema_file.seek(0)
                 schema_gen.generate_from_file_object(schema_file, stream, config=config)
+
+
+#################################################################################
+# INFO command
+# Report information on records in the database
+#################################################################################
+@command_base.command(
+    name="info", help="Provides some basic information on records loaded"
+)
+@click.option(
+    "-t",
+    "--type",
+    "data_type",
+    required=True,
+    help="Type of records",
+    type=click.Choice(["component", "reaction", "base"], case_sensitive=False),
+    default=None,
+)
+@click.option(
+    "-u", "--url", help="Database connection URL", default=ElectrolyteDB.DEFAULT_URL
+)
+@click.option(
+    "-d", "--database", help="Database name", default=ElectrolyteDB.DEFAULT_DB
+)
+def info(data_type, url, database):
+    print_messages = _log.isEnabledFor(logging.ERROR)
+
+    _log.info(f"Connecting to MongoDB at: {url}/{database}")
+    try:
+        edb = ElectrolyteDB(url, database)
+    except ConnectionFailure as err:
+        click.echo(f"Database connection failure: {err}")
+        return -1
+
+    _log.debug("Retrieving records")
+
+    if data_type == "base":
+        print("Info: Base configuration files are for initializing "
+                "thermo or reaction configuration dictionaries \n"
+                "used by the IDAES GenericParameterBlock and "
+                "GenericReactionParameterBlock\n")
+        print("Loaded base options:")
+        print("--------------------")
+        db.list_bases()
+    elif data_type == "component":
+        print("Info: Components are chemical species registered "
+                "within the database. They are stored with their \n"
+                "appropriate methods and/or parameters necessary "
+                "for calculating properties of the phases and/or \n"
+                "mixtures of phases.\n\nTo view loaded components, use the "
+                "'edb dump' command.")
+    else:
+        print("Info: Reactions are registered relationships between "
+                "component records within the database.\nThese currently include, "
+                "(i) equilibrium reactions and (ii) solubility products.\n\n"
+                "To view loaded reactions, use the 'edb dump' command." )
