@@ -11,148 +11,148 @@ default:
     alkalinity_as_caco3:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: alkalinity_as_caco3
     aluminum:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: aluminum
     arsenic:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: arsenic
     barium:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: barium
     bicarbonate_alkalinity_as_caco3:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: bicarbonate_alkalinity_as_caco3
     boron:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: boron
     bromide:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: bromide
     calcium:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: calcium
     chloride:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: chloride
     chromium:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: chromium
     cyanide_as_free:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: cyanide_as_free
     electrical_conductivity:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: electrical_conductivity
     fluoride:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: fluoride
     hardness:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: hardness
     iron:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: iron
     lead:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: lead
     magnesium:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: magnesium
     manganese:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: manganese
     mercury:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: mercury
     nickel:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: nickel
     nitrate:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: nitrate
     nitrate_as_nitrogen:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: nitrate_as_nitrogen
     nitrite_as_nitrogen:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: nitrite_as_nitrogen
     phosphates:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: phosphates
     potassium:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: potassium
     selenium:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: selenium
     silicon:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: silicon
     silver:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: silver
     sodium:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: sodium
     strontium:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: strontium
     sulfate:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: sulfate
     tds:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: tds
     total_coliforms_fecal_ecoli:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: total_coliforms_fecal_ecoli
     trihalomethanes:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: trihalomethanes
     tss:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: tss
     turbidity:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: turbidity
     zinc:
       value: 0.98
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: zinc

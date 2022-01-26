@@ -11,4 +11,4 @@ default:
     tds:
       value: 0.9
       unit: dimensionless
-      constituent_longform: .nan
+      constituent_longform: tds
