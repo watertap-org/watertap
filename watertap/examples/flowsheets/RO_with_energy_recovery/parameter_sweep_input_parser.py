@@ -245,7 +245,7 @@ def get_sweep_params_from_yaml(m, yaml_filename):
 
 
 
-def set_defaults_from_yaml(m, yaml_filename, verbose=False):
+def set_defaults_from_yaml(m, yaml_filename, verbose=False, do_nothing=False):
     """ Sets default model values using values stored in a yaml file
 
     This function reads a yaml file with the structure::
@@ -281,18 +281,20 @@ def set_defaults_from_yaml(m, yaml_filename, verbose=False):
         # property, should work with indexing!
         child = _return_child_property(m, path)
 
-        current_value = value(child)
+        old_value = value(child)
+
+        if do_nothing:
+            new_value = old_value
+
+        else:
+            new_value = default_value
 
         if verbose:
             print('Property: %s' % (key))
-            print('New Value: %e, Old Value: %e' % (default_value, current_value))
+            print('New Value: %e, Old Value: %e' % (new_value, old_value))
 
-        if child.is_variable_type():
-            child.fix(default_value)
-            failed_to_set_value = False
-
-        elif child.is_parameter_type():
-            child.set_value(default_value)
+        if child.is_variable_type() or child.is_variable_type() or child.is_parameter_type() or child.is_expression_type():
+            child.set_value(new_value)
             failed_to_set_value = False
 
         else:
