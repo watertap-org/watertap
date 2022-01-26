@@ -1,0 +1,29 @@
+default:
+  recovery_vol:
+    value: 0.9
+    unit: dimensionless
+    reference: Texas Water Development Board IT3PR User Manual
+  default_removal_mass_solute:
+    value: 0
+    unit: dimensionless
+  removal_frac_mass_solute:
+    eeq:
+      value: 0.2
+      unit: dimensionless
+      constituent_longform: Estradiol Equivalency (EEQ)
+    nonvolatile_toc:
+      value: 0.2
+      unit: dimensionless
+      constituent_longform: Nonvolatile TOC
+    toc:
+      value: 0.2
+      unit: dimensionless
+      constituent_longform: Total Organic Carbon (TOC)
+    nitrate:
+      value: 0.8
+      unit: dimensionless
+      constituent_longform: Nitrate-N, Dissolved
+    tss:
+      value: 0.95
+      unit: dimensionless
+      constituent_longform: Total Suspended Solids (TSS)

@@ -1,0 +1,17 @@
+default:
+  recovery_vol:
+    value: 0.96
+    unit: dimensionless
+    reference: Heap leaching (gold/copper) case study.
+  default_removal_mass_solute:
+    value: 0
+    unit: dimensionless
+  removal_frac_mass_solute:
+    nonvolatile_toc:
+      value: 0.2
+      unit: dimensionless
+      constituent_longform: Nonvolatile TOC
+    tss:
+      value: 0.97
+      unit: dimensionless
+      constituent_longform: Total Suspended Solids (TSS)

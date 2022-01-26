@@ -1,0 +1,158 @@
+default:
+  recovery_vol:
+    value: 0.95
+    unit: dimensionless
+    reference: Default value based on 5% purge rate per source. Survey of High-Recovery
+      and Zero Liquid Discharge Technologies for Water Utilities (2008).
+  default_removal_mass_solute:
+    value: 0
+    unit: dimensionless
+  removal_frac_mass_solute:
+    alkalinity_as_caco3:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    aluminum:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    arsenic:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    barium:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    bicarbonate_alkalinity_as_caco3:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    boron:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    bromide:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    calcium:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    chloride:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    chromium:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    cyanide_as_free:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    electrical_conductivity:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    fluoride:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    hardness:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    iron:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    lead:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    magnesium:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    manganese:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    mercury:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    nickel:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    nitrate:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    nitrate_as_nitrogen:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    nitrite_as_nitrogen:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    phosphates:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    potassium:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    selenium:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    silicon:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    silver:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    sodium:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    strontium:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    sulfate:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    tds:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    total_coliforms_fecal_ecoli:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    trihalomethanes:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    tss:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    turbidity:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan
+    zinc:
+      value: 0.98
+      unit: dimensionless
+      constituent_longform: .nan

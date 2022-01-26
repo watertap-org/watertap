@@ -1,0 +1,12 @@
+default:
+  recovery_vol:
+    value: 0.9999
+    unit: dimensionless
+    reference: '(1) https://www.mrwa.com/WaterWorksMnl/Chapter%2012%20Coagulation.pdf,
+      (2) Cost Estimating Manual for Water Treatment Facilities (McGivney/Kawamura),
+      (3) https://www.iwapublishing.com/news/coagulation-and-flocculation-water-and-wastewater-treatment,
+      (4) Water and Wastewater Engineering: Design Principles and Practice (Mackenzie
+      L. Davis).'
+  default_removal_mass_solute:
+    value: 0
+    unit: dimensionless

@@ -1,0 +1,17 @@
+default:
+  recovery_vol:
+    value: 0.9999
+    unit: dimensionless
+    reference: Defined based on the Carlsbad case study data.
+  default_removal_mass_solute:
+    value: 0
+    unit: dimensionless
+  removal_frac_mass_solute:
+    nonvolatile_toc:
+      value: 0.2
+      unit: dimensionless
+      constituent_longform: Nonvolatile TOC
+    tss:
+      value: 0.5
+      unit: dimensionless
+      constituent_longform: Total Suspended Solids (TSS)

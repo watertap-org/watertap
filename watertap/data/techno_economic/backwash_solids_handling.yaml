@@ -1,0 +1,21 @@
+default:
+  recovery_vol:
+    value: 0.95
+    unit: dimensionless
+    reference: Texas Water Development Board IT3PR User Manual
+  default_removal_mass_solute:
+    value: 0
+    unit: dimensionless
+  removal_frac_mass_solute:
+    nitrate:
+      value: 0.95
+      unit: dimensionless
+      constituent_longform: Nitrate (measured as Nitrogen)
+    toc:
+      value: 0.95
+      unit: dimensionless
+      constituent_longform: Total Organic Carbon (TOC)
+    tss:
+      value: 0.95
+      unit: dimensionless
+      constituent_longform: Total Suspended Solids (TSS))

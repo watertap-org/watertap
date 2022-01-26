@@ -1,0 +1,9 @@
+default:
+  recovery_vol:
+    value: 0.9999
+    unit: dimensionless
+    reference: Based on costs for Sulfuric Acid Addition from Cost Estimating Manual
+      for Water Treatment Facilities (McGivney/Kawamura)
+  default_removal_mass_solute:
+    value: 0
+    unit: dimensionless
