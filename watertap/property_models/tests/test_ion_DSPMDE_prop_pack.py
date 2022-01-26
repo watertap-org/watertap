@@ -377,12 +377,16 @@ def test_scaling(model3):
     set_scaling_factor(stream[0].mass_frac_phase_comp['Liq', 'Mg_2+'], 1e6)
     set_scaling_factor(stream[0].mass_frac_phase_comp['Liq', 'Cl_-'], 1e6)
     set_scaling_factor(stream[0].mass_frac_phase_comp['Liq', 'SO4_2-'], 1e6)
+
+    metadata = m.fs.properties.get_metadata().properties
+    for v_str in metadata.keys():
+        getattr(m.fs.stream[0], v_str)
+
     calculate_scaling_factors(m.fs)
 
     # check that all variables have scaling factors
     unscaled_var_list = list(unscaled_variables_generator(m))
-    for v in unscaled_var_list:
-        print(v)
+    [print(i) for i in unscaled_var_list]
     assert len(unscaled_var_list) == 0
     # check that all constraints have been scaled
     unscaled_constraint_list = list(unscaled_constraints_generator(m))
