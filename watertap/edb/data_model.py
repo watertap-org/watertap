@@ -453,7 +453,7 @@ class ThermoConfig(ConfigGenerator):
         for key in data[section]:
             item_list = key.split("-")
             if (len(item_list)!=2):
-                raise BadConfiguration("BaseConfig._key_to_tuple", data,
+                raise BadConfiguration("ThermoConfig._key_to_tuple", data,
                     missing=None,why="\n"+section+" tuple key must be only 2 items\n")
             temp[tuple(item_list)] = data[section][key]
         data[section] = temp
