@@ -17,9 +17,11 @@ from idaes.core import UnitModelBlockData, useDefault
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.tables import create_stream_table_dataframe
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.environ import units as pyunits
+
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
@@ -72,8 +74,13 @@ class ZeroOrderBaseData(UnitModelBlockData):
     def build(self):
         super().build()
 
-        # Set a placeholder tech_type attribute
+        # Set a placeholder attributes
         self._tech_type = None
+        self._has_recovery_removal = False
+        self._initialize = None
+        self._scaling = None
+        self._stream_table_dict = {}
+        self._perf_var_dict= {}
 
         # Check that property package meets requirements
         if self.config.property_package.phase_list != ["Liq"]:
@@ -99,12 +106,16 @@ class ZeroOrderBaseData(UnitModelBlockData):
                 f"Zero-order models only support `H2O` as a solvent and all "
                 f"other species as Solutes.")
 
-    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
+    def initialize(self, state_args=None, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
         '''
         Placeholder initialization routine, raises NotImplementedError
         '''
-        raise NotImplementedError()
+        if self._initialize is None or not callable(self._initialize):
+            raise NotImplementedError()
+        else:
+            self._initialize(self, state_args=None, outlvl=idaeslog.NOTSET,
+                             solver=None, optarg=None)
 
     def calculate_scaling_factors(self):
         '''
@@ -112,15 +123,12 @@ class ZeroOrderBaseData(UnitModelBlockData):
         '''
         super().calculate_scaling_factors()
 
-    def load_parameters_from_database(self, *args, **kwargs):
-        '''
-        Placeholder method for loading parameters, raises NotImplementedError
-        '''
-        raise NotImplementedError()
+        if callable(self._scaling):
+            self._scaling(self)
 
-    def _load_parameters_from_database(self, use_default_removal=False):
+    def load_parameters_from_database(self, use_default_removal=False):
         """
-        Method to load parameters for nanofiltration models from database.
+        Method to load parameters for from database.
 
         Args:
             use_default_removal - (optional) indicate whether to use defined
@@ -128,8 +136,9 @@ class ZeroOrderBaseData(UnitModelBlockData):
                                   defined in database
 
         Returns:
-            dict of loaded parameters
+            None
         """
+        # Get parameter dict from database
         if self._tech_type is None:
             raise NotImplementedError(
                 f"{self.name} derived zero order unit model has not "
@@ -140,7 +149,33 @@ class ZeroOrderBaseData(UnitModelBlockData):
         pdict = self.config.database.get_unit_operation_parameters(
             self._tech_type, subtype=self.config.process_subtype)
 
-        return pdict
+        if self._has_recovery_removal:
+            self.set_recovery_and_removal(pdict, use_default_removal)
+
+        self.set_param_from_data(self.energy_electric_flow_vol_inlet, pdict)
+
+    def set_recovery_and_removal(self, data, use_default_removal=False):
+        """
+        Common utiltiy method for setting values of recovery and removal
+        fractions.
+
+        Args:
+            data - dict of parameter values to use when fixing variables
+            use_default_removal - (optional) indicate whether to use defined
+                                  default removal fraction if no specific value
+                                  defined in database
+
+        Returns:
+            None
+        """
+        self.set_param_from_data(self.recovery_vol, data)
+
+        for t, j in self.removal_frac_mass_solute:
+            self.set_param_from_data(
+                self.removal_frac_mass_solute[t, j],
+                data,
+                index=j,
+                use_default_removal=use_default_removal)
 
     def set_param_from_data(
             self, parameter, data, index=None, use_default_removal=False):
@@ -208,3 +243,22 @@ class ZeroOrderBaseData(UnitModelBlockData):
 
         parameter.fix(val*units)
         _log.info_high(f"{parameter.name} fixed to value {val} {str(units)}")
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            self._stream_table_dict,
+            time_point=time_point)
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {}
+
+        for k, v in self._perf_var_dict.items():
+            if k == "Solute Removal":
+                for j, vd in self.removal_frac_mass_solute[time_point, :].wildcard_items():
+                    var_dict[f"Solute Removal [{j}]"] = vd
+            elif v.is_indexed():
+                var_dict[k] = v[time_point]
+            else:
+                var_dict[k] = v
+
+        return {"vars": var_dict}

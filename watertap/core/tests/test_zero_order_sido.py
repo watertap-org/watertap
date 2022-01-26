@@ -31,12 +31,21 @@ from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
 
-from watertap.core.zero_order_sido import SIDOBaseData
+from watertap.core.zero_order_base import ZeroOrderBaseData
+from watertap.core.zero_order_sido import build_sido
 from watertap.core.zero_order_properties import \
     WaterParameterBlock, WaterStateBlock
 import idaes.logger as idaeslog
 
 solver = get_solver()
+
+
+@declare_process_block_class("DerivedSIDO")
+class DerivedSIDOData(ZeroOrderBaseData):
+    def build(self):
+        super().build()
+
+        build_sido(self)
 
 
 class TestSIDOConfigurationErrors:
@@ -53,11 +62,6 @@ class TestSIDOConfigurationErrors:
         m.fs.params.del_component(m.fs.params.component_list)
 
         return m
-
-    @declare_process_block_class("DerivedSIDO")
-    class DerivedSIDOData(SIDOBaseData):
-        def build(self):
-            super().build()
 
     @pytest.mark.unit
     def test_phase_list(self, model):

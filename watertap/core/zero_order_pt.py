@@ -19,9 +19,6 @@ from pyomo.environ import Var, units as pyunits
 
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
-from idaes.core.util.tables import create_stream_table_dataframe
-
-from watertap.core.zero_order_base import ZeroOrderBaseData
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
@@ -30,146 +27,117 @@ __author__ = "Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 
-class PassThroughBaseData(ZeroOrderBaseData):
-    """
-    Standard base class for pass-through unit models.
+def build_pt(self):
+    self._has_recovery_removal = False
+    self._initialize = initialize_pt
+    self._scaling = calculate_scaling_factors_pt
 
-    This class is intended to be used for creating derived model classes and
-    should not be instantiated by itself.
-    """
+    # Create state blocks for inlet and outlet
+    tmp_dict = dict(**self.config.property_package_args)
+    tmp_dict["has_phase_equilibrium"] = False
+    tmp_dict["defined_state"] = True
 
-    CONFIG = ZeroOrderBaseData.CONFIG()
+    self.properties = self.config.property_package.build_state_block(
+        self.flowsheet().time,
+        doc="Material properties in unit",
+        default=tmp_dict)
 
-    def build(self):
-        super().build()
+    # Create Ports
+    self.add_port("inlet", self.properties, doc="Inlet port")
+    self.add_port("outlet", self.properties, doc="Tutlet port")
 
-        # Create state blocks for inlet and outlets
-        tmp_dict = dict(**self.config.property_package_args)
-        tmp_dict["has_phase_equilibrium"] = False
-        tmp_dict["defined_state"] = True
+    # Add electricity consumption to model
+    self.electricity = Var(self.flowsheet().time,
+                           units=pyunits.kW,
+                           doc="Electricity consumption of unit")
+    self.energy_electric_flow_vol_inlet = Var(
+        units=pyunits.kWh/pyunits.m**3,
+        doc="Electricity intensity with respect to inlet flowrate of unit")
 
-        self.properties = self.config.property_package.build_state_block(
-            self.flowsheet().time,
-            doc="Material properties in unit",
-            default=tmp_dict)
+    @self.Constraint(self.flowsheet().time,
+                     doc='Constraint for electricity consumption base on '
+                     'feed flowrate.')
+    def electricity_consumption(b, t):
+        return b.electricity[t] == (
+            b.energy_electric_flow_vol_inlet *
+            pyunits.convert(b.properties[t].flow_vol,
+                            to_units=pyunits.m**3/pyunits.hour))
 
-        # Create Ports
-        self.add_port("inlet", self.properties, doc="Inlet port")
-        self.add_port("outlet", self.properties, doc="Tutlet port")
+    self._stream_table_dict = {"Inlet": self.inlet,
+                               "Outlet": self.outlet}
 
-        # Add electricity consumption to model
-        self.electricity = Var(self.flowsheet().time,
-                               units=pyunits.kW,
-                               doc="Electricity consumption of unit")
-        self.energy_electric_flow_vol_inlet = Var(
-            units=pyunits.kWh/pyunits.m**3,
-            doc="Electricity intensity with respect to inlet flowrate of unit")
+    self._perf_var_dict = {
+        "Electricity Demand": self.electricity,
+        "Electricity Intensity": self.energy_electric_flow_vol_inlet}
 
-        @self.Constraint(self.flowsheet().time,
-                         doc='Constraint for electricity consumption base on '
-                         'feed flowrate.')
-        def electricity_consumption(b, t):
-            return b.electricity[t] == (
-                b.energy_electric_flow_vol_inlet *
-                pyunits.convert(b.properties[t].flow_vol,
-                                to_units=pyunits.m**3/pyunits.hour))
 
-    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg=None):
-        '''
-        Initialization routine for pass-through unit models.
+def initialize_pt(blk, state_args=None, outlvl=idaeslog.NOTSET,
+                  solver=None, optarg=None):
+    '''
+    Initialization routine for pass-through unit models.
 
-        Keyword Arguments:
-            state_args : a dict of arguments to be passed to the property
-                           package(s) to provide an initial state for
-                           initialization (see documentation of the specific
-                           property package) (default = {}).
-            outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None, use
-                     default solver options)
-            solver : str indicating which solver to use during
-                     initialization (default = None, use default IDAES solver)
+    Keyword Arguments:
+        state_args : a dict of arguments to be passed to the property
+                       package(s) to provide an initial state for
+                       initialization (see documentation of the specific
+                       property package) (default = {}).
+        outlvl : sets output level of initialization routine
+        optarg : solver options dictionary object (default=None, use
+                 default solver options)
+        solver : str indicating which solver to use during
+                 initialization (default = None, use default IDAES solver)
 
-        Returns:
-            None
-        '''
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+    Returns:
+        None
+    '''
+    init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+    solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        solver_obj = get_solver(solver, optarg)
+    solver_obj = get_solver(solver, optarg)
 
-        # Get initial guesses for inlet if none provided
-        if state_args is None:
-            state_args = {}
-            state_dict = (
-                blk.properties[
-                    blk.flowsheet().time.first()]
-                .define_port_members())
+    # Get initial guesses for inlet if none provided
+    if state_args is None:
+        state_args = {}
+        state_dict = (
+            blk.properties[
+                blk.flowsheet().time.first()]
+            .define_port_members())
 
-            for k in state_dict.keys():
-                if state_dict[k].is_indexed():
-                    state_args[k] = {}
-                    for m in state_dict[k].keys():
-                        state_args[k][m] = state_dict[k][m].value
-                else:
-                    state_args[k] = state_dict[k].value
+        for k in state_dict.keys():
+            if state_dict[k].is_indexed():
+                state_args[k] = {}
+                for m in state_dict[k].keys():
+                    state_args[k][m] = state_dict[k][m].value
+            else:
+                state_args[k] = state_dict[k].value
 
-        # ---------------------------------------------------------------------
-        # Initialize control volume block
-        flags = blk.properties.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args,
-            hold_state=True
-        )
-        init_log.info_high('Initialization Step 1 Complete.')
+    # ---------------------------------------------------------------------
+    # Initialize control volume block
+    flags = blk.properties.initialize(
+        outlvl=outlvl,
+        optarg=optarg,
+        solver=solver,
+        state_args=state_args,
+        hold_state=True
+    )
+    init_log.info_high('Initialization Step 1 Complete.')
 
-        # ---------------------------------------------------------------------
-        # Solve unit
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solver_obj.solve(blk, tee=slc.tee)
+    # ---------------------------------------------------------------------
+    # Solve unit
+    with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        results = solver_obj.solve(blk, tee=slc.tee)
 
-        init_log.info_high(
-            "Initialization Step 2 {}.".format(idaeslog.condition(results))
-        )
+    init_log.info_high(
+        "Initialization Step 2 {}.".format(idaeslog.condition(results))
+    )
 
-        # ---------------------------------------------------------------------
-        # Release Inlet state
-        blk.properties.release_state(flags, outlvl)
+    # ---------------------------------------------------------------------
+    # Release Inlet state
+    blk.properties.release_state(flags, outlvl)
 
-        init_log.info('Initialization Complete: {}'
-                      .format(idaeslog.condition(results)))
+    init_log.info('Initialization Complete: {}'
+                  .format(idaeslog.condition(results)))
 
-    def load_parameters_from_database(self, use_default_removal=False):
-        """
-        Method to load parameters from database.
 
-        Args:
-            use_default_removal - (optional) indicate whether to use defined
-                                  default removal fraction if no specific value
-                                  defined in database
-
-        Returns:
-            None
-        """
-        # Get parameter dict from database
-        pdict = self._load_parameters_from_database(use_default_removal=False)
-
-        self.set_param_from_data(self.energy_electric_flow_vol_inlet, pdict)
-
-    def calculate_scaling_factors(self):
-        # Get default scale factors and do calculations from base classes
-        super().calculate_scaling_factors()
-
-    def _get_stream_table_contents(self, time_point=0):
-        return create_stream_table_dataframe(
-            {"Inlet": self.inlet,
-             "Outlet": self.outlet},
-            time_point=time_point)
-
-    def _get_performance_contents(self, time_point=0):
-        var_dict = {"Electricity Demand": self.electricity[time_point],
-                    "Electricity Intensity": self.energy_electric_flow_vol_inlet}
-
-        return {"vars": var_dict}
+def calculate_scaling_factors_pt(self):
+    pass

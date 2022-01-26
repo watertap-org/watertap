@@ -27,8 +27,8 @@ from pyomo.environ import (ConcreteModel,
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
-
-from watertap.core.zero_order_pt import PassThroughBaseData
+from watertap.core.zero_order_base import ZeroOrderBaseData
+from watertap.core.zero_order_pt import build_pt
 from watertap.core.zero_order_properties import \
     WaterParameterBlock, WaterStateBlock
 
@@ -36,9 +36,11 @@ solver = get_solver()
 
 
 @declare_process_block_class("DerivedPT")
-class DerivedPTData(PassThroughBaseData):
+class DerivedPTData(ZeroOrderBaseData):
     def build(self):
         super().build()
+
+        build_pt(self)
 
 
 class TestPTConfigurationErrors:

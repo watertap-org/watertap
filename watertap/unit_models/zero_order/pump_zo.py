@@ -17,21 +17,24 @@ operation.
 
 from idaes.core import declare_process_block_class
 
-from watertap.core.zero_order_pt import PassThroughBaseData
+from watertap.core.zero_order_base import ZeroOrderBaseData
+from watertap.core.zero_order_pt import build_pt
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
 
 
 @declare_process_block_class("PumpZO")
-class PumpZOData(PassThroughBaseData):
+class PumpZOData(ZeroOrderBaseData):
     """
     Zero-Order model for a pump unit operation.
     """
 
-    CONFIG = PassThroughBaseData.CONFIG()
+    CONFIG = ZeroOrderBaseData.CONFIG()
 
     def build(self):
         super().build()
 
         self._tech_type = "pump"
+
+        build_pt(self)

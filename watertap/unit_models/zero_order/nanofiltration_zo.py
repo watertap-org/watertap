@@ -17,21 +17,24 @@ operation.
 
 from idaes.core import declare_process_block_class
 
-from watertap.core.zero_order_sido import SIDOBaseData
+from watertap.core.zero_order_base import ZeroOrderBaseData
+from watertap.core.zero_order_sido import build_sido
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
 
 
 @declare_process_block_class("NanofiltrationZO")
-class NanofiltrationZOData(SIDOBaseData):
+class NanofiltrationZOData(ZeroOrderBaseData):
     """
     Zero-Order model for a Nanofiltration unit operation.
     """
 
-    CONFIG = SIDOBaseData.CONFIG()
+    CONFIG = ZeroOrderBaseData.CONFIG()
 
     def build(self):
         super().build()
 
         self._tech_type = "nanofiltration"
+
+        build_sido(self)
