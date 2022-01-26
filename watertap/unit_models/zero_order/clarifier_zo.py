@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a nanofiltration unit.
+This module contains a zero-order representation of a clarifier unit.
 operation.
 """
 
@@ -21,13 +21,13 @@ from idaes.core import declare_process_block_class
 from watertap.core.zero_order_sido import SIDOBaseData
 
 # Some more information about this module
-__author__ = "Andrew Lee"
+__author__ = "Adam Atia"
 
 
-@declare_process_block_class("NanofiltrationZO")
-class NanofiltrationZOData(SIDOBaseData):
+@declare_process_block_class("ClarifierZO")
+class ClarifierZOData(SIDOBaseData):
     """
-    Zero-Order model for a Nanofiltration unit operation.
+    Zero-Order model for a Clarifier unit operation.
     """
 
     CONFIG = SIDOBaseData.CONFIG()
@@ -53,7 +53,7 @@ class NanofiltrationZOData(SIDOBaseData):
 
     def load_parameters_from_database(self, use_default_removal=False):
         """
-        Method to load parameters for nanofiltration models from database.
+        Method to load parameters for clarifier models from database.
 
         Args:
             use_default_removal - (optional) indicate whether to use defined
@@ -65,7 +65,7 @@ class NanofiltrationZOData(SIDOBaseData):
         """
         # Get parameter dict from database
         pdict = self.config.database.get_unit_operation_parameters(
-            "nanofiltration", subtype=self.config.process_subtype)
+            "clarifier", subtype=self.config.process_subtype)
 
         self.set_recovery_and_removal(pdict, use_default_removal)
 
