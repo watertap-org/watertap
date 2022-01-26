@@ -11,6 +11,7 @@
 #
 ###############################################################################
 import pytest
+import os
 import numpy as np
 
 from watertap.examples.flowsheets.RO_with_energy_recovery.monte_carlo_sampling_RO_ERD import run_parameter_sweep
@@ -53,11 +54,18 @@ def test_monte_carlo_sampling_with_files():
                              [4.812173e-12, 4.231054e-08, 9.776751e-01, 2.724421e+00, 4.347062e-01],
                              [4.872406e-12, 3.413786e-08, 9.895544e-01, 2.721691e+00, 4.350705e-01]])
 
+    # Define the file of a
+    cwd = os.path.dirname(__file__)
+    sweep_params_fpath = os.path.join(cwd, "..", "mc_sweep_params.yaml")
+    default_config_fpath = os.path.join(cwd, "..", "default_configuration.yaml")
+
+    print("sweep_params_fpath = ", sweep_params_fpath)
+    print("default_config_fpath = ", default_config_fpath)
 
     # Run the parameter sweep
     global_results = run_parameter_sweep(None, seed=1, read_sweep_params_from_file=True,
-        sweep_params_fname='../mc_sweep_params.yaml', read_model_defauls_from_file=True,
-        defaults_fname='../default_configuration.yaml')
+        sweep_params_fname=sweep_params_fpath, read_model_defauls_from_file=True,
+        defaults_fname=default_config_fpath)
 
     # Compare individual values for specificity
     for value, truth_value in zip(global_results.flatten(), truth_values.flatten()):
