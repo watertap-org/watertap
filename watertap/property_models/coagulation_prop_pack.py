@@ -109,7 +109,7 @@ class CoagulationParameterData(PhysicalParameterBlock):
 # this second class contains methods that are applied to state blocks as a whole,
 # rather than individual elements of indexed state blocks. Essentially it just includes
 # the initialization routine
-class _PropStateBlock(StateBlock):
+class _CoagulationStateBlock(StateBlock):
     def initialize(self, state_args=None, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
@@ -213,13 +213,101 @@ class _PropStateBlock(StateBlock):
         revert_state_vars(self, flags)
         init_log.info_high('{} State Released.'.format(self.name))
 
+    def calculate_state(self, var_args=None, hold_state=False, outlvl=idaeslog.NOTSET,
+                        solver=None, optarg=None):
+        """
+        Solves state blocks given a set of variables and their values. These variables can
+        be state variables or properties. This method is typically used before
+        initialization to solve for state variables because non-state variables (i.e. properties)
+        cannot be fixed in initialization routines.
+
+        Keyword Arguments:
+            var_args : dictionary with variables and their values, they can be state variables or properties
+                       {(VAR_NAME, INDEX): VALUE}
+            hold_state : flag indicating whether all of the state variables should be fixed after calculate state.
+                         True - State variables will be fixed.
+                         False - State variables will remain unfixed, unless already fixed.
+            outlvl : idaes logger object that sets output level of solve call (default=idaeslog.NOTSET)
+            solver : solver name string if None is provided the default solver
+                     for IDAES will be used (default = None)
+            optarg : solver options dictionary object (default={})
+
+        Returns:
+            results object from state block solve
+        """
+        # Get logger
+        solve_log = idaeslog.getSolveLogger(self.name, level=outlvl, tag="properties")
+
+        # Initialize at current state values (not user provided)
+        self.initialize(solver=solver, optarg=optarg, outlvl=outlvl)
+
+        # Set solver and options
+        opt = get_solver(solver, optarg)
+
+        # Fix variables and check degrees of freedom
+        flags = {}  # dictionary noting which variables were fixed and their previous state
+        for k in self.keys():
+            sb = self[k]
+            for (v_name, ind), val in var_args.items():
+                var = getattr(sb, v_name)
+                if iscale.get_scaling_factor(var[ind]) is None:
+                    _log.warning(
+                            "While using the calculate_state method on {sb_name}, variable {v_name} "
+                            "was provided as an argument in var_args, but it does not have a scaling "
+                            "factor. This suggests that the calculate_scaling_factor method has not been "
+                            "used or the variable was created on demand after the scaling factors were "
+                            "calculated. It is recommended to touch all relevant variables (i.e. call "
+                            "them or set an initial value) before using the calculate_scaling_factor "
+                            "method.".format(v_name=v_name, sb_name=sb.name))
+                if var[ind].is_fixed():
+                    flags[(k, v_name, ind)] = True
+                    if value(var[ind]) != val:
+                        raise ConfigurationError(
+                            "While using the calculate_state method on {sb_name}, {v_name} was "
+                            "fixed to a value {val}, but it was already fixed to value {val_2}. "
+                            "Unfix the variable before calling the calculate_state "
+                            "method or update var_args."
+                            "".format(sb_name=sb.name, v_name=var.name, val=val, val_2=value(var[ind])))
+                else:
+                    flags[(k, v_name, ind)] = False
+                    var[ind].fix(val)
+
+            if degrees_of_freedom(sb) != 0:
+                raise RuntimeError("While using the calculate_state method on {sb_name}, the degrees "
+                                   "of freedom were {dof}, but 0 is required. Check var_args and ensure "
+                                   "the correct fixed variables are provided."
+                                   "".format(sb_name=sb.name, dof=degrees_of_freedom(sb)))
+
+        # Solve
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = solve_indexed_blocks(opt, [self], tee=slc.tee)
+            solve_log.info_high("Calculate state: {}.".format(idaeslog.condition(results)))
+
+        if not check_optimal_termination(results):
+            _log.warning("While using the calculate_state method on {sb_name}, the solver failed "
+                         "to converge to an optimal solution. This suggests that the user provided "
+                         "infeasible inputs, or that the model is poorly scaled, poorly initialized, "
+                         "or degenerate.")
+
+        # unfix all variables fixed with var_args
+        for (k, v_name, ind), previously_fixed in flags.items():
+            if not previously_fixed:
+                var = getattr(self[k], v_name)
+                var[ind].unfix()
+
+        # fix state variables if hold_state
+        if hold_state:
+            fix_state_vars(self)
+
+        return results
+
 # this third class, provides the instructions to create state blocks
 @declare_process_block_class("PropStateBlock",
-                             block_class=_PropStateBlock)
-class PropStateBlockData(StateBlockData):
+                             block_class=_CoagulationStateBlock)
+class CoagulationStateBlockData(StateBlockData):
     def build(self):
         """Callable method for Block construction."""
-        super(PropStateBlockData, self).build()
+        super(CoagulationStateBlockData, self).build()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
@@ -264,11 +352,11 @@ class PropStateBlockData(StateBlockData):
             units=pyunits.dimensionless,
             doc='Mass fraction')
 
-        def rule_mass_frac_phase_comp(b, j):
-            return (b.mass_frac_phase_comp['Liq', j] == b.flow_mass_phase_comp['Liq', j] /
-                    sum(b.flow_mass_phase_comp['Liq', j]
-                        for j in self.params.component_list))
-        self.eq_mass_frac_phase_comp = Constraint(self.params.component_list, rule=rule_mass_frac_phase_comp)
+        def rule_mass_frac_phase_comp(b, p, j):
+            return (b.mass_frac_phase_comp[p, j] == b.flow_mass_phase_comp[p, j] /
+                    sum(b.flow_mass_phase_comp[p, i]
+                        for i in self.params.component_list))
+        self.eq_mass_frac_phase_comp = Constraint(self.params.phase_list, self.params.component_list, rule=rule_mass_frac_phase_comp)
 
     def _dens_mass_phase(self):
         self.dens_mass_phase = Var(
@@ -423,6 +511,7 @@ class PropStateBlockData(StateBlockData):
             if self.is_property_constructed(v_str):
                 v_comp = getattr(self, v_str)
                 c_comp = getattr(self, 'eq_' + v_str)
-                for j, c in c_comp.items():
-                    sf = iscale.get_scaling_factor(v_comp['Liq', j], default=1, warning=True)
-                    iscale.constraint_scaling_transform(c, sf)
+                for p in self.params.phase_list:
+                    for j in self.params.component_list:
+                        sf = iscale.get_scaling_factor(v_comp[p, j], default=1, warning=True)
+                        iscale.constraint_scaling_transform(c, sf)
