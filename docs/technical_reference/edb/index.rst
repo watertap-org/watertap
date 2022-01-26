@@ -22,14 +22,14 @@ To interface with the `IDAES Core Modeling Framework <https://idaes-pse.readthed
 `dict`. This result can be used to configure and build IDAES objects (`ParameterBlocks`, `ReactionBlocks`, etc.).
 The API also has methods to construct component and reaction objects from IDAES configurations.
 
+Examples for the usage of the EDB for creating these IDAES configurations can be found in the
+:ref:`EDB How-to Documentation<how_to_use_edb>`
+
 Workflows
 ---------
 The EDB is intended to support some known workflows out of the box, with lower-level functions available when these
-are not sufficient.
+are not sufficient. Example workflows can be seen in the how to guides from the link above.
 
-.. note::
-
-    This content is not yet finished.
 
 Python API
 ----------
@@ -227,3 +227,8 @@ standard bootstrap bundled with WaterTAP. Those bases are listed below:
 +----------------------+-------------------------------------------------------------------------------------------+
 | reaction             | ReactionConfig: Blank template for reaction configs                                       |
 +----------------------+-------------------------------------------------------------------------------------------+
+
+The naming convention for the **thermo** bases is as follows: (i) each section of the name is broken up
+by the underscore character (_), (ii) the first word in the name is always **thermo** to denote the
+type of base, (iii) the last word in the name always denotes the **state_vars**, and (iv) each word in
+between denotes the set of **phases** for the configuration file. 

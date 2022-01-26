@@ -244,7 +244,11 @@ def dump_data(output_file, data_type, url, database):
     _log.debug(f"Writing records to output file '{filename}'")
 
     _log.info(f"Connecting to MongoDB at: {url}/{database}")
-    db = ElectrolyteDB(url=url, db=database)
+    try:
+        edb = ElectrolyteDB(url, database)
+    except ConnectionFailure as err:
+        click.echo(f"Database connection failure: {err}")
+        return -1
 
     _log.debug("Retrieving records")
     if data_type == "component":
@@ -397,7 +401,11 @@ def info(data_type, url, database):
     print_messages = _log.isEnabledFor(logging.ERROR)
 
     _log.info(f"Connecting to MongoDB at: {url}/{database}")
-    db = ElectrolyteDB(url=url, db=database)
+    try:
+        edb = ElectrolyteDB(url, database)
+    except ConnectionFailure as err:
+        click.echo(f"Database connection failure: {err}")
+        return -1
 
     _log.debug("Retrieving records")
 

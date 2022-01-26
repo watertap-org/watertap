@@ -29,6 +29,7 @@ from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, PyMon
 
 # package
 from .data_model import Result, Component, Reaction, Base, DataWrapper
+from .error import BadConfiguration
 
 __author__ = "Dan Gunter (LBNL)"
 
@@ -361,7 +362,7 @@ class ElectrolyteDB:
         Args:
             name: Name of the base to describe
         Returns:
-            desc: String of the description of the base 
+            desc: String of the description of the base
         """
         if name == "default_thermo":
             desc = "ThermoConfig: Default uses FTPx state vars for Liq phase"
@@ -369,6 +370,9 @@ class ElectrolyteDB:
             desc = "ReactionConfig: Blank reaction template"
         else:
             items = name.split("_")
+            if len(items) < 3:
+                raise BadConfiguration("ElectrolyteDB._base_desc", self.get_base(name).idaes_config,
+                    missing=None,why="\nName of base ("+name+") is of unknown format\n")
             if items[0] == "thermo":
                 desc = "ThermoConfig: "
             else:
