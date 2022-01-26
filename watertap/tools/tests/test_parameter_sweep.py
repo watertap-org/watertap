@@ -398,6 +398,57 @@ class TestParallelManager():
 
         _assert_dictionary_correctness(truth_dict, output_dict)
 
+    # @pytest.mark.unit
+    # def test_create_global_output(self, model):
+    #     comm, rank, num_procs = _init_mpi()
+    #
+    #     m = model
+    #     m.fs.slack_penalty = 1000.
+    #     m.fs.slack.setub(0)
+    #
+    #     sweep_params = {'input_a' : (m.fs.input['a'], 0.1, 0.9, 3),
+    #                     'input_b' : (m.fs.input['b'], 0.0, 0.5, 3)}
+    #     outputs = {'output_c':m.fs.output['c'],
+    #                'output_d':m.fs.output['d'],
+    #                'performance':m.fs.performance}
+    #
+    #     sweep_params, sampling_type = _process_sweep_params(sweep_params)
+    #     # Get the globale sweep param values
+    #     global_values = _build_combinations(sweep_params, sampling_type, 4, comm, rank, num_procs)
+    #     # divide the workload between processors
+    #     local_values = _divide_combinations(global_values, rank, num_procs)
+    #     local_num_cases = np.shape(local_values)[0]
+    #     global_num_cases = np.shape(global_values)[0]
+    #
+    #     local_output_dict = _create_local_output_skeleton(model, sweep_params, local_num_cases)
+    #
+    #     # Manually update the values in the numpy array
+    #     for key, value in local_output_dict.items():
+    #         for subkey, subvalue in value.items():
+    #             subvalue['value'][:] = rank+1.0
+    #
+    #     # Local output dict also contains the solve_status. The solve status is
+    #     # based on the
+    #     local_output_dict['solve_status'] = [str(rank + 1) for i in range(local_num_cases)]
+    #
+    #     # Get the global output dictionary, This is properly created only on rank 0
+    #     global_output_dict = _create_global_output(local_output_dict, global_num_cases, comm)
+    #
+    #     if num_procs == 1:
+    #         assert local_output_dict == global_output_dict
+    #     else:
+    #         if rank > 0:
+    #             assert global_output_dict == local_output_dict
+    #         else:
+    #             test_array = np.array([1., 1., 2., 2.])
+    #             test_list = ['1', '1', '2', '2']
+    #             for key, value in global_output_dict.items():
+    #                 if key != 'solve_status':
+    #                     for subkey, subvalue in value.items():
+    #                         assert np.allclose(subvalue['value'], test_array)
+    #                 elif key == 'solve_status':
+    #                     assert value == test_list
+
 
     @pytest.mark.component
     def test_parameter_sweep(self, model, tmp_path):
