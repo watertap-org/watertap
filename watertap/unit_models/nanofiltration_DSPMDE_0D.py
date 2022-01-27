@@ -11,6 +11,7 @@
 #
 ###############################################################################
 
+from copy import deepcopy
 # Import Pyomo libraries
 from pyomo.environ import (Block,
                            Set,
@@ -25,9 +26,11 @@ from pyomo.environ import (Block,
                            value,
                            Expr_if,
                            Constraint,
-                           exp)
+                           exp,
+                           check_optimal_termination,
+                           )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-
+from pyomo.common.collections import ComponentSet
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
@@ -44,6 +47,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 from idaes.core.util.constants import Constants
+from watertap.core.util.initialization import check_solve, check_dof
 
 import idaes.logger as idaeslog
 
@@ -168,6 +172,9 @@ class NanofiltrationData(UnitModelBlockData):
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
+        # For permeate-specific scaling in calculate_scaling_factors
+        self._permeate_scaled_properties = ComponentSet()
+
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         self.io_list = io_list = Set(initialize=[0, 1])  # inlet/outlet set
@@ -267,8 +274,9 @@ class NanofiltrationData(UnitModelBlockData):
             io_list,
             phase_list,
             solvent_solute_set,
-            initialize=lambda b,t,x,p,j : 2.5e-2 if j in solvent_set else 1e-5, #TODO: divide solvent by .02 and solute by .1
-            bounds=lambda b,t,x,p,j : (5e-3, 1.5) if j in solvent_set else (1e-7, 1e-2), #TODO: divide solvent by .02 and solute by .1
+            initialize=(lambda b,t,x,p,j : 2.78e-2 if j in solvent_set else 4e-6), #TODO: divided mass solvent by .018 and solute by .25
+            bounds=lambda b,t,x,p,j : (5e-3, 1.5) if j in solvent_set else (4e-8, 4e-3), #TODO: divide solvent by .02 and solute by .1
+            domain=NonNegativeReals,
             units=units_meta('amount')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Component molar flux at inlet and outlet of membrane')
 
@@ -769,15 +777,29 @@ class NanofiltrationData(UnitModelBlockData):
 
     def initialize(
             blk,
+            initialize_guess=None,
             state_args=None,
             outlvl=idaeslog.NOTSET,
             solver=None,
-            optarg=None):
+            optarg=None,
+            fail_on_warning=False,
+            ignore_dof=False):
 
         """
         General wrapper for pressure changer initialization routines
 
         Keyword Arguments:
+            initialize_guess : a dict of guesses for ....
+                   #TODO: revise as appropriate
+                   solvent_recovery, solute_recovery,
+                   and cp_modulus. These guesses offset the initial values
+                   for the retentate, permeate, and membrane interface
+                   state blocks from the inlet feed
+                   (default =
+                   {'deltaP': -1e4,
+                   'solvent_recovery': 0.5,
+                   'solute_recovery': 0.01,
+                   'cp_modulus': 1.1})
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
@@ -786,60 +808,80 @@ class NanofiltrationData(UnitModelBlockData):
             optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
                      initialization (default = None)
-
-        Returns: None
+            fail_on_warning : boolean argument to fail or only produce  warning upon unsuccessful solve (default=False)
+            ignore_dof : boolean argument to ignore when DOF != 0 (default=False)
+        Returns:
+            None
         """
+
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
         # Set solver options
-        if optarg is None:
-            optarg = {'bound_push': 1e-8}
-
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
+        # Extract initial state of inlet feed
+        source = blk.feed_side.properties_in[blk.flowsheet().config.time.first()]
+        state_args = blk._get_state_args(source, blk.mixed_permeate[0], initialize_guess, state_args)
+
+        # ---------------------------------------------------------------------
         # Initialize holdup block
-        flags = blk.feed_side.initialize(
+        flags_feed_side = blk.feed_side.properties_in.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args,
+            state_args=state_args['feed_side'],
+            hold_state=True
         )
         init_log.info_high("Initialization Step 1 Complete.")
+        if not ignore_dof:
+            check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
         # ---------------------------------------------------------------------
-        # Initialize permeate
-        # Set state_args from inlet state
-        if state_args is None:
-            state_args = {}
-            state_dict = blk.feed_side.properties_in[
-                blk.flowsheet().config.time.first()].define_port_members()
-
-            for k in state_dict.keys():
-                if state_dict[k].is_indexed():
-                    state_args[k] = {}
-                    for m in state_dict[k].keys():
-                        state_args[k][m] = state_dict[k][m].value
-                else:
-                    state_args[k] = state_dict[k].value
-
+        # Initialize other state blocks based on properties at
+        # inlet state block
+        blk.feed_side.properties_out.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args['retentate'],)
+        blk.feed_side.properties_interface.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args['interface_out'], )
+        blk.permeate_side.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args['permeate'], )
         blk.mixed_permeate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args,
-        )
+            state_args=state_args['permeate'], )
+        blk.pore_entrance.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args['interface_out'],)
+        blk.pore_exit.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args['permeate'],)
         init_log.info_high("Initialization Step 2 Complete.")
 
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-        init_log.info_high(
-            "Initialization Step 3 {}.".format(idaeslog.condition(res)))
-
+            if not check_optimal_termination(res):
+                init_log.warn("Trouble solving NanofiltrationDSPMDE0D unit model, trying one more time")
+                res = opt.solve(blk, tee=slc.tee)
+        check_solve(res, checkpoint='Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.feed_side.release_state(flags, outlvl + 1)
+        blk.feed_side.release_state(flags_feed_side, outlvl)
         init_log.info(
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )
@@ -900,6 +942,93 @@ class NanofiltrationData(UnitModelBlockData):
         self.costing = Block()
         module.Nanofiltration_costing(self.costing, **kwargs)
 
+    def _get_state_args(self, source, mixed_permeate_properties, initialize_guess, state_args):
+        '''
+        Arguments:
+            source : property model containing inlet feed
+            mixed_permeate_properties : mixed permeate property block
+            initialize_guess : a dict of guesses for solvent_recovery, solute_recovery,
+                               and cp_modulus. These guesses offset the initial values
+                               for the retentate, permeate, and membrane interface
+                               state blocks from the inlet feed
+                               (default =
+                               {'deltaP': -1e4,
+                               'solvent_recovery': 0.5,
+                               'solute_recovery': 0.01,
+                               'cp_modulus': 1.1})
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for the inlet
+                         feed side state block (see documentation of the specific
+                         property package).
+        '''
+
+        # assumptions
+        if initialize_guess is None:
+            initialize_guess = {}
+        #TODO: enable deltaP guess when pressure drop is added
+        if 'deltaP' not in initialize_guess:
+            initialize_guess['deltaP'] = 0
+        if 'solvent_recovery' not in initialize_guess:
+            initialize_guess['solvent_recovery'] = 0.5
+        if 'solute_recovery' not in initialize_guess:
+            initialize_guess['solute_recovery'] = 0.01
+        if 'cp_modulus' not in initialize_guess:
+            initialize_guess['cp_modulus'] = 1.1
+
+        if state_args is None:
+            state_args = {}
+            state_dict = source.define_port_members()
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = state_dict[k][m].value
+                else:
+                    state_args[k] = state_dict[k].value
+
+        if 'flow_mol_phase_comp' not in state_args.keys():
+            raise ConfigurationError(f'{self.__class__.__name__} initialization routine expects '
+                                     'flow_mol_phase_comp as a state variable. Check '
+                                     'that the property package supports this state '
+                                     'variable or that the state_args provided to the '
+                                     'initialize call includes this state variable')
+
+        # slightly modify initial values for other state blocks
+        state_args_retentate = deepcopy(state_args)
+        state_args_permeate = deepcopy(state_args)
+
+        state_args_retentate['pressure'] += initialize_guess['deltaP']
+        state_args_permeate['pressure'] = mixed_permeate_properties.pressure.value
+        for j in self.config.property_package.component_list:
+            state_args_retentate['flow_mol_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solvent_recovery'])
+            state_args_permeate['flow_mol_phase_comp'][('Liq', j)] *= initialize_guess['solvent_recovery']
+        #TODO: remove commented code if not needed
+        # for j in self.config.property_package.solute_set:
+        #     state_args_retentate['flow_mol_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solute_recovery'])
+        #     state_args_permeate['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['solute_recovery']
+
+        state_args_interface_in = deepcopy(state_args)
+        state_args_interface_out = deepcopy(state_args_retentate)
+
+        for j in self.config.property_package.solute_set:
+            state_args_interface_in['flow_mol_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
+            state_args_interface_out['flow_mol_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
+
+        return {'feed_side' : state_args,
+                'retentate' : state_args_retentate,
+                'permeate' : state_args_permeate,
+                'interface_in' : state_args_interface_in,
+                'interface_out' : state_args_interface_out,
+               }
+
+    # permeate properties need to rescale solute values by 100
+    def _rescale_permeate_variable(self, var, factor=100):
+        if var not in self._permeate_scaled_properties:
+            sf = iscale.get_scaling_factor(var)
+            iscale.set_scaling_factor(var, sf * factor)
+            self._permeate_scaled_properties.add(var)
+
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
@@ -907,6 +1036,24 @@ class NanofiltrationData(UnitModelBlockData):
             if hasattr(self.config.property_package, k):
                 solute_set = getattr(self.config.property_package, k)
                 break
+
+        # setting scaling factors for variables
+        for v in self.permeate_side[0, 0].flow_mass_phase_comp['Liq',:]:
+            iscale.set_scaling_factor(v, 1e+5)
+
+        for sb in (self.mixed_permeate, self.permeate_side):
+            for blk in sb.values():
+                for j in self.config.property_package.solute_set:
+                    self._rescale_permeate_variable(blk.flow_mol_phase_comp['Liq', j])
+                    if blk.is_property_constructed('conc_mol_phase_comp'):
+                        self._rescale_permeate_variable(blk.conc_mol_phase_comp['Liq', j])
+                    if blk.is_property_constructed('mole_frac_phase_comp'):
+                        self._rescale_permeate_variable(blk.mole_frac_phase_comp['Liq', j])
+                    if blk.is_property_constructed('molality_comp'):
+                        self._rescale_permeate_variable(blk.molality_comp[j])
+                if blk.is_property_constructed('pressure_osm'):
+                    self._rescale_permeate_variable(blk.pressure_osm)
+
 
         if iscale.get_scaling_factor(self.radius_pore) is None:
             iscale.set_scaling_factor(self.radius_pore, 1e10)
@@ -960,14 +1107,7 @@ class NanofiltrationData(UnitModelBlockData):
         for (_, _, j), v in self.rejection_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, 1e1)
-        #
-        # for (t, p, j), v in self.mass_transfer_phase_comp.items():
-        #     if iscale.get_scaling_factor(v) is None:
-        #         sf = 10 * iscale.get_scaling_factor(self.feed_side.properties_in[t].get_material_flow_terms(p, j))
-        #         iscale.set_scaling_factor(v, sf)
-        # if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
-        #     iscale.set_scaling_factor(self.recovery_vol_phase, 1)
-        #
+
         for (t, p, j), v in self.recovery_mol_phase_comp.items():
             if j in self.config.property_package.solvent_set:
                 sf = 1
@@ -975,7 +1115,14 @@ class NanofiltrationData(UnitModelBlockData):
                 sf = 10
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
-        #
+
+        # for (t, p, j), v in self.mass_transfer_phase_comp.items():
+        #     if iscale.get_scaling_factor(v) is None:
+        #         sf = 10 * iscale.get_scaling_factor(self.feed_side.properties_in[t].get_material_flow_terms(p, j))
+        #         iscale.set_scaling_factor(v, sf)
+        # if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
+        #     iscale.set_scaling_factor(self.recovery_vol_phase, 1)
+
         # # transforming constraints
         # for ind, c in self.feed_side.eq_isothermal.items():
         #     sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].temperature)

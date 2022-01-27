@@ -124,7 +124,7 @@ class TestNanoFiltration():
 
         m.fs.unit.inlet.flow_mol_phase_comp[0, 'Liq', 'H2O'].fix(H2O_mol_comp_flow)
         m.fs.unit.inlet.temperature[0].fix(298.15)
-        m.fs.unit.inlet.pressure[0].fix(101325)
+        m.fs.unit.inlet.pressure[0].fix(50e5)
         # m.fs.unit.permeate.flow_mol_phase_comp[0, 'Liq', 'H2O'].fix(0) #TODO: remove later- temporary to eliminate dof
         m.fs.unit.radius_pore.fix(0.5e-9)
         m.fs.unit.membrane_thickness_effective.fix()
@@ -203,7 +203,7 @@ class TestNanoFiltration():
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
         assert len(unscaled_var_list) == 0
 
-        badly_scaled_var_lst = list(badly_scaled_var_generator(m))
+        badly_scaled_var_lst = list(badly_scaled_var_generator(m, include_fixed=True))
         assert len(unscaled_var_list) == 0
 
         # # check that all constraints have been scaled #TODO: revisit to see if constraints need transformation
@@ -216,23 +216,16 @@ class TestNanoFiltration():
     def test_initialize(self, NF_frame):
         m= NF_frame
         # initialization_tester(m)
-        m.fs.unit.initialize()
+        m.fs.unit.initialize(fail_on_warning=True)
 
-    # @pytest.mark.component
-    # def test_var_scaling(self, NF_frame):
-    #     m = NF_frame
-    #     badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-    #     [print(i,j) for i, j in badly_scaled_var_lst]
-    #     assert badly_scaled_var_lst == []
+    @pytest.mark.component
+    def test_solve(self, NF_frame):
+        m = NF_frame
+        results = solver.solve(m)
 
-    # @pytest.mark.component
-    # def test_solve(self, NF_frame):
-    #     m = NF_frame
-    #     results = solver.solve(m)
-    #
-    #     # Check for optimal solution
-    #     assert_optimal_termination(results)
-    #
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
     # @pytest.mark.component
     # def test_conservation(self, NF_frame):
     #     m = NF_frame
