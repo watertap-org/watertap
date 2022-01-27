@@ -39,13 +39,13 @@ class NanofiltrationZOData(SIDOBaseData):
         self.electricity = Var(self.flowsheet().time,
                                units=pyunits.kW,
                                doc="Electricity consumption of unit")
-        self.electricity_intensity = Var(
+        self.energy_electric_flow_vol_inlet = Var(
             units=pyunits.kWh/pyunits.m**3,
-            doc="Electricity intensity of unit")
+            doc="Electricity intensity with respect to inlet flowrate of unit")
 
         def electricity_consumption(b, t):
             return b.electricity[t] == (
-                b.electricity_intensity *
+                b.energy_electric_flow_vol_inlet *
                 pyunits.convert(b.properties_in[t].flow_vol,
                                 to_units=pyunits.m**3/pyunits.hour))
         self.electricity_consumption = Constraint(self.flowsheet().time,
@@ -69,12 +69,12 @@ class NanofiltrationZOData(SIDOBaseData):
 
         self.set_recovery_and_removal(pdict, use_default_removal)
 
-        self.set_param_from_data(self.electricity_intensity, pdict)
+        self.set_param_from_data(self.energy_electric_flow_vol_inlet, pdict)
 
     def _get_performance_contents(self, time_point=0):
         perf_dict = super()._get_performance_contents(time_point)
 
         perf_dict["vars"]["Electricity Demand"] = self.electricity[time_point]
-        perf_dict["vars"]["Electricity Intensity"] = self.electricity_intensity
+        perf_dict["vars"]["Electricity Intensity"] = self.energy_electric_flow_vol_inlet
 
         return perf_dict
