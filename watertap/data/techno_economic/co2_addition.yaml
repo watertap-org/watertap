@@ -7,6 +7,6 @@ default:
       (3) https://www.iwapublishing.com/news/coagulation-and-flocculation-water-and-wastewater-treatment,
       (4) Water and Wastewater Engineering: Design Principles and Practice (Mackenzie
       L. Davis).'
-  default_removal_mass_solute:
+  default_removal_frac_mass_solute:
     value: 0
     units: dimensionless

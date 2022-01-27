@@ -4,6 +4,6 @@ default:
     units: dimensionless
     reference: Lenntech https://www.lenntech.com/processes/surface-water-discharge-of-brine.htm.  Electricity
       consumption is based on Carlsbad data.
-  default_removal_mass_solute:
+  default_removal_frac_mass_solute:
     value: 0
     units: dimensionless

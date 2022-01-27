@@ -5,6 +5,6 @@ default:
     reference: Intake and Pump Costs from Voutchkov (see capital cost curves in VAR).
       Energy consumption value based on 100-ft head pump and is consistent with reported
       Carlsbad data.
-  default_removal_mass_solute:
+  default_removal_frac_mass_solute:
     value: 0
     units: dimensionless

@@ -4,6 +4,6 @@ default:
     units: dimensionless
     reference: Based on costs for Sulfuric Acid Addition from Cost Estimating Manual
       for Water Treatment Facilities (McGivney/Kawamura).
-  default_removal_mass_solute:
+  default_removal_frac_mass_solute:
     value: 0
     units: dimensionless

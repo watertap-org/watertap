@@ -3,6 +3,6 @@ default:
     value: calculated
     units: dimensionless
     reference: .nan
-  default_removal_mass_solute:
+  default_removal_frac_mass_solute:
     value: 0
     units: dimensionless
