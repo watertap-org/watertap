@@ -1,34 +1,34 @@
 default:
   recovery_vol:
     value: 0.9999
-    unit: dimensionless
+    units: dimensionless
     reference: Texas Water Development Board IT3PR User Manual
   default_removal_mass_solute:
     value: 0
-    unit: dimensionless
+    units: dimensionless
   removal_frac_mass_solute:
     eeq:
       value: 0.054565
-      unit: dimensionless
+      units: dimensionless
       constituent_longform: Estradiol Equivalency (EEQ)
     toc:
       value: 0.054565
-      unit: dimensionless
+      units: dimensionless
       constituent_longform: Total Organic Carbon (TOC)
     viruses_enteric:
       value: 0.965403
-      unit: dimensionless
+      units: dimensionless
       constituent_longform: Viruses (enteric)
     cryptosporidium:
       value: 0.999989
-      unit: dimensionless
+      units: dimensionless
       constituent_longform: Cryptosporidium
     giardia_lamblia:
       value: 0.999989
-      unit: dimensionless
+      units: dimensionless
       constituent_longform: Giardia lamblia
     total_coliforms_fecal_ecoli:
       value: 0.999994
-      unit: dimensionless
+      units: dimensionless
       constituent_longform: "Total Coliforms (including fecal coliform and\uFFFD E.\
         \ Coli)"

@@ -1,10 +1,10 @@
 default:
   recovery_vol:
     value: 0.9999
-    unit: dimensionless
+    units: dimensionless
     reference: Voutchkov, N. (2018). Desalination Project Cost Estimating and Management.
       Taylor & Francis, a CRC title, part of the Taylor & Francis imprint, a member
       of the Taylor & Francis Group, the academic division of T&F Informa, plc.
   default_removal_mass_solute:
     value: 0
-    unit: dimensionless
+    units: dimensionless

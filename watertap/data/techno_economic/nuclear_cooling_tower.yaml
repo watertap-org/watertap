@@ -1,8 +1,8 @@
 default:
   recovery_vol:
     value: 0.25
-    unit: dimensionless
+    units: dimensionless
     reference: DOE/NETL-2002/1169 - Process Equipment Cost Estimation
   default_removal_mass_solute:
     value: 0
-    unit: dimensionless
+    units: dimensionless

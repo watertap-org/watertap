@@ -1,14 +1,14 @@
 default:
   recovery_vol:
     value: calculated
-    unit: dimensionless
+    units: dimensionless
     reference: 'No specific references were identified. Costs are based on seemingly
       comparable addition systems. '
   default_removal_mass_solute:
     value: 0
-    unit: dimensionless
+    units: dimensionless
   removal_frac_mass_solute:
     tds:
       value: 0.9
-      unit: dimensionless
+      units: dimensionless
       constituent_longform: tds
