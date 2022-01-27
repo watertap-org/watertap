@@ -16,30 +16,39 @@ Tests for general zero-order property package
 import pytest
 
 from idaes.core import declare_process_block_class, FlowsheetBlock
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver
-import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
-from pyomo.environ import (ConcreteModel,
-                           Constraint,
-                           SolverStatus,
-                           TerminationCondition,
-                           value,
-                           Var)
-from pyomo.network import Port
-from pyomo.util.check_units import assert_units_consistent
-
+from pyomo.environ import ConcreteModel, Var
 
 from watertap.core.zero_order_base import ZeroOrderBaseData
-from watertap.core.zero_order_properties import \
-    WaterParameterBlock, WaterStateBlock
+from watertap.core.zero_order_properties import WaterParameterBlock
 import idaes.logger as idaeslog
 
-solver = get_solver()
+
+@declare_process_block_class("DerivedZOBase")
+class DerivedZOBaseData(ZeroOrderBaseData):
+    def build(self):
+        super().build()
 
 
-class TestZOBaseConfigurationErrors:
+@pytest.mark.unit
+def test_private_attributes():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
+
+    m.fs.unit = DerivedZOBase(default={"property_package": m.fs.params})
+
+    assert m.fs.unit._tech_type is None
+    assert m.fs.unit._has_recovery_removal is False
+    assert m.fs.unit._fixed_perf_vars == []
+    assert m.fs.unit._initialize is None
+    assert m.fs.unit._scaling is None
+    assert m.fs.unit._get_Q is None
+    assert m.fs.unit._stream_table_dict == {}
+    assert m.fs.unit._perf_var_dict == {}
+
+
+class TestZOBase:
     @pytest.fixture
     def model(self):
         m = ConcreteModel()
@@ -53,11 +62,6 @@ class TestZOBaseConfigurationErrors:
         m.fs.params.del_component(m.fs.params.component_list)
 
         return m
-
-    @declare_process_block_class("DerivedZOBase")
-    class DerivedZOBaseData(ZeroOrderBaseData):
-        def build(self):
-            super().build()
 
     @pytest.mark.unit
     def test_phase_list(self, model):

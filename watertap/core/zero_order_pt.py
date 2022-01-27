@@ -11,9 +11,9 @@
 #
 ###############################################################################
 """
-This module contains the base class for all zero order pass-through unit
-models (i.e. units with a single inlet and single outlet where flow and
-composition do not change, such as pumps).
+This module contains the methods for constructing the material balances for
+zero-order pass-through unit models (i.e. units with a single inlet and single
+outlet where flow and composition do not change, such as pumps).
 """
 from pyomo.environ import Var, units as pyunits
 
@@ -46,29 +46,10 @@ def build_pt(self):
     self.add_port("inlet", self.properties, doc="Inlet port")
     self.add_port("outlet", self.properties, doc="Tutlet port")
 
-    # Add electricity consumption to model
-    self.electricity = Var(self.flowsheet().time,
-                           units=pyunits.kW,
-                           doc="Electricity consumption of unit")
-    self.energy_electric_flow_vol_inlet = Var(
-        units=pyunits.kWh/pyunits.m**3,
-        doc="Electricity intensity with respect to inlet flowrate of unit")
-
-    @self.Constraint(self.flowsheet().time,
-                     doc='Constraint for electricity consumption base on '
-                     'feed flowrate.')
-    def electricity_consumption(b, t):
-        return b.electricity[t] == (
-            b.energy_electric_flow_vol_inlet *
-            pyunits.convert(b.properties[t].flow_vol,
-                            to_units=pyunits.m**3/pyunits.hour))
-
     self._stream_table_dict = {"Inlet": self.inlet,
                                "Outlet": self.outlet}
 
-    self._perf_var_dict = {
-        "Electricity Demand": self.electricity,
-        "Electricity Intensity": self.energy_electric_flow_vol_inlet}
+    self._get_Q = _get_Q_pt
 
 
 def initialize_pt(blk, state_args=None, outlvl=idaeslog.NOTSET,
@@ -141,3 +122,7 @@ def initialize_pt(blk, state_args=None, outlvl=idaeslog.NOTSET,
 
 def calculate_scaling_factors_pt(self):
     pass
+
+
+def _get_Q_pt(self, t):
+    return self.properties[t].flow_vol

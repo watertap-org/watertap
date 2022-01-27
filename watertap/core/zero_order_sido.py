@@ -11,8 +11,8 @@
 #
 ###############################################################################
 """
-This module contains the base class for all zero order single inlet-double
-outlet (SIDO) unit models.
+This module contains methods for constructung the materail balances for
+zero-order single inlet-double outlet (SIDO) unit models.
 """
 
 import idaes.logger as idaeslog
@@ -118,32 +118,14 @@ def build_sido(self):
                 b.recovery_vol[t] *
                 b.properties_treated[t].conc_mass_comp[j])
 
-    # Add electricity consumption to model
-    self.electricity = Var(self.flowsheet().time,
-                           units=pyunits.kW,
-                           doc="Electricity consumption of unit")
-    self.energy_electric_flow_vol_inlet = Var(
-        units=pyunits.kWh/pyunits.m**3,
-        doc="Electricity intensity with respect to inlet flowrate of unit")
-
-    @self.Constraint(self.flowsheet().time,
-                     doc='Constraint for electricity consumption base on '
-                     'feed flowrate.')
-    def electricity_consumption(b, t):
-        return b.electricity[t] == (
-            b.energy_electric_flow_vol_inlet *
-            pyunits.convert(b.properties_in[t].flow_vol,
-                            to_units=pyunits.m**3/pyunits.hour))
-
     self._stream_table_dict = {"Inlet": self.inlet,
                                "Treated": self.treated,
                                "Byproduct": self.byproduct}
 
-    self._perf_var_dict = {
-        "Water Recovery": self.recovery_vol,
-        "Solute Removal": self.removal_frac_mass_solute,
-        "Electricity Demand": self.electricity,
-        "Electricity Intensity": self.energy_electric_flow_vol_inlet}
+    self._perf_var_dict["Water Recovery"] = self.recovery_vol
+    self._perf_var_dict["Solute Removal"] = self.removal_frac_mass_solute
+
+    self._get_Q = _get_Q_sido
 
 
 def initialize_sido(blk, state_args=None, outlvl=idaeslog.NOTSET,
@@ -264,3 +246,7 @@ def calculate_scaling_factors_sido(self):
                 self.properties_in[t].flow_mass_comp[j],
                 default=1,
                 warning=False))  # would just be a duplicate of above
+
+
+def _get_Q_sido(self, t):
+    return self.properties_in[t].flow_vol

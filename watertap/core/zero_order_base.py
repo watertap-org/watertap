@@ -75,12 +75,21 @@ class ZeroOrderBaseData(UnitModelBlockData):
         super().build()
 
         # Set a placeholder attributes
+        # Placeholder for technology type string
         self._tech_type = None
+
+        # Attribute indicating what parameters need to be fixed in the model
         self._has_recovery_removal = False
-        self._initialize = None
-        self._scaling = None
+        self._fixed_perf_vars = []
+
+        # Place holders for assigning methods
+        self._initialize = None  # used to link to initization routine
+        self._scaling = None  # used to link to scaling routine
+        self._get_Q = None  # used to provide inlet volumetric flow
+
+        # Attributed for storing contents of reporting output
         self._stream_table_dict = {}
-        self._perf_var_dict= {}
+        self._perf_var_dict = {}
 
         # Check that property package meets requirements
         if self.config.property_package.phase_list != ["Liq"]:
@@ -152,7 +161,8 @@ class ZeroOrderBaseData(UnitModelBlockData):
         if self._has_recovery_removal:
             self.set_recovery_and_removal(pdict, use_default_removal)
 
-        self.set_param_from_data(self.energy_electric_flow_vol_inlet, pdict)
+        for v in self._fixed_perf_vars:
+            self.set_param_from_data(v, pdict)
 
     def set_recovery_and_removal(self, data, use_default_removal=False):
         """
@@ -243,6 +253,9 @@ class ZeroOrderBaseData(UnitModelBlockData):
 
         parameter.fix(val*units)
         _log.info_high(f"{parameter.name} fixed to value {val} {str(units)}")
+
+    def get_inlet_flow(self, t):
+        return self._get_Q(self, t)
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(

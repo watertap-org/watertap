@@ -19,6 +19,7 @@ from idaes.core import declare_process_block_class
 
 from watertap.core.zero_order_base import ZeroOrderBaseData
 from watertap.core.zero_order_sido import build_sido
+from watertap.core.zero_order_electricity import constant_intensity
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
@@ -38,3 +39,4 @@ class NanofiltrationZOData(ZeroOrderBaseData):
         self._tech_type = "nanofiltration"
 
         build_sido(self)
+        constant_intensity(self)

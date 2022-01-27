@@ -19,7 +19,6 @@ from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
-from idaes.core.util.exceptions import ConfigurationError
 from pyomo.environ import (ConcreteModel,
                            Constraint,
                            value,
@@ -28,7 +27,8 @@ from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
 from watertap.core.zero_order_base import ZeroOrderBaseData
-from watertap.core.zero_order_pt import build_pt
+from watertap.core.zero_order_pt import (
+    build_pt, initialize_pt, calculate_scaling_factors_pt, _get_Q_pt)
 from watertap.core.zero_order_properties import \
     WaterParameterBlock, WaterStateBlock
 
@@ -43,99 +43,7 @@ class DerivedPTData(ZeroOrderBaseData):
         build_pt(self)
 
 
-class TestPTConfigurationErrors:
-    @pytest.fixture
-    def model(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
-
-        m.fs.params.del_component(m.fs.params.phase_list)
-        m.fs.params.del_component(m.fs.params.solvent_set)
-        m.fs.params.del_component(m.fs.params.solute_set)
-        m.fs.params.del_component(m.fs.params.component_list)
-
-        return m
-
-    @pytest.mark.unit
-    def test_phase_list(self, model):
-        model.fs.params.phase_list = ["foo"]
-
-        with pytest.raises(ConfigurationError,
-                           match="fs.unit configured with invalid property "
-                           "package. Zero-order models only support property "
-                           "packages with a single phase named 'Liq'."):
-            model.fs.unit = DerivedPT(
-                default={"property_package": model.fs.params})
-
-    @pytest.mark.unit
-    def test_no_solvent_set(self, model):
-        model.fs.params.phase_list = ["Liq"]
-
-        with pytest.raises(ConfigurationError,
-                           match="fs.unit configured with invalid property "
-                           "package. Zero-order models only support property "
-                           "packages which include 'H2O' as the only Solvent."
-                           ):
-            model.fs.unit = DerivedPT(
-                default={"property_package": model.fs.params})
-
-    @pytest.mark.unit
-    def test_invalid_solvent_set(self, model):
-        model.fs.params.phase_list = ["Liq"]
-        model.fs.params.solvent_set = ["foo"]
-
-        with pytest.raises(ConfigurationError,
-                           match="fs.unit configured with invalid property "
-                           "package. Zero-order models only support property "
-                           "packages which include 'H2O' as the only Solvent."
-                           ):
-            model.fs.unit = DerivedPT(
-                default={"property_package": model.fs.params})
-
-    @pytest.mark.unit
-    def test_no_solute_set(self, model):
-        model.fs.params.phase_list = ["Liq"]
-        model.fs.params.solvent_set = ["H2O"]
-
-        with pytest.raises(ConfigurationError,
-                           match="fs.unit configured with invalid property "
-                           "package. Zero-order models require property "
-                           "packages to declare all dissolved species as "
-                           "Solutes."):
-            model.fs.unit = DerivedPT(
-                default={"property_package": model.fs.params})
-
-    @pytest.mark.unit
-    def test_non_solvent_or_solute(self, model):
-        model.fs.params.phase_list = ["Liq"]
-        model.fs.params.solvent_set = ["H2O"]
-        model.fs.params.solute_set = ["A", "B", "C"]
-        model.fs.params.component_list = ["H2O", "A", "B", "C", "foo"]
-
-        with pytest.raises(ConfigurationError,
-                           match="fs.unit configured with invalid property "
-                           "package. Zero-order models only support `H2O` as "
-                           "a solvent and all other species as Solutes."):
-            model.fs.unit = DerivedPT(
-                default={"property_package": model.fs.params})
-
-    @pytest.mark.unit
-    def test_load_parameters_from_database(self, model):
-        model.fs.params.phase_list = ["Liq"]
-        model.fs.params.solvent_set = ["H2O"]
-        model.fs.params.solute_set = ["A", "B", "C"]
-        model.fs.params.component_list = ["H2O", "A", "B", "C"]
-
-        model.fs.unit = DerivedPT(
-            default={"property_package": model.fs.params})
-
-        with pytest.raises(NotImplementedError):
-            model.fs.unit.load_parameters_from_database()
-
-
-class TestFixedPerformance:
+class TestPT:
     @pytest.fixture(scope="module")
     def model(self):
         m = ConcreteModel()
@@ -153,9 +61,20 @@ class TestFixedPerformance:
         m.fs.unit.inlet.conc_mass_comp[0, "B"].fix(20)
         m.fs.unit.inlet.conc_mass_comp[0, "C"].fix(30)
 
-        m.fs.unit.energy_electric_flow_vol_inlet.fix(10)
-
         return m
+
+    @pytest.mark.unit
+    def test_private_attributes(self, model):
+        assert model.fs.unit._tech_type is None
+        assert model.fs.unit._has_recovery_removal is False
+        assert model.fs.unit._fixed_perf_vars == []
+        assert model.fs.unit._initialize is initialize_pt
+        assert model.fs.unit._scaling is calculate_scaling_factors_pt
+        assert model.fs.unit._get_Q is _get_Q_pt
+        assert model.fs.unit._stream_table_dict == {
+            "Inlet": model.fs.unit.inlet,
+            "Outlet": model.fs.unit.outlet}
+        assert model.fs.unit._perf_var_dict == {}
 
     @pytest.mark.unit
     def test_build(self, model):
@@ -163,14 +82,6 @@ class TestFixedPerformance:
 
         assert isinstance(model.fs.unit.inlet, Port)
         assert isinstance(model.fs.unit.outlet, Port)
-
-        assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
-        assert len(model.fs.unit.energy_electric_flow_vol_inlet) == 1
-        assert isinstance(model.fs.unit.electricity, Var)
-        assert len(model.fs.unit.electricity) == 1
-
-        assert isinstance(model.fs.unit.electricity_consumption, Constraint)
-        assert len(model.fs.unit.electricity_consumption) == 1
 
     @pytest.mark.unit
     def test_degrees_of_freedom(self, model):
@@ -180,9 +91,7 @@ class TestFixedPerformance:
     def test_unit_consistency(self, model):
         assert_units_consistent(model)
 
-    @pytest.mark.component
-    def test_initialization(self, model):
-        initialization_tester(model)
+    # Nothing to initialize or solve
 
     @pytest.mark.component
     def test_solution(self, model):
@@ -200,9 +109,6 @@ class TestFixedPerformance:
             model.fs.unit.inlet.conc_mass_comp[0, "C"]), rel=1e-5) ==
             value(model.fs.unit.outlet.conc_mass_comp[0, "C"]))
 
-        assert (pytest.approx(1512000, rel=1e-5) ==
-                value(model.fs.unit.electricity[0]))
-
     @pytest.mark.component
     def test_report(self, model, capsys):
         model.fs.unit.report()
@@ -213,11 +119,6 @@ Unit : fs.unit                                                             Time:
 ------------------------------------------------------------------------------------
     Unit Performance
 
-    Variables: 
-
-    Key                   : Value      : Fixed : Bounds
-       Electricity Demand : 1.5120e+06 : False : (None, None)
-    Electricity Intensity :     10.000 :  True : (None, None)
 
 ------------------------------------------------------------------------------------
     Stream Table

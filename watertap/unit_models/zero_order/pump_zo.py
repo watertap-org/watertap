@@ -19,6 +19,7 @@ from idaes.core import declare_process_block_class
 
 from watertap.core.zero_order_base import ZeroOrderBaseData
 from watertap.core.zero_order_pt import build_pt
+from watertap.core.zero_order_electricity import constant_intensity
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
@@ -38,3 +39,4 @@ class PumpZOData(ZeroOrderBaseData):
         self._tech_type = "pump"
 
         build_pt(self)
+        constant_intensity(self)
