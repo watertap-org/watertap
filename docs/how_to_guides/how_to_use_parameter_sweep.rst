@@ -25,11 +25,13 @@ In general you would import your own flowsheet module.
 
 .. testsetup::
 
-    # quiet idaes logs
+    # quiet idaes and pyomo logs
     import idaes.logger as idaeslogger
     idaeslogger.getLogger('ideas.core').setLevel('CRITICAL')
     idaeslogger.getLogger('ideas.core.util.scaling').setLevel('CRITICAL')
     idaeslogger.getLogger('idaes.init').setLevel('CRITICAL')
+    import logging
+    logging.getLogger('pyomo.core').setLevel(logging.ERROR)
 
 .. testcode::
 

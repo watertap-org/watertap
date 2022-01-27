@@ -317,7 +317,7 @@ def _default_optimize(model, options=None, tee=False):
 
     '''
     solver = get_solver(options=options)
-    results = solver.solve(m, tee=tee)
+    results = solver.solve(model, tee=tee)
 
     # if results.solver.termination_condition != pyo.TerminationCondition.optimal:
     #     raise RuntimeError("The solver failed to converge to an optimal solution. "
