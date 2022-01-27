@@ -43,8 +43,13 @@ from idaes.core.util.misc import add_object_reference, extract_data
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom, \
     number_unfixed_variables
-from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
+from idaes.core.util.exceptions import (
+    ConfigurationError, InitializationError, PropertyPackageError)
 import idaes.core.util.scaling as iscale
+
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 class HeatOfCrystallizationModel(Enum):
@@ -279,10 +284,17 @@ class NaClParameterData(PhysicalParameterBlock):
         self.enth_phase_param_E4 = Var(within=Reals, initialize=-8.211e-6, units=enth_mass_units_2/pyunits.K**4, doc='Solution enthalpy parameter E4')
         self.enth_phase_param_E5 = Var(within=Reals, initialize=11.43e-6, units=enth_mass_units_2/pyunits.K**4, doc='Solution enthalpy parameter E5')
 
-
         for v in self.component_objects(Var):
             v.fix()
 
+        # ---default scaling---
+        self.set_default_scaling('temperature', 1e-2)
+        self.set_default_scaling('pressure', 1e-6)
+        self.set_default_scaling('dens_mass_phase', 1e-3, index='Liq')
+        self.set_default_scaling('enth_mass_phase', 1e-1, index='Liq')
+        # self.set_default_scaling('visc_d_phase', 1e3, index='Liq')
+        # self.set_default_scaling('diffus_phase', 1e9, index='Liq')
+        # self.set_default_scaling('osm_coeff', 1e0)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -318,14 +330,17 @@ class NaClParameterData(PhysicalParameterBlock):
              'dh_crystallization': {'method': '_dh_crystallization'},
              'enth_flow': {'method': '_enth_flow'},
              'vol_frac_phase': {'method': '_vol_frac_phase'},
-             # 'flow_mol_phase_comp': {'method': '_flow_mol_phase_comp'},
-             # 'mole_frac_phase_comp': {'method': '_mole_frac_phase_comp'},
-             
+             'flow_mol_phase_comp': {'method': '_flow_mol_phase_comp'},
+             'mole_frac_phase_comp': {'method': '_mole_frac_phase_comp'},  
                 })
 
 
 class _NaClStateBlock(StateBlock):
-    # Will build up later
+    """
+    This Class contains methods which should be applied to Property Blocks as a
+    whole, rather than individual elements of indexed Property Blocks.
+    """
+
     def initialize(self, state_args=None, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
@@ -338,12 +353,12 @@ class _NaClStateBlock(StateBlock):
                          were not provided at the unit model level, the
                          control volume passes the inlet values as initial
                          guess.The keys for the state_args dictionary are:
-
                          flow_mass_phase_comp : value at which to initialize
                                                phase component flows
                          pressure : value at which to initialize pressure
                          temperature : value at which to initialize temperature
-
+            outlvl : sets output level of initialization routine (default=idaeslog.NOTSET)
+            optarg : solver options dictionary object (default=None)
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
                               - True - states have already been fixed by the
@@ -353,6 +368,8 @@ class _NaClStateBlock(StateBlock):
                                        with 0D blocks.
                              - False - states have not been fixed. The state
                                        block will deal with fixing/unfixing.
+            solver : Solver object to use during initialization if None is provided
+                     it will use the default solver for IDAES (default = None)
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
@@ -363,10 +380,6 @@ class _NaClStateBlock(StateBlock):
                         - False - state variables are unfixed after
                                  initialization by calling the
                                  release_state method
-            outlvl : sets output level of initialization routine (default=idaeslog.NOTSET)
-            solver : Solver object to use during initialization if None is provided
-                     it will use the default solver for IDAES (default = None)
-            optarg : solver options dictionary object (default=None)
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -405,6 +418,11 @@ class _NaClStateBlock(StateBlock):
                 results = solve_indexed_blocks(opt, [self], tee=slc.tee)
             init_log.info_high("Property initialization: {}.".format(idaeslog.condition(results)))
 
+            if not check_optimal_termination(results):
+                raise InitializationError(
+                    f"{self.name} failed to initialize successfully. Please "
+                    f"check the output logs for more information.")
+
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state
         if state_vars_fixed is False:
@@ -416,7 +434,6 @@ class _NaClStateBlock(StateBlock):
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         '''
         Method to release state variables fixed during initialisation.
-
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -515,6 +532,7 @@ class _NaClStateBlock(StateBlock):
 
         return results
 
+
 @declare_process_block_class("NaClStateBlock", block_class=_NaClStateBlock)
 class NaClStateBlockData(StateBlockData):
     def build(self):
@@ -536,8 +554,8 @@ class NaClStateBlockData(StateBlockData):
                             doc='State temperature [K]')
 
         self.flow_mass_phase_comp = Var(self.params.phase_list, self.params.component_list,
-                            initialize={('Liq', 'H2O'): 0.965, ('Liq', 'NaCl'): 0.035}, 
-                            # ('Vap', 'H2O'): 0, ('Vap', 'NaCl'): 0, ('Sol', 'H2O'): 0, ('Sol', 'NaCl'): 0},
+                            initialize={('Liq', 'H2O'): 0.965, ('Liq', 'NaCl'): 0.035, # }, 
+                            ('Vap', 'H2O'): 0, ('Vap', 'NaCl'): 0, ('Sol', 'H2O'): 0, ('Sol', 'NaCl'): 0},
                             bounds=(1e-8, None),
                             domain=NonNegativeReals,
                             units=pyunits.kg/pyunits.s,
@@ -749,7 +767,7 @@ class NaClStateBlockData(StateBlockData):
         self.flow_vol_phase = Var(
             self.params.phase_list,
             initialize=1,
-            bounds=(1e-8, None),
+            bounds=(0, None),
             units=pyunits.m ** 3 / pyunits.s,
             doc="Volumetric flow rate")
 
@@ -878,7 +896,7 @@ class NaClStateBlockData(StateBlockData):
         self.enth_mass_phase = Var(
             ['Liq'],
             initialize=500,
-            bounds=(1, 1e4),
+            bounds=(1, 1000),
             units=pyunits.kJ * pyunits.kg ** -1,
             doc="Specific enthalpy of NaCl solution")
 
@@ -1001,6 +1019,47 @@ class NaClStateBlockData(StateBlockData):
         self.eq_vol_frac_phase = Constraint(['Liq', 'Sol'], rule=rule_vol_frac_phase)
 
 
+    # 22. Molar flows
+    def _flow_mol_phase_comp(self):
+        self.flow_mol_phase_comp = Var(
+            self.params.phase_list,
+            self.params.component_list,
+            initialize=100,
+            bounds=(None, None),
+            domain=NonNegativeReals,
+            units=pyunits.mol / pyunits.s,
+            doc="Molar flowrate")
+
+        def rule_flow_mol_phase_comp(b, p, j):
+            return (b.flow_mol_phase_comp[p, j] ==
+                    b.flow_mass_phase_comp[p, j] / b.params.mw_comp[j])
+
+        self.eq_flow_mol_phase_comp = Constraint(self.params.phase_list, self.params.component_list, rule=rule_flow_mol_phase_comp)
+
+
+    # Mole fractions
+    def _mole_frac_phase_comp(self):
+        self.mole_frac_phase_comp = Var(
+            self.params.phase_list,
+            self.params.component_list,
+            initialize=0.1,
+            bounds = (1e-8, None),
+            units=pyunits.dimensionless,
+            doc="Mole fraction")
+
+        def rule_mole_frac_phase_comp(b, p, j):  
+            eps = 1e-15 * pyunits.mol/pyunits.s # Small value added to denominator ensure denominator is always greater than zero.
+            return (b.mole_frac_phase_comp[p, j] == b.flow_mol_phase_comp[p, j] / (eps + sum(b.flow_mol_phase_comp[p, j] for j in b.params.component_list)))
+        
+        self.eq_mole_frac_phase_comp = Constraint(self.params.phase_list, self.params.component_list, rule=rule_mole_frac_phase_comp)
+
+
+
+
+
+
+
+
     # -----------------------------------------------------------------------------
     # Boilerplate Methods
 
@@ -1051,6 +1110,21 @@ class NaClStateBlockData(StateBlockData):
         if self.is_property_constructed('flow_vol'):
             sf = iscale.get_scaling_factor(self.flow_vol_phase)
             iscale.set_scaling_factor(self.flow_vol, sf)
+
+        # Scaling for density mass solute - use solution density scaling
+        if self.is_property_constructed('dens_mass_solute'):
+            sf = iscale.get_scaling_factor(self.dens_mass_phase['Liq'])
+            iscale.set_scaling_factor(self.dens_mass_solute, sf)
+
+        # Scaling for density mass solvent - use solution density scaling
+        if self.is_property_constructed('dens_mass_solvent'):
+            for p in self.params.phase_list:
+                if p == 'Liq':
+                    sf = iscale.get_scaling_factor(self.dens_mass_phase['Liq'])
+                    iscale.set_scaling_factor(self.dens_mass_solvent[p], sf)
+
+
+
 
 
 # def nacl_solubility_function():

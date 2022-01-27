@@ -19,7 +19,7 @@ m.fs.stream = m.fs.properties.build_state_block([0], default={'defined_state': T
 print('\n---first display---')
 m.fs.stream[0].display()
 
-# attempt to access properties so that they are built
+# Attempt to access properties so that they are built
 m.fs.stream[0].mass_frac_phase_comp
 m.fs.stream[0].solubility_mass_phase_comp
 m.fs.stream[0].dens_mass_solvent
@@ -40,25 +40,12 @@ m.fs.stream[0].enth_mass_solute
 m.fs.stream[0].enth_mass_phase
 m.fs.stream[0].dh_crystallization
 m.fs.stream[0].vol_frac_phase
+m.fs.stream[0].flow_mol_phase_comp
+m.fs.stream[0].mole_frac_phase_comp
 
-# # after touching the property, the state block automatically builds it,
-# # note the mass_frac_phase_comp variable and the constraint to calculate it
-# print('\n---second display---')
-# m.fs.stream[0].display()
-
-# # touch another property
-# m.fs.stream[0].conc_mass_phase_comp
-# # after touching this property, the state block automatically builds it AND any other properties that are necessary,
-# # note that now there is the conc_mass_phase_comp and dens_mass_phase variable and associated constraints
-# print('\n---third display---')
-# m.fs.stream[0].display()
-
-# # touch last property
-# m.fs.stream[0].flow_vol_phase
-
-# now that we have a state block, we can fix the state variables and solve for the properties
-m.fs.stream[0].temperature.fix(273.15 + 50)
-m.fs.stream[0].pressure.fix(10000)
+# Fix the state variables and solve for the properties
+m.fs.stream[0].temperature.fix(273.15 + 25)
+m.fs.stream[0].pressure.fix(5e5)
 m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'].fix(1)
 m.fs.stream[0].flow_mass_phase_comp['Liq', 'NaCl'].fix(0.27)
 m.fs.stream[0].flow_mass_phase_comp['Sol', 'H2O'].fix(0)
@@ -66,44 +53,35 @@ m.fs.stream[0].flow_mass_phase_comp['Sol', 'NaCl'].fix(0)
 m.fs.stream[0].flow_mass_phase_comp['Vap', 'H2O'].fix(0)
 m.fs.stream[0].flow_mass_phase_comp['Vap', 'NaCl'].fix(0)
 
-# the user should provide the scale for the flow rate, so that our tools can ensure the model is well scaled
-# generally scaling factors should be such that if it is multiplied by the variable it will range between 0.01 and 100
 m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
 m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
-m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e4, index=('Liq', 'TSS'))
-iscale.calculate_scaling_factors(m.fs)  # this utility scales the model
-
-# solving
-assert_units_consistent(m)  # check that units are consistent
-assert(degrees_of_freedom(m) == 0)  # check that the degrees of freedom are what we expect
-
+iscale.calculate_scaling_factors(m.fs) 
+assert_units_consistent(m)  
+assert(degrees_of_freedom(m) == 0) 
 solver = SolverFactory('ipopt')
 solver.options = {'tol': 1e-8, 'nlp_scaling_method': 'user-scaling'}
-
 results = solver.solve(m, tee=False)
 assert results.solver.termination_condition == TerminationCondition.optimal
-
-# display results
-print('\n---fourth display---')
 m.fs.stream[0].display()
 m.fs.stream[0].flow_vol.display()
 m.fs.stream[0].enth_flow.display()
-# note that the properties are solved, and the body of the constraints are small (residual)
 
-# # equation oriented modeling has several advantages, one of them is that we can unfix variables and fix others
-# # instead of setting the mass flow rates, we can set the volumetric flow rate and mass fractions
-# m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'].unfix()
-# m.fs.stream[0].flow_mass_phase_comp['Liq', 'NaCl'].unfix()
-# m.fs.stream[0].flow_mass_phase_comp['Liq', 'TSS'].unfix()
 
-# m.fs.stream[0].flow_vol_phase['Liq'].fix(1.5e-3)
-# m.fs.stream[0].mass_frac_phase_comp['Liq', 'NaCl'].fix(0.05)
-# m.fs.stream[0].mass_frac_phase_comp['Liq', 'TSS'].fix(80e-6)
+# # Initialize/re-solve with other properties fixed
+m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'].unfix()
+m.fs.stream[0].flow_mass_phase_comp['Liq', 'NaCl'].unfix()
+m.fs.stream[0].flow_mass_phase_comp['Sol', 'H2O'].unfix()
+m.fs.stream[0].flow_mass_phase_comp['Sol', 'NaCl'].unfix()
+m.fs.stream[0].flow_mass_phase_comp['Vap', 'H2O'].unfix()
+m.fs.stream[0].flow_mass_phase_comp['Vap', 'NaCl'].unfix()
+m.fs.stream[0].flow_vol_phase['Liq'].fix(2e-2)
+m.fs.stream[0].flow_vol_phase['Sol'].fix(0)
+m.fs.stream[0].flow_vol_phase['Vap'].fix(0)
+m.fs.stream[0].mass_frac_phase_comp['Liq', 'NaCl'].fix(0.05)
+m.fs.stream[0].mass_frac_phase_comp['Vap', 'NaCl'].fix(0)
+m.fs.stream[0].mass_frac_phase_comp['Sol', 'NaCl'].fix(0)
 
-# # resolve
-# results = solver.solve(m, tee=False)
-# assert results.solver.termination_condition == TerminationCondition.optimal
-
-# print('\n---fifth display---')
-# m.fs.stream[0].display()
-
+results = solver.solve(m, tee=False)
+assert results.solver.termination_condition == TerminationCondition.optimal
+print('\n==== New solve ====\n')
+m.fs.stream[0].display()
