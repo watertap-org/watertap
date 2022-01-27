@@ -29,7 +29,7 @@ from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         )
-from idaes.core.util.scaling import calculate_scaling_factors, set_scaling_factor
+from idaes.core.util.scaling import calculate_scaling_factors, set_scaling_factor, get_scaling_factor
 
 from pyomo.util.check_units import assert_units_consistent
 from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock, DSPMDEStateBlock, ActivityCoefficientModel
@@ -304,6 +304,8 @@ def test_build(model3):
                     "Property {v_name} is an on-demand property, but was not built "
                     "when demanded".format(v_name=v_name))
 
+    assert m.fs.stream[0].is_property_constructed('act_coeff_phase_comp')
+
     var_list = ['mass_frac_phase_comp', 'dens_mass_phase', 'flow_vol_phase',
                 'conc_mass_phase_comp', 'flow_mass_phase_comp', 'mole_frac_phase_comp',
                 'molality_comp', 'pressure_osm', 'act_coeff_phase_comp']
@@ -351,8 +353,14 @@ def test_default_scaling(model3):
 @pytest.mark.unit
 def test_scaling(model3):
     m = model3
+    metadata = m.fs.properties.get_metadata().properties
 
-    calculate_scaling_factors(m.fs)
+    for v_name in metadata:
+        getattr(m.fs.stream[0], v_name)
+
+    # m.fs.properties.set_default_scaling(m.fs.stream[0].flow_mol_phase_comp, 1, index=('Liq', 'H2O'))
+
+    calculate_scaling_factors(m)
 
     # check that all variables have scaling factors
     unscaled_var_list = list(unscaled_variables_generator(m))
@@ -365,8 +373,15 @@ def test_scaling(model3):
 
     # check that all constraints have been scaled
     unscaled_constraint_list = list(unscaled_constraints_generator(m))
-    [print(i) for i in unscaled_constraint_list]
     assert len(unscaled_constraint_list) == 0
+
+    # m.fs.stream[0].scaling_factor.display()
+    for j in m.fs.properties.config.solute_list:
+        assert get_scaling_factor(m.fs.stream[0].mw_comp[j]) is not None
+        assert get_scaling_factor(m.fs.stream[0].diffus_phase_comp['Liq', j]) is not None
+        assert get_scaling_factor(m.fs.stream[0].act_coeff_phase_comp['Liq', j]) is not None
+    # assert get_scaling_factor(m.fs.stream[0].dens_mass_phase['Liq']) is not None
+    # assert get_scaling_factor(m.fs.stream[0].visc_d_phase['Liq']) is not None
 
 @pytest.mark.component
 def test_seawater_data():
@@ -425,22 +440,15 @@ def test_seawater_data():
 
     stream[0].assert_electroneutrality(tol=1e-2)
 
-    # temp=0
-    # for ion in feed_mass_frac.keys():
-    #     temp+= feed_mass_frac[ion]/stream[0].dens_mass_comp[ion]
-    #     print(f" X/rho {ion}:",value(temp))
-    # temp+=H2O_mass_frac/stream[0].dens_mass_comp['H2O']
-    # print(f" X/rho H2O:", value(temp))
-    #
-    # print(value(1/temp))
-    # print(H2O_mass_frac)
     metadata = m.fs.properties.get_metadata().properties
     for v_name in metadata:
-        print(getattr(stream[0], v_name))
+        getattr(stream[0], v_name)
 
     assert_units_consistent(m)
 
     check_dof(m, fail_flag=True)
+
+    calculate_scaling_factors(m)
 
     stream.initialize()
 
@@ -455,81 +463,11 @@ def test_seawater_data():
     assert value(stream[0].flow_mol_phase_comp['Liq', 'Cl_-']) == pytest.approx(0.58,  rel=1e-3)
     assert value(stream[0].flow_mol_phase_comp['Liq', 'SO4_2-']) == pytest.approx(0.02225,  rel=1e-3)
     assert value(stream[0].dens_mass_phase['Liq']) == pytest.approx(1000, rel=1e-3) #1015.89,  rel=1e-3) #TODO revisit after solution density finalized
+    assert value(stream[0].pressure_osm) == pytest.approx(29.641e5, rel=1e-3)
+    assert value(stream[0].flow_vol) == pytest.approx(0.001, rel=1e-3)
+    assert value(stream[0].conc_mass_phase_comp['Liq','Na_+']) == pytest.approx(11.122, rel=1e-3)
+    assert value(stream[0].conc_mass_phase_comp['Liq','Cl_-']) == pytest.approx(20.3, rel=1e-3)
+    assert value(sum(stream[0].conc_mass_phase_comp['Liq',j] for j in m.fs.properties.solute_set)) == pytest.approx(35.334, rel=1e-3)
+    assert value(sum(stream[0].mass_frac_phase_comp['Liq',j] for j in m.fs.properties.solute_set)) == pytest.approx(35334e-6, rel=1e-3)
 
-# Not sure how to use property test harness for this particular property model which feeds in various config data
-# # -----------------------------------------------------------------------------
-# @pytest.mark.unit
-# class TestDSPMDEProperty_idaes(PropertyTestHarness_idaes):
-#     def configure(self):
-#         self.prop_pack = DSPMDEParameterBlock
-#         self.param_args = {}
-#         self.prop_args = {
-#
-#         }
-#         self.has_density_terms = False
-#
-#
-# class TestDSPMDEProperty(PropertyTestHarness):
-#     def configure(self):
-#         self.prop_args = {
-#             "solute_list": ["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
-#             "diffusivity_data": {("Liq", "Ca_2+"): 0.792e-9,
-#                                  ("Liq", "SO4_2-"): 1.06e-9,
-#                                  ("Liq", "Na_+"): 1.33e-9,
-#                                  ("Liq", "Cl_-"): 2.03e-9,
-#                                  ("Liq", "Mg_2+"): 0.706e-9},
-#             "mw_data": {"H2O": 18e-3,
-#                         "Na_+": 23e-3,
-#                         "Ca_2+": 40e-3,
-#                         "Mg_2+": 24e-3,
-#                         "Cl_-": 35e-3,
-#                         "SO4_2-": 96e-3},
-#             "stokes_radius_data": {"Na_+": 0.184e-9,
-#                                    "Ca_2+": 0.309e-9,
-#                                    "Mg_2+": 0.347e-9,
-#                                    "Cl_-": 0.121e-9,
-#                                    "SO4_2-": 0.230e-9},
-#             "density_data": {"H2O": 1000,
-#                              "Na_+": 968,
-#                              "Ca_2+": 1550,
-#                              "Mg_2+": 1738,
-#                              "Cl_-": 3214,  # todo: verify valid value; Cl2 specific gravity= 1.41 @ 20 C
-#                              "SO4_2-": 2553},
-#             "charge": {"Na_+": 1,
-#                        "Ca_2+": 2,
-#                        "Mg_2+": 2,
-#                        "Cl_-": -1,
-#                        "SO4_2-": -2},
-#         }
-#         self.prop_pack = DSPMDEParameterBlock
-#         self.param_args = {}
-#         # self.prop_args = {}
-#         self.scaling_args = {('flow_mol_phase_comp', ('Liq', 'H2O')): 1,
-#                              ('flow_mol_phase_comp', ('Liq', 'Na_+')): 1e2,
-#                              ('flow_mol_phase_comp', ('Liq', 'Cl_-')): 1e2,
-#                              ('flow_mol_phase_comp', ('Liq', 'Ca_2+-')): 1e2,
-#                              ('flow_mol_phase_comp', ('Liq', 'Mg_2+')): 1e2,
-#                              ('flow_mol_phase_comp', ('Liq', 'SO4_2-')): 1e2,
-#                              }
-#         self.stateblock_statistics = {'number_variables': 20,
-#                                       'number_total_constraints': 16,
-#                                       'number_unused_variables': 1,  # pressure is unused
-#                                       'default_degrees_of_freedom': 3}  # 4 state vars, but pressure is not active
-#         self.default_solution = {('mass_frac_phase_comp', ('Liq', 'H2O')): 0.965,
-#                                  ('mass_frac_phase_comp', ('Liq', 'NaCl')): 0.035,
-#                                  ('dens_mass_phase', 'Liq'): 1021.5,
-#                                  ('flow_vol_phase', 'Liq'): 9.790e-4,
-#                                  ('conc_mass_phase_comp', ('Liq', 'H2O')): 985.7,
-#                                  ('conc_mass_phase_comp', ('Liq', 'NaCl')): 35.75,
-#                                  ('flow_mol_phase_comp', ('Liq', 'H2O')): 53.57,
-#                                  ('flow_mol_phase_comp', ('Liq', 'NaCl')): 0.5989,
-#                                  ('mole_frac_phase_comp', ('Liq', 'H2O')): 0.9889,
-#                                  ('mole_frac_phase_comp', ('Liq', 'NaCl')): 1.106e-2,
-#                                  ('molality_comp', 'NaCl'): 0.6206,
-#                                  ('diffus_phase', 'Liq'): 1.472e-9,
-#                                  ('visc_d_phase', 'Liq'): 1.055e-3,
-#                                  ('osm_coeff', None): 0.9271,
-#                                  ('pressure_osm', None): 2.853e6,
-#                                  ('enth_mass_phase', 'Liq'): 9.974e4}
-#
-# #
+

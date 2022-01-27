@@ -907,32 +907,59 @@ class NanofiltrationData(UnitModelBlockData):
             if hasattr(self.config.property_package, k):
                 solute_set = getattr(self.config.property_package, k)
                 break
-        if iscale.get_scaling_factor(self.radius_pore) is None:
-            sf = iscale.get_scaling_factor(self.radius_pore, default=1e10, warning=True)
-            iscale.set_scaling_factor(self.radius_pore, sf)
 
-        # # TODO: require users to set scaling factor for area or calculate it based on mass transfer and flux
-        # iscale.set_scaling_factor(self.area, 1e-1)
-        #
+        if iscale.get_scaling_factor(self.radius_pore) is None:
+            iscale.set_scaling_factor(self.radius_pore, 1e10)
+        if iscale.get_scaling_factor(self.membrane_thickness_effective) is None:
+            iscale.set_scaling_factor(self.membrane_thickness_effective, 1e6)
+
         # # setting scaling factors for variables
         # # these variables should have user input, if not there will be a warning
-        # if iscale.get_scaling_factor(self.area) is None:
-        #     sf = iscale.get_scaling_factor(self.area, default=1, warning=True)
-        #     iscale.set_scaling_factor(self.area, sf)
-        #
-        # # these variables do not typically require user input,
-        # # will not override if the user does provide the scaling factor
-        # # TODO: this default scaling assumes SI units rather than being based on the property package
-        # if iscale.get_scaling_factor(self.dens_solvent) is None:
-        #     iscale.set_scaling_factor(self.dens_solvent, 1e-3)
-        #
-        # for t, v in self.flux_vol_solvent.items():
-        #     if iscale.get_scaling_factor(v) is None:
-        #         iscale.set_scaling_factor(v, 1e6)
-        #
-        # for (t, p, j), v in self.rejection_phase_comp.items():
-        #     if iscale.get_scaling_factor(v) is None:
-        #         iscale.set_scaling_factor(v, 1e1)
+        if iscale.get_scaling_factor(self.area) is None:
+            sf = iscale.get_scaling_factor(self.area, default=1, warning=True)
+            iscale.set_scaling_factor(self.area, sf)
+
+        for (t, x, y), v in self.electric_potential.items():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, 1)
+
+        for (t, x), v in self.electric_potential_grad_feed_interface.items():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, 1)
+
+        # these variables do not typically require user input,
+        # will not override if the user does provide the scaling factor
+        for (t, x, p, j), v in self.flux_mol_phase_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                comp = self.config.property_package.get_component(j)
+                if comp.is_solvent():
+                    if x == 0:
+                        prop_feed = self.feed_side.properties_in[t]
+                    elif x == 1:
+                        prop_feed = self.feed_side.properties_out[t]
+                        prop_interface_io = self.feed_side.properties_interface[t, x]
+
+                    sf = (iscale.get_scaling_factor(prop_feed.dens_mass_phase['Liq'])
+                          / iscale.get_scaling_factor(prop_feed.mw_comp[j])
+                          * iscale.get_scaling_factor(prop_feed.pressure)
+                          * iscale.get_scaling_factor(self.radius_pore)**2
+                          / iscale.get_scaling_factor(prop_feed.visc_d_phase['Liq'])
+                          / iscale.get_scaling_factor(self.membrane_thickness_effective))
+                    iscale.set_scaling_factor(v, sf)
+
+        for (t, x, p, j), v in self.flux_mol_phase_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                comp = self.config.property_package.get_component(j)
+                if comp.is_solute():
+                    sf = (iscale.get_scaling_factor(self.flux_mol_phase_comp[t, x, 'Liq', 'H2O'])
+                          / iscale.get_scaling_factor(self.feed_side.properties_in[t].dens_mass_phase['Liq'])
+                          * iscale.get_scaling_factor(self.feed_side.properties_in[t].mw_comp[j])
+                          * iscale.get_scaling_factor(self.permeate_side[t, x].conc_mol_phase_comp['Liq', j]))
+                    iscale.set_scaling_factor(v, sf)
+
+        for (_, _, j), v in self.rejection_phase_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, 1e1)
         #
         # for (t, p, j), v in self.mass_transfer_phase_comp.items():
         #     if iscale.get_scaling_factor(v) is None:
@@ -941,13 +968,13 @@ class NanofiltrationData(UnitModelBlockData):
         # if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
         #     iscale.set_scaling_factor(self.recovery_vol_phase, 1)
         #
-        # for (t, p, j), v in self.recovery_mass_phase_comp.items():
-        #     if j in self.config.property_package.solvent_set:
-        #         sf = 1
-        #     elif j in solute_set:
-        #         sf = 10
-        #     if iscale.get_scaling_factor(v) is None:
-        #         iscale.set_scaling_factor(v, sf)
+        for (t, p, j), v in self.recovery_mol_phase_comp.items():
+            if j in self.config.property_package.solvent_set:
+                sf = 1
+            elif j in solute_set:
+                sf = 10
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
         #
         # # transforming constraints
         # for ind, c in self.feed_side.eq_isothermal.items():
