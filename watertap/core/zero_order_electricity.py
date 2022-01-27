@@ -44,13 +44,12 @@ def _common(self):
             pyunits.convert(b.get_inlet_flow(t),
                             to_units=pyunits.m**3/pyunits.hour))
 
-    self._fixed_perf_vars.append(self.energy_electric_flow_vol_inlet)
-
     self._perf_var_dict["Electricity Demand"] = self.electricity
     self._perf_var_dict["Electricity Intensity"] = \
         self.energy_electric_flow_vol_inlet
 
 
 def constant_intensity(self):
-    # Only need to call the _Common method for this case
     _common(self)
+
+    self._fixed_perf_vars.append(self.energy_electric_flow_vol_inlet)
