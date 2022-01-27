@@ -614,9 +614,9 @@ class DSPMDEStateBlockData(StateBlockData):
         #         for j in self.params.solute_set:
         #             self.act_coeff_phase_comp[p, j].fix(1)
         # else:
-        def rule_act_coeff_phase_comp(b, p, j):
+        def rule_act_coeff_phase_comp(b, j):
             if b.params.config.activity_coefficient_model == ActivityCoefficientModel.ideal:
-                return b.act_coeff_phase_comp[p, j] == 1
+                return b.act_coeff_phase_comp['Liq', j] == 1
             elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.davies:
                 raise NotImplementedError(f"Davies model has not been implemented yet.")
             #TODO: remove these in final merge
@@ -625,7 +625,7 @@ class DSPMDEStateBlockData(StateBlockData):
             #     raise NotImplementedError(f"eNRTL model has not been implemented yet.")
             # elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.pitzer:
             #     raise NotImplementedError(f"Pitzer-Kim model has not been implemented yet.")
-        self.eq_act_coeff_phase_comp = Constraint(self.phase_list, self.params.solute_set,
+        self.eq_act_coeff_phase_comp = Constraint(self.params.solute_set,
                                                   rule=rule_act_coeff_phase_comp)
 
     #TODO: change osmotic pressure calc
@@ -686,7 +686,7 @@ class DSPMDEStateBlockData(StateBlockData):
                         f"{self.flow_mol_phase_comp['Liq', j]} was not fixed. Fix flow_mol_phase_comp for each solute"
                         f" to check that electroneutrality is satisfied.")
         val = value(sum(self.charge_comp[j] * self.flow_mol_phase_comp['Liq', j]
-             for j in self.params.solute_set))
+                    for j in self.params.solute_set))
         if abs(val) <= tol:
             if tee:
                 return print('Electroneutrality satisfied')
@@ -797,8 +797,9 @@ class DSPMDEStateBlockData(StateBlockData):
         if self.is_property_constructed('molality_comp'):
             for j in self.params.solute_set:
                 if iscale.get_scaling_factor(self.molality_comp[j]) is None:
-                    sf = iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j], default=1e2)
-                    sf *= iscale.get_scaling_factor(self.params.mw_comp[j])
+                    sf = (iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j])
+                          / iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O'])
+                          / iscale.get_scaling_factor(self.params.mw_comp[j]))
                     iscale.set_scaling_factor(self.molality_comp[j], sf)
 
         if self.is_property_constructed('act_coeff_phase_comp'):
@@ -807,51 +808,38 @@ class DSPMDEStateBlockData(StateBlockData):
                     sf = iscale.get_scaling_factor(self.act_coeff_phase_comp['Liq', j], default=1)
                     iscale.set_scaling_factor(self.act_coeff_phase_comp, sf)
 
-
-
-
         # transforming constraints
         # property relationships with no index, simple constraint
-        # v_str_lst_simple = ('osm_coeff', 'pressure_osm')
-        # for v_str in v_str_lst_simple:
-        #     if self.is_property_constructed(v_str):
-        #         v = getattr(self, v_str)
-        #         sf = iscale.get_scaling_factor(v, default=1, warning=True)
-        #         c = getattr(self, 'eq_' + v_str)
-        #         iscale.constraint_scaling_transform(c, sf)
-        #
+        if self.is_property_constructed('pressure_osm'):
+            sf = iscale.get_scaling_factor(self.pressure_osm, default=1, warning=True)
+            iscale.constraint_scaling_transform(self.eq_pressure_osm, sf)
+
         # # property relationships with phase index, but simple constraint
-        # for v_str in ('flow_vol_phase', 'visc_d_phase', 'diffus_phase'):
-        #     if self.is_property_constructed(v_str):
-        #         v = getattr(self, v_str)
-        #         sf = iscale.get_scaling_factor(v['Liq'], default=1, warning=True)
-        #         c = getattr(self, 'eq_' + v_str)
-        #         iscale.constraint_scaling_transform(c, sf)
-        #
-        # for v_str in ('dens_mass_phase', 'enth_mass_phase'):
-        #     if self.is_property_constructed(v_str):
-        #         v = getattr(self, v_str)
-        #         sf = iscale.get_scaling_factor(v['Liq'], default=1, warning=True)
-        #         c = getattr(self, 'eq_' + v_str)
-        #         iscale.constraint_scaling_transform(c, sf*10.)
-        #
-        # # property relationship indexed by component
-        # v_str_lst_comp = ['molality_comp']
-        # for v_str in v_str_lst_comp:
-        #     if self.is_property_constructed(v_str):
-        #         v_comp = getattr(self, v_str)
-        #         c_comp = getattr(self, 'eq_' + v_str)
-        #         for j, c in c_comp.items():
-        #             sf = iscale.get_scaling_factor(v_comp[j], default=1, warning=True)
-        #             iscale.constraint_scaling_transform(c, sf)
+        for v_str in ('flow_vol_phase', 'dens_mass_phase'):
+            if self.is_property_constructed(v_str):
+                v = getattr(self, v_str)
+                sf = iscale.get_scaling_factor(v['Liq'], default=1, warning=True)
+                c = getattr(self, 'eq_' + v_str)
+                iscale.constraint_scaling_transform(c, sf)
+
+        # property relationship indexed by component
+        v_str_lst_comp = ['molality_comp']
+        for v_str in v_str_lst_comp:
+            if self.is_property_constructed(v_str):
+                v_comp = getattr(self, v_str)
+                c_comp = getattr(self, 'eq_' + v_str)
+                for j, c in c_comp.items():
+                    sf = iscale.get_scaling_factor(v_comp[j], default=1, warning=True)
+                    iscale.constraint_scaling_transform(c, sf)
 
         # property relationships indexed by component and phase
-        # v_str_lst_phase_comp = ['mass_frac_phase_comp', 'conc_mass_phase_comp', 'flow_mol_phase_comp',
-        #                         'mole_frac_phase_comp']
-        # for v_str in v_str_lst_phase_comp:
-        #     if self.is_property_constructed(v_str):
-        #         v_comp = getattr(self, v_str)
-        #         c_comp = getattr(self, 'eq_' + v_str)
-        #         for j, c in c_comp.items():
-        #             sf = iscale.get_scaling_factor(v_comp['Liq', j], default=1, warning=True)
-        #             iscale.constraint_scaling_transform(c, sf)
+        v_str_lst_phase_comp = ['mass_frac_phase_comp', 'conc_mass_phase_comp', 'flow_mass_phase_comp',
+                                'mole_frac_phase_comp', 'conc_mol_phase_comp', 'act_coeff_phase_comp']
+        for v_str in v_str_lst_phase_comp:
+            if self.is_property_constructed(v_str):
+                v_comp = getattr(self, v_str)
+                c_comp = getattr(self, 'eq_' + v_str)
+                for j, c in c_comp.items():
+                    print(v_comp['Liq', j])
+                    sf = iscale.get_scaling_factor(v_comp['Liq', j], default=1, warning=True)
+                    iscale.constraint_scaling_transform(c, sf)
