@@ -149,7 +149,7 @@ class CompressorData(UnitModelBlockData):
             b.properties_out[t].get_material_flow_terms('Vap', j).fix(lb)
             return (b.properties_in[t].get_material_flow_terms('Vap', j)
                     + b.properties_in[t].get_material_flow_terms('Liq', j)
-                    == b.properties_in[t].get_material_flow_terms('Liq', j))
+                    == b.properties_out[t].get_material_flow_terms('Liq', j))
 
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
@@ -158,14 +158,15 @@ class CompressorData(UnitModelBlockData):
         self.control_volume.add_momentum_balances(
             balance_type=self.config.momentum_balance_type)
 
-        # Add constraints
-        @self.Constraint
+        # # Add constraints
+        @self.Constraint(self.flowsheet().time, doc="Saturation pressure constraint")
+        def eq_condenser_pressure_sat(b, t):
+            return (b.control_volume.properties_out[t].pressure
+                    >= b.control_volume.properties_out[t].pressure_sat)
 
         # Add ports
         self.add_port(name='inlet', block=self.control_volume.properties_in)
         self.add_port(name='outlet', block=self.control_volume.properties_out)
-
-
 
     def initialize(
             blk,
@@ -216,13 +217,9 @@ class CompressorData(UnitModelBlockData):
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )
 
-    # def _get_performance_contents(self, time_point=0):
-    #     var_dict = {}
-    #     var_dict["Pressure ratio"] = self.pressure_ratio
-    #     var_dict["Efficiency"] = self.efficiency
-    #     var_dict["Work"] = self.work
-    #
-    #     return {"vars": var_dict}
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {"Heat duty": self.control_volume.heat[time_point]}
+        return {"vars": var_dict}
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
