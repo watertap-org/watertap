@@ -6,7 +6,7 @@ Single Inlet - Double Outlet Helper Methods
 
 .. currentmodule:: watertap.core.zero_order_sido
 
-The `build_sido` method is intended to be used to rapidly construct a standard set of material balance equations for zero-order type models with a signle inlet and two outlets.
+The `build_sido` method is intended to be used to rapidly construct a standard set of material balance equations for zero-order type models with a single inlet and two outlets.
 
 Usage
 -----
@@ -82,7 +82,7 @@ A similar constraint is then written for each solute to relate the solute concen
 
 .. math:: (1-f_{t, j}) \times C_{inlet,t, j} = r_t \times C_{treated,t,j}
 
-Pressure balances are then written for each steam, including the :math:`\Delta P` terms if present.
+Pressure balances are then written for each stream, including the :math:`\Delta P` terms if present.
 
 `treated_pressure_constraint(t)`:
 

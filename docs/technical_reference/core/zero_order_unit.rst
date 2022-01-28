@@ -13,7 +13,7 @@ Usage
 
 Ther ZeroOrderBaseData class contains no variables or constraints of its own - rather it is intended to be used as the starting point for construction of zero-order type models for specific unit operations.
 
-The cod below shows an outline of how the ZeroOrderBaseData class is intended to be used to develop custom zero-order type models.
+The code below shows an outline of how the ZeroOrderBaseData class is intended to be used to develop custom zero-order type models.
 
 .. testcode::
 
