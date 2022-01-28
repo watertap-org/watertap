@@ -100,6 +100,26 @@ class WaterParameterData(PhysicalParameterBlock):
         self.dens_mass_param_R = Var(within=Reals, initialize=8.31462618, units=pyunits.J/pyunits.mol/pyunits.K,
             doc='Mass density parameter universal gas constant')
 
+        # vapor pressure parameters,  eq. 5 and 6 in Nayar et al.(2016)
+        self.pressure_sat_param_psatw_A1 = Var(
+            within=Reals, initialize=-5.8002206e3, units=pyunits.K,
+            doc='Vapor pressure of pure water parameter A1')
+        self.pressure_sat_param_psatw_A2 = Var(
+            within=Reals, initialize=1.3914993, units=pyunits.dimensionless,
+            doc='Vapor pressure of pure water parameter A2')
+        self.pressure_sat_param_psatw_A3 = Var(
+            within=Reals, initialize=-4.8640239e-2, units=t_inv_units,
+            doc='Vapor pressure of pure water parameter A3')
+        self.pressure_sat_param_psatw_A4 = Var(
+            within=Reals, initialize=4.1764768e-5, units=t_inv_units**2,
+            doc='Vapor pressure of pure water parameter A4')
+        self.pressure_sat_param_psatw_A5 = Var(
+            within=Reals, initialize=-1.4452093e-8, units=t_inv_units**3,
+            doc='Vapor pressure of pure water parameter A5')
+        self.pressure_sat_param_psatw_A6 = Var(
+            within=Reals, initialize=6.5459673, units=pyunits.dimensionless,
+            doc='Vapor pressure of pure water parameter A6')
+
         # specific enthalpy parameters, eq. 55 and 43 in Sharqawy et al. (2010)
         enth_mass_units = pyunits.J/pyunits.kg
 
@@ -233,7 +253,7 @@ class WaterParameterData(PhysicalParameterBlock):
         #self.set_default_scaling('dens_mass_solvent', 1e-3)
         self.set_default_scaling('enth_mass_phase', 1e-5, index='Liq')
         self.set_default_scaling('enth_mass_phase', 1e-6, index='Vap')
-        #self.set_default_scaling('pressure_sat', 1e-5)
+        self.set_default_scaling('pressure_sat', 1e-5)
         self.set_default_scaling('cp_phase', 1e-3, index='Liq')
         self.set_default_scaling('cp_phase', 1e-3, index='Vap')
         self.set_default_scaling('dh_vap', 1e-6)
@@ -250,6 +270,7 @@ class WaterParameterData(PhysicalParameterBlock):
              'flow_vol': {'method': '_flow_vol'},
              'flow_mol_phase_comp': {'method': '_flow_mol_phase_comp'},
              'mole_frac_phase_comp': {'method': '_mole_frac_phase_comp'},
+             'pressure_sat': {'method': '_pressure_sat'},
              'enth_mass_phase': {'method': '_enth_mass_phase'},
              'enth_flow': {'method': '_enth_flow'},
              'cp_phase': {'method': '_cp_phase'},
@@ -591,6 +612,26 @@ class WaterStateBlockData(StateBlockData):
 
         self.eq_enth_mass_phase = Constraint(self.params.phase_list, rule=rule_enth_mass_phase)
 
+
+    def _pressure_sat(self):
+        self.pressure_sat = Var(
+            initialize=1e3,
+            bounds=(1, 1e8),
+            units=pyunits.Pa,
+            doc="Saturation vapor pressure")
+
+        def rule_pressure_sat(b):  # vapor pressure, eq. 5 and 6 in Nayar et al.(2016)
+            t = b.temperature
+            psatw = exp(b.params.pressure_sat_param_psatw_A1 * t**-1
+                        + b.params.pressure_sat_param_psatw_A2
+                        + b.params.pressure_sat_param_psatw_A3 * t
+                        + b.params.pressure_sat_param_psatw_A4 * t**2
+                        + b.params.pressure_sat_param_psatw_A5 * t**3
+                        + b.params.pressure_sat_param_psatw_A6 * log(t/pyunits.K)) * pyunits.Pa
+            return b.pressure_sat == psatw
+        self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
+
+
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method
         def rule_enth_flow(b):  # enthalpy flow [J/s]
@@ -746,7 +787,7 @@ class WaterStateBlockData(StateBlockData):
 
         # transforming constraints
         # property relationships with no index, simple constraint
-        v_str_lst_simple = ['dh_vap']
+        v_str_lst_simple = ['dh_vap', 'pressure_sat']
         for v_str in v_str_lst_simple:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)

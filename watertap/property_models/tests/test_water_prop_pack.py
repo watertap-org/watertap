@@ -32,8 +32,8 @@ class TestSeawaterProperty(PropertyTestHarness):
         self.param_args = {}
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1,
                              ('flow_mass_phase_comp', ('Vap', 'H2O')): 1}
-        self.stateblock_statistics = {'number_variables': 17,
-                                      'number_total_constraints': 13,
+        self.stateblock_statistics = {'number_variables': 18,
+                                      'number_total_constraints': 14,
                                       'number_unused_variables': 0,
                                       'default_degrees_of_freedom': 4}  # 4 state vars
         self.default_solution = {('dens_mass_phase', 'Liq'): 996.9,
