@@ -28,15 +28,13 @@ def main():
     m.fs.compressor.inlet.temperature[0].fix(350) # K
     m.fs.compressor.inlet.pressure[0].fix(0.5e5) # Pa
 
-    m.fs.compressor.inlet.flow_mass_phase_comp[0, 'Vap', 'H2O'].unfix()
-
     # specifications
     m.fs.compressor.pressure_ratio.fix(2)
     m.fs.compressor.efficiency.fix(0.8)
 
     # solving
     assert_units_consistent(m)
-    degrees_of_freedom(m)
+    assert(degrees_of_freedom(m) == 0)
 
     # m.fs.compressor.initialize(outlvl=idaeslog.INFO_HIGH)
     solver = get_solver()
