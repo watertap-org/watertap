@@ -663,7 +663,7 @@ class WaterStateBlockData(StateBlockData):
     #     """Create enthalpy density terms."""
 
     def default_material_balance_type(self):
-        return MaterialBalanceType.componentPhase
+        return MaterialBalanceType.componentTotal
 
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
