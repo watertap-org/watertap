@@ -20,10 +20,9 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
-from pyomo.environ import (ConcreteModel,
+from pyomo.environ import (check_optimal_termination,
+                           ConcreteModel,
                            Constraint,
-                           SolverStatus,
-                           TerminationCondition,
                            value,
                            Var)
 from pyomo.network import Port
@@ -150,9 +149,7 @@ class TestSIDO:
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
+        assert check_optimal_termination(results)
 
     @pytest.mark.component
     def test_solution(self, model):

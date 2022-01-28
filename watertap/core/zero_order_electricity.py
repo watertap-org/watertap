@@ -31,6 +31,13 @@ def _common(self):
     self.electricity = Var(self.flowsheet().time,
                            units=pyunits.kW,
                            doc="Electricity consumption of unit")
+
+    self._perf_var_dict["Electricity Demand"] = self.electricity
+
+
+def constant_intensity(self):
+    _common(self)
+
     self.energy_electric_flow_vol_inlet = Var(
         units=pyunits.kWh/pyunits.m**3,
         doc="Electricity intensity with respect to inlet flowrate of unit")
@@ -44,12 +51,6 @@ def _common(self):
             pyunits.convert(b.get_inlet_flow(t),
                             to_units=pyunits.m**3/pyunits.hour))
 
-    self._perf_var_dict["Electricity Demand"] = self.electricity
+    self._fixed_perf_vars.append(self.energy_electric_flow_vol_inlet)
     self._perf_var_dict["Electricity Intensity"] = \
         self.energy_electric_flow_vol_inlet
-
-
-def constant_intensity(self):
-    _common(self)
-
-    self._fixed_perf_vars.append(self.energy_electric_flow_vol_inlet)
