@@ -120,7 +120,6 @@ class CompressorData(UnitModelBlockData):
         **MomentumBalanceType.momentumTotal** - single momentum balance for material,
         **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
 
-
     def build(self):
         super().build()
 

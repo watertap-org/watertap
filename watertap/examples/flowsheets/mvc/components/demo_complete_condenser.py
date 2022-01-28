@@ -33,7 +33,6 @@ def main():
 
     # solving
     assert_units_consistent(m)
-    print(degrees_of_freedom(m))
     assert(degrees_of_freedom(m) == 0)
 
     m.fs.unit.initialize()

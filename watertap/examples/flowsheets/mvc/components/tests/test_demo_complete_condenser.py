@@ -11,37 +11,35 @@
 #
 ###############################################################################
 import pytest
-from watertap.examples.flowsheets.mvc.components.sim_compressor import main as main_compressor
+from watertap.examples.flowsheets.mvc.components.demo_complete_condenser import main as main_complete_condenser
 from idaes.core.util import get_solver
 
 solver = get_solver()
 
 # -----------------------------------------------------------------------------
 @pytest.mark.component
-def test_compressor(capsys):
-    main_compressor()
+def test_heat_exchanger(capsys):
+    main_complete_condenser()
     captured = capsys.readouterr()
 
     assert captured.out == \
 """
 ====================================================================================
-Unit : fs.compressor                                                       Time: 0.0
+Unit : fs.unit                                                             Time: 0.0
 ------------------------------------------------------------------------------------
     Unit Performance
 
     Variables: 
 
-    Key            : Value      : Fixed : Bounds
-        Efficiency :    0.80000 :  True : (1e-08, 1)
-    Pressure ratio :     2.0000 :  True : (1, 10)
-              Work : 1.1534e+05 : False : (1, 5000000.0)
+    Key       : Value       : Fixed : Bounds
+    Heat duty : -4.8715e+06 : False : (None, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
                                            Inlet     Outlet  
-    flow_mass_phase_comp ('Liq', 'H2O') 1.0000e-08 1.0000e-08
-    flow_mass_phase_comp ('Vap', 'H2O')     1.0000     1.0000
-    temperature                             350.00     429.57
-    pressure                                50000. 1.0000e+05
+    flow_mass_phase_comp ('Liq', 'H2O') 1.0000e-08     1.0000
+    flow_mass_phase_comp ('Vap', 'H2O')     1.0000 1.0000e-10
+    temperature                             400.00     340.00
+    pressure                                50000.     50000.
 ====================================================================================
 """
