@@ -470,7 +470,7 @@ class WaterStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.5,
-            bounds=(None, None),
+            bounds=(1e-10, None),
             domain=NonNegativeReals,
             units=pyunits.kg/pyunits.s,
             doc='Mass flow rate')
@@ -663,7 +663,7 @@ class WaterStateBlockData(StateBlockData):
     #     """Create enthalpy density terms."""
 
     def default_material_balance_type(self):
-        return MaterialBalanceType.componentTotal
+        return MaterialBalanceType.componentPhase
 
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
