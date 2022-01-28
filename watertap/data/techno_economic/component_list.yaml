@@ -32,6 +32,8 @@ endrin:
   constituent_longform: Endrin
 fluoride:
   constituent_longform: Fluoride
+giardia_lamblia:
+  constituent_longform: Giardia Lamblia
 hardness:
   constituent_longform: Hardness
 hydroxide_alkalinity_as_caco3:
