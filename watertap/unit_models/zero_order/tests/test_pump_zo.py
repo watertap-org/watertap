@@ -15,8 +15,7 @@ Tests for zero-order nanofiltration model
 """
 import pytest
 
-from pyomo.environ import (
-    ConcreteModel, Constraint, SolverStatus, TerminationCondition, value, Var)
+from pyomo.environ import ConcreteModel, Constraint, value, Var
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -31,7 +30,7 @@ from watertap.core.zero_order_properties import WaterParameterBlock
 solver = get_solver()
 
 
-class TestPumpZO:
+class TestPumpZOdefault:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -127,123 +126,34 @@ Unit : fs.unit                                                             Time:
         captured = capsys.readouterr()
         assert output in captured.out
 
-# class TestPumpZO_w_default_removal:
-#     @pytest.fixture(scope="class")
-#     def model(self):
-#         m = ConcreteModel()
-#         m.db = Database()
 
-#         m.fs = FlowsheetBlock(default={"dynamic": False})
-#         m.fs.params = WaterParameterBlock(
-#             default={"solute_list": ["sulfur", "toc", "tss", "foo"]})
+db = Database()
+params = db._get_technology("pump")
 
-#         m.fs.unit = PumpZO(default={
-#             "property_package": m.fs.params,
-#             "database": m.db})
 
-#         m.fs.unit.inlet.flow_vol.fix(10)
-#         m.fs.unit.inlet.conc_mass_comp[0, "sulfur"].fix(1)
-#         m.fs.unit.inlet.conc_mass_comp[0, "toc"].fix(2)
-#         m.fs.unit.inlet.conc_mass_comp[0, "tss"].fix(3)
-#         m.fs.unit.inlet.conc_mass_comp[0, "foo"].fix(4)
+class TestPumpZOsubtype:
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
 
-#         return m
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.params = WaterParameterBlock(
+            default={"solute_list": ["sulfur", "toc", "tss"]})
 
-#     @pytest.mark.unit
-#     def test_build(self, model):
-#         assert model.fs.unit.config.database == model.db
+        m.fs.unit = PumpZO(default={
+            "property_package": m.fs.params,
+            "database": db})
 
-#         assert isinstance(model.fs.unit.electricity, Var)
-#         assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
+        return m
 
-#         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
+    @pytest.mark.parametrize("subtype", [params.keys()])
+    @pytest.mark.component
+    def test_load_parameters(self, model, subtype):
+        model.fs.unit.config.process_subtype = subtype
+        data = db.get_unit_operation_parameters("pump", subtype=subtype)
 
-#     @pytest.mark.component
-#     def test_load_parameters(self, model):
-#         data = model.db.get_unit_operation_parameters("nanofiltration")
+        model.fs.unit.load_parameters_from_database()
 
-#         model.fs.unit.load_parameters_from_database(use_default_removal=True)
-
-#         assert model.fs.unit.recovery_vol[0].fixed
-#         assert model.fs.unit.recovery_vol[0].value == \
-#             data["recovery_vol"]["value"]
-
-#         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
-#             assert v.fixed
-#             if j == "foo":
-#                 assert v.value == data["default_removal_frac_mass_solute"]["value"]
-#             else:
-#                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
-
-#         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-#         assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-#             "energy_electric_flow_vol_inlet"]["value"]
-
-#     @pytest.mark.component
-#     def test_degrees_of_freedom(self, model):
-#         assert degrees_of_freedom(model.fs.unit) == 0
-
-#     @pytest.mark.component
-#     def test_unit_consistency(self, model):
-#         assert_units_consistent(model.fs.unit)
-
-#     @pytest.mark.component
-#     def test_initialize(self, model):
-#         initialization_tester(model)
-
-#     @pytest.mark.solver
-#     @pytest.mark.skipif(solver is None, reason="Solver not available")
-#     @pytest.mark.component
-#     def test_solve(self, model):
-#         results = solver.solve(model)
-
-#         # Check for optimal solution
-#         assert results.solver.termination_condition == \
-#             TerminationCondition.optimal
-#         assert results.solver.status == SolverStatus.ok
-
-#     @pytest.mark.solver
-#     @pytest.mark.skipif(solver is None, reason="Solver not available")
-#     @pytest.mark.component
-#     def test_solution(self, model):
-#         assert (pytest.approx(8.5, rel=1e-5) ==
-#                 value(model.fs.unit.treated.flow_vol[0]))
-#         assert (pytest.approx(0.0352941, rel=1e-5) ==
-#                 value(model.fs.unit.treated.conc_mass_comp[0, "sulfur"]))
-#         assert (pytest.approx(0.588235, rel=1e-5) ==
-#                 value(model.fs.unit.treated.conc_mass_comp[0, "toc"]))
-#         assert (pytest.approx(0.105882, rel=1e-5) ==
-#                 value(model.fs.unit.treated.conc_mass_comp[0, "tss"]))
-#         assert (pytest.approx(4.70588, rel=1e-5) ==
-#                 value(model.fs.unit.treated.conc_mass_comp[0, "foo"]))
-
-#         assert (pytest.approx(1.5, rel=1e-5) ==
-#                 value(model.fs.unit.byproduct.flow_vol[0]))
-#         assert (pytest.approx(6.46666, rel=1e-5) ==
-#                 value(model.fs.unit.byproduct.conc_mass_comp[0, "sulfur"]))
-#         assert (pytest.approx(10, rel=1e-5) ==
-#                 value(model.fs.unit.byproduct.conc_mass_comp[0, "toc"]))
-#         assert (pytest.approx(19.4, rel=1e-5) ==
-#                 value(model.fs.unit.byproduct.conc_mass_comp[0, "tss"]))
-#         assert (pytest.approx(0, abs=1e-5) ==
-#                 value(model.fs.unit.byproduct.conc_mass_comp[0, "foo"]))
-
-#         assert (pytest.approx(10*0.231344952*3600, rel=1e-5) ==
-#                 value(model.fs.unit.electricity[0]))
-
-#     @pytest.mark.solver
-#     @pytest.mark.skipif(solver is None, reason="Solver not available")
-#     @pytest.mark.component
-#     def test_conservation(self, model):
-#         assert 1e-6 >= abs(value(model.fs.unit.inlet.flow_vol[0] -
-#                                  model.fs.unit.treated.flow_vol[0] -
-#                                  model.fs.unit.byproduct.flow_vol[0]))
-
-#         for j in model.fs.params.solute_set:
-#             assert 1e-5 >= abs(value(
-#                 model.fs.unit.inlet.flow_vol[0] *
-#                 model.fs.unit.inlet.conc_mass_comp[0, j] -
-#                 model.fs.unit.treated.flow_vol[0] *
-#                 model.fs.unit.treated.conc_mass_comp[0, j] -
-#                 model.fs.unit.byproduct.flow_vol[0] *
-#                 model.fs.unit.byproduct.conc_mass_comp[0, j]))
+        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
+        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
+            "energy_electric_flow_vol_inlet"]["value"]
