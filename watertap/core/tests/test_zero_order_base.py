@@ -19,8 +19,8 @@ from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
 from pyomo.environ import ConcreteModel, Var
 
-from watertap.core.zero_order_base import ZeroOrderBaseData
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core import ZeroOrderBaseData
+from watertap.core import WaterParameterBlock
 import idaes.logger as idaeslog
 
 

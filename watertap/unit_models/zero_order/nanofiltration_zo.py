@@ -17,9 +17,7 @@ operation.
 
 from idaes.core import declare_process_block_class
 
-from watertap.core.zero_order_base import ZeroOrderBaseData
-from watertap.core.zero_order_sido import build_sido
-from watertap.core.zero_order_electricity import constant_intensity
+from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"

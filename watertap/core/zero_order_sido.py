@@ -18,7 +18,6 @@ zero-order single inlet-double outlet (SIDO) unit models.
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
-from idaes.core.util.tables import create_stream_table_dataframe
 
 from pyomo.environ import NonNegativeReals, Var, units as pyunits
 

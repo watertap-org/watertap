@@ -27,9 +27,8 @@ from pyomo.environ import (check_optimal_termination,
                            Var)
 from pyomo.util.check_units import assert_units_consistent
 
-from watertap.core.zero_order_base import ZeroOrderBaseData
-from watertap.core.zero_order_electricity import constant_intensity
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core import \
+    constant_intensity, WaterParameterBlock, ZeroOrderBaseData
 
 solver = get_solver()
 

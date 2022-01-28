@@ -23,11 +23,9 @@ from pyomo.environ import (ConcreteModel,
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
-from watertap.core.zero_order_base import ZeroOrderBaseData
+from watertap.core import WaterParameterBlock, WaterStateBlock, ZeroOrderBaseData
 from watertap.core.zero_order_pt import (
     build_pt, initialize_pt, calculate_scaling_factors_pt, _get_Q_pt)
-from watertap.core.zero_order_properties import \
-    WaterParameterBlock, WaterStateBlock
 
 solver = get_solver()
 

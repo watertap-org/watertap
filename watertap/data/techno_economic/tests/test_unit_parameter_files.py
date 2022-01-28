@@ -19,7 +19,7 @@ import os
 from pyomo.environ import units
 from pyomo.util.check_units import assert_units_equivalent
 
-from watertap.core.wt_database import Database
+from watertap.core import Database
 
 dbpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
