@@ -53,8 +53,7 @@ _log = idaeslog.getLogger(__name__)
 class ActivityCoefficientModel(Enum):
     ideal = auto()                    # Ideal
     davies = auto()                   # Davies
-    enrtl = auto()                    # eNRTL
-    pitzer = auto()                   # Pitzer-Kim
+
 
 @declare_process_block_class("DSPMDEParameterBlock") #TODO: replace w/ "PropParameterBlock"
 class DSPMDEParameterData(PhysicalParameterBlock):
@@ -97,8 +96,6 @@ class DSPMDEParameterData(PhysicalParameterBlock):
     
            "``ActivityCoefficientModel.ideal``", "Activity coefficients equal to 1 assuming ideal solution"
            "``ActivityCoefficientModel.davies``", "Activity coefficients estimated via Davies model"
-           "``ActivityCoefficientModel.enrtl``", "Activity coefficients estimated via eNRTL model"
-           "``ActivityCoefficientModel.pitzer``", "Activity coefficients estimated via Pitzer-Kim model"
        """))
 
     def _init_param_data(self, data, default=None):
@@ -157,7 +154,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         self.visc_d_phase = Param(
             self.phase_list,
             mutable=True,
-            initialize=1e-3, # revisit: assuming ~ 1e-3 Pa*s for pure water
+            initialize=1e-3, #TODO:revisit- assuming ~ 1e-3 Pa*s for pure water
             units=pyunits.Pa * pyunits.s,
             doc="Fluid viscosity")
         self.dens_mass_comp = Param(
@@ -182,15 +179,12 @@ class DSPMDEParameterData(PhysicalParameterBlock):
 
 
         # ---default scaling---
-        # self.set_default_scaling('flow_mol_phase_comp', 1)
         self.set_default_scaling('temperature', 1e-2)
         self.set_default_scaling('pressure', 1e-6)
         self.set_default_scaling('dens_mass_phase', 1e-3, index='Liq')
-        # self.set_default_scaling('dens_mass_comp', 1e-3, index='Liq')
         self.set_default_scaling('visc_d_phase', 1e3, index='Liq')
         self.set_default_scaling('diffus_phase_comp', 1e9, index='Liq')
-        # self.set_default_scaling('osm_coeff', 1e1)
-        # self.set_default_scaling('act_coeff_phase_comp', 1, index='Liq')
+
 
     @classmethod
     def define_metadata(cls, obj):
@@ -245,7 +239,7 @@ class _DSPMDEStateBlock(StateBlock):
                          control volume passes the inlet values as initial
                          guess.The keys for the state_args dictionary are:
 
-                         flow_mass_phase_comp : value at which to initialize
+                         flow_mol_phase_comp : value at which to initialize
                                                phase component flows
                          pressure : value at which to initialize pressure
                          temperature : value at which to initialize temperature
@@ -609,22 +603,11 @@ class DSPMDEStateBlockData(StateBlockData):
             units=pyunits.dimensionless,
             doc="activity coefficient of component")
 
-        # if self.params.config.activity_coefficient_model == ActivityCoefficientModel.ideal:
-        #     for p in self.phase_list:
-        #         for j in self.params.solute_set:
-        #             self.act_coeff_phase_comp[p, j].fix(1)
-        # else:
         def rule_act_coeff_phase_comp(b, j):
             if b.params.config.activity_coefficient_model == ActivityCoefficientModel.ideal:
                 return b.act_coeff_phase_comp['Liq', j] == 1
             elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.davies:
                 raise NotImplementedError(f"Davies model has not been implemented yet.")
-            #TODO: remove these in final merge
-
-            # elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.enrtl:
-            #     raise NotImplementedError(f"eNRTL model has not been implemented yet.")
-            # elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.pitzer:
-            #     raise NotImplementedError(f"Pitzer-Kim model has not been implemented yet.")
         self.eq_act_coeff_phase_comp = Constraint(self.params.solute_set,
                                                   rule=rule_act_coeff_phase_comp)
 
@@ -703,8 +686,8 @@ class DSPMDEStateBlockData(StateBlockData):
 
         # default scaling factors have already been set with
         # idaes.core.property_base.calculate_scaling_factors()
-        # for the following variables: flow_mass_phase_comp, pressure,
-        # temperature, dens_mass, visc_d, diffus, osm_coeff, and enth_mass
+        # for the following variables: pressure,
+        # temperature, dens_mass, visc_d_phase, diffus_phase_comp
 
         # these variables should have user input
         if iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O']) is None:
