@@ -713,10 +713,11 @@ class WaterStateBlockData(StateBlockData):
                     iscale.set_scaling_factor(self.flow_vol_phase[p], sf)
 
         if self.is_property_constructed('flow_vol'):
-            sf_liq = iscale.get_scaling_factor(self.flow_vol_phase['Liq'])
-            sf_vap = iscale.get_scaling_factor(self.flow_vol_phase['Vap'])
-            sf = min(sf_liq, sf_vap)
-            iscale.set_scaling_factor(self.flow_vol, sf)
+            if iscale.get_scaling_factor(self.flow_vol) is None:
+                sf_liq = iscale.get_scaling_factor(self.flow_vol_phase['Liq'])
+                sf_vap = iscale.get_scaling_factor(self.flow_vol_phase['Vap'])
+                sf = min(sf_liq, sf_vap)
+                iscale.set_scaling_factor(self.flow_vol, sf)
 
         if self.is_property_constructed('flow_mol_phase_comp'):
             for p in self.params.phase_list:
@@ -729,9 +730,6 @@ class WaterStateBlockData(StateBlockData):
             sf_flow_mol_liq = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O'])
             sf_flow_mol_vap = iscale.get_scaling_factor(self.flow_mol_phase_comp['Vap', 'H2O'])
             sf_flow_mol = min(sf_flow_mol_liq, sf_flow_mol_vap)
-            print('flow_mol_liq:', sf_flow_mol_liq)
-            print('flow_mol_vap:', sf_flow_mol_vap)
-            print('sf_flow_mol:', sf_flow_mol)
             for p in self.params.phase_list:
                 if iscale.get_scaling_factor(self.mole_frac_phase_comp[p, 'H2O']) is None:
                     sf = iscale.get_scaling_factor(self.flow_mol_phase_comp[p, 'H2O']) / sf_flow_mol
