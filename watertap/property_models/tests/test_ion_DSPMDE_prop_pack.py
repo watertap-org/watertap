@@ -405,11 +405,14 @@ def test_seawater_data():
                                "Mg_2+": 0.347e-9,
                                "Cl_-": 0.121e-9,
                                "SO4_2-": 0.230e-9},
+        # todo: density_data is no longer being used for now (solution density is just set to equal 1000kg/m3);
+        #  keep until final decision made on calculating solution
+        #  density based on ions in mixture; e.g. of issue: what is the density of Cl_- ?
         "density_data": {"H2O": 1000,
                          "Na_+": 968,
                          "Ca_2+": 1550,
                          "Mg_2+": 1738,
-                         "Cl_-": 3214,  # todo: verify valid value; Cl2 specific gravity= 1.41 @ 20 C
+                         "Cl_-": 3214,# dummy value
                          "SO4_2-": 2553},
         "charge": {"Na_+": 1,
                    "Ca_2+": 2,
@@ -469,6 +472,7 @@ def test_seawater_data():
     assert value(stream[0].conc_mass_phase_comp['Liq','Cl_-']) == pytest.approx(20.3, rel=1e-3)
     assert value(sum(stream[0].conc_mass_phase_comp['Liq',j] for j in m.fs.properties.solute_set)) == pytest.approx(35.334, rel=1e-3)
     assert value(sum(stream[0].mass_frac_phase_comp['Liq',j] for j in m.fs.properties.solute_set)) == pytest.approx(35334e-6, rel=1e-3)
-
+    assert value(sum(stream[0].mass_frac_phase_comp['Liq',j] for j in m.fs.properties.component_list)) == pytest.approx(1, rel=1e-3)
+    assert value(sum(stream[0].mole_frac_phase_comp['Liq',j] for j in m.fs.properties.component_list)) == pytest.approx(1, rel=1e-3)
 
 
