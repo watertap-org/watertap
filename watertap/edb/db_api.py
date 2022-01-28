@@ -29,6 +29,7 @@ from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, PyMon
 
 # package
 from .data_model import Result, Component, Reaction, Base, DataWrapper
+from .error import BadConfiguration
 
 __author__ = "Dan Gunter (LBNL)"
 
@@ -343,6 +344,45 @@ class ElectrolyteDB:
                 raise IndexError("No bases found in DB")
         else:
             return result
+
+    def list_bases(self):
+        """List the currently loaded bases and provide brief description
+
+        Args:
+            None
+        Returns:
+            No return, just display info to console
+        """
+        for item in self.get_base():
+            print(f"base name: {item.name}\t\tdescription -> {self._base_desc(item.name)}")
+
+    def _base_desc(self, name) -> str:
+        """Creates a description of a base based on the standard naming
+
+        Args:
+            name: Name of the base to describe
+        Returns:
+            desc: String of the description of the base
+        """
+        if name == "default_thermo":
+            desc = "ThermoConfig: Default uses FTPx state vars for Liq phase"
+        elif name == "reaction":
+            desc = "ReactionConfig: Blank reaction template"
+        else:
+            items = name.split("_")
+            if len(items) < 3:
+                raise BadConfiguration("ElectrolyteDB._base_desc", self.get_base(name).idaes_config,
+                    missing=None,why="\nName of base ("+name+") is of unknown format\n")
+            if items[0] == "thermo":
+                desc = "ThermoConfig: "
+            else:
+                desc = "ReactionConfig: "
+            desc += "uses " + items[-1] + " state vars for "
+            for i in range(1,len(items)-1):
+                desc += items[i] + ","
+            desc += " phases"
+
+        return desc
 
     # older method name
     get_one_base = get_base
