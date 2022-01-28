@@ -21,15 +21,6 @@ default:
     cost_function_form:
       function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
       units: $
-  recovery_vol:
-    value: 0.9999
-    units: dimensionless
-    reference: (1) https://www.engineeringtoolbox.com/water-pumping-costs-d_1527.html,
-      (2) https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470260036.ch5, (3) Cost
-      Estimating Manual for Water Treatment Facilities (McGivney/Kawamura)
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless
 abmet:
   energy_electric_flow_vol_inlet:
     value: 0.025599666
@@ -53,13 +44,6 @@ abmet:
     cost_function_form:
       function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
       units: $
-  recovery_vol:
-    value: 0.9999
-    units: dimensionless
-    reference: Defined based on the San Luis case study data.
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless
 gac_feed:
   energy_electric_flow_vol_inlet:
     value: 0.0
@@ -83,13 +67,6 @@ gac_feed:
     cost_function_form:
       function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
       units: $
-  recovery_vol:
-    value: 0.9999
-    units: dimensionless
-    reference: 'EPA model: https://www.epa.gov/sdwa/drinking-water-treatment-technology-unit-cost-models'
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless
 recharge_well:
   energy_electric_flow_vol_inlet:
     value: 0.076798998
@@ -113,13 +90,6 @@ recharge_well:
     cost_function_form:
       function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
       units: $
-  recovery_vol:
-    value: 0.9999
-    units: dimensionless
-    reference: .nan
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless
 ultrafiltration_feed:
   energy_electric_flow_vol_inlet:
     value: 0.025599666
@@ -143,10 +113,3 @@ ultrafiltration_feed:
     cost_function_form:
       function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
       units: $
-  recovery_vol:
-    value: 0.9999
-    units: dimensionless
-    reference: Defined based on the San Luis case study data.
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless
