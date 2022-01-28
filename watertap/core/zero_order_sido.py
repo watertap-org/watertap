@@ -29,6 +29,29 @@ _log = idaeslog.getLogger(__name__)
 
 
 def build_sido(self):
+    """
+    Helper method for constructing material balances for zero-order type models
+    with one inlet and two outlets.
+
+    Three StateBlocks are added with corresponding Ports:
+        * properties_inlet
+        * properties_treated
+        * properties_byproduct
+
+    Two additional variables are added:
+        * recovery_vol (indexed by time)
+        * removal_frac_mass_solute (indexed by time and solute)
+
+    Four additional constraints are added to represent the material balances
+        * water_recovery_equation (indexed by time)
+        * flow_balance (indexed by time)
+        * solute_removal_equation (indexed by time and solute)
+        * solute_treated_equation (indexed by time and solute)
+
+    This method also sets private attributes on the unit model with references
+    to the appropriate initialization and scaling methods to use and to return
+    the inlet volumetric flow rate.
+    """
     self._has_recovery_removal = True
     self._initialize = initialize_sido
     self._scaling = calculate_scaling_factors_sido

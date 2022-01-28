@@ -36,6 +36,19 @@ def _common(self):
 
 
 def constant_intensity(self):
+    """
+    Helper method for implementing electricity demand assuming constant
+    intensity based on the inlet volumetric flow rate.
+
+    E[t] = Q[t] * intensity
+
+    Two variables are added to the model:
+        * electricity (indexed by time)
+        * energy_electric_flow_vol_inlet (unindexed)
+
+    One constraint is added to the model:
+        * electricity_consumption (indexed by time)
+    """
     _common(self)
 
     self.energy_electric_flow_vol_inlet = Var(

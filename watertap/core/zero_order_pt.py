@@ -28,6 +28,19 @@ _log = idaeslog.getLogger(__name__)
 
 
 def build_pt(self):
+    """
+    Helper method for constructing material balances for zero-order type models
+    with pass-through behavior.
+
+    One StateBlocks is added with two corresponding Ports:
+        * properties
+
+    No additional variables and constraints are created.
+
+    This method also sets private attributes on the unit model with references
+    to the appropriate initialization and scaling methods to use and to return
+    the inlet volumetric flow rate.
+    """
     self._has_recovery_removal = False
     self._initialize = initialize_pt
     self._scaling = calculate_scaling_factors_pt
