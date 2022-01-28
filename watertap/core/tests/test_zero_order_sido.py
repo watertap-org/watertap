@@ -220,13 +220,13 @@ class TestSIDOConfigurationErrors:
             default={"property_package": model.fs.params})
 
         model.fs.unit.set_param_from_data(
-                model.fs.unit.removal_mass_solute[0, "A"],
-                {"removal_mass_solute": {"A": {
+                model.fs.unit.removal_frac_mass_solute[0, "A"],
+                {"removal_frac_mass_solute": {"A": {
                     "value": 0.42, "units": "m^3/m^3"}}},
                 index="A")
 
-        assert model.fs.unit.removal_mass_solute[0, "A"].value == 0.42
-        assert model.fs.unit.removal_mass_solute[0, "A"].fixed
+        assert model.fs.unit.removal_frac_mass_solute[0, "A"].value == 0.42
+        assert model.fs.unit.removal_frac_mass_solute[0, "A"].fixed
 
     @pytest.mark.unit
     def test_set_param_from_data_indexed_no_entry(self, model):
@@ -240,11 +240,11 @@ class TestSIDOConfigurationErrors:
 
         with pytest.raises(KeyError,
                            match="fs.unit - database provided does not "
-                           "contain an entry for removal_mass_solute with "
+                           "contain an entry for removal_frac_mass_solute with "
                            "index A for technology."):
             model.fs.unit.set_param_from_data(
-                model.fs.unit.removal_mass_solute[0, "A"],
-                {"removal_mass_solute": {}},
+                model.fs.unit.removal_frac_mass_solute[0, "A"],
+                {"removal_frac_mass_solute": {}},
                 index="A")
 
     @pytest.mark.unit
@@ -280,16 +280,16 @@ class TestSIDOConfigurationErrors:
             default={"property_package": model.fs.params})
 
         model.fs.unit.set_param_from_data(
-            model.fs.unit.removal_mass_solute[0, "A"],
-            {"removal_mass_solute": {"A": {
+            model.fs.unit.removal_frac_mass_solute[0, "A"],
+            {"removal_frac_mass_solute": {"A": {
                 "value": 0.42, "units": "m^3/m^3"}},
-             "default_removal_mass_solute": {
+             "default_removal_frac_mass_solute": {
                 "value": 0.70, "units": "kg/kg"}},
             index="D",
             use_default_removal=True)
 
-        assert model.fs.unit.removal_mass_solute[0, "A"].value == 0.70
-        assert model.fs.unit.removal_mass_solute[0, "A"].fixed
+        assert model.fs.unit.removal_frac_mass_solute[0, "A"].value == 0.70
+        assert model.fs.unit.removal_frac_mass_solute[0, "A"].fixed
 
     @pytest.mark.unit
     def test_set_param_from_data_indexed_use_default_undefined(self, model):
@@ -303,12 +303,12 @@ class TestSIDOConfigurationErrors:
 
         with pytest.raises(KeyError,
                            match="fs.unit - database provided does not "
-                           "contain an entry for removal_mass_solute with "
+                           "contain an entry for removal_frac_mass_solute with "
                            "index D for technology and no default removal was "
                            "specified."):
             model.fs.unit.set_param_from_data(
-                model.fs.unit.removal_mass_solute[0, "A"],
-                {"removal_mass_solute": {"A": {
+                model.fs.unit.removal_frac_mass_solute[0, "A"],
+                {"removal_frac_mass_solute": {"A": {
                     "value": 0.42, "units": "m^3/m^3"}}},
                 index="D",
                 use_default_removal=True)
@@ -333,9 +333,9 @@ class TestPressureChange:
         m.fs.unit.inlet.conc_mass_comp[0, "C"].fix(30)
 
         m.fs.unit.recovery_vol.fix(0.8)
-        m.fs.unit.removal_mass_solute[0, "A"].fix(0.1)
-        m.fs.unit.removal_mass_solute[0, "B"].fix(0.2)
-        m.fs.unit.removal_mass_solute[0, "C"].fix(0.3)
+        m.fs.unit.removal_frac_mass_solute[0, "A"].fix(0.1)
+        m.fs.unit.removal_frac_mass_solute[0, "B"].fix(0.2)
+        m.fs.unit.removal_frac_mass_solute[0, "C"].fix(0.3)
 
         return m
 
@@ -351,8 +351,8 @@ class TestPressureChange:
 
         assert isinstance(model.fs.unit.recovery_vol, Var)
         assert len(model.fs.unit.recovery_vol) == 1
-        assert isinstance(model.fs.unit.removal_mass_solute, Var)
-        assert len(model.fs.unit.removal_mass_solute) == 3
+        assert isinstance(model.fs.unit.removal_frac_mass_solute, Var)
+        assert len(model.fs.unit.removal_frac_mass_solute) == 3
 
         assert isinstance(model.fs.unit.water_recovery_equation, Constraint)
         assert len(model.fs.unit.water_recovery_equation) == 1

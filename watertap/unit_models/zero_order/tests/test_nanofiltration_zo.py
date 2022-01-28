@@ -57,7 +57,7 @@ class TestNFZO:
         assert model.fs.unit.config.database == model.db
 
         assert isinstance(model.fs.unit.electricity, Var)
-        assert isinstance(model.fs.unit.electricity_intensity, Var)
+        assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
 
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
 
@@ -71,13 +71,13 @@ class TestNFZO:
         assert model.fs.unit.recovery_vol[0].value == \
             data["recovery_vol"]["value"]
 
-        for (t, j), v in model.fs.unit.removal_mass_solute.items():
+        for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
-            assert v.value == data["removal_mass_solute"][j]["value"]
+            assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
-        assert model.fs.unit.electricity_intensity.fixed
-        assert model.fs.unit.electricity_intensity.value == data[
-            "electricity_intensity"]["value"]
+        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
+        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
+            "energy_electric_flow_vol_inlet"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -172,7 +172,7 @@ class TestNFZO_w_default_removal:
         assert model.fs.unit.config.database == model.db
 
         assert isinstance(model.fs.unit.electricity, Var)
-        assert isinstance(model.fs.unit.electricity_intensity, Var)
+        assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
 
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
 
@@ -186,16 +186,16 @@ class TestNFZO_w_default_removal:
         assert model.fs.unit.recovery_vol[0].value == \
             data["recovery_vol"]["value"]
 
-        for (t, j), v in model.fs.unit.removal_mass_solute.items():
+        for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             if j == "foo":
-                assert v.value == data["default_removal_mass_solute"]["value"]
+                assert v.value == data["default_removal_frac_mass_solute"]["value"]
             else:
-                assert v.value == data["removal_mass_solute"][j]["value"]
+                assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
-        assert model.fs.unit.electricity_intensity.fixed
-        assert model.fs.unit.electricity_intensity.value == data[
-            "electricity_intensity"]["value"]
+        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
+        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
+            "energy_electric_flow_vol_inlet"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
