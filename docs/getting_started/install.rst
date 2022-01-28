@@ -62,8 +62,11 @@ If you are going to use WaterTAP's functionality, but *do not* plan to contribut
 
 .. _install-idaes-ext:
 
-Installing solvers distributed through IDAES Extensions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Installing solvers
+^^^^^^^^^^^^^^^^^^
+
+Windows and Linux Users: solvers distributed through IDAES Extensions
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 After installing WaterTAP, the ``idaes get-extensions`` command can be used to automatically install the solvers distributed as part of the IDAES Extensions.
 
@@ -76,6 +79,45 @@ From the same environment where WaterTAP was installed, run:
         idaes get-extensions
 
 .. note:: Typically, the ``idaes get-extensions`` command only needs to be run once for each system, as it will install the required files into a common, system-wide location.
+
+macOS: solvers from conda-forge (experimental)
+++++++++++++++++++++++++++++++++++++++++++++++
+
+After installing WaterTAP, we need to ensure we have the Xcode toolkit, build the PyNumero Pyomo extensions, and obtain solvers from conda-forge.
+
+To install Xcode, run:
+
+    .. code-block:: shell
+
+        xcode-select --install
+
+
+To build PyNumero, from the same environment where WaterTAP was installed, run:
+
+    .. code-block:: shell
+
+        conda install --yes cmake
+        pyomo build-extensions
+
+The output of the second command should be something like:
+
+    .. code-block:: shell
+
+        INFO: Finished building Pyomo extensions.
+        INFO: The following extensions were built:
+                [FAIL]  appsi
+                [FAIL]  mcpp
+                [ OK ]  pynumero
+
+Finally, we can obtain Ipopt and CBC from conda-forge:
+
+    .. code-block:: shell
+
+        conda install --yes -c conda-forge ipopt coincbc
+
+.. note:: The ``pyomo build-extensions`` command only needs to be run once for each system as it builds and installs the required libraries into a common, system-wide location.
+
+.. note:: After building PyNumero, you should not need cmake. You can remove it by running ``conda uninstall cmake``.
 
 .. _install-edb:
 
