@@ -98,7 +98,7 @@ class PropertyTestHarness():
         self.configure_class(m)
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.properties = self.prop_pack(default=self.prop_args)
+        m.fs.properties = self.prop_pack()
         m.fs.stream = m.fs.properties.build_state_block([0], default=self.param_args)
 
         for (v_str, ind), sf in self.scaling_args.items():
