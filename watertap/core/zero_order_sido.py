@@ -181,16 +181,26 @@ class SIDOBaseData(UnitModelBlockData):
                     (1 - b.recovery_vol[t]) *
                     b.properties_byproduct[t].conc_mass_comp[j])
 
-        # Solute concentration of treated stream
+        # # Solute concentration of treated stream
         @self.Constraint(self.flowsheet().time,
                          self.config.property_package.solute_set,
                          doc='Constraint for solute concentration in treated '
                          'stream.')
         def solute_treated_equation(b, t, j):
-            return ((1 - b.removal_frac_mass_solute[t, j]) *
-                    b.properties_in[t].conc_mass_comp[j] ==
-                    b.recovery_vol[t] *
-                    b.properties_treated[t].conc_mass_comp[j])
+            return (b.properties_in[t].conc_mass_comp[j]
+                    - (1 - b.recovery_vol[t]) * b.properties_byproduct[t].conc_mass_comp[j] ==
+                    b.recovery_vol[t] * b.properties_treated[t].conc_mass_comp[j]
+                    )
+
+        # @self.Constraint(self.flowsheet().time,
+        #                  self.config.property_package.solute_set,
+        #                  doc='Constraint for solute concentration in treated '
+        #                  'stream.')
+        # def solute_treated_equation(b, t, j):
+        #     return ((1 - b.removal_frac_mass_solute[t, j]) *
+        #             b.properties_in[t].conc_mass_comp[j] ==
+        #             b.recovery_vol[t] *
+        #             b.properties_treated[t].conc_mass_comp[j])
 
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):

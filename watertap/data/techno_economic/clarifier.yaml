@@ -22,7 +22,7 @@ default:
       function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
       units: $
   recovery_vol:
-    value: 0.99 #9
+    value: 0.985
     units: dimensionless
     reference: No specific references were identified. Based on costs for Chlorine
       Storage and Feed from Cost Estimating Manual for Water Treatment Facilities
