@@ -39,7 +39,6 @@ m.fs.stream[0].enth_mass_solvent
 m.fs.stream[0].enth_mass_solute
 m.fs.stream[0].enth_mass_phase
 m.fs.stream[0].dh_crystallization
-m.fs.stream[0].vol_frac_phase
 m.fs.stream[0].flow_mol_phase_comp
 m.fs.stream[0].mole_frac_phase_comp
 
