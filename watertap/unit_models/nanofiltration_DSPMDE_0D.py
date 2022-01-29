@@ -516,8 +516,9 @@ class NanofiltrationData(UnitModelBlockData):
                     b.feed_side.properties_interface[t, x].act_coeff_phase_comp[p, j]
                     * b.feed_side.properties_interface[t, x].conc_mol_phase_comp[p, j]
                     * b.partition_factor_steric_comp[t, j]
-                    * b.partition_factor_born_solvation_comp[t, j]
-                    * b.partition_factor_donnan_comp_feed[t, x, j])
+                    # * b.partition_factor_born_solvation_comp[t, j]
+                    * b.partition_factor_donnan_comp_feed[t, x, j]
+                    )
 
         # 2. Permeate solution/membrane equilibrium, DOF= Nj * 2 for inlet/outlet
         @self.Constraint(self.flowsheet().config.time,
@@ -888,35 +889,37 @@ class NanofiltrationData(UnitModelBlockData):
 
     def _get_performance_contents(self, time_point=0):
         pass
-        # for k in ('ion_set', 'solute_set'):
-        #     if hasattr(self.config.property_package, k):
-        #         solute_set = getattr(self.config.property_package, k)
-        #         break
-        # var_dict = {}
-        # expr_dict = {}
-        # var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[time_point, 'Liq']
-        # var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[time_point, 'Liq', 'H2O']
-        # var_dict["Membrane Area"] = self.area
-        # if hasattr(self, "deltaP"):
-        #     var_dict["Pressure Change"] = self.deltaP[time_point]
-        # if self.feed_side.properties_in[time_point].is_property_constructed('flow_vol'):
-        #     if self.feed_side.properties_in[time_point].flow_vol.is_variable_type():
-        #         obj_dict = var_dict
-        #     elif self.feed_side.properties_in[time_point].flow_vol.is_named_expression_type():
-        #         obj_dict = expr_dict
-        #     else:
-        #         raise Exception(f"{self.feed_side.properties_in[time_point].flow_vol} isn't a variable nor expression")
-        #     obj_dict['Volumetric Flowrate @Inlet'] = self.feed_side.properties_in[time_point].flow_vol
-        # if self.feed_side.properties_out[time_point].is_property_constructed('flow_vol'):
-        #     if self.feed_side.properties_out[time_point].flow_vol.is_variable_type():
-        #         obj_dict = var_dict
-        #     elif self.feed_side.properties_out[time_point].flow_vol.is_named_expression_type():
-        #         obj_dict = expr_dict
-        #     else:
-        #         raise Exception(f"{self.feed_side.properties_in[time_point].flow_vol} isn't a variable nor expression")
-        #     obj_dict['Volumetric Flowrate @Outlet'] = self.feed_side.properties_out[time_point].flow_vol
-        # var_dict['Solvent Volumetric Flux']= self.flux_vol_solvent[time_point, 'H2O']
-        # for j in solute_set:
+        for k in ('ion_set', 'solute_set'):
+            if hasattr(self.config.property_package, k):
+                solute_set = getattr(self.config.property_package, k)
+                break
+        var_dict = {}
+        expr_dict = {}
+        var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[time_point, 'Liq']
+        var_dict["Solvent Mass Recovery Rate"] = self.recovery_mol_phase_comp[time_point, 'Liq', 'H2O']
+        var_dict["Membrane Area"] = self.area
+        if hasattr(self, "deltaP"):
+            var_dict["Pressure Change"] = self.deltaP[time_point]
+        if self.feed_side.properties_in[time_point].is_property_constructed('flow_vol'):
+            if self.feed_side.properties_in[time_point].flow_vol.is_variable_type():
+                obj_dict = var_dict
+            elif self.feed_side.properties_in[time_point].flow_vol.is_named_expression_type():
+                obj_dict = expr_dict
+            else:
+                raise Exception(f"{self.feed_side.properties_in[time_point].flow_vol} isn't a variable nor expression")
+            obj_dict['Volumetric Flowrate @Inlet'] = self.feed_side.properties_in[time_point].flow_vol
+        if self.feed_side.properties_out[time_point].is_property_constructed('flow_vol'):
+            if self.feed_side.properties_out[time_point].flow_vol.is_variable_type():
+                obj_dict = var_dict
+            elif self.feed_side.properties_out[time_point].flow_vol.is_named_expression_type():
+                obj_dict = expr_dict
+            else:
+                raise Exception(f"{self.feed_side.properties_in[time_point].flow_vol} isn't a variable nor expression")
+            obj_dict['Volumetric Flowrate @Outlet'] = self.feed_side.properties_out[time_point].flow_vol
+
+        expr_dict['Average Volumetric Flux (LMH)'] = self.flux_vol_water_avg[time_point] *3.6e6
+        for j in self.config.property_package.component_list:
+              expr_dict[f'{j} Average Mole FLux'] = self.flux_mol_phase_comp_avg[time_point, 'Liq', j]
         #     var_dict[f'{j} Rejection'] = self.rejection_phase_comp[time_point, 'Liq', j]
         #     if self.feed_side.properties_in[time_point].conc_mol_phase_comp['Liq', j].is_expression_type():
         #         obj_dict = expr_dict
@@ -926,7 +929,7 @@ class NanofiltrationData(UnitModelBlockData):
         #     obj_dict[f'{j} Molar Concentration @Outlet'] = self.feed_side.properties_out[time_point].conc_mol_phase_comp['Liq', j]
         #     obj_dict[f'{j} Molar Concentration @Permeate'] = self.properties_permeate[time_point].conc_mol_phase_comp['Liq', j]
         #
-        # return {"vars": var_dict, "exprs": expr_dict}
+        return {"vars": var_dict, "exprs": expr_dict}
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
