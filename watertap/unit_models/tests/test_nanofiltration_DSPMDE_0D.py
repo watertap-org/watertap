@@ -124,7 +124,7 @@ class TestNanoFiltration():
 
         m.fs.unit.inlet.flow_mol_phase_comp[0, 'Liq', 'H2O'].fix(H2O_mol_comp_flow)
         m.fs.unit.inlet.temperature[0].fix(298.15)
-        m.fs.unit.inlet.pressure[0].fix(50e5)
+        m.fs.unit.inlet.pressure[0].fix(5e5)
 
         m.fs.unit.radius_pore.fix(0.5e-9)
         m.fs.unit.membrane_thickness_effective.fix()
