@@ -29,7 +29,9 @@ from watertap.tools.parameter_sweep import (_init_mpi,
                                                _read_output_h5,
                                                _create_local_output_skeleton,
                                                _create_global_output,
+                                               _numeric_termination_condition_translation,
                                                parameter_sweep,
+                                               TerminationConditionMapping,
                                                LinearSample,
                                                UniformSample,
                                                NormalSample,
@@ -220,6 +222,44 @@ class TestParallelManager():
             assert local_combo_array[-1, 0] == pytest.approx(range_A[1])
             assert local_combo_array[-1, 1] == pytest.approx(range_B[1])
             assert local_combo_array[-1, 2] == pytest.approx(range_C[1])
+
+    @pytest.mark.component
+    def test_termination_condition_mapping(self):
+
+        pyomo_termination_condition = TerminationConditionMapping()
+        tc_strings = ['unknown',
+                       # OK
+                       'maxTimeLimit',
+                       'maxIterations',
+                       'minFunctionValue',
+                       'minStepLength',
+                       'globallyOptimal',
+                       'locallyOptimal',
+                       'feasible',
+                       'optimal',
+                       'maxEvaluations',
+                       'other',
+                       # WARNING
+                       'unbounded',
+                       'infeasible',
+                       'infeasibleOrUnbounded',
+                       'invalidProblem',
+                       'intermediateNonInteger',
+                       'noSolution',
+                       # ERROR
+                       'solverFailure',
+                       'internalSolverError',
+                       'error',
+                       # ABORTED
+                       'userInterrupt',
+                       'resourceInterrupt',
+                       'licensingProblems']
+        tc_int_arr = np.arange(0,23)
+
+        return_arr = np.array([_numeric_termination_condition_translation(str_val) for str_val in tc_strings])
+        return_list = [_numeric_termination_condition_translation(tc_int) for tc_int in tc_int_arr]
+        assert (return_arr == tc_int_arr).all()
+        assert return_list == tc_strings
 
     @pytest.mark.component
     def test_update_model_values(self, model):
