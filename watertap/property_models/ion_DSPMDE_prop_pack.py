@@ -406,7 +406,7 @@ class _DSPMDEStateBlock(StateBlock):
 class DSPMDEStateBlockData(StateBlockData):
     def build(self):
         """Callable method for Block construction."""
-        super(DSPMDEStateBlockData, self).build()
+        super().build()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
@@ -424,7 +424,7 @@ class DSPMDEStateBlockData(StateBlockData):
             initialize=298.15,
             bounds=(273.15, 373.15),
             domain=NonNegativeReals,
-            units=pyunits.degK,
+            units=pyunits.K,
             doc='State temperature')
 
         self.pressure = Var(
