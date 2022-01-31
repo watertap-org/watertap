@@ -12,7 +12,7 @@
 ###############################################################################
 """
 Initial property package for multi-ionic system for use in the
-Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE
+Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE)
 """
 
 # Import Python libraries
@@ -21,8 +21,7 @@ import idaes.logger as idaeslog
 from enum import Enum, auto
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, \
-    Var, Param, Suffix, value, check_optimal_termination
-from pyomo.environ import units as pyunits
+    Var, Param, Suffix, value, check_optimal_termination, units as pyunits
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
