@@ -67,11 +67,6 @@ def model():
                                "B": 1e-9,
                                "C": 1e-9,
                                "D": 1e-10},
-        "density_data": {"H2O": 1000,
-                         "A": 1200,
-                         "B": 1100,
-                         "C": 1010,
-                         "D": 900},
         "charge": {"A": 1,
                    "B": -2,
                    "C": 2,
@@ -97,12 +92,6 @@ def test_parameter_block(model):
         assert j in ["Liq"]
 
     assert model.fs.properties._state_block_class is DSPMDEStateBlock
-
-    assert isinstance(model.fs.properties.dens_mass_comp, Param)
-    assert model.fs.properties.dens_mass_comp['A'].value == 1200
-    assert model.fs.properties.dens_mass_comp['B'].value == 1100
-    assert model.fs.properties.dens_mass_comp['C'].value == 1010
-    assert model.fs.properties.dens_mass_comp['H2O'].value == 1000
 
     assert isinstance(model.fs.properties.mw_comp, Param)
     assert model.fs.properties.mw_comp['A'].value == 10e-3
@@ -219,12 +208,6 @@ def test_property_ions(model2):
     stream[0].radius_stokes_comp['B'] = 1e-9
     stream[0].radius_stokes_comp['C'] = 1e-9
     stream[0].radius_stokes_comp['D'] = 1e-10
-
-    stream[0].dens_mass_comp['H2O'] = 1e3
-    stream[0].dens_mass_comp['A'] = 1.2e3
-    stream[0].dens_mass_comp['B'] = 1.1e3
-    stream[0].dens_mass_comp['C'] = 1.01e3
-    stream[0].dens_mass_comp['D'] = 0.9e3
 
     stream[0].charge_comp['A'] = 1
     stream[0].charge_comp['B'] = -2
@@ -358,8 +341,6 @@ def test_scaling(model3):
     for v_name in metadata:
         getattr(m.fs.stream[0], v_name)
 
-    # m.fs.properties.set_default_scaling(m.fs.stream[0].flow_mol_phase_comp, 1, index=('Liq', 'H2O'))
-
     calculate_scaling_factors(m)
 
     # check that all variables have scaling factors
@@ -380,8 +361,8 @@ def test_scaling(model3):
         assert get_scaling_factor(m.fs.stream[0].mw_comp[j]) is not None
         assert get_scaling_factor(m.fs.stream[0].diffus_phase_comp['Liq', j]) is not None
         assert get_scaling_factor(m.fs.stream[0].act_coeff_phase_comp['Liq', j]) is not None
-    # assert get_scaling_factor(m.fs.stream[0].dens_mass_phase['Liq']) is not None
-    # assert get_scaling_factor(m.fs.stream[0].visc_d_phase['Liq']) is not None
+    assert get_scaling_factor(m.fs.stream[0].dens_mass_phase['Liq']) is not None
+    assert get_scaling_factor(m.fs.stream[0].visc_d_phase['Liq']) is not None
 
 @pytest.mark.component
 def test_seawater_data():
@@ -405,15 +386,6 @@ def test_seawater_data():
                                "Mg_2+": 0.347e-9,
                                "Cl_-": 0.121e-9,
                                "SO4_2-": 0.230e-9},
-        # todo: density_data is no longer being used for now (solution density is just set to equal 1000kg/m3);
-        #  keep until final decision made on calculating solution
-        #  density based on ions in mixture; e.g. of issue: what is the density of Cl_- ?
-        "density_data": {"H2O": 1000,
-                         "Na_+": 968,
-                         "Ca_2+": 1550,
-                         "Mg_2+": 1738,
-                         "Cl_-": 3214,# dummy value
-                         "SO4_2-": 2553},
         "charge": {"Na_+": 1,
                    "Ca_2+": 2,
                    "Mg_2+": 2,
@@ -465,7 +437,7 @@ def test_seawater_data():
     assert value(stream[0].flow_mol_phase_comp['Liq', 'Mg_2+']) == pytest.approx(0.05808,  rel=1e-3)
     assert value(stream[0].flow_mol_phase_comp['Liq', 'Cl_-']) == pytest.approx(0.58,  rel=1e-3)
     assert value(stream[0].flow_mol_phase_comp['Liq', 'SO4_2-']) == pytest.approx(0.02225,  rel=1e-3)
-    assert value(stream[0].dens_mass_phase['Liq']) == pytest.approx(1000, rel=1e-3) #1015.89,  rel=1e-3) #TODO revisit after solution density finalized
+    assert value(stream[0].dens_mass_phase['Liq']) == pytest.approx(1000, rel=1e-3)
     assert value(stream[0].pressure_osm) == pytest.approx(29.641e5, rel=1e-3)
     assert value(stream[0].flow_vol) == pytest.approx(0.001, rel=1e-3)
     assert value(stream[0].conc_mass_phase_comp['Liq','Na_+']) == pytest.approx(11.122, rel=1e-3)

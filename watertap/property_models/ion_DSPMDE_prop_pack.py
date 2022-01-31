@@ -73,10 +73,6 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         default={},
         domain=dict,
         description="Dict of component names and molecular weight data"))
-    CONFIG.declare("density_data", ConfigValue(
-        default={},
-        domain=dict,
-        description="Dict of component names and component density data"))
     CONFIG.declare("charge", ConfigValue(
         default={},
         domain=dict,
@@ -96,17 +92,6 @@ class DSPMDEParameterData(PhysicalParameterBlock):
            "``ActivityCoefficientModel.ideal``", "Activity coefficients equal to 1 assuming ideal solution"
            "``ActivityCoefficientModel.davies``", "Activity coefficients estimated via Davies model"
        """))
-
-    def _init_param_data(self, data, default=None):
-        if default is None:
-            default = 1
-        config = getattr(self.config, data)
-        if len(config) != 0:
-            return extract_data(config)
-        else: #TODO only works if no data provided at all, but should have conditional that handles one or more missing vals
-            _log.warning(f"Missing initial configuration values for {data}. All values being arbitrarily set to {default}. "
-                         f"Ensure correct data values are assigned before solving.")
-            return default
 
     def build(self):
         '''
@@ -133,45 +118,45 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         self.mw_comp = Param(
             self.component_list,
             mutable=True,
-            initialize=self._init_param_data('mw_data'),
+            default=18e-3,
+            initialize=self.config.mw_data,
             units=pyunits.kg/pyunits.mol,
-            doc="Molecular weight kg/mol")
+            doc="Molecular weight")
         # Stokes radius
         self.radius_stokes_comp = Param(
             self.solute_set,
             mutable=True,
-            initialize=self._init_param_data('stokes_radius_data', default=1e-9),
+            default=1e-10,
+            initialize=self.config.stokes_radius_data,
             units=pyunits.m,
             doc="Stokes radius of solute")
         self.diffus_phase_comp = Param(
             self.phase_list,
             self.solute_set,
             mutable=True,
-            initialize=self._init_param_data('diffusivity_data', default=1e-9),
+            default=1e-9,
+            initialize=self.config.diffusivity_data,
             units=pyunits.m ** 2 * pyunits.s ** -1,
             doc="Bulk diffusivity of ion")
         self.visc_d_phase = Param(
             self.phase_list,
             mutable=True,
+            default=1e-3,
             initialize=1e-3, #TODO:revisit- assuming ~ 1e-3 Pa*s for pure water
             units=pyunits.Pa * pyunits.s,
             doc="Fluid viscosity")
-        self.dens_mass_comp = Param(
-            self.component_list,
-            mutable=True,
-            initialize=self._init_param_data('density_data', default=1e3),
-            units=pyunits.kg/pyunits.m**3,
-            doc="Density of component")
         # Ion charge
         self.charge_comp = Param(
             self.solute_set,
             mutable=True,
-            initialize=self._init_param_data('charge'),
+            default=1,
+            initialize=self.config.charge,
             units=pyunits.dimensionless,
             doc="Ion charge")
         # Dielectric constant of water
         self.dielectric_constant = Param(
             mutable=True,
+            default=80.4,
             initialize=80.4, #todo: make a variable with parameter values for coefficients in the function of temperature
             units=pyunits.dimensionless,
             doc="Dielectric constant of water")
@@ -206,7 +191,6 @@ class DSPMDEParameterData(PhysicalParameterBlock):
              'pressure_osm': {'method': '_pressure_osm'},
              'radius_stokes_comp': {'method': '_radius_stokes_comp'},
              'mw_comp': {'method': '_mw_comp'},
-             'dens_mass_comp': {'method': '_dens_mass_comp'},
              'charge_comp': {'method': '_charge_comp'},
              'act_coeff_phase_comp': {'method': '_act_coeff_phase_comp'},
              'dielectric_constant': {'method': '_dielectric_constant'}
@@ -475,9 +459,6 @@ class DSPMDEStateBlockData(StateBlockData):
         #TODO: reconsider this approach for solution density based on arbitrary solute_list
         def rule_dens_mass_phase(b):
             return (b.dens_mass_phase['Liq'] == 1000 * pyunits.kg * pyunits.m**-3)
-            #TODO: remove commented code or replace- temporarily assigning density of 1000
-                    # * sum(b.mass_frac_phase_comp['Liq', j] / b.params.dens_mass_comp[j]
-                    #       for j in b.params.component_list) == 1)
         self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
 
     def _flow_vol_phase(self):
@@ -584,9 +565,6 @@ class DSPMDEStateBlockData(StateBlockData):
     def _mw_comp(self):
         add_object_reference(self, "mw_comp", self.params.mw_comp)
 
-    def _dens_mass_comp(self):
-        add_object_reference(self, "dens_mass_comp", self.params.dens_mass_comp)
-
     def _charge_comp(self):
         add_object_reference(self, "charge_comp", self.params.charge_comp)
 
@@ -621,7 +599,7 @@ class DSPMDEStateBlockData(StateBlockData):
         def rule_pressure_osm(b):
             return (b.pressure_osm ==
                     sum(b.molality_comp[j] for j in self.params.solute_set)
-                    * b.dens_mass_comp['H2O'] * Constants.gas_constant * b.temperature)
+                    * b.dens_mass_phase['Liq'] * Constants.gas_constant * b.temperature)
         self.eq_pressure_osm = Constraint(rule=rule_pressure_osm)
 
     # -----------------------------------------------------------------------------
@@ -698,20 +676,15 @@ class DSPMDEStateBlockData(StateBlockData):
                 sf = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j], default=1)
                 iscale.set_scaling_factor(self.flow_mol_phase_comp['Liq', j], sf)
 
-        if self.is_property_constructed('dens_mass_comp'):
-            v = getattr(self, 'dens_mass_comp')
-            for ion, val in v.items():
-                if iscale.get_scaling_factor(self.dens_mass_comp[ion]) is None:
-                    iscale.set_scaling_factor(v[ion], 1e-3)
-
-
         # scaling factors for parameters
-        for j, v in self.params.mw_comp.items():
+        for j, v in self.mw_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.mw_comp[j], 1e1)
-        for (p, j), v in self.params.diffus_phase_comp.items():
+        for ind, v in self.diffus_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.diffus_phase_comp[p, j], 1e10)
+                iscale.set_scaling_factor(self.diffus_phase_comp[ind], 1e10)
+            else:
+                raise
 
         for p, v in self.dens_mass_phase.items():
             if iscale.get_scaling_factor(v) is None:
