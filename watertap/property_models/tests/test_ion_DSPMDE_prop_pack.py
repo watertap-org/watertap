@@ -253,7 +253,7 @@ def test_property_ions(model2):
     results = solver.solve(m)
     assert_optimal_termination(results)
 
-    assert value(stream[0].flow_vol_phase['Liq']) == pytest.approx(1.91524e-5,  rel=1e-3)
+    assert value(stream[0].flow_vol_phase['Liq']) == pytest.approx(1.82478e-5,  rel=1e-3)
 
 @pytest.fixture(scope="class")
 def model3():
@@ -317,8 +317,8 @@ def test_build(model3):
         c = getattr(m.fs.stream[0], 'eq_' + v)
         assert isinstance(c, Constraint)
 
-    assert number_variables(m) == 51
-    assert number_total_constraints(m) == 43
+    assert number_variables(m) == 62
+    assert number_total_constraints(m) == 44
     assert number_unused_variables(m) == 1  # pressure is unused
 
 @pytest.mark.unit
@@ -364,6 +364,7 @@ def test_scaling(model3):
 
     # check that all variables have scaling factors
     unscaled_var_list = list(unscaled_variables_generator(m))
+    [print(i) for i in unscaled_var_list]
     assert len(unscaled_var_list) == 0
 
     # check if any variables are badly scaled
@@ -458,19 +459,19 @@ def test_seawater_data():
     results = solver.solve(m)
     assert_optimal_termination(results)
 
-    assert value(stream[0].flow_vol_phase['Liq']) == pytest.approx(0.001,  rel=1e-3)
+    assert value(stream[0].flow_vol_phase['Liq']) == pytest.approx(9.767e-4,  rel=1e-3)
     assert value(stream[0].flow_mol_phase_comp['Liq', 'H2O']) == pytest.approx(53.59256,  rel=1e-3)
     assert value(stream[0].flow_mol_phase_comp['Liq', 'Na_+']) == pytest.approx(0.4836,  rel=1e-3)
     assert value(stream[0].flow_mol_phase_comp['Liq', 'Ca_2+']) == pytest.approx(0.00955,  rel=1e-3)
     assert value(stream[0].flow_mol_phase_comp['Liq', 'Mg_2+']) == pytest.approx(0.05808,  rel=1e-3)
     assert value(stream[0].flow_mol_phase_comp['Liq', 'Cl_-']) == pytest.approx(0.58,  rel=1e-3)
     assert value(stream[0].flow_mol_phase_comp['Liq', 'SO4_2-']) == pytest.approx(0.02225,  rel=1e-3)
-    assert value(stream[0].dens_mass_phase['Liq']) == pytest.approx(1000, rel=1e-3) #1015.89,  rel=1e-3) #TODO revisit after solution density finalized
+    assert value(stream[0].dens_mass_phase['Liq']) == pytest.approx(1023.816, rel=1e-3) #1015.89,  rel=1e-3) #TODO revisit after solution density finalized
     assert value(stream[0].pressure_osm) == pytest.approx(29.641e5, rel=1e-3)
-    assert value(stream[0].flow_vol) == pytest.approx(0.001, rel=1e-3)
-    assert value(stream[0].conc_mass_phase_comp['Liq','Na_+']) == pytest.approx(11.122, rel=1e-3)
-    assert value(stream[0].conc_mass_phase_comp['Liq','Cl_-']) == pytest.approx(20.3, rel=1e-3)
-    assert value(sum(stream[0].conc_mass_phase_comp['Liq',j] for j in m.fs.properties.solute_set)) == pytest.approx(35.334, rel=1e-3)
+    assert value(stream[0].flow_vol) == pytest.approx(9.767e-4, rel=1e-3)
+    assert value(stream[0].conc_mass_phase_comp['Liq','Na_+']) == pytest.approx(11.38688, rel=1e-3)
+    assert value(stream[0].conc_mass_phase_comp['Liq','Cl_-']) == pytest.approx(20.783, rel=1e-3)
+    assert value(sum(stream[0].conc_mass_phase_comp['Liq',j] for j in m.fs.properties.solute_set)) == pytest.approx(36.1755, rel=1e-3)
     assert value(sum(stream[0].mass_frac_phase_comp['Liq',j] for j in m.fs.properties.solute_set)) == pytest.approx(35334e-6, rel=1e-3)
     assert value(sum(stream[0].mass_frac_phase_comp['Liq',j] for j in m.fs.properties.component_list)) == pytest.approx(1, rel=1e-3)
     assert value(sum(stream[0].mole_frac_phase_comp['Liq',j] for j in m.fs.properties.component_list)) == pytest.approx(1, rel=1e-3)

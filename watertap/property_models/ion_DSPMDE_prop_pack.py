@@ -56,6 +56,12 @@ class ActivityCoefficientModel(Enum):
     enrtl = auto()                    # eNRTL
     pitzer = auto()                   # Pitzer-Kim
 
+class DensityCalculation(Enum):
+    constant = auto()                 # constant @ 1000 kg/m3
+    seawater = auto()                 # seawater correlation for TDS from Sharqawy
+    laliberte = auto()                # Laliberte correlation using apparent density #TODO add this later with reference
+
+
 @declare_process_block_class("DSPMDEParameterBlock") #TODO: replace w/ "PropParameterBlock"
 class DSPMDEParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
@@ -99,6 +105,22 @@ class DSPMDEParameterData(PhysicalParameterBlock):
            "``ActivityCoefficientModel.davies``", "Activity coefficients estimated via Davies model"
            "``ActivityCoefficientModel.enrtl``", "Activity coefficients estimated via eNRTL model"
            "``ActivityCoefficientModel.pitzer``", "Activity coefficients estimated via Pitzer-Kim model"
+       """))
+    CONFIG.declare("density_calculation", ConfigValue(
+        default=DensityCalculation.seawater,
+        domain=In(DensityCalculation),
+        description="Solution density calculation construction flag",
+        doc="""
+           Options to account for solution density.
+    
+           **default** - ``DensityCalculation.seawater``
+    
+       .. csv-table::
+           :header: "Configuration Options", "Description"
+    
+           "``DensityCalculation.constant``", "Solution density assumed constant at 1000 kg/m3"
+           "``DensityCalculation.seawater``", "Solution density based on correlation for seawater (TDS)"
+           "``DensityCalculation.laliberte``", "Solution density based on mixing correlation from Laliberte"
        """))
 
     def _init_param_data(self, data, default=None):
@@ -180,6 +202,43 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             units=pyunits.dimensionless,
             doc="Dielectric constant of water")
 
+        # Mass density parameters, eq. 8 in Sharqawy et al. (2010)
+        dens_units = pyunits.kg / pyunits.m ** 3
+        t_inv_units = pyunits.K ** -1
+
+        self.dens_mass_param_A1 = Var(
+            within=Reals, initialize=9.999e2, units=dens_units,
+            doc='Mass density parameter A1')
+        self.dens_mass_param_A2 = Var(
+            within=Reals, initialize=2.034e-2, units=dens_units * t_inv_units,
+            doc='Mass density parameter A2')
+        self.dens_mass_param_A3 = Var(
+            within=Reals, initialize=-6.162e-3, units=dens_units * t_inv_units ** 2,
+            doc='Mass density parameter A3')
+        self.dens_mass_param_A4 = Var(
+            within=Reals, initialize=2.261e-5, units=dens_units * t_inv_units ** 3,
+            doc='Mass density parameter A4')
+        self.dens_mass_param_A5 = Var(
+            within=Reals, initialize=-4.657e-8, units=dens_units * t_inv_units ** 4,
+            doc='Mass density parameter A5')
+        self.dens_mass_param_B1 = Var(
+            within=Reals, initialize=8.020e2, units=dens_units,
+            doc='Mass density parameter B1')
+        self.dens_mass_param_B2 = Var(
+            within=Reals, initialize=-2.001, units=dens_units * t_inv_units,
+            doc='Mass density parameter B2')
+        self.dens_mass_param_B3 = Var(
+            within=Reals, initialize=1.677e-2, units=dens_units * t_inv_units ** 2,
+            doc='Mass density parameter B3')
+        self.dens_mass_param_B4 = Var(
+            within=Reals, initialize=-3.060e-5, units=dens_units * t_inv_units ** 3,
+            doc='Mass density parameter B4')
+        self.dens_mass_param_B5 = Var(
+            within=Reals, initialize=-1.613e-5, units=dens_units * t_inv_units ** 2,
+            doc='Mass density parameter B5')
+
+        for v in self.component_objects(Var):
+            v.fix()
 
         # ---default scaling---
         # self.set_default_scaling('flow_mol_phase_comp', 1)
@@ -202,8 +261,9 @@ class DSPMDEParameterData(PhysicalParameterBlock):
              'flow_mass_phase_comp': {'method': '_flow_mass_phase_comp'},
              'mass_frac_phase_comp': {'method': '_mass_frac_phase_comp'},
              'dens_mass_phase': {'method': '_dens_mass_phase'},
-             'flow_vol_phase': {'method': '_flow_vol_phase'},
+             'dens_mass_solvent': {'method': '_dens_mass_solvent'},
              'flow_vol': {'method': '_flow_vol'},
+             'flow_vol_phase': {'method': '_flow_vol_phase'},
              'conc_mol_phase_comp': {'method': '_conc_mol_phase_comp'},
              'conc_mass_phase_comp': {'method': '_conc_mass_phase_comp'},
              'mole_frac_phase_comp': {'method': '_mole_frac_phase_comp'},
@@ -481,11 +541,41 @@ class DSPMDEStateBlockData(StateBlockData):
             doc="Mass density")
         #TODO: reconsider this approach for solution density based on arbitrary solute_list
         def rule_dens_mass_phase(b):
-            return (b.dens_mass_phase['Liq'] == 1000 * pyunits.kg * pyunits.m**-3)
-            #TODO: remove commented code or replace- temporarily assigning density of 1000
+            if b.params.config.density_calculation == DensityCalculation.constant:
+                return (b.dens_mass_phase['Liq'] == 1000 * pyunits.kg * pyunits.m**-3)
+            elif b.params.config.density_calculation == DensityCalculation.seawater:
+                # density, eq. 8 in Sharqawy #TODO- add Sharqawy reference
+                t = b.temperature - 273.15 * pyunits.K
+                s = sum(b.mass_frac_phase_comp['Liq', j] for j in b.params.solute_set)
+                dens_mass = (b.dens_mass_solvent
+                             + b.params.dens_mass_param_B1 * s
+                             + b.params.dens_mass_param_B2 * s * t
+                             + b.params.dens_mass_param_B3 * s * t ** 2
+                             + b.params.dens_mass_param_B4 * s * t ** 3
+                             + b.params.dens_mass_param_B5 * s ** 2 * t ** 2)
+                return b.dens_mass_phase['Liq'] == dens_mass
+
+                #TODO: remove commented code or replace- temporarily assigning density of 1000
                     # * sum(b.mass_frac_phase_comp['Liq', j] / b.params.dens_mass_comp[j]
                     #       for j in b.params.component_list) == 1)
         self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
+
+    def _dens_mass_solvent(self):
+        self.dens_mass_solvent = Var(
+            initialize=1e3,
+            bounds=(1, 1e6),
+            units=pyunits.kg*pyunits.m**-3,
+            doc="Mass density of pure water")
+
+        def rule_dens_mass_solvent(b):  # density, eq. 8 in Sharqawy
+            t = b.temperature - 273.15*pyunits.K
+            dens_mass_w = (b.params.dens_mass_param_A1
+                         + b.params.dens_mass_param_A2 * t
+                         + b.params.dens_mass_param_A3 * t**2
+                         + b.params.dens_mass_param_A4 * t**3
+                         + b.params.dens_mass_param_A5 * t**4)
+            return b.dens_mass_solvent == dens_mass_w
+        self.eq_dens_mass_solvent = Constraint(rule=rule_dens_mass_solvent)
 
     def _flow_vol_phase(self):
         self.flow_vol_phase = Var(
@@ -731,6 +821,10 @@ class DSPMDEStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.diffus_phase_comp[p, j], 1e10)
 
+        if self.is_property_constructed('dens_mass_solvent'):
+            if iscale.get_scaling_factor(self.dens_mass_solvent) is None:
+                iscale.set_scaling_factor(self.dens_mass_solvent, 1e-2)
+
         for p, v in self.dens_mass_phase.items():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.dens_mass_phase[p], 1e-2)
@@ -821,9 +915,12 @@ class DSPMDEStateBlockData(StateBlockData):
 
         # transforming constraints
         # property relationships with no index, simple constraint
-        if self.is_property_constructed('pressure_osm'):
-            sf = iscale.get_scaling_factor(self.pressure_osm, default=1, warning=True)
-            iscale.constraint_scaling_transform(self.eq_pressure_osm, sf)
+        for v_str in ('pressure_osm', 'dens_mass_solvent'):
+            if self.is_property_constructed(v_str):
+                v = getattr(self, v_str)
+                sf = iscale.get_scaling_factor(v, default=1, warning=True)
+                c = getattr(self, 'eq_' + v_str)
+                iscale.constraint_scaling_transform(c, sf)
 
         # # property relationships with phase index, but simple constraint
         for v_str in ('flow_vol_phase', 'dens_mass_phase'):

@@ -172,8 +172,8 @@ class NanofiltrationData(UnitModelBlockData):
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
-        # For permeate-specific scaling in calculate_scaling_factors
-        self._permeate_scaled_properties = ComponentSet()
+        # For stateblock-specific scaling in calculate_scaling_factors
+        self._sb_scaled_properties = ComponentSet()
 
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
@@ -335,7 +335,7 @@ class NanofiltrationData(UnitModelBlockData):
             self.flowsheet().config.time,
             phase_list,
             solute_set,
-            initialize=0.9,
+            initialize=0.5,
             bounds=(-1 + 1e-6, 1 - 1e-6),
             units=pyunits.dimensionless,
             doc='Observed solute rejection')
@@ -404,8 +404,8 @@ class NanofiltrationData(UnitModelBlockData):
                          doc="Diffusive hindered transport coefficient")
         def hindrance_factor_diffusive_comp(b, t, j):
             eps = 1e-8
-            return Expr_if(b.lambda_comp[t,j] > 0.95,
-                        0.984 *((1 - b.lambda_comp[t,j])/(b.lambda_comp[t,j])) ** (5/2),
+            return Expr_if(b.lambda_comp[t, j] > 0.95,
+                        0.984 *((1 - b.lambda_comp[t,j])/(b.lambda_comp[t, j])) ** (5/2),
                            (1 + 9. / 8. * b.lambda_comp[t, j] * log(b.lambda_comp[t, j])
                         - 1.56034 * b.lambda_comp[t, j]
                         + 0.528155 * b.lambda_comp[t, j]**2
@@ -689,52 +689,8 @@ class NanofiltrationData(UnitModelBlockData):
             return (b.mixed_permeate[t].get_material_flow_terms(p, j)
                     == b.flux_mol_phase_comp_avg[t, p, j] * b.area)
 
-        # 14. Experimental constraint: Electroneutrality of final permeate
-        @self.Constraint(self.flowsheet().config.time,
-                         phase_list,
-                         doc="Electroneutrality in mixed permeate")
-        def eq_electroneutrality_mixed_permeate(b, t, p):
-            return (abs(sum(b.mixed_permeate[t].conc_mol_phase_comp[p, j] *
-                            b.mixed_permeate[t].charge_comp[j] for j in solute_set)) == b.tol_electroneutrality)
 
-        # Experimental constraint: feed electroneutrality
-        @self.Constraint(self.flowsheet().config.time,
-                         io_list,
-                         phase_list,
-                         doc="Electroneutrality at feed")
-        def eq_electroneutrality_feed(b, t, x, p):
-            if x == 0:
-                prop = b.feed_side.properties_in[t]
-            elif x:
-                prop = b.feed_side.properties_out[t]
-            return (abs(sum(prop.conc_mol_phase_comp[p, j] *
-                            prop.charge_comp[j] for j in solute_set))
-                    == b.tol_electroneutrality)
-
-        # Experimental constraint
-        @self.Constraint(self.flowsheet().config.time,
-                         io_list,
-                         doc="Volumetric flow at interface of inlet and outlet")
-        def eq_equal_flow_vol_interface(b, t, x):
-            if x == 0:
-                bulk = b.feed_side.properties_in[t]
-            elif x:
-                bulk = b.feed_side.properties_out[t]
-            interface = b.feed_side.properties_interface[t, x]
-            return interface.flow_vol_phase['Liq'] ==\
-                   bulk.flow_vol_phase['Liq']
-        #
-        # Experimental constraint
-        @self.Constraint(self.flowsheet().config.time,
-                         io_list,
-                         doc="Volumetric flow at pore exit and permeate of inlet and outlet")
-        def eq_equal_flow_vol_pore_permeate(b, t, x):
-            pore = b.pore_exit[t, x]
-            permeate = b.permeate_side[t, x]
-            return pore.flow_vol_phase['Liq'] ==\
-                   permeate.flow_vol_phase['Liq']
-
-        # 15. Mole component recovery rate
+        # 14. Mole component recovery rate
         @self.Constraint(self.flowsheet().config.time,
                          solvent_solute_set)
         def eq_recovery_mol_phase_comp(b, t, j):
@@ -742,7 +698,7 @@ class NanofiltrationData(UnitModelBlockData):
                     b.mixed_permeate[t].flow_mol_phase_comp['Liq', j] /
                     b.feed_side.properties_in[t].flow_mol_phase_comp['Liq', j])
 
-        # 16. Volumetric recovery rate
+        # 15. Volumetric recovery rate
         @self.Constraint(self.flowsheet().config.time,
                          phase_list)
         def eq_recovery_vol_phase(b, t, p):
@@ -750,7 +706,7 @@ class NanofiltrationData(UnitModelBlockData):
                     * b.feed_side.properties_in[t].flow_vol_phase[p]
                     == b.mixed_permeate[t].flow_vol_phase[p])
 
-        # 17. Observed rejection rate
+        # 16. Observed rejection rate
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
                          solute_set,
@@ -774,6 +730,70 @@ class NanofiltrationData(UnitModelBlockData):
             return b.feed_side.properties_in[t].temperature == \
                    prop.temperature
 
+        # Experimental Constraint with new density calculation in prop package-- temp equality in permeate
+        @self.Constraint(self.flowsheet().config.time,
+                         io_list,
+                         doc="Isothermal assumption for mixed permeate")
+        def eq_permeate_isothermal_mixed(b, t, x):
+            return b.feed_side.properties_in[t].temperature == \
+                   b.mixed_permeate[t].temperature
+
+        # Experimental constraint: noticed feed outlet temp didn't match inlet
+        @self.feed_side.Constraint(self.flowsheet().config.time,
+                                   doc="Isothermal assumption for feed-outlet")
+        def eq_feed_isothermal(b, t):
+            return b.properties_in[t].temperature == \
+                   b.properties_out[t].temperature
+
+
+        # Experimental constraint
+        @self.Constraint(self.flowsheet().config.time,
+                         io_list,
+                         doc="Equal volumetric flow for pore exit and permeate at inlet and outlet")
+        def eq_equal_flow_vol_pore_permeate(b, t, x):
+            return b.permeate_side[t, x].flow_vol_phase['Liq'] ==\
+                   b.pore_exit[t, x].flow_vol_phase['Liq']
+
+        # # Experimental constraint
+        @self.Constraint(self.flowsheet().config.time,
+                         io_list,
+                         doc="Volumetric flow at permeate of inlet and outlet equal to mixed permeate")
+        def eq_equal_flow_vol_permeate(b, t, x):
+            return b.permeate_side[t, x].flow_vol_phase['Liq'] ==\
+                   b.mixed_permeate[t].flow_vol_phase['Liq']
+
+        # 14. Experimental constraint: Electroneutrality of final permeate
+        @self.Constraint(self.flowsheet().config.time,
+                         phase_list,
+                         doc="Electroneutrality in mixed permeate")
+        def eq_electroneutrality_mixed_permeate(b, t, p):
+            return (abs(sum(b.mixed_permeate[t].conc_mol_phase_comp[p, j] *
+                            b.mixed_permeate[t].charge_comp[j] for j in solute_set)) == b.tol_electroneutrality)
+
+        # Experimental constraint: feed electroneutrality
+        @self.Constraint(self.flowsheet().config.time,
+                         phase_list,
+                         doc="Electroneutrality at feed outlet")
+        def eq_electroneutrality_feed(b, t, p):
+            prop = b.feed_side.properties_out[t]
+            return (abs(sum(prop.conc_mol_phase_comp[p, j] *
+                            prop.charge_comp[j] for j in solute_set))
+                    == b.tol_electroneutrality)
+
+        # # Experimental constraint
+        # @self.Constraint(self.flowsheet().config.time,
+        #                  io_list,
+        #                  doc="Volumetric flow at interface of inlet and outlet")
+        # def eq_equal_flow_vol_interface(b, t, x):
+        #     if x == 0:
+        #         bulk = b.feed_side.properties_in[t]
+        #     elif x:
+        #         bulk = b.feed_side.properties_out[t]
+        #     interface = b.feed_side.properties_interface[t, x]
+        #     return interface.flow_vol_phase['Liq'] ==\
+        #            bulk.flow_vol_phase['Liq']
+        # #
+
 
     def initialize(
             blk,
@@ -783,7 +803,8 @@ class NanofiltrationData(UnitModelBlockData):
             solver=None,
             optarg=None,
             fail_on_warning=False,
-            ignore_dof=False):
+            ignore_dof=False,
+            automate_rescale=True):
 
         """
         General wrapper for pressure changer initialization routines
@@ -810,6 +831,7 @@ class NanofiltrationData(UnitModelBlockData):
                      initialization (default = None)
             fail_on_warning : boolean argument to fail or only produce  warning upon unsuccessful solve (default=False)
             ignore_dof : boolean argument to ignore when DOF != 0 (default=False)
+            automate_rescale: boolean argument to automatically rescale poorly scaled vars
         Returns:
             None
         """
@@ -876,7 +898,10 @@ class NanofiltrationData(UnitModelBlockData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
             if not check_optimal_termination(res):
-                init_log.warn("Trouble solving NanofiltrationDSPMDE0D unit model, trying one more time")
+                init_log.warn("Trouble solving NanofiltrationDSPMDE0D unit model; "
+                              "automatically rescaling poorly scaled variables and trying one more time")
+                if automate_rescale:
+                    blk._automate_rescale_variables()
                 res = opt.solve(blk, tee=slc.tee)
         check_solve(res, checkpoint='Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
         # ---------------------------------------------------------------------
@@ -916,20 +941,28 @@ class NanofiltrationData(UnitModelBlockData):
         #         raise Exception(f"{self.feed_side.properties_in[time_point].flow_vol} isn't a variable nor expression")
         #     obj_dict['Volumetric Flowrate @Outlet'] = self.feed_side.properties_out[time_point].flow_vol
         # Volume flowrates
+        if self.feed_side.properties_in[time_point].is_property_constructed('flow_vol_phase'):
+            var_dict[f'Volumetric flow rate @ inlet'] = self.feed_side.properties_in[time_point].flow_vol_phase['Liq']
+        if self.feed_side.properties_interface[time_point, 0].is_property_constructed('flow_vol_phase'):
+            var_dict[f'Volumetric flow rate @ inlet interface'] = self.feed_side.properties_interface[time_point, 0].flow_vol_phase['Liq']
+        if self.pore_entrance[time_point, 0].is_property_constructed('flow_vol_phase'):
+            var_dict[f'Volumetric flow rate @ inlet pore entrance'] = self.pore_entrance[time_point, 0].flow_vol_phase['Liq']
+        if self.pore_exit[time_point, 0].is_property_constructed('flow_vol_phase'):
+            var_dict[f'Volumetric flow rate @ inlet pore exit'] = self.pore_exit[time_point, 0].flow_vol_phase['Liq']
+        if self.permeate_side[time_point, 0].is_property_constructed('flow_vol_phase'):
+            var_dict[f'Volumetric flow rate @ inlet permeate'] = self.permeate_side[time_point, 0].flow_vol_phase['Liq']
 
-        var_dict[f'Volumetric flow rate @ inlet'] = self.feed_side.properties_in[0].flow_vol_phase['Liq']
-        var_dict[f'Volumetric flow rate @ inlet interface'] = self.feed_side.properties_interface[0, 0].flow_vol_phase['Liq']
-        var_dict[f'Volumetric flow rate @ inlet pore entrance'] = self.pore_entrance[0, 0].flow_vol_phase['Liq']
-        var_dict[f'Volumetric flow rate @ inlet pore exit'] = self.pore_exit[0, 0].flow_vol_phase['Liq']
-        var_dict[f'Volumetric flow rate @ inlet permeate'] = self.permeate_side[0, 0].flow_vol_phase['Liq']
-
-        var_dict[f'Volumetric flow rate @ outlet'] = self.feed_side.properties_out[0].flow_vol_phase['Liq']
-        var_dict[f'Volumetric flow rate @ outlet interface'] = self.feed_side.properties_interface[0, 1].flow_vol_phase['Liq']
-        var_dict[f'Volumetric flow rate @ outlet pore entrance'] = self.pore_entrance[0, 1].flow_vol_phase['Liq']
-        var_dict[f'Volumetric flow rate @ outlet pore exit'] = self.pore_exit[0, 1].flow_vol_phase['Liq']
-        var_dict[f'Volumetric flow rate @ outlet permeate'] = self.permeate_side[0, 1].flow_vol_phase['Liq']
-
-        var_dict[f'Volumetric flow rate @ final permeate'] = self.mixed_permeate[0].flow_vol_phase['Liq']
+        if self.feed_side.properties_out[time_point].is_property_constructed('flow_vol_phase'):
+            var_dict[f'Volumetric flow rate @ outlet'] = self.feed_side.properties_out[time_point].flow_vol_phase['Liq']
+            if self.feed_side.properties_interface[time_point, 1].is_property_constructed('flow_vol_phase'):
+                var_dict[f'Volumetric flow rate @ outlet interface'] = self.feed_side.properties_interface[time_point, 1].flow_vol_phase['Liq']
+        if self.pore_entrance[time_point, 1].is_property_constructed('flow_vol_phase'):
+            var_dict[f'Volumetric flow rate @ outlet pore entrance'] = self.pore_entrance[time_point, 1].flow_vol_phase['Liq']
+        if self.pore_exit[time_point, 1].is_property_constructed('flow_vol_phase'):
+            var_dict[f'Volumetric flow rate @ outlet pore exit'] = self.pore_exit[time_point, 1].flow_vol_phase['Liq']
+        if self.permeate_side[time_point, 0].is_property_constructed('flow_vol_phase'):
+            var_dict[f'Volumetric flow rate @ outlet permeate'] = self.permeate_side[time_point, 1].flow_vol_phase['Liq']
+        var_dict[f'Volumetric flow rate @ final permeate'] = self.mixed_permeate[time_point].flow_vol_phase['Liq']
 
         expr_dict['Average Volumetric Flux (LMH)'] = self.flux_vol_water_avg[time_point] *3.6e6
         for j in self.config.property_package.component_list:
@@ -989,7 +1022,7 @@ class NanofiltrationData(UnitModelBlockData):
         if 'deltaP' not in initialize_guess:
             initialize_guess['deltaP'] = 0
         if 'solvent_recovery' not in initialize_guess:
-            initialize_guess['solvent_recovery'] = 0.5
+            initialize_guess['solvent_recovery'] = 0.8
         if 'solute_recovery' not in initialize_guess:
             initialize_guess['solute_recovery'] = 0.01
         if 'cp_modulus' not in initialize_guess:
@@ -1020,13 +1053,12 @@ class NanofiltrationData(UnitModelBlockData):
 
         state_args_retentate['pressure'] += initialize_guess['deltaP']
         state_args_permeate['pressure'] = mixed_permeate_properties.pressure.value
-        for j in self.config.property_package.component_list:
+        for j in self.config.property_package.solvent_set:
             state_args_retentate['flow_mol_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solvent_recovery'])
             state_args_permeate['flow_mol_phase_comp'][('Liq', j)] *= initialize_guess['solvent_recovery']
-        #TODO: remove commented code if not needed
-        # for j in self.config.property_package.solute_set:
-        #     state_args_retentate['flow_mol_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solute_recovery'])
-        #     state_args_permeate['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['solute_recovery']
+        for j in self.config.property_package.solute_set:
+            state_args_retentate['flow_mol_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solute_recovery'])
+            state_args_permeate['flow_mol_phase_comp'][('Liq', j)] *= initialize_guess['solute_recovery']
 
         state_args_interface_in = deepcopy(state_args)
         state_args_interface_out = deepcopy(state_args_retentate)
@@ -1042,12 +1074,23 @@ class NanofiltrationData(UnitModelBlockData):
                 'interface_out' : state_args_interface_out,
                }
 
-    # permeate properties need to rescale solute values by 100
-    def _rescale_permeate_variable(self, var, factor=100):
-        if var not in self._permeate_scaled_properties:
+    # stateblock properties need to rescale solute values by a larger factor
+    def _rescale_sb_variable(self, var, factor=100):
+        if var not in self._sb_scaled_properties:
             sf = iscale.get_scaling_factor(var)
             iscale.set_scaling_factor(var, sf * factor)
-            self._permeate_scaled_properties.add(var)
+            self._sb_scaled_properties.add(var)
+
+    # automatically rescale poorly scaled variables by setting a new scaling factor
+    # which multiples a variable value by the old scaling factor divided by the poorly scaled (resulting) value,
+    # bringing the new scaled value to 1. Providing a rescale_factor would just multiply that factor by 1.
+    def _automate_rescale_variables(self, rescale_factor=None):
+        if rescale_factor is None:
+            rescale_factor = 1
+        for var, sv in iscale.badly_scaled_var_generator(self):
+            sf = iscale.get_scaling_factor(var)
+            iscale.unset_scaling_factor(var) # not sure I need to do this, but just to be safe
+            iscale.set_scaling_factor(var, sf / sv * rescale_factor)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -1058,24 +1101,26 @@ class NanofiltrationData(UnitModelBlockData):
                 break
 
         # setting scaling factors for variables
-        # for v in self.permeate_side[0, 0].flow_mass_phase_comp['Liq',:]:
-        #     iscale.set_scaling_factor(v, 1e+5)
+
 
         # Scale properties at permeate
-        for sb in (self.mixed_permeate, self.permeate_side):
+        for sb in (self.mixed_permeate, self.permeate_side, self.pore_entrance, self.pore_exit,
+                   self.feed_side.properties_interface):
             for blk in sb.values():
                 for j in self.config.property_package.solute_set:
-                    self._rescale_permeate_variable(blk.flow_mol_phase_comp['Liq', j],factor=1e4)
+                    self._rescale_sb_variable(blk.flow_mol_phase_comp['Liq', j], factor=5e4)
                     if blk.is_property_constructed('conc_mol_phase_comp'):
-                        self._rescale_permeate_variable(blk.conc_mol_phase_comp['Liq', j])
+                        self._rescale_sb_variable(blk.conc_mol_phase_comp['Liq', j], factor=1e5)
+                    if blk.is_property_constructed('conc_mol_phase_comp'):
+                        self._rescale_sb_variable(blk.mass_frac_phase_comp['Liq', j], factor=1e5)
                     if blk.is_property_constructed('mole_frac_phase_comp'):
-                        self._rescale_permeate_variable(blk.mole_frac_phase_comp['Liq', j])
+                        self._rescale_sb_variable(blk.mole_frac_phase_comp['Liq', j], factor=1e5)
+                    if blk.is_property_constructed('flow_mass_phase_comp'):
+                        self._rescale_sb_variable(blk.flow_mass_phase_comp['Liq', j], factor=1e4)
                     if blk.is_property_constructed('molality_comp'):
-                        self._rescale_permeate_variable(blk.molality_comp[j])
+                        self._rescale_sb_variable(blk.molality_comp[j])
                 if blk.is_property_constructed('pressure_osm'):
-                    self._rescale_permeate_variable(blk.pressure_osm)
-
-
+                    self._rescale_sb_variable(blk.pressure_osm)
 
         if iscale.get_scaling_factor(self.radius_pore) is None:
             iscale.set_scaling_factor(self.radius_pore, 1e10)
@@ -1095,9 +1140,12 @@ class NanofiltrationData(UnitModelBlockData):
                 else:
                     iscale.set_scaling_factor(v, 1e3)
 
-        for (t, x), v in self.electric_potential_grad_feed_interface.items():
+        for (t,x), v in self.electric_potential_grad_feed_interface.items():
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(v, 1)
+                if not x:
+                    iscale.set_scaling_factor(v, 1e2)
+                elif x:
+                    iscale.set_scaling_factor(v, 1e-1)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
@@ -1111,7 +1159,7 @@ class NanofiltrationData(UnitModelBlockData):
                         prop_feed = self.feed_side.properties_out[t]
                         prop_interface_io = self.feed_side.properties_interface[t, x]
 
-                    sf = 1000*(iscale.get_scaling_factor(prop_feed.dens_mass_phase['Liq'])
+                    sf = (iscale.get_scaling_factor(prop_feed.dens_mass_phase['Liq'])
                           / iscale.get_scaling_factor(prop_feed.mw_comp[j])
                           * iscale.get_scaling_factor(prop_feed.pressure)
                           * iscale.get_scaling_factor(self.radius_pore)**2
@@ -1156,6 +1204,8 @@ class NanofiltrationData(UnitModelBlockData):
         #     iscale.set_scaling_factor(self.recovery_vol_phase, 1)
 
         # # transforming constraints
+        # for ind, con in self.eq_interfacial_partitioning_feed.items():
+
         # for ind, c in self.feed_side.eq_isothermal.items():
         #     sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].temperature)
         #     iscale.constraint_scaling_transform(c, sf)
