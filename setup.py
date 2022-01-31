@@ -116,7 +116,7 @@ setup(
             # other requirements
             "linkify-it-py",
             "json-schema-for-humans",  # pretty JSON schema in HTML
-            "black<22",  # code formatting
+            "black<=21.12b0",  # code formatting
             # other requirements
             "pytest",  # test framework
             "pytest-cov",  # code coverage
