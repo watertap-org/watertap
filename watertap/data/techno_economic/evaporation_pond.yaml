@@ -8,10 +8,6 @@ default:
     value: 0
     units: dimensionless
   removal_frac_mass_solute:
-    alkalinity_as_caco3:
-      value: 0.98
-      units: dimensionless
-      constituent_longform: alkalinity_as_caco3
     aluminum:
       value: 0.98
       units: dimensionless
@@ -52,10 +48,6 @@ default:
       value: 0.98
       units: dimensionless
       constituent_longform: cyanide_as_free
-    electrical_conductivity:
-      value: 0.98
-      units: dimensionless
-      constituent_longform: electrical_conductivity
     fluoride:
       value: 0.98
       units: dimensionless
@@ -92,14 +84,10 @@ default:
       value: 0.98
       units: dimensionless
       constituent_longform: nitrate
-    nitrate_as_nitrogen:
+    nitrite:
       value: 0.98
       units: dimensionless
-      constituent_longform: nitrate_as_nitrogen
-    nitrite_as_nitrogen:
-      value: 0.98
-      units: dimensionless
-      constituent_longform: nitrite_as_nitrogen
+      constituent_longform: nitrite
     phosphates:
       value: 0.98
       units: dimensionless

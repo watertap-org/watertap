@@ -1,3 +1,5 @@
+aluminum:
+  constituent_longform: Aluminum
 arsenic:
   constituent_longform: Arsenic
 barium:
@@ -22,6 +24,8 @@ cod:
   constituent_longform: Chemical Oxygen Demand (COD)
 cryptosporidium:
   constituent_longform: Cryptosporidium
+cyanide_as_free:
+  constituent_longform: cyanide_as_free
 eeq:
   constituent_longform: Estradiol Equivalency (EEQ)
 electrical_conductivity:
@@ -40,6 +44,8 @@ hydroxide_alkalinity_as_caco3:
   constituent_longform: Hydroxide Alkalinity as CaCO3
 iron:
   constituent_longform: Iron
+lead:
+  constituent_longform: Lead
 magnesium:
   constituent_longform: Magnesium
 manganese:
@@ -50,6 +56,8 @@ molybdenum:
   constituent_longform: Molybdenum
 ndma:
   constituent_longform: N-nitrosodimethylamine (NDMA)
+nickel:
+  constituent_longform: Nickel
 nitrate:
   constituent_longform: Nitrate
 nitrite:
@@ -78,6 +86,8 @@ selenium:
   constituent_longform: Selenium
 silicon:
   constituent_longform: Silicon
+silver:
+  constituent_longform: Silver
 sodium:
   constituent_longform: Sodium
 strontium:
@@ -93,6 +103,8 @@ toc:
 total_coliforms_fecal_ecoli:
   constituent_longform: "Total Coliforms (including fecal coliform and\uFFFD E.\
     \ Coli)"
+trihalomethanes:
+  constituent_longform: Trihalomethanes
 tss:
   constituent_longform: Total Suspended Solids (TSS)
 turbidity:
