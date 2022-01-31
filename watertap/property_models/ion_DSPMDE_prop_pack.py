@@ -21,7 +21,7 @@ import idaes.logger as idaeslog
 from enum import Enum, auto
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, \
-    Var, Param, Suffix, value, check_optimal_termination, units as pyunits
+    Var, Param, Suffix, value, check_optimal_termination, units as pyunits, assert_optimal_termination
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -42,7 +42,7 @@ from idaes.core.util.misc import add_object_reference, extract_data
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom, \
     number_unfixed_variables
-from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 
 # Set up logger
@@ -113,7 +113,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         # reference
         # Todo: enter any relevant references
 
-
+        # TODO: consider turning parameters into variables for future param estimation
         # molecular weight
         self.mw_comp = Param(
             self.component_list,
@@ -266,7 +266,7 @@ class _DSPMDEStateBlock(StateBlock):
         for k in self.keys():
             dof = degrees_of_freedom(self[k])
             if dof != 0:
-                raise PropertyPackageError("\nWhile initializing {sb_name}, the degrees of freedom "
+                raise InitializationError("\nWhile initializing {sb_name}, the degrees of freedom "
                                            "are {dof}, when zero is required. \nInitialization assumes "
                                            "that the state variables should be fixed and that no other "
                                            "variables are fixed. \nIf other properties have a "
@@ -285,6 +285,8 @@ class _DSPMDEStateBlock(StateBlock):
             # Initialize properties
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = solve_indexed_blocks(opt, [self], tee=slc.tee)
+                if not assert_optimal_termination:
+                    raise InitializationError('The property package failed to solve during initialization.')
             init_log.info_high("Property initialization: {}.".format(idaeslog.condition(results)))
 
         # ---------------------------------------------------------------------
@@ -611,6 +613,7 @@ class DSPMDEStateBlockData(StateBlockData):
         """Create material flow terms for control volume."""
         return self.flow_mol_phase_comp[p, j]
 
+    # TODO: add enthalpy terms later
     # def get_enthalpy_flow_terms(self, p):
     #     """Create enthalpy flow terms."""
     #     return self.enth_flow
@@ -625,6 +628,7 @@ class DSPMDEStateBlockData(StateBlockData):
     def default_material_balance_type(self):
         return MaterialBalanceType.componentTotal
 
+    # TODO: augment model with energybalance later
     # def default_energy_balance_type(self):
     #     return EnergyBalanceType.enthalpyTotal
 
