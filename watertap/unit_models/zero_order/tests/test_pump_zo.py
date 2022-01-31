@@ -14,6 +14,7 @@
 Tests for zero-order nanofiltration model
 """
 import pytest
+from io import StringIO
 
 from pyomo.environ import ConcreteModel, Constraint, value, Var
 from pyomo.util.check_units import assert_units_consistent
@@ -94,12 +95,14 @@ class TestPumpZOdefault:
                 model.fs.unit.inlet.conc_mass_comp[0, j]), rel=1e-5) ==
                 value(model.fs.unit.outlet.conc_mass_comp[0, j]))
 
-        assert (pytest.approx(10*0.102398663*3600, rel=1e-5) ==
+        assert (pytest.approx(10*0.051*3600, rel=1e-5) ==
                 value(model.fs.unit.electricity[0]))
 
     @pytest.mark.component
-    def test_report(self, model, capsys):
-        model.fs.unit.report()
+    def test_report(self, model):
+        stream = StringIO()
+
+        model.fs.unit.report(ostream=stream)
 
         output = """
 ====================================================================================
@@ -109,9 +112,9 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                   : Value   : Fixed : Bounds
-       Electricity Demand :  3686.4 : False : (None, None)
-    Electricity Intensity : 0.10240 :  True : (None, None)
+    Key                   : Value    : Fixed : Bounds
+       Electricity Demand :   1836.0 : False : (None, None)
+    Electricity Intensity : 0.051000 :  True : (None, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -123,8 +126,7 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
 
-        captured = capsys.readouterr()
-        assert output in captured.out
+        assert output == stream.getvalue()
 
 
 db = Database()
