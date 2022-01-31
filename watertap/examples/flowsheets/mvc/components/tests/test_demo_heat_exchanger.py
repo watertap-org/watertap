@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
+import sys
 import pytest
 from watertap.examples.flowsheets.mvc.components.demo_heat_exchanger import main as main_heat_exchanger
 from idaes.core.util import get_solver
@@ -18,6 +19,7 @@ solver = get_solver()
 
 # -----------------------------------------------------------------------------
 @pytest.mark.component
+@pytest.mark.skipif(sys.platform.startswith("darwin"), reason="Heat exchanger needs complied IDAES extensions")
 def test_heat_exchanger(capsys):
     main_heat_exchanger()
     captured = capsys.readouterr()
