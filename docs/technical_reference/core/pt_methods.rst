@@ -36,12 +36,12 @@ The build_pt method constructs a simple representation of unit operation with a 
 Variables
 ---------
 
-The build_pt method creates no additional variables beyond to those created by the `StateBlocks`.
+The build_pt method creates no additional variables beyond those created by the `StateBlocks`.
 
 Constraints
 -----------
 
-The build_pt method writes no additional constraints beyond to those created by the `StateBlocks`.
+The build_pt method writes no additional constraints beyond those created by the `StateBlocks`.
 
 Module Documentation
 --------------------

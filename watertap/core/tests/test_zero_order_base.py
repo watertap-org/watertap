@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-Tests for general zero-order property package
+Tests for general zero-order base class
 """
 import pytest
 

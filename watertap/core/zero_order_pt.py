@@ -32,7 +32,7 @@ def build_pt(self):
     Helper method for constructing material balances for zero-order type models
     with pass-through behavior.
 
-    One StateBlocks is added with two corresponding Ports:
+    One StateBlock is added with two corresponding Ports:
         * properties
 
     No additional variables and constraints are created.
@@ -57,7 +57,7 @@ def build_pt(self):
 
     # Create Ports
     self.add_port("inlet", self.properties, doc="Inlet port")
-    self.add_port("outlet", self.properties, doc="Tutlet port")
+    self.add_port("outlet", self.properties, doc="Outlet port")
 
     self._stream_table_dict = {"Inlet": self.inlet,
                                "Outlet": self.outlet}
