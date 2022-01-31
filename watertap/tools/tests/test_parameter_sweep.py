@@ -431,7 +431,7 @@ class TestParallelManager():
 
         # Local output dict also contains the solve_status. The solve status is
         # based on the
-        local_output_dict['solve_status'] = [str(rank + 1) for i in range(local_num_cases)]
+        local_output_dict['solve_status'] = ['optimal' for i in range(local_num_cases)]
 
         # Get the global output dictionary, This is properly created only on rank 0
         global_output_dict = _create_global_output(local_output_dict, global_num_cases, comm)
@@ -444,7 +444,7 @@ class TestParallelManager():
                 assert global_output_dict == local_output_dict
             else:
                 test_array = np.repeat(np.arange(1,num_procs+1, dtype=float), 2)
-                test_list = [str(i) for i in test_array.astype(int)]
+                test_list = ['optimal' for i in range(global_num_cases)]
                 for key, value in global_output_dict.items():
                     if key != 'solve_status':
                         for subkey, subvalue in value.items():
