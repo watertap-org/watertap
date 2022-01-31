@@ -516,7 +516,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=100,
-            bounds=(1e-6, None),
+            bounds=(1e-8, None),
             units=pyunits.kg / pyunits.s,
             doc="Component Mass flowrate")
 
