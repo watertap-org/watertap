@@ -116,7 +116,8 @@ setup(
             # other requirements
             "linkify-it-py",
             "json-schema-for-humans",  # pretty JSON schema in HTML
-            "black",  # code formatting
+            # removing for now, black 22.1.0 needs click>=8.0.0, IDAES 1.13.0.dev0 wants click<=7.1.2
+            # "black",  # code formatting
             # other requirements
             "pytest",  # test framework
             "pytest-cov",  # code coverage
