@@ -1230,7 +1230,7 @@ def run_case3(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCaOH2 = 1e-20, xCa=1e-
     #       changes to the global solver options in WaterTAP)
     temp_config = {"constr_viol_tol": 1e-5,
                     "tol": 1e-5,
-                    "nlp_scaling_method": "user-scaling"}
+                   }
     model.fs.unit.initialize(optarg=temp_config, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
