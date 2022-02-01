@@ -65,21 +65,29 @@ class CoagulationParameterData(PhysicalParameterBlock):
         # components
         self.H2O = Component(default={"valid_phase_types": PhaseType.liquidPhase})
         self.TSS = Component(default={"valid_phase_types": PhaseType.liquidPhase})
+        self.TDS = Component(default={"valid_phase_types": PhaseType.liquidPhase})
 
-        # parameters
+        # ====== parameters ========
+        #   heat capacity of liquid
         self.cp = Param(mutable=False,
-                        initialize=4.2e3,
+                        initialize=4184,
                         units=pyunits.J / (pyunits.kg * pyunits.K))
 
-        dens_mass_param_dict = {('Liq','H2O'): 1000,
-                                ('Liq','TSS'): 1400}
-        self.dens_mass_param = Param(
-            dens_mass_param_dict.keys(),
+        #   reference density of liquid
+        self.ref_dens_liq = Param(
             domain=Reals,
-            initialize=dens_mass_param_dict,
+            initialize=1000,
             mutable=True,
             units=pyunits.kg / pyunits.m ** 3,
-            doc='Mass density parameters')
+            doc='Reference liquid mass density parameter')
+
+        #   reference density of solids
+        self.ref_dens_sol = Param(
+            domain=Reals,
+            initialize=2600,
+            mutable=True,
+            units=pyunits.kg / pyunits.m ** 3,
+            doc='Reference solid mass density parameter')
 
 
         # ---default scaling---
@@ -317,8 +325,9 @@ class CoagulationStateBlockData(StateBlockData):
 
         # first we create the state variables
         # the following dictionary is used for providing initial values in line 229
-        seawater_mass_frac_dict = {('Liq', 'TSS'): 50e-6,
-                                   ('Liq', 'H2O'): 0.965}
+        seawater_mass_frac_dict = {('Liq', 'TSS'): 25e-6,
+                                   ('Liq', 'H2O'): 0.965,
+                                   ('Liq', 'TDS'): 25e-6}
 
         self.flow_mass_phase_comp = Var(
             self.params.phase_list,
@@ -371,9 +380,12 @@ class CoagulationStateBlockData(StateBlockData):
             doc="Mass density")
 
         def rule_dens_mass_phase(b, p):
-            return (b.dens_mass_phase[p] ==
-                    sum(b.params.dens_mass_param[(p,i)] * b.mass_frac_phase_comp[p, i]
-                        for i in self.params.component_list))
+            if (p == 'Liq'):
+                return b.dens_mass_phase[p] == b.params.ref_dens_liq
+            elif (p == 'Sol'):
+                return b.dens_mass_phase[p] == b.params.ref_dens_sol
+            else:
+                raise PropertyPackageError("Unsupported phase for CoagulationParameterData property package")
         self.eq_dens_mass_phase = Constraint(self.params.phase_list, rule=rule_dens_mass_phase)
 
 
@@ -465,6 +477,10 @@ class CoagulationStateBlockData(StateBlockData):
         if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'TSS']) is None:
             sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'TSS'], default=1e5, warning=True)
             iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'TSS'], sf)
+
+        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'TDS']) is None:
+            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'TDS'], default=1e5, warning=True)
+            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'TDS'], sf)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
