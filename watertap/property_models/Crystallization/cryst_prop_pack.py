@@ -296,9 +296,11 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling('dens_mass_solute', 1e-3, index='Sol')
         self.set_default_scaling('dens_mass_solute', 1e-3, index='Liq')
         self.set_default_scaling('dens_mass_phase', 1e-3, index='Liq')
-        self.set_default_scaling('enth_mass_phase', 1e-1, index='Liq')
+        self.set_default_scaling('enth_mass_solvent', 1e-2, index='Liq')
+        self.set_default_scaling('enth_mass_solvent', 1e-3, index='Vap')
         self.set_default_scaling('cp_phase', 1e-3, index='Liq')
-        self.set_default_scaling('dh_vap', 1e-6)
+        self.set_default_scaling('dh_vap_solvent', 1e-3)
+        self.set_default_scaling('dh_crystallization', 1e-2, index='NaCl')
 
 
     @classmethod
@@ -573,7 +575,7 @@ class NaClStateBlockData(StateBlockData):
                                     self.params.component_list,
                                     domain=NonNegativeReals,
                                     initialize={('Liq', 'H2O'): 0.965, ('Liq', 'NaCl'): 0.035},
-                                    bounds=(0, None),  # upper bound set to None because of stability benefits
+                                    bounds=(0, 1.0001),  # upper bound set to None because of stability benefits
                                     units=pyunits.dimensionless,
                                     doc='Mass fraction')
 
@@ -606,7 +608,7 @@ class NaClStateBlockData(StateBlockData):
     def _solubility_mass_frac_phase_comp(self):
         self.solubility_mass_frac_phase_comp = Var(['Liq'], ['NaCl'],
                                 domain = NonNegativeReals,
-                                bounds = (0, 1),
+                                bounds = (0, 1.0001),
                                 initialize = 0.5,
                                 units = pyunits.dimensionless,
                                 doc="solubility (as mass fraction) of NaCl in water")
@@ -623,7 +625,7 @@ class NaClStateBlockData(StateBlockData):
     def _dens_mass_solvent(self):
         self.dens_mass_solvent = Var(['Liq', 'Vap'],
             initialize=1e3,
-            bounds=(1e-4, 1e6),
+            bounds=(1e-4, 1e4),
             units=pyunits.kg*pyunits.m**-3,
             doc="Mass density of pure water")
 
@@ -647,7 +649,7 @@ class NaClStateBlockData(StateBlockData):
     def _dens_mass_solute(self):
         self.dens_mass_solute = Var(['Sol', 'Liq'],
             initialize=1e3,
-            bounds=(1e-4, 1e6),
+            bounds=(1e-4, 1e4),
             units=pyunits.kg*pyunits.m**-3,
             doc="Mass density of solid NaCl crystals")
 
@@ -684,14 +686,15 @@ class NaClStateBlockData(StateBlockData):
     def _dh_vap_solvent(self):
         self.dh_vap_solvent = Var(
             initialize=2.4e3,
-            bounds=(1, 1e9),
-            units=pyunits.J/pyunits.kg,
+            bounds=(1, 1e5),
+            units=pyunits.kJ/pyunits.kg,
             doc="Latent heat of vaporization of pure water")
 
         def rule_dh_vap_solvent(b):
             t = b.temperature - 273.15 * pyunits.K
-            return b.dh_vap_solvent == b.params.dh_vap_w_param_0 + b.params.dh_vap_w_param_1 * t + b.params.dh_vap_w_param_2 * t**2 \
+            dh_vap_sol = b.params.dh_vap_w_param_0 + b.params.dh_vap_w_param_1 * t + b.params.dh_vap_w_param_2 * t**2 \
                        + b.params.dh_vap_w_param_3 * t**3 + b.params.dh_vap_w_param_4 * t**4
+            return b.dh_vap_solvent == pyunits.convert(dh_vap_sol, to_units=pyunits.kJ / pyunits.kg)
 
         self.eq_dh_vap_solvent = Constraint(rule=rule_dh_vap_solvent)
 
@@ -701,7 +704,7 @@ class NaClStateBlockData(StateBlockData):
         self.cp_solvent = Var(
             ['Liq', 'Vap'],
             initialize=4e3,
-            bounds=(1e-8, 1e8),
+            bounds=(1e-5, 1e5),
             units=pyunits.J / pyunits.kg / pyunits.K,
             doc="Specific heat capacity of pure solvent")
 
@@ -730,7 +733,7 @@ class NaClStateBlockData(StateBlockData):
     def _cp_solute(self):
         self.cp_solute = Var(['Liq', 'Sol'],
             initialize=1e3,
-            bounds=(-1e4, 1e6),
+            bounds=(-1e4, 1e5),
             units=pyunits.J / pyunits.kg / pyunits.K,
             doc="Specific heat capacity of solid NaCl crystals")
 
@@ -757,7 +760,7 @@ class NaClStateBlockData(StateBlockData):
         self.cp_phase = Var(
             ['Liq'],
             initialize=4e3,
-            bounds=(1e-8, 1e8),
+            bounds=(1e-4, 1e5),
             units=pyunits.J/pyunits.kg/pyunits.K,
             doc="Specific heat capacity of liquid solution")
 
@@ -876,8 +879,8 @@ class NaClStateBlockData(StateBlockData):
     # 16. Specific enthalpy of solvent (pure water in liquid and vapour phases)
     def _enth_mass_solvent(self):
         self.enth_mass_solvent = Var(['Liq', 'Vap'],
-            initialize=1e6,
-            bounds=(1, 1e9),
+            initialize=1e3,
+            bounds=(1, 1e4),
             units=pyunits.kJ * pyunits.kg ** -1,
             doc="Specific saturated enthalpy of pure solvent")
 
@@ -891,7 +894,7 @@ class NaClStateBlockData(StateBlockData):
                 return b.enth_mass_solvent[p] == pyunits.convert(h_w, to_units=pyunits.kJ * pyunits.kg ** -1) 
             elif p =='Vap':
                 
-                return b.enth_mass_solvent[p] ==pyunits.convert((h_w + b.dh_vap_solvent), to_units=pyunits.kJ * pyunits.kg ** -1) 
+                return b.enth_mass_solvent[p] ==pyunits.convert(h_w, to_units=pyunits.kJ * pyunits.kg ** -1) + + b.dh_vap_solvent
  
         self.eq_enth_mass_solvent = Constraint(['Liq', 'Vap'], rule=rule_enth_mass_solvent)
 
@@ -940,7 +943,7 @@ class NaClStateBlockData(StateBlockData):
         self.dh_crystallization = Var(
             ['NaCl'],
             initialize=1,
-            bounds=(-1e4, 1e4),
+            bounds=(-1e3, 1e3),
             units=pyunits.kJ/pyunits.kg,
             doc="NaCl heat of crystallization")
 
@@ -959,7 +962,7 @@ class NaClStateBlockData(StateBlockData):
     def _enth_mass_solute(self):
         self.enth_mass_solute = Var(['Sol'],
             initialize=1e3,
-            bounds=(1e-3, 1e6),
+            bounds=(1e-3, 1e4),
             units=pyunits.kJ / pyunits.kg,
             doc="Specific enthalpy of solid NaCl crystals")
 
@@ -1024,7 +1027,7 @@ class NaClStateBlockData(StateBlockData):
     #     self.eq_vol_frac_phase = Constraint(['Liq', 'Sol'], rule=rule_vol_frac_phase)
 
 
-    # 22. Molar flows
+    # 21. Molar flows
     def _flow_mol_phase_comp(self):
         self.flow_mol_phase_comp = Var(
             self.params.phase_list,
@@ -1042,13 +1045,13 @@ class NaClStateBlockData(StateBlockData):
         self.eq_flow_mol_phase_comp = Constraint(self.params.phase_list, self.params.component_list, rule=rule_flow_mol_phase_comp)
 
 
-    # Mole fractions
+    # 22. Mole fractions
     def _mole_frac_phase_comp(self):
         self.mole_frac_phase_comp = Var(
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds = (0, None),
+            bounds = (0, 1.0001),
             units=pyunits.dimensionless,
             doc="Mole fraction")
 
@@ -1127,10 +1130,14 @@ class NaClStateBlockData(StateBlockData):
                 iscale.set_scaling_factor(self.params.mw_comp, 1e-1)
 
         # Scaling for solubility (g/L) parameters. Values typically about 300-500, so scale by 1e-3.
-        # Use user-supplied scaling if available.
         if self.is_property_constructed('solubility_mass_phase_comp'):
             if iscale.get_scaling_factor(self.solubility_mass_phase_comp) is None:
                 iscale.set_scaling_factor(self.solubility_mass_phase_comp, 1e-3)
+
+        # Scaling for solubility mass fraction. Values typically about 0-1, so scale by 1e0.
+        if self.is_property_constructed('solubility_mass_frac_phase_comp'):
+            if iscale.get_scaling_factor(self.solubility_mass_frac_phase_comp) is None:
+                iscale.set_scaling_factor(self.solubility_mass_frac_phase_comp, 1e0)
 
         # Scaling for flow_vol_phase: scaled as scale of dominant component in phase / density of phase
         if self.is_property_constructed('flow_vol_phase'):
@@ -1156,68 +1163,190 @@ class NaClStateBlockData(StateBlockData):
             sf = iscale.get_scaling_factor(self.flow_vol_phase)
             iscale.set_scaling_factor(self.flow_vol, sf)
 
+        # Scaling material heat capacities
+        if self.is_property_constructed('cp_solute'):
+            for p in ['Sol', 'Liq']:
+                if iscale.get_scaling_factor(self.cp_solute) is None:
+                    iscale.set_scaling_factor(self.cp_solute[p], iscale.get_scaling_factor(self.cp_phase['Liq']))
+
+        if self.is_property_constructed('cp_solvent'):
+            for p in ['Vap', 'Liq']:
+                if iscale.get_scaling_factor(self.cp_solvent) is None:
+                    iscale.set_scaling_factor(self.cp_solvent[p], iscale.get_scaling_factor(self.cp_phase['Liq']))
+
+        # Scaling saturation temperature
+        if self.is_property_constructed('temperature_sat_solvent'):
+            if iscale.get_scaling_factor(self.temperature_sat_solvent) is None:
+                iscale.set_scaling_factor(self.temperature_sat_solvent, iscale.get_scaling_factor(self.temperature))
+
+        # Scaling solute and solvent enthalpies
+        if self.is_property_constructed('enth_mass_solute'):
+            if iscale.get_scaling_factor(self.enth_mass_solute) is None:
+                iscale.set_scaling_factor(self.enth_mass_solute['Sol'], iscale.get_scaling_factor(self.enth_mass_solvent['Liq']))
+
+        if self.is_property_constructed('enth_mass_phase'):
+            if iscale.get_scaling_factor(self.enth_mass_phase) is None:
+                iscale.set_scaling_factor(self.enth_mass_phase['Liq'], iscale.get_scaling_factor(self.enth_mass_solvent['Liq']))
+
+
+        # Scaling enthapy flow - not sure about this one
+        if self.is_property_constructed('enth_flow'):
+            iscale.set_scaling_factor(self.enth_flow,
+                                      iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'])
+                                      * iscale.get_scaling_factor(self.enth_mass_phase['Liq']))
+
+        # Scaling molar flows - derived from flow_mass
+        if self.is_property_constructed('flow_mol_phase_comp'):
+            for p in self.params.phase_list:
+                for j in self.params.component_list:
+                    if iscale.get_scaling_factor(self.flow_mol_phase_comp[p, j]) is None:
+                        sf = iscale.get_scaling_factor(self.flow_mass_phase_comp[p, j])
+                        sf *= iscale.get_scaling_factor(self.params.mw_comp[j])
+                        iscale.set_scaling_factor(self.flow_mol_phase_comp[p, j], sf)
+
+
+        ######################################################
+        # Scaling for mass fractions - needs verification!
+        if self.is_property_constructed('mass_frac_phase_comp'):
+            # Option 1: 
+            for p in self.params.phase_list:
+                for j in self.params.component_list:
+                    if iscale.get_scaling_factor(self.mass_frac_phase_comp[p, j]) is None:
+                        if p == 'Sol':
+                            if j == 'NaCl':
+                                iscale.set_scaling_factor(self.mass_frac_phase_comp[p, j], 1e0)
+                            else:
+                                sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp[p, j])
+                              / iscale.get_scaling_factor(self.flow_mass_phase_comp[p, 'NaCl']))
+                                iscale.set_scaling_factor(self.mass_frac_phase_comp[p, j], sf)
+                        else:
+                            if j == 'NaCl':
+                                sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp[p, j])
+                              / iscale.get_scaling_factor(self.flow_mass_phase_comp[p, 'H2O']))
+                                iscale.set_scaling_factor(self.mass_frac_phase_comp[p, j], sf)
+                            elif j == 'H2O':
+                                iscale.set_scaling_factor(self.mass_frac_phase_comp[p, j], 1e0)
+
+
+            # # Option 2: 
+            # sf_flow_mass_liq = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'])
+            # sf_flow_mass_vap = iscale.get_scaling_factor(self.flow_mass_phase_comp['Vap', 'H2O'])
+            # sf_flow_mass_sol = iscale.get_scaling_factor(self.flow_mass_phase_comp['Sol', 'NaCl'])
+            # sf_flow_mass = min(sf_flow_mass_liq, sf_flow_mass_vap, sf_flow_mass_sol)
+
+            # for p in self.params.phase_list:
+            #     for j in self.params.component_list:
+            #         if iscale.get_scaling_factor(self.mass_frac_phase_comp[p, j]) is None:
+            #             sf = iscale.get_scaling_factor(self.flow_mass_phase_comp[p, j]) / sf_flow_mass
+            #             print('iter:', p, sf)
+            #             iscale.set_scaling_factor(self.mass_frac_phase_comp[p, j], sf)
+
+
+
+        # Scaling for mole fractions - same approach as mass fractions - needs verification!
+        # Appears to make things worse!
+        if self.is_property_constructed('mole_frac_phase_comp'):
+            # Option 1: 
+            for p in self.params.phase_list:
+                for j in self.params.component_list:
+                    if iscale.get_scaling_factor(self.mole_frac_phase_comp[p, j]) is None:
+                        if p == 'Sol':
+                            if j == 'NaCl':
+                                iscale.set_scaling_factor(self.mole_frac_phase_comp[p, j], 1e0)
+                            else:
+                                sf = (iscale.get_scaling_factor(self.flow_mol_phase_comp[p, j])
+                              / iscale.get_scaling_factor(self.flow_mol_phase_comp[p, 'NaCl']))
+                                iscale.set_scaling_factor(self.mole_frac_phase_comp[p, j], sf)
+                        else:
+                            if j == 'NaCl':
+                                sf = (iscale.get_scaling_factor(self.flow_mol_phase_comp[p, j])
+                              / iscale.get_scaling_factor(self.flow_mol_phase_comp[p, 'H2O']))
+                                iscale.set_scaling_factor(self.mole_frac_phase_comp[p, j], sf)
+                            elif j == 'H2O':
+                                iscale.set_scaling_factor(self.mole_frac_phase_comp[p, j], 1e0)
+
+
+            # # Option 2: 
+            # sf_flow_mol_liq = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O'])
+            # sf_flow_mol_vap = iscale.get_scaling_factor(self.flow_mol_phase_comp['Vap', 'H2O'])
+            # sf_flow_mol_sol = iscale.get_scaling_factor(self.flow_mol_phase_comp['Sol', 'NaCl'])
+            # sf_flow_mol = min(sf_flow_mol_liq, sf_flow_mol_vap, sf_flow_mol_sol)
+
+            # for p in self.params.phase_list:
+            #     for j in self.params.component_list:
+            #         if iscale.get_scaling_factor(self.mole_frac_phase_comp[p, j]) is None:
+            #             sf = iscale.get_scaling_factor(self.flow_mol_phase_comp[p, j]) / sf_flow_mol
+            #             print('iter:', p, sf)
+            #             iscale.set_scaling_factor(self.mole_frac_phase_comp[p, j], sf)
+
+        ########################################################
+
+        # Scaling for mass concentrations
+        if self.is_property_constructed('conc_mass_phase_comp'):
+            for j in self.params.component_list:
+                sf_dens = iscale.get_scaling_factor(self.dens_mass_phase['Liq'])
+                if iscale.get_scaling_factor(self.conc_mass_phase_comp['Liq', j]) is None:
+                    if j == 'H2O':
+                        iscale.set_scaling_factor(self.conc_mass_phase_comp['Liq', j], sf_dens)
+                    elif j == 'NaCl':
+                        iscale.set_scaling_factor(self.conc_mass_phase_comp['Liq', j], \
+                            sf_dens * iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j])
+                            )
 
 
 
 
+        # Transforming constraints
+        # property relationships with no index, simple constraint
+        v_str_lst_simple = ['pressure_sat', 'dh_vap_solvent', 'temperature_sat_solvent']
+        for v_str in v_str_lst_simple:
+            if self.is_property_constructed(v_str):
+                v = getattr(self, v_str)
+                sf = iscale.get_scaling_factor(v, default=1, warning=True)
+                c = getattr(self, 'eq_' + v_str)
+                iscale.constraint_scaling_transform(c, sf)
 
+        # Property relationships with phase index, but simple constraint
+        v_str_lst_phase = ['dens_mass_phase', 'enth_mass_phase',  'cp_phase']
+        for v_str in v_str_lst_phase:
+            if self.is_property_constructed(v_str):
+                v = getattr(self, v_str)
+                sf = iscale.get_scaling_factor(v['Liq'], default=1, warning=True)
+                c = getattr(self, 'eq_' + v_str)
+                iscale.constraint_scaling_transform(c, sf)
 
+        # Property relationship indexed by component
+        v_str_lst_comp = ['solubility_mass_phase_comp', 'solubility_mass_frac_phase_comp', 'conc_mass_phase_comp']
+        for v_str in v_str_lst_comp:
+            if self.is_property_constructed(v_str):
+                v_comp = getattr(self, v_str)
+                c_comp = getattr(self, 'eq_' + v_str)
+                for j, c in c_comp.items():
+                    sf = iscale.get_scaling_factor(v_comp['Liq', j], default=1, warning=True)
+                    iscale.constraint_scaling_transform(c, sf)
 
+        # Property relationship indexed by single component
+        if self.is_property_constructed('dh_crystallization'):
+            sf = iscale.get_scaling_factor(self.dh_crystallization['NaCl'])
+            iscale.constraint_scaling_transform(self.eq_dh_crystallization, sf)
 
+        # Property relationships with phase index and indexed constraints
+        v_str_lst_phase = ['dens_mass_solvent', 'dens_mass_solute', 'flow_vol_phase', \
+                           'enth_mass_solvent', 'enth_mass_solute', 'cp_solvent', 'cp_solute']
+        for v_str in v_str_lst_phase:
+            if self.is_property_constructed(v_str):
+                v = getattr(self, v_str)
+                c_phase = getattr(self, 'eq_' + v_str)
+                for (ind, c) in c_phase.items():
+                    sf = iscale.get_scaling_factor(v[ind], default=1, warning=True)
+                    iscale.constraint_scaling_transform(c, sf)
 
-
-
-
-
-
-        # if self.is_property_constructed('dens_mass_phase'):
-        #     sf = iscale.get_scaling_factor(self.dens_mass_phase['Liq'])
-        #     iscale.constraint_scaling_transform(self.eq_dens_mass_phase, sf)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# def nacl_solubility_function():
-#     import numpy as np 
-#     from idaes.surrogate.pysmo import polynomial_regression as pr 
-#     from matplotlib import pyplot as plt
-
-#     # Data
-#     sol_data = np.array([ [0, 356.5], [10, 357.2], [20, 358.9], [30, 360.9], [40, 363.7], [60, 370.4], [80, 379.3], [100, 389.9] ])
-#     sol_data[:, 0] = sol_data[:, 0] + 273.15
-
-#     # Model training
-#     model = pr.PolynomialRegression(sol_data, sol_data, maximum_polynomial_order = 2, number_of_crossvalidations=10, training_split=0.9, overwrite=True, fname='nacl_sol.pickle')
-#     model.get_feature_vector()
-#     model.training()
-
-#     # Model validation - eye test
-#     xrange = np.linspace(273.15, 373.15, 101)
-#     xrange = xrange.reshape(xrange.shape[0], 1)
-#     y_pred = model.predict_output(xrange)
-#     plt.plot(sol_data[:, 0], sol_data[:, 1], 'o', label='training points')
-#     plt.plot(xrange, y_pred, label='Surrogate function')
-#     plt.show()
-
-#     return model
+        # Property relationships indexed by component and phase
+        v_str_lst_phase_comp = ['mass_frac_phase_comp', 'flow_mol_phase_comp', 'mole_frac_phase_comp']
+        for v_str in v_str_lst_phase_comp:
+            if self.is_property_constructed(v_str):
+                v_comp = getattr(self, v_str)
+                c_comp = getattr(self, 'eq_' + v_str)
+                for j, c in c_comp.items():
+                    sf = iscale.get_scaling_factor(v_comp[j], default=1, warning=True)
+                    iscale.constraint_scaling_transform(c, sf)
