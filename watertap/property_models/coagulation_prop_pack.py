@@ -76,10 +76,55 @@ class CoagulationParameterData(PhysicalParameterBlock):
         #   reference density of liquid
         self.ref_dens_liq = Param(
             domain=Reals,
-            initialize=1000,
+            initialize=999.26,
             mutable=True,
             units=pyunits.kg / pyunits.m ** 3,
-            doc='Reference liquid mass density parameter')
+            doc='Reference water mass density parameter @ 0 oC and no salts')
+
+        #   change in liquid density with increasing mass fraction of salts (approximate behavior)
+        self.dens_slope = Param(
+            domain=Reals,
+            initialize=879.04,
+            mutable=True,
+            units=pyunits.kg / pyunits.m ** 3,
+            doc='Relative increase in liquid density with mass fraction of salts')
+
+        #   adjustment parameters for density change with temperature
+        self.dens_param_A = Param(
+            domain=Reals,
+            initialize=-2.9335E-6,
+            mutable=True,
+            units=pyunits.K**-2,
+            doc='Density correction parameter A for temperature variation')
+
+        self.dens_param_B = Param(
+            domain=Reals,
+            initialize=0.001529811,
+            mutable=True,
+            units=pyunits.K**-1,
+            doc='Density correction parameter B for temperature variation')
+
+        self.dens_param_C = Param(
+            domain=Reals,
+            initialize=0.787973,
+            mutable=True,
+            units=pyunits.dimensionless,
+            doc='Density correction parameter C for temperature variation')
+
+        #   Correction factors for changes in density with changes in pressure
+        self.ref_pressure_correction = Param(
+            domain=Reals,
+            initialize=1.0135,
+            mutable=True,
+            units=pyunits.dimensionless,
+            doc='Density reference correction parameter for changes in pressure')
+
+        self.ref_pressure_slope = Param(
+            domain=Reals,
+            initialize=4.9582E-10,
+            mutable=True,
+            units=pyunits.Pa**-1,
+            doc='Slope of density change as a function of pressure')
 
         #   reference density of solids
         self.ref_dens_sol = Param(
@@ -87,7 +132,7 @@ class CoagulationParameterData(PhysicalParameterBlock):
             initialize=2600,
             mutable=True,
             units=pyunits.kg / pyunits.m ** 3,
-            doc='Reference solid mass density parameter')
+            doc='Reference dry solid mass density parameter')
 
 
         # ---default scaling---
@@ -366,9 +411,12 @@ class CoagulationStateBlockData(StateBlockData):
             doc='Mass fraction')
 
         def rule_mass_frac_phase_comp(b, p, j):
-            return (b.mass_frac_phase_comp[p, j] == b.flow_mass_phase_comp[p, j] /
+            if (p == 'Liq'):
+                return (b.mass_frac_phase_comp[p, j] == b.flow_mass_phase_comp[p, j] /
                     sum(b.flow_mass_phase_comp[p, i]
                         for i in self.params.component_list))
+            else:
+                return (b.mass_frac_phase_comp[p, j] == 1.0)
         self.eq_mass_frac_phase_comp = Constraint(self.params.phase_list, self.params.component_list, rule=rule_mass_frac_phase_comp)
 
     def _dens_mass_phase(self):
@@ -381,7 +429,12 @@ class CoagulationStateBlockData(StateBlockData):
 
         def rule_dens_mass_phase(b, p):
             if (p == 'Liq'):
-                return b.dens_mass_phase[p] == b.params.ref_dens_liq
+                return (b.dens_mass_phase[p] == (b.params.ref_dens_liq +
+                            b.params.dens_slope * b.mass_frac_phase_comp['Liq', 'TDS'] +
+                            b.params.dens_slope * b.mass_frac_phase_comp['Liq', 'TSS']) *
+                            (b.params.dens_param_A * b.temperature**2 + b.params.dens_param_B *
+                            b.temperature + b.params.dens_param_C) * (b.params.ref_pressure_correction +
+                            b.params.ref_pressure_slope * b.pressure) )
             elif (p == 'Sol'):
                 return b.dens_mass_phase[p] == b.params.ref_dens_sol
             else:
