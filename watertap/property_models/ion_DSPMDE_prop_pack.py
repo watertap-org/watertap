@@ -729,7 +729,7 @@ class DSPMDEStateBlockData(StateBlockData):
         def rule_pressure_osm(b):
             return (b.pressure_osm ==
                     sum(b.molality_comp[j] for j in self.params.solute_set)
-                    * b.dens_mass_comp['H2O'] * Constants.gas_constant * b.temperature)
+                    * b.dens_mass_solvent * Constants.gas_constant * b.temperature)
         self.eq_pressure_osm = Constraint(rule=rule_pressure_osm)
 
     # -----------------------------------------------------------------------------

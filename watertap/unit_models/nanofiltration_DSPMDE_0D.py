@@ -419,7 +419,7 @@ class NanofiltrationData(UnitModelBlockData):
                          doc="Volumetric water flux at inlet and outlet")
         def flux_vol_water(b, t, x):
             prop = b.feed_side.properties_in[t]
-            return b.flux_mol_phase_comp[t, x, 'Liq', 'H2O'] * prop.mw_comp['H2O'] / prop.dens_mass_comp['H2O']
+            return b.flux_mol_phase_comp[t, x, 'Liq', 'H2O'] * prop.mw_comp['H2O'] / prop.dens_mass_solvent
 
         # Average Volumetric Water Flux ------------------------------------#
         @self.Expression(self.flowsheet().config.time,
@@ -621,12 +621,13 @@ class NanofiltrationData(UnitModelBlockData):
 
         # 13. Mass transfer equal to permeate flow terms; mole_flow,perm final = -dMf = Javg * area
         @self.Constraint(self.flowsheet().config.time,
-                         self.config.property_package.phase_list,
+                         phase_list,
                          solvent_solute_set,
                          doc="Permeate production/average mass transfer constraint")
         def eq_permeate_production(b, t, p, j):
-            return (b.mixed_permeate[t].get_material_flow_terms(p, j)
-                    == b.flux_mol_phase_comp_avg[t, p, j] * b.area)
+            if b.mixed_permeate[0].get_material_flow_basis() == MaterialFlowBasis.molar:
+                return (b.mixed_permeate[t].get_material_flow_terms(p, j)
+                        == b.flux_mol_phase_comp_avg[t, p, j] * b.area)
 
 
         # 14. Mole component recovery rate
@@ -645,14 +646,15 @@ class NanofiltrationData(UnitModelBlockData):
                     * b.feed_side.properties_in[t].flow_vol_phase[p]
                     == b.mixed_permeate[t].flow_vol_phase[p])
 
-        # 16. Observed rejection rate
+        # 16. Intrinsic rejection rate
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
                          solute_set,
-                         doc="Observed solute rejection")
+                         doc="Intrinsic solute rejection")
         def eq_rejection_phase_comp(b, t, p, j):
             return (b.mixed_permeate[t].conc_mol_phase_comp['Liq', j]
-                    == b.feed_side.properties_in[t].conc_mol_phase_comp['Liq', j]
+                    == 0.5 *(b.feed_side.properties_interface[t, 0].conc_mol_phase_comp['Liq', j] +
+                             b.feed_side.properties_interface[t, 1].conc_mol_phase_comp['Liq', j])
                     * (1 - b.rejection_phase_comp[t, p, j]))
 
         # TODO: seems stale since temperature unused at pore entrance/exit- confirm+remove;
@@ -874,7 +876,7 @@ class NanofiltrationData(UnitModelBlockData):
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args['interface_out'], )
+            state_args=state_args['interface_in'], )
         blk.permeate_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
@@ -889,7 +891,7 @@ class NanofiltrationData(UnitModelBlockData):
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args['interface_out'],)
+            state_args=state_args['interface_in'],)
         blk.pore_exit.initialize(
             outlvl=outlvl,
             optarg=optarg,
@@ -1028,9 +1030,9 @@ class NanofiltrationData(UnitModelBlockData):
         if 'solvent_recovery' not in initialize_guess:
             initialize_guess['solvent_recovery'] = 0.25
         if 'solute_recovery' not in initialize_guess:
-            initialize_guess['solute_recovery'] = 0.1
+            initialize_guess['solute_recovery'] = 0.25
         if 'cp_modulus' not in initialize_guess:
-            initialize_guess['cp_modulus'] = 1
+            initialize_guess['cp_modulus'] = 1.1
 
         if state_args is None:
             state_args = {}
