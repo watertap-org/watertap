@@ -54,6 +54,10 @@ import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
+#TODO: Before trying to validate:
+# -Add Davies Model to prop pack to compute activity coefficients
+# -Add constraints for computing mass transfer coefficient
+# -Add constraints for computing pressure drop in spiral wound membrane
 
 @declare_process_block_class("NanofiltrationDSPMDE0D")
 class NanofiltrationData(UnitModelBlockData):
@@ -653,8 +657,7 @@ class NanofiltrationData(UnitModelBlockData):
                          doc="Intrinsic solute rejection")
         def eq_rejection_phase_comp(b, t, p, j):
             return (b.mixed_permeate[t].conc_mol_phase_comp['Liq', j]
-                    == 0.5 *(b.feed_side.properties_interface[t, 0].conc_mol_phase_comp['Liq', j] +
-                             b.feed_side.properties_interface[t, 1].conc_mol_phase_comp['Liq', j])
+                    == b.feed_side.properties_interface[t, 0].conc_mol_phase_comp['Liq', j]
                     * (1 - b.rejection_phase_comp[t, p, j]))
 
         # TODO: seems stale since temperature unused at pore entrance/exit- confirm+remove;
