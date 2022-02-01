@@ -391,11 +391,22 @@ class TestWaterStoich(object):
         orig_fixed_vars = fixed_variables_set(m)
         orig_act_consts = activated_constraints_set(m)
 
-        # Temporary fix: Error in initialize that causes changes in dof map 
-        try:
-            m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-        except:
-            pass
+        #   Manually fix the unknown inlet and force unfix the known outlets
+        #       This customization is REQUIRED for StoichiometricReactor
+        #       since IDAES assumes that inlets are knowns during a solve
+        m.fs.unit.inlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.0000006 )
+        m.fs.unit.outlet.mole_frac_comp[0, "Ca(OH)2"].unfix()
+        m.fs.unit.outlet.mole_frac_comp[0, "Ca(HCO3)2"].unfix()
+        m.fs.unit.outlet.mole_frac_comp[0, "Mg(HCO3)2"].unfix()
+
+        m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+
+        #   Undo the fixing we just did and return all values to there
+        #       original states
+        m.fs.unit.outlet.mole_frac_comp[0, "Ca(OH)2"].fix( 0.0000003 )
+        m.fs.unit.inlet.mole_frac_comp[0, "Ca(OH)2"].unfix()
+        m.fs.unit.outlet.mole_frac_comp[0, "Ca(HCO3)2"].fix( 0.000015 )
+        m.fs.unit.outlet.mole_frac_comp[0, "Mg(HCO3)2"].fix( 0.000015 )
 
         fin_fixed_vars = fixed_variables_set(m)
         fin_act_consts = activated_constraints_set(m)
@@ -410,7 +421,7 @@ class TestWaterStoich(object):
     def test_solve(self, water_stoich):
         m = water_stoich
         solver.options['max_iter'] = 4000
-        results = solver.solve(m)
+        results = solver.solve(m, tee=True)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
