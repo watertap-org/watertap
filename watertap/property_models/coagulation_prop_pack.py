@@ -61,11 +61,13 @@ class CoagulationParameterData(PhysicalParameterBlock):
 
         # phases
         self.Liq = LiquidPhase()
+        self.Sol = SolidPhase()
 
         # components
         self.H2O = Component(default={"valid_phase_types": PhaseType.liquidPhase})
         self.TSS = Component(default={"valid_phase_types": PhaseType.liquidPhase})
         self.TDS = Component(default={"valid_phase_types": PhaseType.liquidPhase})
+        self.Sludge = Component(default={"valid_phase_types": PhaseType.solidPhase})
 
         # ====== parameters ========
         #   heat capacity of liquid
@@ -372,26 +374,27 @@ class CoagulationStateBlockData(StateBlockData):
         # the following dictionary is used for providing initial values in line 229
         self.seawater_mass_frac_dict = {('Liq', 'TSS'): 25e-6,
                                    ('Liq', 'H2O'): 0.965,
-                                   ('Liq', 'TDS'): 25e-6}
+                                   ('Liq', 'TDS'): 25e-6,
+                                   ('Sol', 'Sludge'): 1}
 
         self.flow_mass_phase_comp = Var(
             self.seawater_mass_frac_dict.keys(),
             initialize=self.seawater_mass_frac_dict,
-            bounds=(1e-8, 100),
+            bounds=(1e-16, 1000),
             domain=NonNegativeReals,
             units=pyunits.kg/pyunits.s,
             doc='Mass flow rate')
 
         self.temperature = Var(
             initialize=298.15,
-            bounds=(273.15, 1000),
+            bounds=(273.15, 700),
             domain=NonNegativeReals,
             units=pyunits.degK,
             doc='State temperature')
 
         self.pressure = Var(
             initialize=101325,
-            bounds=(1e5, 5e7),
+            bounds=(0.9e5, 3e7),
             domain=NonNegativeReals,
             units=pyunits.Pa,
             doc='State pressure')
@@ -403,8 +406,8 @@ class CoagulationStateBlockData(StateBlockData):
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
             self.seawater_mass_frac_dict.keys(),
-            initialize=0.1,
-            bounds=(1e-8, None),
+            initialize=self.seawater_mass_frac_dict,
+            bounds=(1e-16, None),
             units=pyunits.dimensionless,
             doc='Mass fraction')
 
@@ -422,8 +425,8 @@ class CoagulationStateBlockData(StateBlockData):
     def _dens_mass_phase(self):
         self.dens_mass_phase = Var(
             self.params.phase_list,
-            initialize=1e3,
-            bounds=(5e2, 2e3),
+            initialize={'Liq': 1000, 'Sol': 2600},
+            bounds=(5e2, 2e4),
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density")
 
@@ -445,8 +448,8 @@ class CoagulationStateBlockData(StateBlockData):
     def _flow_vol_phase(self):
         self.flow_vol_phase = Var(
             self.params.phase_list,
-            initialize=1e-3,
-            bounds=(1e-8, None),
+            initialize=1,
+            bounds=(1e-16, None),
             units=pyunits.m**3/pyunits.s,
             doc="Volumetric flow rate")
 
@@ -466,8 +469,8 @@ class CoagulationStateBlockData(StateBlockData):
     def _conc_mass_phase_comp(self):
         self.conc_mass_phase_comp = Var(
             self.seawater_mass_frac_dict.keys(),
-            initialize=1,
-            bounds=(1e-8, None),
+            initialize=self.seawater_mass_frac_dict,
+            bounds=(1e-16, None),
             units=pyunits.kg/pyunits.m**3,
             doc="Molar flowrate")
 
@@ -541,8 +544,13 @@ class CoagulationStateBlockData(StateBlockData):
             sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'TDS'], default=1e2, warning=True)
             iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'TDS'], sf)
 
+        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Sol', 'Sludge']) is None:
+            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Sol', 'Sludge'], default=1e2, warning=True)
+            iscale.set_scaling_factor(self.flow_mass_phase_comp['Sol', 'Sludge'], sf)
+
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
+        '''
         if self.is_property_constructed('mass_frac_phase_comp'):
             for j in self.params.component_list:
                 if iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j]) is None:
@@ -575,6 +583,7 @@ class CoagulationStateBlockData(StateBlockData):
         if self.is_property_constructed('dens_mass_phase'):
             if iscale.get_scaling_factor(self.dens_mass_phase) is None:
                 iscale.set_scaling_factor(self.dens_mass_phase, 1e-3)
+        '''
 
         # # TODO:  FIX THIS GARBAGE
         '''
