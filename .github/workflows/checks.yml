@@ -17,8 +17,7 @@ defaults:
 
 env:
   # needed for colorized output to be shown in GHA logs
-  # FIXME revert before merging
-  PYTEST_ADDOPTS: "--color=yes -k test_commands"
+  PYTEST_ADDOPTS: "--color=yes"
 
 jobs:
   tests:
@@ -29,9 +28,7 @@ jobs:
 #    env:
 #      EDB_CLOUD_PASSWORD: ${{ secrets.EDB_CLOUD_PASSWORD }}
     strategy:
-      # FIXME revert before merging
-      # fail-fast: false
-      fail-fast: true
+      fail-fast: false
       matrix:
         python-version:
           - '3.7'
