@@ -522,7 +522,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=lambda b,p,j : 0.4037 if j == "H2O" else 0.0033, #todo: revisit
-            bounds=(1e-6, None),  # upper bound set to None because of stability benefits
+            bounds=(1e-6, 1.001),  # upper bound set to None because of stability benefits
             units=pyunits.kg/pyunits.kg,
             doc='Mass fraction')
 
@@ -644,7 +644,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-6, None),
+            bounds=(1e-6, 1.001),
             units=pyunits.dimensionless,
             doc="Mole fraction")
 
@@ -695,7 +695,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.phase_list,
             self.params.solute_set,
             initialize=1,
-            bounds=(1e-4, 1),
+            bounds=(1e-4, 1.001),
             units=pyunits.dimensionless,
             doc="activity coefficient of component")
 

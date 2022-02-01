@@ -8,16 +8,20 @@ from watertap.unit_models.nanofiltration_DSPMDE_0D import NanofiltrationDSPMDE0D
 from watertap.core.util.initialization import check_dof, check_solve
 from pyomo.util.infeasible import *
 from idaes.core.util import get_solver
+from watertap.core.util.infeasible import *
 from idaes.core.util.model_statistics import *
 import idaes.logger as idaeslog
 
+import logging
+from pyomo.util.infeasible import *
 
-_log = idaeslog.getLogger(__name__)
 
 if __name__ == '__main__':
     solver = get_solver()
 
     m = ConcreteModel()
+
+
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = DSPMDEParameterBlock(default={
@@ -193,6 +197,8 @@ if __name__ == '__main__':
     # m.fs.unit.eq_equal_flow_vol_pore_permeate.deactivate()
     # m.fs.unit.eq_equal_flow_vol_permeate.deactivate()
     # initialize
+
+
     m.fs.unit.initialize()
 
     print ('---------------- AFTER INITIALIZATION---------------------------------------')
@@ -221,11 +227,14 @@ if __name__ == '__main__':
     results = solver.solve(m, tee=True)
     if check_optimal_termination(results):
         print('SUCCESS!!!!!!!!!!!')
-    else:
-        for var, sv in iscale.badly_scaled_var_generator(m):
-            print(var, sv)
-            m.fs.unit._automate_rescale_variables(rescale_factor=1)
-            results = solver.solve(m, tee=True)
+    logging.basicConfig(filename='infeasible4.log', level=logging.INFO)
+    log_infeasible_constraints(m, log_expression=True, log_variables=True)
+    log_infeasible_bounds(m)
+    # else:
+    #     for var, sv in iscale.badly_scaled_var_generator(m):
+    #         print(var, sv)
+    #         m.fs.unit._automate_rescale_variables(rescale_factor=1)
+    #         results = solver.solve(m, tee=True)
 
     #     b.display()
     #     m.fs.unit.report()
