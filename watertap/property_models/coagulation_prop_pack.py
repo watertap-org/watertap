@@ -46,8 +46,8 @@ __author__ = "Austin Ladshaw"
 _log = idaeslog.getLogger(__name__)
 
 
-# Forward declaration of 'PropParameterBlock' from 'CoagulationParameterData'
-@declare_process_block_class("PropParameterBlock")
+# Forward declaration of 'CoagulationParameterData'
+@declare_process_block_class("CoagulationParameterBlock")
 class CoagulationParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
@@ -57,7 +57,7 @@ class CoagulationParameterData(PhysicalParameterBlock):
         """
         super(CoagulationParameterData, self).build()
 
-        self._state_block_class = PropStateBlock
+        self._state_block_class = CoagulationStateBlock
 
         # phases
         self.Liq = LiquidPhase()
@@ -306,7 +306,7 @@ class _CoagulationStateBlock(StateBlock):
         return results
 
 # this third class, provides the instructions to create state blocks
-@declare_process_block_class("PropStateBlock",
+@declare_process_block_class("CoagulationStateBlock",
                              block_class=_CoagulationStateBlock)
 class CoagulationStateBlockData(StateBlockData):
     def build(self):
