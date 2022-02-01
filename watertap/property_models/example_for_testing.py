@@ -39,9 +39,9 @@ m.fs.stream[0].flow_vol_phase
 m.fs.stream[0].temperature.fix(273.15 + 25)
 m.fs.stream[0].pressure.fix(101325)
 m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'].fix(1)
-m.fs.stream[0].flow_mass_phase_comp['Liq', 'TSS'].fix(120e-6)
-m.fs.stream[0].flow_mass_phase_comp['Liq', 'TDS'].fix(120e-6)
-m.fs.stream[0].flow_mass_phase_comp['Sol', 'Sludge'].fix(120e-6)
+m.fs.stream[0].flow_mass_phase_comp['Liq', 'TSS'].fix(120e-4)
+m.fs.stream[0].flow_mass_phase_comp['Liq', 'TDS'].fix(120e-4)
+m.fs.stream[0].flow_mass_phase_comp['Sol', 'Sludge'].fix(1e-5)
 
 # the user should provide the scale for the flow rate, so that our tools can ensure the model is well scaled
 # generally scaling factors should be such that if it is multiplied by the variable it will range between 0.01 and 100
@@ -73,8 +73,8 @@ m.fs.stream[0].flow_mass_phase_comp['Liq', 'TSS'].unfix()
 m.fs.stream[0].flow_mass_phase_comp['Liq', 'TDS'].unfix()
 
 m.fs.stream[0].flow_vol_phase['Liq'].fix(1.5e-3)
-m.fs.stream[0].mass_frac_phase_comp['Liq', 'TSS'].fix(80e-6)
-m.fs.stream[0].mass_frac_phase_comp['Liq', 'TDS'].fix(80e-6)
+m.fs.stream[0].mass_frac_phase_comp['Liq', 'TSS'].fix(80e-4)
+m.fs.stream[0].mass_frac_phase_comp['Liq', 'TDS'].fix(80e-4)
 
 # resolve
 results = solver.solve(m, tee=True)
@@ -82,8 +82,3 @@ assert results.solver.termination_condition == TerminationCondition.optimal
 
 print('\n---fifth display---')
 m.fs.stream[0].display()
-
-# touch the enth_flow prop
-m.fs.stream[0].enth_flow.display()
-
-m.fs.stream[0].eq_conc_mass_phase_comp.pprint()
