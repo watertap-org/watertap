@@ -147,7 +147,7 @@ class TestNaClCalculateState_1(PropertyCalculateStateTest):
         self.solver = 'ipopt'
         self.optarg = {'nlp_scaling_method': 'user-scaling'}
 
-        self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e-1,
+        self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e-2,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e1,
                              }
 
@@ -215,8 +215,12 @@ class TestNaClCalculateState_3(PropertyCalculateStateTest):
         self.solver = 'ipopt'
         self.optarg = {'nlp_scaling_method': 'user-scaling'}
 
-        self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e-1,
+        self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e0,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e1,
+                             ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1e-1,
+                             ('flow_mass_phase_comp', ('Vap', 'H2O')): 1e3,
+                             ('flow_mass_phase_comp', ('Sol', 'H2O')): 1e3,   # 1/eps, # expected to be zero
+                             ('flow_mass_phase_comp', ('Vap', 'NaCl')): 1e3,  #1/eps, # expected to be zero
                              }
 
         self.var_args = {('flow_vol_phase', 'Liq'): 2e-2,
@@ -247,12 +251,10 @@ class TestNaClCalculateState_4(PropertyCalculateStateTest):
         self.param_args = {}
 
         self.solver = 'ipopt'
-        self.optarg = {'nlp_scaling_method': 'user-scaling'}
+        self.optarg = {'tol': 1e-8, 'nlp_scaling_method': 'user-scaling'}
 
-        self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1/eps,
-                             ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1e-2,
-                             ('flow_mass_phase_comp', ('Sol', 'H2O')): 1/eps,
-                             ('flow_mass_phase_comp', ('Vap', 'H2O')): 1/eps
+        self.scaling_args = {
+                             ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1e-3
                              }
 
         self.var_args = {('flow_vol_phase', 'Liq'): 0,
@@ -266,11 +268,11 @@ class TestNaClCalculateState_4(PropertyCalculateStateTest):
                          }
 
         self.state_solution = {('flow_mass_phase_comp', ('Sol', 'NaCl')): 2115 * 2e-2, # solid density is constant
-                               ('flow_mass_phase_comp', ('Sol', 'H2O')):  0, 
-                               ('flow_mass_phase_comp', ('Liq', 'H2O')): 9.968e-09,
+                               ('flow_mass_phase_comp', ('Sol', 'H2O')):   0, 
+                               ('flow_mass_phase_comp', ('Liq', 'H2O')):  0,
                                ('flow_mass_phase_comp', ('Liq', 'NaCl')): 0,
                                ('flow_mass_phase_comp', ('Vap', 'NaCl')): 0,
-                               ('flow_mass_phase_comp', ('Vap', 'H2O')):  2.708e-09
+                               ('flow_mass_phase_comp', ('Vap', 'H2O')):  0 
                                }
 
 
@@ -320,10 +322,10 @@ class TestNaClCalculateState_6(PropertyCalculateStateTest):
 
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e1,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e2,
-                             ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1e2,
+                             ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1e-1,
                              ('flow_mass_phase_comp', ('Vap', 'H2O')): 1e3,
-                             ('flow_mass_phase_comp', ('Sol', 'H2O')): 1/eps, # expected to be zero
-                             ('flow_mass_phase_comp', ('Vap', 'NaCl')): 1/eps, # expected to be zero
+                             ('flow_mass_phase_comp', ('Sol', 'H2O')): 1e3,   # 1/eps, # expected to be zero
+                             ('flow_mass_phase_comp', ('Vap', 'NaCl')): 1e3,  #1/eps, # expected to be zero
                              }
         self.var_args = {('flow_vol_phase', 'Liq'): 2e-4,
                          ('flow_vol_phase', 'Sol'): 2e-4,
@@ -337,6 +339,6 @@ class TestNaClCalculateState_6(PropertyCalculateStateTest):
                                ('flow_mass_phase_comp', ('Liq', 'NaCl')): 3.215e-2,
                                ('flow_mass_phase_comp', ('Sol', 'NaCl')): 0.423,
                                ('flow_mass_phase_comp', ('Sol', 'H2O')): 0,
-                               ('flow_mass_phase_comp', ('Vap', 'NaCl')): 0,
+                               ('flow_mass_phase_comp', ('Vap', 'NaCl')):  0,
                                ('flow_mass_phase_comp', ('Vap', 'H2O')): 3.632 * 2e-4 # Density from ideal gas law * vol. flow
                                }
