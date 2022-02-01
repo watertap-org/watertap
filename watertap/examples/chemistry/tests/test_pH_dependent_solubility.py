@@ -1211,9 +1211,10 @@ def run_case3(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCaOH2 = 1e-20, xCa=1e-
     assert (degrees_of_freedom(model) == 0)
 
     ## ==================== Start Scaling for this problem ===========================
-    _set_eps_vals(model.fs.rxn_params, rxn_config)
-    _set_equ_rxn_scaling(model.fs.unit, rxn_config)
-    _set_mat_bal_scaling_FpcTP(model.fs.unit)
+    #   Modify some of the default scaling factors with function args 
+    _set_eps_vals(model.fs.rxn_params, rxn_config, factor=1e-2, max_k_eq_ref=1e-16)
+    _set_equ_rxn_scaling(model.fs.unit, rxn_config, min_k_eq_ref=1e-3)
+    _set_mat_bal_scaling_FpcTP(model.fs.unit, min_flow_mol_phase_comp=1e-2)
     if has_energy_balance == True:
         _set_ene_bal_scaling(model.fs.unit)
 
@@ -1223,11 +1224,16 @@ def run_case3(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCaOH2 = 1e-20, xCa=1e-
     assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
     ## ==================== END Scaling for this problem ===========================
-
+    #   Loosen the tolerances for initialization stage
+    solver.options["constr_viol_tol"] = 1e-5
+    solver.options["tol"] = 1e-5
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
+    #   Reset tolerances back to defaults for full solve
+    solver.options["constr_viol_tol"] = 1e-8
+    solver.options["tol"] = 1e-8
     results = solver.solve(model, tee=True)
 
     assert results.solver.termination_condition == TerminationCondition.optimal
