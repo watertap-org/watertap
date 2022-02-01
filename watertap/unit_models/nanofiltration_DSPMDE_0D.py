@@ -392,69 +392,8 @@ class NanofiltrationData(UnitModelBlockData):
         ###############################################################################################################
         # Expressions
         ###############################################################################################################
-        # Stokes radius to membrane pore radius ratio (for each solute)
-        @self.Expression(self.flowsheet().config.time,
-                         solute_set,
-                         doc="Ratio of stokes radius to membrane pore radius equation")
-        def lambda_comp(b, t, j):
-            return smooth_min(1, b.feed_side.properties_in[t].radius_stokes_comp[j]/b.radius_pore)
-
-        @self.Expression(self.flowsheet().config.time,
-                         solute_set,
-                         doc="Diffusive hindered transport coefficient")
-        def hindrance_factor_diffusive_comp(b, t, j):
-            eps = 1e-8
-            return Expr_if(b.lambda_comp[t, j] > 0.95,
-                        0.984 *((1 - b.lambda_comp[t,j])/(b.lambda_comp[t, j])) ** (5/2),
-                           (1 + 9. / 8. * b.lambda_comp[t, j] * log(b.lambda_comp[t, j])
-                        - 1.56034 * b.lambda_comp[t, j]
-                        + 0.528155 * b.lambda_comp[t, j]**2
-                        + 1.91521 * b.lambda_comp[t, j]**3
-                        - 2.81903 * b.lambda_comp[t, j]**4
-                        + 0.270788 * b.lambda_comp[t, j]**5
-                        - 1.10115 * b.lambda_comp[t, j]**6
-                        - 0.435933 * b.lambda_comp[t, j]**7) /
-                        (1 - b.lambda_comp[t, j]+eps) ** 2,
-                    )
-
-        @self.Expression(self.flowsheet().config.time,
-                         solute_set,
-                         doc="Pore diffusion coefficient")
-        def diffus_pore_comp(b, t, j):
-            return b.hindrance_factor_diffusive_comp[t, j] * b.feed_side.properties_in[t].diffus_phase_comp['Liq', j]
-
-        @self.Expression(self.flowsheet().config.time,
-                         solute_set,
-                         doc="Convective hindered transport coefficient")
-        def hindrance_factor_convective_comp(b, t, j):
-            return ((1 + 3.867 * b.lambda_comp[t, j]
-                     - 1.907 * b.lambda_comp[t, j] ** 2
-                     - 0.834 * b.lambda_comp[t, j] ** 3)
-                    / (1 + 1.867 * b.lambda_comp[t, j] - 0.741 * b.lambda_comp[t, j]))
-
-        @self.Expression(self.flowsheet().config.time,
-                         solute_set,
-                         doc="Steric partitioning factor")
-        def partition_factor_steric_comp(b, t, j):
-            return (1 - b.lambda_comp[t, j]) ** 2
-
-        @self.Expression(self.flowsheet().config.time,
-                         solute_set,
-                         doc="Gibbs free energy of solvation for each ion")
-        def gibbs_solvation_comp(b, t, j):
-            return (b.feed_side.properties_in[t].charge_comp[j] ** 2
-                    * Constants.elemental_charge ** 2
-                    / (8 * Constants.pi
-                       * Constants.vacuum_electric_permittivity
-                       * b.feed_side.properties_in[t].radius_stokes_comp[j])
-                    * (1 / b.feed_side.properties_in[t].dielectric_constant - 1 / b.dielectric_constant_pore[t]))
-
-        @self.Expression(self.flowsheet().config.time,
-                         solute_set,
-                         doc="Born solvation contribution to partitioning")
-        def partition_factor_born_solvation_comp(b, t, j):
-            return (-b.gibbs_solvation_comp[t, j]
-                    / (Constants.boltzmann_constant * b.feed_side.properties_in[t].temperature))
+        # Make expressions that don't depend on any variables
+        self._make_expressions()
 
         @self.Expression(self.flowsheet().config.time,
                          io_list,
@@ -793,7 +732,72 @@ class NanofiltrationData(UnitModelBlockData):
         #     return interface.flow_vol_phase['Liq'] ==\
         #            bulk.flow_vol_phase['Liq']
         # #
+    def _make_expressions(self):
+        solute_set = self.config.property_package.solute_set
 
+        # Stokes radius to membrane pore radius ratio (for each solute)
+        @self.Expression(self.flowsheet().config.time,
+                         solute_set,
+                         doc="Ratio of stokes radius to membrane pore radius equation")
+        def lambda_comp(b, t, j):
+            return smooth_min(1, b.feed_side.properties_in[t].radius_stokes_comp[j] / b.radius_pore)
+
+        @self.Expression(self.flowsheet().config.time,
+                         solute_set,
+                         doc="Diffusive hindered transport coefficient")
+        def hindrance_factor_diffusive_comp(b, t, j):
+            eps = 1e-8
+            return Expr_if(b.lambda_comp[t, j] > 0.95,
+                           0.984 * ((1 - b.lambda_comp[t, j]) / (b.lambda_comp[t, j])) ** (5 / 2),
+                           (1 + 9. / 8. * b.lambda_comp[t, j] * log(b.lambda_comp[t, j])
+                            - 1.56034 * b.lambda_comp[t, j]
+                            + 0.528155 * b.lambda_comp[t, j] ** 2
+                            + 1.91521 * b.lambda_comp[t, j] ** 3
+                            - 2.81903 * b.lambda_comp[t, j] ** 4
+                            + 0.270788 * b.lambda_comp[t, j] ** 5
+                            - 1.10115 * b.lambda_comp[t, j] ** 6
+                            - 0.435933 * b.lambda_comp[t, j] ** 7) /
+                           (1 - b.lambda_comp[t, j] + eps) ** 2,
+                           )
+
+        @self.Expression(self.flowsheet().config.time,
+                         solute_set,
+                         doc="Pore diffusion coefficient")
+        def diffus_pore_comp(b, t, j):
+            return b.hindrance_factor_diffusive_comp[t, j] * b.feed_side.properties_in[t].diffus_phase_comp['Liq', j]
+
+        @self.Expression(self.flowsheet().config.time,
+                         solute_set,
+                         doc="Convective hindered transport coefficient")
+        def hindrance_factor_convective_comp(b, t, j):
+            return ((1 + 3.867 * b.lambda_comp[t, j]
+                     - 1.907 * b.lambda_comp[t, j] ** 2
+                     - 0.834 * b.lambda_comp[t, j] ** 3)
+                    / (1 + 1.867 * b.lambda_comp[t, j] - 0.741 * b.lambda_comp[t, j]))
+
+        @self.Expression(self.flowsheet().config.time,
+                         solute_set,
+                         doc="Steric partitioning factor")
+        def partition_factor_steric_comp(b, t, j):
+            return (1 - b.lambda_comp[t, j]) ** 2
+
+        @self.Expression(self.flowsheet().config.time,
+                         solute_set,
+                         doc="Gibbs free energy of solvation for each ion")
+        def gibbs_solvation_comp(b, t, j):
+            return (b.feed_side.properties_in[t].charge_comp[j] ** 2
+                    * Constants.elemental_charge ** 2
+                    / (8 * Constants.pi
+                       * Constants.vacuum_electric_permittivity
+                       * b.feed_side.properties_in[t].radius_stokes_comp[j])
+                    * (1 / b.feed_side.properties_in[t].dielectric_constant - 1 / b.dielectric_constant_pore[t]))
+
+        @self.Expression(self.flowsheet().config.time,
+                         solute_set,
+                         doc="Born solvation contribution to partitioning")
+        def partition_factor_born_solvation_comp(b, t, j):
+            return (-b.gibbs_solvation_comp[t, j]
+                    / (Constants.boltzmann_constant * b.feed_side.properties_in[t].temperature))
 
     def initialize(
             blk,
