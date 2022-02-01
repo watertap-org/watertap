@@ -370,14 +370,13 @@ class CoagulationStateBlockData(StateBlockData):
 
         # first we create the state variables
         # the following dictionary is used for providing initial values in line 229
-        seawater_mass_frac_dict = {('Liq', 'TSS'): 25e-6,
+        self.seawater_mass_frac_dict = {('Liq', 'TSS'): 25e-6,
                                    ('Liq', 'H2O'): 0.965,
                                    ('Liq', 'TDS'): 25e-6}
 
         self.flow_mass_phase_comp = Var(
-            self.params.phase_list,
-            self.params.component_list,
-            initialize=seawater_mass_frac_dict,
+            self.seawater_mass_frac_dict.keys(),
+            initialize=self.seawater_mass_frac_dict,
             bounds=(1e-8, 100),
             domain=NonNegativeReals,
             units=pyunits.kg/pyunits.s,
@@ -403,8 +402,7 @@ class CoagulationStateBlockData(StateBlockData):
     # for by a user or unit model)
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
-            self.params.phase_list,
-            self.params.component_list,
+            self.seawater_mass_frac_dict.keys(),
             initialize=0.1,
             bounds=(1e-8, None),
             units=pyunits.dimensionless,
@@ -413,11 +411,13 @@ class CoagulationStateBlockData(StateBlockData):
         def rule_mass_frac_phase_comp(b, p, j):
             if (p == 'Liq'):
                 return (b.mass_frac_phase_comp[p, j] == b.flow_mass_phase_comp[p, j] /
-                    sum(b.flow_mass_phase_comp[p, i]
-                        for i in self.params.component_list))
+                    (b.flow_mass_phase_comp['Liq', 'H2O'] +
+                        b.flow_mass_phase_comp['Liq', 'TDS'] +
+                            b.flow_mass_phase_comp['Liq', 'TSS']))
+            # Only 1 component in other phase, so mass frac is 1
             else:
                 return (b.mass_frac_phase_comp[p, j] == 1.0)
-        self.eq_mass_frac_phase_comp = Constraint(self.params.phase_list, self.params.component_list, rule=rule_mass_frac_phase_comp)
+        self.eq_mass_frac_phase_comp = Constraint(self.seawater_mass_frac_dict.keys(), rule=rule_mass_frac_phase_comp)
 
     def _dens_mass_phase(self):
         self.dens_mass_phase = Var(
@@ -451,15 +451,21 @@ class CoagulationStateBlockData(StateBlockData):
             doc="Volumetric flow rate")
 
         def rule_flow_vol_phase(b, p):
-            return (b.flow_vol_phase[p]
-                    == sum(b.flow_mass_phase_comp[p, j] for j in b.params.component_list)
-                    / b.dens_mass_phase[p])
+            if (p == 'Liq'):
+                return (b.flow_vol_phase[p]
+                    == (b.flow_mass_phase_comp['Liq', 'H2O'] +
+                            b.flow_mass_phase_comp['Liq', 'TDS'] +
+                                b.flow_mass_phase_comp['Liq', 'TSS'])
+                                    / b.dens_mass_phase[p])
+            elif (p == 'Sol'):
+                return (b.flow_vol_phase[p]== (b.flow_mass_phase_comp[p, 'Sludge'] / b.dens_mass_phase[p]) )
+            else:
+                raise PropertyPackageError("Unsupported phase for CoagulationParameterData property package")
         self.eq_flow_vol_phase = Constraint(self.params.phase_list, rule=rule_flow_vol_phase)
 
     def _conc_mass_phase_comp(self):
         self.conc_mass_phase_comp = Var(
-            self.params.phase_list,
-            self.params.component_list,
+            self.seawater_mass_frac_dict.keys(),
             initialize=1,
             bounds=(1e-8, None),
             units=pyunits.kg/pyunits.m**3,
@@ -468,7 +474,7 @@ class CoagulationStateBlockData(StateBlockData):
         def rule_conc_mass_phase_comp(b, p, j):
             return (b.conc_mass_phase_comp[p, j] ==
                     b.mass_frac_phase_comp[p, j] * b.dens_mass_phase[p])
-        self.eq_conc_mass_phase_comp = Constraint(self.params.phase_list, self.params.component_list, rule=rule_conc_mass_phase_comp)
+        self.eq_conc_mass_phase_comp = Constraint(self.seawater_mass_frac_dict.keys(), rule=rule_conc_mass_phase_comp)
 
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method

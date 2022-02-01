@@ -81,5 +81,7 @@ assert results.solver.termination_condition == TerminationCondition.optimal
 print('\n---fifth display---')
 m.fs.stream[0].display()
 
-# touch the enth_flow prop 
+# touch the enth_flow prop
 m.fs.stream[0].enth_flow.display()
+
+m.fs.stream[0].eq_conc_mass_phase_comp.pprint()
