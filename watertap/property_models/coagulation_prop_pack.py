@@ -81,7 +81,7 @@ class CoagulationParameterData(PhysicalParameterBlock):
             units=pyunits.kg / pyunits.m ** 3,
             doc='Reference water mass density parameter @ 0 oC and no salts')
 
-        #   change in liquid density with increasing mass fraction of salts (approximate behavior)
+        #   change in liquid density with increasing mass fraction of salts
         self.dens_slope = Param(
             domain=Reals,
             initialize=879.04,
@@ -476,7 +476,7 @@ class CoagulationStateBlockData(StateBlockData):
 
         def rule_enth_flow(b):  # enthalpy flow [J/s]
             return (b.params.cp
-                    * sum(b.flow_mass_phase_comp[p, j] for (p, j) in (b.params.phase_list, b.params.component_list))
+                    * sum(b.flow_mass_phase_comp[pair] for pair in b.flow_mass_phase_comp)
                     * (b.temperature - temperature_ref))
         self.enth_flow = Expression(rule=rule_enth_flow)
 
@@ -528,11 +528,11 @@ class CoagulationStateBlockData(StateBlockData):
             iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'], sf)
 
         if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'TSS']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'TSS'], default=1e5, warning=True)
+            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'TSS'], default=1e2, warning=True)
             iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'TSS'], sf)
 
         if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'TDS']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'TDS'], default=1e5, warning=True)
+            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'TDS'], default=1e2, warning=True)
             iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'TDS'], sf)
 
         # these variables do not typically require user input,
