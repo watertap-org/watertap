@@ -70,7 +70,11 @@ class CoagulationParameterData(PhysicalParameterBlock):
         self.Sludge = Component(default={"valid_phase_types": PhaseType.solidPhase})
 
         # ====== parameters ========
-        ## TODO:  Add molecular weights
+        ## TODO:  Add molecular weights (in kg/mol) and methods
+        mw_comp_data = {'H2O': 18.01528e-3,
+                        'TSS': 31.4038218e-3,
+                        'TDS': 31.4038218e-3,
+                        'Sludge': 31.4038218e-3}
 
         #   heat capacity of liquid
         self.cp = Param(mutable=False,
@@ -373,7 +377,8 @@ class CoagulationStateBlockData(StateBlockData):
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
         # first we create the state variables
-        # the following dictionary is used for providing initial values in line 229
+        #   note: the following dictionary is used for providing initial values
+        #   and to establish a set of valid keys to iterate over in the methods
         self.seawater_mass_frac_dict = {('Liq', 'TSS'): 25e-6,
                                    ('Liq', 'H2O'): 0.965,
                                    ('Liq', 'TDS'): 25e-6,
@@ -575,7 +580,8 @@ class CoagulationStateBlockData(StateBlockData):
 
             sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Sol', 'Sludge'])
                   / iscale.get_scaling_factor(self.dens_mass_phase['Sol']))
-            iscale.set_scaling_factor(self.flow_vol_phase['Sol'], sf)
+            # note: this volume flow is generally much smaller than the other 
+            iscale.set_scaling_factor(self.flow_vol_phase['Sol'], sf*1000)
             # transforming constraints
             iscale.constraint_scaling_transform(self.eq_flow_vol_phase['Sol'], sf)
 

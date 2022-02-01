@@ -4,6 +4,8 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
 
+from idaes.core.util.scaling import badly_scaled_var_generator
+
 import coagulation_prop_pack as props
 
 # create model, flowsheet
@@ -46,9 +48,9 @@ m.fs.stream[0].flow_mass_phase_comp['Sol', 'Sludge'].fix(1e-5)
 # the user should provide the scale for the flow rate, so that our tools can ensure the model is well scaled
 # generally scaling factors should be such that if it is multiplied by the variable it will range between 0.01 and 100
 m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e4, index=('Liq', 'TSS'))
-m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e4, index=('Liq', 'TDS'))
-m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e4, index=('Sol', 'Sludge'))
+m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TSS'))
+m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TDS'))
+m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Sol', 'Sludge'))
 iscale.calculate_scaling_factors(m.fs)  # this utility scales the model
 
 # solving
@@ -82,3 +84,12 @@ assert results.solver.termination_condition == TerminationCondition.optimal
 
 print('\n---fifth display---')
 m.fs.stream[0].display()
+
+# Looking for poor scaling 
+badly_scaled_var_list = list(badly_scaled_var_generator(m, large=1e2, small=1e-2))
+if len(badly_scaled_var_list) != 0:
+    lst = []
+    for (var, val) in badly_scaled_var_list:
+        lst.append((var.name, val))
+        print(var.name, var.value)
+    print("The following variable(s) are poorly scaled: {lst}".format(lst=lst))
