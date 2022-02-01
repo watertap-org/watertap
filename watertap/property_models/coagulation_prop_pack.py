@@ -19,7 +19,8 @@ from pyomo.environ import (Constraint,
                            Expression,
                            Reals,
                            NonNegativeReals,
-                           Suffix)
+                           Suffix,
+                           assert_optimal_termination)
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores
@@ -34,7 +35,7 @@ from idaes.core.components import Component
 from idaes.core.phases import LiquidPhase, SolidPhase, PhaseType
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars, solve_indexed_blocks
 from idaes.core.util.model_statistics import degrees_of_freedom, number_unfixed_variables
-from idaes.core.util.exceptions import PropertyPackageError
+from idaes.core.util.exceptions import PropertyPackageError, InitializationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
@@ -188,6 +189,8 @@ class _CoagulationStateBlock(StateBlock):
             # Initialize properties
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = solve_indexed_blocks(opt, [self], tee=slc.tee)
+                if not assert_optimal_termination:
+                    raise InitializationError('The property package failed to solve during initialization')
             init_log.info_high("Property initialization: {}.".format(idaeslog.condition(results)))
 
         # ---------------------------------------------------------------------
