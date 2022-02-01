@@ -54,7 +54,7 @@ class ActivityCoefficientModel(Enum):
     davies = auto()                   # Davies
 
 
-@declare_process_block_class("DSPMDEParameterBlock") #TODO: replace w/ "PropParameterBlock"
+@declare_process_block_class("DSPMDEParameterBlock")
 class DSPMDEParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
