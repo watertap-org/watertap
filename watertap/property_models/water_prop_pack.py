@@ -742,7 +742,7 @@ class WaterStateBlockData(StateBlockData):
         # scaling factors for parameters
         for j, v in self.params.mw_comp.items():
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.params.mw_comp, 1e-2)
+                iscale.set_scaling_factor(self.params.mw_comp, 1e2)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
@@ -764,7 +764,7 @@ class WaterStateBlockData(StateBlockData):
             for p in self.params.phase_list:
                 if iscale.get_scaling_factor(self.flow_mol_phase_comp[p, 'H2O']) is None:
                     sf = iscale.get_scaling_factor(self.flow_mass_phase_comp[p, 'H2O'])
-                    sf *= iscale.get_scaling_factor(self.params.mw_comp['H2O'])
+                    sf /= iscale.get_scaling_factor(self.params.mw_comp['H2O'])
                     iscale.set_scaling_factor(self.flow_mol_phase_comp[p, 'H2O'], sf)
 
         if self.is_property_constructed('mole_frac_phase_comp'):
