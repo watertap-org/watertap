@@ -636,7 +636,7 @@ def _numeric_termination_condition_translation(termination_condition):
             if termination_condition == key:
                 ctr += 1
                 return value
-    elif isinstance(termination_condition, np.int64):
+    elif isinstance(termination_condition, np.integer):
         for key, value in pyomo_termination_condition.mapping.items():
             if termination_condition == value:
                 ctr += 1
