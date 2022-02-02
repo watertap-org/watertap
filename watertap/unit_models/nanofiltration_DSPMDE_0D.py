@@ -315,14 +315,15 @@ class NanofiltrationData(UnitModelBlockData):
             self.flowsheet().config.time,
             io_list,
             ['pore_entrance','pore_exit', 'permeate'], #TODO: revisit - build in property model w/o constraint?
-            initialize=1, #TODO:revisit
+            initialize=0.1, #TODO:revisit
             domain=Reals,
+            bounds=(-0.1, 0.1),
             units=pyunits.V,
             doc='Electric potential of pore entrance/exit, and permeate')
         self.electric_potential_grad_feed_interface = Var(
             self.flowsheet().config.time,
             io_list,
-            initialize=1, #TODO: revisit
+            initialize=0.1, #TODO: revisit
             domain=Reals,
             units= pyunits.V*pyunits.m**-1, # TODO: revisit- Geraldes and Alves give unitless while Roy et al. give V/m
             doc='Electric potential gradient of feed-membrane interface')
@@ -720,7 +721,7 @@ class NanofiltrationData(UnitModelBlockData):
         @self.Constraint(self.flowsheet().config.time,
                          phase_list,
                          doc="Electroneutrality at feed outlet")
-        def eq_electroneutrality_feed(b, t, p):
+        def eq_electroneutrality_feed_outlet(b, t, p):
             prop = b.feed_side.properties_out[t]
             return (abs(sum(prop.conc_mol_phase_comp[p, j] *
                             prop.charge_comp[j] for j in solute_set))
@@ -920,7 +921,7 @@ class NanofiltrationData(UnitModelBlockData):
         # blk.eq_electroneutrality_interface.deactivate()
         # blk.eq_electroneutrality_pore.deactivate()
         # blk.eq_electroneutrality_permeate.deactivate()
-        # blk.eq_electroneutrality_feed.deactivate()
+        # blk.eq_electroneutrality_feed_outlet.deactivate()
         #
         # # ---------------------------------------------------------------------
         # # Solve unit
@@ -940,7 +941,7 @@ class NanofiltrationData(UnitModelBlockData):
         # blk.eq_electroneutrality_interface.activate()
         # blk.eq_electroneutrality_pore.activate()
         # blk.eq_electroneutrality_permeate.activate()
-        # blk.eq_electroneutrality_feed.activate()
+        # blk.eq_electroneutrality_feed_outlet.activate()
         # # Solve unit
         # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
         #     res = opt.solve(blk, tee=slc.tee)
@@ -1011,7 +1012,15 @@ class NanofiltrationData(UnitModelBlockData):
         for j in self.config.property_package.component_list:
               expr_dict[f'Average Mole FLux of {j} '] = self.flux_mol_phase_comp_avg[time_point, 'Liq', j]
         for j in self.config.property_package.solute_set:
+            expr_dict[f'Stokes radius of {j}'] = self.feed_side.properties_in[0].radius_stokes_comp[j]
             expr_dict[f'Gibbs Free Energy of Solvation of {j}'] = self.gibbs_solvation_comp[time_point, j]
+            expr_dict[f'Born Solvation Energy Partitioning Factor of {j}'] = self.partition_factor_born_solvation_comp[time_point, j]
+            expr_dict[f'Steric Hindrance Partitioning Factor of {j}'] = self.partition_factor_steric_comp[time_point, j]
+            expr_dict[f'Donnan Partitioning Factor of {j} @ Feed-side Inlet'] = self.partition_factor_donnan_comp_feed[time_point, 0, j]
+            expr_dict[f'Donnan Partitioning Factor of {j} @ Permeate-side Inlet'] = self.partition_factor_donnan_comp_permeate[time_point, 0, j]
+            expr_dict[f'Donnan Partitioning Factor of {j} @ Feed-side Outlet'] = self.partition_factor_donnan_comp_feed[time_point, 1, j]
+            expr_dict[f'Donnan Partitioning Factor of {j} @ Permeate-side Outlet'] = self.partition_factor_donnan_comp_permeate[time_point, 1, j]
+
             var_dict[f'Observed Rejection of {j}'] = self.rejection_phase_comp[time_point, 'Liq', j]
 
         #     if self.feed_side.properties_in[time_point].conc_mol_phase_comp['Liq', j].is_expression_type():

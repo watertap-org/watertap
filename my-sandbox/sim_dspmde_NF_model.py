@@ -6,7 +6,7 @@ from pyomo.util.check_units import assert_units_consistent
 from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock, ActivityCoefficientModel, DensityCalculation
 from watertap.unit_models.nanofiltration_DSPMDE_0D import NanofiltrationDSPMDE0D
 from watertap.core.util.initialization import check_dof, check_solve
-from pyomo.util.infeasible import *
+from watertap.core.util.infeasible import *
 from idaes.core.util import get_solver
 from watertap.core.util.infeasible import *
 from idaes.core.util.model_statistics import *
@@ -102,7 +102,6 @@ if __name__ == '__main__':
                       # 'Y': 11122e-6,
 
                       }
-    check_dof(m, fail_flag=False)
 
     # Fix mole flow rates of each ion and water
     for ion, x in feed_mass_frac.items():
@@ -120,7 +119,6 @@ if __name__ == '__main__':
     # Fix other inlet state variables
     m.fs.unit.inlet.temperature[0].fix(298.15)
     m.fs.unit.inlet.pressure[0].fix(4e5)
-    # check_dof(m, fail_flag=False)
 
     # Fix the membrane variables that are usually fixed for the DSPM-DE model
     m.fs.unit.radius_pore.fix(0.5e-9)
@@ -130,25 +128,15 @@ if __name__ == '__main__':
 
     # Fix final permeate pressure to be ~atmospheric
     m.fs.unit.mixed_permeate[0].pressure.fix(101325)
-    # m.fs.unit.permeate_side[0,:].pressure.fix(101325)
-    # check_dof(m, fail_flag=False)
 
-
-
-    # m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.8)
-
-    #Other things I tried fixing when experimenting with DOF reduction
+    # Other things I tried fixing when experimenting with DOF reduction
     # m.fs.unit.flux_mol_phase_comp[0, 0, 'Liq', 'H2O'].fix(5e-5)
-    # m.fs.unit.flux_vol_water[0, :].set_value(1e-3 *pyunits.m/pyunits.s)
-    # m.fs.unit.flux_vol_water_avg[0].set_value(1e-3 *pyunits.m/pyunits.s)
 
     # fix the mass transfer coefficient, which is just a var without the associated constraint for now.
-    # Planning to add in the associated constraint(s) for this once the model solves at this level
+    # #TODO: Planning to add in the associated constraint(s) for this variable once the model solves at this level
     for i in range(2):
         for j in m.fs.properties.solute_set:
             m.fs.unit.Kf_comp[0, i, j].fix()
-
-    # check_dof(m, fail_flag=True)
 
     # Set electroneutrality tolerance to 0 (value used in equality constraints for electroneutrality in unit model)
     m.fs.unit.tol_electroneutrality = 0
@@ -254,8 +242,6 @@ if __name__ == '__main__':
     m.fs.unit.eq_mass_transfer_feed.activate() # when area was unfixed, solve fails with this constraint active
     m.fs.unit.eq_permeate_production.activate()
 
-
-
     m.fs.unit.eq_solute_flux_pore_domain.activate()
     m.fs.unit.eq_recovery_mol_phase_comp.activate() # model solves and gets ~67%!
     m.fs.unit.eq_pore_isothermal.activate()
@@ -284,17 +270,18 @@ if __name__ == '__main__':
     #
     m.fs.unit._automate_rescale_variables(rescale_factor=1)
     # Constraints activated that messed up the solve
-    # m.fs.unit.eq_interfacial_partitioning_feed.activate()
+    m.fs.unit.eq_interfacial_partitioning_feed.activate()
     m.fs.unit.eq_interfacial_partitioning_permeate.activate()
-    m.fs.unit.eq_electroneutrality_mixed_permeate.activate() #- extends number of iterations
+    # m.fs.unit.eq_electroneutrality_mixed_permeate.activate() #- extends number of iterations
     m.fs.unit.eq_electroneutrality_interface.activate()
-    # m.fs.unit.eq_electroneutrality_pore.activate()
+    m.fs.unit.eq_electroneutrality_pore.activate()
     m.fs.unit.eq_electroneutrality_permeate.activate()
-    m.fs.unit.eq_electroneutrality_feed.activate() #- extends number of iterations
+    # m.fs.unit.eq_electroneutrality_feed.activate() #- extends number of iterations
     m.fs.unit.eq_rejection_phase_comp.activate()
 
     m.fs.unit.recovery_vol_phase[0, 'Liq'].unfix()
-    m.fs.unit.area.unfix()
+    # m.fs.unit.area.unfix()
+    # solver.options['constr_viol_tol'] = 1e-6
     results = solver.solve(m, tee=True)
     if check_optimal_termination(results):
         b.report()
@@ -309,9 +296,12 @@ if __name__ == '__main__':
     # if check_optimal_termination(results):
     #     print('SUCCESS!!!!!!!!!!!')
 
-    logging.basicConfig(filename='infeasible1.log', level=logging.INFO)
-    log_infeasible_constraints(m, log_expression=True, log_variables=True)
-    log_infeasible_bounds(m)
+    print_infeasible_constraints(m, print_expression=True, print_variables=True, output_file='new_infeasible.log')
+
+
+    # logging.basicConfig(filename='infeasible1.log', level=logging.INFO)
+    # log_infeasible_constraints(m, log_expression=True, log_variables=True)
+    # log_infeasible_bounds(m)
     # else:
     #     for var, sv in iscale.badly_scaled_var_generator(m):
     #         print(var, sv)
