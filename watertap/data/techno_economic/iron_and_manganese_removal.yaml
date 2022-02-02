@@ -1,0 +1,17 @@
+default:
+  recovery_vol:
+    value: 0.9999
+    units: dimensionless
+    reference: .nan
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_solute:
+    iron:
+      value: 0.9
+      units: dimensionless
+      constituent_longform: Iron
+    manganese:
+      value: 0.9
+      units: dimensionless
+      constituent_longform: Manganese
