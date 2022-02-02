@@ -460,7 +460,8 @@ class NanofiltrationData(UnitModelBlockData):
                     * b.feed_side.properties_interface[t, x].conc_mol_phase_comp[p, j]
                     * b.partition_factor_steric_comp[t, j]
                     * b.partition_factor_born_solvation_comp[t, j]
-                    * b.partition_factor_donnan_comp_feed[t, x, j])
+                    * b.partition_factor_donnan_comp_feed[t, x, j]
+                    )
 
         # 2. Permeate solution/membrane equilibrium, DOF= Nj * 2 for inlet/outlet
         @self.Constraint(self.flowsheet().config.time,

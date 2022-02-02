@@ -133,10 +133,7 @@ if __name__ == '__main__':
     # m.fs.unit.permeate_side[0,:].pressure.fix(101325)
     # check_dof(m, fail_flag=False)
 
-    # Membrane area and recovery haven't typically been included in the literature for DSPM-DE,
-    # but since we include them in our model to simulate/optimize at process level, I chose to fix those here
-    m.fs.unit.area.fix(40)
-    m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.5)
+
 
     # m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.8)
 
@@ -240,7 +237,11 @@ if __name__ == '__main__':
     # solver.options['constr_viol_tol'] = 1e-3
     # log_infeasible_bounds(m.fs.unit)
 
-    # m.fs.unit.area.unfix()
+    # Membrane area and recovery haven't typically been included in the literature for DSPM-DE,
+    # but since we include them in our model to simulate/optimize at process level, I chose to fix those here
+    m.fs.unit.area.fix(40)
+    m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.5)
+
     for con in m.fs.unit.component_data_objects(Constraint, descend_into=False):
         con.deactivate()
 
@@ -265,30 +266,17 @@ if __name__ == '__main__':
     m.fs.unit.eq_equal_flow_vol_pore_permeate.activate() # brought in after eq_permeate_isothermal - flow rate values were 1e5 but solve worked
     m.fs.unit.eq_equal_flow_vol_permeate.activate() #- also brought flowrate to 1e5
 
-
-
-
     # Constraints that could mess up the solve
 
-
-
-    # results = solver.solve(m, tee=True)
-    # if check_optimal_termination(results):
-    #     print('SUCCESS!!!!!!!!!!!')
-
-
-    # Activate later
-
-
-
-    # for con in m.fs.unit.component_data_objects(Constraint):
-    #     con.activate()
     b = m.fs.unit
 
     results = solver.solve(m, tee=True)
     if check_optimal_termination(results):
         b.report()
         print('SUCCESS WITH FIRST SOLVE!!!!!!!!!!!')
+    else:
+        print('FIRST SOLVE FAILED')
+
 
     print ('---------------- AFTER SOLVE 1---------------------------------------')
     [print(i[0],i[1]) for i in iscale.badly_scaled_var_generator(m)]
@@ -296,21 +284,23 @@ if __name__ == '__main__':
     #
     m.fs.unit._automate_rescale_variables(rescale_factor=1)
     # Constraints activated that messed up the solve
-    # m.fs.unit.eq_interfacial_partitioning_feed.activate()
+    m.fs.unit.eq_interfacial_partitioning_feed.activate()
     # m.fs.unit.eq_interfacial_partitioning_permeate.activate()
     # m.fs.unit.eq_electroneutrality_mixed_permeate.activate() #- extends number of iterations
-    # m.fs.unit.eq_electroneutrality_interface.activate()
-    # m.fs.unit.eq_electroneutrality_pore.activate()
+    m.fs.unit.eq_electroneutrality_interface.activate()
+    m.fs.unit.eq_electroneutrality_pore.activate()
     # m.fs.unit.eq_electroneutrality_permeate.activate()
     m.fs.unit.eq_electroneutrality_feed.activate() #- extends number of iterations
     m.fs.unit.eq_rejection_phase_comp.activate()
 
-
+    m.fs.unit.recovery_vol_phase[0, 'Liq'].unfix()
+    m.fs.unit.area.unfix()
     results = solver.solve(m, tee=True)
     if check_optimal_termination(results):
         b.report()
         print('SUCCESS WITH SECOND SOLVE!!!!!!!!!!!')
-
+    else:
+        print('SECOND SOLVE FAILED')
 
     # m.fs.unit.eq_recovery_vol_phase.activate() # model solves in 27 iterations (instead of 25), but doesn't match recovery_mol_phase_comp
     # m.fs.unit.eq_equal_flow_vol_pore_permeate.activate() # brought in after eq_permeate_isothermal - flow rate values were 1e5 but solve worked
@@ -319,7 +309,7 @@ if __name__ == '__main__':
     # if check_optimal_termination(results):
     #     print('SUCCESS!!!!!!!!!!!')
 
-    logging.basicConfig(filename='infeasible6.log', level=logging.INFO)
+    logging.basicConfig(filename='infeasible0.log', level=logging.INFO)
     log_infeasible_constraints(m, log_expression=True, log_variables=True)
     log_infeasible_bounds(m)
     # else:
