@@ -227,8 +227,8 @@ if __name__ == '__main__':
 
     # Membrane area and recovery haven't typically been included in the literature for DSPM-DE,
     # but since we include them in our model to simulate/optimize at process level, I chose to fix those here
-    m.fs.unit.area.fix(40)
-    m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.5)
+    m.fs.unit.area.fix(60)
+    m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.1)
 
     for con in m.fs.unit.component_data_objects(Constraint, descend_into=False):
         con.deactivate()
@@ -239,7 +239,7 @@ if __name__ == '__main__':
     m.fs.unit.eq_permeate_isothermal.activate()
     m.fs.unit.eq_permeate_isothermal_mixed.activate()
     m.fs.unit.eq_pressure_permeate_io.activate()
-    m.fs.unit.eq_mass_transfer_feed.activate() # when area was unfixed, solve fails with this constraint active
+    m.fs.unit.eq_mass_transfer_feed.activate()
     m.fs.unit.eq_permeate_production.activate()
 
     m.fs.unit.eq_solute_flux_pore_domain.activate()
@@ -256,19 +256,19 @@ if __name__ == '__main__':
 
     b = m.fs.unit
 
-    results = solver.solve(m, tee=True)
-    if check_optimal_termination(results):
-        b.report()
-        print('SUCCESS WITH FIRST SOLVE!!!!!!!!!!!')
-    else:
-        print('FIRST SOLVE FAILED')
-
-
-    print ('---------------- AFTER SOLVE 1---------------------------------------')
-    [print(i[0],i[1]) for i in iscale.badly_scaled_var_generator(m)]
-    print('\nNUMBER OF badly scaled variables:', len(list(iscale.badly_scaled_var_generator(m))))
+    # results = solver.solve(m, tee=True)
+    # if check_optimal_termination(results):
+    #     b.report()
+    #     print('SUCCESS WITH FIRST SOLVE!!!!!!!!!!!')
+    # else:
+    #     print('FIRST SOLVE FAILED')
     #
-    m.fs.unit._automate_rescale_variables(rescale_factor=1)
+    #
+    # print ('---------------- AFTER SOLVE 1---------------------------------------')
+    # [print(i[0],i[1]) for i in iscale.badly_scaled_var_generator(m)]
+    # print('\nNUMBER OF badly scaled variables:', len(list(iscale.badly_scaled_var_generator(m))))
+    # #
+    # m.fs.unit._automate_rescale_variables(rescale_factor=1)
     # Constraints activated that messed up the solve
     m.fs.unit.eq_interfacial_partitioning_feed.activate()
     m.fs.unit.eq_interfacial_partitioning_permeate.activate()
@@ -279,9 +279,9 @@ if __name__ == '__main__':
     # m.fs.unit.eq_electroneutrality_feed_outlet.activate() #- extends number of iterations
     m.fs.unit.eq_rejection_phase_comp.activate()
 
-    m.fs.unit.recovery_vol_phase[0, 'Liq'].unfix()
-    # m.fs.unit.area.unfix()
-    # solver.options['constr_viol_tol'] = 1e-6
+    # m.fs.unit.recovery_vol_phase[0, 'Liq'].unfix()
+    m.fs.unit.area.unfix()
+    # solver.options['max_iter'] = 749
     results = solver.solve(m, tee=True)
     if check_optimal_termination(results):
         b.report()

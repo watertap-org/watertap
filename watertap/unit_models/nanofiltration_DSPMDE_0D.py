@@ -323,7 +323,7 @@ class NanofiltrationData(UnitModelBlockData):
         self.electric_potential_grad_feed_interface = Var(
             self.flowsheet().config.time,
             io_list,
-            initialize=0.1, #TODO: revisit
+            initialize=180, #TODO: revisit
             domain=Reals,
             units= pyunits.V*pyunits.m**-1, # TODO: revisit- Geraldes and Alves give unitless while Roy et al. give V/m
             doc='Electric potential gradient of feed-membrane interface')
@@ -456,8 +456,8 @@ class NanofiltrationData(UnitModelBlockData):
                          solute_set,
                          doc="Interfacial partitioning at feed side of membrane")
         def eq_interfacial_partitioning_feed(b, t, x, p, j):
-            return (b.pore_entrance[t, x].act_coeff_phase_comp[p, j] * b.pore_entrance[t, x].conc_mol_phase_comp[p, j] /
-                    (b.feed_side.properties_interface[t, x].act_coeff_phase_comp[p, j]
+            return (b.pore_entrance[t, x].act_coeff_phase_comp[p, j] * b.pore_entrance[t, x].conc_mol_phase_comp[p, j]
+                    / (b.feed_side.properties_interface[t, x].act_coeff_phase_comp[p, j]
                     * b.feed_side.properties_interface[t, x].conc_mol_phase_comp[p, j])
                     ==
                     b.partition_factor_steric_comp[t, j]
@@ -472,10 +472,11 @@ class NanofiltrationData(UnitModelBlockData):
                          solute_set,
                          doc="Interfacial partitioning at permeate side of membrane")
         def eq_interfacial_partitioning_permeate(b, t, x, p, j):
-            return (b.pore_exit[t, x].act_coeff_phase_comp[p, j] * b.pore_exit[t, x].conc_mol_phase_comp[p, j] ==
-                    b.permeate_side[t, x].act_coeff_phase_comp[p, j]
-                    * b.permeate_side[t, x].conc_mol_phase_comp[p, j]
-                    * b.partition_factor_steric_comp[t, j]
+            return (b.pore_exit[t, x].act_coeff_phase_comp[p, j] * b.pore_exit[t, x].conc_mol_phase_comp[p, j]
+                    / (b.permeate_side[t, x].act_coeff_phase_comp[p, j]
+                    * b.permeate_side[t, x].conc_mol_phase_comp[p, j])
+                    ==
+                    b.partition_factor_steric_comp[t, j]
                     * b.partition_factor_born_solvation_comp[t, j]
                     * b.partition_factor_donnan_comp_permeate[t, x, j])
 
@@ -485,8 +486,8 @@ class NanofiltrationData(UnitModelBlockData):
                          phase_list,
                          doc="Electroneutrality at feed-side membrane interface")
         def eq_electroneutrality_interface(b, t, x, p):
-            return (abs(sum(b.feed_side.properties_interface[t, x].conc_mol_phase_comp[p, j] *
-                        b.feed_side.properties_interface[t, x].charge_comp[j] for j in solute_set))
+            return (sum(b.feed_side.properties_interface[t, x].conc_mol_phase_comp[p, j] *
+                    b.feed_side.properties_interface[t, x].charge_comp[j] for j in solute_set)
                     == b.tol_electroneutrality)
             #todo: (1) consider adding tol_electroneutrality as property pack param
             # to match assert_electroneutrality method in dspmde prop pack
@@ -504,9 +505,9 @@ class NanofiltrationData(UnitModelBlockData):
                 pore_loc = b.pore_entrance[t, x]
             elif y == 'pore_exit':
                 pore_loc = b.pore_exit[t, x]
-            return (abs(sum(pore_loc.conc_mol_phase_comp[p, j]
-                            * pore_loc.charge_comp[j] for j in solute_set)
-                        + b.membrane_charge_density[t]) == b.tol_electroneutrality)
+            return (sum(pore_loc.conc_mol_phase_comp[p, j]
+                    * pore_loc.charge_comp[j] for j in solute_set)
+                    + b.membrane_charge_density[t] == b.tol_electroneutrality)
 
         # 4. Permeate electroneutrality, DOF=1 *2 for inlet/outlet:  DOF=2
         @self.Constraint(self.flowsheet().config.time,
@@ -514,8 +515,8 @@ class NanofiltrationData(UnitModelBlockData):
                          phase_list,
                          doc="Electroneutrality in permeate")
         def eq_electroneutrality_permeate(b, t, x, p):
-            return (abs(sum(b.permeate_side[t, x].conc_mol_phase_comp[p, j] *
-                            b.permeate_side[t, x].charge_comp[j] for j in solute_set)) == b.tol_electroneutrality)
+            return (sum(b.permeate_side[t, x].conc_mol_phase_comp[p, j] *
+                        b.permeate_side[t, x].charge_comp[j] for j in solute_set) == b.tol_electroneutrality)
 
         # 5. Water flux via Hagen-Poiseuille relationship, DOF= 1 * 2 for inlet/outlet: DOF= 2
         @self.Constraint(self.flowsheet().config.time,
@@ -659,8 +660,8 @@ class NanofiltrationData(UnitModelBlockData):
                          solute_set,
                          doc="Intrinsic solute rejection")
         def eq_rejection_phase_comp(b, t, p, j):
-            return (b.mixed_permeate[t].conc_mol_phase_comp['Liq', j]
-                    == b.feed_side.properties_interface[t, 0].conc_mol_phase_comp['Liq', j]
+            return (b.mixed_permeate[t].conc_mol_phase_comp[p, j]
+                    == b.feed_side.properties_interface[t, 0].conc_mol_phase_comp[p, j]
                     * (1 - b.rejection_phase_comp[t, p, j]))
 
         # TODO: seems stale since temperature unused at pore entrance/exit- confirm+remove;
@@ -714,8 +715,8 @@ class NanofiltrationData(UnitModelBlockData):
                          phase_list,
                          doc="Electroneutrality in mixed permeate")
         def eq_electroneutrality_mixed_permeate(b, t, p):
-            return (abs(sum(b.mixed_permeate[t].conc_mol_phase_comp[p, j] *
-                            b.mixed_permeate[t].charge_comp[j] for j in solute_set)) == b.tol_electroneutrality)
+            return (sum(b.mixed_permeate[t].conc_mol_phase_comp[p, j] *
+                        b.mixed_permeate[t].charge_comp[j] for j in solute_set) == b.tol_electroneutrality)
 
         # Experimental constraint: feed electroneutrality
         @self.Constraint(self.flowsheet().config.time,
@@ -723,8 +724,8 @@ class NanofiltrationData(UnitModelBlockData):
                          doc="Electroneutrality at feed outlet")
         def eq_electroneutrality_feed_outlet(b, t, p):
             prop = b.feed_side.properties_out[t]
-            return (abs(sum(prop.conc_mol_phase_comp[p, j] *
-                            prop.charge_comp[j] for j in solute_set))
+            return (sum(prop.conc_mol_phase_comp[p, j] *
+                    prop.charge_comp[j] for j in solute_set)
                     == b.tol_electroneutrality)
 
         # # Experimental constraint
@@ -1022,6 +1023,17 @@ class NanofiltrationData(UnitModelBlockData):
             expr_dict[f'Donnan Partitioning Factor of {j} @ Permeate-side Outlet'] = self.partition_factor_donnan_comp_permeate[time_point, 1, j]
 
             var_dict[f'Observed Rejection of {j}'] = self.rejection_phase_comp[time_point, 'Liq', j]
+        for x in self.io_list:
+            for y in ['pore_entrance','pore_exit', 'permeate']:
+                if x:
+                    io = 'Inlet'
+                else:
+                    io = 'Outlet'
+            var_dict[f'Electric Potential @ Pore Entrance, {io}'] = self.electric_potential[0, x, 'pore_entrance']
+            var_dict[f'Electric Potential @ Pore Exit, {io}'] = self.electric_potential[0, x, 'pore_entrance']
+            var_dict[f'Electric Potential @ Permeate, {io}'] = self.electric_potential[0, x, 'pore_entrance']
+            var_dict[f'Electric Potential Gradient @ Feed-Membrane Interface, {io}'] = self.electric_potential_grad_feed_interface[0, x]
+
 
         #     if self.feed_side.properties_in[time_point].conc_mol_phase_comp['Liq', j].is_expression_type():
         #         obj_dict = expr_dict
@@ -1187,17 +1199,14 @@ class NanofiltrationData(UnitModelBlockData):
 
         for (t, x, y), v in self.electric_potential.items():
             if iscale.get_scaling_factor(v) is None:
-                if y == 'permeate':
-                    iscale.set_scaling_factor(v, 1e3)
-                else:
-                    iscale.set_scaling_factor(v, 1e3)
+                iscale.set_scaling_factor(v, 1e4)
 
         for (t,x), v in self.electric_potential_grad_feed_interface.items():
             if iscale.get_scaling_factor(v) is None:
                 if not x:
-                    iscale.set_scaling_factor(v, 1e2)
+                    iscale.set_scaling_factor(v, 1e-2)
                 elif x:
-                    iscale.set_scaling_factor(v, 1e-1)
+                    iscale.set_scaling_factor(v, 1e-2)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
