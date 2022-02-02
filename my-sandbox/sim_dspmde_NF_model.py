@@ -276,7 +276,7 @@ if __name__ == '__main__':
     m.fs.unit.eq_electroneutrality_interface.activate()
     m.fs.unit.eq_electroneutrality_pore.activate()
     m.fs.unit.eq_electroneutrality_permeate.activate()
-    # m.fs.unit.eq_electroneutrality_feed.activate() #- extends number of iterations
+    # m.fs.unit.eq_electroneutrality_feed_outlet.activate() #- extends number of iterations
     m.fs.unit.eq_rejection_phase_comp.activate()
 
     m.fs.unit.recovery_vol_phase[0, 'Liq'].unfix()
