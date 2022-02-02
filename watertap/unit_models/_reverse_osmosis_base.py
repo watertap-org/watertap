@@ -487,18 +487,15 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
             state_args_retentate['flow_mass_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solute_recovery'])
             state_args_permeate['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['solute_recovery']
 
-        state_args_interface_in = deepcopy(state_args)
-        state_args_interface_out = deepcopy(state_args_retentate)
+        state_args_interface = deepcopy(state_args)
 
         for j in self.config.property_package.solute_set:
-            state_args_interface_in['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
-            state_args_interface_out['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
+            state_args_interface['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
 
         return {'feed_side' : state_args,
                 'retentate' : state_args_retentate,
                 'permeate' : state_args_permeate,
-                'interface_in' : state_args_interface_in,
-                'interface_out' : state_args_interface_out,
+                'interface' : state_args_interface,
                }
 
     # permeate properties need to rescale solute values by 100

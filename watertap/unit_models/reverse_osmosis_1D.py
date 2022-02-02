@@ -204,7 +204,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         # Add reference to pressure drop for feed side only
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != MomentumBalanceType.none):
-            add_object_reference(self, 'deltaP', feed_side.deltaP)
+            add_object_reference(self, 'dP_dx', feed_side.deltaP)
 
         self._make_performance()
 
@@ -296,7 +296,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             doc='Mass transfer to permeate')
 
         if self.config.has_pressure_change:
-            self.deltaP_stage = Var(
+            self.deltaP = Var(
                 self.flowsheet().config.time,
                 initialize=-1e5,
                 bounds=(-1e6, 0),
@@ -497,8 +497,8 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             @self.Constraint(self.flowsheet().config.time,
                              doc='Pressure drop across unit')
             def eq_pressure_drop(b, t):
-                return (b.deltaP_stage[t] ==
-                        sum(b.deltaP[t, x] * b.length / b.nfe
+                return (b.deltaP[t] ==
+                        sum(b.dP_dx[t, x] * b.length / b.nfe
                             for x in b.length_domain if x != 0))
 
         if (self.config.pressure_change_type == PressureChangeType.fixed_per_stage
@@ -507,7 +507,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                              self.length_domain,
                              doc='Fixed pressure drop across unit')
             def eq_pressure_drop(b, t, x):
-                return b.deltaP_stage[t] == b.length * b.deltaP[t, x]
+                return b.deltaP[t] == b.length * b.dP_dx[t, x]
 
         if self.config.pressure_change_type == PressureChangeType.calculated:
             ## ==========================================================================
@@ -536,7 +536,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                              doc="pressure change per unit length due to friction")
             def eq_dP_dx(b, t, x):
                 bulk = b.feed_side.properties[t, x]
-                return (b.deltaP[t, x] * b.dh ==
+                return (b.dP_dx[t, x] * b.dh ==
                         -0.5 * b.friction_factor_darcy[t, x]
                         * bulk.dens_mass_phase['Liq'] * b.velocity[t, x]**2)
         ## ==========================================================================
@@ -683,7 +683,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                 outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
-                state_args=state_args['interface_out'])
+                state_args=state_args['interface'])
         flags_permeate_side = blk.permeate_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
@@ -730,8 +730,8 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             var_dict["Membrane Length"] = self.length
         if hasattr(self, "width") or self.config.has_full_reporting:
             var_dict["Membrane Width"] = self.width
-        if hasattr(self, "deltaP_stage") or self.config.has_full_reporting:
-            var_dict["Pressure Change"] = self.deltaP_stage[time_point]
+        if hasattr(self, "deltaP") or self.config.has_full_reporting:
+            var_dict["Pressure Change"] = self.deltaP[time_point]
         if hasattr(self, "N_Re") or self.config.has_full_reporting:
             var_dict["Reynolds Number @Inlet"] = self.N_Re[time_point, x_in]
             var_dict["Reynolds Number @Outlet"] = self.N_Re[time_point, x_out]
@@ -844,12 +844,12 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1)
 
-        if hasattr(self, 'deltaP_stage'):
-            for v in self.deltaP_stage.values():
+        if hasattr(self, 'deltaP'):
+            for v in self.deltaP.values():
                 if iscale.get_scaling_factor(v) is None:
                      iscale.set_scaling_factor(v, 1e-4)
 
-        if hasattr(self, 'deltaP'):
+        if hasattr(self, 'dP_dx'):
             for v in self.feed_side.pressure_dx.values():
                 iscale.set_scaling_factor(v, 1e-5)
         else:

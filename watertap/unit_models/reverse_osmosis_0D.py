@@ -100,13 +100,10 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             doc="Material properties of mixed permeate exiting the module",
             default=tmp_dict)
         # Interface properties
-        self.feed_side.properties_interface_in = self.config.property_package.state_block_class(
+        self.feed_side.properties_interface = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
-            doc="Material properties of feed-side interface at inlet",
-            default=tmp_dict)
-        self.feed_side.properties_interface_out = self.config.property_package.state_block_class(
-            self.flowsheet().config.time,
-            doc="Material properties of feed-side interface at outlet",
+            self.length_domain,
+            doc="Material properties of feed-side membrane interface",
             default=tmp_dict)
 
         # Add Ports
@@ -168,7 +165,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
 
         if self.config.pressure_change_type == PressureChangeType.calculated:
             # different representation in 1DRO
-            self.dP_dx_io = Var(
+            self.dP_dx = Var(
                 self.flowsheet().config.time,
                 self.length_domain,
                 initialize=-5e4,
@@ -176,6 +173,14 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                 domain=NegativeReals,
                 units=units_meta('pressure')*units_meta('length')**-1,
                 doc="Pressure drop per unit length of feed channel at inlet and outlet")
+        elif self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length:
+            self.dP_dx = Var(
+                self.flowsheet().config.time,
+                initialize=-5e4,
+                bounds=(-2e5, -1e3),
+                domain=NegativeReals,
+                units=units_meta('pressure')*units_meta('length')**-1,
+                doc="pressure drop per unit length across feed channel")
 
         if ((self.config.pressure_change_type != PressureChangeType.fixed_per_stage)
                 or (self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)):
@@ -194,14 +199,6 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                 units=units_meta('length'),
                 doc='Effective feed-channel width')
 
-        if self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length:
-            self.dP_dx = Var(
-                self.flowsheet().config.time,
-                initialize=-5e4,
-                bounds=(-2e5, -1e3),
-                domain=NegativeReals,
-                units=units_meta('pressure')*units_meta('length')**-1,
-                doc="pressure drop per unit length across feed channel")
 
         # constraints for additional variables (i.e. variables not used in other constraints)
         @self.Constraint(self.flowsheet().config.time)
@@ -238,12 +235,11 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                          doc="Water and salt flux")
         def eq_flux_io(b, t, x, p, j):
             prop_perm = b.permeate_side[t, x]
+            prop_feed_inter = b.feed_side.properties_interface[t, x]
             if x == 0.:
                 prop_feed = b.feed_side.properties_in[t]
-                prop_feed_inter = b.feed_side.properties_interface_in[t]
             elif x == 1.:
                 prop_feed = b.feed_side.properties_out[t]
-                prop_feed_inter = b.feed_side.properties_interface_out[t]
             comp = self.config.property_package.get_component(j)
             if comp.is_solvent():
                 return (b.flux_mass_phase_comp[t, x, p, j] == b.A_comp[t, j] * b.dens_solvent
@@ -340,12 +336,11 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                                    solute_set,
                                    doc="Concentration polarization")
         def eq_concentration_polarization_io(b, t, x, j):
+            prop_interface_io = b.properties_interface[t, x]
             if x == 0.:
                 prop_io = b.properties_in[t]
-                prop_interface_io = b.properties_interface_in[t]
             elif x == 1.:
                 prop_io = b.properties_out[t]
-                prop_interface_io = b.properties_interface_out[t]
             if self.config.concentration_polarization_type == ConcentrationPolarizationType.none:
                 return prop_interface_io.conc_mass_phase_comp['Liq', j] == \
                        prop_io.conc_mass_phase_comp['Liq', j]
@@ -451,12 +446,12 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             @self.Constraint(self.flowsheet().config.time,
                              self.length_domain,
                              doc="pressure change per unit length due to friction")
-            def eq_dP_dx_io(b, t, x):
+            def eq_dP_dx(b, t, x):
                 if x == 0.:
                     prop_io = b.feed_side.properties_in[t]
                 elif x == 1.:
                     prop_io = b.feed_side.properties_out[t]
-                return (b.dP_dx_io[t, x] * b.dh ==
+                return (b.dP_dx[t, x] * b.dh ==
                         -0.5 * b.friction_factor_darcy[t, x]
                         * prop_io.dens_mass_phase['Liq'] * b.velocity[t, x]**2)
 
@@ -464,7 +459,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             @self.Expression(self.flowsheet().config.time,
                              doc="expression for average pressure change per unit length due to friction")
             def dP_dx_avg(b, t):
-                return 0.5 * sum(b.dP_dx_io[t, x] for x in b.length_domain)
+                return 0.5 * sum(b.dP_dx[t, x] for x in b.length_domain)
 
             # Pressure change equation
             @self.Constraint(self.flowsheet().config.time,
@@ -477,12 +472,11 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                                    self.length_domain,
                                    doc="Temperature at interface")
         def eq_equal_temp_interface_io(b, t, x):
+            prop_interface_io = b.properties_interface[t,x]
             if x == 0.:
                 prop_io = b.properties_in[t]
-                prop_interface_io = b.properties_interface_in[t]
             elif x == 1.:
                 prop_io = b.properties_out[t]
-                prop_interface_io = b.properties_interface_out[t]
             return prop_interface_io.temperature == \
                    prop_io.temperature
 
@@ -490,12 +484,11 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                                    self.length_domain,
                                    doc="Pressure at interface")
         def eq_equal_pressure_interface_io(b, t, x):
+            prop_interface_io = b.properties_interface[t,x]
             if x == 0.:
                 prop_io = b.properties_in[t]
-                prop_interface_io = b.properties_interface_in[t]
             elif x == 1.:
                 prop_io = b.properties_out[t]
-                prop_interface_io = b.properties_interface_out[t]
             return prop_interface_io.pressure == \
                    prop_io.pressure
 
@@ -503,12 +496,11 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                                    self.length_domain,
                                    doc="Volumetric flow at interface of inlet")
         def eq_equal_flow_vol_interface_io(b, t, x):
+            prop_interface_io = b.properties_interface[t,x]
             if x == 0.:
                 prop_io = b.properties_in[t]
-                prop_interface_io = b.properties_interface_in[t]
             elif x == 1.:
                 prop_io = b.properties_out[t]
-                prop_interface_io = b.properties_interface_out[t]
             return prop_interface_io.flow_vol_phase['Liq'] ==\
                    prop_io.flow_vol_phase['Liq']
 
@@ -590,16 +582,11 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             optarg=optarg,
             solver=solver,
             state_args=state_args['retentate'],)
-        blk.feed_side.properties_interface_in.initialize(
+        blk.feed_side.properties_interface.initialize(
                 outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
-                state_args=state_args['interface_in'],)
-        blk.feed_side.properties_interface_out.initialize(
-                outlvl=outlvl,
-                optarg=optarg,
-                solver=solver,
-                state_args=state_args['interface_out'],)
+                state_args=state_args['interface'],)
         blk.mixed_permeate.initialize(
             outlvl=outlvl,
             optarg=optarg,
@@ -648,10 +635,10 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         for j in self.config.property_package.solute_set:
             cin_mem_name=f'{j} Concentration @Inlet,Membrane-Interface '
             var_dict[cin_mem_name] = (
-                        self.feed_side.properties_interface_in[time_point].conc_mass_phase_comp['Liq', j])
+                        self.feed_side.properties_interface[time_point, 0.].conc_mass_phase_comp['Liq', j])
             cout_mem_name=f'{j} Concentration @Outlet,Membrane-Interface '
             var_dict[cout_mem_name] = (
-                self.feed_side.properties_interface_out[time_point].conc_mass_phase_comp['Liq', j])
+                self.feed_side.properties_interface[time_point, 1.].conc_mass_phase_comp['Liq', j])
             cin_bulk_name=f'{j} Concentration @Inlet,Bulk '
             var_dict[cin_bulk_name] = (
                         self.feed_side.properties_in[time_point].conc_mass_phase_comp['Liq', j])
@@ -661,15 +648,15 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             cp_name=f'{j} Permeate Concentration '
             var_dict[cp_name] = (
                 self.mixed_permeate[time_point].conc_mass_phase_comp['Liq', j])
-        if self.feed_side.properties_interface_out[time_point].is_property_constructed('pressure_osm'):
+        if self.feed_side.properties_interface[time_point, 1.].is_property_constructed('pressure_osm'):
             var_dict['Osmotic Pressure @Outlet,Membrane-Interface '] = (
-                self.feed_side.properties_interface_out[time_point].pressure_osm)
+                self.feed_side.properties_interface[time_point, 1.].pressure_osm)
         if self.feed_side.properties_out[time_point].is_property_constructed('pressure_osm'):
             var_dict['Osmotic Pressure @Outlet,Bulk'] = (
                 self.feed_side.properties_out[time_point].pressure_osm)
-        if self.feed_side.properties_interface_in[time_point].is_property_constructed('pressure_osm'):
+        if self.feed_side.properties_interface[time_point, 0.].is_property_constructed('pressure_osm'):
             var_dict['Osmotic Pressure @Inlet,Membrane-Interface'] = (
-                self.feed_side.properties_interface_in[time_point].pressure_osm)
+                self.feed_side.properties_interface[time_point, 0.].pressure_osm)
         if self.feed_side.properties_in[time_point].is_property_constructed('pressure_osm'):
             var_dict['Osmotic Pressure @Inlet,Bulk'] = (
                 self.feed_side.properties_in[time_point].pressure_osm)
@@ -715,7 +702,6 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                         prop_io = self.feed_side.properties_in[t]
                     elif x == 1.:
                         prop_io = self.feed_side.properties_out[t]
-                        prop_interface_io = self.feed_side.properties_interface_out[t]
                     sf = (iscale.get_scaling_factor(self.A_comp[t, j])
                           * iscale.get_scaling_factor(self.dens_solvent)
                           * iscale.get_scaling_factor(prop_io.pressure))
@@ -743,10 +729,5 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
 
         if hasattr(self, 'dP_dx'):
             for v in self.dP_dx.values():
-                if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, 1e-4)
-
-        if hasattr(self, 'dP_dx_io'):
-            for v in self.dP_dx_io.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1e-4)

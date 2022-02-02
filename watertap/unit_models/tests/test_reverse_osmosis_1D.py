@@ -87,8 +87,8 @@ def test_option_has_pressure_change():
         "has_pressure_change": True})
 
     assert isinstance(m.fs.unit.feed_side.deltaP, Var)
+    assert isinstance(m.fs.unit.dP_dx, Var)
     assert isinstance(m.fs.unit.deltaP, Var)
-    assert isinstance(m.fs.unit.deltaP_stage, Var)
 
 @pytest.mark.unit
 def test_option_concentration_polarization_type_fixed():
@@ -165,8 +165,8 @@ def test_option_pressure_change_calculated():
     assert m.fs.unit.config.pressure_change_type == \
            PressureChangeType.calculated
     assert isinstance(m.fs.unit.feed_side.deltaP, Var)
+    assert isinstance(m.fs.unit.dP_dx, Var)
     assert isinstance(m.fs.unit.deltaP, Var)
-    assert isinstance(m.fs.unit.deltaP_stage, Var)
     assert isinstance(m.fs.unit.channel_height, Var)
     assert isinstance(m.fs.unit.dh, Var)
     assert isinstance(m.fs.unit.spacer_porosity, Var)
@@ -251,8 +251,8 @@ class TestReverseOsmosis():
                                'N_Re': Var,
                                'N_Sc': Var,
                                'N_Sh': Var,
+                               'dP_dx': Var,
                                'deltaP': Var,
-                               'deltaP_stage': Var,
                                'velocity': Var,
                                'friction_factor_darcy': Var,
                                'mass_transfer_phase_comp': Var,
@@ -383,7 +383,7 @@ class TestReverseOsmosis():
     def test_solution(self, RO_frame):
         m = RO_frame
         x_interface_in = m.fs.unit.feed_side.length_domain[2]
-        assert (pytest.approx(-1.755e5, rel=1e-3) == value(m.fs.unit.deltaP_stage[0]))
+        assert (pytest.approx(-1.755e5, rel=1e-3) == value(m.fs.unit.deltaP[0]))
         assert (pytest.approx(7.992e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp[0, x_interface_in, 'Liq', 'H2O']))
         assert (pytest.approx(2.114e-6, rel=1e-3) ==
@@ -730,7 +730,7 @@ class TestReverseOsmosis():
 
         m.fs.unit.inlet.pressure[0].fix(feed_pressure)
         m.fs.unit.inlet.temperature[0].fix(feed_temperature)
-        # m.fs.unit.deltaP.fix(0)
+        # m.fs.unit.dP_dx.fix(0)
         m.fs.unit.A_comp.fix(A)
         m.fs.unit.B_comp.fix(B)
         m.fs.unit.permeate.pressure[0].fix(pressure_atmospheric)
@@ -1036,7 +1036,7 @@ class TestReverseOsmosis():
         m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.4)
         m.fs.unit.spacer_porosity.fix(0.75)
         m.fs.unit.channel_height.fix(0.002)
-        m.fs.unit.deltaP.fix(-0.1e5)
+        m.fs.unit.dP_dx.fix(-0.1e5)
 
         # test pyomo objects on unit
         unit_objs_type_dict = {'dens_solvent': Param,
@@ -1056,8 +1056,8 @@ class TestReverseOsmosis():
                                'N_Re': Var,
                                'N_Sc': Var,
                                'N_Sh': Var,
+                               'dP_dx': Var,
                                'deltaP': Var,
-                               'deltaP_stage': Var,
                                'mass_transfer_phase_comp': Var,
                                'nfe': Param,
                                'eq_mass_transfer_term': Constraint,
@@ -1138,7 +1138,7 @@ class TestReverseOsmosis():
 
         # Test solution
         x_interface_in = m.fs.unit.feed_side.length_domain[2]
-        assert (pytest.approx(-8.000e4, rel=1e-3) == value(m.fs.unit.deltaP_stage[0]))
+        assert (pytest.approx(-8.000e4, rel=1e-3) == value(m.fs.unit.deltaP[0]))
         assert (pytest.approx(2.249e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp[0, x_interface_in, 'Liq', 'H2O']))
         assert (pytest.approx(1.872e-6, rel=1e-3) ==
@@ -1197,7 +1197,7 @@ class TestReverseOsmosis():
         m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.4)
         m.fs.unit.spacer_porosity.fix(0.75)
         m.fs.unit.channel_height.fix(0.002)
-        m.fs.unit.deltaP_stage.fix(-62435.6)
+        m.fs.unit.deltaP.fix(-62435.6)
 
         # test pyomo objects on unit
         unit_objs_type_dict = {'dens_solvent': Param,
@@ -1217,8 +1217,8 @@ class TestReverseOsmosis():
                                'N_Re': Var,
                                'N_Sc': Var,
                                'N_Sh': Var,
+                               'dP_dx': Var,
                                'deltaP': Var,
-                               'deltaP_stage': Var,
                                'mass_transfer_phase_comp': Var,
                                'nfe': Param,
                                'eq_mass_transfer_term': Constraint,
@@ -1300,7 +1300,7 @@ class TestReverseOsmosis():
 
         # Test solution
         x_interface_in = m.fs.unit.feed_side.length_domain[2]
-        assert (pytest.approx(-6.2436e4, rel=1e-3) == value(m.fs.unit.deltaP_stage[0]))
+        assert (pytest.approx(-6.2436e4, rel=1e-3) == value(m.fs.unit.deltaP[0]))
         assert (pytest.approx(2.278e-3, rel=1e-3) ==
                 value(m.fs.unit.flux_mass_phase_comp[0, x_interface_in, 'Liq', 'H2O']))
         assert (pytest.approx(1.872e-6, rel=1e-3) ==
