@@ -971,6 +971,9 @@ def _get_rank0_path(comm, tmp_path):
 
 def _assert_dictionary_correctness(truth_dict, test_dict):
 
+    # import pprint
+    # pprint.pprint(test_dict)
+
     for key, item in truth_dict.items():
         if key != 'solve_status':
             for subkey, subitem in item.items():

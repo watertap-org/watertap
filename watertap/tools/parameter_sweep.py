@@ -401,6 +401,10 @@ def _create_local_output_skeleton(model, sweep_params, num_samples):
     for obj in total_objectives_set(model):
         obj_str = obj.name
         output_dict["outputs"][obj_str] = _create_component_output_skeleton(var, num_samples)
+    # print()
+    # for pyo_obj in model.component_data_objects((pyo.Var, pyo.Expression, pyo.Objective), active=True):
+    #     print("pyo_obj.name = ", pyo_obj.name)
+    #     output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
 
     return output_dict
 
@@ -410,13 +414,12 @@ def _create_component_output_skeleton(component, num_samples):
     # TODO: Revisit thie variable "component" name
 
     comp_dict = {}
-    attr_list  = dir(component)
     comp_dict["value"] = np.zeros(num_samples, dtype=np.float)
-    if 'lb' in attr_list:
+    if hasattr(component, 'lb'):
         comp_dict["lower bound"] = component.lb
-    if 'ub' in attr_list:
+    if hasattr(component, 'ub'):
         comp_dict["upper bound"] = component.lb
-    if 'get_units' in attr_list:
+    if hasattr(component, 'get_units'):
         unit_obj = component.get_units()
         if unit_obj is not None:
             comp_dict["units"] = component.get_units().name
@@ -636,7 +639,7 @@ def _numeric_termination_condition_translation(termination_condition):
             if termination_condition == key:
                 ctr += 1
                 return value
-    elif isinstance(termination_condition, np.int64):
+    elif isinstance(termination_condition, np.integer):
         for key, value in pyomo_termination_condition.mapping.items():
             if termination_condition == value:
                 ctr += 1
@@ -676,7 +679,6 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
             # Simulate/optimize with this set of parameter
             results = optimize_function(model, **optimize_kwargs)
             pyo.assert_optimal_termination(results)
-            # _force_exception(k) # DELETE_ME!!!
 
         except:
             # If the run is infeasible, report nan
