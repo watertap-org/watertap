@@ -153,16 +153,6 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             units=units_meta('mass') * units_meta('time')**-1,
             doc='Mass transfer to permeate')
 
-        if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
-            self.cp_modulus = Var(
-                self.flowsheet().config.time,
-                solute_set,
-                initialize=1.1,
-                bounds=(0.9, 3),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc='Concentration polarization modulus')
-
         if self.config.pressure_change_type == PressureChangeType.calculated:
             # different representation in 1DRO
             self.dP_dx = Var(
@@ -347,7 +337,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             elif self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
                 return (prop_interface_io.conc_mass_phase_comp['Liq', j] ==
                         prop_io.conc_mass_phase_comp['Liq', j]
-                        * self.cp_modulus[t, j])
+                        * self.cp_modulus[t, x, j])
             elif self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated:
                 jw = self.flux_mass_phase_comp[t, x, 'Liq', 'H2O'] / self.dens_solvent
                 js = self.flux_mass_phase_comp[t, x, 'Liq', j]
@@ -714,10 +704,6 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         for v in self.rejection_phase_comp.values():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, 1)
-
-        if hasattr(self, 'cp_modulus'):
-            if iscale.get_scaling_factor(self.cp_modulus) is None:
-                iscale.set_scaling_factor(self.cp_modulus, 1)
 
         if hasattr(self, 'length'):
             if iscale.get_scaling_factor(self.length) is None:

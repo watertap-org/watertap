@@ -409,6 +409,17 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                         / (2 / b.channel_height
                            + (1 - b.spacer_porosity) * 8 / b.channel_height))
 
+        if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
+            self.cp_modulus = Var(
+                self.flowsheet().config.time,
+                self.length_domain,
+                solute_set,
+                initialize=1.1,
+                bounds=(0.9, 3),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc='Concentration polarization modulus')
+
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
             {
@@ -572,6 +583,11 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1)
 
+        if hasattr(self, 'cp_modulus'):
+            for v in self.cp_modulus.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, 1)
+
         for sb in (self.permeate_side, self.mixed_permeate):
             for blk in sb.values():
                 for j in self.config.property_package.solute_set:
@@ -586,4 +602,3 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                         self._rescale_permeate_variable(blk.molality_comp[j])
                 if blk.is_property_constructed('pressure_osm'):
                     self._rescale_permeate_variable(blk.pressure_osm)
-

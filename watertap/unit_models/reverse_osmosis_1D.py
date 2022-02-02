@@ -304,17 +304,6 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                 units=units_meta('pressure'),
                 doc='Pressure drop across unit')
 
-        if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
-            self.cp_modulus = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                solute_set,
-                initialize=1.1,
-                bounds=(0.9, 3),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc='Concentration polarization modulus')
-
         # ==========================================================================
         # Volumetric Recovery rate
 
@@ -838,11 +827,6 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                         sf = (iscale.get_scaling_factor(self.B_comp[t, j])
                               * iscale.get_scaling_factor(self.feed_side.properties[t, x].conc_mass_phase_comp[p, j]))
                         iscale.set_scaling_factor(v, sf)
-
-        if hasattr(self, 'cp_modulus'):
-            for v in self.cp_modulus.values():
-                if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, 1)
 
         if hasattr(self, 'deltaP'):
             for v in self.deltaP.values():
