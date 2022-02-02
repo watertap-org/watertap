@@ -10,10 +10,31 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
+"""
+This module contains a zero-order representation of a pump unit
+operation.
+"""
 
-from .wt_database import Database
-from .zero_order_base import ZeroOrderBaseData
-from .zero_order_properties import WaterParameterBlock, WaterStateBlock
-from .zero_order_electricity import constant_intensity
-from .zero_order_pt import build_pt
-from .zero_order_sido import build_sido
+from idaes.core import declare_process_block_class
+
+from watertap.core import build_pt, constant_intensity, ZeroOrderBaseData
+
+# Some more inforation about this module
+__author__ = "Andrew Lee"
+
+
+@declare_process_block_class("PumpZO")
+class PumpZOData(ZeroOrderBaseData):
+    """
+    Zero-Order model for a pump unit operation.
+    """
+
+    CONFIG = ZeroOrderBaseData.CONFIG()
+
+    def build(self):
+        super().build()
+
+        self._tech_type = "pump"
+
+        build_pt(self)
+        constant_intensity(self)
