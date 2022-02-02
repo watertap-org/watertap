@@ -284,12 +284,12 @@ if __name__ == '__main__':
     #
     m.fs.unit._automate_rescale_variables(rescale_factor=1)
     # Constraints activated that messed up the solve
-    m.fs.unit.eq_interfacial_partitioning_feed.activate()
-    # m.fs.unit.eq_interfacial_partitioning_permeate.activate()
-    # m.fs.unit.eq_electroneutrality_mixed_permeate.activate() #- extends number of iterations
+    # m.fs.unit.eq_interfacial_partitioning_feed.activate()
+    m.fs.unit.eq_interfacial_partitioning_permeate.activate()
+    m.fs.unit.eq_electroneutrality_mixed_permeate.activate() #- extends number of iterations
     m.fs.unit.eq_electroneutrality_interface.activate()
-    m.fs.unit.eq_electroneutrality_pore.activate()
-    # m.fs.unit.eq_electroneutrality_permeate.activate()
+    # m.fs.unit.eq_electroneutrality_pore.activate()
+    m.fs.unit.eq_electroneutrality_permeate.activate()
     m.fs.unit.eq_electroneutrality_feed.activate() #- extends number of iterations
     m.fs.unit.eq_rejection_phase_comp.activate()
 
@@ -309,7 +309,7 @@ if __name__ == '__main__':
     # if check_optimal_termination(results):
     #     print('SUCCESS!!!!!!!!!!!')
 
-    logging.basicConfig(filename='infeasible0.log', level=logging.INFO)
+    logging.basicConfig(filename='infeasible1.log', level=logging.INFO)
     log_infeasible_constraints(m, log_expression=True, log_variables=True)
     log_infeasible_bounds(m)
     # else:

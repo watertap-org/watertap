@@ -455,10 +455,11 @@ class NanofiltrationData(UnitModelBlockData):
                          solute_set,
                          doc="Interfacial partitioning at feed side of membrane")
         def eq_interfacial_partitioning_feed(b, t, x, p, j):
-            return (b.pore_entrance[t, x].act_coeff_phase_comp[p, j] * b.pore_entrance[t, x].conc_mol_phase_comp[p, j] ==
-                    b.feed_side.properties_interface[t, x].act_coeff_phase_comp[p, j]
-                    * b.feed_side.properties_interface[t, x].conc_mol_phase_comp[p, j]
-                    * b.partition_factor_steric_comp[t, j]
+            return (b.pore_entrance[t, x].act_coeff_phase_comp[p, j] * b.pore_entrance[t, x].conc_mol_phase_comp[p, j] /
+                    (b.feed_side.properties_interface[t, x].act_coeff_phase_comp[p, j]
+                    * b.feed_side.properties_interface[t, x].conc_mol_phase_comp[p, j])
+                    ==
+                    b.partition_factor_steric_comp[t, j]
                     * b.partition_factor_born_solvation_comp[t, j]
                     * b.partition_factor_donnan_comp_feed[t, x, j]
                     )
