@@ -227,8 +227,8 @@ if __name__ == '__main__':
 
     # Membrane area and recovery haven't typically been included in the literature for DSPM-DE,
     # but since we include them in our model to simulate/optimize at process level, I chose to fix those here
-    m.fs.unit.area.fix(60)
-    m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.1)
+    m.fs.unit.area.fix(40)
+    m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.5)
 
     for con in m.fs.unit.component_data_objects(Constraint, descend_into=False):
         con.deactivate()
