@@ -180,9 +180,9 @@ class TestNanoFiltration():
         assert isinstance(m.fs.unit.pore_exit, props.DSPMDEStateBlock)
 
         # test statistics
-        assert number_variables(m) == 357
-        assert number_total_constraints(m) == 324
-        assert number_unused_variables(m) == 8  # temperature and pressure unused on particular stateblocks
+        assert number_variables(m) == 507
+        assert number_total_constraints(m) == 466
+        assert number_unused_variables(m) == 6  # temperature and pressure unused on particular stateblocks
 
     @pytest.mark.unit
     def test_dof(self, NF_frame):

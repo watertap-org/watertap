@@ -136,6 +136,8 @@ if __name__ == '__main__':
     # Membrane area and recovery haven't typically been included in the literature for DSPM-DE,
     # but since we include them in our model to simulate/optimize at process level, I chose to fix those here
     m.fs.unit.area.fix(40)
+    m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.5)
+
     # m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.8)
 
     #Other things I tried fixing when experimenting with DOF reduction
@@ -153,7 +155,6 @@ if __name__ == '__main__':
 
     # Set electroneutrality tolerance to 0 (value used in equality constraints for electroneutrality in unit model)
     m.fs.unit.tol_electroneutrality = 0
-
     print ('----------------BEFORE SCALING---------------------------------------')
     # for ion, i in m.fs.unit.feed_side.properties_in[0].radius_stokes_comp.items():
     #     print(f"{ion}stokes radius:", value(i))
@@ -185,13 +186,13 @@ if __name__ == '__main__':
     iscale.calculate_scaling_factors(m.fs.unit)
     print('---------------- After scaling---------------------------------------')
     [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
-    m.fs.unit._automate_rescale_variables()
+    # m.fs.unit._automate_rescale_variables()
     # iscale.set_scaling_factor(m.fs.unit.feed_side.properties_in[0].conc_mol_phase_comp['Liq', 'Ca_2+'], 1e3)
     # iscale.set_scaling_factor(m.fs.unit.feed_side.properties_in[0].conc_mol_phase_comp['Liq', 'Ca_2+'], 1e3)
     # iscale.set_scaling_factor(m.fs.unit.feed_side.properties_in[0].mole_frac_phase_comp['Liq', 'Ca_2+'], 1e3)
     # iscale.set_scaling_factor(m.fs.unit.feed_side.properties_in[0].mole_frac_phase_comp['Liq', 'SO4_2-'], 1e3)
 
-    iscale.calculate_scaling_factors(m.fs.unit)
+    # iscale.calculate_scaling_factors(m.fs.unit)
     print('---------------- After scaling again---------------------------------------')
     print('List of badly scaled vars:\n')
     [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
@@ -217,7 +218,7 @@ if __name__ == '__main__':
     [print(i[0],i[1]) for i in iscale.badly_scaled_var_generator(m)]
     print('\nNUMBER OF badly scaled variables:', len(list(iscale.badly_scaled_var_generator(m))))
     #
-    m.fs.unit._automate_rescale_variables(rescale_factor=1)
+    # m.fs.unit._automate_rescale_variables(rescale_factor=1)
 
     # print('---------------- AFTER AUTOMATE RESCALE---------------------------------------')
     # [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
@@ -240,7 +241,6 @@ if __name__ == '__main__':
     # log_infeasible_bounds(m.fs.unit)
 
     # m.fs.unit.area.unfix()
-    m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.5)
     for con in m.fs.unit.component_data_objects(Constraint, descend_into=False):
         con.deactivate()
 
@@ -257,7 +257,6 @@ if __name__ == '__main__':
 
     m.fs.unit.eq_solute_flux_pore_domain.activate()
     m.fs.unit.eq_recovery_mol_phase_comp.activate() # model solves and gets ~67%!
-    m.fs.unit.eq_rejection_phase_comp.activate()
     m.fs.unit.eq_pore_isothermal.activate()
     m.fs.unit.feed_side.eq_feed_interface_isothermal.activate() #- extends number of iterations
     m.fs.unit.feed_side.eq_feed_isothermal.activate() # - extends number of iterations
@@ -291,18 +290,27 @@ if __name__ == '__main__':
         b.report()
         print('SUCCESS WITH FIRST SOLVE!!!!!!!!!!!')
 
+    print ('---------------- AFTER SOLVE 1---------------------------------------')
+    [print(i[0],i[1]) for i in iscale.badly_scaled_var_generator(m)]
+    print('\nNUMBER OF badly scaled variables:', len(list(iscale.badly_scaled_var_generator(m))))
+    #
+    m.fs.unit._automate_rescale_variables(rescale_factor=1)
+    # Constraints activated that messed up the solve
+    # m.fs.unit.eq_interfacial_partitioning_feed.activate()
+    # m.fs.unit.eq_interfacial_partitioning_permeate.activate()
+    # m.fs.unit.eq_electroneutrality_mixed_permeate.activate() #- extends number of iterations
+    # m.fs.unit.eq_electroneutrality_interface.activate()
+    # m.fs.unit.eq_electroneutrality_pore.activate()
+    # m.fs.unit.eq_electroneutrality_permeate.activate()
+    m.fs.unit.eq_electroneutrality_feed.activate() #- extends number of iterations
+    m.fs.unit.eq_rejection_phase_comp.activate()
+
+
     results = solver.solve(m, tee=True)
     if check_optimal_termination(results):
         b.report()
         print('SUCCESS WITH SECOND SOLVE!!!!!!!!!!!')
-    # Constraints activated that messed up the solve
-    m.fs.unit.eq_interfacial_partitioning_feed.activate()
-    m.fs.unit.eq_interfacial_partitioning_permeate.activate()
-    m.fs.unit.eq_electroneutrality_mixed_permeate.activate() #- extends number of iterations
-    m.fs.unit.eq_electroneutrality_interface.activate()
-    m.fs.unit.eq_electroneutrality_pore.activate()
-    m.fs.unit.eq_electroneutrality_permeate.activate()
-    m.fs.unit.eq_electroneutrality_feed.activate() #- extends number of iterations
+
 
     # m.fs.unit.eq_recovery_vol_phase.activate() # model solves in 27 iterations (instead of 25), but doesn't match recovery_mol_phase_comp
     # m.fs.unit.eq_equal_flow_vol_pore_permeate.activate() # brought in after eq_permeate_isothermal - flow rate values were 1e5 but solve worked
