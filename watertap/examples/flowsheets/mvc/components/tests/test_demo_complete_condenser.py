@@ -11,6 +11,7 @@
 #
 ###############################################################################
 import pytest
+from io import StringIO
 from watertap.examples.flowsheets.mvc.components.demo_complete_condenser import main as main_complete_condenser
 from idaes.core.util import get_solver
 
@@ -18,12 +19,13 @@ solver = get_solver()
 
 # -----------------------------------------------------------------------------
 @pytest.mark.component
-def test_heat_exchanger(capsys):
-    main_complete_condenser()
-    captured = capsys.readouterr()
+def test_heat_exchanger():
+    m = main_complete_condenser()
 
-    assert captured.out == \
-"""
+    report_io = StringIO()
+    m.fs.unit.report(ostream=report_io)
+    output = \
+        """
 ====================================================================================
 Unit : fs.unit                                                             Time: 0.0
 ------------------------------------------------------------------------------------
@@ -43,3 +45,4 @@ Unit : fs.unit                                                             Time:
     pressure                                50000.     50000.
 ====================================================================================
 """
+    assert output == report_io.getvalue()

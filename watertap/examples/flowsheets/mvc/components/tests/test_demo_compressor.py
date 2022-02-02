@@ -11,6 +11,7 @@
 #
 ###############################################################################
 import pytest
+from io import StringIO
 from watertap.examples.flowsheets.mvc.components.demo_compressor import main as main_compressor
 from idaes.core.util import get_solver
 
@@ -18,12 +19,13 @@ solver = get_solver()
 
 # -----------------------------------------------------------------------------
 @pytest.mark.component
-def test_compressor(capsys):
-    main_compressor()
-    captured = capsys.readouterr()
+def test_compressor():
+    m = main_compressor()
 
-    assert captured.out == \
-"""
+    report_io = StringIO()
+    m.fs.compressor.report(ostream=report_io)
+    output = \
+        """
 ====================================================================================
 Unit : fs.compressor                                                       Time: 0.0
 ------------------------------------------------------------------------------------
@@ -45,3 +47,4 @@ Unit : fs.compressor                                                       Time:
     pressure                                50000. 1.0000e+05
 ====================================================================================
 """
+    assert output == report_io.getvalue()

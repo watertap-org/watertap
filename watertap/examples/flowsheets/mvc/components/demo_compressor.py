@@ -43,5 +43,7 @@ def main():
 
     m.fs.compressor.report()
 
+    return m
+
 if __name__ == "__main__":
-    main()
+    m = main()
