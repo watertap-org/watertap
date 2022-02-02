@@ -1084,7 +1084,7 @@ class SeawaterStateBlockData(StateBlockData):
                 if isinstance(getattr(self.params, j), Solute):
                     if iscale.get_scaling_factor(self.molality_comp[j]) is None:
                         sf = iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j])
-                        sf *= iscale.get_scaling_factor(self.params.mw_comp[j])
+                        sf /= iscale.get_scaling_factor(self.params.mw_comp[j])
                         iscale.set_scaling_factor(self.molality_comp[j], sf)
 
         if self.is_property_constructed('enth_flow'):
