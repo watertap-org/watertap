@@ -44,13 +44,13 @@ def get_sweep_params_from_yaml(m, yaml_filename):
 
         A_comp:
             type: NormalSample
-            model_value: fs.RO.A_comp
+            param: fs.RO.A_comp
             mean: 4.0e-12
             std: 0.5e-12
 
     where the top-level keyword can be any short, easily understood identifier
     for the parameter.  ``type`` must be one of ``LinearSample``, ``UniformSample``,
-    ``NormalSample``, or ``LatinHypercubeSample``.  ``model_value`` must be a valid
+    ``NormalSample``, or ``LatinHypercubeSample``.  ``param`` must be a valid
     dot-sperated string path to the object attribute (in this case, an RO attribute
     on the flowsheet ``m``) that you wish to vary.  The remaining arguments are
     dependent on the sample type selected.  For ``NormalSample`` information about
@@ -77,10 +77,10 @@ def get_sweep_params_from_yaml(m, yaml_filename):
     for param, values in input_dict.items():
 
         # Find the specified component on the model 
-        component = m.find_component(values['model_value'])
+        component = m.find_component(values['param'])
 
         if component is None:
-            raise ValueError(f'Could not acccess attribute {values["model_value"]}')
+            raise ValueError(f'Could not acccess attribute {values["param"]}')
 
         if values['type'] == 'LinearSample':
             sweep_params[param] = LinearSample(component,
