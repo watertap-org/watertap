@@ -1,17 +1,17 @@
 #================================================================
 A_comp:
   type: NormalSample
-  model_value: m.fs.RO.A_comp
+  model_value: fs.RO.A_comp
   mean: 4.0e-12
   std: 0.5e-12
 B_comp:
   type: NormalSample
-  model_value: m.fs.RO.B_comp
+  model_value: fs.RO.B_comp
   mean: 3.5e-8
   std: 0.5e-8
 Spacer_porosity:
   type: UniformSample
-  model_value: m.fs.RO.spacer_porosity
+  model_value: fs.RO.spacer_porosity
   lower_limit: 0.95
   upper_limit: 0.99
 #================================================================
