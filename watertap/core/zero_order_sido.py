@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module contains methods for constructung the materail balances for
+This module contains methods for constructing the material balances for
 zero-order single inlet-double outlet (SIDO) unit models.
 """
 
