@@ -34,7 +34,7 @@ from idaes.core import (declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType)
 from idaes.core.components import Component, Solute, Solvent
-from idaes.core.phases import LiquidPhase, VaporPhase, SolidPhase
+from idaes.core.phases import LiquidPhase, VaporPhase, SolidPhase, Phase, PhaseType as PT
 from idaes.core.util.constants import Constants
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
@@ -84,13 +84,13 @@ class NaClParameterData(PhysicalParameterBlock):
         self._state_block_class = NaClStateBlock
 
         # Component
-        self.H2O = Solvent()
-        self.NaCl = Solute()
+        self.H2O = Component(default={"valid_phase_types": [PT.liquidPhase, PT.vaporPhase]})
+        self.NaCl = Component(default={"valid_phase_types": [PT.liquidPhase, PT.solidPhase]})
 
         # Phases
-        self.Liq = LiquidPhase()
-        self.Vap = VaporPhase()
-        self.Sol = SolidPhase()
+        self.Liq = LiquidPhase(default={"component_list": ["H2O", "NaCl"]})
+        self.Vap = VaporPhase(default={"component_list": ["H2O"]})
+        self.Sol = SolidPhase(default={"component_list": ["NaCl"]})
 
         ''' 
        References
@@ -559,9 +559,9 @@ class NaClStateBlockData(StateBlockData):
                             units = pyunits.degK,
                             doc='State temperature [K]')
 
-        self.flow_mass_phase_comp = Var(self.params.phase_list, self.params.component_list,
-                            initialize={('Liq', 'H2O'): 0.965, ('Liq', 'NaCl'): 0.035, # }, 
-                            ('Vap', 'H2O'): 0, ('Vap', 'NaCl'): 0, ('Sol', 'H2O'): 0, ('Sol', 'NaCl'): 0},
+        self.flow_mass_phase_comp = Var(self.phase_component_set, 
+                            initialize={('Liq', 'H2O'): 0.965, ('Liq', 'NaCl'): 0.035, ('Vap', 'H2O'): 0, 
+                            ('Sol', 'NaCl'): 0},
                             bounds=(0, None),
                             domain=NonNegativeReals,
                             units=pyunits.kg/pyunits.s,
@@ -571,19 +571,21 @@ class NaClStateBlockData(StateBlockData):
 
     # 1 Mass fraction: From NaCl property package 
     def _mass_frac_phase_comp(self):
-        self.mass_frac_phase_comp = Var(self.params.phase_list,
-                                    self.params.component_list,
+        self.mass_frac_phase_comp = Var(self.phase_component_set,
                                     domain=NonNegativeReals,
-                                    initialize={('Liq', 'H2O'): 0.965, ('Liq', 'NaCl'): 0.035},
-                                    bounds=(0, 1.0001),  # upper bound set to None because of stability benefits
+                                    initialize={('Liq', 'H2O'): 0.965, ('Liq', 'NaCl'): 0.035, ('Vap', 'H2O'): 1.0, 
+                                    ('Sol', 'NaCl'): 1.0},
+                                    bounds=(0, 1.0001),  
                                     units=pyunits.dimensionless,
                                     doc='Mass fraction')
 
         def rule_mass_frac_phase_comp(b, p, j):  
             eps = 1e-15 * pyunits.kg/pyunits.s # Small value added to denominator ensure denominator is always greater than zero.
-            return (b.mass_frac_phase_comp[p, j] ==  b.flow_mass_phase_comp[p, j] / (eps + sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list)))
+            return (b.mass_frac_phase_comp[p, j] ==  b.flow_mass_phase_comp[p, j] / 
+                (eps + sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list if (p, j) in b.phase_component_set)))
+
         
-        self.eq_mass_frac_phase_comp = Constraint(self.params.phase_list, self.params.component_list, rule=rule_mass_frac_phase_comp)
+        self.eq_mass_frac_phase_comp = Constraint(self.phase_component_set, rule=rule_mass_frac_phase_comp)
 
 
     # 2. Solubility in g/L: calculated from solubility mass fraction
@@ -780,13 +782,16 @@ class NaClStateBlockData(StateBlockData):
 
         def rule_flow_vol_phase(b, p):
             if p == 'Liq':
-                return (b.flow_vol_phase[p] == sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list)
+                return (b.flow_vol_phase[p] == 
+                    sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list if (p, j) in self.phase_component_set)
                         / b.dens_mass_phase[p])
             elif p == 'Sol':
-                return (b.flow_vol_phase[p] == sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list)
+                return (b.flow_vol_phase[p] == 
+                    sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list if (p, j) in self.phase_component_set)
                         / b.dens_mass_solute['Sol'])
             elif p == 'Vap':
-                return (b.flow_vol_phase[p] == sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list)
+                return (b.flow_vol_phase[p] == 
+                    sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list if (p, j) in self.phase_component_set)
                         / b.dens_mass_solvent['Vap'])
         self.eq_flow_vol_phase = Constraint(self.params.phase_list, rule=rule_flow_vol_phase)
 
@@ -1012,26 +1017,10 @@ class NaClStateBlockData(StateBlockData):
         self.enth_flow = Expression(rule=rule_enth_flow)
 
 
-    # # 21. Volumetric fraction of solids in slurry (solid + liquid phase)
-    # def _vol_frac_phase(self):
-    #     self.vol_frac_phase = Var(
-    #         ['Liq', 'Sol'],
-    #         initialize=0.5,
-    #         bounds=(0, 1),
-    #         units=pyunits.dimensionless,
-    #         doc="Volumetric fraction of liquid and solids in slurry")
-
-    #     def rule_vol_frac_phase(b, p):  
-    #         return ( b.vol_frac_phase[p] == b.flow_vol_phase[p] / (b.flow_vol_phase['Sol'] + b.flow_vol_phase['Liq']) )
-
-    #     self.eq_vol_frac_phase = Constraint(['Liq', 'Sol'], rule=rule_vol_frac_phase)
-
-
     # 21. Molar flows
     def _flow_mol_phase_comp(self):
         self.flow_mol_phase_comp = Var(
-            self.params.phase_list,
-            self.params.component_list,
+            self.phase_component_set,
             initialize=100,
             bounds=(None, None),
             domain=NonNegativeReals,
@@ -1039,17 +1028,15 @@ class NaClStateBlockData(StateBlockData):
             doc="Molar flowrate")
 
         def rule_flow_mol_phase_comp(b, p, j):
-            return (b.flow_mol_phase_comp[p, j] ==
-                    b.flow_mass_phase_comp[p, j] / b.params.mw_comp[j])
+            return (b.flow_mol_phase_comp[p, j] == b.flow_mass_phase_comp[p, j] / b.params.mw_comp[j])
 
-        self.eq_flow_mol_phase_comp = Constraint(self.params.phase_list, self.params.component_list, rule=rule_flow_mol_phase_comp)
+        self.eq_flow_mol_phase_comp = Constraint(self.phase_component_set, rule=rule_flow_mol_phase_comp)
 
 
     # 22. Mole fractions
     def _mole_frac_phase_comp(self):
         self.mole_frac_phase_comp = Var(
-            self.params.phase_list,
-            self.params.component_list,
+            self.phase_component_set,
             initialize=0.1,
             bounds = (0, 1.0001),
             units=pyunits.dimensionless,
@@ -1057,9 +1044,10 @@ class NaClStateBlockData(StateBlockData):
 
         def rule_mole_frac_phase_comp(b, p, j):  
             eps = 1e-15 * pyunits.mol/pyunits.s # Small value added to denominator ensure denominator is always greater than zero.
-            return (b.mole_frac_phase_comp[p, j] == b.flow_mol_phase_comp[p, j] / (eps + sum(b.flow_mol_phase_comp[p, j] for j in b.params.component_list)))
+            return (b.mole_frac_phase_comp[p, j] == b.flow_mol_phase_comp[p, j] / 
+                (eps + sum(b.flow_mol_phase_comp[p, j] for j in self.params.component_list if (p, j) in b.phase_component_set)))
         
-        self.eq_mole_frac_phase_comp = Constraint(self.params.phase_list, self.params.component_list, rule=rule_mole_frac_phase_comp)
+        self.eq_mole_frac_phase_comp = Constraint(self.phase_component_set, rule=rule_mole_frac_phase_comp)
 
 
     # -----------------------------------------------------------------------------
@@ -1114,20 +1102,11 @@ class NaClStateBlockData(StateBlockData):
             sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Vap', 'H2O'], default=1e0, warning=True)
             iscale.set_scaling_factor(self.flow_mass_phase_comp['Vap', 'H2O'], sf)
 
-        # This flow is always zero - no H2O in solid phase
-        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Sol', 'H2O']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Sol', 'H2O'], default=1e0)
-            iscale.set_scaling_factor(self.flow_mass_phase_comp['Sol', 'H2O'], sf)
-
-        # This flow is always zero - no NaCl in vapour phase
-        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Vap', 'NaCl']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Vap', 'NaCl'], default=1e0)
-            iscale.set_scaling_factor(self.flow_mass_phase_comp['Vap', 'NaCl'], sf)
 
         # scaling factors for molecular weights 
         for j, v in self.params.mw_comp.items():
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.params.mw_comp, 1e-1)
+                iscale.set_scaling_factor(self.params.mw_comp, 1e3)
 
         # Scaling for solubility (g/L) parameters. Values typically about 300-500, so scale by 1e-3.
         if self.is_property_constructed('solubility_mass_phase_comp'):
@@ -1195,13 +1174,13 @@ class NaClStateBlockData(StateBlockData):
                                       iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'])
                                       * iscale.get_scaling_factor(self.enth_mass_phase['Liq']))
 
+
         # Scaling molar flows - derived from flow_mass
         if self.is_property_constructed('flow_mol_phase_comp'):
-            for p in self.params.phase_list:
-                for j in self.params.component_list:
+            for p, j in self.phase_component_set:
                     if iscale.get_scaling_factor(self.flow_mol_phase_comp[p, j]) is None:
                         sf = iscale.get_scaling_factor(self.flow_mass_phase_comp[p, j])
-                        sf *= iscale.get_scaling_factor(self.params.mw_comp[j])
+                        sf /= iscale.get_scaling_factor(self.params.mw_comp[j])
                         iscale.set_scaling_factor(self.flow_mol_phase_comp[p, j], sf)
 
 
@@ -1209,23 +1188,17 @@ class NaClStateBlockData(StateBlockData):
         # Scaling for mass fractions - needs verification!
         if self.is_property_constructed('mass_frac_phase_comp'):
             # Option 1: 
-            for p in self.params.phase_list:
-                for j in self.params.component_list:
-                    if iscale.get_scaling_factor(self.mass_frac_phase_comp[p, j]) is None:
-                        if p == 'Sol':
-                            if j == 'NaCl':
-                                iscale.set_scaling_factor(self.mass_frac_phase_comp[p, j], 1e0)
-                            else:
-                                sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp[p, j])
-                              / iscale.get_scaling_factor(self.flow_mass_phase_comp[p, 'NaCl']))
-                                iscale.set_scaling_factor(self.mass_frac_phase_comp[p, j], sf)
-                        else:
-                            if j == 'NaCl':
-                                sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp[p, j])
-                              / iscale.get_scaling_factor(self.flow_mass_phase_comp[p, 'H2O']))
-                                iscale.set_scaling_factor(self.mass_frac_phase_comp[p, j], sf)
-                            elif j == 'H2O':
-                                iscale.set_scaling_factor(self.mass_frac_phase_comp[p, j], 1e0)
+            for p, j in self.phase_component_set:
+                if iscale.get_scaling_factor(self.mass_frac_phase_comp[p, j]) is None:
+                    if p == 'Sol':
+                        iscale.set_scaling_factor(self.mass_frac_phase_comp[p, j], 1e0)
+                    else:
+                        if j == 'NaCl':
+                            sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp[p, j])
+                          / iscale.get_scaling_factor(self.flow_mass_phase_comp[p, 'H2O']))
+                            iscale.set_scaling_factor(self.mass_frac_phase_comp[p, j], sf)
+                        elif j == 'H2O':
+                            iscale.set_scaling_factor(self.mass_frac_phase_comp[p, j], 1e0)
 
 
             # # Option 2: 
@@ -1234,11 +1207,9 @@ class NaClStateBlockData(StateBlockData):
             # sf_flow_mass_sol = iscale.get_scaling_factor(self.flow_mass_phase_comp['Sol', 'NaCl'])
             # sf_flow_mass = min(sf_flow_mass_liq, sf_flow_mass_vap, sf_flow_mass_sol)
 
-            # for p in self.params.phase_list:
-            #     for j in self.params.component_list:
+            # for p, j in self.phase_component_set:
             #         if iscale.get_scaling_factor(self.mass_frac_phase_comp[p, j]) is None:
             #             sf = iscale.get_scaling_factor(self.flow_mass_phase_comp[p, j]) / sf_flow_mass
-            #             print('iter:', p, sf)
             #             iscale.set_scaling_factor(self.mass_frac_phase_comp[p, j], sf)
 
 
@@ -1247,23 +1218,17 @@ class NaClStateBlockData(StateBlockData):
         # Appears to make things worse!
         if self.is_property_constructed('mole_frac_phase_comp'):
             # Option 1: 
-            for p in self.params.phase_list:
-                for j in self.params.component_list:
-                    if iscale.get_scaling_factor(self.mole_frac_phase_comp[p, j]) is None:
-                        if p == 'Sol':
-                            if j == 'NaCl':
-                                iscale.set_scaling_factor(self.mole_frac_phase_comp[p, j], 1e0)
-                            else:
-                                sf = (iscale.get_scaling_factor(self.flow_mol_phase_comp[p, j])
-                              / iscale.get_scaling_factor(self.flow_mol_phase_comp[p, 'NaCl']))
-                                iscale.set_scaling_factor(self.mole_frac_phase_comp[p, j], sf)
-                        else:
-                            if j == 'NaCl':
-                                sf = (iscale.get_scaling_factor(self.flow_mol_phase_comp[p, j])
-                              / iscale.get_scaling_factor(self.flow_mol_phase_comp[p, 'H2O']))
-                                iscale.set_scaling_factor(self.mole_frac_phase_comp[p, j], sf)
-                            elif j == 'H2O':
-                                iscale.set_scaling_factor(self.mole_frac_phase_comp[p, j], 1e0)
+            for p, j in self.phase_component_set:
+                if iscale.get_scaling_factor(self.mole_frac_phase_comp[p, j]) is None:
+                    if p == 'Sol':
+                        iscale.set_scaling_factor(self.mole_frac_phase_comp[p, j], 1e0)
+                    else:
+                        if j == 'NaCl':
+                            sf = (iscale.get_scaling_factor(self.flow_mol_phase_comp[p, j])
+                          / iscale.get_scaling_factor(self.flow_mol_phase_comp[p, 'H2O']))
+                            iscale.set_scaling_factor(self.mole_frac_phase_comp[p, j], sf)
+                        elif j == 'H2O':
+                            iscale.set_scaling_factor(self.mole_frac_phase_comp[p, j], 1e0)
 
 
             # # Option 2: 
@@ -1272,14 +1237,12 @@ class NaClStateBlockData(StateBlockData):
             # sf_flow_mol_sol = iscale.get_scaling_factor(self.flow_mol_phase_comp['Sol', 'NaCl'])
             # sf_flow_mol = min(sf_flow_mol_liq, sf_flow_mol_vap, sf_flow_mol_sol)
 
-            # for p in self.params.phase_list:
-            #     for j in self.params.component_list:
-            #         if iscale.get_scaling_factor(self.mole_frac_phase_comp[p, j]) is None:
-            #             sf = iscale.get_scaling_factor(self.flow_mol_phase_comp[p, j]) / sf_flow_mol
-            #             print('iter:', p, sf)
-            #             iscale.set_scaling_factor(self.mole_frac_phase_comp[p, j], sf)
+            # for p, j in self.phase_component_set:
+            #     if iscale.get_scaling_factor(self.mole_frac_phase_comp[p, j]) is None:
+            #         sf = iscale.get_scaling_factor(self.flow_mol_phase_comp[p, j]) / sf_flow_mol
+            #         iscale.set_scaling_factor(self.mole_frac_phase_comp[p, j], sf)
 
-        ########################################################
+    #     ########################################################
 
         # Scaling for mass concentrations
         if self.is_property_constructed('conc_mass_phase_comp'):
@@ -1340,6 +1303,7 @@ class NaClStateBlockData(StateBlockData):
                 for (ind, c) in c_phase.items():
                     sf = iscale.get_scaling_factor(v[ind], default=1, warning=True)
                     iscale.constraint_scaling_transform(c, sf)
+
 
         # Property relationships indexed by component and phase
         v_str_lst_phase_comp = ['mass_frac_phase_comp', 'flow_mol_phase_comp', 'mole_frac_phase_comp']
