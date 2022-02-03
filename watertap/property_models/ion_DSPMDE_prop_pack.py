@@ -12,7 +12,7 @@
 ###############################################################################
 """
 Initial property package for multi-ionic system for use in the
-Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE
+Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE)
 """
 
 # Import Python libraries
@@ -21,8 +21,7 @@ import idaes.logger as idaeslog
 from enum import Enum, auto
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, \
-    Var, Param, Suffix, value, check_optimal_termination
-from pyomo.environ import units as pyunits
+    Var, Param, Suffix, value, check_optimal_termination, units as pyunits, assert_optimal_termination
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -43,7 +42,7 @@ from idaes.core.util.misc import add_object_reference, extract_data
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom, \
     number_unfixed_variables
-from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 
 # Set up logger
@@ -53,8 +52,6 @@ _log = idaeslog.getLogger(__name__)
 class ActivityCoefficientModel(Enum):
     ideal = auto()                    # Ideal
     davies = auto()                   # Davies
-    enrtl = auto()                    # eNRTL
-    pitzer = auto()                   # Pitzer-Kim
 
 class DensityCalculation(Enum):
     constant = auto()                 # constant @ 1000 kg/m3
@@ -62,7 +59,7 @@ class DensityCalculation(Enum):
     laliberte = auto()                # Laliberte correlation using apparent density #TODO add this later with reference
 
 
-@declare_process_block_class("DSPMDEParameterBlock") #TODO: replace w/ "PropParameterBlock"
+@declare_process_block_class("DSPMDEParameterBlock")
 class DSPMDEParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
@@ -81,10 +78,6 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         default={},
         domain=dict,
         description="Dict of component names and molecular weight data"))
-    CONFIG.declare("density_data", ConfigValue(
-        default={},
-        domain=dict,
-        description="Dict of component names and component density data"))
     CONFIG.declare("charge", ConfigValue(
         default={},
         domain=dict,
@@ -103,8 +96,6 @@ class DSPMDEParameterData(PhysicalParameterBlock):
     
            "``ActivityCoefficientModel.ideal``", "Activity coefficients equal to 1 assuming ideal solution"
            "``ActivityCoefficientModel.davies``", "Activity coefficients estimated via Davies model"
-           "``ActivityCoefficientModel.enrtl``", "Activity coefficients estimated via eNRTL model"
-           "``ActivityCoefficientModel.pitzer``", "Activity coefficients estimated via Pitzer-Kim model"
        """))
     CONFIG.declare("density_calculation", ConfigValue(
         default=DensityCalculation.seawater,
@@ -122,17 +113,6 @@ class DSPMDEParameterData(PhysicalParameterBlock):
            "``DensityCalculation.seawater``", "Solution density based on correlation for seawater (TDS)"
            "``DensityCalculation.laliberte``", "Solution density based on mixing correlation from Laliberte"
        """))
-
-    def _init_param_data(self, data, default=None):
-        if default is None:
-            default = 1
-        config = getattr(self.config, data)
-        if len(config) != 0:
-            return extract_data(config)
-        else: #TODO only works if no data provided at all, but should have conditional that handles one or more missing vals
-            _log.warning(f"Missing initial configuration values for {data}. All values being arbitrarily set to {default}. "
-                         f"Ensure correct data values are assigned before solving.")
-            return default
 
     def build(self):
         '''
@@ -154,50 +134,50 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         # reference
         # Todo: enter any relevant references
 
-
+        # TODO: consider turning parameters into variables for future param estimation
         # molecular weight
         self.mw_comp = Param(
             self.component_list,
             mutable=True,
-            initialize=self._init_param_data('mw_data'),
+            default=18e-3,
+            initialize=self.config.mw_data,
             units=pyunits.kg/pyunits.mol,
-            doc="Molecular weight kg/mol")
+            doc="Molecular weight")
         # Stokes radius
         self.radius_stokes_comp = Param(
             self.solute_set,
             mutable=True,
-            initialize=self._init_param_data('stokes_radius_data', default=1e-9),
+            default=1e-10,
+            initialize=self.config.stokes_radius_data,
             units=pyunits.m,
             doc="Stokes radius of solute")
         self.diffus_phase_comp = Param(
             self.phase_list,
             self.solute_set,
             mutable=True,
-            initialize=self._init_param_data('diffusivity_data', default=1e-9),
+            default=1e-9,
+            initialize=self.config.diffusivity_data,
             units=pyunits.m ** 2 * pyunits.s ** -1,
             doc="Bulk diffusivity of ion")
         self.visc_d_phase = Param(
             self.phase_list,
             mutable=True,
-            initialize=1e-3, # revisit: assuming ~ 1e-3 Pa*s for pure water
+            default=1e-3,
+            initialize=1e-3, #TODO:revisit- assuming ~ 1e-3 Pa*s for pure water
             units=pyunits.Pa * pyunits.s,
             doc="Fluid viscosity")
-        self.dens_mass_comp = Param(
-            self.component_list,
-            mutable=True,
-            initialize=self._init_param_data('density_data', default=1e3),
-            units=pyunits.kg/pyunits.m**3,
-            doc="Density of component")
         # Ion charge
         self.charge_comp = Param(
             self.solute_set,
             mutable=True,
-            initialize=self._init_param_data('charge'),
+            default=1,
+            initialize=self.config.charge,
             units=pyunits.dimensionless,
             doc="Ion charge")
         # Dielectric constant of water
         self.dielectric_constant = Param(
             mutable=True,
+            default=80.4,
             initialize=80.4, #todo: make a variable with parameter values for coefficients in the function of temperature
             units=pyunits.dimensionless,
             doc="Dielectric constant of water")
@@ -241,15 +221,12 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             v.fix()
 
         # ---default scaling---
-        # self.set_default_scaling('flow_mol_phase_comp', 1)
         self.set_default_scaling('temperature', 1e-2)
         self.set_default_scaling('pressure', 1e-6)
         self.set_default_scaling('dens_mass_phase', 1e-3, index='Liq')
-        # self.set_default_scaling('dens_mass_comp', 1e-3, index='Liq')
         self.set_default_scaling('visc_d_phase', 1e3, index='Liq')
         self.set_default_scaling('diffus_phase_comp', 1e9, index='Liq')
-        # self.set_default_scaling('osm_coeff', 1e1)
-        # self.set_default_scaling('act_coeff_phase_comp', 1, index='Liq')
+
 
     @classmethod
     def define_metadata(cls, obj):
@@ -273,7 +250,6 @@ class DSPMDEParameterData(PhysicalParameterBlock):
              'pressure_osm': {'method': '_pressure_osm'},
              'radius_stokes_comp': {'method': '_radius_stokes_comp'},
              'mw_comp': {'method': '_mw_comp'},
-             'dens_mass_comp': {'method': '_dens_mass_comp'},
              'charge_comp': {'method': '_charge_comp'},
              'act_coeff_phase_comp': {'method': '_act_coeff_phase_comp'},
              'dielectric_constant': {'method': '_dielectric_constant'}
@@ -305,7 +281,7 @@ class _DSPMDEStateBlock(StateBlock):
                          control volume passes the inlet values as initial
                          guess.The keys for the state_args dictionary are:
 
-                         flow_mass_phase_comp : value at which to initialize
+                         flow_mol_phase_comp : value at which to initialize
                                                phase component flows
                          pressure : value at which to initialize pressure
                          temperature : value at which to initialize temperature
@@ -349,7 +325,7 @@ class _DSPMDEStateBlock(StateBlock):
         for k in self.keys():
             dof = degrees_of_freedom(self[k])
             if dof != 0:
-                raise PropertyPackageError("\nWhile initializing {sb_name}, the degrees of freedom "
+                raise InitializationError("\nWhile initializing {sb_name}, the degrees of freedom "
                                            "are {dof}, when zero is required. \nInitialization assumes "
                                            "that the state variables should be fixed and that no other "
                                            "variables are fixed. \nIf other properties have a "
@@ -368,6 +344,8 @@ class _DSPMDEStateBlock(StateBlock):
             # Initialize properties
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = solve_indexed_blocks(opt, [self], tee=slc.tee)
+                if not assert_optimal_termination:
+                    raise InitializationError('The property package failed to solve during initialization.')
             init_log.info_high("Property initialization: {}.".format(idaeslog.condition(results)))
 
         # ---------------------------------------------------------------------
@@ -487,7 +465,7 @@ class _DSPMDEStateBlock(StateBlock):
 class DSPMDEStateBlockData(StateBlockData):
     def build(self):
         """Callable method for Block construction."""
-        super(DSPMDEStateBlockData, self).build()
+        super().build()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
@@ -505,7 +483,7 @@ class DSPMDEStateBlockData(StateBlockData):
             initialize=298.15,
             bounds=(273.15, 373.15),
             domain=NonNegativeReals,
-            units=pyunits.degK,
+            units=pyunits.K,
             doc='State temperature')
 
         self.pressure = Var(
@@ -522,7 +500,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=lambda b,p,j : 0.4037 if j == "H2O" else 0.0033, #todo: revisit
-            bounds=(1e-6, 1.001),  # upper bound set to None because of stability benefits
+            bounds=(1e-6, 1.001),
             units=pyunits.kg/pyunits.kg,
             doc='Mass fraction')
 
@@ -554,10 +532,6 @@ class DSPMDEStateBlockData(StateBlockData):
                              + b.params.dens_mass_param_B4 * s * t ** 3
                              + b.params.dens_mass_param_B5 * s ** 2 * t ** 2)
                 return b.dens_mass_phase['Liq'] == dens_mass
-
-                #TODO: remove commented code or replace- temporarily assigning density of 1000
-                    # * sum(b.mass_frac_phase_comp['Liq', j] / b.params.dens_mass_comp[j]
-                    #       for j in b.params.component_list) == 1)
         self.eq_dens_mass_phase = Constraint(rule=rule_dens_mass_phase)
 
     def _dens_mass_solvent(self):
@@ -630,7 +604,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=100,
-            bounds=(1e-6, None),
+            bounds=(1e-8, None),
             units=pyunits.kg / pyunits.s,
             doc="Component Mass flowrate")
 
@@ -681,9 +655,6 @@ class DSPMDEStateBlockData(StateBlockData):
     def _mw_comp(self):
         add_object_reference(self, "mw_comp", self.params.mw_comp)
 
-    def _dens_mass_comp(self):
-        add_object_reference(self, "dens_mass_comp", self.params.dens_mass_comp)
-
     def _charge_comp(self):
         add_object_reference(self, "charge_comp", self.params.charge_comp)
 
@@ -700,22 +671,11 @@ class DSPMDEStateBlockData(StateBlockData):
             units=pyunits.dimensionless,
             doc="activity coefficient of component")
 
-        # if self.params.config.activity_coefficient_model == ActivityCoefficientModel.ideal:
-        #     for p in self.phase_list:
-        #         for j in self.params.solute_set:
-        #             self.act_coeff_phase_comp[p, j].fix(1)
-        # else:
         def rule_act_coeff_phase_comp(b, j):
             if b.params.config.activity_coefficient_model == ActivityCoefficientModel.ideal:
                 return b.act_coeff_phase_comp['Liq', j] == 1
             elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.davies:
                 raise NotImplementedError(f"Davies model has not been implemented yet.")
-            #TODO: remove these in final merge
-
-            # elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.enrtl:
-            #     raise NotImplementedError(f"eNRTL model has not been implemented yet.")
-            # elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.pitzer:
-            #     raise NotImplementedError(f"Pitzer-Kim model has not been implemented yet.")
         self.eq_act_coeff_phase_comp = Constraint(self.params.solute_set,
                                                   rule=rule_act_coeff_phase_comp)
 
@@ -742,6 +702,7 @@ class DSPMDEStateBlockData(StateBlockData):
         """Create material flow terms for control volume."""
         return self.flow_mol_phase_comp[p, j]
 
+    # TODO: add enthalpy terms later
     # def get_enthalpy_flow_terms(self, p):
     #     """Create enthalpy flow terms."""
     #     return self.enth_flow
@@ -756,6 +717,7 @@ class DSPMDEStateBlockData(StateBlockData):
     def default_material_balance_type(self):
         return MaterialBalanceType.componentTotal
 
+    # TODO: augment model with energybalance later
     # def default_energy_balance_type(self):
     #     return EnergyBalanceType.enthalpyTotal
 
@@ -795,8 +757,8 @@ class DSPMDEStateBlockData(StateBlockData):
 
         # default scaling factors have already been set with
         # idaes.core.property_base.calculate_scaling_factors()
-        # for the following variables: flow_mass_phase_comp, pressure,
-        # temperature, dens_mass, visc_d, diffus, osm_coeff, and enth_mass
+        # for the following variables: pressure,
+        # temperature, dens_mass, visc_d_phase, diffus_phase_comp
 
         # these variables should have user input
         if iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O']) is None:
@@ -808,20 +770,15 @@ class DSPMDEStateBlockData(StateBlockData):
                 sf = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j], default=1)
                 iscale.set_scaling_factor(self.flow_mol_phase_comp['Liq', j], sf)
 
-        if self.is_property_constructed('dens_mass_comp'):
-            v = getattr(self, 'dens_mass_comp')
-            for ion, val in v.items():
-                if iscale.get_scaling_factor(self.dens_mass_comp[ion]) is None:
-                    iscale.set_scaling_factor(v[ion], 1e-3)
-
-
         # scaling factors for parameters
-        for j, v in self.params.mw_comp.items():
+        for j, v in self.mw_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.mw_comp[j], 1e1)
-        for (p, j), v in self.params.diffus_phase_comp.items():
+        for ind, v in self.diffus_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.diffus_phase_comp[p, j], 1e10)
+                iscale.set_scaling_factor(self.diffus_phase_comp[ind], 1e10)
+            else:
+                raise
 
         if self.is_property_constructed('dens_mass_solvent'):
             if iscale.get_scaling_factor(self.dens_mass_solvent) is None:
