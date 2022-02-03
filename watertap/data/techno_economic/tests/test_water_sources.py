@@ -23,8 +23,7 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 
 from watertap.unit_models.zero_order import FeedZO
-from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core import Database, WaterParameterBlock
 
 dbpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 with open(os.path.join(dbpath, "water_sources.yaml"), "r") as f:
