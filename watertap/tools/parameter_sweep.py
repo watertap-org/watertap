@@ -624,56 +624,44 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
             else:
                 reinitialize_function(model, **reinitialize_kwargs)
 
-        # Attempt to actually solve the flowsheet
-        results = optimize_function(model, **optimize_kwargs)
-        if pyo.check_optimal_termination(results):
-            local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
-            previous_run_failed = False
-        else:
+        try:
+            # Simulate/optimize with this set of parameter
+            results = optimize_function(model, **optimize_kwargs)
+            pyo.assert_optimal_termination(results)
+
+        except:
+            # If the run is infeasible, report nan
             local_results[k, :] = np.nan
             previous_run_failed = True
-        # try:
-        #     # Simulate/optimize with this set of parameter
-        #     results = optimize_function(model, **optimize_kwargs)
-        #     pyo.assert_optimal_termination(results)
-        #
-        # except:
-        #     # If the run is infeasible, report nan
-        #     local_results[k, :] = np.nan
-        #     previous_run_failed = True
-        #
-        # else:
-        #     # If the simulation suceeds, report stats
-        #     local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
-        #     previous_run_failed = False
+
+        else:
+            # If the simulation suceeds, report stats
+            local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
+            previous_run_failed = False
 
         # If the initial attempt failed and additional conditions are met, try
         # to reinitialize and resolve.
         if reinitialize_before_sweep == False and previous_run_failed and (reinitialize_function is not None):
-            reinitialize_function(model, **reinitialize_kwargs)
-            results = optimize_function(model, **optimize_kwargs)
-            if pyo.check_optimal_termination(results):
+            try:
+                reinitialize_function(model, **reinitialize_kwargs)
+                results = optimize_function(model, **optimize_kwargs)
+                pyo.assert_optimal_termination(results)
+
+            except:
+                pass
+            else:
                 local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
-            # try:
-            #     reinitialize_function(model, **reinitialize_kwargs)
-            #     results = optimize_function(model, **optimize_kwargs)
-            #     pyo.assert_optimal_termination(results)
-            #
-            # except:
-            #     pass
-            # else:
-            #     local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
 
 
         elif reinitialize_before_sweep and previous_run_failed:
             pass
 
         # Update the loop based on the reinitialization
-        solver_termination_condition = results.solver.termination_condition.name
-        _update_local_output_dict(model, sweep_params, k, local_values[k, :], solver_termination_condition, local_output_dict)
+        _update_local_output_dict(model, sweep_params, k, local_values[k, :],
+            results.solver.termination_condition.name, local_output_dict)
 
         # We will store status as a string
-        local_solve_status_list.append(solver_termination_condition)
+        local_solve_status_list.append(results.solver.termination_condition.name)
 
     n_optimal = local_solve_status_list.count("optimal")
     fail_counter = local_num_cases - n_optimal
