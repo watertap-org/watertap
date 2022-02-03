@@ -418,6 +418,7 @@ def test_seawater_data():
     metadata = m.fs.properties.get_metadata().properties
     for v_name in metadata:
         getattr(stream[0], v_name)
+    assert stream[0].is_property_constructed('conc_mol_phase_comp')
 
     assert_units_consistent(m)
 
@@ -440,11 +441,32 @@ def test_seawater_data():
     assert value(stream[0].dens_mass_phase['Liq']) == pytest.approx(1000, rel=1e-3)
     assert value(stream[0].pressure_osm) == pytest.approx(29.641e5, rel=1e-3)
     assert value(stream[0].flow_vol) == pytest.approx(0.001, rel=1e-3)
-    assert value(stream[0].conc_mass_phase_comp['Liq','Na_+']) == pytest.approx(11.122, rel=1e-3)
-    assert value(stream[0].conc_mass_phase_comp['Liq','Cl_-']) == pytest.approx(20.3, rel=1e-3)
+
     assert value(sum(stream[0].conc_mass_phase_comp['Liq',j] for j in m.fs.properties.solute_set)) == pytest.approx(35.334, rel=1e-3)
     assert value(sum(stream[0].mass_frac_phase_comp['Liq',j] for j in m.fs.properties.solute_set)) == pytest.approx(35334e-6, rel=1e-3)
     assert value(sum(stream[0].mass_frac_phase_comp['Liq',j] for j in m.fs.properties.component_list)) == pytest.approx(1, rel=1e-3)
     assert value(sum(stream[0].mole_frac_phase_comp['Liq',j] for j in m.fs.properties.component_list)) == pytest.approx(1, rel=1e-3)
 
+    assert value(stream[0].conc_mol_phase_comp['Liq', 'Na_+']) == pytest.approx(483.565, rel=1e-3)
+    assert value(stream[0].conc_mol_phase_comp['Liq', 'Cl_-']) == pytest.approx(580, rel=1e-3)
+    assert value(stream[0].conc_mol_phase_comp['Liq', 'Ca_2+']) == pytest.approx(9.55, rel=1e-3)
+    assert value(stream[0].conc_mol_phase_comp['Liq', 'SO4_2-']) == pytest.approx(22.25, rel=1e-3)
+    assert value(stream[0].conc_mol_phase_comp['Liq', 'Mg_2+']) == pytest.approx(58.08, rel=1e-3)
 
+    assert value(stream[0].conc_mass_phase_comp['Liq', 'Na_+']) == pytest.approx(11.122, rel=1e-3)
+    assert value(stream[0].conc_mass_phase_comp['Liq', 'Cl_-']) == pytest.approx(20.3, rel=1e-3)
+    assert value(stream[0].conc_mass_phase_comp['Liq', 'Ca_2+']) == pytest.approx(0.382, rel=1e-3)
+    assert value(stream[0].conc_mass_phase_comp['Liq', 'SO4_2-']) == pytest.approx(2.136, rel=1e-3)
+    assert value(stream[0].conc_mass_phase_comp['Liq', 'Mg_2+']) == pytest.approx(1.394, rel=1e-3)
+
+    assert value(stream[0].mole_frac_phase_comp['Liq', 'Na_+']) == pytest.approx(8.833e-3, rel=1e-3)
+    assert value(stream[0].mole_frac_phase_comp['Liq', 'Cl_-']) == pytest.approx(1.059e-2, rel=1e-3)
+    assert value(stream[0].mole_frac_phase_comp['Liq', 'Ca_2+']) == pytest.approx(1.744e-4, rel=1e-3)
+    assert value(stream[0].mole_frac_phase_comp['Liq', 'SO4_2-']) == pytest.approx(4.064e-4, rel=1e-3)
+    assert value(stream[0].mole_frac_phase_comp['Liq', 'Mg_2+']) == pytest.approx(1.061e-3, rel=1e-3)
+
+    assert value(stream[0].mass_frac_phase_comp['Liq', 'Na_+']) == pytest.approx(1.112e-2, rel=1e-3)
+    assert value(stream[0].mass_frac_phase_comp['Liq', 'Cl_-']) == pytest.approx(2.03e-2, rel=1e-3)
+    assert value(stream[0].mass_frac_phase_comp['Liq', 'Ca_2+']) == pytest.approx(3.82e-4, rel=1e-3)
+    assert value(stream[0].mass_frac_phase_comp['Liq', 'SO4_2-']) == pytest.approx(2.136e-3, rel=1e-3)
+    assert value(stream[0].mass_frac_phase_comp['Liq', 'Mg_2+']) == pytest.approx(1.394e-3, rel=1e-3)
