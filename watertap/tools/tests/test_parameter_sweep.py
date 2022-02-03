@@ -395,10 +395,6 @@ class TestParallelManager():
         num_cases = np.shape(values)[0]
         output_dict = _create_local_output_skeleton(model, sweep_params, num_cases)
 
-        import pprint
-        print()
-        pprint.pprint(output_dict)
-
         truth_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
                                                   'units': 'non-dimensional',
                                                   'upper bound': 0,
@@ -444,8 +440,8 @@ class TestParallelManager():
         m.fs.slack_penalty = 1000.
         m.fs.slack.setub(0)
 
-        sweep_params = {'input_a' : (m.fs.input['a'], 0.1, 0.9, 3),
-                        'input_b' : (m.fs.input['b'], 0.0, 0.5, 3)}
+        sweep_params = {'input_a' : NormalSample(m.fs.input['a'], 0.1, 0.9),
+                        'input_b' : NormalSample(m.fs.input['b'], 0.0, 0.5)}
         outputs = {'output_c':m.fs.output['c'],
                    'output_d':m.fs.output['d'],
                    'performance':m.fs.performance}
@@ -464,7 +460,7 @@ class TestParallelManager():
         # Manually update the values in the numpy array
         for key, value in local_output_dict.items():
             for subkey, subvalue in value.items():
-                subvalue['value'][:] = rank+1.0
+                subvalue['value'][:] = rank
 
         # Local output dict also contains the solve_status. The solve status is
         # based on the
@@ -480,7 +476,7 @@ class TestParallelManager():
             if rank > 0:
                 assert global_output_dict == local_output_dict
             else:
-                test_array = np.repeat(np.arange(1,num_procs+1, dtype=float), 2)
+                test_array = np.repeat(np.arange(0,num_procs, dtype=float), 2)
                 test_list = ['optimal' for i in range(global_num_cases)]
                 for key, value in global_output_dict.items():
                     if key != 'solve_status':
@@ -929,9 +925,6 @@ def _get_rank0_path(comm, tmp_path):
     return comm.bcast(tmp_path, root=0)
 
 def _assert_dictionary_correctness(truth_dict, test_dict):
-
-    # import pprint
-    # pprint.pprint(test_dict)
 
     for key, item in truth_dict.items():
         if key != 'solve_status':

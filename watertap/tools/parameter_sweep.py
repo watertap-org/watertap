@@ -43,8 +43,8 @@ class TerminationConditionMapping:
         The mapping string values are obtained from TerminationCondition from
         pyomo.opt
         '''
-        self.str_to_int = { condition : idx for idx, condition in enumerate(_TerminationCondition) }
-        self.int_to_str = { idx : condition for idx, condition in enumerate(_TerminationCondition) }
+        self.str_to_int = { condition.name : idx for idx, condition in enumerate(_TerminationCondition) }
+        self.int_to_str = { idx : condition.name for idx, condition in enumerate(_TerminationCondition) }
 
 # ================================================================
 
@@ -505,7 +505,7 @@ def _create_global_output(local_output_dict, req_num_samples, comm):
                              root=0)
 
                 if my_mpi_rank == 0:
-                    global_tc_str = [tc_map.int_to_st[i] for i in global_tc_int]
+                    global_tc_str = [tc_map.int_to_str[i] for i in global_tc_int]
                     global_output_dict[key] = global_tc_str[0:req_num_samples]
 
     return global_output_dict
