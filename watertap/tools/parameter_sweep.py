@@ -43,8 +43,8 @@ class TerminationConditionMapping:
         The mapping string values are obtained from TerminationCondition from
         pyomo.opt
         '''
-        self.str_to_int_mapping = { condition : idx for idx, condition in enumerate(_TerminationCondition) }
-        self.int_to_str_mapping = { idx : condition for idx, condition in enumerate(_TerminationCondition) }
+        self.str_to_int = { condition : idx for idx, condition in enumerate(_TerminationCondition) }
+        self.int_to_str = { idx : condition for idx, condition in enumerate(_TerminationCondition) }
 
 # ================================================================
 
@@ -474,6 +474,8 @@ def _create_global_output(local_output_dict, req_num_samples, comm):
         else:
             global_output_dict = local_output_dict
 
+        tc_map = TerminationConditionMapping() # We will need this forgathering solve status
+
         # Finally collect the values
         for key, item in local_output_dict.items(): # This probably doesnt work
             if key != "solve_status":
@@ -490,7 +492,7 @@ def _create_global_output(local_output_dict, req_num_samples, comm):
                 # but the current implementation converts the termination condition
                 # string into a numeric value, gathers it using MPI, and then
                 # converts it back to a string.
-                local_tc_int = [_numeric_termination_condition_translation(i) for i in item]
+                local_tc_int = [tc_map.str_to_int[i] for i in item]
                 local_tc_int = np.asarray(local_tc_int, dtype=np.int64)
 
                 if my_mpi_rank == 0:
@@ -503,7 +505,7 @@ def _create_global_output(local_output_dict, req_num_samples, comm):
                              root=0)
 
                 if my_mpi_rank == 0:
-                    global_tc_str = [_numeric_termination_condition_translation(i) for i in global_tc_int]
+                    global_tc_str = [tc_map.int_to_st[i] for i in global_tc_int]
                     global_output_dict[key] = global_tc_str[0:req_num_samples]
 
     return global_output_dict
@@ -591,25 +593,6 @@ def _read_output_h5(filepath):
     f.close()
 
     return output_dict
-
-# ================================================================
-
-def _numeric_termination_condition_translation(termination_condition):
-
-    pyomo_termination_condition = TerminationConditionMapping()
-
-    ctr = 0
-    if isinstance(termination_condition, str):
-        if termination_condition in pyomo_termination_condition.str_to_int_mapping:
-            ctr += 1
-            return pyomo_termination_condition.str_to_int_mapping[termination_condition]
-    elif isinstance(termination_condition, np.integer):
-        if termination_condition in pyomo_termination_condition.int_to_str_mapping:
-            ctr += 1
-            return pyomo_termination_condition.int_to_str_mapping[termination_condition]
-
-    if ctr == 0:
-        raise ValueError("Pyomo termination condition value not found in known list")
 
 # ================================================================
 

@@ -29,7 +29,6 @@ from watertap.tools.parameter_sweep import (_init_mpi,
                                                _read_output_h5,
                                                _create_local_output_skeleton,
                                                _create_global_output,
-                                               _numeric_termination_condition_translation,
                                                parameter_sweep,
                                                TerminationConditionMapping,
                                                LinearSample,
@@ -256,8 +255,8 @@ class TestParallelManager():
                        'licensingProblems']
         tc_int_arr = np.arange(0,23)
 
-        return_arr = np.array([_numeric_termination_condition_translation(str_val) for str_val in tc_strings])
-        return_list = [_numeric_termination_condition_translation(tc_int) for tc_int in tc_int_arr]
+        return_arr = np.array([pyomo_termination_condition.str_to_int[str_val] for str_val in tc_strings])
+        return_list = [pyomo_termination_condition.int_to_str[tc_int] for tc_int in tc_int_arr]
         assert (return_arr == tc_int_arr).all()
         assert return_list == tc_strings
 
