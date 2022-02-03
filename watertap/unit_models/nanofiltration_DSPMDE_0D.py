@@ -728,6 +728,20 @@ class NanofiltrationData(UnitModelBlockData):
                     prop.charge_comp[j] for j in solute_set)
                     == b.tol_electroneutrality)
 
+        # # # Experimental Constraint
+        @self.Constraint(self.flowsheet().config.time,
+                         io_list,
+                         doc="Equal flowrates at pore entrance and exit")
+        def eq_equal_flowrate_pore_entrance_io(b, t, x):
+            return b.pore_exit[t, x].flow_vol_phase['Liq'] == b.pore_entrance[t, x].flow_vol_phase['Liq']
+
+        # # Experimental Constraint
+        @self.Constraint(self.flowsheet().config.time,
+                         io_list,
+                         doc="Equal flowrates at pore entrance and exit")
+        def eq_pressure_pore_exit_io(b, t, x):
+            return b.pore_exit[t, x].pressure == b.mixed_permeate[t].pressure
+
         # # Experimental constraint
         # @self.Constraint(self.flowsheet().config.time,
         #                  io_list,

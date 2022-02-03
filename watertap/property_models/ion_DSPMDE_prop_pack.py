@@ -767,9 +767,10 @@ class DSPMDEStateBlockData(StateBlockData):
                 "temperature": self.temperature,
                 "pressure": self.pressure}
 
-    def assert_electroneutrality(self, tol=None, tee=False):
+    def assert_electroneutrality(self, tol=None, tee=False, defined_state=True):
         if tol is None:
             tol = 1e-6
+        if defined_state:
             for j in self.params.solute_set:
                 if not self.flow_mol_phase_comp['Liq', j].is_fixed():
                     raise AssertionError(
@@ -779,9 +780,9 @@ class DSPMDEStateBlockData(StateBlockData):
                     for j in self.params.solute_set))
         if abs(val) <= tol:
             if tee:
-                return print('Electroneutrality satisfied')
+                return print(f'Electroneutrality satisfied for {self}. Result = {val}')
         else:
-            raise AssertionError(f"Electroneutrality condition violated. Ion concentrations should be adjusted to bring "
+            raise AssertionError(f"Electroneutrality condition violated in {self}. Ion concentrations should be adjusted to bring "
                                  f"the result of {val} closer towards 0.")
 
     # -----------------------------------------------------------------------------

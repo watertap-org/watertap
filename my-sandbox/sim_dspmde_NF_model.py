@@ -140,34 +140,7 @@ if __name__ == '__main__':
 
     # Set electroneutrality tolerance to 0 (value used in equality constraints for electroneutrality in unit model)
     m.fs.unit.tol_electroneutrality = 0
-    print ('----------------BEFORE SCALING---------------------------------------')
-    # for ion, i in m.fs.unit.feed_side.properties_in[0].radius_stokes_comp.items():
-    #     print(f"{ion}stokes radius:", value(i))
-    #     print(value(b.feed_side.properties_in[0].radius_stokes_comp[ion]))
-    #     print(f"{ion}lambda:", value(i / m.fs.unit.radius_pore))
-    #     print(value(b.lambda_comp[0, ion]))
-    #     print(value(b.radius_pore))
 
-    # for c in m.fs.unit.component_data_objects(Constraint, active=True):
-    #     print(c)
-
-    # b.eq_solute_flux_concentration_polarization.deactivate()
-    # b.Kf_comp.deactivate()
-    # assert False
-    # solute_flux_concentration_polarization_eq
-
-    # m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e1, index=('Liq', 'H2O'))
-    #
-    # for ion in m.fs.properties.solute_set:
-    #     if j != 'Na_+' and j != 'Cl_-':
-    #         m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e4, index=('Liq', j))
-    #         iscale.set_scaling_factor(m.fs.unit.feed_side.properties_in[0].conc_mol_phase_comp['Liq', j], 1e5)
-    #         iscale.set_scaling_factor(m.fs.unit.feed_side.properties_in[0].conc_mol_phase_comp['Liq', j], 1e5)
-    #
-    #     else:
-    #         m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e2, index=('Liq', j))
-    # iscale.set_scaling_factor(m.fs.unit.feed_side.properties_in[0].conc_mol_phase_comp['Liq', 'Ca_2+'], 1e9)
-    # iscale.set_scaling_factor(m.fs.unit.feed_side.properties_out[0].conc_mol_phase_comp['Liq', 'Ca_2+'], 1e9)
     iscale.calculate_scaling_factors(m.fs.unit)
     print('---------------- After scaling---------------------------------------')
     [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
@@ -268,16 +241,21 @@ if __name__ == '__main__':
     # [print(i[0],i[1]) for i in iscale.badly_scaled_var_generator(m)]
     # print('\nNUMBER OF badly scaled variables:', len(list(iscale.badly_scaled_var_generator(m))))
     # #
-    # m.fs.unit._automate_rescale_variables(rescale_factor=1)
-    # Constraints activated that messed up the solve
+    # m.fs.unit._automate_rescale_variables(rescale_tofactor=1)
+
+    # Solution can't converge with these constraints activated:
+    # m.fs.unit.eq_electroneutrality_mixed_permeate.activate()
+    # m.fs.unit.eq_electroneutrality_feed_outlet.activate()
+
     m.fs.unit.eq_interfacial_partitioning_feed.activate()
     m.fs.unit.eq_interfacial_partitioning_permeate.activate()
-    # m.fs.unit.eq_electroneutrality_mixed_permeate.activate() #- extends number of iterations
     m.fs.unit.eq_electroneutrality_interface.activate()
     m.fs.unit.eq_electroneutrality_pore.activate()
     m.fs.unit.eq_electroneutrality_permeate.activate()
-    # m.fs.unit.eq_electroneutrality_feed_outlet.activate() #- extends number of iterations
     m.fs.unit.eq_rejection_phase_comp.activate()
+
+    m.fs.unit.eq_equal_flowrate_pore_entrance_io.activate()
+    m.fs.unit.eq_pressure_pore_exit_io.activate()
 
     # m.fs.unit.recovery_vol_phase[0, 'Liq'].unfix()
     m.fs.unit.area.unfix()
@@ -285,9 +263,14 @@ if __name__ == '__main__':
     results = solver.solve(m, tee=True)
     if check_optimal_termination(results):
         b.report()
-        print('SUCCESS WITH SECOND SOLVE!!!!!!!!!!!')
+        print('SUCCESSFUL SOLVE!!!!!!!!!!!')
     else:
-        print('SECOND SOLVE FAILED')
+        print('SOLVE FAILED')
+
+    # Check that electroneutrality is satisfied for feed outlet and mixed permeate- constraints that
+    # are deactivated because they lead to failed solve
+    b.feed_side.properties_out[0].assert_electroneutrality(defined_state=False, tee=True)
+    b.mixed_permeate[0].assert_electroneutrality(defined_state=False, tee=True)
 
     # m.fs.unit.eq_recovery_vol_phase.activate() # model solves in 27 iterations (instead of 25), but doesn't match recovery_mol_phase_comp
     # m.fs.unit.eq_equal_flow_vol_pore_permeate.activate() # brought in after eq_permeate_isothermal - flow rate values were 1e5 but solve worked
