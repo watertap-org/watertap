@@ -55,7 +55,10 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 #TODO: Before trying to validate:
-# -Add Davies Model to prop pack to compute activity coefficients
+# - Refine initialization routine
+# - Refine initial variable values
+# - Refine scaling
+# - Add Davies Model to prop pack to compute activity coefficients
 # -Add constraints for computing mass transfer coefficient
 # -Add constraints for computing pressure drop in spiral wound membrane
 
