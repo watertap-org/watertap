@@ -355,23 +355,21 @@ def _create_local_output_skeleton(model, sweep_params, num_samples):
         output_dict["sweep_params"][var_str] =  _create_component_output_skeleton(var, num_samples)
 
     # 2. lets deal with the output variables from the pyomo model
-    for var in variables_in_activated_equalities_set(model.fs):
-        var_str = var.name
-        output_dict["outputs"][var_str] = _create_component_output_skeleton(var, num_samples)
-
-    # 3. lets deal with expressions
-    for expr in expressions_set(model.fs):
-        expr_str = expr.name
-        output_dict["outputs"][expr_str] = _create_component_output_skeleton(var, num_samples)
-
-    # 4. Lets deal with objectives
-    for obj in total_objectives_set(model):
-        obj_str = obj.name
-        output_dict["outputs"][obj_str] = _create_component_output_skeleton(var, num_samples)
-    # print()
-    # for pyo_obj in model.component_data_objects((pyo.Var, pyo.Expression, pyo.Objective), active=True):
-    #     print("pyo_obj.name = ", pyo_obj.name)
-    #     output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
+    for pyo_obj in model.component_data_objects((pyo.Var, pyo.Expression, pyo.Objective), active=True):
+        output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
+    # for var in variables_in_activated_equalities_set(model.fs):
+    #     var_str = var.name
+    #     output_dict["outputs"][var_str] = _create_component_output_skeleton(var, num_samples)
+    #
+    # # 3. lets deal with expressions
+    # for expr in expressions_set(model.fs):
+    #     expr_str = expr.name
+    #     output_dict["outputs"][expr_str] = _create_component_output_skeleton(expr, num_samples)
+    #
+    # # 4. Lets deal with objectives
+    # for obj in total_objectives_set(model):
+    #     obj_str = obj.name
+    #     output_dict["outputs"][obj_str] = _create_component_output_skeleton(obj, num_samples)
 
     return output_dict
 

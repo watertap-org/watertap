@@ -396,6 +396,10 @@ class TestParallelManager():
         num_cases = np.shape(values)[0]
         output_dict = _create_local_output_skeleton(model, sweep_params, num_cases)
 
+        import pprint
+        print()
+        pprint.pprint(output_dict)
+
         truth_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
                                                   'units': 'non-dimensional',
                                                   'upper bound': 0,
@@ -412,10 +416,7 @@ class TestParallelManager():
                                                    'units': 'non-dimensional',
                                                    'upper bound': 0,
                                                    'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
-                                  'fs.performance': {'lower bound': 0,
-                                                     'units': 'non-dimensional',
-                                                     'upper bound': 0,
-                                                     'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                  'fs.performance': {'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
                                   'fs.slack[ab_slack]': {'lower bound': 0,
                                                          'units': 'non-dimensional',
                                                          'upper bound': 0,
@@ -424,10 +425,7 @@ class TestParallelManager():
                                                          'units': 'non-dimensional',
                                                          'upper bound': 0,
                                                          'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
-                                  'objective': {'lower bound': 0,
-                                                'units': 'non-dimensional',
-                                                'upper bound': 0,
-                                                'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])}},
+                                  'objective': {'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])}},
                       'sweep_params': {'fs.input[a]': {'lower bound': 0,
                                                        'units': 'non-dimensional',
                                                        'upper bound': 0,
@@ -556,10 +554,7 @@ class TestParallelManager():
                                                        'units': 'non-dimensional',
                                                        'upper bound': 0,
                                                        'value': np.array([0.  , 0.75,  np.nan, 0., 0.75,  np.nan, np.nan, np.nan, np.nan])},
-                                      'fs.performance': {'lower bound': 0,
-                                                         'units': 'non-dimensional',
-                                                         'upper bound': 0,
-                                                         'value': np.array([0.2 , 0.95,  np.nan, 1., 1.75,  np.nan, np.nan,  np.nan, np.nan])},
+                                      'fs.performance': {'value': np.array([0.2 , 0.95,  np.nan, 1., 1.75,  np.nan, np.nan,  np.nan, np.nan])},
                                       'fs.slack[ab_slack]': {'lower bound': 0,
                                                              'units': 'non-dimensional',
                                                              'upper bound': 0,
@@ -568,10 +563,7 @@ class TestParallelManager():
                                                              'units': 'non-dimensional',
                                                              'upper bound': 0,
                                                              'value': np.array([ 0.,  0., np.nan,  0.,  0., np.nan, np.nan, np.nan, np.nan])},
-                                      'objective': {'lower bound': 0,
-                                                    'units': 'non-dimensional',
-                                                    'upper bound': 0,
-                                                    'value': np.array([0.2 , 0.95,  np.nan, 1., 1.75, np.nan, np.nan, np.nan, np.nan])}},
+                                      'objective': {'value': np.array([0.2 , 0.95,  np.nan, 1., 1.75, np.nan, np.nan, np.nan, np.nan])}},
                           'solve_status': ['optimal',
                                            'optimal',
                                            'infeasible',
@@ -668,10 +660,7 @@ class TestParallelManager():
                                                        'units': 'non-dimensional',
                                                        'upper bound': 0,
                                                        'value': np.array([9.98580690e-09, 7.50000010e-01, 1.00000000e+00, 9.99872731e-09, 7.50000010e-01, 1.00000000e+00, 9.99860382e-09, 7.50000010e-01, 1.])},
-                                      'fs.performance': {'lower bound': 0,
-                                                         'units': 'non-dimensional',
-                                                         'upper bound': 0,
-                                                         'value': np.array([0.20000002, 0.95000002, 1.20000001, 1.00000001, 1.75000001, 2., 1.00000001, 1.75000001, 2.])},
+                                      'fs.performance': {'value': np.array([0.20000002, 0.95000002, 1.20000001, 1.00000001, 1.75000001, 2., 1.00000001, 1.75000001, 2.])},
                                       'fs.slack[ab_slack]': {'lower bound': 0,
                                                              'units': 'non-dimensional',
                                                              'upper bound': 0,
@@ -680,10 +669,7 @@ class TestParallelManager():
                                                              'units': 'non-dimensional',
                                                              'upper bound': 0,
                                                              'value': np.array([0., 0., 0.49999999, 0., 0., 0.49999999, 0., 0., 0.49999999])},
-                                      'objective': {'lower bound': 0,
-                                                    'units': 'non-dimensional',
-                                                    'upper bound': 0,
-                                                    'value': np.array([ 2.00000020e-01,  9.50000020e-01, -4.98799990e+02,  1.00000001e+00,  1.75000001e+00, -4.97999990e+02, -7.98999990e+02, -7.98249990e+02, 2.0 - 1000.*((2.*0.9 - 1.) + (3.*0.5 - 1.))])}},
+                                      'objective': {'value': np.array([ 2.00000020e-01,  9.50000020e-01, -4.98799990e+02,  1.00000001e+00,  1.75000001e+00, -4.97999990e+02, -7.98999990e+02, -7.98249990e+02, 2.0 - 1000.*((2.*0.9 - 1.) + (3.*0.5 - 1.))])}},
                           'solve_status': ['optimal',
                                            'optimal',
                                            'optimal',
@@ -744,13 +730,6 @@ class TestParallelManager():
                 reinitialize_kwargs={'slack_penalty':10.},
                 mpi_comm = comm)
 
-        # parameter_sweep(m, sweep_params, outputs,
-        #         results_file = results_file,
-        #         optimize_function=_optimization,
-        #         reinitialize_function=_reinitialize,
-        #         reinitialize_kwargs={'slack_penalty':10.},
-        #         mpi_comm = comm)
-
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
@@ -784,10 +763,7 @@ class TestParallelManager():
                                                        'units': 'non-dimensional',
                                                        'upper bound': 0,
                                                        'value': np.array([0.00000000e+00, 7.50000000e-01, 1.00000000e+00, 9.77756334e-09, 7.50000010e-01, 1.00000000e+00, 9.98605188e-09, 7.50000010e-01, 1.00000000e+00])},
-                                      'fs.performance': {'lower bound': 0,
-                                                         'units': 'non-dimensional',
-                                                         'upper bound': 0,
-                                                         'value': np.array([0.2, 0.95, 1.20000001, 1.00000001, 1.75000001, 2., 1.00000001, 1.75000001, 2.])},
+                                      'fs.performance': {'value': np.array([0.2, 0.95, 1.20000001, 1.00000001, 1.75000001, 2., 1.00000001, 1.75000001, 2.])},
                                       'fs.slack[ab_slack]': {'lower bound': 0,
                                                              'units': 'non-dimensional',
                                                              'upper bound': 0,
@@ -796,10 +772,7 @@ class TestParallelManager():
                                                              'units': 'non-dimensional',
                                                              'upper bound': 0,
                                                              'value': np.array([0., 0., 0.49999999, 0., 0., 0.49999999, 0., 0., 0.49999999])},
-                                      'objective': {'lower bound': 0,
-                                                    'units': 'non-dimensional',
-                                                    'upper bound': 0,
-                                                    'value': np.array([0.2, 0.95,  -3.79999989,   1.00000001,   1.75000001,  -2.9999999 ,  -6.99999989,  -6.24999989, -10.9999998 ])}},
+                                      'objective': {'value': np.array([0.2, 0.95,  -3.79999989,   1.00000001,   1.75000001,  -2.9999999 ,  -6.99999989,  -6.24999989, -10.9999998 ])}},
                           'solve_status': ['optimal',
                                            'optimal',
                                            'optimal',
@@ -860,13 +833,6 @@ class TestParallelManager():
                 reinitialize_kwargs={'slack_penalty':10.},
                 mpi_comm = comm)
 
-        # parameter_sweep(m, sweep_params, outputs,
-        #         results_file = results_file,
-        #         optimize_function=_optimization,
-        #         reinitialize_function=_bad_reinitialize,
-        #         reinitialize_kwargs={'slack_penalty':10.},
-        #         mpi_comm = comm)
-
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
         #       responsible for doing any output file checking
         #       tmp_path can be deleted as soon as this method
@@ -899,10 +865,7 @@ class TestParallelManager():
                                                        'units': 'non-dimensional',
                                                        'upper bound': 0,
                                                        'value': np.array([0.  , 0.75, np.nan, 0., 0.75,  np.nan,  np.nan,  np.nan,  np.nan])},
-                                      'fs.performance': {'lower bound': 0,
-                                                         'units': 'non-dimensional',
-                                                         'upper bound': 0,
-                                                         'value': np.array([0.2 , 0.95, np.nan, 1., 1.75,  np.nan,  np.nan,  np.nan,  np.nan])},
+                                      'fs.performance': {'value': np.array([0.2 , 0.95, np.nan, 1., 1.75,  np.nan,  np.nan,  np.nan,  np.nan])},
                                       'fs.slack[ab_slack]': {'lower bound': 0,
                                                              'units': 'non-dimensional',
                                                              'upper bound': 0,
@@ -911,10 +874,7 @@ class TestParallelManager():
                                                              'units': 'non-dimensional',
                                                              'upper bound': 0,
                                                              'value': np.array([ 0.,  0., np.nan,  0.,  0., np.nan, np.nan, np.nan, np.nan])},
-                                      'objective': {'lower bound': 0,
-                                                    'units': 'non-dimensional',
-                                                    'upper bound': 0,
-                                                    'value': np.array([0.2 , 0.95, np.nan, 1., 1.75,  np.nan,  np.nan,  np.nan,  np.nan])}},
+                                      'objective': {'value': np.array([0.2 , 0.95, np.nan, 1., 1.75,  np.nan,  np.nan,  np.nan,  np.nan])}},
                           'solve_status': ['optimal',
                                            'optimal',
                                            'infeasible',
@@ -977,9 +937,10 @@ def _assert_dictionary_correctness(truth_dict, test_dict):
     for key, item in truth_dict.items():
         if key != 'solve_status':
             for subkey, subitem in item.items():
-                assert subitem['lower bound'] == test_dict[key][subkey]['lower bound']
-                assert subitem['upper bound'] == test_dict[key][subkey]['upper bound']
-                assert subitem['units'] == test_dict[key][subkey]['units']
-                assert np.allclose(test_dict[key][subkey]['value'], subitem['value'], equal_nan=True)
+                for subsubkey, subsubitem in subitem.items():
+                    if subsubkey == 'value':
+                        assert np.allclose(test_dict[key][subkey]['value'], subitem['value'], equal_nan=True)
+                    else:
+                        assert subsubitem == test_dict[key][subkey][subsubkey]
         elif key == "solve_status":
             assert item == test_dict[key]
