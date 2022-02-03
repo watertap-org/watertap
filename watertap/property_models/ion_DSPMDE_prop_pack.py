@@ -608,7 +608,7 @@ class DSPMDEStateBlockData(StateBlockData):
 
         def rule_conc_mol_phase_comp(b, j):
             return (b.conc_mol_phase_comp['Liq', j] * b.params.mw_comp[j] ==
-                    b.dens_mass_phase['Liq'] * b.mole_frac_phase_comp['Liq', j])
+                    b.conc_mass_phase_comp['Liq', j])
         self.eq_conc_mol_phase_comp = Constraint(self.params.component_list, rule=rule_conc_mol_phase_comp)
 
     def _conc_mass_phase_comp(self):
@@ -695,6 +695,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.phase_list,
             self.params.solute_set,
             initialize=1,
+            domain=NonNegativeReals,
             bounds=(1e-4, 1.001),
             units=pyunits.dimensionless,
             doc="activity coefficient of component")

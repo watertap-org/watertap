@@ -58,6 +58,8 @@ _log = idaeslog.getLogger(__name__)
 # - Refine initialization routine
 # - Refine initial variable values
 # - Refine scaling
+# - See if there is one more DOF that I can add when Kf is assumed and fixed and act coeff = 1
+# - Add/refine tests
 # - Add Davies Model to prop pack to compute activity coefficients
 # -Add constraints for computing mass transfer coefficient
 # -Add constraints for computing pressure drop in spiral wound membrane
@@ -745,6 +747,29 @@ class NanofiltrationData(UnitModelBlockData):
         def eq_pressure_pore_exit_io(b, t, x):
             return b.pore_exit[t, x].pressure == b.mixed_permeate[t].pressure
 
+        # # Experimental Constraint
+        @self.Constraint(self.flowsheet().config.time,
+                         doc="Density of mixed permeate average of inlet and outlet permeate")
+        def eq_density_mixed_permeate(b, t):
+            return (0.5
+                    * (b.permeate_side[t, 0].dens_mass_phase['Liq']
+                    +  b.permeate_side[t, 1].dens_mass_phase['Liq'])
+                    == b.mixed_permeate[t].dens_mass_phase['Liq'])
+
+        #     # # # Experimental Constraint
+        #
+        # @self.Constraint(self.flowsheet().config.time,
+        #                  io_list,
+        #                  doc="Equal flowrates at pore entrance and exit")
+        # def eq_equal_flowrate_pore_io(b, t, x):
+        #     return b.pore_exit[t, x].flow_vol_phase['Liq'] == b.pore_entrance[t, x].flow_vol_phase['Liq']
+        #
+        # # # # Experimental Constraint
+        # @self.Constraint(self.flowsheet().config.time,
+        #                  doc="Equal flowrates at feed and interface")
+        # def eq_equal_flowrate_feed_interface_in(b, t):
+        #     return (b.feed_side.properties_interface[t, 0].flow_vol_phase['Liq']
+        #             == b.feed_side.properties_in[t].flow_vol_phase['Liq'])
         # # Experimental constraint
         # @self.Constraint(self.flowsheet().config.time,
         #                  io_list,
@@ -1194,8 +1219,8 @@ class NanofiltrationData(UnitModelBlockData):
                         self._rescale_sb_variable(blk.conc_mol_phase_comp['Liq', j], factor=1e5)
                     if blk.is_property_constructed('conc_mol_phase_comp'):
                         self._rescale_sb_variable(blk.mass_frac_phase_comp['Liq', j], factor=1e5)
-                    if blk.is_property_constructed('mole_frac_phase_comp'):
-                        self._rescale_sb_variable(blk.mole_frac_phase_comp['Liq', j], factor=1e5)
+                    # if blk.is_property_constructed('mole_frac_phase_comp'):
+                    #     self._rescale_sb_variable(blk.mole_frac_phase_comp['Liq', j], factor=1e5)
                     if blk.is_property_constructed('flow_mass_phase_comp'):
                         self._rescale_sb_variable(blk.flow_mass_phase_comp['Liq', j], factor=1e4)
                     if blk.is_property_constructed('molality_comp'):

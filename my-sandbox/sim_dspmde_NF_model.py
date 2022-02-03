@@ -257,6 +257,10 @@ if __name__ == '__main__':
     m.fs.unit.eq_equal_flowrate_pore_entrance_io.activate()
     m.fs.unit.eq_pressure_pore_exit_io.activate()
 
+    # m.fs.unit.eq_density_mixed_permeate.activate()
+    # m.fs.unit.eq_equal_flowrate_pore_io.activate()
+    # m.fs.unit.eq_equal_flowrate_feed_interface_in.activate()
+
     # m.fs.unit.recovery_vol_phase[0, 'Liq'].unfix()
     m.fs.unit.area.unfix()
     # solver.options['max_iter'] = 749
@@ -271,7 +275,7 @@ if __name__ == '__main__':
     # are deactivated because they lead to failed solve
     b.feed_side.properties_out[0].assert_electroneutrality(defined_state=False, tee=True)
     b.mixed_permeate[0].assert_electroneutrality(defined_state=False, tee=True)
-
+    print(f'Degrees of freedom ={degrees_of_freedom(m)} ')
     # m.fs.unit.eq_recovery_vol_phase.activate() # model solves in 27 iterations (instead of 25), but doesn't match recovery_mol_phase_comp
     # m.fs.unit.eq_equal_flow_vol_pore_permeate.activate() # brought in after eq_permeate_isothermal - flow rate values were 1e5 but solve worked
     # m.fs.unit.eq_equal_flow_vol_permeate.activate() #- also brought flowrate to 1e5
