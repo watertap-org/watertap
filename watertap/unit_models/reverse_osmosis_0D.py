@@ -61,6 +61,8 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
 
         # for quacking like 1D model -> 0. is "in", 1. is "out"
         self.length_domain = Set(ordered=True, initialize=(0., 1.))  # inlet/outlet set
+        add_object_reference(self, 'difference_elements', self.length_domain)
+        self.first_element = self.length_domain.first()
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(default={
