@@ -15,6 +15,9 @@ Initial property package for multi-ionic system for use in the
 Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE)
 """
 
+# TODO:
+#  -add calc option for Stokes radius from Stokes Einstein
+#  -add viscosity as func of temp and concentration
 # Import Python libraries
 import idaes.logger as idaeslog
 

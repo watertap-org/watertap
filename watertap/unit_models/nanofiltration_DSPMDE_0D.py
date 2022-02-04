@@ -12,6 +12,7 @@
 ###############################################################################
 
 from copy import deepcopy
+from enum import Enum, auto
 # Import Pyomo libraries
 from pyomo.environ import (Block,
                            Set,
@@ -63,6 +64,10 @@ _log = idaeslog.getLogger(__name__)
 # - Add Davies Model to prop pack to compute activity coefficients
 # -Add constraints for computing mass transfer coefficient
 # -Add constraints for computing pressure drop in spiral wound membrane
+
+class MassTransferCoefficient(Enum):
+    fixed = auto()                   # mass transfer coefficient is a user specified value
+    spiral_wound = auto()            # mass transfer coefficient is calculated using spiral wound correlation
 
 @declare_process_block_class("NanofiltrationDSPMDE0D")
 class NanofiltrationData(UnitModelBlockData):
@@ -160,6 +165,22 @@ class NanofiltrationData(UnitModelBlockData):
     **default** - None.
     **Valid values:** {
     see property package for documentation.}"""))
+    CONFIG.declare("mass_transfer_coefficient", ConfigValue(
+        default=MassTransferCoefficient.fixed,
+        domain=In(MassTransferCoefficient),
+        description="Mass transfer coefficient in feed channel",
+        doc="""
+            Options to account for mass transfer coefficient.
+
+            **default** - ``MassTransferCoefficient.fixed``
+
+        .. csv-table::
+            :header: "Configuration Options", "Description"
+
+            "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
+            "``MassTransferCoefficient.spiral_wound``", "Allow model to perform calculation of mass transfer coefficient based on 
+            spiral wound module correlation"
+        """))
 
 
     def _process_config(self):
@@ -337,7 +358,7 @@ class NanofiltrationData(UnitModelBlockData):
             self.io_list,
             solute_set,
             initialize=5e-5,
-            bounds=(1e-6, 1e-3),
+            bounds=(1e-8, 1e-3),
             domain=NonNegativeReals,
             units=units_meta('length') * units_meta('time') ** -1,
             doc='Component mass transfer coefficient in feed channel at inlet and outlet')
@@ -355,18 +376,6 @@ class NanofiltrationData(UnitModelBlockData):
             domain=NonNegativeReals,
             units=units_meta('length') ** 2,
             doc='Membrane area')
-        # self.length = Var(
-        #     initialize=10,
-        #     bounds=(0.1, 5e2),
-        #     domain=NonNegativeReals,
-        #     units=units_meta('length'),
-        #     doc='Effective membrane length')
-        # self.width = Var(
-        #     initialize=1,
-        #     bounds=(0.1, 5e2),
-        #     domain=NonNegativeReals,
-        #     units=units_meta('length'),
-        #     doc='Effective feed-channel width')
 
         def recovery_mol_phase_comp_initialize(b, t, p, j):
             if j in b.config.property_package.solvent_set:
@@ -399,6 +408,69 @@ class NanofiltrationData(UnitModelBlockData):
             bounds=(1e-3, 1 - 1e-6),
             units=pyunits.dimensionless,
             doc='Volumetric-based recovery')
+        if self.config.mass_transfer_coefficient == MassTransferCoefficient.spiral_wound:
+            self.length = Var(
+                initialize=10,
+                bounds=(0.1, 5e2),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Effective membrane length')
+            self.width = Var(
+                initialize=1,
+                bounds=(0.1, 5e2),
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc='Effective feed-channel width')
+            self.channel_height = Var(
+                initialize=1e-3,
+                domain=NonNegativeReals,
+                bounds=(1e-4, 5e-3),
+                units=units_meta('length'),
+                doc='Feed channel height')
+            self.spacer_porosity = Var(
+                initialize=0.95,
+                bounds=(0.1, 0.99),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc='Feed-channel spacer porosity')
+            self.velocity = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                initialize=0.5,
+                bounds=(1e-3, 2),
+                domain=NonNegativeReals,
+                units=units_meta('length') / units_meta('time'),
+                doc="Crossflow velocity in feed channel at inlet and outlet")
+            self.N_Sc_comp = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                solute_set,
+                initialize=5e2,
+                bounds=(1e2, 2e3),
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Schmidt number at inlet and outlet")
+            self.N_Pe_comp = Var(
+                self.flowsheet().config.time,
+                self.io_list,
+                solute_set,
+                initialize=5e2,
+                bounds=(1e2, None), # #TODO:unsure of value ranges at the moment
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Peclet number at inlet and outlet")
+            self.spacer_mixing_efficiency = Var(
+                initialize=0.5,
+                # bounds=(1e2, 2e3), # #TODO:unsure of value ranges at the moment- since this is efficiency, assuming 0 -1
+                domain=NonNegativeReals,
+                units=pyunits.dimensionless,
+                doc="Mixing efficiency of spacer net")
+            self.spacer_mixing_length = Var(
+                initialize=0.6,
+                # bounds=(1e2, 5e3), # #TODO:unsure of value ranges at the moment- since this is efficiency, assuming 0 -1
+                domain=NonNegativeReals,
+                units=units_meta('length'),
+                doc="Characteristic length of spacer")
         ###############################################################################################################
         # Expressions
         ###############################################################################################################
@@ -445,14 +517,25 @@ class NanofiltrationData(UnitModelBlockData):
         def flux_mol_phase_comp_avg(b, t, p, j):
             return sum(b.flux_mol_phase_comp[t, x, p, j] for x in io_list) * 0.5
 
+        # TODO - no relationship described between mixing length and spacer mixing efficiency with spacer porosity.
+        #  Need effective cross-sectional area for velocity at inlet AND outlet. Assuming spacer porosity as an
+        #  additional variable in the model that is independent of aforementioned parameters which are used in
+        #  the mass transfer coefficient calculation for spiral wound modules. Revisit later.
+
+        if self.config.mass_transfer_coefficient == MassTransferCoefficient.spiral_wound:
+            # Cross sectional area ------------------------------------#
+            @self.Expression(doc="Cross-sectional area")
+            def area_cross(b):
+                return b.channel_height * b.width * b.spacer_porosity
 
         ################################################################################################################
         # Constraints
         ################################################################################################################
-        # Membrane area
-        # @self.Constraint(doc="Membrane area")
-        # def eq_area(b):
-        #     return b.area == b.length * b.width
+        if self.config.mass_transfer_coefficient == MassTransferCoefficient.spiral_wound:
+            # 0. Membrane area
+            @self.Constraint(doc="Membrane area")
+            def eq_area(b):
+                return b.area == b.length * b.width
 
         # 1. Feed-solution/membrane equilibrium, DOF= Nj * 2 for inlet/outlet
         @self.Constraint(self.flowsheet().config.time,
@@ -668,6 +751,54 @@ class NanofiltrationData(UnitModelBlockData):
             return (b.mixed_permeate[t].conc_mol_phase_comp[p, j]
                     == b.feed_side.properties_interface[t, 0].conc_mol_phase_comp[p, j]
                     * (1 - b.rejection_phase_comp[t, p, j]))
+
+        if self.config.mass_transfer_coefficient == MassTransferCoefficient.spiral_wound:
+            # 17. Mass transfer coefficient
+            @self.Constraint(self.flowsheet().config.time,
+                             io_list,
+                             solute_set,
+                             doc="Mass transfer coefficient")
+            def eq_Kf_comp(b, t, x, j):
+                bulk_diff = b.feed_side.properties_in[t].diffus_phase_comp['Liq', j]
+                return (b.Kf_comp[t, x, j] ==
+                        0.753
+                        * (b.spacer_mixing_efficiency/(2 - b.spacer_mixing_efficiency)) ** 0.5
+                        * (2 * bulk_diff / b.channel_height) * b.N_Sc_comp[t, x, j] ** (-1/6)
+                        * (b.N_Pe_comp[t, x, j] * b.channel_height / (2 * b.spacer_mixing_length)) ** 0.5)
+                #TODO: NOTE--- error in MIT paper; 1/2 of channel height should be in numerator
+
+            # 18. Schmidt number calculation
+            @self.Constraint(self.flowsheet().config.time,
+                             io_list,
+                             solute_set,
+                             doc="Schmidt number equation")
+            def eq_N_Sc_comp(b, t, x, j):
+                if not x:
+                    prop_io = b.feed_side.properties_in[t]
+                elif x:
+                    prop_io = b.feed_side.properties_out[t]
+                return (b.N_Sc_comp[t, x, j] * prop_io.dens_mass_phase['Liq'] * prop_io.diffus_phase_comp['Liq', j] ==
+                        prop_io.visc_d_phase['Liq'])
+
+            # 19. Peclet number calculation
+            @self.Constraint(self.flowsheet().config.time,
+                             io_list,
+                             solute_set,
+                             doc="Peclet number equation")
+            def eq_N_Pe_comp(b, t, x, j):
+                bulk_diff = b.feed_side.properties_in[t].diffus_phase_comp['Liq', j]
+                return b.N_Pe_comp[t, x, j] == 2 * b.channel_height * b.velocity[t, x] / bulk_diff
+
+            # 20. Crossflow velocity at inlet and outlet
+            @self.Constraint(self.flowsheet().config.time,
+                             self.io_list,
+                             doc="Crossflow velocity constraint")
+            def eq_velocity(b, t, x):
+                if not x:
+                    prop_io = b.feed_side.properties_in[t]
+                elif x:
+                    prop_io = b.feed_side.properties_out[t]
+                return b.velocity[t, x] * b.area_cross == prop_io.flow_vol_phase['Liq']
 
         # TODO: seems stale since temperature unused at pore entrance/exit- confirm+remove;
         #  1/17/22: after including temp variables for pore in interfacial equilib eqns, this is relevant
@@ -1082,9 +1213,9 @@ class NanofiltrationData(UnitModelBlockData):
                 self.feed_side.properties_out[time_point].pressure_osm
 
             for x in self.io_list:
-                if x:
+                if not x:
                     io = 'Inlet'
-                else:
+                elif x:
                     io = 'Outlet'
                 var_dict[f'Molar Concentration of {j} @ Membrane Interface, {io}'] = \
                     self.feed_side.properties_interface[time_point, x].conc_mol_phase_comp['Liq', j]

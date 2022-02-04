@@ -171,14 +171,8 @@ if __name__ == '__main__':
     # [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
     # print('\nNUMBER OF badly scaled variables:', len(list(iscale.badly_scaled_var_generator(m))))
 
-    # b.display()
 
-    # for ion, i in m.fs.unit.feed_side.properties_in[0].radius_stokes_comp.items():
-    #     print(f"{ion}stokes radius:", value(i))
-    #     print(value(b.feed_side.properties_in[0].radius_stokes_comp[ion]))
-    #     print(f"{ion}lambda:", value(i / m.fs.unit.radius_pore))
-    #     print(value(b.lambda_comp[0, ion]))
-    #     print(value(b.radius_pore))
+
 
     # b.display()
     #
