@@ -37,6 +37,8 @@ m.fs.stream[0].display()
 # touch a property to construct
 m.fs.stream[0].flow_vol_phase
 m.fs.stream[0].flow_mol_phase_comp
+m.fs.stream[0].mol_frac_phase_comp
+m.fs.stream[0].conc_mol_phase_comp
 
 # now that we have a state block, we can fix the state variables and solve for the properties
 m.fs.stream[0].temperature.fix(273.15 + 25)
