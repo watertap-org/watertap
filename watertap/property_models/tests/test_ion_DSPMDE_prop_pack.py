@@ -439,7 +439,7 @@ def test_seawater_data():
     assert value(stream[0].flow_mol_phase_comp['Liq', 'Cl_-']) == pytest.approx(0.58,  rel=1e-3)
     assert value(stream[0].flow_mol_phase_comp['Liq', 'SO4_2-']) == pytest.approx(0.02225,  rel=1e-3)
     assert value(stream[0].dens_mass_phase['Liq']) == pytest.approx(1000, rel=1e-3)
-    assert value(stream[0].pressure_osm) == pytest.approx(29.641e5, rel=1e-3)
+    assert value(stream[0].pressure_osm) == pytest.approx(28.593e5, rel=1e-3)
     assert value(stream[0].flow_vol) == pytest.approx(0.001, rel=1e-3)
 
     assert value(sum(stream[0].conc_mass_phase_comp['Liq',j] for j in m.fs.properties.solute_set)) == pytest.approx(35.334, rel=1e-3)
