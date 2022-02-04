@@ -1,0 +1,8 @@
+default:
+  recovery_vol:
+    value: 0.922222222
+    units: dimensionless
+    reference: .nan
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
