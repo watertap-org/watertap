@@ -240,7 +240,7 @@ class TestReverseOsmosis():
                                'over_pressure_ratio': Expression,
                                'eq_mass_transfer_term': Constraint,
                                'eq_permeate_production': Constraint,
-                               'eq_flux_io': Constraint,
+                               'eq_flux_mass': Constraint,
                                'eq_connect_mass_transfer': Constraint,
                                'eq_connect_enthalpy_transfer': Constraint,
                                'eq_permeate_isothermal': Constraint,
@@ -251,6 +251,7 @@ class TestReverseOsmosis():
                                'eq_permeate_outlet_isothermal': Constraint,
                                'eq_permeate_outlet_isobaric': Constraint,
                                'eq_flow_vol_permeate_io': Constraint,
+                               'nfe': Param,
                                }
         for (obj_str, obj_type) in unit_objs_type_dict.items():
             obj = getattr(m.fs.unit, obj_str)
@@ -271,10 +272,10 @@ class TestReverseOsmosis():
             sb = getattr(m.fs.unit.feed_side, sb_str)
             assert isinstance(sb, props.NaClStateBlock)
         # test objects added to control volume
-        cv_objs_type_dict = {'eq_concentration_polarization_io': Constraint,
-                             'eq_equal_temp_interface_io': Constraint,
-                             'eq_equal_pressure_interface_io': Constraint,
-                             'eq_equal_flow_vol_interface_io': Constraint}
+        cv_objs_type_dict = {'eq_concentration_polarization': Constraint,
+                             'eq_equal_temp_interface': Constraint,
+                             'eq_equal_pressure_interface': Constraint,
+                             'eq_equal_flow_vol_interface': Constraint}
         for (obj_str, obj_type) in cv_objs_type_dict.items():
             obj = getattr(m.fs.unit.feed_side, obj_str)
             assert isinstance(obj, obj_type)
@@ -506,8 +507,8 @@ class TestReverseOsmosis():
         m.fs.unit.length.fix(length)
 
         # test statistics
-        assert number_variables(m) == 140
-        assert number_total_constraints(m) == 110
+        assert number_variables(m) == 141
+        assert number_total_constraints(m) == 111
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
         # test degrees of freedom
@@ -597,8 +598,8 @@ class TestReverseOsmosis():
         m.fs.unit.length.fix(16)
 
         # test statistics
-        assert number_variables(m) == 146
-        assert number_total_constraints(m) == 117
+        assert number_variables(m) == 147
+        assert number_total_constraints(m) == 118
         assert number_unused_variables(m) == 0  # vars from property package parameters
 
         # test degrees of freedom
@@ -696,8 +697,8 @@ class TestReverseOsmosis():
         m.fs.unit.dP_dx.fix(-membrane_pressure_drop / length)
 
         # test statistics
-        assert number_variables(m) == 141
-        assert number_total_constraints(m) == 111
+        assert number_variables(m) == 142
+        assert number_total_constraints(m) == 112
         assert number_unused_variables(m) == 0
 
         # test degrees of freedom

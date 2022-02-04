@@ -281,7 +281,7 @@ class TestReverseOsmosis():
                                'eq_dP_dx': Constraint,
                                'N_Re_avg': Expression,
                                'Kf_avg': Expression,
-                               'flux_mass_phase_comp_avg': Expression
+                               'flux_mass_phase_comp_avg': Expression,
                                }
         for (obj_str, obj_type) in unit_objs_type_dict.items():
             obj = getattr(m.fs.unit, obj_str)
@@ -338,26 +338,6 @@ class TestReverseOsmosis():
     @pytest.mark.component
     def test_initialize(self, RO_frame):
         initialization_tester(RO_frame, fail_on_warning=True)
-        var_list = [ 
-            (RO_frame.find_component('fs.unit.feed_side.properties_interface[0.0,0.0].flow_mass_phase_comp[Liq,H2O]'), 0.26825472222222224),
-            (RO_frame.find_component('fs.unit.feed_side.properties_interface[0.0,0.0].flow_mass_phase_comp[Liq,NaCl]'), 0.010475361111111112),
-            (RO_frame.find_component('fs.unit.feed_side.properties_interface[0.0,0.0].temperature'), 298.15),
-            (RO_frame.find_component('fs.unit.feed_side.properties_interface[0.0,0.0].pressure'), 7000000.0),
-            (RO_frame.find_component('fs.unit.feed_side.properties_interface[0.0,0.333333].flow_mass_phase_comp[Liq,H2O]'), 0.22354564656097226),
-            (RO_frame.find_component('fs.unit.feed_side.properties_interface[0.0,0.333333].flow_mass_phase_comp[Liq,NaCl]'), 0.010440443275658611),
-            (RO_frame.find_component('fs.unit.feed_side.properties_interface[0.0,0.333333].temperature'), 298.15),
-            (RO_frame.find_component('fs.unit.feed_side.properties_interface[0.0,0.333333].pressure'), 6996666.67),
-            (RO_frame.find_component('fs.unit.feed_side.properties_interface[0.0,0.666667].flow_mass_phase_comp[Liq,H2O]'), 0.1788364367723611),
-            (RO_frame.find_component('fs.unit.feed_side.properties_interface[0.0,0.666667].flow_mass_phase_comp[Liq,NaCl]'), 0.0104055253354525),
-            (RO_frame.find_component('fs.unit.feed_side.properties_interface[0.0,0.666667].temperature'), 298.15),
-            (RO_frame.find_component('fs.unit.feed_side.properties_interface[0.0,0.666667].pressure'), 6993333.33),
-            (RO_frame.find_component('fs.unit.feed_side.properties_interface[0.0,1.0].flow_mass_phase_comp[Liq,H2O]'), 0.13412736111111112),
-            (RO_frame.find_component('fs.unit.feed_side.properties_interface[0.0,1.0].flow_mass_phase_comp[Liq,NaCl]'), 0.0103706075),
-            (RO_frame.find_component('fs.unit.feed_side.properties_interface[0.0,1.0].temperature'), 298.15),
-            (RO_frame.find_component('fs.unit.feed_side.properties_interface[0.0,1.0].pressure'), 6990000.0),
-        ]
-        for v, guess_val in var_list:
-            print(f"{v}: initialize_value: {v.value}, guessed_value: {guess_val}")
 
     @pytest.mark.component
     def test_var_scaling(self, RO_frame):
@@ -488,7 +468,8 @@ class TestReverseOsmosis():
                                'eq_area': Constraint,
                                'eq_mass_flux_equal_mass_transfer': Constraint,
                                'eq_permeate_outlet_isothermal': Constraint,
-                               'eq_permeate_outlet_isobaric': Constraint
+                               'eq_permeate_outlet_isobaric': Constraint,
+                               'flux_mass_phase_comp_avg': Expression
                                }
         for (obj_str, obj_type) in unit_objs_type_dict.items():
             obj = getattr(m.fs.unit, obj_str)
@@ -637,7 +618,8 @@ class TestReverseOsmosis():
                                'eq_area': Constraint,
                                'eq_mass_flux_equal_mass_transfer': Constraint,
                                'eq_permeate_outlet_isothermal': Constraint,
-                               'eq_permeate_outlet_isobaric': Constraint
+                               'eq_permeate_outlet_isobaric': Constraint,
+                               'flux_mass_phase_comp_avg': Expression,
                                }
         for (obj_str, obj_type) in unit_objs_type_dict.items():
             obj = getattr(m.fs.unit, obj_str)
@@ -783,7 +765,9 @@ class TestReverseOsmosis():
                                'eq_area': Constraint,
                                'eq_mass_flux_equal_mass_transfer': Constraint,
                                'eq_permeate_outlet_isothermal': Constraint,
-                               'eq_permeate_outlet_isobaric': Constraint
+                               'eq_permeate_outlet_isobaric': Constraint,
+                               'Kf_avg': Expression,
+                               'flux_mass_phase_comp_avg': Expression,
                                }
         for (obj_str, obj_type) in unit_objs_type_dict.items():
             obj = getattr(m.fs.unit, obj_str)
@@ -937,7 +921,10 @@ class TestReverseOsmosis():
                                'eq_N_Sc': Constraint,
                                'eq_N_Sh': Constraint,
                                'eq_area_cross': Constraint,
-                               'eq_dh': Constraint
+                               'eq_dh': Constraint,
+                               'N_Re_avg': Expression,
+                               'Kf_avg': Expression,
+                               'flux_mass_phase_comp_avg': Expression,
                                }
         for (obj_str, obj_type) in unit_objs_type_dict.items():
             obj = getattr(m.fs.unit, obj_str)
@@ -1098,7 +1085,10 @@ class TestReverseOsmosis():
                                'eq_N_Sh': Constraint,
                                'eq_area_cross': Constraint,
                                'eq_dh': Constraint,
-                               'eq_pressure_drop': Constraint
+                               'eq_pressure_drop': Constraint,
+                               'N_Re_avg': Expression,
+                               'Kf_avg': Expression,
+                               'flux_mass_phase_comp_avg': Expression,
                                }
         for (obj_str, obj_type) in unit_objs_type_dict.items():
             obj = getattr(m.fs.unit, obj_str)
@@ -1259,7 +1249,10 @@ class TestReverseOsmosis():
                                'eq_N_Sh': Constraint,
                                'eq_area_cross': Constraint,
                                'eq_dh': Constraint,
-                               'eq_pressure_drop': Constraint
+                               'eq_pressure_drop': Constraint,
+                               'N_Re_avg': Expression,
+                               'Kf_avg': Expression,
+                               'flux_mass_phase_comp_avg': Expression,
                                }
         for (obj_str, obj_type) in unit_objs_type_dict.items():
             obj = getattr(m.fs.unit, obj_str)
