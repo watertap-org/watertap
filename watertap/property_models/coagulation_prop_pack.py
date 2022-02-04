@@ -20,7 +20,8 @@ from pyomo.environ import (Constraint,
                            Reals,
                            NonNegativeReals,
                            Suffix,
-                           assert_optimal_termination)
+                           assert_optimal_termination,
+                           check_optimal_termination)
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores
@@ -250,7 +251,7 @@ class _CoagulationStateBlock(StateBlock):
             # Initialize properties
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = solve_indexed_blocks(opt, [self], tee=slc.tee)
-                if not assert_optimal_termination:
+                if not check_optimal_termination(results):
                     raise InitializationError('The property package failed to solve during initialization')
             init_log.info_high("Property initialization: {}.".format(idaeslog.condition(results)))
 
@@ -580,7 +581,7 @@ class CoagulationStateBlockData(StateBlockData):
 
             sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Sol', 'Sludge'])
                   / iscale.get_scaling_factor(self.dens_mass_phase['Sol']))
-            # note: this volume flow is generally much smaller than the other 
+            # note: this volume flow is generally much smaller than the other
             iscale.set_scaling_factor(self.flow_vol_phase['Sol'], sf*1000)
             # transforming constraints
             iscale.constraint_scaling_transform(self.eq_flow_vol_phase['Sol'], sf)
