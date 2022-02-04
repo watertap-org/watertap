@@ -498,10 +498,27 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
             state_args_retentate['flow_mass_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solute_recovery'])
             state_args_permeate['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['solute_recovery']
 
-        state_args_interface = deepcopy(state_args)
+        state_args_interface_in = deepcopy(state_args)
+        state_args_interface_out = deepcopy(state_args_retentate)
 
         for j in self.config.property_package.solute_set:
-            state_args_interface['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
+            state_args_interface_in['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
+            state_args_interface_out['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
+
+        state_args_interface = {}
+        for t in self.flowsheet().config.time:
+            for x in self.length_domain:
+                assert 0. <= x <= 1.
+                state_args_tx = {}
+                for k in state_args_interface_in:
+                    if isinstance(state_args_interface_in[k], dict):
+                        if k not in state_args_tx:
+                            state_args_tx[k] = {}
+                        for index in state_args_interface_in[k]:
+                            state_args_tx[k][index] = (1.-x)*state_args_interface_in[k][index] + x*state_args_interface_out[k][index]
+                    else:
+                        state_args_tx[k] = (1.-x)*state_args_interface_in[k] + x*state_args_interface_out[k]
+                state_args_interface[t,x] = state_args_tx
 
         return {'feed_side' : state_args,
                 'retentate' : state_args_retentate,
