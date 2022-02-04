@@ -285,7 +285,7 @@ class _DSPMDEStateBlock(StateBlock):
             # Initialize properties
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = solve_indexed_blocks(opt, [self], tee=slc.tee)
-                if not assert_optimal_termination:
+                if not check_optimal_termination(results):
                     raise InitializationError('The property package failed to solve during initialization.')
             init_log.info_high("Property initialization: {}.".format(idaeslog.condition(results)))
 
