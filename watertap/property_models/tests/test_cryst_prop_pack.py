@@ -11,7 +11,7 @@
 #
 ###############################################################################
 import pytest
-import watertap.property_models.water_prop_pack as props as props
+import watertap.property_models.water_prop_pack as props
 from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition
 from idaes.core import FlowsheetBlock, ControlVolume0DBlock
 from idaes.generic_models.properties.tests.test_harness import \
