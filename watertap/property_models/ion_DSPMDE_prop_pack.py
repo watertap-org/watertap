@@ -268,7 +268,7 @@ class _DSPMDEStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(self, state_args=None, state_vars_fixed=False,
+    def initialize(blk, state_args=None, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
         """
@@ -313,17 +313,17 @@ class _DSPMDEStateBlock(StateBlock):
             which states were fixed during initialization.
         """
         # Get loggers
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="properties")
 
         # Set solver and options
         opt = get_solver(solver, optarg)
 
         # Fix state variables
-        flags = fix_state_vars(self, state_args)
+        flags = fix_state_vars(blk, state_args)
         # Check when the state vars are fixed already result in dof 0
-        for k in self.keys():
-            dof = degrees_of_freedom(self[k])
+        for k in blk.keys():
+            dof = degrees_of_freedom(blk[k])
             if dof != 0:
                 raise InitializationError("\nWhile initializing {sb_name}, the degrees of freedom "
                                            "are {dof}, when zero is required. \nInitialization assumes "
@@ -332,19 +332,19 @@ class _DSPMDEStateBlock(StateBlock):
                                            "predetermined value, use the calculate_state method "
                                            "before using initialize to determine the values for "
                                            "the state variables and avoid fixing the property variables."
-                                           "".format(sb_name=self.name, dof=dof))
+                                           "".format(sb_name=blk.name, dof=dof))
 
         # ---------------------------------------------------------------------
         skip_solve = True  # skip solve if only state variables are present
-        for k in self.keys():
-            if number_unfixed_variables(self[k]) != 0:
+        for k in blk.keys():
+            if number_unfixed_variables(blk[k]) != 0:
                 skip_solve = False
 
         if not skip_solve:
             # Initialize properties
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                results = solve_indexed_blocks(opt, [self], tee=slc.tee)
-                if not assert_optimal_termination:
+                results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+                if not check_optimal_termination(results):
                     raise InitializationError('The property package failed to solve during initialization.')
             init_log.info_high("Property initialization: {}.".format(idaeslog.condition(results)))
 
@@ -354,7 +354,7 @@ class _DSPMDEStateBlock(StateBlock):
             if hold_state is True:
                 return flags
             else:
-                self.release_state(flags)
+                blk.release_state(flags)
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         '''
@@ -689,8 +689,8 @@ class DSPMDEStateBlockData(StateBlockData):
 
         def rule_pressure_osm(b):
             return (b.pressure_osm ==
-                    sum(b.molality_comp[j] for j in self.params.solute_set)
-                    * b.dens_mass_solvent * Constants.gas_constant * b.temperature)
+                    sum(b.conc_mol_phase_comp['Liq', j] for j in self.params.solute_set)
+                    * Constants.gas_constant * b.temperature)
         self.eq_pressure_osm = Constraint(rule=rule_pressure_osm)
 
     # -----------------------------------------------------------------------------

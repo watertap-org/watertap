@@ -327,7 +327,7 @@ def test_default_scaling(model3):
                                 ('pressure', None): 1e-6,
                                 ('dens_mass_phase', 'Liq'): 1e-3,
                                 ('visc_d_phase', 'Liq'): 1e3,
-                                ('diffus_phase_comp', 'Liq'): 1e9}
+                                ('diffus_phase_comp', 'Liq'): 1e10}
     assert len(default_scaling_var_dict) == len(m.fs.properties.default_scaling_factor)
     for t, sf in default_scaling_var_dict.items():
         assert t in m.fs.properties.default_scaling_factor.keys()
@@ -439,8 +439,9 @@ def test_seawater_data():
     assert value(stream[0].flow_mol_phase_comp['Liq', 'Mg_2+']) == pytest.approx(0.05808,  rel=1e-3)
     assert value(stream[0].flow_mol_phase_comp['Liq', 'Cl_-']) == pytest.approx(0.58,  rel=1e-3)
     assert value(stream[0].flow_mol_phase_comp['Liq', 'SO4_2-']) == pytest.approx(0.02225,  rel=1e-3)
+
     assert value(stream[0].dens_mass_phase['Liq']) == pytest.approx(1023.816, rel=1e-3)
-    assert value(stream[0].pressure_osm) == pytest.approx(29.549e5, rel=1e-3)
+    assert value(stream[0].pressure_osm) == pytest.approx(29.274e5, rel=1e-3)
     assert value(stream[0].flow_vol) == pytest.approx(9.767e-4, rel=1e-3)
 
     assert value(sum(stream[0].conc_mass_phase_comp['Liq', j] for j in m.fs.properties.solute_set)) == pytest.approx(36.176, rel=1e-3)
