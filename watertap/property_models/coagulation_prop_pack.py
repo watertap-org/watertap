@@ -415,7 +415,7 @@ class CoagulationStateBlockData(StateBlockData):
         self.mass_frac_phase_comp = Var(
             self.seawater_mass_frac_dict.keys(),
             initialize=self.seawater_mass_frac_dict,
-            bounds=(1e-16, None),
+            bounds=(1e-16, 1.001),
             units=pyunits.dimensionless,
             doc='Mass fraction')
 
