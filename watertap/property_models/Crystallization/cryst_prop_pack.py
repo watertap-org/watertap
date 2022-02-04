@@ -84,8 +84,8 @@ class NaClParameterData(PhysicalParameterBlock):
         self._state_block_class = NaClStateBlock
 
         # Component
-        self.H2O = Component(default={"valid_phase_types": [PT.liquidPhase, PT.vaporPhase]})
-        self.NaCl = Component(default={"valid_phase_types": [PT.liquidPhase, PT.solidPhase]})
+        self.H2O = Solvent(default={"valid_phase_types": [PT.liquidPhase, PT.vaporPhase]})
+        self.NaCl = Solute(default={"valid_phase_types": [PT.liquidPhase, PT.solidPhase]})
 
         # Phases
         self.Liq = LiquidPhase(default={"component_list": ["H2O", "NaCl"]})
@@ -1221,7 +1221,7 @@ class NaClStateBlockData(StateBlockData):
             for p, j in self.phase_component_set:
                 if iscale.get_scaling_factor(self.mole_frac_phase_comp[p, j]) is None:
                     if p == 'Sol':
-                        iscale.set_scaling_factor(self.mole_frac_phase_comp[p, j], 1e0)
+                        iscale.set_scaling_factor(self.mole_frac_phase_comp[p, j], 1e-1)
                     else:
                         if j == 'NaCl':
                             sf = (iscale.get_scaling_factor(self.flow_mol_phase_comp[p, j])
