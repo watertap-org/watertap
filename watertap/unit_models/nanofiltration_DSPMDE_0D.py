@@ -1207,10 +1207,12 @@ class NanofiltrationData(UnitModelBlockData):
             var_dict[f'Molar Concentration of {j} @ Final Permeate'] = \
                 self.mixed_permeate[time_point].conc_mol_phase_comp['Liq', j]
 
-            var_dict[f"Osmotic Pressure @ Bulk Feed, Inlet (Pa)"] = \
-                self.feed_side.properties_in[time_point].pressure_osm
-            var_dict[f"Osmotic Pressure @ Bulk Feed, Outlet (Pa)"] = \
-                self.feed_side.properties_out[time_point].pressure_osm
+            if self.feed_side.properties_in[time_point].is_property_constructed('pressure_osm'):
+                var_dict[f"Osmotic Pressure @ Bulk Feed, Inlet (Pa)"] = \
+                    self.feed_side.properties_in[time_point].pressure_osm
+            if self.feed_side.properties_out[time_point].is_property_constructed('pressure_osm'):
+                var_dict[f"Osmotic Pressure @ Bulk Feed, Outlet (Pa)"] = \
+                    self.feed_side.properties_out[time_point].pressure_osm
 
             for x in self.io_list:
                 if not x:
@@ -1363,23 +1365,23 @@ class NanofiltrationData(UnitModelBlockData):
 
 
         # Scale properties at permeate
-        for sb in (self.mixed_permeate, self.permeate_side, self.pore_entrance, self.pore_exit,
-                   self.feed_side.properties_interface):
-            for blk in sb.values():
-                for j in self.config.property_package.solute_set:
-                    self._rescale_sb_variable(blk.flow_mol_phase_comp['Liq', j], factor=5e4)
-                    if blk.is_property_constructed('conc_mol_phase_comp'):
-                        self._rescale_sb_variable(blk.conc_mol_phase_comp['Liq', j], factor=1e5)
-                    if blk.is_property_constructed('conc_mol_phase_comp'):
-                        self._rescale_sb_variable(blk.mass_frac_phase_comp['Liq', j], factor=1e5)
-                    # if blk.is_property_constructed('mole_frac_phase_comp'):
-                    #     self._rescale_sb_variable(blk.mole_frac_phase_comp['Liq', j], factor=1e5)
-                    if blk.is_property_constructed('flow_mass_phase_comp'):
-                        self._rescale_sb_variable(blk.flow_mass_phase_comp['Liq', j], factor=1e4)
-                    if blk.is_property_constructed('molality_comp'):
-                        self._rescale_sb_variable(blk.molality_comp[j])
-                if blk.is_property_constructed('pressure_osm'):
-                    self._rescale_sb_variable(blk.pressure_osm)
+        # for sb in (self.mixed_permeate, self.permeate_side, self.pore_entrance, self.pore_exit,
+        #            self.feed_side.properties_interface):
+            # for blk in sb.values():
+            #     for j in self.config.property_package.solute_set:
+            #         self._rescale_sb_variable(blk.flow_mol_phase_comp['Liq', j], factor=5e4)
+            #         if blk.is_property_constructed('conc_mol_phase_comp'):
+            #             self._rescale_sb_variable(blk.conc_mol_phase_comp['Liq', j], factor=1e5)
+            #         if blk.is_property_constructed('conc_mol_phase_comp'):
+            #             self._rescale_sb_variable(blk.mass_frac_phase_comp['Liq', j], factor=1e5)
+            #         # if blk.is_property_constructed('mole_frac_phase_comp'):
+            #         #     self._rescale_sb_variable(blk.mole_frac_phase_comp['Liq', j], factor=1e5)
+            #         if blk.is_property_constructed('flow_mass_phase_comp'):
+            #             self._rescale_sb_variable(blk.flow_mass_phase_comp['Liq', j], factor=1e4)
+            #         if blk.is_property_constructed('molality_comp'):
+            #             self._rescale_sb_variable(blk.molality_comp[j])
+            #     if blk.is_property_constructed('pressure_osm'):
+            #         self._rescale_sb_variable(blk.pressure_osm)
 
         if iscale.get_scaling_factor(self.radius_pore) is None:
             iscale.set_scaling_factor(self.radius_pore, 1e10)
