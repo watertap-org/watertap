@@ -34,8 +34,9 @@ m.fs.stream[0].conc_mass_phase_comp
 print('\n---third display---')
 m.fs.stream[0].display()
 
-# touch last property
+# touch a property to construct
 m.fs.stream[0].flow_vol_phase
+m.fs.stream[0].flow_mol_phase_comp
 
 # now that we have a state block, we can fix the state variables and solve for the properties
 m.fs.stream[0].temperature.fix(273.15 + 25)
@@ -85,7 +86,10 @@ assert results.solver.termination_condition == TerminationCondition.optimal
 print('\n---fifth display---')
 m.fs.stream[0].display()
 
-# Looking for poor scaling 
+# Display contraint with scaling factors
+#m.fs.stream[0].eq_flow_mol_phase_comp.pprint()
+
+# Looking for poor scaling
 badly_scaled_var_list = list(badly_scaled_var_generator(m, large=1e2, small=1e-2))
 if len(badly_scaled_var_list) != 0:
     lst = []

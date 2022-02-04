@@ -71,16 +71,21 @@ class CoagulationParameterData(PhysicalParameterBlock):
         self.Sludge = Component(default={"valid_phase_types": PhaseType.solidPhase})
 
         # ====== parameters ========
-        ## TODO:  Add molecular weights (in kg/mol) and methods
         mw_comp_data = {'H2O': 18.01528e-3,
                         'TSS': 31.4038218e-3,
                         'TDS': 31.4038218e-3,
                         'Sludge': 31.4038218e-3}
 
+        self.mw_comp = Param(self.component_list,
+             mutable=False,
+             initialize=mw_comp_data,
+             units=pyunits.kg/pyunits.mol,
+             doc="Molecular weight")
+
         #   heat capacity of liquid
         self.cp = Param(mutable=False,
-                        initialize=4184,
-                        units=pyunits.J / (pyunits.kg * pyunits.K))
+            initialize=4184,
+            units=pyunits.J / (pyunits.kg * pyunits.K))
 
         #   reference density of liquid
         self.ref_dens_liq = Param(
@@ -156,6 +161,7 @@ class CoagulationParameterData(PhysicalParameterBlock):
             {'flow_mass_phase_comp': {'method': None},
              'temperature': {'method': None},
              'pressure': {'method': None},
+             'flow_mol_phase_comp': {'method': '_flow_mol_phase_comp'},
              'mass_frac_phase_comp': {'method': '_mass_frac_phase_comp'},
              'dens_mass_phase': {'method': '_dens_mass_phase'},
              'flow_vol_phase': {'method': '_flow_vol_phase'},
@@ -411,6 +417,19 @@ class CoagulationStateBlockData(StateBlockData):
     # Property Methods
     # these property methods build variables and constraints on demand (i.e. only when asked
     # for by a user or unit model)
+    def _flow_mol_phase_comp(self):
+        self.flow_mol_phase_comp = Var(
+            self.seawater_mass_frac_dict.keys(),
+            initialize=self.seawater_mass_frac_dict,
+            bounds=(1e-16, None),
+            units=pyunits.mol/pyunits.s,
+            doc="Molar flowrate")
+
+        def rule_flow_mol_phase_comp(b, p, j):
+            return (b.flow_mol_phase_comp[p, j] ==
+                    b.flow_mass_phase_comp[p, j] / b.params.mw_comp[j])
+        self.eq_flow_mol_phase_comp = Constraint(self.seawater_mass_frac_dict.keys(), rule=rule_flow_mol_phase_comp)
+
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(
             self.seawater_mass_frac_dict.keys(),
@@ -553,6 +572,13 @@ class CoagulationStateBlockData(StateBlockData):
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
+
+        if self.is_property_constructed('flow_mol_phase_comp'):
+            for pair in self.seawater_mass_frac_dict.keys():
+                if iscale.get_scaling_factor(self.flow_mol_phase_comp[pair]) is None:
+                    sf = iscale.get_scaling_factor(self.flow_mass_phase_comp[pair]) * self.params.mw_comp[pair[1]].value
+                    iscale.set_scaling_factor(self.flow_mol_phase_comp[pair], sf*10)
+                    iscale.constraint_scaling_transform(self.eq_flow_mol_phase_comp[pair], sf*10)
 
         if self.is_property_constructed('mass_frac_phase_comp'):
             for pair in self.seawater_mass_frac_dict.keys():
