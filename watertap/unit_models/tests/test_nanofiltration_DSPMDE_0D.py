@@ -56,7 +56,7 @@ def test_config():
 
 
     # check unit config arguments
-    assert len(m.fs.unit.config) == 7
+    assert len(m.fs.unit.config) == 8
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -92,12 +92,6 @@ class TestNanoFiltration():
                                    "Mg_2+": 0.347e-9,
                                    "Cl_-": 0.121e-9,
                                    "SO4_2-": 0.230e-9},
-            "density_data": {"H2O": 1000,
-                             "Na_+": 968,
-                             "Ca_2+": 1550,
-                             "Mg_2+": 1738,
-                             "Cl_-": 3214,
-                             "SO4_2-": 2553},
             "charge": {"Na_+": 1,
                        "Ca_2+": 2,
                        "Mg_2+": 2,
@@ -180,9 +174,9 @@ class TestNanoFiltration():
         assert isinstance(m.fs.unit.pore_exit, props.DSPMDEStateBlock)
 
         # test statistics
-        assert number_variables(m) == 507
-        assert number_total_constraints(m) == 466
-        assert number_unused_variables(m) == 6  # temperature and pressure unused on particular stateblocks
+        assert number_variables(m) == 489
+        assert number_total_constraints(m) == 450
+        assert number_unused_variables(m) == 4  # temperature and pressure unused on particular stateblocks
 
     @pytest.mark.unit
     def test_dof(self, NF_frame):
@@ -193,9 +187,9 @@ class TestNanoFiltration():
     def test_calculate_scaling(self, NF_frame):
         m = NF_frame
 
-        m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', 'H2O'))
-        for ion in m.fs.properties.config.solute_list:
-            m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e2, index=('Liq', ion))
+        # m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', 'H2O'))
+        # for ion in m.fs.properties.config.solute_list:
+        #     m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e2, index=('Liq', ion))
 
         calculate_scaling_factors(m)
 
@@ -207,9 +201,9 @@ class TestNanoFiltration():
         assert len(unscaled_var_list) == 0
 
         # # check that all constraints have been scaled #TODO: revisit to see if constraints need transformation
-        # unscaled_constraint_list = list(unscaled_constraints_generator(m.fs.unit))
-        # [print(i) for i in unscaled_constraint_list]
-        # assert len(unscaled_constraint_list) == 0
+        unscaled_constraint_list = list(unscaled_constraints_generator(m.fs.unit))
+        [print(i) for i in unscaled_constraint_list]
+        assert len(unscaled_constraint_list) == 0
 
 
     @pytest.mark.component

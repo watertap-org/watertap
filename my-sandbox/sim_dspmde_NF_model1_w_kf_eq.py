@@ -198,7 +198,8 @@ if __name__ == '__main__':
 
     b = m.fs.unit
 
-
+    # m.fs.unit.eq_equal_flow_vol_permeate.deactivate()
+    # m.fs.unit.eq_equal_flow_vol_pore_permeate.deactivate()
     m.fs.unit.recovery_vol_phase[0, 'Liq'].unfix()
     # m.fs.unit.area.unfix()
 

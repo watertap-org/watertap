@@ -235,8 +235,8 @@ def test_property_ions(model2):
 
     results = solver.solve(m)
     assert_optimal_termination(results)
-
     assert value(stream[0].flow_vol_phase['Liq']) == pytest.approx(1.82478e-5,  rel=1e-3)
+
 
 @pytest.fixture(scope="class")
 def model3():
@@ -328,6 +328,7 @@ def test_default_scaling(model3):
                                 ('dens_mass_phase', 'Liq'): 1e-3,
                                 ('visc_d_phase', 'Liq'): 1e3,
                                 ('diffus_phase_comp', 'Liq'): 1e10}
+
     assert len(default_scaling_var_dict) == len(m.fs.properties.default_scaling_factor)
     for t, sf in default_scaling_var_dict.items():
         assert t in m.fs.properties.default_scaling_factor.keys()
@@ -345,7 +346,6 @@ def test_scaling(model3):
 
     # check that all variables have scaling factors
     unscaled_var_list = list(unscaled_variables_generator(m))
-    [print(i) for i in unscaled_var_list]
     assert len(unscaled_var_list) == 0
 
     # check if any variables are badly scaled

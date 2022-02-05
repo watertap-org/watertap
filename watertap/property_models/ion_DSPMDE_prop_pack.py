@@ -18,6 +18,7 @@ Donnan Steric Pore Model with Dielectric Exclusion (DSPM-DE)
 # TODO:
 #  -add calc option for Stokes radius from Stokes Einstein
 #  -add viscosity as func of temp and concentration
+
 # Import Python libraries
 import idaes.logger as idaeslog
 
@@ -117,11 +118,13 @@ class DSPMDEParameterData(PhysicalParameterBlock):
            "``DensityCalculation.laliberte``", "Solution density based on mixing correlation from Laliberte"
        """))
 
+
     def build(self):
         '''
         Callable method for Block construction.
         '''
         super().build()
+
 
         self._state_block_class = DSPMDEStateBlock
 
@@ -229,6 +232,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         self.set_default_scaling('dens_mass_phase', 1e-3, index='Liq')
         self.set_default_scaling('visc_d_phase', 1e3, index='Liq')
         self.set_default_scaling('diffus_phase_comp', 1e10, index='Liq')
+
 
 
     @classmethod
@@ -341,6 +345,7 @@ class _DSPMDEStateBlock(StateBlock):
         skip_solve = True  # skip solve if only state variables are present
         for k in blk.keys():
             if number_unfixed_variables(blk[k]) != 0:
+
                 skip_solve = False
 
         if not skip_solve:
@@ -359,6 +364,7 @@ class _DSPMDEStateBlock(StateBlock):
             else:
                 blk.release_state(flags)
 
+
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         '''
         Method to release state variables fixed during initialisation.
@@ -368,7 +374,7 @@ class _DSPMDEStateBlock(StateBlock):
                     were fixed during initialization, and should now be
                     unfixed. This dict is returned by initialize if
                     hold_state=True.
-            outlvl : sets output level of of logging
+            outlvl : sets output level of logging
         '''
         # Unfix state variables
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
