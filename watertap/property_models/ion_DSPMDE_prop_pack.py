@@ -781,7 +781,6 @@ class DSPMDEStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.diffus_phase_comp[ind], 1e10)
 
-
         if self.is_property_constructed('dens_mass_solvent'):
             if iscale.get_scaling_factor(self.dens_mass_solvent) is None:
                 iscale.set_scaling_factor(self.dens_mass_solvent, 1e-2)
@@ -803,11 +802,35 @@ class DSPMDEStateBlockData(StateBlockData):
                               / iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O']))
                         iscale.set_scaling_factor(self.mole_frac_phase_comp['Liq', j], sf)
 
+        if self.is_property_constructed('mass_frac_phase_comp'):
+            for j in self.params.component_list:
+                comp = self.params.get_component(j)
+                if iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j]) is None:
+                    if comp.is_solute():
+                        sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', j], default=1)
+                              / iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'], default=1))
+                        iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], sf)
+                    elif comp.is_solvent():
+                        iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], 100)
+                    else:
+                        raise TypeError(f'comp={comp}, j = {j}')
+
+        if self.is_property_constructed('conc_mass_phase_comp'):
+            for j in self.params.component_list:
+                sf_dens = iscale.get_scaling_factor(self.dens_mass_phase['Liq'])
+                if iscale.get_scaling_factor(self.conc_mass_phase_comp['Liq', j]) is None:
+                    if j == 'H2O':
+                        # solvents typically have a mass fraction between 0.5-1
+                        iscale.set_scaling_factor(self.conc_mass_phase_comp['Liq', j], sf_dens)
+                    else:
+                        iscale.set_scaling_factor(
+                            self.conc_mass_phase_comp['Liq', j],
+                            sf_dens * iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j],default=1,warning=True))
+
         if self.is_property_constructed('conc_mol_phase_comp'):
             for j in self.params.component_list:
                 if iscale.get_scaling_factor(self.conc_mol_phase_comp['Liq', j]) is None:
-                    sf_dens = iscale.get_scaling_factor(self.dens_mass_phase['Liq'])
-                    sf = (sf_dens * iscale.get_scaling_factor(self.mole_frac_phase_comp['Liq', j], default=1)
+                    sf = (iscale.get_scaling_factor(self.conc_mass_phase_comp['Liq', j])
                           / iscale.get_scaling_factor(self.mw_comp[j]))
                     iscale.set_scaling_factor(self.conc_mol_phase_comp['Liq', j], sf)
 
@@ -825,19 +848,6 @@ class DSPMDEStateBlockData(StateBlockData):
                 sf = iscale.get_scaling_factor(self.pressure)
                 iscale.set_scaling_factor(self.pressure_osm, sf)
 
-        if self.is_property_constructed('mass_frac_phase_comp'):
-            for j in self.params.component_list:
-                comp = self.params.get_component(j)
-                if iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j]) is None:
-                    if comp.is_solute():
-                        sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', j], default=1)
-                              / iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'], default=1))
-                        iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], sf)
-                    elif comp.is_solvent():
-                        iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], 100)
-                    else:
-                        raise TypeError(f'comp={comp}, j = {j}')
-
         if self.is_property_constructed('flow_vol_phase'):
             sf = (iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O'], default=1)
                   * iscale.get_scaling_factor(self.mw_comp[j])
@@ -847,19 +857,6 @@ class DSPMDEStateBlockData(StateBlockData):
         if self.is_property_constructed('flow_vol'):
             sf = iscale.get_scaling_factor(self.flow_vol_phase)
             iscale.set_scaling_factor(self.flow_vol, sf)
-
-        if self.is_property_constructed('conc_mass_phase_comp'):
-            for j in self.params.component_list:
-                sf_dens = iscale.get_scaling_factor(self.dens_mass_phase['Liq'])
-                if iscale.get_scaling_factor(self.conc_mass_phase_comp['Liq', j]) is None:
-                    if j == 'H2O':
-                        # solvents typically have a mass fraction between 0.5-1
-                        iscale.set_scaling_factor(self.conc_mass_phase_comp['Liq', j], sf_dens)
-                    else:
-                        iscale.set_scaling_factor(
-                            self.conc_mass_phase_comp['Liq', j],
-                            sf_dens * iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j],default=1,warning=True))
-
 
         if self.is_property_constructed('molality_comp'):
             for j in self.params.solute_set:
