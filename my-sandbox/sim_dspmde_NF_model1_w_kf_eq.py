@@ -104,7 +104,10 @@ if __name__ == '__main__':
 
     # Use assert electroneutrality method from property model to ensure the ion concentrations provided
     # obey electroneutrality condition
-    m.fs.unit.feed_side.properties_in[0].assert_electroneutrality(tol=1e-6)
+    m.fs.unit.feed_side.properties_in[0].assert_electroneutrality(defined_state=True,
+                                                                  adjust_by_ion='Cl_-',
+                                                                  get_property='mass_frac_phase_comp')
+    # m.fs.unit.feed_side.properties_in[0].mass_frac_phase_comp.display()
 
     # Fix other inlet state variables
     m.fs.unit.inlet.temperature[0].fix(298.15)

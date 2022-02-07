@@ -739,20 +739,53 @@ class DSPMDEStateBlockData(StateBlockData):
                 "temperature": self.temperature,
                 "pressure": self.pressure}
 
-    def assert_electroneutrality(self, tol=None, tee=False, defined_state=True):
+    def assert_electroneutrality(self, tol=None, tee=True, defined_state=True, adjust_by_ion=None,
+                                 get_property=None):
+        #TODO: technically, this should be charge*concentration instead of charge*mole flow
         if tol is None:
             tol = 1e-6
+        if adjust_by_ion is not None:
+            if adjust_by_ion in self.params.solute_set:
+                self.charge_balance = Constraint(expr=sum(self.charge_comp[j] * self.conc_mol_phase_comp['Liq', j]
+                                                 for j in self.params.solute_set) == 0)
+            else:
+                raise ValueError('adjust_by_ion must be set to the name of an ion in the list of solutes.')
         if defined_state:
             for j in self.params.solute_set:
-                if not self.flow_mol_phase_comp['Liq', j].is_fixed():
+                if not self.flow_mol_phase_comp['Liq', j].is_fixed() and adjust_by_ion != j:
                     raise AssertionError(
                         f"{self.flow_mol_phase_comp['Liq', j]} was not fixed. Fix flow_mol_phase_comp for each solute"
                         f" to check that electroneutrality is satisfied.")
-        val = value(sum(self.charge_comp[j] * self.flow_mol_phase_comp['Liq', j]
-                    for j in self.params.solute_set))
+                if adjust_by_ion == j and self.flow_mol_phase_comp['Liq', j].is_fixed():
+                    self.flow_mol_phase_comp['Liq', j].unfix()
+
+        if get_property is not None:
+            for i in [get_property]:
+                getattr(self, i)
+        self.conc_mol_phase_comp
+
+        solve = get_solver()
+        results = solve.solve(self)
+        if check_optimal_termination(results):
+            val = value(sum(self.charge_comp[j] * self.conc_mol_phase_comp['Liq', j]
+                        for j in self.params.solute_set))
+        else:
+            if adjust_by_ion is not None:
+                del self.charge_balance
+            raise ValueError('The stateblock failed to solve while computing concentrations to check the charge balance.')
+
         if abs(val) <= tol:
+            if adjust_by_ion is not None:
+                # self.flow_mol_phase_comp['Liq', adjust_by_ion].fix()
+                ion_adjusted = self.flow_mol_phase_comp['Liq', adjust_by_ion].value
+                msg = f"{adjust_by_ion} was adjusted and flow_mol_phase_comp['Liq',{adjust_by_ion}] was fixed " \
+                      f"to {ion_adjusted}."
+                del self.charge_balance
+            else:
+                msg = ""
             if tee:
-                return print(f'Electroneutrality satisfied for {self}. Result = {val}')
+                return print(f'{msg} Electroneutrality satisfied for {self}. Balance Result = {val}')
+
         else:
             raise AssertionError(f"Electroneutrality condition violated in {self}. Ion concentrations should be adjusted to bring "
                                  f"the result of {val} closer towards 0.")
