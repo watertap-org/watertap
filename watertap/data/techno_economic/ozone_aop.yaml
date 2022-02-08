@@ -1,5 +1,5 @@
 default:
-  recovery_vol:
+  recovery_frac_mass_H2O:
     value: 0.9999
     units: dimensionless
     reference: 'EPA model: https://www.epa.gov/sdwa/drinking-water-treatment-technology-unit-cost-models'
