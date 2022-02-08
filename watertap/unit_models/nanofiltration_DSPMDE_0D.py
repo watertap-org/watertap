@@ -636,6 +636,13 @@ class NanofiltrationData(UnitModelBlockData):
                     / (8 * prop_feed.visc_d_phase[p] * b.membrane_thickness_effective)
                     )
 
+        # TESTING ANOTHER PROBLEMATIC CONSTRAINT RESULTING IN ERRONEOUSLY LOW REJECTION:
+        @self.Expression(self.flowsheet().config.time,
+                         io_list,
+                         phase_list,
+                         doc="Total mole flux")
+        def flux_mol_phase_sum(b, t, x, p):
+            return sum(b.flux_mol_phase_comp[t, x, p, j] for j in b.config.property_package.component_list)
         # 6. Unhindered mass transfer; Js,i=Jw*cp,i; DOF= Nj * 2 for inlet/outlet
         @self.Constraint(self.flowsheet().config.time,
                          io_list,
@@ -643,8 +650,10 @@ class NanofiltrationData(UnitModelBlockData):
                          solute_set,
                          doc="Solute flux as function of solvent flux")
         def eq_solute_solvent_flux(b, t, x, p, j):
-            return (b.flux_mol_phase_comp[t, x, p, j] ==
-                    b.flux_vol_water[t, x] * b.permeate_side[t, x].conc_mol_phase_comp[p, j])
+            return (b.flux_mol_phase_comp[t, x, p, j] * b.permeate_side[t, x].dens_mass_phase[p] ==
+                    b.flux_mol_phase_sum[t, x, p]
+                    * sum(b.feed_side.properties_in[t].mw_comp[j] for j in solute_set)
+                    * b.permeate_side[t, x].conc_mol_phase_comp[p, j])
 
         # TESTING PROBLEMATIC CONSTRAINT RESULTING IN ERRONEOUSLY LOW REJECTION:
         @self.Expression(self.flowsheet().config.time,
