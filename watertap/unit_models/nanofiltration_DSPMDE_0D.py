@@ -517,6 +517,16 @@ class NanofiltrationData(UnitModelBlockData):
         def flux_mol_phase_comp_avg(b, t, p, j):
             return sum(b.flux_mol_phase_comp[t, x, p, j] for x in io_list) * 0.5
 
+        # Average concentration inside the membrane------------------------------------#
+        @self.Expression(self.flowsheet().config.time,
+                         io_list,
+                         phase_list,
+                         solvent_solute_set,
+                         doc="Average molar concentration inside the membrane")
+        def conc_mol_phase_comp_pore_avg(b, t, x, p, j):
+            return (b.pore_entrance[t, x].conc_mol_phase_comp[p, j]
+                    + b.pore_exit[t, x].conc_mol_phase_comp[p, j]) * 0.5
+
         # TODO - no relationship described between mixing length and spacer mixing efficiency with spacer porosity.
         #  Need effective cross-sectional area for velocity at inlet AND outlet. Assuming spacer porosity as an
         #  additional variable in the model that is independent of aforementioned parameters which are used in
@@ -636,6 +646,40 @@ class NanofiltrationData(UnitModelBlockData):
             return (b.flux_mol_phase_comp[t, x, p, j] ==
                     b.flux_vol_water[t, x] * b.permeate_side[t, x].conc_mol_phase_comp[p, j])
 
+        # TESTING PROBLEMATIC CONSTRAINT RESULTING IN ERRONEOUSLY LOW REJECTION:
+        @self.Expression(self.flowsheet().config.time,
+                         io_list,
+                         phase_list,
+                         solute_set,
+                         doc="Diffusive transport across membrane pore")
+        def diffusive_term(b, t, x, p, j):
+            return (- b.diffus_pore_comp[t, j]
+                    * (b.pore_exit[t, x].conc_mol_phase_comp[p, j] - b.pore_entrance[t, x].conc_mol_phase_comp[p, j])
+                    / b.membrane_thickness_effective)
+
+        @self.Expression(self.flowsheet().config.time,
+                         io_list,
+                         phase_list,
+                         solute_set,
+                         doc="Convective transport across membrane pore")
+        def convective_term(b, t, x, p, j):
+            return (b.hindrance_factor_convective_comp[t, j]
+                    * b.conc_mol_phase_comp_pore_avg[t, x, p, j]
+                    * b.flux_vol_water[t, x])
+
+        @self.Expression(self.flowsheet().config.time,
+                         io_list,
+                         phase_list,
+                         solute_set,
+                         doc="Electromigrative transport across membrane pore")
+        def electromigration_term(b, t, x, p, j):
+            return (- b.feed_side.properties_in[t].charge_comp[j]
+                    * b.conc_mol_phase_comp_pore_avg[t, x, p, j]
+                    * b.diffus_pore_comp[t, j]
+                    * Constants.faraday_constant / (Constants.gas_constant * b.feed_side.properties_in[t].temperature)
+                    * (b.electric_potential[t, x, 'pore_exit'] - b.electric_potential[t, x, 'pore_entrance'])
+                    / b.membrane_thickness_effective)
+
         # 7. Extended Nernst Planck equation, DOF= Nj * 2 for inlet/outlet
         @self.Constraint(self.flowsheet().config.time,
                          io_list,
@@ -644,18 +688,10 @@ class NanofiltrationData(UnitModelBlockData):
                          doc="Solute flux within pore domain")
         def eq_solute_flux_pore_domain(b, t, x, p, j):
             return (b.flux_mol_phase_comp[t, x, p, j] ==
-                    - b.diffus_pore_comp[t, j]
-                    * (b.pore_exit[t, x].conc_mol_phase_comp[p, j] - b.pore_entrance[t, x].conc_mol_phase_comp[p, j])
-                    / b.membrane_thickness_effective
-                    - 0.5 * b.feed_side.properties_in[t].charge_comp[j]
-                    * (b.pore_entrance[t, x].conc_mol_phase_comp[p, j] + b.pore_exit[t, x].conc_mol_phase_comp[p, j])
-                    * b.diffus_pore_comp[t, j]
-                    * Constants.faraday_constant / (Constants.gas_constant * b.feed_side.properties_in[t].temperature)
-                    * (b.electric_potential[t, x, 'pore_exit'] - b.electric_potential[t, x, 'pore_entrance'])
-                    / b.membrane_thickness_effective
-                    + 0.5 * b.hindrance_factor_convective_comp[t, j]
-                    * (b.pore_entrance[t, x].conc_mol_phase_comp[p, j] + b.pore_exit[t, x].conc_mol_phase_comp[p, j])
-                    * b.flux_vol_water[t, x])
+                    b.diffusive_term[t, x, p, j]
+                    + b.convective_term[t, x, p, j]
+                    + b.electromigration_term[t, x, p, j]
+                    )
 
         # 8. Feed-solution/membrane mass transfer resistance, DOF= Nj * 2 for inlet/outlet
         @self.Constraint(self.flowsheet().config.time,
@@ -749,9 +785,9 @@ class NanofiltrationData(UnitModelBlockData):
                          solute_set,
                          doc="Intrinsic solute rejection")
         def eq_rejection_intrinsic_phase_comp(b, t, p, j):
-            return (b.mixed_permeate[t].conc_mol_phase_comp[p, j]
-                    == b.feed_side.properties_interface[t, 0].conc_mol_phase_comp[p, j]
-                    * (1 - b.rejection_intrinsic_phase_comp[t, p, j]))
+            return (b.rejection_intrinsic_phase_comp[t, p, j] ==
+                    1 - b.mixed_permeate[t].conc_mol_phase_comp[p, j]
+                    / b.feed_side.properties_interface[t,0].conc_mol_phase_comp[p, j])
 
         if self.config.mass_transfer_coefficient == MassTransferCoefficient.spiral_wound:
             # 17. Mass transfer coefficient
@@ -863,6 +899,17 @@ class NanofiltrationData(UnitModelBlockData):
             prop = b.feed_side.properties_out[t]
             return (sum(prop.conc_mol_phase_comp[p, j] *
                     prop.charge_comp[j] for j in solute_set)
+                    == b.tol_electroneutrality)
+
+        # Experimental constraint: electroneutrality inside membrane
+        @self.Constraint(self.flowsheet().config.time,
+                         io_list,
+                         phase_list,
+                         doc="Electroneutrality inside the membrane")
+        def eq_electroneutrality_in_membrane(b, t, x, p):
+            return (sum(b.conc_mol_phase_comp_pore_avg[t, x, p, j] *
+                    b.feed_side.properties_in[t].charge_comp[j] for j in solute_set)
+                    + b.membrane_charge_density[t]
                     == b.tol_electroneutrality)
 
         # # # # Experimental Constraint

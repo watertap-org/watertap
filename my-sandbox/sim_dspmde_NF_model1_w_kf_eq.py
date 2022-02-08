@@ -74,8 +74,8 @@ if __name__ == '__main__':
             # "Y": 1
 
         },
-        "activity_coefficient_model": ActivityCoefficientModel.ideal,
-        "density_calculation": DensityCalculation.seawater
+        "activity_coefficient_model": ActivityCoefficientModel.davies,
+        "density_calculation": DensityCalculation.constant
     })
 
     m.fs.unit = NanofiltrationDSPMDE0D(default={"property_package": m.fs.properties,
@@ -128,9 +128,9 @@ if __name__ == '__main__':
     m.fs.unit.spacer_mixing_length.fix()
     # m.fs.unit.length.fix(1)
     m.fs.unit.channel_height.fix(5e-4)
-    m.fs.unit.velocity[0, 0].fix(0.25)
-    m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.5)
-
+    # m.fs.unit.velocity[0, 0].fix(0.1)
+    # m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.5)
+    # m.fs.unit.rejection_intrinsic_phase_comp[0, 'Liq', 'Ca_2+'].setlb(.2)
 
 
 
@@ -167,15 +167,15 @@ if __name__ == '__main__':
     # m.fs.unit.eq_mass_transfer_feed.activate()
     # m.fs.unit.eq_permeate_production.activate()
     # #
-    # m.fs.unit.eq_solute_flux_pore_domain.activate()
+    # m.fs.unit.eq_solute_flux_pore_domain.deactivate()
     # m.fs.unit.eq_recovery_mol_phase_comp.activate()
     # m.fs.unit.eq_pore_isothermal.activate()
     # m.fs.unit.feed_side.eq_feed_interface_isothermal.activate()
     # m.fs.unit.feed_side.eq_feed_isothermal.activate()
     #
     # m.fs.unit.eq_recovery_vol_phase.activate()
-    # m.fs.unit.eq_equal_flow_vol_pore_permeate.activate()
-    # m.fs.unit.eq_equal_flow_vol_permeate.activate()
+    # m.fs.unit.eq_equal_flow_vol_pore_permeate.deactivate()
+    # m.fs.unit.eq_equal_flow_vol_permeate.deactivate()
     #
     # # BRING IN NEW constraints for mass transfer coefficient
     # m.fs.unit.eq_Kf_comp.activate()

@@ -191,7 +191,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             mutable=True,
             default=0.3,
             initialize=0.3,
-            units=pyunits.m**3/pyunits.mol,
+            units=pyunits.kg/pyunits.mol,
             doc="Debye Huckel constant b")
 
         # Mass density parameters, eq. 8 in Sharqawy et al. (2010)
@@ -682,9 +682,9 @@ class DSPMDEStateBlockData(StateBlockData):
         self.act_coeff_phase_comp = Var(
             self.phase_list,
             self.params.solute_set,
-            initialize=1,
+            initialize=0.7,
             domain=NonNegativeReals,
-            bounds=(1e-4, 1.001),
+            bounds=(1e-3, 1.001),
             units=pyunits.dimensionless,
             doc="activity coefficient of component")
 
@@ -692,25 +692,27 @@ class DSPMDEStateBlockData(StateBlockData):
             if b.params.config.activity_coefficient_model == ActivityCoefficientModel.ideal:
                 return b.act_coeff_phase_comp['Liq', j] == 1
             elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.davies:
+                I = b.ionic_strength
                 return (log(b.act_coeff_phase_comp['Liq', j]) == -b.debye_huckel_constant
                         * b.charge_comp[j] ** 2
-                        * (b.ionic_strength**0.5
-                        / (1 * pyunits.mole ** 0.5 / pyunits.m ** 1.5
-                           + b.ionic_strength ** 0.5)
-                           - b.params.debye_huckel_b * b.ionic_strength))
+                        * (I**0.5
+                        / (1 * pyunits.mole ** 0.5 / pyunits.kg ** 0.5
+                           + I ** 0.5)
+                           - b.params.debye_huckel_b * I))
                 # raise NotImplementedError(f"Davies model has not been implemented yet.")
         self.eq_act_coeff_phase_comp = Constraint(self.params.solute_set,
                                                   rule=rule_act_coeff_phase_comp)
-
+    #TODO: note- assuming molal ionic strength goes into Debye Huckel relationship;
+    # the MIT's DSPMDE paper indicates usage of molar concentration
     def _ionic_strength(self):
         self.ionic_strength = Var(
             initialize = 1,
             domain=NonNegativeReals,
-            units=pyunits.mol/pyunits.m**3,
-            doc="Molar ionic strength")
+            units=pyunits.mol/pyunits.kg,
+            doc="Molal ionic strength")
 
         def rule_ionic_strength(b):
-            return b.ionic_strength == 0.5 * sum(b.charge_comp[j]**2 * b.conc_mol_phase_comp['Liq', j]
+            return b.ionic_strength == 0.5 * sum(b.charge_comp[j]**2 * b.molality_comp[j]
                                                  for j in self.params.solute_set)
         self.eq_ionic_strength = Constraint(rule=rule_ionic_strength)
 
@@ -719,6 +721,8 @@ class DSPMDEStateBlockData(StateBlockData):
             initialize = 1,
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
+            # TODO: units are technically (kg/mol)**0.5, but Debye Huckel equation
+            #  is empirical and units don't seem to cancel as typical. leaving as dimensionless for now
             doc="Temperature-dependent Debye Huckel constant A")
 
         def rule_debye_huckel_constant(b):
