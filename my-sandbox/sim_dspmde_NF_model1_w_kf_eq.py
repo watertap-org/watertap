@@ -126,7 +126,7 @@ if __name__ == '__main__':
     m.fs.unit.spacer_porosity.fix(1)
     m.fs.unit.spacer_mixing_efficiency.fix()
     m.fs.unit.spacer_mixing_length.fix()
-    m.fs.unit.length.fix(1)
+    # m.fs.unit.length.fix(1)
     m.fs.unit.channel_height.fix(5e-4)
     m.fs.unit.velocity[0, 0].fix(0.25)
     m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.5)
@@ -157,7 +157,7 @@ if __name__ == '__main__':
 
     # for con in m.fs.unit.component_data_objects(Constraint, descend_into=False):
     #     con.deactivate()
-    #
+    # #
     # m.fs.unit.eq_water_flux.activate()
     # m.fs.unit.eq_solute_solvent_flux.activate()
     # m.fs.unit.eq_solute_flux_concentration_polarization.activate()
@@ -166,7 +166,7 @@ if __name__ == '__main__':
     # m.fs.unit.eq_pressure_permeate_io.activate()
     # m.fs.unit.eq_mass_transfer_feed.activate()
     # m.fs.unit.eq_permeate_production.activate()
-    #
+    # #
     # m.fs.unit.eq_solute_flux_pore_domain.activate()
     # m.fs.unit.eq_recovery_mol_phase_comp.activate()
     # m.fs.unit.eq_pore_isothermal.activate()
@@ -183,13 +183,13 @@ if __name__ == '__main__':
     # m.fs.unit.eq_N_Pe_comp.activate()
     # m.fs.unit.eq_velocity.activate()
     # m.fs.unit.eq_area.activate()
-
+    #
     # m.fs.unit.eq_interfacial_partitioning_feed.activate()
     # m.fs.unit.eq_interfacial_partitioning_permeate.activate()
     # m.fs.unit.eq_electroneutrality_interface.activate()
     # m.fs.unit.eq_electroneutrality_pore.activate()
     # m.fs.unit.eq_electroneutrality_permeate.activate()
-    # m.fs.unit.eq_rejection_phase_comp.activate()
+    # m.fs.unit.eq_rejection_intrinsic_phase_comp.activate()
     #
     # m.fs.unit.eq_equal_flowrate_pore_entrance_io.activate()
     # m.fs.unit.eq_pressure_pore_exit_io.activate()
@@ -203,7 +203,7 @@ if __name__ == '__main__':
 
     # m.fs.unit.eq_equal_flow_vol_permeate.deactivate()
     # m.fs.unit.eq_equal_flow_vol_pore_permeate.deactivate()
-    m.fs.unit.recovery_vol_phase[0, 'Liq'].unfix()
+    # m.fs.unit.recovery_vol_phase[0, 'Liq'].unfix()
     # m.fs.unit.area.unfix()
 
     # print('---------------- BEFORE AUTOMATE RESCALE---------------------------------------')
@@ -222,8 +222,8 @@ if __name__ == '__main__':
         print('SUCCESSFUL FIRST SOLVE!!!!!!!!!!!')
         # Check that electroneutrality is satisfied for feed outlet and mixed permeate- constraints that
         # are deactivated because they lead to failed solve
-        b.feed_side.properties_out[0].assert_electroneutrality(defined_state=False, tee=True)
-        b.mixed_permeate[0].assert_electroneutrality(defined_state=False, tee=True)
+        b.feed_side.properties_out[0].assert_electroneutrality(defined_state=False, tee=True, solve=False)
+        b.mixed_permeate[0].assert_electroneutrality(defined_state=False, tee=True, solve=False)
     else:
         print('FIRST SOLVE FAILED..............')
         print('Badly scaled vars after FIRST failed solve:')
@@ -237,8 +237,8 @@ if __name__ == '__main__':
             print('SUCCESSFUL SECOND SOLVE!!!!!!!!!!!')
             # Check that electroneutrality is satisfied for feed outlet and mixed permeate- constraints that
             # are deactivated because they lead to failed solve
-            b.feed_side.properties_out[0].assert_electroneutrality(defined_state=False, tee=True)
-            b.mixed_permeate[0].assert_electroneutrality(defined_state=False, tee=True)
+            b.feed_side.properties_out[0].assert_electroneutrality(defined_state=False, tee=True, solve=False)
+            b.mixed_permeate[0].assert_electroneutrality(defined_state=False, tee=True, solve=False)
         else:
             print('Badly scaled vars after SECOND failed solve:')
             [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]

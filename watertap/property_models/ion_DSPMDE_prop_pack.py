@@ -24,7 +24,7 @@ import idaes.logger as idaeslog
 
 from enum import Enum, auto
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, \
+from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, log, \
     Var, Param, Suffix, value, check_optimal_termination, units as pyunits, assert_optimal_termination
 from pyomo.common.config import ConfigValue, In
 
@@ -187,6 +187,12 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             initialize=80.4, #todo: make a variable with parameter values for coefficients in the function of temperature
             units=pyunits.dimensionless,
             doc="Dielectric constant of water")
+        self.debye_huckel_b = Param(
+            mutable=True,
+            default=0.3,
+            initialize=0.3,
+            units=pyunits.m**3/pyunits.mol,
+            doc="Debye Huckel constant b")
 
         # Mass density parameters, eq. 8 in Sharqawy et al. (2010)
         dens_units = pyunits.kg / pyunits.m ** 3
@@ -259,7 +265,9 @@ class DSPMDEParameterData(PhysicalParameterBlock):
              'mw_comp': {'method': '_mw_comp'},
              'charge_comp': {'method': '_charge_comp'},
              'act_coeff_phase_comp': {'method': '_act_coeff_phase_comp'},
-             'dielectric_constant': {'method': '_dielectric_constant'}
+             'dielectric_constant': {'method': '_dielectric_constant'},
+             'debye_huckel_constant': {'method': '_debye_huckel_constant'},
+             'ionic_strength': {'method': '_ionic_strength'}
              })
 
         obj.add_default_units({'time': pyunits.s,
@@ -684,9 +692,49 @@ class DSPMDEStateBlockData(StateBlockData):
             if b.params.config.activity_coefficient_model == ActivityCoefficientModel.ideal:
                 return b.act_coeff_phase_comp['Liq', j] == 1
             elif b.params.config.activity_coefficient_model == ActivityCoefficientModel.davies:
-                raise NotImplementedError(f"Davies model has not been implemented yet.")
+                return (log(b.act_coeff_phase_comp['Liq', j]) == -b.debye_huckel_constant
+                        * b.charge_comp[j] ** 2
+                        * (b.ionic_strength**0.5
+                        / (1 * pyunits.mole ** 0.5 / pyunits.m ** 1.5
+                           + b.ionic_strength ** 0.5)
+                           - b.params.debye_huckel_b * b.ionic_strength))
+                # raise NotImplementedError(f"Davies model has not been implemented yet.")
         self.eq_act_coeff_phase_comp = Constraint(self.params.solute_set,
                                                   rule=rule_act_coeff_phase_comp)
+
+    def _ionic_strength(self):
+        self.ionic_strength = Var(
+            initialize = 1,
+            domain=NonNegativeReals,
+            units=pyunits.mol/pyunits.m**3,
+            doc="Molar ionic strength")
+
+        def rule_ionic_strength(b):
+            return b.ionic_strength == 0.5 * sum(b.charge_comp[j]**2 * b.conc_mol_phase_comp['Liq', j]
+                                                 for j in self.params.solute_set)
+        self.eq_ionic_strength = Constraint(rule=rule_ionic_strength)
+
+    def _debye_huckel_constant(self):
+        self.debye_huckel_constant = Var(
+            initialize = 1,
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc="Temperature-dependent Debye Huckel constant A")
+
+        def rule_debye_huckel_constant(b):
+            return (b.debye_huckel_constant == ((2 * Constants.pi * Constants.avogadro_number) ** 0.5
+                                                / log(10)) * (Constants.elemental_charge ** 2
+                                                             /(4 * Constants.pi
+                                                               * Constants.vacuum_electric_permittivity
+                                                               * b.params.dielectric_constant
+                                                               * Constants.boltzmann_constant
+                                                               * b.temperature)) ** (3/2)
+                    *(pyunits.coulomb ** 3
+                      * pyunits.m ** 1.5
+                      / pyunits.farad ** 1.5
+                      / pyunits.J ** 1.5
+                      / pyunits.mol ** 0.5)**-1)
+        self.eq_debye_huckel_constant = Constraint(rule=rule_debye_huckel_constant)
 
     #TODO: change osmotic pressure calc
     def _pressure_osm(self):
@@ -740,7 +788,7 @@ class DSPMDEStateBlockData(StateBlockData):
                 "pressure": self.pressure}
 
     def assert_electroneutrality(self, tol=None, tee=True, defined_state=True, adjust_by_ion=None,
-                                 get_property=None):
+                                 get_property=None, solve=True):
         #TODO: technically, this should be charge*concentration instead of charge*mole flow
         if tol is None:
             tol = 1e-6
@@ -764,16 +812,19 @@ class DSPMDEStateBlockData(StateBlockData):
                 getattr(self, i)
         self.conc_mol_phase_comp
 
-        solve = get_solver()
-        results = solve.solve(self)
-        if check_optimal_termination(results):
-            val = value(sum(self.charge_comp[j] * self.conc_mol_phase_comp['Liq', j]
-                        for j in self.params.solute_set))
+        if solve:
+            solve = get_solver()
+            results = solve.solve(self)
+            if check_optimal_termination(results):
+                val = value(sum(self.charge_comp[j] * self.conc_mol_phase_comp['Liq', j]
+                            for j in self.params.solute_set))
+            else:
+                if adjust_by_ion is not None:
+                    del self.charge_balance
+                raise ValueError('The stateblock failed to solve while computing concentrations to check the charge balance.')
         else:
-            if adjust_by_ion is not None:
-                del self.charge_balance
-            raise ValueError('The stateblock failed to solve while computing concentrations to check the charge balance.')
-
+            val = value(sum(self.charge_comp[j] * self.conc_mol_phase_comp['Liq', j]
+                            for j in self.params.solute_set))
         if abs(val) <= tol:
             if adjust_by_ion is not None:
                 # self.flow_mol_phase_comp['Liq', adjust_by_ion].fix()

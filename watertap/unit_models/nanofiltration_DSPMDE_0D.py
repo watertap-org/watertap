@@ -619,8 +619,9 @@ class NanofiltrationData(UnitModelBlockData):
             prop_perm = b.permeate_side[t, x]
             prop_feed_inter = b.feed_side.properties_interface[t, x]
             return (b.flux_vol_water[t, x] ==
-                    (prop_feed.pressure - prop_perm.pressure -
-                     (prop_feed_inter.pressure_osm - prop_perm.pressure_osm))
+                    (prop_feed.pressure - prop_perm.pressure
+                     -(prop_feed_inter.pressure_osm - prop_perm.pressure_osm)
+                     )
                     * (b.radius_pore ** 2)
                     / (8 * prop_feed.visc_d_phase[p] * b.membrane_thickness_effective)
                     )
@@ -837,8 +838,8 @@ class NanofiltrationData(UnitModelBlockData):
         def eq_equal_flow_vol_pore_permeate(b, t, x):
             return b.permeate_side[t, x].flow_vol_phase['Liq'] ==\
                    b.pore_exit[t, x].flow_vol_phase['Liq']
-
-        # # Experimental constraint
+        #
+        # # # Experimental constraint
         @self.Constraint(self.flowsheet().config.time,
                          io_list,
                          doc="Volumetric flow at permeate of inlet and outlet equal to mixed permeate")
@@ -846,37 +847,37 @@ class NanofiltrationData(UnitModelBlockData):
             return b.permeate_side[t, x].flow_vol_phase['Liq'] ==\
                    b.mixed_permeate[t].flow_vol_phase['Liq']
 
-        # # 14. Experimental constraint: Electroneutrality of final permeate
-        # @self.Constraint(self.flowsheet().config.time,
-        #                  phase_list,
-        #                  doc="Electroneutrality in mixed permeate")
-        # def eq_electroneutrality_mixed_permeate(b, t, p):
-        #     return (sum(b.mixed_permeate[t].conc_mol_phase_comp[p, j] *
-        #                 b.mixed_permeate[t].charge_comp[j] for j in solute_set) == b.tol_electroneutrality)
+        # 14. Experimental constraint: Electroneutrality of final permeate
+        @self.Constraint(self.flowsheet().config.time,
+                         phase_list,
+                         doc="Electroneutrality in mixed permeate")
+        def eq_electroneutrality_mixed_permeate(b, t, p):
+            return (sum(b.mixed_permeate[t].conc_mol_phase_comp[p, j] *
+                        b.mixed_permeate[t].charge_comp[j] for j in solute_set) == b.tol_electroneutrality)
         #
-        # # Experimental constraint: feed electroneutrality
+        # Experimental constraint: feed electroneutrality
+        @self.Constraint(self.flowsheet().config.time,
+                         phase_list,
+                         doc="Electroneutrality at feed outlet")
+        def eq_electroneutrality_feed_outlet(b, t, p):
+            prop = b.feed_side.properties_out[t]
+            return (sum(prop.conc_mol_phase_comp[p, j] *
+                    prop.charge_comp[j] for j in solute_set)
+                    == b.tol_electroneutrality)
+
+        # # # # Experimental Constraint
         # @self.Constraint(self.flowsheet().config.time,
-        #                  phase_list,
-        #                  doc="Electroneutrality at feed outlet")
-        # def eq_electroneutrality_feed_outlet(b, t, p):
-        #     prop = b.feed_side.properties_out[t]
-        #     return (sum(prop.conc_mol_phase_comp[p, j] *
-        #             prop.charge_comp[j] for j in solute_set)
-        #             == b.tol_electroneutrality)
-
+        #                  io_list,
+        #                  doc="Equal flowrates at pore entrance and exit")
+        # def eq_equal_flowrate_pore_entrance_io(b, t, x):
+        #     return b.pore_exit[t, x].flow_vol_phase['Liq'] == b.pore_entrance[t, x].flow_vol_phase['Liq']
+        #
         # # # Experimental Constraint
-        @self.Constraint(self.flowsheet().config.time,
-                         io_list,
-                         doc="Equal flowrates at pore entrance and exit")
-        def eq_equal_flowrate_pore_entrance_io(b, t, x):
-            return b.pore_exit[t, x].flow_vol_phase['Liq'] == b.pore_entrance[t, x].flow_vol_phase['Liq']
-
-        # # Experimental Constraint
-        @self.Constraint(self.flowsheet().config.time,
-                         io_list,
-                         doc="Equal flowrates at pore entrance and exit")
-        def eq_pressure_pore_exit_io(b, t, x):
-            return b.pore_exit[t, x].pressure == b.mixed_permeate[t].pressure
+        # @self.Constraint(self.flowsheet().config.time,
+        #                  io_list,
+        #                  doc="Equal flowrates at pore entrance and exit")
+        # def eq_pressure_pore_exit_io(b, t, x):
+        #     return b.pore_exit[t, x].pressure == b.mixed_permeate[t].pressure
 
         # # # Experimental Constraint
         # @self.Constraint(self.flowsheet().config.time,
@@ -930,7 +931,7 @@ class NanofiltrationData(UnitModelBlockData):
         def hindrance_factor_diffusive_comp(b, t, j):
             eps = 1e-8
             return Expr_if(b.lambda_comp[t, j] > 0.95,
-                           0.984 * ((1 - b.lambda_comp[t, j]) / (b.lambda_comp[t, j])) ** (5 / 2),
+                           0.984 * ((1 - b.lambda_comp[t, j]) / b.lambda_comp[t, j]) ** (5 / 2),
                            (1 + 9. / 8. * b.lambda_comp[t, j] * log(b.lambda_comp[t, j])
                             - 1.56034 * b.lambda_comp[t, j]
                             + 0.528155 * b.lambda_comp[t, j] ** 2
