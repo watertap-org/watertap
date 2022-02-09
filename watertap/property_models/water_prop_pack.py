@@ -788,7 +788,7 @@ class WaterStateBlockData(StateBlockData):
                 if iscale.get_scaling_factor(self.enth_flow_phase[p]) is None:
                     sf = iscale.get_scaling_factor(self.flow_mass_phase_comp[p, 'H2O'])
                     sf *= iscale.get_scaling_factor(self.enth_mass_phase[p])
-                    iscale.set_scaling_factor(self.enth_flow_phase, sf)
+                    iscale.set_scaling_factor(self.enth_flow_phase[p], sf)
 
         # transforming constraints
         # property relationships with no index, simple constraint
@@ -829,6 +829,16 @@ class WaterStateBlockData(StateBlockData):
                 for p, c in c_phase.items():
                     sf = iscale.get_scaling_factor(v_phase[p, 'H2O'], default=1, warning=True)
                     iscale.constraint_scaling_transform(c, sf)
+
+        if self.is_property_constructed('enth_mass_phase'):
+            for p in self.params.phase_list:
+                sf = iscale.get_scaling_factor(self.enth_mass_phase[p], default=1, warning=True)
+                iscale.constraint_scaling_transform(self.eq_enth_mass_phase[p], sf)
+
+        if self.is_property_constructed('enth_flow_phase'):
+            for p in self.params.phase_list:
+                sf = iscale.get_scaling_factor(self.enth_flow_phase[p], default=1, warning=True)
+                iscale.constraint_scaling_transform(self.eq_enth_flow_phase[p], sf)
 
         # property relationships indexed by component and phase
         v_str_lst_phase_comp = []
