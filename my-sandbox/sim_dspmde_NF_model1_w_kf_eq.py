@@ -115,9 +115,9 @@ if __name__ == '__main__':
 
     # Fix the membrane variables that are usually fixed for the DSPM-DE model
     m.fs.unit.radius_pore.fix(0.5e-9)
-    m.fs.unit.membrane_thickness_effective.fix()
+    m.fs.unit.membrane_thickness_effective.fix(2.5e-6)
     m.fs.unit.membrane_charge_density.fix(-27)
-    m.fs.unit.dielectric_constant_pore.fix(41.3)
+    m.fs.unit.dielectric_constant_pore.fix(60)
 
     # Fix final permeate pressure to be ~atmospheric
     m.fs.unit.mixed_permeate[0].pressure.fix(101325)
