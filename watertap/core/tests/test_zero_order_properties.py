@@ -37,9 +37,7 @@ from pyomo.environ import (ConcreteModel,
 from pyomo.util.check_units import (assert_units_consistent,
                                     assert_units_equivalent)
 
-from watertap.core.zero_order_properties import \
-    WaterParameterBlock, WaterStateBlock
-from watertap.core.wt_database import Database
+from watertap.core import Database, WaterParameterBlock, WaterStateBlock
 
 
 @pytest.fixture(scope="module")

@@ -672,7 +672,7 @@ class NaClStateBlockData(StateBlockData):
         # scaling factors for parameters
         for j, v in self.params.mw_comp.items():
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(self.params.mw_comp, 1e-1)
+                iscale.set_scaling_factor(self.params.mw_comp, 1e2)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
@@ -716,7 +716,7 @@ class NaClStateBlockData(StateBlockData):
             for j in self.params.component_list:
                 if iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j]) is None:
                     sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', j])
-                    sf *= iscale.get_scaling_factor(self.params.mw_comp[j])
+                    sf /= iscale.get_scaling_factor(self.params.mw_comp[j])
                     iscale.set_scaling_factor(self.flow_mol_phase_comp['Liq', j], sf)
 
         if self.is_property_constructed('mole_frac_phase_comp'):
@@ -734,7 +734,7 @@ class NaClStateBlockData(StateBlockData):
                 if isinstance(getattr(self.params, j), Solute):
                     if iscale.get_scaling_factor(self.molality_comp[j]) is None:
                         sf = iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j])
-                        sf *= iscale.get_scaling_factor(self.params.mw_comp[j])
+                        sf /= iscale.get_scaling_factor(self.params.mw_comp[j])
                         iscale.set_scaling_factor(self.molality_comp[j], sf)
 
         if self.is_property_constructed('enth_flow'):

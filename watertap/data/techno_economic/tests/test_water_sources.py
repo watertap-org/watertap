@@ -23,11 +23,10 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 
 from watertap.unit_models.zero_order import FeedZO
-from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core import Database, WaterParameterBlock
 
 dbpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-with open(os.path.join(dbpath, "water_sources.yml"), "r") as f:
+with open(os.path.join(dbpath, "water_sources.yaml"), "r") as f:
     lines = f.read()
     f.close()
 source_data = yaml.load(lines, yaml.Loader)
@@ -90,3 +89,5 @@ def test_all_sources(source):
         assert pytest.approx(v["value"], rel=1e-12) == value(
             m.fs.unit.outlet.conc_mass_comp[0, j])
         assert m.fs.unit.outlet.conc_mass_comp[0, j].fixed
+
+        assert j in m.db.component_list.keys()
