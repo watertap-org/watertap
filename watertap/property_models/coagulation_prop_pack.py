@@ -20,6 +20,7 @@ from pyomo.environ import (Constraint,
                            Reals,
                            NonNegativeReals,
                            Suffix,
+                           value,
                            assert_optimal_termination,
                            check_optimal_termination)
 from pyomo.environ import units as pyunits
@@ -36,7 +37,7 @@ from idaes.core.components import Component
 from idaes.core.phases import LiquidPhase, SolidPhase, PhaseType
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars, solve_indexed_blocks
 from idaes.core.util.model_statistics import degrees_of_freedom, number_unfixed_variables
-from idaes.core.util.exceptions import PropertyPackageError, InitializationError
+from idaes.core.util.exceptions import PropertyPackageError, InitializationError, ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
@@ -735,3 +736,13 @@ class CoagulationStateBlockData(StateBlockData):
             sf = iscale.get_scaling_factor(self.dens_mass_phase)
             iscale.constraint_scaling_transform(self.eq_dens_mass_phase['Liq'], sf)
             iscale.constraint_scaling_transform(self.eq_dens_mass_phase['Sol'], sf)
+
+    # ------------------------------------------------------------------
+    # # TODO: Create a 'rescale' function to apply new scaling after a solve
+    #       or initialization. This is because after initializing or solving
+    #       based on user specified inputs, the default scaling calculated
+    #       above may no longer be 'good'.
+    #
+    # # TODO: Create functions for easier user access to setup intial values
+    #       for all state vars and properties. This may be useful for improving
+    #       how scaling factors are determined.

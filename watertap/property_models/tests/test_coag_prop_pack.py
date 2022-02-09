@@ -24,6 +24,7 @@ from pyomo.environ import (ConcreteModel,
                            Suffix,
                            Constraint,
                            SolverFactory,
+                           SolverStatus,
                            TerminationCondition)
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -117,7 +118,7 @@ class TestCoagulationPropPack():
         model.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'].fix(1)
         model.fs.stream[0].flow_mass_phase_comp['Liq', 'TSS'].fix(0.01)
         model.fs.stream[0].flow_mass_phase_comp['Liq', 'TDS'].fix(0.01)
-        model.fs.stream[0].flow_mass_phase_comp['Sol', 'Sludge'].fix(0.01)
+        model.fs.stream[0].flow_mass_phase_comp['Sol', 'Sludge'].fix(0.001)
         assert degrees_of_freedom(model) == 0
 
     @pytest.mark.unit
@@ -128,7 +129,7 @@ class TestCoagulationPropPack():
         model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
         model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TSS'))
         model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TDS'))
-        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Sol', 'Sludge'))
+        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Sol', 'Sludge'))
         iscale.calculate_scaling_factors(model.fs)
 
         # check that all variables have scaling factors
@@ -148,3 +149,40 @@ class TestCoagulationPropPack():
                 print(var.name, var.value)
             print("The following variable(s) are poorly scaled: {lst}".format(lst=lst))
         assert len(badly_scaled_var_list) == 0
+
+    @pytest.mark.component
+    def test_initialization(self, coag_obj):
+        model = coag_obj
+
+        # call the 'calculate_state', which will call initialize and return results
+        #       pass var_args as the fixed states from 'test_stats'
+        args = {('temperature', None): 298,
+                ('pressure', None): 101325,
+                ('flow_mass_phase_comp', ('Liq','H2O')): 1,
+                ('flow_mass_phase_comp', ('Liq','TDS')): 0.01,
+                ('flow_mass_phase_comp', ('Liq','TSS')): 0.01,
+                ('flow_mass_phase_comp', ('Sol','Sludge')): 0.001}
+        results = model.fs.stream.calculate_state(var_args=args)
+        assert results.solver.termination_condition == TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        # check to make sure DOF does not change
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.component
+    def test_solve(self, coag_obj):
+        model = coag_obj
+
+        # first, check to make sure that after initialized, the scaling is still good
+        badly_scaled_var_list = list(iscale.badly_scaled_var_generator(model, large=1e2, small=1e-2))
+        if len(badly_scaled_var_list) != 0:
+            lst = []
+            for (var, val) in badly_scaled_var_list:
+                lst.append((var.name, val))
+                print(var.name, var.value)
+            print("The following variable(s) are poorly scaled: {lst}".format(lst=lst))
+        assert len(badly_scaled_var_list) == 0
+
+        # run solver and check for optimal solution 
+        results = solver.solve(model)
+        assert_optimal_termination(results)
