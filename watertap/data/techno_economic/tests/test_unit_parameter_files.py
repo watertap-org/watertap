@@ -45,7 +45,8 @@ def test_unit_parameter_files(tech):
 
     # Iterate overall entries in tech data and check for expected contents
     # TODO : Need to check up on this once everything is done
-    pass_through = ["pump"]
+    pass_through = ["chemical_addition",
+                    "pump"]
     no_electricity = ["energy_recovery",
                       "mbr_denitrification",
                       "mbr_nitrification",
@@ -58,7 +59,6 @@ def test_unit_parameter_files(tech):
                       "anion_exchange",
                       "ozone_aop",
                       "fixed_bed_pressure_vessel",
-                      "ammonia_addition",
                       "holding_tank",
                       "heap_leaching",
                       "nuclear_cooling_tower",
@@ -70,14 +70,11 @@ def test_unit_parameter_files(tech):
                       "sedimentation",
                       "backwash_solids_handling",
                       "ph_decrease",
-                      "anti_scalant_addition",
                       "ph_increase",
                       "co2_addition",
                       "coag_and_floc",
                       "crystallizer",
                       "gac_gravity",
-                      "sodium_bisulfite_addition",
-                      "chlorine_addition_cylinder",
                       "iron_and_manganese_removal",
                       "fluidized_bed",
                       "uv_irradiation",
@@ -85,7 +82,6 @@ def test_unit_parameter_files(tech):
                       "surface_discharge",
                       "solution_distribution_and_recovery_plant",
                       "chemical_addition",
-                      "ferric_chloride_addition",
                       "cartridge_filtration",
                       "injection_well",
                       "sw_onshore_intake",
@@ -93,14 +89,12 @@ def test_unit_parameter_files(tech):
                       "municipal_drinking",
                       "gac_pressure_30_min",
                       "packed_tower_aeration",
-                      "hydrochloric_acid_addition",
                       "treated_storage",
                       "gac_gravity_60_min",
                       "evaporation_pond",
                       "lime_addition",
                       "brine_concentrator",
                       "fixed_bed_gravity_basin",
-                      "caustic_soda_addition",
                       "agglom_stacking",
                       "landfill_zld"]
 
