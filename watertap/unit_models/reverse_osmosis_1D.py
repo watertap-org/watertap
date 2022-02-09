@@ -274,6 +274,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             self.config.property_package.component_list,
             initialize=lambda b,t,x,p,j : 5e-4 if j in solvent_set else 1e-6,
             bounds=lambda b,t,x,p,j : (1e-4, 3e-2) if j in solvent_set else (1e-8, 1e-3),
+            domain=NonNegativeReals,
             units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Mass flux across membrane')
 

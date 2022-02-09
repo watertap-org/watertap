@@ -47,7 +47,7 @@ def main(number_of_stages, water_recovery=None, Cin=None, Cbrine=None,A_case=Non
     display_state(m)
 
     optimize_set_up(m, water_recovery, Cbrine, A_case, B_case, AB_tradeoff, A_fixed, permeate_quality_limit)
-    solve(m, raise_on_failure=True)
+    solve(m, raise_on_failure=True, tee=True)
     print('\n***---Optimization results---***')
     display_system(m)
     display_design(m)
@@ -387,14 +387,14 @@ def initialize(m, verbose=False, solver=None):
     seq.run(m, func_initialize)
 
 
-def solve(m, solver=None, tee=False, raise_on_failure=False):
+def solve(model, solver=None, tee=False, raise_on_failure=False):
     # ---solving---
     if solver is None:
         solver = get_solver()
 
-    results = solver.solve(m, tee=tee)
+    results = solver.solve(model, tee=tee)
     if check_optimal_termination(results):
-        return m
+        return model
     msg = "The current configuration is infeasible. Please adjust the decision variables."
     if raise_on_failure:
         raise RuntimeError(msg)
@@ -477,17 +477,19 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
                 stage.A_comp.setlb(2.78e-12)
                 stage.A_comp.setub(4.2e-11)
             elif A_case == 'fix':
-                if A_fixed is not None:
-                    if not isinstance(A_fixed, (int, float)):
-                        raise TypeError('A_fixed must be a numeric value')
-                elif A_fixed is None:
-                    raise TypeError('A value for A_fixed must be provided')
+                # if A_fixed is not None:
+                #     if not isinstance(A_fixed, (int, float)):
+                #         raise TypeError('A_fixed must be a numeric value')
+                # elif A_fixed is None:
+                if not isinstance(A_fixed, (int, float)):
+                    raise TypeError('A_fixed must be a numeric value')
+                    # raise TypeError('A value for A_fixed must be provided')
                 stage.A_comp.unfix()
                 stage.A_comp.fix(A_fixed)
             elif A_case is None:
                 pass
             else:
-                raise TypeError('A_case must be set to "fix" or "optimize"')
+                raise TypeError('A_case must be set to "fix","optimize" or None')
 
             if AB_tradeoff == 'equality constraint':
                 stage.ABtradeoff = Constraint(expr=pyunits.convert(stage.B_comp[0,'NaCl'], to_units=pyunits.L*pyunits.m**-2*pyunits.hour**-1)
