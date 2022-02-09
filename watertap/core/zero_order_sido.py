@@ -90,13 +90,13 @@ def build_sido(self):
                   doc="Byproduct outlet port")
 
     # Add performance variables
-    self.recovery_vol = Var(
+    self.recovery_frac_mass_H2O = Var(
         self.flowsheet().time,
         initialize=0.8,
         domain=NonNegativeReals,
         units=pyunits.dimensionless,
         bounds=(1E-8, 1.0000001),
-        doc='Volumetric recovery fraction of water in the treated stream')
+        doc='Mass recovery fraction of water in the treated stream')
     self.removal_frac_mass_solute = Var(
         self.flowsheet().time,
         self.config.property_package.solute_set,
@@ -109,15 +109,16 @@ def build_sido(self):
     # Water recovery
     @self.Constraint(self.flowsheet().time, doc='Water recovery equation')
     def water_recovery_equation(b, t):
-        return (b.recovery_vol[t] * b.properties_in[t].flow_vol ==
-                b.properties_treated[t].flow_vol)
+        return (b.recovery_frac_mass_H2O[t] *
+                b.properties_in[t].flow_mass_comp["H2O"] ==
+                b.properties_treated[t].flow_mass_comp["H2O"])
 
     # Flow balance
     @self.Constraint(self.flowsheet().time, doc='Overall flow balance')
-    def flow_balance(b, t):
-        return (b.properties_in[t].flow_vol ==
-                b.properties_treated[t].flow_vol +
-                b.properties_byproduct[t].flow_vol)
+    def water_balance(b, t):
+        return (b.properties_in[t].flow_mass_comp["H2O"] ==
+                b.properties_treated[t].flow_mass_comp["H2O"] +
+                b.properties_byproduct[t].flow_mass_comp["H2O"])
 
     # Solute removal
     @self.Constraint(self.flowsheet().time,
@@ -125,9 +126,8 @@ def build_sido(self):
                      doc='Solute removal equations')
     def solute_removal_equation(b, t, j):
         return (b.removal_frac_mass_solute[t, j] *
-                b.properties_in[t].conc_mass_comp[j] ==
-                (1 - b.recovery_vol[t]) *
-                b.properties_byproduct[t].conc_mass_comp[j])
+                b.properties_in[t].flow_mass_comp[j] ==
+                b.properties_byproduct[t].flow_mass_comp[j])
 
     # Solute concentration of treated stream
     @self.Constraint(self.flowsheet().time,
@@ -136,15 +136,14 @@ def build_sido(self):
                      'stream.')
     def solute_treated_equation(b, t, j):
         return ((1 - b.removal_frac_mass_solute[t, j]) *
-                b.properties_in[t].conc_mass_comp[j] ==
-                b.recovery_vol[t] *
-                b.properties_treated[t].conc_mass_comp[j])
+                b.properties_in[t].flow_mass_comp[j] ==
+                b.properties_treated[t].flow_mass_comp[j])
 
     self._stream_table_dict = {"Inlet": self.inlet,
                                "Treated": self.treated,
                                "Byproduct": self.byproduct}
 
-    self._perf_var_dict["Water Recovery"] = self.recovery_vol
+    self._perf_var_dict["Water Recovery"] = self.recovery_frac_mass_H2O
     self._perf_var_dict["Solute Removal"] = self.removal_frac_mass_solute
 
     self._get_Q = _get_Q_sido
@@ -242,15 +241,15 @@ def calculate_scaling_factors_sido(self):
     for t, v in self.water_recovery_equation.items():
         iscale.constraint_scaling_transform(
             v, iscale.get_scaling_factor(
-                self.properties_in[t].flow_vol,
+                self.properties_in[t].flow_mass_comp["H2O"],
                 default=1,
                 warning=True,
                 hint=" for water recovery"))
 
-    for t, v in self.flow_balance.items():
+    for t, v in self.water_balance.items():
         iscale.constraint_scaling_transform(
             v, iscale.get_scaling_factor(
-                self.properties_in[t].flow_vol,
+                self.properties_in[t].flow_mass_comp["H2O"],
                 default=1,
                 warning=False))  # would just be a duplicate of above
 
