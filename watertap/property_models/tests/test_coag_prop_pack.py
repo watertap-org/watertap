@@ -115,9 +115,9 @@ class TestCoagulationPropPack():
         model.fs.stream[0].temperature.fix(298)
         model.fs.stream[0].pressure.fix(101325)
         model.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'].fix(1)
-        model.fs.stream[0].flow_mass_phase_comp['Liq', 'TSS'].fix(120e-4)
-        model.fs.stream[0].flow_mass_phase_comp['Liq', 'TDS'].fix(120e-4)
-        model.fs.stream[0].flow_mass_phase_comp['Sol', 'Sludge'].fix(1e-5)
+        model.fs.stream[0].flow_mass_phase_comp['Liq', 'TSS'].fix(0.01)
+        model.fs.stream[0].flow_mass_phase_comp['Liq', 'TDS'].fix(0.01)
+        model.fs.stream[0].flow_mass_phase_comp['Sol', 'Sludge'].fix(0.01)
         assert degrees_of_freedom(model) == 0
 
     @pytest.mark.unit
@@ -134,3 +134,17 @@ class TestCoagulationPropPack():
         # check that all variables have scaling factors
         unscaled_var_list = list(iscale.unscaled_variables_generator(model))
         assert len(unscaled_var_list) == 0
+
+        # check that all constraints have been scaled
+        unscaled_constraint_list = list(iscale.unscaled_constraints_generator(model))
+        assert len(unscaled_constraint_list) == 0
+
+        # check if any variables are badly scaled
+        badly_scaled_var_list = list(iscale.badly_scaled_var_generator(model, large=1e2, small=1e-2))
+        if len(badly_scaled_var_list) != 0:
+            lst = []
+            for (var, val) in badly_scaled_var_list:
+                lst.append((var.name, val))
+                print(var.name, var.value)
+            print("The following variable(s) are poorly scaled: {lst}".format(lst=lst))
+        assert len(badly_scaled_var_list) == 0

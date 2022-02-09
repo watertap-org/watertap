@@ -386,16 +386,36 @@ class CoagulationStateBlockData(StateBlockData):
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
         # first we create the state variables
-        #   note: the following dictionary is used for providing initial values
-        #   and to establish a set of valid keys to iterate over in the methods
-        self.seawater_mass_frac_dict = {('Liq', 'TSS'): 25e-6,
-                                   ('Liq', 'H2O'): 0.965,
-                                   ('Liq', 'TDS'): 25e-6,
+        #   note: the following dictionaries are used for providing initial values
+        #   to state variables and on-demand variables
+        self.seawater_mass_frac_dict = {('Liq', 'TSS'): 0.01,
+                                   ('Liq', 'H2O'): 1,
+                                   ('Liq', 'TDS'): 0.01,
                                    ('Sol', 'Sludge'): 1}
+
+        self.seawater_mass_flow_dict = {('Liq', 'TSS'): 0.01,
+                                   ('Liq', 'H2O'): 1,
+                                   ('Liq', 'TDS'): 0.01,
+                                   ('Sol', 'Sludge'): 0.001}
+
+        self.seawater_mol_flow_dict = {('Liq', 'TSS'): 0.01/31.4038218e-3,
+                                   ('Liq', 'H2O'): 1/18.01528e-3,
+                                   ('Liq', 'TDS'): 0.01/31.4038218e-3,
+                                   ('Sol', 'Sludge'): 0.001/31.4038218e-3}
+
+        self.seawater_mass_conc_dict = {('Liq', 'TSS'): 0.01*1000,
+                                   ('Liq', 'H2O'): 1*1000,
+                                   ('Liq', 'TDS'): 0.01*1000,
+                                   ('Sol', 'Sludge'): 0.001*2600}
+
+        self.seawater_mol_conc_dict = {('Liq', 'TSS'): 0.01*1000/31.4038218e-3,
+                                   ('Liq', 'H2O'): 1*1000/18.01528e-3,
+                                   ('Liq', 'TDS'): 0.01*1000/31.4038218e-3,
+                                   ('Sol', 'Sludge'): 0.001*2600/31.4038218e-3}
 
         self.flow_mass_phase_comp = Var(
             self.seawater_mass_frac_dict.keys(),
-            initialize=self.seawater_mass_frac_dict,
+            initialize=self.seawater_mass_flow_dict,
             bounds=(1e-16, 100),
             domain=NonNegativeReals,
             units=pyunits.kg/pyunits.s,
@@ -422,7 +442,7 @@ class CoagulationStateBlockData(StateBlockData):
     def _flow_mol_phase_comp(self):
         self.flow_mol_phase_comp = Var(
             self.seawater_mass_frac_dict.keys(),
-            initialize=self.seawater_mass_frac_dict,
+            initialize=self.seawater_mol_flow_dict,
             bounds=(1e-16, None),
             units=pyunits.mol/pyunits.s,
             doc="Molar flowrate")
@@ -496,7 +516,7 @@ class CoagulationStateBlockData(StateBlockData):
     def _flow_vol_phase(self):
         self.flow_vol_phase = Var(
             self.params.phase_list,
-            initialize={'Liq': 1e-3, 'Sol': 1e-8},
+            initialize={'Liq': 1e-3, 'Sol': 1e-7},
             bounds=(1e-16, None),
             units=pyunits.m**3/pyunits.s,
             doc="Volumetric flow rate")
@@ -517,7 +537,7 @@ class CoagulationStateBlockData(StateBlockData):
     def _conc_mass_phase_comp(self):
         self.conc_mass_phase_comp = Var(
             self.seawater_mass_frac_dict.keys(),
-            initialize=self.seawater_mass_frac_dict,
+            initialize=self.seawater_mass_conc_dict,
             bounds=(1e-16, None),
             units=pyunits.kg/pyunits.m**3,
             doc="Mass concentration")
@@ -530,7 +550,7 @@ class CoagulationStateBlockData(StateBlockData):
     def _conc_mol_phase_comp(self):
         self.conc_mol_phase_comp = Var(
             self.seawater_mass_frac_dict.keys(),
-            initialize=self.seawater_mass_frac_dict,
+            initialize=self.seawater_mol_conc_dict,
             bounds=(1e-16, None),
             units=pyunits.mol/pyunits.m**3,
             doc="Molar concentration")
@@ -601,7 +621,7 @@ class CoagulationStateBlockData(StateBlockData):
             iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'TDS'], sf)
 
         if iscale.get_scaling_factor(self.flow_mass_phase_comp['Sol', 'Sludge']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Sol', 'Sludge'], default=1e2, warning=True)
+            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Sol', 'Sludge'], default=1e3, warning=True)
             iscale.set_scaling_factor(self.flow_mass_phase_comp['Sol', 'Sludge'], sf)
 
         # these variables do not typically require user input,
@@ -660,7 +680,7 @@ class CoagulationStateBlockData(StateBlockData):
             sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Sol', 'Sludge'])
                   / iscale.get_scaling_factor(self.dens_mass_phase['Sol']))
             # note: this volume flow is generally much smaller than the other
-            iscale.set_scaling_factor(self.flow_vol_phase['Sol'], sf*1000)
+            iscale.set_scaling_factor(self.flow_vol_phase['Sol'], sf)
             # transforming constraints
             iscale.constraint_scaling_transform(self.eq_flow_vol_phase['Sol'], sf)
 
@@ -676,9 +696,9 @@ class CoagulationStateBlockData(StateBlockData):
                     elif pair[0] == 'Sol':
                         sf = (iscale.get_scaling_factor(self.mass_frac_phase_comp[pair])
                               * iscale.get_scaling_factor(self.dens_mass_phase['Sol']))
-                        iscale.set_scaling_factor(self.conc_mass_phase_comp[pair], sf)
+                        iscale.set_scaling_factor(self.conc_mass_phase_comp[pair], sf*10)
                         # transforming constraints
-                        iscale.constraint_scaling_transform(self.eq_conc_mass_phase_comp[pair], sf)
+                        iscale.constraint_scaling_transform(self.eq_conc_mass_phase_comp[pair], sf*10)
                     else:
                         raise PropertyPackageError("Unsupported phase for CoagulationParameterData property package")
 
@@ -694,9 +714,9 @@ class CoagulationStateBlockData(StateBlockData):
                     elif pair[0] == 'Sol':
                         sf = (iscale.get_scaling_factor(self.mass_frac_phase_comp[pair])
                               * iscale.get_scaling_factor(self.dens_mass_phase['Sol']))
-                        iscale.set_scaling_factor(self.conc_mol_phase_comp[pair], sf/50)
+                        iscale.set_scaling_factor(self.conc_mol_phase_comp[pair], sf/50*10)
                         # transforming constraints
-                        iscale.constraint_scaling_transform(self.eq_conc_mol_phase_comp[pair], sf/50)
+                        iscale.constraint_scaling_transform(self.eq_conc_mol_phase_comp[pair], sf/50*10)
                     else:
                         raise PropertyPackageError("Unsupported phase for CoagulationParameterData property package")
 

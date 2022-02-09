@@ -43,18 +43,27 @@ m.fs.stream[0].conc_mol_phase_comp
 # now that we have a state block, we can fix the state variables and solve for the properties
 m.fs.stream[0].temperature.fix(273.15 + 25)
 m.fs.stream[0].pressure.fix(101325)
-m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'].fix(1)
-m.fs.stream[0].flow_mass_phase_comp['Liq', 'TSS'].fix(120e-4)
-m.fs.stream[0].flow_mass_phase_comp['Liq', 'TDS'].fix(120e-4)
-m.fs.stream[0].flow_mass_phase_comp['Sol', 'Sludge'].fix(1e-5)
+m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'].fix(10)
+m.fs.stream[0].flow_mass_phase_comp['Liq', 'TSS'].fix(0.1)
+m.fs.stream[0].flow_mass_phase_comp['Liq', 'TDS'].fix(0.1)
+m.fs.stream[0].flow_mass_phase_comp['Sol', 'Sludge'].fix(0.001)
 
 # the user should provide the scale for the flow rate, so that our tools can ensure the model is well scaled
 # generally scaling factors should be such that if it is multiplied by the variable it will range between 0.01 and 100
-m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TSS'))
-m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TDS'))
-m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Sol', 'Sludge'))
+m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e-1, index=('Liq', 'H2O'))
+m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e1, index=('Liq', 'TSS'))
+m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e1, index=('Liq', 'TDS'))
+m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Sol', 'Sludge'))
 iscale.calculate_scaling_factors(m.fs)  # this utility scales the model
+
+# Looking for poor scaling
+badly_scaled_var_list = list(badly_scaled_var_generator(m, large=1e2, small=1e-2))
+if len(badly_scaled_var_list) != 0:
+    lst = []
+    for (var, val) in badly_scaled_var_list:
+        lst.append((var.name, val))
+        print(var.name, var.value)
+    print("The following variable(s) are poorly scaled: {lst}".format(lst=lst))
 
 # solving
 assert_units_consistent(m)  # check that units are consistent
@@ -65,6 +74,16 @@ solver.options = {'tol': 1e-8, 'nlp_scaling_method': 'user-scaling'}
 
 results = solver.solve(m, tee=True)
 assert results.solver.termination_condition == TerminationCondition.optimal
+
+# Looking for poor scaling
+badly_scaled_var_list = list(badly_scaled_var_generator(m, large=1e2, small=1e-2))
+if len(badly_scaled_var_list) != 0:
+    lst = []
+    for (var, val) in badly_scaled_var_list:
+        lst.append((var.name, val))
+        print(var.name, var.value)
+    print("The following variable(s) are poorly scaled: {lst}".format(lst=lst))
+
 
 # display results
 print('\n---fourth display---')
