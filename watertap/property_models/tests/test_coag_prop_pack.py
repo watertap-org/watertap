@@ -26,7 +26,10 @@ from pyomo.environ import (ConcreteModel,
                            SolverFactory,
                            SolverStatus,
                            TerminationCondition)
-from idaes.core import FlowsheetBlock
+from idaes.core import (FlowsheetBlock,
+                        MaterialFlowBasis,
+                        MaterialBalanceType,
+                        EnergyBalanceType)
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
@@ -99,6 +102,19 @@ class TestCoagulationPropPack():
                     raise PropertyAttributeError(
                         "Property {v_name} is an on-demand property, but was not built "
                         "when demanded".format(v_name=v_name))
+
+        # check the other stateblock functions
+        res = model.fs.stream[0].define_state_vars()
+        assert res["flow_mass_phase_comp"] == model.fs.stream[0].flow_mass_phase_comp
+        assert res["pressure"] == model.fs.stream[0].pressure
+        assert res["temperature"] == model.fs.stream[0].temperature
+        assert model.fs.stream[0].get_material_flow_terms('Liq','H2O') == \
+            model.fs.stream[0].flow_mass_phase_comp['Liq','H2O']
+        assert model.fs.stream[0].default_material_balance_type() == MaterialBalanceType.componentTotal
+        assert model.fs.stream[0].default_energy_balance_type() == EnergyBalanceType.enthalpyTotal
+        assert model.fs.stream[0].get_material_flow_basis() == MaterialFlowBasis.mass
+        assert model.fs.stream[0].get_enthalpy_flow_terms('Liq') == \
+            model.fs.stream[0].enth_flow
 
         # NOTE: At this point, all property methods have been touched, so
         #       all will now be built
@@ -183,6 +199,6 @@ class TestCoagulationPropPack():
             print("The following variable(s) are poorly scaled: {lst}".format(lst=lst))
         assert len(badly_scaled_var_list) == 0
 
-        # run solver and check for optimal solution 
+        # run solver and check for optimal solution
         results = solver.solve(model)
         assert_optimal_termination(results)
