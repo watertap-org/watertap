@@ -11,27 +11,46 @@
 #
 ###############################################################################
 """
-Tests for zero-order pump model
+Tests for zero-order chemical addition model
 """
 import pytest
 from io import StringIO
 
-from pyomo.environ import ConcreteModel, Constraint, value, Var
+from pyomo.environ import ConcreteModel, Constraint, Param, value, Var
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
+from idaes.core.util.exceptions import ConfigurationError
 
-from watertap.unit_models.zero_order import PumpZO
+from watertap.unit_models.zero_order import ChemicalAdditionZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 
 solver = get_solver()
 
 
-class TestPumpZOdefault:
+@pytest.mark.unit
+def test_no_subtype():
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.params = WaterParameterBlock(
+        default={"solute_list": ["sulfur", "toc", "tss"]})
+
+    with pytest.raises(ConfigurationError,
+                       match="fs.unit - zero-order chemcial addition "
+                       "operations require the process_subtype configuration "
+                       "argument to be set"):
+        m.fs.unit = ChemicalAdditionZO(default={
+            "property_package": m.fs.params,
+            "database": m.db})
+
+
+class TestChemAddZOAmmonia:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -41,9 +60,10 @@ class TestPumpZOdefault:
         m.fs.params = WaterParameterBlock(
             default={"solute_list": ["sulfur", "toc", "tss"]})
 
-        m.fs.unit = PumpZO(default={
+        m.fs.unit = ChemicalAdditionZO(default={
             "property_package": m.fs.params,
-            "database": m.db})
+            "database": m.db,
+            "process_subtype": "default"})
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
         m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -56,20 +76,32 @@ class TestPumpZOdefault:
     def test_build(self, model):
         assert model.fs.unit.config.database == model.db
 
-        assert isinstance(model.fs.unit.electricity, Var)
-        assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
+        assert isinstance(model.fs.unit.chemical_dosage, Var)
+        assert isinstance(model.fs.unit.chemical_flow_vol, Var)
+        assert isinstance(model.fs.unit.solution_density, Var)
+        assert isinstance(model.fs.unit.ratio_in_solution, Var)
+        assert isinstance(model.fs.unit.chemical_flow_constraint, Constraint)
 
+        assert isinstance(model.fs.unit.lift_height, Param)
+        assert isinstance(model.fs.unit.eta_pump, Param)
+        assert isinstance(model.fs.unit.eta_motor, Param)
+        assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("pump")
+        data = model.db.get_unit_operation_parameters("chemical_addition")
 
         model.fs.unit.load_parameters_from_database()
 
-        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert model.fs.unit.chemical_dosage[0].fixed
+        assert model.fs.unit.chemical_dosage[0].value == 1
+
+        assert model.fs.unit.solution_density.fixed
+        assert model.fs.unit.solution_density.value == 1000
+
+        assert model.fs.unit.ratio_in_solution.fixed
+        assert model.fs.unit.ratio_in_solution.value == 0.5
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -92,7 +124,10 @@ class TestPumpZOdefault:
                 model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5) ==
                 value(model.fs.unit.outlet.flow_mass_comp[t, j]))
 
-        assert (pytest.approx(1.0060*0.051*3600, rel=1e-5) ==
+        assert (pytest.approx(2.012e-6, rel=1e-5) ==
+                value(model.fs.unit.chemical_flow_vol[0]))
+
+        assert (pytest.approx(7.41395e-4, rel=1e-5) ==
                 value(model.fs.unit.electricity[0]))
 
     @pytest.mark.component
@@ -109,9 +144,10 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                   : Value    : Fixed : Bounds
-       Electricity Demand :   184.70 : False : (None, None)
-    Electricity Intensity : 0.051000 :  True : (None, None)
+    Key                : Value      : Fixed : Bounds
+       Chemical Dosage :     1.0000 :  True : (0, None)
+         Chemical Flow : 2.0120e-06 : False : (0, None)
+    Electricity Demand : 0.00074140 : False : (None, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -128,7 +164,7 @@ Unit : fs.unit                                                             Time:
 
 
 db = Database()
-params = db._get_technology("pump")
+params = db._get_technology("chemical_addition")
 
 
 class TestPumpZOsubtype:
@@ -140,20 +176,30 @@ class TestPumpZOsubtype:
         m.fs.params = WaterParameterBlock(
             default={"solute_list": ["sulfur", "toc", "tss"]})
 
-        m.fs.unit = PumpZO(default={
-            "property_package": m.fs.params,
-            "database": db})
-
         return m
 
     @pytest.mark.parametrize("subtype", [params.keys()])
     @pytest.mark.component
     def test_load_parameters(self, model, subtype):
+        model.fs.unit = ChemicalAdditionZO(default={
+            "property_package": model.fs.params,
+            "database": db,
+            "process_subtype": subtype})
+
         model.fs.unit.config.process_subtype = subtype
-        data = db.get_unit_operation_parameters("pump", subtype=subtype)
+        data = db.get_unit_operation_parameters(
+            "chemical_addition", subtype=subtype)
 
         model.fs.unit.load_parameters_from_database()
 
-        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert model.fs.unit.chemical_dosage[0].fixed
+        assert model.fs.unit.chemical_dosage[0].value == data[
+            "chemical_dosage"]["value"]
+
+        assert model.fs.unit.solution_density.fixed
+        assert model.fs.unit.solution_density.value == data[
+            "solution_density"]["value"]
+
+        assert model.fs.unit.ratio_in_solution.fixed
+        assert model.fs.unit.ratio_in_solution.value == data[
+            "ratio_in_solution"]["value"]

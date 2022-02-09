@@ -1,8 +1,21 @@
 default:
-  recovery_frac_mass_H2O:
-    value: 0.9999
+  # This is a placeholder that is required by the database class and testing
+  chemical_dosage:
+    value: 1
+    units: mg/L
+  solution_density:
+    value: 1000
+    units: kg/m^3
+  ratio_in_solution:
+    value: 0.5
     units: dimensionless
-    reference: Texas Water Development Board IT3PR User Manual
-  default_removal_frac_mass_solute:
-    value: 0
+ammonia:
+  chemical_dosage:
+    value: 10
+    units: mg/L
+  solution_density:
+    value: 900
+    units: kg/m^3
+  ratio_in_solution:
+    value: 0.3
     units: dimensionless
