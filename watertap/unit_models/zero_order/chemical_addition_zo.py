@@ -55,7 +55,7 @@ class ChemicalAdditionZOData(ZeroOrderBaseData):
             units=pyo.units.kg/pyo.units.m**3,
             doc="Mass density of chemical solution")
         self.ratio_in_solution = pyo.Var(
-            bounds=(0, None),
+            bounds=(0, 1),
             units=pyo.units.dimensionless,
             doc="Mass fraction of chemical in solution")
 
