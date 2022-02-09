@@ -34,7 +34,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key       : Value       : Fixed : Bounds
-    Heat duty : -4.8715e+06 : False : (None, None)
+    Heat duty : -2.4358e+06 : False : (None, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
