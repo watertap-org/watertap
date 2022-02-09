@@ -47,7 +47,7 @@ def main(number_of_stages, water_recovery=None, Cin=None, Cbrine=None,A_case=Non
     display_state(m)
 
     optimize_set_up(m, water_recovery, Cbrine, A_case, B_case, AB_tradeoff, A_fixed, permeate_quality_limit)
-    solve(m)
+    solve(m, raise_on_failure=True)
     print('\n***---Optimization results---***')
     display_system(m)
     display_design(m)
@@ -442,7 +442,7 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
         stage.area.unfix()
         stage.width.unfix()
         stage.area.setlb(1)
-        stage.area.setub(10000)
+        stage.area.setub(20000)
         stage.width.setlb(0.1)
         stage.width.setub(1000)
         # stage.length.setub(8)
@@ -484,6 +484,8 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
                     raise TypeError('A value for A_fixed must be provided')
                 stage.A_comp.unfix()
                 stage.A_comp.fix(A_fixed)
+            elif A_case is None:
+                pass
             else:
                 raise TypeError('A_case must be set to "fix" or "optimize"')
 
@@ -595,24 +597,24 @@ def display_RO_reports(m):
 if __name__ == "__main__":
     import sys
 
-    if len(sys.argv) == 2:
-        print("Usage 1: python lsrro.py number_of_stages")
-        m = main(int(sys.argv[1]))
-    elif len(sys.argv) == 3:
-        print("Usage 2: python lsrro.py number_of_stages target_water_recovery_fraction")
-        m = main(int(sys.argv[1]), float(sys.argv[2]))
-    else:
-        print("Usage 3 (specify inputs in main before running): python lsrro.py")
-        m = main(number_of_stages=4,
-                 water_recovery=None,
-                 Cin=35,
-                 Cbrine=250000e-6 ,#* pyunits.kg/pyunits.m**3,
-                 A_case="optimize",
-                 B_case="optimize",
-                 AB_tradeoff="inequality constraint",
-                 nacl_solubility_limit=True,
-                 permeate_quality_limit=500e-6,
-                 has_CP=True,
-                 has_Pdrop=True,
-                 A_fixed=1.5/3.6e11
-                 )
+    # if len(sys.argv) == 2:
+    #     print("Usage 1: python lsrro.py number_of_stages")
+    #     m = main(int(sys.argv[1]))
+    # elif len(sys.argv) == 3:
+    #     print("Usage 2: python lsrro.py number_of_stages target_water_recovery_fraction")
+    #     m = main(int(sys.argv[1]), float(sys.argv[2]))
+    # else:
+    #     print("Usage 3 (specify inputs in main before running): python lsrro.py")
+    m = main(number_of_stages=3,
+             water_recovery=None,
+             Cin=35,
+             Cbrine=250000e-6 ,# mass fraction
+             A_case="optimize",
+             B_case="optimize",
+             AB_tradeoff="no constraint",
+             nacl_solubility_limit=True,
+             permeate_quality_limit=500e-6,
+             has_CP=True,
+             has_Pdrop=True,
+             A_fixed=2.78e-12
+             )
