@@ -104,7 +104,7 @@ def test_unit_parameter_files(tech):
                       "agglom_stacking",
                       "landfill_zld"]
 
-    expected = ["recovery_vol",
+    expected = ["recovery_frac_mass_H2O",
                 "default_removal_frac_mass_solute"]
 
     for k in data.values():
