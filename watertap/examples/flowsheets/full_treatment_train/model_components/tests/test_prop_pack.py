@@ -18,7 +18,7 @@ from pyomo.environ import ConcreteModel, value
 from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
 from pyomo.util.check_units import assert_units_consistent
-from watertap.examples.flowsheets.full_treatment_train.util import solve_with_user_scaling, check_dof
+from watertap.examples.flowsheets.full_treatment_train.util import solve_block, check_dof
 import watertap.examples.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as property_seawater_ions
 import watertap.examples.flowsheets.full_treatment_train.model_components.seawater_salt_prop_pack as property_seawater_salts
 
@@ -65,7 +65,7 @@ def test_property_seawater_ions():
     m.fs.stream.initialize(optarg={'nlp_scaling_method': 'user-scaling'})
 
     # solve
-    solve_with_user_scaling(m)
+    solve_block(m)
 
     # check values
     assert value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'H2O']) == pytest.approx(0.9647, rel=1e-3)

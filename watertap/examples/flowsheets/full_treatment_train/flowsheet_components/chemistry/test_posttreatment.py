@@ -22,8 +22,12 @@ import pytest
 
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components.chemistry.posttreatment_ideal_naocl_chlorination_block import (
     run_ideal_naocl_mixer_example, run_ideal_naocl_chlorination_example, run_chlorination_block_example,
-    build_translator_from_RO_to_chlorination_block)
+    build_translator_from_RO_to_chlorination_block, unfix_ideal_naocl_mixer_inlet_stream)
 from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
+from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import desalination
+from watertap.examples.flowsheets.full_treatment_train.util import check_dof
+from pyomo.environ import TransformationFactory
+from pyomo.network import Arc
 
 __author__ = "Austin Ladshaw"
 
@@ -70,3 +74,24 @@ def test_addition_of_translator():
     property_models.build_prop(model, base='TDS')
     build_translator_from_RO_to_chlorination_block(model)
     assert hasattr(model.fs, 'RO_to_Chlor')
+
+@pytest.mark.component
+def test_build_flowsheet():
+    model = run_chlorination_block_example(fix_free_chlorine=True)
+    property_models.build_prop(model, base='TDS')
+    build_translator_from_RO_to_chlorination_block(model)
+    # Here, we set 'has_feed' to True because RO is our first block in the flowsheet
+    kwargs_desal = {'has_desal_feed': True, 'is_twostage': False, 'has_ERD': False,
+                    'RO_type': '0D', 'RO_base': 'TDS', 'RO_level': 'detailed'}
+    desal_port = desalination.build_desalination(model, **kwargs_desal)
+    desalination.scale_desalination(model, **kwargs_desal)
+    desalination.initialize_desalination(model, **kwargs_desal)
+
+    # Add the connecting arcs
+    model.fs.S1 = Arc(source=desal_port['out'], destination=model.fs.RO_to_Chlor.inlet)
+    model.fs.S2 = Arc(source=model.fs.RO_to_Chlor.outlet, destination=model.fs.ideal_naocl_mixer_unit.inlet_stream)
+    TransformationFactory("network.expand_arcs").apply_to(model)
+
+    # Unfix inlet stream for mixer
+    unfix_ideal_naocl_mixer_inlet_stream(model)
+    check_dof(model)

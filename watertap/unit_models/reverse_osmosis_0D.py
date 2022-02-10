@@ -11,8 +11,6 @@
 #
 ###############################################################################
 
-
-from copy import deepcopy
 # Import Pyomo libraries
 from pyomo.environ import (Var,
                            Set,
@@ -21,8 +19,8 @@ from pyomo.environ import (Var,
                            Reference,
                            units as pyunits,
                            exp,
-                           value)
-from pyomo.common.collections import ComponentSet
+                           value,
+                           check_optimal_termination)
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class)
@@ -66,9 +64,6 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
 
         solvent_set = self.config.property_package.solvent_set
         solute_set = self.config.property_package.solute_set
-
-        # For permeate-specific scaling in calculate_scaling_factors
-        self._permeate_scaled_properties = ComponentSet()
 
         # Add unit variables
         self.flux_mass_io_phase_comp = Var(
@@ -620,116 +615,71 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         # Set solver and options
         opt = get_solver(solver, optarg)
 
-        # assumptions
-        if initialize_guess is None:
-            initialize_guess = {}
-        if 'deltaP' not in initialize_guess:
-            initialize_guess['deltaP'] = -1e4
-        if 'solvent_recovery' not in initialize_guess:
-            initialize_guess['solvent_recovery'] = 0.5
-        if 'solute_recovery' not in initialize_guess:
-            initialize_guess['solute_recovery'] = 0.01
-        if 'cp_modulus' not in initialize_guess:
-            initialize_guess['cp_modulus'] = 1.1
 
         # ---------------------------------------------------------------------
         # Extract initial state of inlet feed
-        if state_args is None:
-            state_args = {}
-            state_dict = blk.feed_side.properties_in[
-                blk.flowsheet().config.time.first()].define_port_members()
-
-            for k in state_dict.keys():
-                if state_dict[k].is_indexed():
-                    state_args[k] = {}
-                    for m in state_dict[k].keys():
-                        state_args[k][m] = state_dict[k][m].value
-                else:
-                    state_args[k] = state_dict[k].value
-
+        source = blk.feed_side.properties_in[blk.flowsheet().config.time.first()]
+        state_args = blk._get_state_args(source, blk.permeate_side.properties_mixed[0], initialize_guess, state_args)
 
         # Initialize feed inlet state block
-        flags = blk.feed_side.properties_in.initialize(
+        flags_feed_side = blk.feed_side.properties_in.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args,
+            state_args=state_args['feed_side'],
             hold_state=True)
 
-        init_log.info_high("Initialization Step 1 Complete.")
+        init_log.info("Initialization Step 1 Complete.")
         if not ignore_dof:
             check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
         # ---------------------------------------------------------------------
         # Initialize other state blocks
         # base properties on inlet state block
 
-        if 'flow_mass_phase_comp' not in state_args.keys():
-            raise ConfigurationError('ReverseOsmosis0D initialization routine expects '
-                                     'flow_mass_phase_comp as a state variable. Check '
-                                     'that the property package supports this state '
-                                     'variable or that the state_args provided to the '
-                                     'initialize call includes this state variable')
-
-        # slightly modify initial values for other state blocks
-        state_args_retentate = deepcopy(state_args)
-        state_args_permeate = deepcopy(state_args)
-
-        state_args_retentate['pressure'] += initialize_guess['deltaP']
-        state_args_permeate['pressure'] = blk.permeate_side.properties_mixed[0].pressure.value
-        for j in blk.config.property_package.solvent_set:
-            state_args_retentate['flow_mass_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solvent_recovery'])
-            state_args_permeate['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['solvent_recovery']
-        for j in blk.config.property_package.solute_set:
-            state_args_retentate['flow_mass_phase_comp'][('Liq', j)] *= (1 - initialize_guess['solute_recovery'])
-            state_args_permeate['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['solute_recovery']
-
-        state_args_interface_in = deepcopy(state_args)
-        state_args_interface_out = deepcopy(state_args_retentate)
-
-        for j in blk.config.property_package.solute_set:
-            state_args_interface_in['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
-            state_args_interface_out['flow_mass_phase_comp'][('Liq', j)] *= initialize_guess['cp_modulus']
-
         blk.feed_side.properties_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args_retentate,)
+            state_args=state_args['retentate'],)
         blk.feed_side.properties_interface_in.initialize(
                 outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
-                state_args=state_args_interface_in,)
+                state_args=state_args['interface_in'],)
         blk.feed_side.properties_interface_out.initialize(
                 outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
-                state_args=state_args_interface_out,)
+                state_args=state_args['interface_out'],)
         blk.permeate_side.properties_mixed.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args_permeate,)
+            state_args=state_args['permeate'],)
         blk.permeate_side.properties_in.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args_permeate,)
+            state_args=state_args['permeate'],)
         blk.permeate_side.properties_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args_permeate,)
-        init_log.info_high("Initialization Step 2 Complete.")
+            state_args=state_args['permeate'],)
+        init_log.info("Initialization Step 2 Complete.")
 
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
+            # occasionally it might be worth retrying a solve
+            if not check_optimal_termination(res):
+                init_log.warn("Trouble solving ReverseOsmosis0D unit model, trying one more time")
+                res = opt.solve(blk, tee=slc.tee)
         check_solve(res, checkpoint='Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.feed_side.release_state(flags, outlvl)
+        blk.feed_side.release_state(flags_feed_side, outlvl)
         init_log.info(
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )
@@ -796,42 +746,56 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
 
         return {"vars": var_dict}
 
-    # permeate properties need to rescale solute values by 100
-    def _rescale_permeate_variable(self, var, factor=100):
-        if var not in self._permeate_scaled_properties:
-            sf = iscale.get_scaling_factor(var)
-            iscale.set_scaling_factor(var, sf * factor)
-            self._permeate_scaled_properties.add(var)
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
         for sb in (self.permeate_side.properties_in, self.permeate_side.properties_out,
                 self.permeate_side.properties_mixed):
-            for t in self.flowsheet().config.time:
+            for blk in sb.values():
                 for j in self.config.property_package.solute_set:
-                    self._rescale_permeate_variable(sb[t].flow_mass_phase_comp['Liq', j])
-                    if sb[t].is_property_constructed('mass_frac_phase_comp'):
-                        self._rescale_permeate_variable(sb[t].mass_frac_phase_comp['Liq', j])
-                    if sb[t].is_property_constructed('conc_mass_phase_comp'):
-                        self._rescale_permeate_variable(sb[t].conc_mass_phase_comp['Liq', j])
-                    if sb[t].is_property_constructed('mole_frac_phase_comp'):
-                        self._rescale_permeate_variable(sb[t].mole_frac_phase_comp[j])
-                    if sb[t].is_property_constructed('molality_comp'):
-                        self._rescale_permeate_variable(sb[t].molality_comp[j])
-                if sb[t].is_property_constructed('pressure_osm'):
-                    self._rescale_permeate_variable(sb[t].pressure_osm)
-
-        # TODO: require users to set scaling factor for area or calculate it based on mass transfer and flux
-        iscale.set_scaling_factor(self.area, 1e-1)
+                    self._rescale_permeate_variable(blk.flow_mass_phase_comp['Liq', j])
+                    if blk.is_property_constructed('mass_frac_phase_comp'):
+                        self._rescale_permeate_variable(blk.mass_frac_phase_comp['Liq', j])
+                    if blk.is_property_constructed('conc_mass_phase_comp'):
+                        self._rescale_permeate_variable(blk.conc_mass_phase_comp['Liq', j])
+                    if blk.is_property_constructed('mole_frac_phase_comp'):
+                        self._rescale_permeate_variable(blk.mole_frac_phase_comp[j])
+                    if blk.is_property_constructed('molality_comp'):
+                        self._rescale_permeate_variable(blk.molality_comp[j])
+                if blk.is_property_constructed('pressure_osm'):
+                    self._rescale_permeate_variable(blk.pressure_osm)
 
         # setting scaling factors for variables
-
-        # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
         if iscale.get_scaling_factor(self.dens_solvent) is None:
             sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].dens_mass_phase['Liq'])
             iscale.set_scaling_factor(self.dens_solvent, sf)
+
+        for (t, p, j), v in self.mass_transfer_phase_comp.items():
+            sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].get_material_flow_terms(p, j))
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
+            v = self.feed_side.mass_transfer_term[t,p,j]
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
+
+        for (t, x, p, j), v in self.flux_mass_io_phase_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                comp = self.config.property_package.get_component(j)
+                if comp.is_solvent():  # scaling based on solvent flux equation
+                    if x == 'in':
+                        prop_io = self.feed_side.properties_in[t]
+                    elif x == 'out':
+                        prop_io = self.feed_side.properties_out[t]
+                        prop_interface_io = self.feed_side.properties_interface_out[t]
+                    sf = (iscale.get_scaling_factor(self.A_comp[t, j])
+                          * iscale.get_scaling_factor(self.dens_solvent)
+                          * iscale.get_scaling_factor(prop_io.pressure))
+                    iscale.set_scaling_factor(v, sf)
+                elif comp.is_solute():  # scaling based on solute flux equation
+                    sf = (iscale.get_scaling_factor(self.B_comp[t, j])
+                          * iscale.get_scaling_factor(self.feed_side.properties_in[t].conc_mass_phase_comp[p, j]))
+                    iscale.set_scaling_factor(v, sf)
 
         for v in self.rejection_phase_comp.values():
             if iscale.get_scaling_factor(v) is None:
@@ -839,13 +803,12 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
 
         if hasattr(self, 'cp_modulus'):
             if iscale.get_scaling_factor(self.cp_modulus) is None:
-                sf = iscale.get_scaling_factor(self.cp_modulus)
-                iscale.set_scaling_factor(self.cp_modulus, sf)
+                iscale.set_scaling_factor(self.cp_modulus, 1)
 
         if hasattr(self, 'Kf_io'):
             for v in self.Kf_io.values():
                 if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, 1e5)
+                    iscale.set_scaling_factor(v, 1e4)
 
         if hasattr(self, 'N_Re_io'):
             for v in self.N_Re_io.values():
@@ -889,180 +852,3 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             for v in self.dP_dx_io.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1e-4)
-
-        for (t, x, p, j), v in self.flux_mass_io_phase_comp.items():
-            if iscale.get_scaling_factor(v) is None:
-                comp = self.config.property_package.get_component(j)
-                if comp.is_solvent():  # scaling based on solvent flux equation
-                    if x == 'in':
-                        prop_io = self.feed_side.properties_in[t]
-                    elif x == 'out':
-                        prop_io = self.feed_side.properties_out[t]
-                        prop_interface_io = self.feed_side.properties_interface_out[t]
-                    sf = (iscale.get_scaling_factor(self.A_comp[t, j])
-                          * iscale.get_scaling_factor(self.dens_solvent)
-                          * iscale.get_scaling_factor(prop_io.pressure))
-                    iscale.set_scaling_factor(v, sf)
-                elif comp.is_solute():  # scaling based on solute flux equation
-                    sf = (iscale.get_scaling_factor(self.B_comp[t, j])
-                          * iscale.get_scaling_factor(self.feed_side.properties_in[t].conc_mass_phase_comp[p, j]))
-                    iscale.set_scaling_factor(v, sf)
-
-        for (t, p, j), v in self.feed_side.mass_transfer_term.items():
-            # already scaled by control volume with the default based on properties_in flow
-            # solute typically has mass transfer 2 orders magnitude less than flow
-            if j in self.config.property_package.solute_set:
-                self._rescale_permeate_variable(v)
-
-        for (t, p, j), v in self.mass_transfer_phase_comp.items():
-            if iscale.get_scaling_factor(v) is None:
-                sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].get_material_flow_terms(p, j))
-                comp = self.config.property_package.get_component(j)
-                if comp.is_solute:
-                    sf *= 1e2  # solute typically has mass transfer 2 orders magnitude less than flow
-                iscale.set_scaling_factor(v, sf)
-
-        # transforming constraints
-        for ind, c in self.eq_mass_transfer_term.items():
-            sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
-            iscale.constraint_scaling_transform(c, sf/10.)
-
-        for ind, c in self.eq_permeate_production.items():
-            sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
-            iscale.constraint_scaling_transform(c, sf/10.)
-
-        for ind, c in self.eq_flux_io.items():
-            sf = iscale.get_scaling_factor(self.flux_mass_io_phase_comp[ind])
-            iscale.constraint_scaling_transform(c, sf)
-
-        for ind, c in self.eq_connect_mass_transfer.items():
-            sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
-            iscale.constraint_scaling_transform(c, sf/10.)
-
-        for ind, c in self.eq_connect_enthalpy_transfer.items():
-            sf = iscale.get_scaling_factor(self.feed_side.enthalpy_transfer[ind])
-            iscale.constraint_scaling_transform(c, sf*10.)
-
-        for t, c in self.eq_permeate_isothermal.items():
-            sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].temperature)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x, j), c in self.permeate_side.eq_mass_frac_permeate_io.items():
-            if x == 'in':
-                prop_io = self.permeate_side.properties_in[t]
-            elif x == 'out':
-                prop_io = self.permeate_side.properties_out[t]
-            sf = iscale.get_scaling_factor(prop_io.mass_frac_phase_comp['Liq', j])
-            iscale.constraint_scaling_transform(c, sf*100.)
-
-        for (t, x), c in self.permeate_side.eq_temperature_permeate_io.items():
-            if x == 'in':
-                prop_io = self.permeate_side.properties_in[t]
-            elif x == 'out':
-                prop_io = self.permeate_side.properties_out[t]
-            sf = iscale.get_scaling_factor(prop_io.temperature)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x), c in self.permeate_side.eq_pressure_permeate_io.items():
-            if x == 'in':
-                prop_io = self.permeate_side.properties_in[t]
-            elif x == 'out':
-                prop_io = self.permeate_side.properties_out[t]
-            sf = iscale.get_scaling_factor(prop_io.pressure)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x), c in self.permeate_side.eq_flow_vol_permeate_io.items():
-            if x == 'in':
-                prop_io = self.permeate_side.properties_in[t]
-            elif x == 'out':
-                prop_io = self.permeate_side.properties_out[t]
-            sf = iscale.get_scaling_factor(prop_io.flow_vol_phase['Liq'])
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x, j), c in self.feed_side.eq_concentration_polarization_io.items():
-            if x == 'in':
-                prop_interface_io = self.feed_side.properties_interface_in[t]
-            elif x == 'out':
-                prop_interface_io = self.feed_side.properties_interface_out[t]
-            sf = iscale.get_scaling_factor(prop_interface_io.conc_mass_phase_comp['Liq', j])
-            iscale.constraint_scaling_transform(c, sf)
-
-        if hasattr(self, 'eq_Kf_io'):
-            for ind, c in self.eq_Kf_io.items():
-                sf = iscale.get_scaling_factor(self.Kf_io[ind])
-                iscale.constraint_scaling_transform(c, sf)
-
-        if hasattr(self, 'eq_N_Re_io'):
-            for ind, c in self.eq_N_Re_io.items():
-                sf = iscale.get_scaling_factor(self.N_Re_io[ind])
-                iscale.constraint_scaling_transform(c, sf*1e4)
-
-        if hasattr(self, 'eq_N_Sc_io'):
-            for ind, c in self.eq_N_Sc_io.items():
-                sf = iscale.get_scaling_factor(self.N_Sc_io[ind])
-                iscale.constraint_scaling_transform(c, sf*1e3)
-
-        if hasattr(self, 'eq_N_Sh_io'):
-            for ind, c in self.eq_N_Sh_io.items():
-                sf = iscale.get_scaling_factor(self.N_Sh_io[ind])
-                iscale.constraint_scaling_transform(c, sf)
-
-        if hasattr(self, 'eq_area'):
-            sf = iscale.get_scaling_factor(self.area)
-            iscale.constraint_scaling_transform(self.eq_area, sf)
-
-        if hasattr(self, 'eq_pressure_change'):
-            for ind, c in self.eq_pressure_change.items():
-                sf = iscale.get_scaling_factor(self.deltaP[ind])
-                iscale.constraint_scaling_transform(c, sf)
-
-        if hasattr(self, 'eq_velocity_io'):
-            for ind, c in self.eq_velocity_io.items():
-                sf = iscale.get_scaling_factor(self.velocity_io[ind])
-                iscale.constraint_scaling_transform(c, sf*100.)
-
-        if hasattr(self, 'eq_friction_factor_darcy_io'):
-            for ind, c in self.eq_friction_factor_darcy_io.items():
-                sf = iscale.get_scaling_factor(self.friction_factor_darcy_io[ind])
-                iscale.constraint_scaling_transform(c, sf/10.)
-
-        if hasattr(self, 'eq_dP_dx_io'):
-            for ind, c in self.eq_dP_dx_io.items():
-                sf = iscale.get_scaling_factor(self.dP_dx_io[ind])
-                iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x), c in self.feed_side.eq_equal_temp_interface_io.items():
-            if x == 'in':
-                prop_interface_io = self.feed_side.properties_interface_in[t]
-            elif x == 'out':
-                prop_interface_io = self.feed_side.properties_interface_out[t]
-            sf = iscale.get_scaling_factor(prop_interface_io.temperature)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x), c in self.feed_side.eq_equal_pressure_interface_io.items():
-            if x == 'in':
-                prop_interface_io = self.feed_side.properties_interface_in[t]
-            elif x == 'out':
-                prop_interface_io = self.feed_side.properties_interface_out[t]
-            sf = iscale.get_scaling_factor(prop_interface_io.pressure)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x), c in self.feed_side.eq_equal_flow_vol_interface_io.items():
-            if x == 'in':
-                prop_interface_io = self.feed_side.properties_interface_in[t]
-            elif x == 'out':
-                prop_interface_io = self.feed_side.properties_interface_out[t]
-            sf = iscale.get_scaling_factor(prop_interface_io.flow_vol_phase['Liq'])
-            iscale.constraint_scaling_transform(c, sf)
-
-        for t, c in self.eq_recovery_vol_phase.items():
-            sf = iscale.get_scaling_factor(self.recovery_vol_phase[t, 'Liq'])
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, j), c in self.eq_recovery_mass_phase_comp.items():
-            sf = iscale.get_scaling_factor(self.recovery_mass_phase_comp[t, 'Liq', j])
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, j), c in self.eq_rejection_phase_comp.items():
-            sf = iscale.get_scaling_factor(self.rejection_phase_comp[t, 'Liq', j])
-            iscale.constraint_scaling_transform(c, sf)

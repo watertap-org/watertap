@@ -16,6 +16,7 @@ Test of db_api module
 import pytest
 from ..db_api import ElectrolyteDB
 from ..data_model import Component, Reaction, Base
+from ..commands import _load_bootstrap
 from pymongo import MongoClient
 from .util import MockDB
 
@@ -52,24 +53,33 @@ def edb():
 @requires_mongo
 def test_edb_init(edb):
     assert edb is not None
+    assert edb.connect_status_str == "Connection succeeded"
+    assert type(edb.connect_status) is dict
+
+
+@pytest.mark.component
+@requires_mongo
+def test_edb_load(edb):
+    # Load bootstrap for temporary testing purposes
+    _load_bootstrap(edb)
+    base = edb.get_base("default_thermo")
+    assert type(base) is Base
+    edb.list_bases()
 
 
 @pytest.mark.component
 @requires_mongo
 def test_edb_get_components(edb):
-    pass
+    res_obj_comps = edb.get_components(element_names=["H","O"])
+    for comp_obj in res_obj_comps:
+        assert type(comp_obj) is Component
+    assert edb._process_species("H2O") == "H2O"
+    assert edb._process_species("H_+") == "H"
+    assert edb._process_species("OH_-") == "OH"
 
-
-@pytest.mark.component
-@requires_mongo
-def test_edb_get_reactions():
-    pass
-
-
-@pytest.mark.component
-@requires_mongo
-def test_edb_load():
-    pass
+    # Drop the bootstrap database for cleaning
+    edb.drop_database(edb.DEFAULT_URL, edb.DEFAULT_DB)
+    assert edb.is_empty()
 
 
 @pytest.mark.unit
