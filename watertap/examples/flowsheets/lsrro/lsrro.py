@@ -47,7 +47,7 @@ def main(number_of_stages, water_recovery=None, Cin=None, Cbrine=None,A_case=Non
     display_state(m)
 
     optimize_set_up(m, water_recovery, Cbrine, A_case, B_case, AB_tradeoff, A_fixed, permeate_quality_limit)
-    solve(m, raise_on_failure=True, tee=True)
+    solve(m, raise_on_failure=True, tee=False)
     print('\n***---Optimization results---***')
     display_system(m)
     display_design(m)
@@ -390,7 +390,7 @@ def initialize(m, verbose=False, solver=None):
 def solve(model, solver=None, tee=False, raise_on_failure=False):
     # ---solving---
     if solver is None:
-        solver = get_solver()
+        solver = get_solver(options={'honor_original_bounds': 'no'})
 
     results = solver.solve(model, tee=tee)
     if check_optimal_termination(results):
@@ -472,6 +472,10 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
             else:
                 pass
 
+            stage.A_min = Param(initialize=2.78e-12, units=pyunits.m**2/pyunits.kg*pyunits.s)
+            stage.A_max = Param(initialize=4.2e-11, units=pyunits.m**2/pyunits.kg*pyunits.s)
+            stage._A_comp_con = Constraint(expr=(stage.A_min, stage.A_comp[0, 'H2O'], stage.A_max))
+            iscale.constraint_scaling_transform(stage._A_comp_con, iscale.get_scaling_factor(stage.A_comp[0, 'H2O']))
             if A_case == 'optimize':
                 stage.A_comp.unfix()
                 stage.A_comp.setlb(2.78e-12)
@@ -607,7 +611,7 @@ if __name__ == "__main__":
     #     m = main(int(sys.argv[1]), float(sys.argv[2]))
     # else:
     #     print("Usage 3 (specify inputs in main before running): python lsrro.py")
-    m = main(number_of_stages=3,
+    m = main(number_of_stages=4,
              water_recovery=None,
              Cin=35,
              Cbrine=250000e-6 ,# mass fraction
