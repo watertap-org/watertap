@@ -316,7 +316,7 @@ class CompressorData(UnitModelBlockData):
         var_dict = {}
         var_dict["Pressure ratio"] = self.pressure_ratio
         var_dict["Efficiency"] = self.efficiency
-        var_dict["Work"] = self.control_volume.work
+        var_dict["Work"] = self.control_volume.work[time_point]
 
         return {"vars": var_dict}
 
@@ -325,7 +325,6 @@ class CompressorData(UnitModelBlockData):
 
         iscale.set_scaling_factor(self.pressure_ratio, 1)
         iscale.set_scaling_factor(self.efficiency, 1)
-        iscale.set_scaling_factor(self.control_volume.work, 1e-6)
 
         # for j, c in self.eq_mass_balance.items():
         #     sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].flow_mass_phase_comp[j, 'H2O'])

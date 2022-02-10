@@ -21,6 +21,7 @@ def main():
     # scaling
     m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Vap', 'H2O'))
     m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
+    iscale.set_scaling_factor(m.fs.compressor.control_volume.work, 1e-6)
     iscale.calculate_scaling_factors(m)
 
     # state variables
@@ -47,7 +48,7 @@ def main():
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
-    # m.fs.compressor.report()
+    m.fs.compressor.report()
 
     m.fs.compressor.control_volume.work.display()
     return m
