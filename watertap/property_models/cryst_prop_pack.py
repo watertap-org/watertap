@@ -74,7 +74,7 @@ class NaClParameterData(PhysicalParameterBlock):
        .. csv-table::
            :header: "Configuration Options", "Description"
     
-           "``HeatOfCrystallizationModel.constant``", "Fixed of crystallization for NaCl based on literature"
+           "``HeatOfCrystallizationModel.constant``", "Fixed heat of crystallization for NaCl based on literature"
            "``HeatOfCrystallizationModel.zero``", "Zero heat of crystallization assumption"
            "``HeatOfCrystallizationModel.temp_dependent``", "Temperature-dependent heat of crystallization for NaCl"
        """))
@@ -123,9 +123,6 @@ class NaClParameterData(PhysicalParameterBlock):
         - Tavare, N. S. Industrial Crystallization, Springer US, 2013.        
         '''
 
-        ## TO-DO ##
-        # 1. Fix mass fraction formulation
-        # 2. Add scaling rules
 
         # Unit definitions
         dens_units = pyunits.kg/pyunits.m**3
@@ -155,10 +152,6 @@ class NaClParameterData(PhysicalParameterBlock):
         self.sol_param_A1 = Param(initialize= 0.2628, units = pyunits.dimensionless, doc=' Solubility parameter A1 for NaCl')
         self.sol_param_A2 = Param(initialize= 62.75e-6, units = pyunits.K ** -1, doc=' Solubility parameter A2 for NaCl')
         self.sol_param_A3 = Param(initialize= 1.084e-6, units = pyunits.K ** -2, doc=' Solubility parameter A3 for NaCl')
-    
-        # Vapour mass density parameter (approximating using ideal gas): universal gas constant
-        self.dens_mass_param_R = Var(within=Reals, initialize=8.31462618, units=pyunits.J/pyunits.mol/pyunits.K,
-            doc='Mass density parameter universal gas constant')
 
         # Mass density value for NaCl crystals in solid phase: fixed for now at Tavare value - may not be accurate?
         self.dens_mass_param_NaCl = Param(initialize=2115, units=pyunits.kg/pyunits.m**3, doc='NaCl crystal density')
@@ -641,8 +634,7 @@ class NaClStateBlockData(StateBlockData):
                              + b.params.dens_mass_param_A5 * t**4)
                 return b.dens_mass_solvent[p] == dens_mass_w
             elif p =='Vap':
-                return b.dens_mass_solvent[p] ==  (b.params.mw_comp['H2O'] * b.pressure) / (b.params.dens_mass_param_R * b.temperature)
-                # return b.dens_mass_solvent[p] ==  (b.params.mw_comp['H2O'] * b.pressure_sat * 1e6 * pyunits.Pa / pyunits.MPa) / (b.params.dens_mass_param_R * b.temperature_sat_solvent)
+                return b.dens_mass_solvent[p] ==  (b.params.mw_comp['H2O'] * b.pressure) / (Constants.gas_constant * b.temperature)
 
         self.eq_dens_mass_solvent = Constraint(['Liq', 'Vap'], rule=rule_dens_mass_solvent)
 
@@ -746,7 +738,7 @@ class NaClStateBlockData(StateBlockData):
                             (b.params.cp_param_NaCl_solid_C * t ** 2) + (b.params.cp_param_NaCl_solid_D * t ** 3)  + \
                             (b.params.cp_param_NaCl_solid_E /(t ** 2))
                 return b.cp_solute[p] == cp_solute_mol / b.params.mw_comp['NaCl']
-            if p == 'Liq': # density, eq. 11-12 of Laliberte (2009)
+            if p == 'Liq': # NaCl liq. apparent specific heat capacity, eq. 11-12 of Laliberte (2009)
                 t = b.temperature - 273.15 * pyunits.K
                 alpha = (b.params.cp_param_NaCl_liq_A2 * t) + (b.params.cp_param_NaCl_liq_A4 * (1 - b.mass_frac_phase_comp['Liq', 'H2O'])) \
                         + (b.params.cp_param_NaCl_liq_A3 * exp(0.01 * pyunits.K**-1 * t))
@@ -806,7 +798,6 @@ class NaClStateBlockData(StateBlockData):
 
 
     # 13. Vapour pressure of the NaCl solution based on the boiling temperature
-    ## TO-DO: CHECK/CORRECT TEMPERATURE TO TEMPERATURE OF SOLUTION ##
     def _pressure_sat(self):
         self.pressure_sat = Var(
             initialize=1e3,
@@ -975,7 +966,7 @@ class NaClStateBlockData(StateBlockData):
             ############################
             # Shomate equation for molar enthalpy ofNaCl, NIST
             # Note: Tref is 298 K, so changing the Tref to 273 K to match IAPWS is necessary.
-            # Computation formulafor reference temperature change: 
+            # Computation formula for reference temperature change: 
             #    Enthalpy at T relative to 273 K = Enthalpy change relative to 298 K + (Enthalpy at 298 K - Enthalpy at 273 K)
             ############################
 
