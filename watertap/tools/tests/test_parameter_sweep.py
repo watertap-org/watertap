@@ -395,15 +395,7 @@ class TestParallelManager():
         num_cases = np.shape(values)[0]
         output_dict = _create_local_output_skeleton(model, sweep_params, None, num_cases)
 
-        truth_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
-                                                  'units': 'non-dimensional',
-                                                  'upper bound': 0,
-                                                  'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
-                                  'fs.input[b]': {'lower bound': 0,
-                                                  'units': 'non-dimensional',
-                                                  'upper bound': 0,
-                                                  'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
-                                  'fs.output[c]': {'lower bound': 0,
+        truth_dict = {'outputs': {'fs.output[c]': {'lower bound': 0,
                                                    'units': 'non-dimensional',
                                                    'upper bound': 0,
                                                    'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
@@ -496,8 +488,10 @@ class TestParallelManager():
         m.fs.slack_penalty = 1000.
         m.fs.slack.setub(0)
 
-        sweep_params = {'input_a' : (m.fs.input['a'], 0.1, 0.9, 3),
-                        'input_b' : (m.fs.input['b'], 0.0, 0.5, 3)}
+        A = m.fs.input['a']
+        B = m.fs.input['b']
+        sweep_params = {A.name : (A, 0.1, 0.9, 3),
+                        B.name : (B, 0.0, 0.5, 3)}
         outputs = {'output_c':m.fs.output['c'],
                    'output_d':m.fs.output['d'],
                    'performance':m.fs.performance}
@@ -563,15 +557,7 @@ class TestParallelManager():
             h5_fpath = os.path.join(tmp_path, 'output_dict.h5')
             read_dict = _read_output_h5(h5_fpath)
             _assert_dictionary_correctness(truth_dict, read_dict)
-
-            # Check this new dictionary against the original logging system
-            # assert np.allclose(read_dict['outputs']['fs.input[a]']['value'], data[:,0], equal_nan=True)
-            assert np.allclose(read_dict['sweep_params']['fs.input[a]']['value'], data[:,0], equal_nan=True)
-            # assert np.allclose(read_dict['outputs']['fs.input[b]']['value'], data[:,1], equal_nan=True)
-            assert np.allclose(read_dict['sweep_params']['fs.input[b]']['value'], data[:,1], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.output[c]']['value'], data[:,2], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.output[d]']['value'], data[:,3], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.performance']['value'], data[:,4], equal_nan=True)
+            _assert_h5_csv_agreement(results_file, read_dict)
 
 
     @pytest.mark.component
@@ -583,8 +569,10 @@ class TestParallelManager():
         m.fs.slack_penalty = 1000.
         m.fs.slack.setub(0)
 
-        sweep_params = {'input_a' : (m.fs.input['a'], 0.1, 0.9, 3),
-                        'input_b' : (m.fs.input['b'], 0.0, 0.5, 3)}
+        A = m.fs.input['a']
+        B = m.fs.input['b']
+        sweep_params = {A.name : (A, 0.1, 0.9, 3),
+                        B.name : (B, 0.0, 0.5, 3)}
         outputs = {'output_c':m.fs.output['c'],
                    'output_d':m.fs.output['d'],
                    'performance':m.fs.performance,
@@ -653,16 +641,7 @@ class TestParallelManager():
             h5_fpath = os.path.join(tmp_path, '{0}.h5'.format(h5_fname))
             read_dict = _read_output_h5(h5_fpath)
             _assert_dictionary_correctness(truth_dict, read_dict)
-
-            # Check this new dictionary against the original logging system
-            # assert np.allclose(read_dict['outputs']['fs.input[a]']['value'], data[:,0], equal_nan=True)
-            assert np.allclose(read_dict['sweep_params']['fs.input[a]']['value'], data[:,0], equal_nan=True)
-            # assert np.allclose(read_dict['outputs']['fs.input[b]']['value'], data[:,1], equal_nan=True)
-            assert np.allclose(read_dict['sweep_params']['fs.input[b]']['value'], data[:,1], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.output[c]']['value'], data[:,2], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.output[d]']['value'], data[:,3], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.performance']['value'], data[:,4], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['objective']['value'], data[:,5], equal_nan=True)
+            _assert_h5_csv_agreement(results_file, read_dict)
 
 
     @pytest.mark.component
@@ -674,8 +653,10 @@ class TestParallelManager():
         m.fs.slack_penalty = 1000.
         m.fs.slack.setub(0)
 
-        sweep_params = {'input_a' : (m.fs.input['a'], 0.1, 0.9, 3),
-                        'input_b' : (m.fs.input['b'], 0.0, 0.5, 3)}
+        A = m.fs.input['a']
+        B = m.fs.input['b']
+        sweep_params = {A.name : (A, 0.1, 0.9, 3),
+                        B.name : (B, 0.0, 0.5, 3)}
         # outputs = {'output_c':m.fs.output['c'],
         #            'output_d':m.fs.output['d'],
         #            'performance':m.fs.performance,
@@ -704,8 +685,7 @@ class TestParallelManager():
             data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
 
             # Compare the last row of the imported data to truth
-            # truth_data = [ 0.9, 0.5, 1.0, 1.0, 2.0, 2.0 - 10.*((2.*0.9 - 1.) + (3.*0.5 - 1.))]
-            truth_data = [  0.9,   0.5, -11. ,   0.9,   0.5,   1. ,   1. ,   0.8,   0.5,   2. ]
+            truth_data = [  0.9,   0.5, -11. ,   1. ,   1. ,   0.8,   0.5,   2. ]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
         if rank == 0:
@@ -749,16 +729,7 @@ class TestParallelManager():
             h5_fpath = os.path.join(tmp_path, '{0}.h5'.format(h5_fname))
             read_dict = _read_output_h5(h5_fpath)
             _assert_dictionary_correctness(truth_dict, read_dict)
-
-            # Check this new dictionary against the original logging system
-            # assert np.allclose(read_dict['outputs']['fs.input[a]']['value'], data[:,0], equal_nan=True)
-            assert np.allclose(read_dict['sweep_params']['fs.input[a]']['value'], data[:,0], equal_nan=True)
-            # assert np.allclose(read_dict['outputs']['fs.input[b]']['value'], data[:,1], equal_nan=True)
-            assert np.allclose(read_dict['sweep_params']['fs.input[b]']['value'], data[:,1], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.output[c]']['value'], data[:,5], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.output[d]']['value'], data[:,6], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.performance']['value'], data[:,9], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['objective']['value'], data[:,2], equal_nan=True)
+            _assert_h5_csv_agreement(results_file, read_dict)
 
 
     @pytest.mark.component
@@ -770,8 +741,10 @@ class TestParallelManager():
         m.fs.slack_penalty = 1000.
         m.fs.slack.setub(0)
 
-        sweep_params = {'input_a' : (m.fs.input['a'], 0.1, 0.9, 3),
-                        'input_b' : (m.fs.input['b'], 0.0, 0.5, 3)}
+        A = m.fs.input['a']
+        B = m.fs.input['b']
+        sweep_params = {A.name : (A, 0.1, 0.9, 3),
+                        B.name : (B, 0.0, 0.5, 3)}
         # outputs = {'output_c':m.fs.output['c'],
         #            'output_d':m.fs.output['d'],
         #            'performance':m.fs.performance,
@@ -800,7 +773,7 @@ class TestParallelManager():
             data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
 
             # Compare the last row of the imported data to truth
-            truth_data = [ 0.9, 0.5, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]
+            truth_data = [ 0.9, 0.5, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
         if rank == 0:
@@ -843,16 +816,7 @@ class TestParallelManager():
             h5_fpath = os.path.join(tmp_path, '{0}.h5'.format(h5_fname))
             read_dict = _read_output_h5(h5_fpath)
             _assert_dictionary_correctness(truth_dict, read_dict)
-
-            # Check this new dictionary against the original logging system
-            # assert np.allclose(read_dict['outputs']['fs.input[a]']['value'], data[:,0], equal_nan=True)
-            assert np.allclose(read_dict['sweep_params']['fs.input[a]']['value'], data[:,0], equal_nan=True)
-            # assert np.allclose(read_dict['outputs']['fs.input[b]']['value'], data[:,1], equal_nan=True)
-            assert np.allclose(read_dict['sweep_params']['fs.input[b]']['value'], data[:,1], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.output[c]']['value'], data[:,5], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.output[d]']['value'], data[:,6], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.performance']['value'], data[:,9], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['objective']['value'], data[:,2], equal_nan=True)
+            _assert_h5_csv_agreement(results_file, read_dict)
 
 
 def _optimization(m, relax_feasibility=False):
@@ -888,3 +852,35 @@ def _assert_dictionary_correctness(truth_dict, test_dict):
                         assert subsubitem == test_dict[key][subkey][subsubkey]
         elif key == "solve_status":
             assert item == test_dict[key]
+
+def _assert_h5_csv_agreement(csv_filename, h5_dict):
+    csv_header = _build_header_list_from_csv(csv_filename)
+    csv_data = np.genfromtxt(csv_filename, skip_header=1, delimiter=',')
+
+    for output_type in ['sweep_params', 'outputs']:
+        for key in h5_dict[output_type].keys():
+            # Find the matching label in the CSV file
+            idx = csv_header.index(key)
+            assert np.allclose(h5_dict[output_type][key]['value'], csv_data[:, idx], equal_nan=True)
+            # print(f'Passed test of {key}')
+
+def _build_header_list_from_csv(csv_filename):
+    with open(csv_filename, 'r') as fp:
+        csv_header_raw = fp.readline()
+        
+    csv_header_raw = csv_header_raw.replace('# ', '').strip()
+    csv_header_raw = csv_header_raw.split(',')
+
+    csv_header = []
+
+    for k, item in enumerate(csv_header_raw):
+        if k == 0:
+            csv_header.append(item)
+            
+        else:        
+            if csv_header[-1].count('[') == csv_header[-1].count(']'):
+                csv_header.append(item)
+            else:
+                csv_header[-1] += f',{item}'
+
+    return csv_header

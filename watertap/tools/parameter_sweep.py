@@ -348,33 +348,25 @@ def _create_local_output_skeleton(model, sweep_params, outputs, num_samples):
     output_dict["sweep_params"] = {}
     output_dict["outputs"] = {}
 
-    # 1. deal with the inputs
+    var_str_list = []
+
+    # Store the inputs
     for key in sweep_params.keys():
         var = sweep_params[key].pyomo_object
         var_str = sweep_params[key].pyomo_object.name
+        var_str_list.append(var_str)
         output_dict["sweep_params"][var_str] =  _create_component_output_skeleton(var, num_samples)
 
     if outputs is None:
-        # 2. lets deal with the output variables from the pyomo model
+        # No outputs are specified, so every Var, Expression, and Objective on the model should be saved
         for pyo_obj in model.component_data_objects((pyo.Var, pyo.Expression, pyo.Objective), active=True):
-            output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
+            # Only need to save this variable if it isn't one of the value in sweep_params
+            if pyo_obj.name not in var_str_list:
+                output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
     else:
+        # Save only the outputs specified in the outputs dictionary
         for pyo_obj in outputs.values():
             output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
-
-    # for var in variables_in_activated_equalities_set(model.fs):
-    #     var_str = var.name
-    #     output_dict["outputs"][var_str] = _create_component_output_skeleton(var, num_samples)
-    #
-    # # 3. lets deal with expressions
-    # for expr in expressions_set(model.fs):
-    #     expr_str = expr.name
-    #     output_dict["outputs"][expr_str] = _create_component_output_skeleton(expr, num_samples)
-    #
-    # # 4. Lets deal with objectives
-    # for obj in total_objectives_set(model):
-    #     obj_str = obj.name
-    #     output_dict["outputs"][obj_str] = _create_component_output_skeleton(obj, num_samples)
 
     return output_dict
 
