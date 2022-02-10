@@ -141,6 +141,14 @@ class TestIpoptWaterTAP:
         m.a.value = 1
 
     @pytest.mark.unit
+    def test_presolve_AMPL_evaluation_error_cleans_up(self, m, s):
+        m.a.value = 0
+        with pytest.raises(RuntimeError):
+            s.solve(m)
+        assert not hasattr(s, "_scaling_cache")
+        m.a.value = 1
+
+    @pytest.mark.unit
     def test_presolve_ignore_AMPL_evaluation_error(self, m, s):
         m.a.value = 0
         s.options["halt_on_ampl_error"] = "no"
