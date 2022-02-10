@@ -272,7 +272,7 @@ class WaterParameterData(PhysicalParameterBlock):
              'mole_frac_phase_comp': {'method': '_mole_frac_phase_comp'},
              'pressure_sat': {'method': '_pressure_sat'},
              'enth_mass_phase': {'method': '_enth_mass_phase'},
-             'enth_flow': {'method': '_enth_flow'},
+             'enth_flow_phase': {'method': '_enth_flow_phase'},
              'cp_phase': {'method': '_cp_phase'},
              'dh_vap': {'method': '_dh_vap'},
              })
@@ -566,11 +566,12 @@ class WaterStateBlockData(StateBlockData):
             units=pyunits.mol / pyunits.s,
             doc="Molar flowrate")
 
-        def rule_flow_mol_phase_comp(b, p):
-            return (b.flow_mol_phase_comp[p, 'H2O'] ==
-                    b.flow_mass_phase_comp[p, 'H2O'] / b.params.mw_comp['H2O'])
+        def rule_flow_mol_phase_comp(b, p, j):
+            return (b.flow_mol_phase_comp[p, j] ==
+                    b.flow_mass_phase_comp[p, j] / b.params.mw_comp[j])
 
-        self.eq_flow_mol_phase_comp = Constraint(self.params.phase_list, rule=rule_flow_mol_phase_comp)
+        self.eq_flow_mol_phase_comp = Constraint(
+            self.params.phase_list, self.params.component_list, rule=rule_flow_mol_phase_comp)
 
     def _mole_frac_phase_comp(self):
         self.mole_frac_phase_comp = Var(
@@ -581,11 +582,12 @@ class WaterStateBlockData(StateBlockData):
             units=pyunits.dimensionless,
             doc="Mole fraction")
 
-        def rule_mole_frac_phase_comp(b, p):
-            return (b.mole_frac_phase_comp[p, 'H2O'] == b.flow_mol_phase_comp[p, 'H2O'] /
-                    sum(b.flow_mol_phase_comp[p, 'H2O'] for p in b.params.phase_list))
+        def rule_mole_frac_phase_comp(b, p, j):
+            return (b.mole_frac_phase_comp[p, j] == b.flow_mol_phase_comp[p, j] /
+                    sum(b.flow_mol_phase_comp[p, j] for p in b.params.phase_list))
 
-        self.eq_mole_frac_phase_comp = Constraint(self.params.phase_list, rule=rule_mole_frac_phase_comp)
+        self.eq_mole_frac_phase_comp = Constraint(
+            self.params.phase_list, self.params.component_list, rule=rule_mole_frac_phase_comp)
 
     def _enth_mass_phase(self):
         self.enth_mass_phase = Var(
@@ -609,7 +611,6 @@ class WaterStateBlockData(StateBlockData):
                 #           + b.params.dh_vap_w_param_3 * t ** 3 + b.params.dh_vap_w_param_4 * t ** 4
                 # h_vap = h_w + dh_vap_w
                 return b.enth_mass_phase['Vap'] == h_w + b.dh_vap
-
         self.eq_enth_mass_phase = Constraint(self.params.phase_list, rule=rule_enth_mass_phase)
 
 
@@ -632,12 +633,19 @@ class WaterStateBlockData(StateBlockData):
         self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
 
 
-    def _enth_flow(self):
-        # enthalpy flow expression for get_enthalpy_flow_terms method
-        def rule_enth_flow(b):  # enthalpy flow [J/s]
-            return sum(b.flow_mass_phase_comp[p, 'H2O'] * b.enth_mass_phase[p] for p in b.params.phase_list)
+    def _enth_flow_phase(self):
+        # enthalpy flow variable
+        self.enth_flow_phase = Var(
+            self.params.phase_list,  # ['Liq','Vap']
+            initialize=1e6,
+            bounds=(None, None),
+            units=pyunits.J / pyunits.s,
+            doc="Enthalpy flow")
 
-        self.enth_flow = Expression(rule=rule_enth_flow)
+        def rule_enth_flow_phase(b, p):  # enthalpy flow [J/s]
+            return (b.enth_flow_phase[p] ==
+                    b.flow_mass_phase_comp[p, 'H2O'] * b.enth_mass_phase[p])
+        self.eq_enth_flow_phase = Constraint(self.params.phase_list, rule=rule_enth_flow_phase)
 
 
     def _cp_phase(self):
@@ -679,9 +687,11 @@ class WaterStateBlockData(StateBlockData):
 
         def rule_dh_vap(b):  # latent heat of seawater from eq. 37 and eq. 55 in Sharqawy et al. (2010)
             t = b.temperature - 273.15 * pyunits.K
-            return b.dh_vap == b.params.dh_vap_w_param_0 + b.params.dh_vap_w_param_1 * t + b.params.dh_vap_w_param_2 * t ** 2 \
-                       + b.params.dh_vap_w_param_3 * t ** 3 + b.params.dh_vap_w_param_4 * t ** 4
-
+            return (b.dh_vap == b.params.dh_vap_w_param_0
+                    + b.params.dh_vap_w_param_1 * t
+                    + b.params.dh_vap_w_param_2 * t ** 2
+                    + b.params.dh_vap_w_param_3 * t ** 3
+                    + b.params.dh_vap_w_param_4 * t ** 4)
         self.eq_dh_vap = Constraint(rule=rule_dh_vap)
 
 # General Methods
@@ -694,7 +704,7 @@ class WaterStateBlockData(StateBlockData):
 
     def get_enthalpy_flow_terms(self, p):
         """Create enthalpy flow terms."""
-        return self.enth_flow
+        return self.enth_flow_phase[p]
 
     # TODO: make property package compatible with dynamics
     # def get_material_density_terms(self, p, j):
@@ -777,60 +787,21 @@ class WaterStateBlockData(StateBlockData):
                     print('iter:', p, sf)
                     iscale.set_scaling_factor(self.mole_frac_phase_comp[p, 'H2O'], sf)
 
-        if self.is_property_constructed('enth_flow'):
-            sf_liq = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'])
-                      * iscale.get_scaling_factor(self.enth_mass_phase['Liq']))
-            sf_vap = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Vap', 'H2O'])
-                      * iscale.get_scaling_factor(self.enth_mass_phase['Vap']))
-            sf = min(sf_liq, sf_vap)
-            iscale.set_scaling_factor(self.enth_flow, sf)
+        if self.is_property_constructed('enth_flow_phase'):
+            for p in self.params.phase_list:
+                if iscale.get_scaling_factor(self.enth_flow_phase[p]) is None:
+                    sf = iscale.get_scaling_factor(self.flow_mass_phase_comp[p, 'H2O'])
+                    sf *= iscale.get_scaling_factor(self.enth_mass_phase[p])
+                    iscale.set_scaling_factor(self.enth_flow_phase[p], sf)
 
         # transforming constraints
-        # property relationships with no index, simple constraint
-        v_str_lst_simple = ['dh_vap', 'pressure_sat']
-        for v_str in v_str_lst_simple:
-            if self.is_property_constructed(v_str):
-                v = getattr(self, v_str)
-                sf = iscale.get_scaling_factor(v, default=1, warning=True)
-                c = getattr(self, 'eq_' + v_str)
-                iscale.constraint_scaling_transform(c, sf)
-
-        # property relationships with phase index, but simple constraint
-        v_str_lst_phase = ['dens_mass_phase', 'flow_vol_phase', 'enth_mass_phase', 'cp_phase']
-        for v_str in v_str_lst_phase:
-            if self.is_property_constructed(v_str):
-                v = getattr(self, v_str)
-                c_phase = getattr(self, 'eq_' + v_str)
-                for (ind, c) in c_phase.items():
-                    sf = iscale.get_scaling_factor(v[ind], default=1, warning=True)
-                    iscale.constraint_scaling_transform(c, sf)
-
-        # property relationship indexed by component
-        v_str_lst_comp = []
-        for v_str in v_str_lst_comp:
-            if self.is_property_constructed(v_str):
-                v_comp = getattr(self, v_str)
-                c_comp = getattr(self, 'eq_' + v_str)
-                for j, c in c_comp.items():
-                    sf = iscale.get_scaling_factor(v_comp[j], default=1, warning=True)
-                    iscale.constraint_scaling_transform(c, sf)
-
-        # property relationship indexed by phase
-        v_str_lst_comp = ['flow_mol_phase_comp', 'mole_frac_phase_comp']
-        for v_str in v_str_lst_comp:
-            if self.is_property_constructed(v_str):
-                v_phase = getattr(self, v_str)
-                c_phase = getattr(self, 'eq_' + v_str)
-                for p, c in c_phase.items():
-                    sf = iscale.get_scaling_factor(v_phase[p, 'H2O'], default=1, warning=True)
-                    iscale.constraint_scaling_transform(c, sf)
-
-        # property relationships indexed by component and phase
-        v_str_lst_phase_comp = []
-        for v_str in v_str_lst_phase_comp:
-            if self.is_property_constructed(v_str):
-                v_comp = getattr(self, v_str)
-                c_comp = getattr(self, 'eq_' + v_str)
-                for j, c in c_comp.items():
-                    sf = iscale.get_scaling_factor(v_comp['Liq', j], default=1, warning=True)
-                    iscale.constraint_scaling_transform(c, sf)
+        for metadata_dic in self.params.get_metadata().properties.values():
+            var_str = metadata_dic['name']
+            if metadata_dic['method'] is not None and self.is_property_constructed(var_str):
+                var = getattr(self, var_str)
+                if isinstance(var, Expression):
+                    continue  # properties that are expressions do not have constraints
+                con = getattr(self, 'eq_' + var_str)
+                for ind in con.keys():
+                    sf = iscale.get_scaling_factor(var[ind], default=1, warning=True)
+                    iscale.constraint_scaling_transform(con[ind], sf)
