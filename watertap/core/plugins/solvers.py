@@ -152,10 +152,8 @@ class IpoptWaterTAP(IPOPT):
             sf = get_scaling_factor(v, default=1)
             if v.lb is not None:
                 v.lb = val((v.lb*sf - bound_relax_factor*max(1, abs(val(v.lb*sf))))/sf)
-                print(f"setting lower bound for {v} to {v.lb}")
             if v.ub is not None:
                 v.ub = val((v.ub*sf + bound_relax_factor*max(1, abs(val(v.ub*sf))))/sf)
-                print(f"setting upper bound for {v} to {v.ub}")
 
     def _reset_bounds(self):
         for v, lb, ub in self._bound_cache:
