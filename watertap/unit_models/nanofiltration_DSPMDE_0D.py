@@ -319,7 +319,7 @@ class NanofiltrationData(UnitModelBlockData):
 
         #3. Effective thickness of membrane, Ak, DOF=1
         self.membrane_thickness_effective = Var(
-            initialize=1.33e-6, # Value used by Labban et al., 2017
+            initialize=1.33e-6,     # Value used by Labban et al., 2017
             domain=NonNegativeReals,
             units=units_meta('length'),
             doc='Effective membrane thickness')
