@@ -1,5 +1,5 @@
 default:
-  recovery_vol:
+  recovery_frac_mass_H2O:
     value: 0.96
     units: dimensionless
     reference: Heap leaching (gold/copper) case study.
