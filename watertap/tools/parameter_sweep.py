@@ -342,7 +342,7 @@ def _interp_nan_values(global_values, global_results):
 
 # ================================================================
 
-def _create_local_output_skeleton(model, sweep_params, num_samples):
+def _create_local_output_skeleton(model, sweep_params, outputs, num_samples):
 
     output_dict = {}
     output_dict["sweep_params"] = {}
@@ -354,9 +354,14 @@ def _create_local_output_skeleton(model, sweep_params, num_samples):
         var_str = sweep_params[key].pyomo_object.name
         output_dict["sweep_params"][var_str] =  _create_component_output_skeleton(var, num_samples)
 
-    # 2. lets deal with the output variables from the pyomo model
-    for pyo_obj in model.component_data_objects((pyo.Var, pyo.Expression, pyo.Objective), active=True):
-        output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
+    if outputs is None:
+        # 2. lets deal with the output variables from the pyomo model
+        for pyo_obj in model.component_data_objects((pyo.Var, pyo.Expression, pyo.Objective), active=True):
+            output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
+    else:
+        for pyo_obj in outputs.values():
+            output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
+
     # for var in variables_in_activated_equalities_set(model.fs):
     #     var_str = var.name
     #     output_dict["outputs"][var_str] = _create_component_output_skeleton(var, num_samples)
@@ -406,36 +411,44 @@ def _update_local_output_dict(model, sweep_params, case_number, sweep_vals,
 
     # Get the outputs from model
     if solver_termination_condition == "optimal":
+        for key in output_dict['outputs'].keys():
+            outcome = model.find_component(key)
+            output_dict["outputs"][key]["value"][case_number] = pyo.value(outcome)
+
         # 1. Variables
-        for var in variables_in_activated_equalities_set(model.fs):
-            output_dict["outputs"][var.name]["value"][case_number] = var.value
+        # for var in variables_in_activated_equalities_set(model.fs):
+        #     output_dict["outputs"][var.name]["value"][case_number] = var.value
 
-        # 2. Expressions
-        for expr in expressions_set(model.fs):
-            output_dict["outputs"][expr.name]["value"][case_number] = pyo.value(expr)
+        # # 2. Expressions
+        # for expr in expressions_set(model.fs):
+        #     output_dict["outputs"][expr.name]["value"][case_number] = pyo.value(expr)
 
-        # 3. Objectives
-        for obj in total_objectives_set(model):
-            output_dict["outputs"][obj.name]["value"][case_number] = pyo.value(obj)
+        # # 3. Objectives
+        # for obj in total_objectives_set(model):
+        #     output_dict["outputs"][obj.name]["value"][case_number] = pyo.value(obj)
 
     else:
+        for key in output_dict['outputs'].keys():
+            outcome = model.find_component(key)
+            output_dict["outputs"][key]["value"][case_number] = np.nan
+
         # 1. Variables: We will set everything to NaNs unless they are an input
-        for var in variables_in_activated_equalities_set(model.fs):
-            if var.name in op_ps_dict.keys():
-                # This conditional exists so that we capture the actual input
-                # values. This is a redundancy since we already capture the
-                # inputs above.
-                output_dict["outputs"][var.name]["value"][case_number] = var.value
-            else:
-                output_dict["outputs"][var.name]["value"][case_number] = np.nan
+        # for var in variables_in_activated_equalities_set(model.fs):
+        #     if var.name in op_ps_dict.keys():
+        #         # This conditional exists so that we capture the actual input
+        #         # values. This is a redundancy since we already capture the
+        #         # inputs above.
+        #         output_dict["outputs"][var.name]["value"][case_number] = var.value
+        #     else:
+        #         output_dict["outputs"][var.name]["value"][case_number] = np.nan
 
-        # 2. Expressions
-        for expr in expressions_set(model.fs):
-            output_dict["outputs"][expr.name]["value"][case_number] = np.nan
+        # # 2. Expressions
+        # for expr in expressions_set(model.fs):
+        #     output_dict["outputs"][expr.name]["value"][case_number] = np.nan
 
-        # 3. Objectives
-        for obj in total_objectives_set(model):
-            output_dict["outputs"][obj.name]["value"][case_number] = np.nan
+        # # 3. Objectives
+        # for obj in total_objectives_set(model):
+        #     output_dict["outputs"][obj.name]["value"][case_number] = np.nan
 
     return None
 
@@ -601,11 +614,18 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
 
     # Initialize space to hold results
     local_num_cases = np.shape(local_values)[0]
-    local_results = np.zeros((local_num_cases, len(outputs)))
-    local_solve_status_list = []
 
     # Create the output skeleton for storing detailed data
-    local_output_dict = _create_local_output_skeleton(model, sweep_params, local_num_cases)
+    local_output_dict = _create_local_output_skeleton(model, sweep_params, outputs, local_num_cases)
+
+    if outputs is None:
+        outputs = {}
+        for key in local_output_dict['outputs'].keys():
+            outputs[key] = model.find_component(key)
+
+    local_results = np.zeros((local_num_cases, len(outputs)))
+
+    local_solve_status_list = []
 
     # ================================================================
     # Run all optimization cases
@@ -711,7 +731,7 @@ def _save_results(sweep_params, outputs, local_values, global_values, local_resu
         comm.Barrier()
 
     # Write a header string for all data files
-    data_header = ','.join(itertools.chain(sweep_params,outputs))
+    data_header = ','.join(itertools.chain(sweep_params,global_output_dict['outputs']))
 
     if debugging_data_dir is not None:
         # Create the local filename and data
@@ -751,7 +771,7 @@ def _save_results(sweep_params, outputs, local_values, global_values, local_resu
 
 # ================================================================
 
-def parameter_sweep(model, sweep_params, outputs, csv_results_file=None, results_fname="output_dict", optimize_function=_default_optimize,
+def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, results_fname="output_dict", optimize_function=_default_optimize,
         optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
         reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
         interpolate_nan_outputs=False, num_samples=None, seed=None):
@@ -774,9 +794,12 @@ def parameter_sweep(model, sweep_params, outputs, csv_results_file=None, results
                       A uniform number of samples ``num_samples`` will be take between
                       the ``lower_limit`` and ``upper_limit``.
 
-        outputs : A dictionary containing "short names" as keys and and Pyomo objects
+        outputs : An optional dictionary containing "short names" as keys and and Pyomo objects
                   on ``model`` whose values to report as values. E.g.,
                   ``outputs['Short/Pretty-print Name'] = model.fs.variable_or_expression_to_report``.
+                  If not provided, i.e., outputs = None, the default behavior is to save all model
+                  variables, parameters, and expressions which provides very thorough results
+                  at the cost of large file sizes. 
 
         csv_results_file (optional) : The path and file name where the results are to be saved;
                                    subdirectories will be created as needed.
