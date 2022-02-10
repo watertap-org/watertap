@@ -29,6 +29,7 @@ class IpoptWaterTAP(IPOPT):
 
     def __init__(self, **kwds):
         kwds["name"] = "ipopt-watertap"
+        self._cleanup_needed = False
         super().__init__(**kwds)
 
     def _presolve(self, *args, **kwds):
@@ -47,9 +48,8 @@ class IpoptWaterTAP(IPOPT):
             self.options["constr_viol_tol"] = 1e-08
 
         if not self._is_user_scaling():
-            self._reset_needed = False
-            super()._presolve(*args, **kwds)
-            return
+            self._cleanup_needed = False
+            return super()._presolve(*args, **kwds)
 
         if self._tee:
             print("ipopt-watertap: Ipopt with user variable scaling and IDAES jacobian constraint scaling")
@@ -69,7 +69,7 @@ class IpoptWaterTAP(IPOPT):
 
         self._model = args[0]
         self._cache_scaling_factors()
-        self._reset_needed = True
+        self._cleanup_needed = True
 
         # NOTE: This function sets the scaling factors on the
         #       constraints. Hence we cache the constraint scaling
@@ -89,21 +89,27 @@ class IpoptWaterTAP(IPOPT):
                 if halt_on_ampl_error == "no" :
                     print("ipopt-watertap: halt_on_ampl_error=no, so continuing with optimization.")
                 else:
+                    self._cleanup()
                     raise RuntimeError("Error in AMPL evaluation.\n"
                             "Run ipopt with halt_on_ampl_error=yes and symbolic_solver_labels=True to see the affected function.")
             else:
                 print("Error in constraint_autoscale_large_jac")
+                self._cleanup()
                 raise
 
-        # this creates the NL file, among other things
-        super()._presolve(*args, **kwds)
+        try:
+            # this creates the NL file, among other things
+            return super()._presolve(*args, **kwds)
+        except:
+            self._cleanup()
+
+    def _cleanup(self):
+        if self._cleanup_needed:
+            self._reset_scaling_factors()
+            del self._model
 
     def _postsolve(self):
-        if self._reset_needed:
-            self._reset_scaling_factors()
-            # remove our reference to the model
-            del self._model
-        del self._reset_needed
+        self._cleanup()
         return super()._postsolve()
 
     def _cache_scaling_factors(self):
