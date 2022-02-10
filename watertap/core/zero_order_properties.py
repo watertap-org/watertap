@@ -109,19 +109,8 @@ class WaterParameterBlockData(PhysicalParameterBlock):
         for j in solute_list:
             self.add_component(str(j), Solute())
 
-        # ---------------------------------------------------------------------
-        # Constant properties (Params)
-        self.cp_mass = Param(initialize=4.184e3,
-                             units=pyunits.J/pyunits.K/pyunits.kg,
-                             domain=PositiveReals,
-                             mutable=True,
-                             doc="Mass specific heat capacity")
-
-        self.dens_mass = Param(initialize=1000,
-                               units=pyunits.kg/pyunits.m**3,
-                               domain=PositiveReals,
-                               mutable=True,
-                               doc="Mass density")
+        # DEfine default vlaue for mass density of solution
+        self.dens_mass_default = 1000*pyunits.kg/pyunits.m**3
 
         # ---------------------------------------------------------------------
         # Set default scaling factors
@@ -140,11 +129,10 @@ class WaterParameterBlockData(PhysicalParameterBlock):
                 })
 
         obj.add_properties(
-            {'flow_vol': {'method': None},
-             'conc_mass_comp': {'method': None},
-             'cp_mass': {'method': '_cp_mass'},
-             'dens_mass': {'method': '_dens_mass'},
-             'flow_mass_comp': {'method': None}})
+            {'flow_mass_comp': {'method': None},
+             'flow_vol': {'method': '_flow_vol'},
+             'conc_mass_comp': {'method': '_conc_mass_comp'},
+             'dens_mass': {'method': '_dens_mass'}})
 
 
 class _WaterStateBlock(StateBlock):
@@ -247,34 +235,32 @@ class WaterStateBlockData(StateBlockData):
         super().build()
 
         # Create state variables
-        self.flow_vol = Var(initialize=1e-3,
-                            domain=PositiveReals,
-                            doc='Total volumetric flowrate',
-                            units=pyunits.m**3/pyunits.s)
-        self.conc_mass_comp = Var(self.params.solute_set,
+        self.flow_mass_comp = Var(self.component_list,
+                                  initialize=1,
                                   domain=PositiveReals,
-                                  initialize=1e-5,
-                                  bounds=(1e-20, 1e3),
-                                  doc='Component mass concentrations',
-                                  units=pyunits.kg/pyunits.m**3)
-
-        # ---------------------------------------------------------------------
-        # Flow and density expressions
-        def rule_flow_mass_comp(blk, j):
-            if j == "H2O":
-                return blk.flow_vol*blk.params.dens_mass
-            else:
-                return blk.flow_vol*blk.conc_mass_comp[j]
-        self.flow_mass_comp = Expression(
-            self.component_list, rule=rule_flow_mass_comp)
+                                  doc='Mass fowrate of each component',
+                                  units=pyunits.kg/pyunits.s)
 
     # -------------------------------------------------------------------------
     # Other properties
-    def _cp_mass(self):
-        add_object_reference(self, "cp_mass", self.params.cp_mass)
+    def _conc_mass_comp(self):
+        def rule_cmc(blk, j):
+            return (blk.flow_mass_comp[j] /
+                    sum(self.flow_mass_comp[k] for k in self.component_list) *
+                    blk.dens_mass)
+        self.conc_mass_comp = Expression(self.component_list,
+                                         rule=rule_cmc)
 
     def _dens_mass(self):
-        add_object_reference(self, "dens_mass", self.params.dens_mass)
+        self.dens_mass = Param(initialize=self.params.dens_mass_default,
+                               units=pyunits.kg/pyunits.m**3,
+                               mutable=True,
+                               doc="Mass density of flow")
+
+    def _flow_vol(self):
+        self.flow_vol = Expression(
+            expr=sum(self.flow_mass_comp[j] for j in self.component_list) /
+            self.dens_mass)
 
     def get_material_flow_terms(blk, p, j):
         return blk.flow_mass_comp[j]
@@ -283,10 +269,7 @@ class WaterStateBlockData(StateBlockData):
         raise NotImplementedError
 
     def get_material_density_terms(blk, p, j):
-        if j == "H2O":
-            return blk.params.dens_mass
-        else:
-            return blk.conc_mass_comp[j]
+        return blk.conc_mass_comp[j]
 
     def get_energy_density_terms(blk, p):
         raise NotImplementedError
@@ -298,8 +281,7 @@ class WaterStateBlockData(StateBlockData):
         return EnergyBalanceType.none
 
     def define_state_vars(blk):
-        return {"flow_vol": blk.flow_vol,
-                "conc_mass_comp": blk.conc_mass_comp}
+        return {"flow_mass_comp": blk.flow_mass_comp}
 
     def define_display_vars(blk):
         return {"Volumetric Flowrate": blk.flow_vol,
@@ -312,26 +294,24 @@ class WaterStateBlockData(StateBlockData):
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
 
-        sf_Q = iscale.get_scaling_factor(self.flow_vol)
-        if sf_Q is None:
-            sf_Q = self.params.default_scaling_factor["flow_vol"]
-            iscale.set_scaling_factor(self.flow_vol, sf_Q)
-
-        for j, v in self.conc_mass_comp.items():
-            sf_c = iscale.get_scaling_factor(self.conc_mass_comp[j])
-            if sf_c is None:
-                try:
-                    sf_c = self.params.default_scaling_factor[
-                        ("conc_mass_comp", j)]
-                except KeyError:
-                    sf_c = self.params.default_scaling_factor["conc_mass_comp"]
-                iscale.set_scaling_factor(self.conc_mass_comp[j], sf_c)
+        d_sf_Q = self.params.default_scaling_factor["flow_vol"]
+        d_sf_c = self.params.default_scaling_factor["conc_mass_comp"]
 
         for j, v in self.flow_mass_comp.items():
             if iscale.get_scaling_factor(v) is None:
-                if j == "H2O":
-                    sf_c = 1e-3
-                else:
-                    sf_c = iscale.get_scaling_factor(
-                        self.conc_mass_comp[j], default=1e2, warning=True)
-                iscale.set_scaling_factor(v, sf_Q*sf_c)
+                iscale.set_scaling_factor(v, d_sf_Q*d_sf_c)
+
+        if self.is_property_constructed("flow_vol"):
+            if iscale.get_scaling_factor(self.flow_vol) is None:
+                iscale.set_scaling_factor(self.flow_vol, d_sf_Q)
+
+        if self.is_property_constructed("conc_mass_comp"):
+            for j, v in self.conc_mass_comp.items():
+                sf_c = iscale.get_scaling_factor(self.conc_mass_comp[j])
+                if sf_c is None:
+                    try:
+                        sf_c = self.params.default_scaling_factor[
+                            ("conc_mass_comp", j)]
+                    except KeyError:
+                        sf_c = d_sf_c
+                    iscale.set_scaling_factor(self.conc_mass_comp[j], sf_c)
