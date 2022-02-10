@@ -426,7 +426,19 @@ def test_seawater_data():
 
     calculate_scaling_factors(m)
 
+    # check if any variables are badly scaled
+    #       pre-initialize (all good)
+    badly_scaled_var_list = list(badly_scaled_var_generator(m))
+    [print(i[0],i[1]) for i in badly_scaled_var_list]
+    assert len(badly_scaled_var_list) == 0
+
     stream.initialize()
+
+    # check if any variables are badly scaled
+    #   post-initialize (bad)
+    badly_scaled_var_list = list(badly_scaled_var_generator(m))
+    [print(i[0],i[1]) for i in badly_scaled_var_list]
+    assert len(badly_scaled_var_list) == 0
 
     results = solver.solve(m)
     assert_optimal_termination(results)
