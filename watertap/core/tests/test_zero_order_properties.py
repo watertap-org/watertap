@@ -70,12 +70,6 @@ def test_parameter_block(model):
 
     assert model.fs.water_props._state_block_class is WaterStateBlock
 
-    assert isinstance(model.fs.water_props.cp_mass, Param)
-    assert model.fs.water_props.cp_mass.value == 4.184e3
-
-    assert isinstance(model.fs.water_props.dens_mass, Param)
-    assert model.fs.water_props.dens_mass.value == 1000
-
 
 @pytest.mark.unit
 def test_build_state_block(model):
@@ -92,14 +86,11 @@ def test_build_state_block(model):
 
 @pytest.mark.unit
 def test_state_block_basic_attributes(model):
-    assert isinstance(model.fs.state[0].flow_vol, Var)
-    assert isinstance(model.fs.state[0].conc_mass_comp, Var)
+    assert isinstance(model.fs.state[0].flow_mass_comp, Var)
 
     # All variables are stale, so DoF should be 0
     assert len(unused_variables_set(model.fs.state[0])) == 4
     assert degrees_of_freedom(model.fs.state[0]) == 0
-
-    assert isinstance(model.fs.state[0].flow_mass_comp, Expression)
 
     for p in model.fs.state[0].phase_list:
 
@@ -107,12 +98,8 @@ def test_state_block_basic_attributes(model):
             assert (model.fs.state[0].get_material_flow_terms(p, j) is
                     model.fs.state[0].flow_mass_comp[j])
 
-            if j == "H2O":
-                assert (model.fs.state[0].get_material_density_terms(p, j) is
-                        model.fs.water_props.dens_mass)
-            else:
-                assert (model.fs.state[0].get_material_density_terms(p, j) is
-                        model.fs.state[0].conc_mass_comp[j])
+            assert (model.fs.state[0].get_material_density_terms(p, j) is
+                    model.fs.state[0].conc_mass_comp[j])
 
     assert (model.fs.state[0].default_material_balance_type() is
             MaterialBalanceType.componentTotal)
@@ -121,8 +108,7 @@ def test_state_block_basic_attributes(model):
             EnergyBalanceType.none)
 
     assert (model.fs.state[0].define_state_vars() == {
-        "flow_vol": model.fs.state[0].flow_vol,
-        "conc_mass_comp": model.fs.state[0].conc_mass_comp})
+        "flow_mass_comp": model.fs.state[0].flow_mass_comp})
 
     assert (model.fs.state[0].define_display_vars() == {
         "Volumetric Flowrate": model.fs.state[0].flow_vol,
@@ -134,8 +120,9 @@ def test_state_block_basic_attributes(model):
 
 @pytest.mark.unit
 def test_state_block_other_properties(model):
-    assert model.fs.state[0].cp_mass is model.fs.water_props.cp_mass
-    assert model.fs.state[0].dens_mass is model.fs.water_props.dens_mass
+    assert isinstance(model.fs.state[0].dens_mass, Param)
+    assert isinstance(model.fs.state[0].conc_mass_comp, Expression)
+    assert isinstance(model.fs.state[0].flow_vol, Expression)
 
 
 @pytest.mark.unit
@@ -145,10 +132,11 @@ def test_state_block_scaling(model):
 
     iscale.calculate_scaling_factors(model)
 
-    model.fs.state[0].scaling_factor.display()
-    assert len(model.fs.state[0].scaling_factor) == 8
+    assert len(model.fs.state[0].scaling_factor) == 9
 
     assert model.fs.state[0].scaling_factor[model.fs.state[0].flow_vol] == 1e3
+    assert model.fs.state[0].scaling_factor[
+        model.fs.state[0].conc_mass_comp["H2O"]] == 100
     assert model.fs.state[0].scaling_factor[
         model.fs.state[0].conc_mass_comp["A"]] == 100
     assert model.fs.state[0].scaling_factor[
@@ -157,11 +145,11 @@ def test_state_block_scaling(model):
         model.fs.state[0].conc_mass_comp["C"]] == 100
 
     assert model.fs.state[0].scaling_factor[
-        model.fs.state[0].flow_mass_comp["H2O"]] == 1
+        model.fs.state[0].flow_mass_comp["H2O"]] == 1e5
     assert model.fs.state[0].scaling_factor[
         model.fs.state[0].flow_mass_comp["A"]] == 1e5
     assert model.fs.state[0].scaling_factor[
-        model.fs.state[0].flow_mass_comp["B"]] == 5e1
+        model.fs.state[0].flow_mass_comp["B"]] == 1e5
     assert model.fs.state[0].scaling_factor[
         model.fs.state[0].flow_mass_comp["C"]] == 1e5
 
@@ -170,8 +158,10 @@ def test_state_block_scaling(model):
 def test_unit_consistency(model):
     assert_units_consistent(model)
 
-    for e in model.fs.state[0].flow_mass_comp.values():
-        assert_units_equivalent(e, pyunits.kg/pyunits.s)
+    for e in model.fs.state[0].flow_vol.values():
+        assert_units_equivalent(e, pyunits.m**3/pyunits.s)
+    for e in model.fs.state[0].conc_mass_comp.values():
+        assert_units_equivalent(e, pyunits.kg/pyunits.m**3)
 
 
 @pytest.mark.component
@@ -184,10 +174,10 @@ def test_initialize_state_block(model):
     assert degrees_of_freedom(model) == 0
     inter_fixed_vars = fixed_variables_set(model)
     for v in inter_fixed_vars:
-        assert v.name in ['fs.state[0].flow_vol',
-                          'fs.state[0].conc_mass_comp[A]',
-                          'fs.state[0].conc_mass_comp[B]',
-                          'fs.state[0].conc_mass_comp[C]']
+        assert v.name in ['fs.state[0].flow_mass_comp[H2O]',
+                          'fs.state[0].flow_mass_comp[A]',
+                          'fs.state[0].flow_mass_comp[B]',
+                          'fs.state[0].flow_mass_comp[C]']
 
     model.fs.state.release_state(flags)
 
