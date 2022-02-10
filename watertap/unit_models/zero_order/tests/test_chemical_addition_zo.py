@@ -42,7 +42,7 @@ def test_no_subtype():
         default={"solute_list": ["sulfur", "toc", "tss"]})
 
     with pytest.raises(ConfigurationError,
-                       match="fs.unit - zero-order chemcial addition "
+                       match="fs.unit - zero-order chemical addition "
                        "operations require the process_subtype configuration "
                        "argument to be set"):
         m.fs.unit = ChemicalAdditionZO(default={

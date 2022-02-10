@@ -40,7 +40,7 @@ class ChemicalAdditionZOData(ZeroOrderBaseData):
 
         if self.config.process_subtype is None:
             raise ConfigurationError(
-                f"{self.name} - zero-order chemcial addition operations "
+                f"{self.name} - zero-order chemical addition operations "
                 "require the process_subtype configuration argument to be set")
 
         build_pt(self)

@@ -71,12 +71,12 @@ def constant_intensity(self):
 
 def pump_electricity(self, flow_rate):
     """
-    Helper method for calcuating implementing electricity demand based on a
+    Helper method for calculating electricity demand based on a
     pump flow equation.
 
     E[t] = (0.746 * Q[t] * H / (3960 * eta_pump * eta_motor))
 
-    Here Q is the volumeric flowrate to be used to calcuate electricity demand,
+    Here Q is the volumetric flowrate to be used to calculate electricity demand,
     H is the lift height for the pump and eta_pump and eta_motor are the
     efficiencies of the pump and motor respectively.
 
@@ -88,7 +88,7 @@ def pump_electricity(self, flow_rate):
     self.lift_height = Param(initialize=100,
                              units=pyunits.feet,
                              mutable=True,
-                             doc="Lift hegiht for pump")
+                             doc="Lift height for pump")
     self.eta_pump = Param(initialize=0.9,
                           units=pyunits.dimensionless,
                           mutable=True,
