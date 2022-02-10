@@ -16,7 +16,8 @@ from pyomo.core.base.block import _BlockData
 from pyomo.core.kernel.block import IBlock
 from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
 
-from idaes.core.util.scaling import (constraint_autoscale_large_jac,
+import idaes.core.util.scaling as iscale
+from idaes.core.util.scaling import (
         get_scaling_factor, set_scaling_factor, unset_scaling_factor)
 from idaes.logger import getLogger
 
@@ -77,12 +78,12 @@ class IpoptWaterTAP(IPOPT):
         #       so that repeated calls to solve change the scaling
         #       each time based on the initial values, just like in Ipopt.
         try:
-            constraint_autoscale_large_jac(self._model,
+            iscale.constraint_autoscale_large_jac(self._model,
                     ignore_constraint_scaling=ignore_constraint_scaling,
                     ignore_variable_scaling=ignore_variable_scaling,
                     max_grad=max_grad,
                     min_scale=min_scale)
-        except AssertionError as err:
+        except Exception as err:
             if str(err) == "Error in AMPL evaluation":
                 print("ipopt-watertap: Issue in AMPL function evaluation; Jacobian constraint scaling not applied.")
                 halt_on_ampl_error = self.options.get("halt_on_ampl_error", "yes")
@@ -102,6 +103,7 @@ class IpoptWaterTAP(IPOPT):
             return super()._presolve(*args, **kwds)
         except:
             self._cleanup()
+            raise
 
     def _cleanup(self):
         if self._cleanup_needed:
