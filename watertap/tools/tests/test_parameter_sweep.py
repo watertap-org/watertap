@@ -505,7 +505,7 @@ class TestParallelManager():
         h5_fname = "output_dict"
 
         # Call the parameter_sweep function
-        parameter_sweep(m, sweep_params, outputs,
+        parameter_sweep(m, sweep_params, outputs=outputs,
                 csv_results_file = results_file,
                 results_fname = h5_fname,
                 optimize_function=_optimization,
@@ -533,15 +533,7 @@ class TestParallelManager():
 
         # Check for the h5 output
         if rank == 0:
-            truth_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
-                                                      'units': 'non-dimensional',
-                                                      'upper bound': 0,
-                                                      'value': np.array([0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9])},
-                                      'fs.input[b]': {'lower bound': 0,
-                                                      'units': 'non-dimensional',
-                                                      'upper bound': 0,
-                                                      'value': np.array([0.  , 0.25, 0.5 , 0.  , 0.25, 0.5 , 0.  , 0.25, 0.5 ])},
-                                      'fs.output[c]': {'lower bound': 0,
+            truth_dict = {'outputs': {'fs.output[c]': {'lower bound': 0,
                                                        'units': 'non-dimensional',
                                                        'upper bound': 0,
                                                        'value': np.array([0.2, 0.2, np.nan, 1., 1., np.nan, np.nan, np.nan, np.nan])},
@@ -549,16 +541,7 @@ class TestParallelManager():
                                                        'units': 'non-dimensional',
                                                        'upper bound': 0,
                                                        'value': np.array([0.  , 0.75,  np.nan, 0., 0.75,  np.nan, np.nan, np.nan, np.nan])},
-                                      'fs.performance': {'value': np.array([0.2 , 0.95,  np.nan, 1., 1.75,  np.nan, np.nan,  np.nan, np.nan])},
-                                      'fs.slack[ab_slack]': {'lower bound': 0,
-                                                             'units': 'non-dimensional',
-                                                             'upper bound': 0,
-                                                             'value': np.array([ 0.,  0., np.nan,  0.,  0., np.nan, np.nan, np.nan, np.nan])},
-                                      'fs.slack[cd_slack]': {'lower bound': 0,
-                                                             'units': 'non-dimensional',
-                                                             'upper bound': 0,
-                                                             'value': np.array([ 0.,  0., np.nan,  0.,  0., np.nan, np.nan, np.nan, np.nan])},
-                                      'objective': {'value': np.array([0.2 , 0.95,  np.nan, 1., 1.75, np.nan, np.nan, np.nan, np.nan])}},
+                                      'fs.performance': {'value': np.array([0.2 , 0.95,  np.nan, 1., 1.75,  np.nan, np.nan,  np.nan, np.nan])}},
                           'solve_status': ['optimal',
                                            'optimal',
                                            'infeasible',
@@ -582,9 +565,9 @@ class TestParallelManager():
             _assert_dictionary_correctness(truth_dict, read_dict)
 
             # Check this new dictionary against the original logging system
-            assert np.allclose(read_dict['outputs']['fs.input[a]']['value'], data[:,0], equal_nan=True)
+            # assert np.allclose(read_dict['outputs']['fs.input[a]']['value'], data[:,0], equal_nan=True)
             assert np.allclose(read_dict['sweep_params']['fs.input[a]']['value'], data[:,0], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.input[b]']['value'], data[:,1], equal_nan=True)
+            # assert np.allclose(read_dict['outputs']['fs.input[b]']['value'], data[:,1], equal_nan=True)
             assert np.allclose(read_dict['sweep_params']['fs.input[b]']['value'], data[:,1], equal_nan=True)
             assert np.allclose(read_dict['outputs']['fs.output[c]']['value'], data[:,2], equal_nan=True)
             assert np.allclose(read_dict['outputs']['fs.output[d]']['value'], data[:,3], equal_nan=True)
@@ -610,7 +593,7 @@ class TestParallelManager():
         h5_fname = "output_dict_optimize"
 
         # Call the parameter_sweep function
-        parameter_sweep(m, sweep_params, outputs,
+        parameter_sweep(m, sweep_params, outputs=outputs,
                 csv_results_file = results_file,
                 results_fname = h5_fname,
                 optimize_function=_optimization,
@@ -639,15 +622,7 @@ class TestParallelManager():
         # Check the h5
         if rank == 0:
 
-            truth_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
-                                                      'units': 'non-dimensional',
-                                                      'upper bound': 0,
-                                                      'value': np.array([0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9])},
-                                      'fs.input[b]': {'lower bound': 0,
-                                                      'units': 'non-dimensional',
-                                                      'upper bound': 0,
-                                                      'value': np.array([0., 0.25, 0.5, 0., 0.25, 0.5 , 0., 0.25, 0.5 ])},
-                                      'fs.output[c]': {'lower bound': 0,
+            truth_dict = {'outputs': {'fs.output[c]': {'lower bound': 0,
                                                        'units': 'non-dimensional',
                                                        'upper bound': 0,
                                                        'value': np.array([0.20000001, 0.20000001, 0.20000001, 1., 1., 1., 1., 1., 1.])},
@@ -656,14 +631,6 @@ class TestParallelManager():
                                                        'upper bound': 0,
                                                        'value': np.array([9.98580690e-09, 7.50000010e-01, 1.00000000e+00, 9.99872731e-09, 7.50000010e-01, 1.00000000e+00, 9.99860382e-09, 7.50000010e-01, 1.])},
                                       'fs.performance': {'value': np.array([0.20000002, 0.95000002, 1.20000001, 1.00000001, 1.75000001, 2., 1.00000001, 1.75000001, 2.])},
-                                      'fs.slack[ab_slack]': {'lower bound': 0,
-                                                             'units': 'non-dimensional',
-                                                             'upper bound': 0,
-                                                             'value': np.array([0., 0., 0., 0., 0., 0., 0.79999999, 0.79999999, 0.79999999])},
-                                      'fs.slack[cd_slack]': {'lower bound': 0,
-                                                             'units': 'non-dimensional',
-                                                             'upper bound': 0,
-                                                             'value': np.array([0., 0., 0.49999999, 0., 0., 0.49999999, 0., 0., 0.49999999])},
                                       'objective': {'value': np.array([ 2.00000020e-01,  9.50000020e-01, -4.98799990e+02,  1.00000001e+00,  1.75000001e+00, -4.97999990e+02, -7.98999990e+02, -7.98249990e+02, 2.0 - 1000.*((2.*0.9 - 1.) + (3.*0.5 - 1.))])}},
                           'solve_status': ['optimal',
                                            'optimal',
@@ -688,9 +655,9 @@ class TestParallelManager():
             _assert_dictionary_correctness(truth_dict, read_dict)
 
             # Check this new dictionary against the original logging system
-            assert np.allclose(read_dict['outputs']['fs.input[a]']['value'], data[:,0], equal_nan=True)
+            # assert np.allclose(read_dict['outputs']['fs.input[a]']['value'], data[:,0], equal_nan=True)
             assert np.allclose(read_dict['sweep_params']['fs.input[a]']['value'], data[:,0], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.input[b]']['value'], data[:,1], equal_nan=True)
+            # assert np.allclose(read_dict['outputs']['fs.input[b]']['value'], data[:,1], equal_nan=True)
             assert np.allclose(read_dict['sweep_params']['fs.input[b]']['value'], data[:,1], equal_nan=True)
             assert np.allclose(read_dict['outputs']['fs.output[c]']['value'], data[:,2], equal_nan=True)
             assert np.allclose(read_dict['outputs']['fs.output[d]']['value'], data[:,3], equal_nan=True)
@@ -709,15 +676,15 @@ class TestParallelManager():
 
         sweep_params = {'input_a' : (m.fs.input['a'], 0.1, 0.9, 3),
                         'input_b' : (m.fs.input['b'], 0.0, 0.5, 3)}
-        outputs = {'output_c':m.fs.output['c'],
-                   'output_d':m.fs.output['d'],
-                   'performance':m.fs.performance,
-                   'objective':m.objective}
+        # outputs = {'output_c':m.fs.output['c'],
+        #            'output_d':m.fs.output['d'],
+        #            'performance':m.fs.performance,
+        #            'objective':m.objective}
         results_file = os.path.join(tmp_path, 'global_results_recover.csv')
         h5_fname = "output_dict_recover"
 
         # Call the parameter_sweep function
-        parameter_sweep(m, sweep_params, outputs,
+        parameter_sweep(m, sweep_params, outputs=None,
                 csv_results_file = results_file,
                 results_fname = h5_fname,
                 optimize_function=_optimization,
@@ -737,20 +704,13 @@ class TestParallelManager():
             data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
 
             # Compare the last row of the imported data to truth
-            truth_data = [ 0.9, 0.5, 1.0, 1.0, 2.0, 2.0 - 10.*((2.*0.9 - 1.) + (3.*0.5 - 1.))]
+            # truth_data = [ 0.9, 0.5, 1.0, 1.0, 2.0, 2.0 - 10.*((2.*0.9 - 1.) + (3.*0.5 - 1.))]
+            truth_data = [  0.9,   0.5, -11. ,   0.9,   0.5,   1. ,   1. ,   0.8,   0.5,   2. ]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
         if rank == 0:
 
-            truth_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
-                                                      'units': 'non-dimensional',
-                                                      'upper bound': 0,
-                                                      'value': np.array([0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9])},
-                                      'fs.input[b]': {'lower bound': 0,
-                                                      'units': 'non-dimensional',
-                                                      'upper bound': 0,
-                                                      'value': np.array([0., 0.25, 0.5, 0., 0.25, 0.5, 0., 0.25, 0.5 ])},
-                                      'fs.output[c]': {'lower bound': 0,
+            truth_dict = {'outputs': {'fs.output[c]': {'lower bound': 0,
                                                        'units': 'non-dimensional',
                                                        'upper bound': 0,
                                                        'value': np.array([0.2, 0.2, 0.20000001, 1., 1., 1., 1., 1., 1.])},
@@ -791,14 +751,14 @@ class TestParallelManager():
             _assert_dictionary_correctness(truth_dict, read_dict)
 
             # Check this new dictionary against the original logging system
-            assert np.allclose(read_dict['outputs']['fs.input[a]']['value'], data[:,0], equal_nan=True)
+            # assert np.allclose(read_dict['outputs']['fs.input[a]']['value'], data[:,0], equal_nan=True)
             assert np.allclose(read_dict['sweep_params']['fs.input[a]']['value'], data[:,0], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.input[b]']['value'], data[:,1], equal_nan=True)
+            # assert np.allclose(read_dict['outputs']['fs.input[b]']['value'], data[:,1], equal_nan=True)
             assert np.allclose(read_dict['sweep_params']['fs.input[b]']['value'], data[:,1], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.output[c]']['value'], data[:,2], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.output[d]']['value'], data[:,3], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.performance']['value'], data[:,4], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['objective']['value'], data[:,5], equal_nan=True)
+            assert np.allclose(read_dict['outputs']['fs.output[c]']['value'], data[:,5], equal_nan=True)
+            assert np.allclose(read_dict['outputs']['fs.output[d]']['value'], data[:,6], equal_nan=True)
+            assert np.allclose(read_dict['outputs']['fs.performance']['value'], data[:,9], equal_nan=True)
+            assert np.allclose(read_dict['outputs']['objective']['value'], data[:,2], equal_nan=True)
 
 
     @pytest.mark.component
@@ -812,15 +772,15 @@ class TestParallelManager():
 
         sweep_params = {'input_a' : (m.fs.input['a'], 0.1, 0.9, 3),
                         'input_b' : (m.fs.input['b'], 0.0, 0.5, 3)}
-        outputs = {'output_c':m.fs.output['c'],
-                   'output_d':m.fs.output['d'],
-                   'performance':m.fs.performance,
-                   'objective':m.objective}
+        # outputs = {'output_c':m.fs.output['c'],
+        #            'output_d':m.fs.output['d'],
+        #            'performance':m.fs.performance,
+        #            'objective':m.objective}
         results_file = os.path.join(tmp_path, 'global_results_bad_recover.csv')
         h5_fname = "output_dict_bad_recover"
 
         # Call the parameter_sweep function
-        parameter_sweep(m, sweep_params, outputs,
+        parameter_sweep(m, sweep_params, outputs=None,
                 csv_results_file = results_file,
                 results_fname = h5_fname,
                 optimize_function=_optimization,
@@ -840,19 +800,11 @@ class TestParallelManager():
             data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
 
             # Compare the last row of the imported data to truth
-            truth_data = [ 0.9, 0.5, np.nan, np.nan, np.nan, np.nan]
+            truth_data = [ 0.9, 0.5, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
 
         if rank == 0:
-            truth_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
-                                                      'units': 'non-dimensional',
-                                                      'upper bound': 0,
-                                                      'value': np.array([0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9])},
-                                      'fs.input[b]': {'lower bound': 0,
-                                                      'units': 'non-dimensional',
-                                                      'upper bound': 0,
-                                                      'value': np.array([0.  , 0.25, 0.5 , 0.  , 0.25, 0.5 , 0.  , 0.25, 0.5 ])},
-                                      'fs.output[c]': {'lower bound': 0,
+            truth_dict = {'outputs': {'fs.output[c]': {'lower bound': 0,
                                                        'units': 'non-dimensional',
                                                        'upper bound': 0,
                                                        'value': np.array([0.2, 0.2, np.nan, 1. , 1. , np.nan, np.nan, np.nan, np.nan])},
@@ -893,14 +845,14 @@ class TestParallelManager():
             _assert_dictionary_correctness(truth_dict, read_dict)
 
             # Check this new dictionary against the original logging system
-            assert np.allclose(read_dict['outputs']['fs.input[a]']['value'], data[:,0], equal_nan=True)
+            # assert np.allclose(read_dict['outputs']['fs.input[a]']['value'], data[:,0], equal_nan=True)
             assert np.allclose(read_dict['sweep_params']['fs.input[a]']['value'], data[:,0], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.input[b]']['value'], data[:,1], equal_nan=True)
+            # assert np.allclose(read_dict['outputs']['fs.input[b]']['value'], data[:,1], equal_nan=True)
             assert np.allclose(read_dict['sweep_params']['fs.input[b]']['value'], data[:,1], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.output[c]']['value'], data[:,2], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.output[d]']['value'], data[:,3], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['fs.performance']['value'], data[:,4], equal_nan=True)
-            assert np.allclose(read_dict['outputs']['objective']['value'], data[:,5], equal_nan=True)
+            assert np.allclose(read_dict['outputs']['fs.output[c]']['value'], data[:,5], equal_nan=True)
+            assert np.allclose(read_dict['outputs']['fs.output[d]']['value'], data[:,6], equal_nan=True)
+            assert np.allclose(read_dict['outputs']['fs.performance']['value'], data[:,9], equal_nan=True)
+            assert np.allclose(read_dict['outputs']['objective']['value'], data[:,2], equal_nan=True)
 
 
 def _optimization(m, relax_feasibility=False):
