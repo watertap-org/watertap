@@ -22,13 +22,14 @@ from idaes.core.util import get_solver
 from pyomo.environ import (check_optimal_termination,
                            ConcreteModel,
                            Constraint,
+                           Param,
                            units as pyunits,
                            value,
                            Var)
 from pyomo.util.check_units import assert_units_consistent
 
-from watertap.core import \
-    constant_intensity, WaterParameterBlock, ZeroOrderBaseData
+from watertap.core import (constant_intensity, pump_electricity,
+                           WaterParameterBlock, ZeroOrderBaseData)
 
 solver = get_solver()
 
@@ -126,6 +127,100 @@ Unit : fs.unit                                                             Time:
     Key                   : Value  : Fixed : Bounds
        Electricity Demand : 420.00 : False : (None, None)
     Electricity Intensity : 10.000 :  True : (None, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+    Empty DataFrame
+    Columns: []
+    Index: []
+====================================================================================
+"""
+
+        assert output == stream.getvalue()
+
+
+class TestPumpElectricity:
+    @pytest.fixture(scope="module")
+    def model(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.water_props = WaterParameterBlock(
+            default={"solute_list": ["A", "B", "C"]})
+
+        m.fs.unit = DerivedZO(
+            default={"property_package": m.fs.water_props})
+
+        m.fs.unit.flow = Param(m.fs.time,
+                               initialize=1,
+                               units=pyunits.gallon/pyunits.minute)
+
+        pump_electricity(m.fs.unit, m.fs.unit.flow)
+
+        return m
+
+    @pytest.mark.unit
+    def test_build(self, model):
+        assert isinstance(model.fs.unit.electricity, Var)
+        assert model.fs.unit.electricity.is_indexed()
+
+        assert isinstance(model.fs.unit.lift_height, Param)
+        assert value(model.fs.unit.lift_height) == 100
+        assert isinstance(model.fs.unit.eta_pump, Param)
+        assert value(model.fs.unit.eta_pump) == 0.9
+        assert isinstance(model.fs.unit.eta_motor, Param)
+        assert value(model.fs.unit.eta_motor) == 0.9
+
+        assert isinstance(model.fs.unit.electricity_consumption, Constraint)
+        assert model.fs.unit.electricity_consumption.is_indexed()
+
+    @pytest.mark.unit
+    def test_private_attributes(self, model):
+        assert model.fs.unit._tech_type is None
+        assert model.fs.unit._has_recovery_removal is False
+        assert model.fs.unit._initialize is None
+        assert model.fs.unit._scaling is None
+        assert model.fs.unit._get_Q is get_Q
+        assert model.fs.unit._perf_var_dict == {
+            "Electricity Demand": model.fs.unit.electricity}
+
+    @pytest.mark.unit
+    def test_degrees_of_freedom(self, model):
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.component
+    def test_unit_consistency(self, model):
+        assert_units_consistent(model)
+
+    @pytest.mark.component
+    def test_solve(self, model):
+        results = solver.solve(model)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+
+    @pytest.mark.component
+    def test_solution(self, model):
+        assert pytest.approx(2.32479e-2, rel=1e-5) == value(
+            model.fs.unit.electricity[0])
+
+    @pytest.mark.component
+    def test_report(self, model):
+        stream = StringIO()
+
+        model.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                : Value    : Fixed : Bounds
+    Electricity Demand : 0.023248 : False : (None, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
