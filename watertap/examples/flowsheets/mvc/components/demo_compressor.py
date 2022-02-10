@@ -8,7 +8,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-from watertap.examples.flowsheets.mvc.components.compressor_cv import Compressor
+from watertap.examples.flowsheets.mvc.components.compressor import Compressor
 import watertap.property_models.water_prop_pack as props
 
 def main():
@@ -34,9 +34,9 @@ def main():
     m.fs.compressor.efficiency.fix(0.8)
 
 
-    m.fs.compressor.eq_compressor_work.pprint()
-    m.fs.compressor.control_volume.enthalpy_balances.pprint()
-    assert False
+    # m.fs.compressor.eq_compressor_work.pprint()
+    # m.fs.compressor.control_volume.enthalpy_balances.pprint()
+    # assert False
 
     # solving
     assert_units_consistent(m)
@@ -47,9 +47,8 @@ def main():
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
 
-    m.fs.compressor.report()
+    # m.fs.compressor.report()
 
-    m.fs.compressor.work.display()
     m.fs.compressor.control_volume.work.display()
     return m
 

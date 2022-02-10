@@ -80,7 +80,7 @@ class CompressorData(UnitModelBlockData):
     **default** - None.
     **Valid values:** {
     see property package for documentation.}"""))
-    CONFIG.declare("material_balance_type", ConfigValue(
+    CONFIG.declare("material_balance_type", ConfigValue( # TODO: update default material balance type
         default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
@@ -139,11 +139,11 @@ class CompressorData(UnitModelBlockData):
             units=pyunits.dimensionless
         )
 
-        self.work = Var(
-            initialize=500,
-            bounds=(1,5e6),
-            units=pyunits.kg*pyunits.m**2*pyunits.s**-3 # Watts
-        )
+        # self.work = Var(
+        #     initialize=500,
+        #     bounds=(1,5e6),
+        #     units=pyunits.kg*pyunits.m**2*pyunits.s**-3 # Watts
+        # )
 
         self.efficiency = Var(
             initialize=0.8,
@@ -151,25 +151,33 @@ class CompressorData(UnitModelBlockData):
             units=pyunits.dimensionless
         )
 
+        # Build control volume
+        self.control_volume = ControlVolume0DBlock(default={
+            "dynamic": False,
+            "has_holdup": False,
+            "property_package": self.config.property_package,
+            "property_package_args": self.config.property_package_args})
+
+        self.control_volume.add_state_blocks(has_phase_equilibrium=False)
+
+        self.control_volume.add_material_balances(
+            balance_type=MaterialBalanceType.componentPhase,
+            has_mass_transfer=False)
+
+        self.control_volume.add_energy_balances(
+            balance_type=self.config.energy_balance_type,
+            has_work_transfer=True)
+
+        self.control_volume.add_momentum_balances(
+            balance_type=self.config.momentum_balance_type,
+            has_pressure_change=True)
 
         # Add state blocks for inlet and outlet
         # These include the state variables and any other properties on demand
-        # Add inlet block
+        # Add isentropic outlet block
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package
-        tmp_dict["defined_state"] = True  # inlet block is an inlet
-        self.properties_in = self.config.property_package.state_block_class(
-            self.flowsheet().config.time,  # time domain for the state block, just 0 in this case
-            doc="Material properties of inlet",
-            default=tmp_dict)
-        # Add outlet block
-        tmp_dict["defined_state"] = False  # outlet block is not an inlet
-        self.properties_out = self.config.property_package.state_block_class(
-            self.flowsheet().config.time,
-            doc="Material properties of outlet",
-            default=tmp_dict)
-        # Add isentropic outlet block
         tmp_dict["defined_state"] = False # isentropic outlet is not an inlet
         self.properties_isentropic_out = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
@@ -177,43 +185,48 @@ class CompressorData(UnitModelBlockData):
             default=tmp_dict)
 
         # Add ports - oftentimes users interact with these rather than the state blocks
-        self.add_port(name='inlet', block=self.properties_in)
-        self.add_port(name='outlet', block=self.properties_out)
-        #self.add_port(name='isentropic_outlet', block=self.properties_isentropic_out)
+        self.add_port(name='inlet', block=self.control_volume.properties_in)
+        self.add_port(name='outlet', block=self.control_volume.properties_out)
+
+        # References for control volume
+        # pressure change
+        # if (self.config.has_pressure_change is True and
+        #         self.config.momentum_balance_type != 'none'):
+        #     self.deltaP = Reference(self.control_volume.deltaP)
 
         # Add constraints
-        @self.Constraint(self.config.property_package.phase_list, doc="Mass balance for inlet/outlet")
-        def eq_mass_balance(b, p):
-            return (b.properties_in[0].flow_mass_phase_comp[p, 'H2O']
-                    == b.properties_out[0].flow_mass_phase_comp[p, 'H2O'])
+        # @self.Constraint(self.config.property_package.phase_list, doc="Mass balance for inlet/outlet")
+        # def eq_mass_balance(b, p):
+        #     return (b.control_volume.properties_in[0].flow_mass_phase_comp[p, 'H2O']
+        #             == b.control_volume.properties_out[0].flow_mass_phase_comp[p, 'H2O'])
 
         @self.Constraint(self.config.property_package.phase_list, doc="Mass balance for inlet/isentropic outlet")
         def eq_mass_balance_isentropic(b, p):
-            return (b.properties_in[0].flow_mass_phase_comp[p, 'H2O']
+            return (b.control_volume.properties_in[0].flow_mass_phase_comp[p, 'H2O']
                     == b.properties_isentropic_out[0].flow_mass_phase_comp[p, 'H2O'])
 
         @self.Constraint(doc="Pressure ratio")
         def eq_pressure_ratio(b):
-            return b.properties_in[0].pressure*b.pressure_ratio == b.properties_out[0].pressure
+            return b.control_volume.properties_in[0].pressure*b.pressure_ratio == b.control_volume.properties_out[0].pressure
 
         @self.Constraint(doc="Isentropic pressure")
         def eq_isentropic_pressure(b):
-            return b.properties_isentropic_out[0].pressure == b.properties_out[0].pressure
+            return b.properties_isentropic_out[0].pressure == b.control_volume.properties_out[0].pressure
 
         @self.Constraint(doc="Isentropic temperature")
         def eq_isentropic_temperature(b):
             gamma = 1.3 # change to specific heat ratio
-            return b.properties_isentropic_out[0].temperature == b.properties_in[0].temperature * b.pressure_ratio ** (1-1/gamma)
+            return b.properties_isentropic_out[0].temperature == b.control_volume.properties_in[0].temperature * b.pressure_ratio ** (1-1/gamma)
 
         @self.Constraint(doc="Energy balance/efficiency definition")
         def eq_efficiency(b):
-            return b.efficiency*(b.properties_out[0].enth_mass_phase['Vap'] - b.properties_in[0].enth_mass_phase['Vap'])\
-                   == b.properties_isentropic_out[0].enth_mass_phase['Vap'] - b.properties_in[0].enth_mass_phase['Vap']
+            return b.efficiency*(b.control_volume.properties_out[0].enth_mass_phase['Vap'] - b.control_volume.properties_in[0].enth_mass_phase['Vap'])\
+                   == b.properties_isentropic_out[0].enth_mass_phase['Vap'] - b.control_volume.properties_in[0].enth_mass_phase['Vap']
 
-        @self.Constraint(doc="Compressor work")
-        def eq_compressor_work(b):
-            return b.work == b.properties_out[0].flow_mass_phase_comp['Vap', 'H2O']*\
-                   (b.properties_out[0].enth_mass_phase['Vap'] -b.properties_in[0].enth_mass_phase['Vap'])
+        # @self.Constraint(doc="Compressor work")
+        # def eq_compressor_work(b):
+        #     return b.work == b.control_volume.properties_out[0].flow_mass_phase_comp['Vap', 'H2O']*\
+        #            (b.control_volume.properties_out[0].enth_mass_phase['Vap'] -b.control_volume.properties_in[0].enth_mass_phase['Vap'])
 
     def initialize(
             blk,
@@ -303,7 +316,7 @@ class CompressorData(UnitModelBlockData):
         var_dict = {}
         var_dict["Pressure ratio"] = self.pressure_ratio
         var_dict["Efficiency"] = self.efficiency
-        var_dict["Work"] = self.work
+        var_dict["Work"] = self.control_volume.work
 
         return {"vars": var_dict}
 
@@ -312,26 +325,26 @@ class CompressorData(UnitModelBlockData):
 
         iscale.set_scaling_factor(self.pressure_ratio, 1)
         iscale.set_scaling_factor(self.efficiency, 1)
-        iscale.set_scaling_factor(self.work, 1e-6)
+        iscale.set_scaling_factor(self.control_volume.work, 1e-6)
 
-        for j, c in self.eq_mass_balance.items():
-            sf = iscale.get_scaling_factor(self.properties_in[0].flow_mass_phase_comp[j, 'H2O'])
-            iscale.constraint_scaling_transform(c, sf)
+        # for j, c in self.eq_mass_balance.items():
+        #     sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].flow_mass_phase_comp[j, 'H2O'])
+        #     iscale.constraint_scaling_transform(c, sf)
 
         for j, c in self.eq_mass_balance_isentropic.items():
-            sf = iscale.get_scaling_factor(self.properties_in[0].flow_mass_phase_comp[j, 'H2O'])
+            sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].flow_mass_phase_comp[j, 'H2O'])
             iscale.constraint_scaling_transform(c, sf)
 
         # Pressure constraints
-        sf = iscale.get_scaling_factor(self.properties_in[0].pressure)
+        sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].pressure)
         iscale.constraint_scaling_transform(self.eq_pressure_ratio, sf)
         iscale.constraint_scaling_transform(self.eq_isentropic_pressure, sf)
 
         # Temperature constraint
-        sf = iscale.get_scaling_factor(self.properties_in[0].temperature)
+        sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].temperature)
         iscale.constraint_scaling_transform(self.eq_isentropic_temperature, sf)
 
         # Efficiency, work constraints
-        sf = iscale.get_scaling_factor(self.work)
+        sf = iscale.get_scaling_factor(self.control_volume.work)
         iscale.constraint_scaling_transform(self.eq_efficiency, sf)
-        iscale.constraint_scaling_transform(self.eq_compressor_work, sf)
+        #iscale.constraint_scaling_transform(self.eq_compressor_work, sf)
