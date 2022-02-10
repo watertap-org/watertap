@@ -1,9 +1,0 @@
-default:
-  recovery_frac_mass_H2O:
-    value: 0.9999
-    units: dimensionless
-    reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for
-      Water Utilities (2008).
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless
