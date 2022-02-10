@@ -45,6 +45,11 @@ class IpoptWaterTAP(IPOPT):
         # for examples/chemistry/tests/test_pure_water_pH.py
         if "constr_viol_tol" not in self.options:
             self.options["constr_viol_tol"] = 1e-08
+        # new default in Ipopt, see https://github.com/coin-or/Ipopt/issues/312
+        if "honor_original_bounds" not in self.options:
+            self.options["honor_original_bounds"] = "no"
+
+        assert self.options["honor_original_bounds"] == "no"
 
         if not self._is_user_scaling():
             self._reset_needed = False
@@ -53,6 +58,12 @@ class IpoptWaterTAP(IPOPT):
 
         if self._tee:
             print("ipopt-watertap: Ipopt with user variable scaling and IDAES jacobian constraint scaling")
+
+        bound_relax_factor = self._get_option("bound_relax_factor", 1e-08)
+        if bound_relax_factor < 0.:
+            raise ValueError(f"Option bound_relax_factor must be non-negative; bound_relax_factor={bound_relax_factor}")
+        # we're doing this ourselves, don't want Ipopt to also do it
+        self.options["bound_relax_factor"] = 0.0
 
         # These options are typically available with gradient-scaling, and they
         # have corresponding options in the IDAES constraint_autoscale_large_jac
@@ -69,6 +80,7 @@ class IpoptWaterTAP(IPOPT):
 
         self._model = args[0]
         self._cache_scaling_factors()
+        self._cache_and_set_relaxed_bounds(bound_relax_factor)
         self._reset_needed = True
 
         # NOTE: This function sets the scaling factors on the
@@ -101,6 +113,7 @@ class IpoptWaterTAP(IPOPT):
     def _postsolve(self):
         if self._reset_needed:
             self._reset_scaling_factors()
+            self._reset_bounds()
             # remove our reference to the model
             del self._model
         del self._reset_needed
@@ -118,6 +131,24 @@ class IpoptWaterTAP(IPOPT):
             else:
                 set_scaling_factor(c, s)
         del self._scaling_cache
+
+    def _cache_and_set_relaxed_bounds(self, bound_relax_factor):
+        self._bound_cache = []
+        for v in self._model.component_data_objects(pyo.Var, active=True, descend_into=True):
+            if v.lb is None and v.ub is None:
+                continue
+            self._bound_cache.append((v, v.lb, v.ub))
+            sf = get_scaling_factor(v, default=1)
+            if v.lb is not None:
+                v.lb = (v.lb*sf - bound_relax_factor*max(1, abs(v.lb*sf)))/sf
+            if v.ub is not None:
+                v.ub = (v.ub*sf + bound_relax_factor*max(1, abs(v.ub*sf)))/sf
+
+    def _reset_bounds(self):
+        for v, lb, ub in self._bound_cache:
+            v.lb = lb
+            v.ub = ub
+        del self._bound_cache
 
     def _get_option(self, option_name, default_value):
         # NOTE: options get reset to their original value at the end of the
