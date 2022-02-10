@@ -178,7 +178,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
         Returns:
             None
         """
-        self.set_param_from_data(self.recovery_vol, data)
+        self.set_param_from_data(self.recovery_frac_mass_H2O, data)
 
         for t, j in self.removal_frac_mass_solute:
             self.set_param_from_data(
