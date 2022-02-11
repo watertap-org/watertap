@@ -474,7 +474,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                          doc="Mass transfer from feed to permeate")
         def eq_connect_mass_transfer(b, t, x, p, j):
             if x == b.feed_side.length_domain.first():
-                return b.permeate_side[t, x].get_material_flow_terms(p, j) == 0
+                return Constraint.Skip
             else:
                 return (b.permeate_side[t, x].get_material_flow_terms(p, j)
                         == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length / b.nfe)
@@ -862,9 +862,6 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             iscale.set_scaling_factor(self.length, sf)
 
         # setting scaling factors for variables
-        for v in self.permeate_side[0, 0].flow_mass_phase_comp['Liq',:]:
-            iscale.set_scaling_factor(v, 1e+5)
-
         for sb in (self.mixed_permeate, self.permeate_side):
             for blk in sb.values():
                 for j in self.config.property_package.solute_set:

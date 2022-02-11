@@ -309,8 +309,8 @@ class TestReverseOsmosis():
 
         # test statistics
         assert number_variables(m) == 250
-        assert number_total_constraints(m) == 207
-        assert number_unused_variables(m) == 20
+        assert number_total_constraints(m) == 205
+        assert number_unused_variables(m) == 22
 
     @pytest.mark.integration
     def test_units(self, RO_frame):
@@ -483,8 +483,8 @@ class TestReverseOsmosis():
 
         # test statistics
         assert number_variables(m) == 200
-        assert number_total_constraints(m) == 159
-        assert number_unused_variables(m) == 27
+        assert number_total_constraints(m) == 157
+        assert number_unused_variables(m) == 29
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -632,8 +632,8 @@ class TestReverseOsmosis():
 
        # test statistics
         assert number_variables(m) == 204
-        assert number_total_constraints(m) == 159
-        assert number_unused_variables(m) == 28
+        assert number_total_constraints(m) == 157
+        assert number_unused_variables(m) == 30
 
         assert_units_consistent(m.fs.unit)
 
@@ -778,8 +778,8 @@ class TestReverseOsmosis():
 
         # test statistics
         assert number_variables(m) == 204
-        assert number_total_constraints(m) == 159
-        assert number_unused_variables(m) == 28
+        assert number_total_constraints(m) == 157
+        assert number_unused_variables(m) == 30
 
         assert_units_consistent(m.fs.unit)
 
@@ -932,8 +932,8 @@ class TestReverseOsmosis():
 
         # test statistics
         assert number_variables(m) == 227
-        assert number_total_constraints(m) == 184
-        assert number_unused_variables(m) == 20
+        assert number_total_constraints(m) == 182
+        assert number_unused_variables(m) == 22
 
         assert_units_consistent(m.fs.unit)
 
@@ -1093,8 +1093,8 @@ class TestReverseOsmosis():
 
         # test statistics
         assert number_variables(m) == 232
-        assert number_total_constraints(m) == 185
-        assert number_unused_variables(m) == 21
+        assert number_total_constraints(m) == 183
+        assert number_unused_variables(m) == 23
 
         assert_units_consistent(m.fs.unit)
 
@@ -1254,8 +1254,8 @@ class TestReverseOsmosis():
 
         # test statistics
         assert number_variables(m) == 232
-        assert number_total_constraints(m) == 188
-        assert number_unused_variables(m) == 20
+        assert number_total_constraints(m) == 186
+        assert number_unused_variables(m) == 22
 
         assert_units_consistent(m.fs.unit)
 
