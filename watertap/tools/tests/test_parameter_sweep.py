@@ -36,6 +36,11 @@ from watertap.tools.parameter_sweep import (_init_mpi,
                                                NormalSample,
                                                SamplingType)
 
+# Imports for conditional fails
+from idaes.config import bin_directory as idaes_bin_directory
+from idaes.core.util import get_solver
+solver = get_solver()
+is_solver_from_idaes_ext = idaes_bin_directory in solver.executable()
 # -----------------------------------------------------------------------------
 
 class TestParallelManager():
@@ -562,6 +567,13 @@ class TestParallelManager():
 
     @pytest.mark.component
     def test_parameter_sweep_optimize(self, model, tmp_path):
+
+        if not is_solver_from_idaes_ext:
+            pytest.xfail(
+                    "This test is known to be failing with solver: "
+                    f"{solver}, {solver.executable()}"
+            )
+
         comm, rank, num_procs = _init_mpi()
         tmp_path = _get_rank0_path(comm, tmp_path)
 
@@ -867,7 +879,7 @@ def _assert_h5_csv_agreement(csv_filename, h5_dict):
 def _build_header_list_from_csv(csv_filename):
     with open(csv_filename, 'r') as fp:
         csv_header_raw = fp.readline()
-        
+
     csv_header_raw = csv_header_raw.replace('# ', '').strip()
     csv_header_raw = csv_header_raw.split(',')
 
@@ -876,8 +888,8 @@ def _build_header_list_from_csv(csv_filename):
     for k, item in enumerate(csv_header_raw):
         if k == 0:
             csv_header.append(item)
-            
-        else:        
+
+        else:
             if csv_header[-1].count('[') == csv_header[-1].count(']'):
                 csv_header.append(item)
             else:
