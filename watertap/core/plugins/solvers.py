@@ -55,6 +55,9 @@ class IpoptWaterTAP(IPOPT):
         if self._tee:
             print("ipopt-watertap: Ipopt with user variable scaling and IDAES jacobian constraint scaling")
 
+        # TODO: It is possible we should set the default to 1e-06 to slightly
+        #       over-relax the variable bounds. Leaving it a 1e-08 for now as
+        #       that is more consistent with the other default tolerances
         bound_relax_factor = self._get_option("bound_relax_factor", 1e-08)
         if bound_relax_factor < 0.:
             raise ValueError(f"Option bound_relax_factor must be non-negative; bound_relax_factor={bound_relax_factor}")
@@ -72,7 +75,7 @@ class IpoptWaterTAP(IPOPT):
         # function. Here we use their Ipopt names and default values, see
         # https://coin-or.github.io/Ipopt/OPTIONS.html#OPT_NLP_Scaling
         max_grad = self._get_option("nlp_scaling_max_gradient", 100)
-        min_scale = self._get_option("nlp_scaling_min_value", 1e-8)
+        min_scale = self._get_option("nlp_scaling_min_value", 1e-08)
 
         # These options are custom for the IDAES constraint_autoscale_large_jac
         # function. We expose them as solver options as this has become part

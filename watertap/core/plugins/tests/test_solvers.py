@@ -246,7 +246,14 @@ class TestIpoptWaterTAPBoundsRelax:
 
     @pytest.mark.unit
     def test_set_bound_relax_2_big(self, m, s):
-        s.options["bound_relax_factor"] = 1e-12
+        s.options["bound_relax_factor"] = 0.
         s.solve(m, tee=True)
         assert pyo.value(m.x) == pytest.approx(5.0e+15, abs=0, rel=1e-8)
+        del s.options["bound_relax_factor"]
+
+    @pytest.mark.unit
+    def test_invalid_bound_relax_raises_error(self, m, s):
+        s.options["bound_relax_factor"] = -1e-12
+        with pytest.raises(ValueError):
+            s.solve(m)
         del s.options["bound_relax_factor"]
