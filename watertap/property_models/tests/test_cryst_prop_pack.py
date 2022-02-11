@@ -14,6 +14,7 @@ import pytest
 import watertap.property_models.cryst_prop_pack as props
 from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition
 from idaes.core import FlowsheetBlock, ControlVolume0DBlock
+from idaes.core.util import get_solver
 from idaes.config import bin_directory as idaes_bin_directory
 from idaes.generic_models.properties.tests.test_harness import \
     PropertyTestHarness as PropertyTestHarness_idaes
@@ -718,7 +719,7 @@ class TestNaClCalculateState_4(PropertyCalculateStateTest):
                 "This test is known to be failing with solver: "
                 f"{solver}, {solver.executable()}"
             )
-            
+
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
 
