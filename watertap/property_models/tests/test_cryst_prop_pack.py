@@ -58,8 +58,6 @@ class TestDefaultNaClwaterProperty:
 
     # Create instance of PropertyTesthARNESS class and add attributes needed for tests
     xv = PropertyTestHarness()
-    xv.solver = 'ipopt-watertap'
-    xv.optarg = {'tol': 1e-8, 'nlp_scaling_method': 'user-scaling'}
 
     xv.stateblock_statistics = {'number_variables': 43,
                                   'number_total_constraints': 37,
@@ -168,9 +166,6 @@ class TestNaClPropertySolution_1(PropertyRegressionTest):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
 
-        self.solver = 'ipopt-watertap'
-        self.optarg = {'tol':1e-8, 'nlp_scaling_method': 'user-scaling'}
-
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e0,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e2,
                              ('flow_mass_phase_comp', ('Vap', 'H2O')): 1e2,
@@ -210,9 +205,6 @@ class TestNaClPropertySolution_2(PropertyRegressionTest):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
 
-        self.solver = 'ipopt-watertap'
-        self.optarg = {'tol':1e-8, 'nlp_scaling_method': 'user-scaling'}
-
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e0,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e2,
                              ('flow_mass_phase_comp', ('Vap', 'H2O')): 1e2,
@@ -249,9 +241,6 @@ class TestNaClPropertySolution_3(PropertyRegressionTest):
     def configure(self):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
-
-        self.solver = 'ipopt-watertap'
-        self.optarg = {'tol':1e-8, 'nlp_scaling_method': 'user-scaling'}
 
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e0,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e3,
@@ -297,9 +286,6 @@ class TestNaClPropertySolution_4(PropertyRegressionTest):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
 
-        self.solver = 'ipopt-watertap'
-        self.optarg = {'tol': 1e-8, 'nlp_scaling_method': 'user-scaling'}
-
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e1,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e3,
                              ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1e0,
@@ -337,9 +323,6 @@ class TestNaClPropertySolution_5(PropertyRegressionTest):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
 
-        self.solver = 'ipopt-watertap'
-        self.optarg = {'tol': 1e-8, 'nlp_scaling_method': 'user-scaling'}
-
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e1,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e3,
                              ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1e3,
@@ -369,9 +352,6 @@ class TestNaClPropertySolution_6(PropertyRegressionTest):
     def configure(self):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
-
-        self.solver = 'ipopt-watertap'
-        self.optarg = {'tol': 1e-8, 'nlp_scaling_method': 'user-scaling'}
 
         self.scaling_args = {('flow_mass_phase_comp', ('Sol', 'NaCl')): 10,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e1
@@ -428,9 +408,6 @@ class TestNaClPropertySolution_7(PropertyRegressionTest):
     def configure(self):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
-
-        self.solver = 'ipopt-watertap'
-        self.optarg = {'tol': 1e-8, 'nlp_scaling_method': 'user-scaling'}
 
         self.scaling_args = {('flow_mass_phase_comp', ('Sol', 'NaCl')): 10,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e3
@@ -495,9 +472,6 @@ class TestNaClPropertySolution_8(PropertyRegressionTest):
     def configure(self):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
-
-        self.solver = 'ipopt-watertap'
-        self.optarg = {'tol': 1e-8, 'nlp_scaling_method': 'user-scaling'}
 
         self.scaling_args = {('flow_mass_phase_comp', ('Sol', 'NaCl')): 1e0,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e0, 
@@ -566,9 +540,6 @@ class TestNaClPropertySolution_9(PropertyRegressionTest):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
 
-        self.solver = 'ipopt-watertap'
-        self.optarg = {'tol': 1e-8, 'nlp_scaling_method': 'user-scaling'}
-
         self.scaling_args = {('flow_mass_phase_comp', ('Sol', 'NaCl')): 1e0,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e0, 
                              ('flow_mass_phase_comp', ('Vap', 'H2O')): 1e-1, 
@@ -628,9 +599,6 @@ class TestNaClCalculateState_1(PropertyCalculateStateTest):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
 
-        self.solver = 'ipopt-watertap'
-        self.optarg = {'nlp_scaling_method': 'user-scaling'}
-
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e-1,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e0,
                              ('flow_mass_phase_comp', ('Vap', 'H2O')): 1/eps,
@@ -658,9 +626,6 @@ class TestNaClCalculateState_2(PropertyCalculateStateTest):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
 
-        self.solver = 'ipopt-watertap'
-        self.optarg = {'nlp_scaling_method': 'user-scaling'}
-
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e1,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e2,
                              # The rest are expected to be zero
@@ -685,9 +650,6 @@ class TestNaClCalculateState_3(PropertyCalculateStateTest):
     def configure(self):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
-
-        self.solver = 'ipopt-watertap'
-        self.optarg = {'nlp_scaling_method': 'user-scaling'}
 
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e0,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e1,
@@ -723,9 +685,6 @@ class TestNaClCalculateState_4(PropertyCalculateStateTest):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
 
-        self.solver = 'ipopt-watertap'
-        self.optarg = {'tol': 1e-8, 'nlp_scaling_method': 'user-scaling'}
-
         self.scaling_args = {
                              ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1e-1,
                              ('flow_mass_phase_comp', ('Vap', 'H2O')): 1e-1
@@ -752,9 +711,6 @@ class TestNaClCalculateState_5(PropertyCalculateStateTest):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
 
-        self.solver = 'ipopt-watertap'
-        self.optarg = {'nlp_scaling_method': 'user-scaling'}
-
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e-1,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e1,
                              ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1e-2}
@@ -779,9 +735,6 @@ class TestNaClCalculateState_6(PropertyCalculateStateTest):
     def configure(self):
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
-
-        self.solver = 'ipopt-watertap'
-        self.optarg = {'tol': 1e-8, 'nlp_scaling_method': 'user-scaling'}
 
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e1,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e2,
