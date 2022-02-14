@@ -32,6 +32,6 @@ default:
     units: dimensionless
   removal_frac_mass_solute:
     tss:
-      value: 0.9910826
+      value: 0.990826
       units: dimensionless
       constituent_longform: Total Suspended Solids (TSS)

@@ -107,11 +107,11 @@ class TestClarifierZO:
                 value(model.fs.unit.properties_in[0].flow_vol))
         assert (pytest.approx(230.77, rel=1e-5) ==
                 value(model.fs.unit.properties_in[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(1.00168e-2, rel=1e-5) ==
+        assert (pytest.approx(1.001752e-2, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(2.67075, rel=1e-5) ==
+        assert (pytest.approx(2.7474, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(2.98325e-3, rel=1e-5) ==
+        assert (pytest.approx(2.9825e-3, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].flow_vol))
         assert (pytest.approx(996.648, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
@@ -145,15 +145,15 @@ Unit : fs.unit                                                             Time:
     Key                   : Value   : Fixed : Bounds
        Electricity Demand :  0.0000 : False : (None, None)
     Electricity Intensity :  0.0000 :  True : (None, None)
-     Solute Removal [tss] : 0.99108 :  True : (0, None)
+     Solute Removal [tss] : 0.99083 :  True : (0, None)
            Water Recovery : 0.99900 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
                              Inlet   Treated  Byproduct
-    Volumetric Flowrate    0.013000 0.010017 0.0029832 
-    Mass Concentration H2O   769.23   997.33    3.3521 
-    Mass Concentration tss   230.77   2.6707    996.65 
+    Volumetric Flowrate    0.013000 0.010018 0.0029825 
+    Mass Concentration H2O   769.23   997.25    3.3529 
+    Mass Concentration tss   230.77   2.7474    996.65 
 ====================================================================================
 """
 
@@ -240,13 +240,13 @@ class TestClarifierZO_w_default_removal:
                 value(model.fs.unit.properties_in[0].conc_mass_comp["tss"]))
         assert (pytest.approx(71.4286, rel=1e-5) ==
                 value(model.fs.unit.properties_in[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(1.10168e-2, rel=1e-5) ==
+        assert (pytest.approx(1.10175e-2, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(2.4283, rel=1e-5) ==
+        assert (pytest.approx(2.4980, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(90.7709, rel=1e-5) ==
+        assert (pytest.approx(90.7645, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(2.98325e-3, rel=1e-5) ==
+        assert (pytest.approx(2.9825e-3, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].flow_vol))
         assert (pytest.approx(996.648, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
@@ -283,16 +283,16 @@ Unit : fs.unit                                                             Time:
        Electricity Demand :  0.0000 : False : (None, None)
     Electricity Intensity :  0.0000 :  True : (None, None)
      Solute Removal [foo] :  0.0000 :  True : (0, None)
-     Solute Removal [tss] : 0.99108 :  True : (0, None)
+     Solute Removal [tss] : 0.99083 :  True : (0, None)
            Water Recovery : 0.99900 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
                              Inlet   Treated  Byproduct
-    Volumetric Flowrate    0.014000 0.011017 0.0029832 
-    Mass Concentration H2O   714.29   906.80    3.3521 
-    Mass Concentration tss   214.29   2.4283    996.65 
-    Mass Concentration foo   71.429   90.771    0.0000 
+    Volumetric Flowrate    0.014000 0.011018 0.0029825 
+    Mass Concentration H2O   714.29   906.74    3.3529 
+    Mass Concentration tss   214.29   2.4980    996.65 
+    Mass Concentration foo   71.429   90.765    0.0000 
 ====================================================================================
 """
 
