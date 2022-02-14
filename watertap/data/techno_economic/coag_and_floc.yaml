@@ -7,11 +7,6 @@ default:
   default_removal_frac_mass_solute:
     value: 0
     units: dimensionless
-  removal_frac_mass_solute:
-    tss:
-      value: 0.95
-      units: dimensionless
-      constituent_longform: Total Suspended Solids (TSS)
   alum_dose:
     value: 10
     units: mg/L
@@ -20,6 +15,9 @@ default:
     value: 0.1
     units: mg/L
     constituent_longform: Polymer Dosage
+  anion_to_cation_polymer_ratio:
+    value: 1
+    units: dimensionless
   rapid_mix_retention_time:
     value: 5.5
     units: s
