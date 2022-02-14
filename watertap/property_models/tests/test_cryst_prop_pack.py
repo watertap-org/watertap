@@ -24,8 +24,6 @@ from watertap.property_models.tests.property_test_harness import \
 solver = get_solver()
 is_solver_from_idaes_ext = idaes_bin_directory in solver.executable()
 
-eps = 1e-15 # eps value for mass fractions in property package
-
 # -----------------------------------------------------------------------------
 
 class TestNaClProperty_idaes(PropertyTestHarness_idaes):
@@ -97,12 +95,12 @@ class TestDefaultNaClwaterProperty:
                             ('dh_crystallization', 'NaCl'): -520,
                             ('mass_frac_phase_comp', ('Liq', 'H2O')) : 0.965,
                             ('mass_frac_phase_comp', ('Liq', 'NaCl')) : 0.035,
-                            ('mass_frac_phase_comp', ('Sol', 'NaCl')) : 0,
-                            ('mass_frac_phase_comp', ('Vap', 'H2O')) : 0,
+                            ('mass_frac_phase_comp', ('Sol', 'NaCl')) : 1.0,
+                            ('mass_frac_phase_comp', ('Vap', 'H2O')) : 1.0,
                             ('flow_mol_phase_comp', ('Liq', 'H2O')) : 53.57,
                             ('flow_mol_phase_comp', ('Liq', 'NaCl')) : 0.5989,
-                            ('flow_mol_phase_comp', ('Sol', 'NaCl')) : 3.8166100626166014e-08,
-                            ('flow_mol_phase_comp', ('Vap', 'H2O')) : 3.817250895845419e-06,
+                            ('flow_mol_phase_comp', ('Sol', 'NaCl')) : 3.811504179523017e-08,
+                            ('flow_mol_phase_comp', ('Vap', 'H2O')) : 3.8114854951498772e-06,
                             ('mole_frac_phase_comp', ('Liq', 'H2O')) : 0.9889,
                             ('mole_frac_phase_comp', ('Liq', 'NaCl')) : 0.01106,
                             ('mole_frac_phase_comp', ('Sol', 'NaCl')) : 1.0,
@@ -179,8 +177,6 @@ class TestNaClPropertySolution_1(PropertyRegressionTest):
 
         self.regression_solution = {('mass_frac_phase_comp', ('Liq', 'H2O')): 0.95,
                                     ('mass_frac_phase_comp', ('Liq', 'NaCl')): 0.05,
-                                    ('mass_frac_phase_comp', ('Sol', 'NaCl')) : 0,
-                                    ('mass_frac_phase_comp', ('Vap', 'H2O')) : 0,
                                     ('solubility_mass_phase_comp', ('Liq', 'NaCl')) : 359.50,
                                     ('solubility_mass_frac_phase_comp', ('Liq', 'NaCl')) : 0.265,
                                     ('dens_mass_solvent', 'Liq'): 996.89,
@@ -191,8 +187,6 @@ class TestNaClPropertySolution_1(PropertyRegressionTest):
                                     ('conc_mass_phase_comp', ('Liq', 'NaCl')): 51.61,
                                     ('flow_mol_phase_comp', ('Liq', 'H2O')): 52.73,
                                     ('flow_mol_phase_comp', ('Liq', 'NaCl')): 0.8556,
-                                    ('flow_mol_phase_comp', ('Sol', 'NaCl')) : 0.0,
-                                    ('flow_mol_phase_comp', ('Vap', 'H2O')) : 0.0,
                                     ('mole_frac_phase_comp', ('Liq', 'H2O')): 0.9840,
                                     ('mole_frac_phase_comp', ('Liq', 'NaCl')): 1.597e-2,
                                     ('cp_solvent', 'Liq'): 4186.52,
@@ -222,8 +216,6 @@ class TestNaClPropertySolution_2(PropertyRegressionTest):
 
         self.regression_solution = {('mass_frac_phase_comp', ('Liq', 'H2O')): 0.74,
                                     ('mass_frac_phase_comp', ('Liq', 'NaCl')): 0.26,
-                                    ('mass_frac_phase_comp', ('Sol', 'NaCl')) : 0,
-                                    ('mass_frac_phase_comp', ('Vap', 'H2O')) : 0,
                                     ('solubility_mass_phase_comp', ('Liq', 'NaCl')) : 359.50,
                                     ('solubility_mass_frac_phase_comp', ('Liq', 'NaCl')) : 0.265,
                                     ('dens_mass_solvent', 'Liq'): 996.89,
@@ -233,8 +225,6 @@ class TestNaClPropertySolution_2(PropertyRegressionTest):
                                     ('conc_mass_phase_comp', ('Liq', 'NaCl')): 310.29,
                                     ('flow_mol_phase_comp', ('Liq', 'H2O')): 41.08,
                                     ('flow_mol_phase_comp', ('Liq', 'NaCl')): 4.449,
-                                    ('flow_mol_phase_comp', ('Sol', 'NaCl')) : 0.0,
-                                    ('flow_mol_phase_comp', ('Vap', 'H2O')) : 0.0,
                                     ('mole_frac_phase_comp', ('Liq', 'H2O')): 0.9022,
                                     ('mole_frac_phase_comp', ('Liq', 'NaCl')): 9.773e-2,
                                     ('cp_solvent', 'Liq'): 4186.52,
@@ -263,8 +253,6 @@ class TestNaClPropertySolution_3(PropertyRegressionTest):
 
         self.regression_solution = {('mass_frac_phase_comp', ('Liq', 'H2O')): 0.999,
                                     ('mass_frac_phase_comp', ('Liq', 'NaCl')): 0.001,
-                                    ('mass_frac_phase_comp', ('Sol', 'NaCl')) : 0,
-                                    ('mass_frac_phase_comp', ('Vap', 'H2O')) : 0,
                                     ('solubility_mass_phase_comp', ('Liq', 'NaCl')) : 359.50,
                                     ('solubility_mass_frac_phase_comp', ('Liq', 'NaCl')) : 0.265,
                                     ('dens_mass_solvent', 'Liq'): 996.89,
@@ -275,8 +263,6 @@ class TestNaClPropertySolution_3(PropertyRegressionTest):
                                     ('conc_mass_phase_comp', ('Liq', 'NaCl')): 0.9976,
                                     ('flow_mol_phase_comp', ('Liq', 'H2O')): 55.45,
                                     ('flow_mol_phase_comp', ('Liq', 'NaCl')): 1.711e-2,
-                                    ('flow_mol_phase_comp', ('Sol', 'NaCl')) : 0.0,
-                                    ('flow_mol_phase_comp', ('Vap', 'H2O')) : 0.0,
                                     ('mole_frac_phase_comp', ('Liq', 'H2O')): 0.9997,
                                     ('mole_frac_phase_comp', ('Liq', 'NaCl')): 3.084e-4,
                                     ('cp_solvent', 'Liq'): 4186.52,
@@ -300,7 +286,7 @@ class TestNaClPropertySolution_4(PropertyRegressionTest):
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e1,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e3,
                              ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1e0,
-                             ('flow_mass_phase_comp', ('Vap', 'H2O')): 1e2
+                             ('flow_mass_phase_comp', ('Vap', 'H2O')): 1e02,
                              }
 
         self.state_args = {('flow_vol_phase', 'Liq'): 0,
@@ -340,7 +326,7 @@ class TestNaClPropertySolution_5(PropertyRegressionTest):
                              ('flow_mass_phase_comp', ('Vap', 'H2O')): 1e0
                              }
 
-        self.state_args = {('flow_vol_phase', 'Liq'): eps,
+        self.state_args = {('flow_vol_phase', 'Liq'): 0,
                            ('flow_vol_phase', 'Sol'): 0,
                            ('mass_frac_phase_comp', ('Liq', 'NaCl')): 0.05,
                            ('flow_mass_phase_comp', ('Vap', 'H2O')): 1.0,
@@ -612,8 +598,8 @@ class TestNaClCalculateState_1(PropertyCalculateStateTest):
 
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e-1,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e0,
-                             ('flow_mass_phase_comp', ('Vap', 'H2O')): 1/eps,
-                             ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1/eps,
+                             ('flow_mass_phase_comp', ('Vap', 'H2O')): 1,
+                             ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1,
                              }
 
         self.var_args = {('flow_vol_phase', 'Liq'): 2e-2,
@@ -628,7 +614,6 @@ class TestNaClCalculateState_1(PropertyCalculateStateTest):
                                ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1.032,
                                ('flow_mass_phase_comp', ('Sol', 'NaCl')): 0,
                                ('flow_mass_phase_comp', ('Vap', 'H2O')): 0,
-                               ('mass_frac_phase_comp', ('Vap', 'H2O')): 0,
                                }
 
 @pytest.mark.component
@@ -641,8 +626,8 @@ class TestNaClCalculateState_2(PropertyCalculateStateTest):
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e1,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e2,
                              # The rest are expected to be zero
-                             ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1/eps,
-                             ('flow_mass_phase_comp', ('Vap', 'H2O')): 1/eps,
+                             ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1,
+                             ('flow_mass_phase_comp', ('Vap', 'H2O')): 1,
                              }
         self.var_args = {('flow_vol_phase', 'Liq'): 2e-4,
                          ('flow_vol_phase', 'Sol'): 0,
@@ -654,7 +639,6 @@ class TestNaClCalculateState_2(PropertyCalculateStateTest):
                                ('flow_mass_phase_comp', ('Liq', 'NaCl')): 3.215e-2,
                                ('flow_mass_phase_comp', ('Sol', 'NaCl')): 0,
                                ('flow_mass_phase_comp', ('Vap', 'H2O')): 0,
-                               ('mole_frac_phase_comp', ('Vap', 'H2O')): 0,
                                }
 
 @pytest.mark.component

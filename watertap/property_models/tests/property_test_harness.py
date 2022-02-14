@@ -14,7 +14,6 @@
 import pytest
 from math import fabs
 
-from pyomo.common.collections import ComponentSet
 from pyomo.environ import (ConcreteModel,
                            Block,
                            Set,
@@ -304,7 +303,7 @@ class PropertyTestHarness():
     @pytest.mark.component
     def test_badly_scaled(self, frame_stateblock):
         m = frame_stateblock
-        badly_scaled_var_list = list(badly_scaled_var_generator(m, large=1e2, small=1e-2))
+        badly_scaled_var_list = list(badly_scaled_var_generator(m, large=1e2, small=1e-2, zero=1e-8))
         if len(badly_scaled_var_list) != 0:
             lst = []
             for (var, val) in badly_scaled_var_list:
@@ -321,7 +320,7 @@ class PropertyTestHarness():
 
         # solve model
         opt = get_solver()
-        results = opt.solve(m.fs.stream[0])
+        results = opt.solve(m.fs.stream[0], tee=True)
         assert_optimal_termination(results)
 
         # check convergence
@@ -468,16 +467,14 @@ class PropertyRegressionTest():
 
         # solve model
         opt = get_solver(self.solver, self.optarg)
-        results = opt.solve(m)
+        results = opt.solve(m, tee=True)
         assert_optimal_termination(results)
 
-        zero_valued_vars = ComponentSet()
         # check results
         for (v_name, ind), val in self.regression_solution.items():
             var = getattr(m.fs.stream[0], v_name)[ind]
             # relative tolerance doesn't mean anything for 0-valued things
             if val == 0:
-                zero_valued_vars.add(var)
                 if not pytest.approx(val, abs=1.0e-08) == value(var):
                     raise PropertyValueError(
                         "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, "
@@ -493,9 +490,7 @@ class PropertyRegressionTest():
 
         # check if any variables are badly scaled
         lst = []
-        for (var, val) in badly_scaled_var_generator(m, large=1e2, small=1e-2):
-            if var in zero_valued_vars:
-                continue
+        for (var, val) in badly_scaled_var_generator(m, large=1e2, small=1e-2, zero=1e-8):
             lst.append((var.name, val))
             print(var.name, var.value)
         if lst:
@@ -559,13 +554,11 @@ class PropertyCalculateStateTest():
         results = m.fs.stream.calculate_state(var_args=self.var_args, solver=self.solver, optarg=self.optarg)
         assert_optimal_termination(results)
 
-        zero_valued_vars = ComponentSet()
         # check results
         for (v_name, ind), val in self.state_solution.items():
             var = getattr(m.fs.stream[0], v_name)[ind]
             # relative tolerance doesn't mean anything for 0-valued things
             if val == 0:
-                zero_valued_vars.add(var)
                 if not pytest.approx(val, abs=1.0e-08) == value(var):
                     raise PropertyValueError(
                         "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, "
@@ -581,9 +574,7 @@ class PropertyCalculateStateTest():
 
         # check if any variables are badly scaled
         lst = []
-        for (var, val) in badly_scaled_var_generator(m, large=1e2, small=1e-2):
-            if var in zero_valued_vars:
-                continue
+        for (var, val) in badly_scaled_var_generator(m, large=1e2, small=1e-2, zero=1e-8):
             lst.append((var.name, val))
             print(var.name, var.value)
         if lst:
