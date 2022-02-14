@@ -60,6 +60,10 @@ class TestSedimentationZO:
 
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
 
+        assert isinstance(model.fs.unit.settling_velocity, Var)
+        assert isinstance(model.fs.unit.basin_surface_area, Var)
+        assert isinstance(model.fs.unit.basin_surface_area_constraint, Constraint)
+
     @pytest.mark.component
     def test_load_parameters(self, model):
         data = model.db.get_unit_operation_parameters("sedimentation")
@@ -77,6 +81,10 @@ class TestSedimentationZO:
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
         assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
             "energy_electric_flow_vol_inlet"]["value"]
+
+        assert model.fs.unit.settling_velocity[0].fixed
+        assert model.fs.unit.settling_velocity[0].value == data[
+            "settling_velocity"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -192,6 +200,10 @@ class TestSedimentationZO_w_default_removal:
 
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
 
+        assert isinstance(model.fs.unit.settling_velocity, Var)
+        assert isinstance(model.fs.unit.basin_surface_area, Var)
+        assert isinstance(model.fs.unit.basin_surface_area_constraint, Constraint)
+
     @pytest.mark.component
     def test_load_parameters(self, model):
         data = model.db.get_unit_operation_parameters("sedimentation")
@@ -212,6 +224,10 @@ class TestSedimentationZO_w_default_removal:
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
         assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
             "energy_electric_flow_vol_inlet"]["value"]
+
+        assert model.fs.unit.settling_velocity[0].fixed
+        assert model.fs.unit.settling_velocity[0].value == data[
+            "settling_velocity"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
