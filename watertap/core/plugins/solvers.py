@@ -44,7 +44,6 @@ class IpoptWaterTAP(IPOPT):
         # Set the default watertap options
         if "tol" not in self.options:
             self.options["tol"] = 1e-08
-        # for examples/chemistry/tests/test_pure_water_pH.py
         if "constr_viol_tol" not in self.options:
             self.options["constr_viol_tol"] = 1e-08
 
@@ -55,15 +54,12 @@ class IpoptWaterTAP(IPOPT):
         if self._tee:
             print("ipopt-watertap: Ipopt with user variable scaling and IDAES jacobian constraint scaling")
 
-        # TODO: It is possible we should set the default to 1e-06 to slightly
-        #       over-relax the variable bounds. Leaving it a 1e-08 for now as
-        #       that is more consistent with the other default tolerances
         bound_relax_factor = self._get_option("bound_relax_factor", 1e-08)
         if bound_relax_factor < 0.:
             raise ValueError(f"Option bound_relax_factor must be non-negative; bound_relax_factor={bound_relax_factor}")
 
-        # we're doing this ourselves, don't want Ipopt to also do it
-        # also effectively tuns "honor_original_bounds" off
+        # we are doing this ourselves, don't want Ipopt to also do it
+        # also effectively turns "honor_original_bounds" off
         self.options["bound_relax_factor"] = 0.0
 
         # raise an error if "honor_original_bounds" is set to "yes" (for now)

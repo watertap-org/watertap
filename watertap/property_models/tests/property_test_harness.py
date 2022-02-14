@@ -579,4 +579,3 @@ class PropertyCalculateStateTest():
         if lst:
             raise PropertyValueError(
                 "The following variable(s) are poorly scaled: {lst}".format(lst=lst))
-
