@@ -275,11 +275,6 @@ class TestNaClPropertySolution_3(PropertyRegressionTest):
 class TestNaClPropertySolution_4(PropertyRegressionTest):
     # Test pure solid solution 1 - check solid properties
     def configure(self):
-        if not is_solver_from_idaes_ext:
-            pytest.xfail(
-                "This test is known to be failing with solver: "
-                f"{solver}, {solver.executable()}"
-            )
 
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
@@ -312,11 +307,6 @@ class TestNaClPropertySolution_4(PropertyRegressionTest):
 class TestNaClPropertySolution_5(PropertyRegressionTest):
     # Test pure vapor solution 1 - check vapor properties
     def configure(self):
-        if not is_solver_from_idaes_ext:
-            pytest.xfail(
-                "This test is known to be failing with solver: "
-                f"{solver}, {solver.executable()}"
-            )
 
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
@@ -674,11 +664,6 @@ class TestNaClCalculateState_3(PropertyCalculateStateTest):
 class TestNaClCalculateState_4(PropertyCalculateStateTest):
     # Test pure solid solution with mass fractions
     def configure(self):
-        if not is_solver_from_idaes_ext:
-            pytest.xfail(
-                "This test is known to be failing with solver: "
-                f"{solver}, {solver.executable()}"
-            )
 
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
