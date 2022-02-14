@@ -18,63 +18,26 @@ operation.
 from pyomo.environ import Constraint, units as pyunits, Var
 from idaes.core import declare_process_block_class
 
-from watertap.core.zero_order_sido import SIDOBaseData
+from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
 
 # Some more information about this module
 __author__ = "Adam Atia"
 
 
 @declare_process_block_class("ClarifierZO")
-class ClarifierZOData(SIDOBaseData):
+class ClarifierZOData(ZeroOrderBaseData):
     """
     Zero-Order model for a Clarifier unit operation.
     """
 
-    CONFIG = SIDOBaseData.CONFIG()
+    CONFIG = ZeroOrderBaseData.CONFIG()
 
     def build(self):
         super().build()
 
-        # Add electricity consumption to model
-        self.electricity = Var(self.flowsheet().time,
-                               units=pyunits.kW,
-                               doc="Electricity consumption of unit")
-        self.energy_electric_flow_vol_inlet = Var(
-            units=pyunits.kWh/pyunits.m**3,
-            doc="Electricity intensity with respect to inlet flowrate of unit")
 
-        def electricity_consumption(b, t):
-            return b.electricity[t] == (
-                b.energy_electric_flow_vol_inlet *
-                pyunits.convert(b.properties_in[t].flow_vol,
-                                to_units=pyunits.m**3/pyunits.hour))
-        self.electricity_consumption = Constraint(self.flowsheet().time,
-                                                  rule=electricity_consumption)
 
-    def load_parameters_from_database(self, use_default_removal=False):
-        """
-        Method to load parameters for clarifier models from database.
+        self._tech_type = "clarifier"
 
-        Args:
-            use_default_removal - (optional) indicate whether to use defined
-                                  default removal fraction if no specific value
-                                  defined in database
-
-        Returns:
-            None
-        """
-        # Get parameter dict from database
-        pdict = self.config.database.get_unit_operation_parameters(
-            "clarifier", subtype=self.config.process_subtype)
-
-        self.set_recovery_and_removal(pdict, use_default_removal)
-
-        self.set_param_from_data(self.energy_electric_flow_vol_inlet, pdict)
-
-    def _get_performance_contents(self, time_point=0):
-        perf_dict = super()._get_performance_contents(time_point)
-
-        perf_dict["vars"]["Electricity Demand"] = self.electricity[time_point]
-        perf_dict["vars"]["Electricity Intensity"] = self.energy_electric_flow_vol_inlet
-
-        return perf_dict
+        build_sido(self)
+        constant_intensity(self)
