@@ -115,7 +115,7 @@ class TestClarifierZO:
                 value(model.fs.unit.properties_byproduct[0].flow_vol))
         assert (pytest.approx(996.648, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(0, rel=1e-5) ==
+        assert (pytest.approx(0, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
 
     @pytest.mark.solver
@@ -250,9 +250,9 @@ class TestClarifierZO_w_default_removal:
                 value(model.fs.unit.properties_byproduct[0].flow_vol))
         assert (pytest.approx(996.648, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(0, rel=1e-5) ==
+        assert (pytest.approx(0, abs=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0, rel=1e-5) ==
+        assert (pytest.approx(0, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
 
     @pytest.mark.solver
