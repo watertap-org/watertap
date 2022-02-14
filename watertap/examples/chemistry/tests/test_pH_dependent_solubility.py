@@ -119,6 +119,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
                                               number_unused_variables)
+from idaes.core.util.scaling import get_scaling_factor
 
 # Import the idaes objects for Generic Properties and Reactions
 from idaes.generic_models.properties.core.generic.generic_property import (
@@ -366,8 +367,13 @@ def run_case1(xOH=1e-7/55.2, xH=1e-7/55.2, xCaOH2=1e-20, xCa=1e-20,
     assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
     ## ==================== END Scaling for this problem ===========================
-
-    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+    #   Loosen the tolerances for initialization stage by passing a temporary
+    #       config dict replacing default values (this does so without any
+    #       changes to the global solver options in WaterTAP)
+    temp_config = {"constr_viol_tol": 1e-5,
+                    "tol": 1e-5,
+                   }
+    model.fs.unit.initialize(optarg=temp_config, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
@@ -1921,7 +1927,9 @@ def run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
 
     ## ==================== END Scaling for this problem ===========================
 
-    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+    init_options = {**solver.options}
+    init_options["bound_relax_factor"] = 1.0e-02
+    model.fs.unit.initialize(optarg=init_options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
