@@ -35,8 +35,6 @@ class ClarifierZOData(ZeroOrderBaseData):
     def build(self):
         super().build()
 
-
-
         self._tech_type = "clarifier"
 
         build_sido(self)
