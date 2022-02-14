@@ -107,7 +107,7 @@ def get_sweep_params_from_yaml(m, yaml_filename):
 
 
 
-def set_defaults_from_yaml(m, yaml_filename, verbose=False, do_nothing=False):
+def set_defaults_from_yaml(m, yaml_filename, verbose=False):
     """ Sets default model values using values stored in a yaml file
 
     This function reads a yaml file with the structure::
@@ -143,12 +143,7 @@ def set_defaults_from_yaml(m, yaml_filename, verbose=False, do_nothing=False):
             raise ValueError(f"Could not acccess attribute {key}")
 
         old_value = value(component)
-
-        if do_nothing:
-            new_value = old_value
-
-        else:
-            new_value = default_value
+        new_value = default_value
 
         if verbose:
             print(f'Property: {key}')

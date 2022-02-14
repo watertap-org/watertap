@@ -20,7 +20,7 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
     solve,
     optimize)
 
-from watertap.examples.flowsheets.RO_with_energy_recovery.parameter_sweep_input_parser import (get_sweep_params_from_yaml,
+from watertap.tools.parameter_sweep_input_parser import (get_sweep_params_from_yaml,
     set_defaults_from_yaml)
 
 def get_sweep_params(m, use_LHS=False):
