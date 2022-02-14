@@ -11,7 +11,8 @@
 #
 ###############################################################################
 
+from .chemical_addition_zo import ChemicalAdditionZO
 from .feed_zo import FeedZO
 from .nanofiltration_zo import NanofiltrationZO
 from .clarifier_zo import ClarifierZO
-
+from .pump_zo import PumpZO
