@@ -21,6 +21,7 @@ from idaes.generic_models.properties.tests.test_harness import \
 from watertap.property_models.tests.property_test_harness import \
     (PropertyTestHarness, PropertyRegressionTest, PropertyCalculateStateTest)
 
+
 solver = get_solver()
 is_solver_from_idaes_ext = idaes_bin_directory in solver.executable()
 
@@ -286,7 +287,7 @@ class TestNaClPropertySolution_4(PropertyRegressionTest):
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e1,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e3,
                              ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1e0,
-                             ('flow_mass_phase_comp', ('Vap', 'H2O')): 1e02,
+                             ('flow_mass_phase_comp', ('Vap', 'H2O')): 1e2
                              }
 
         self.state_args = {('flow_vol_phase', 'Liq'): 0,
@@ -613,7 +614,7 @@ class TestNaClCalculateState_1(PropertyCalculateStateTest):
         self.state_solution = {('flow_mass_phase_comp', ('Liq', 'H2O')): 19.6,
                                ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1.032,
                                ('flow_mass_phase_comp', ('Sol', 'NaCl')): 0,
-                               ('flow_mass_phase_comp', ('Vap', 'H2O')): 0,
+                               ('flow_mass_phase_comp', ('Vap', 'H2O')): 0
                                }
 
 @pytest.mark.component
@@ -638,7 +639,7 @@ class TestNaClCalculateState_2(PropertyCalculateStateTest):
         self.state_solution = {('flow_mass_phase_comp', ('Liq', 'H2O')): 18.84e-2,
                                ('flow_mass_phase_comp', ('Liq', 'NaCl')): 3.215e-2,
                                ('flow_mass_phase_comp', ('Sol', 'NaCl')): 0,
-                               ('flow_mass_phase_comp', ('Vap', 'H2O')): 0,
+                               ('flow_mass_phase_comp', ('Vap', 'H2O')): 0
                                }
 
 @pytest.mark.component

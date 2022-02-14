@@ -320,7 +320,7 @@ class PropertyTestHarness():
 
         # solve model
         opt = get_solver()
-        results = opt.solve(m.fs.stream[0], tee=True)
+        results = opt.solve(m.fs.stream[0])
         assert_optimal_termination(results)
 
         # check convergence
@@ -385,7 +385,6 @@ class PropertyTestHarness():
 
         # check results, properties_in and properties_out should be the same as default initialize
         for (v_name, ind), val in m._test_objs.default_solution.items():
-            var = None
             for sb in [m.fs.cv.properties_in[0], m.fs.cv.properties_out[0]]:
                 if sb.is_property_constructed(v_name):
                     var = getattr(sb, v_name)[ind]  # get property if it was created
@@ -467,7 +466,7 @@ class PropertyRegressionTest():
 
         # solve model
         opt = get_solver(self.solver, self.optarg)
-        results = opt.solve(m, tee=True)
+        results = opt.solve(m)
         assert_optimal_termination(results)
 
         # check results
@@ -477,15 +476,15 @@ class PropertyRegressionTest():
             if val == 0:
                 if not pytest.approx(val, abs=1.0e-08) == value(var):
                     raise PropertyValueError(
-                        "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, "
-                        "but it has a value of {val_t}. \nUpdate default_solution dict in the "
-                        "configure function that sets up the PropertyTestHarness".format(
+                        "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, but it "
+                        "has a value of {val_t}. \nUpdate regression_solution in the configure function "
+                        "that sets up the PropertyRegressionTest".format(
                             v_name=v_name, ind=ind, val=val, val_t=value(var)))
             elif not pytest.approx(val, rel=1e-3) == value(var):
                 raise PropertyValueError(
-                    "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, "
-                    "but it has a value of {val_t}. \nUpdate default_solution dict in the "
-                    "configure function that sets up the PropertyTestHarness".format(
+                    "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, but it "
+                    "has a value of {val_t}. \nUpdate regression_solution in the configure function "
+                    "that sets up the PropertyRegressionTest".format(
                         v_name=v_name, ind=ind, val=val, val_t=value(var)))
 
         # check if any variables are badly scaled
@@ -561,15 +560,15 @@ class PropertyCalculateStateTest():
             if val == 0:
                 if not pytest.approx(val, abs=1.0e-08) == value(var):
                     raise PropertyValueError(
-                        "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, "
-                        "but it has a value of {val_t}. \nUpdate default_solution dict in the "
-                        "configure function that sets up the PropertyTestHarness".format(
+                        "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, but it "
+                        "has a value of {val_t}. \nUpdate state_solution in the configure function "
+                        "that sets up the PropertyCalculateStateTest".format(
                             v_name=v_name, ind=ind, val=val, val_t=value(var)))
             elif not pytest.approx(val, rel=1e-3) == value(var):
                 raise PropertyValueError(
-                    "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, "
-                    "but it has a value of {val_t}. \nUpdate default_solution dict in the "
-                    "configure function that sets up the PropertyTestHarness".format(
+                    "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, but it "
+                    "has a value of {val_t}. \nUpdate state_solution in the configure function "
+                    "that sets up the PropertyCalculateStateTest".format(
                         v_name=v_name, ind=ind, val=val, val_t=value(var)))
 
         # check if any variables are badly scaled
@@ -580,3 +579,4 @@ class PropertyCalculateStateTest():
         if lst:
             raise PropertyValueError(
                 "The following variable(s) are poorly scaled: {lst}".format(lst=lst))
+
