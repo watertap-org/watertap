@@ -464,7 +464,7 @@ class TestParallelManager():
         local_output_dict['solve_status'] = ['optimal' for i in range(local_num_cases)]
 
         # Get the global output dictionary, This is properly created only on rank 0
-        global_output_dict = _create_global_output(local_output_dict, global_num_cases, comm)
+        global_output_dict = _create_global_output(local_output_dict, global_num_cases, comm, rank, num_procs)
 
         if num_procs == 1:
             assert local_output_dict == global_output_dict

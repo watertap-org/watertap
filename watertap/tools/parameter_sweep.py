@@ -407,55 +407,18 @@ def _update_local_output_dict(model, sweep_params, case_number, sweep_vals,
             outcome = model.find_component(key)
             output_dict["outputs"][key]["value"][case_number] = pyo.value(outcome)
 
-        # 1. Variables
-        # for var in variables_in_activated_equalities_set(model.fs):
-        #     output_dict["outputs"][var.name]["value"][case_number] = var.value
-
-        # # 2. Expressions
-        # for expr in expressions_set(model.fs):
-        #     output_dict["outputs"][expr.name]["value"][case_number] = pyo.value(expr)
-
-        # # 3. Objectives
-        # for obj in total_objectives_set(model):
-        #     output_dict["outputs"][obj.name]["value"][case_number] = pyo.value(obj)
-
     else:
         for key in output_dict['outputs'].keys():
             outcome = model.find_component(key)
             output_dict["outputs"][key]["value"][case_number] = np.nan
 
-        # 1. Variables: We will set everything to NaNs unless they are an input
-        # for var in variables_in_activated_equalities_set(model.fs):
-        #     if var.name in op_ps_dict.keys():
-        #         # This conditional exists so that we capture the actual input
-        #         # values. This is a redundancy since we already capture the
-        #         # inputs above.
-        #         output_dict["outputs"][var.name]["value"][case_number] = var.value
-        #     else:
-        #         output_dict["outputs"][var.name]["value"][case_number] = np.nan
-
-        # # 2. Expressions
-        # for expr in expressions_set(model.fs):
-        #     output_dict["outputs"][expr.name]["value"][case_number] = np.nan
-
-        # # 3. Objectives
-        # for obj in total_objectives_set(model):
-        #     output_dict["outputs"][obj.name]["value"][case_number] = np.nan
-
     return None
 
 # ================================================================
 
-def _create_global_output(local_output_dict, req_num_samples, comm):
+def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_procs):
 
-    if comm is None:
-        my_mpi_rank = 0
-        comm_size = 1
-    else:
-        my_mpi_rank = comm.Get_rank()
-        comm_size = comm.Get_size()
-
-    if comm_size == 1:
+    if num_procs == 1:
         global_output_dict = local_output_dict
     else:
         # We make the assumption that the parameter sweep is running the same
@@ -468,7 +431,7 @@ def _create_global_output(local_output_dict, req_num_samples, comm):
         num_total_samples = sum(sample_split_arr)
 
         # Create the global value array on rank 0
-        if my_mpi_rank == 0:
+        if rank == 0:
             global_output_dict = copy.deepcopy(local_output_dict)
             # Create a global value array of inputs in the dictionary
             for key, item in global_output_dict.items():
@@ -479,7 +442,7 @@ def _create_global_output(local_output_dict, req_num_samples, comm):
         else:
             global_output_dict = local_output_dict
 
-        tc_map = TerminationConditionMapping() # We will need this forgathering solve status
+        tc_map = TerminationConditionMapping() # We will need this for gathering solve status
 
         # Finally collect the values
         for key, item in local_output_dict.items(): # This probably doesnt work
@@ -500,7 +463,7 @@ def _create_global_output(local_output_dict, req_num_samples, comm):
                 local_tc_int = [tc_map.str_to_int[i] for i in item]
                 local_tc_int = np.asarray(local_tc_int, dtype=np.int64)
 
-                if my_mpi_rank == 0:
+                if rank == 0:
                     global_tc_int = np.zeros(num_total_samples, dtype=np.int64)
                 else:
                     global_tc_int = None
@@ -509,7 +472,7 @@ def _create_global_output(local_output_dict, req_num_samples, comm):
                              recvbuf=(global_tc_int, sample_split_arr),
                              root=0)
 
-                if my_mpi_rank == 0:
+                if rank == 0:
                     global_tc_str = [tc_map.int_to_str[i] for i in global_tc_int]
                     global_output_dict[key] = global_tc_str[0:req_num_samples]
 
@@ -566,8 +529,6 @@ def _write_output_to_h5(output_dict, output_directory="./output/",
                         subgrp.create_dataset(subsubkey, data=output_dict[key][subkey][subsubkey])
         elif key == 'solve_status':
             grp.create_dataset(key, data=output_dict[key])
-        else:
-            pass
 
     f.close()
 
@@ -684,15 +645,10 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
 # ================================================================
 
 def _aggregate_local_results(global_values, local_results, local_output_dict,
-        num_samples, local_num_cases, fail_counter, comm):
-
-    if comm is None:
-        num_procs = 1
-    else:
-        num_procs = comm.Get_size()
+        num_samples, local_num_cases, fail_counter, comm, rank, num_procs):
 
     global_results = _aggregate_results(local_results, global_values, comm, num_procs)
-    global_output_dict = _create_global_output(local_output_dict, num_samples, comm)
+    global_output_dict = _create_global_output(local_output_dict, num_samples, comm, rank, num_procs)
 
     return global_results, global_output_dict
 
@@ -700,14 +656,7 @@ def _aggregate_local_results(global_values, local_results, local_output_dict,
 
 def _save_results(sweep_params, outputs, local_values, global_values, local_results,
         global_results, global_output_dict, csv_results_file, results_fname_no_ext,
-        debugging_data_dir, comm, interpolate_nan_outputs):
-
-    if comm is None:
-        rank = 0
-        num_procs = 1
-    else:
-        rank = comm.Get_rank()
-        num_procs = comm.Get_size()
+        debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
 
     # Make a directory for saved outputs
     if rank == 0:
@@ -791,7 +740,7 @@ def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, re
                   ``outputs['Short/Pretty-print Name'] = model.fs.variable_or_expression_to_report``.
                   If not provided, i.e., outputs = None, the default behavior is to save all model
                   variables, parameters, and expressions which provides very thorough results
-                  at the cost of large file sizes. 
+                  at the cost of large file sizes.
 
         csv_results_file (optional) : The path and file name where the results are to be saved;
                                    subdirectories will be created as needed.
@@ -876,11 +825,12 @@ def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, re
 
     # Do the Loop
     local_results, local_output_dict, fail_counter = _do_param_sweep(model, sweep_params, outputs, local_values,
-        optimize_function, optimize_kwargs, reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep, comm)
+        optimize_function, optimize_kwargs, reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep,
+        comm)
 
     # Aggregate results on Master
     global_results, global_output_dict = _aggregate_local_results(global_values, local_results, local_output_dict,
-            num_samples, local_num_cases, fail_counter, comm)
+            num_samples, local_num_cases, fail_counter, comm, rank, num_procs)
 
     # import pprint
     # print("global_output_dict =")
@@ -888,7 +838,7 @@ def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, re
 
     # Save to file
     global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results, global_results, global_output_dict,
-        csv_results_file, results_fname, debugging_data_dir, comm, interpolate_nan_outputs)
+        csv_results_file, results_fname, debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs)
 
     return global_save_data
 
