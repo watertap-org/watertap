@@ -15,7 +15,7 @@ This module contains a zero-order representation of a coagulation/flocculation u
 operation.
 """
 
-from pyomo.environ import Constraint, units as pyunits, Var
+from pyomo.environ import Constraint, units as pyunits, Var, Expression
 from idaes.core import declare_process_block_class
 
 from watertap.core import build_pt, constant_intensity, ZeroOrderBaseData
@@ -48,16 +48,6 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
                              units=pyunits.mg / pyunits.L,
                              bounds=(0, None),
                              doc="Dosing rate of polymer")
-
-        self.anionic_polymer_dose = Var(self.flowsheet().time,
-                                    units=pyunits.mg / pyunits.L,
-                                    bounds=(0, None),
-                                    doc="Dosing rate of anionic polymer")
-
-        self.cationic_polymer_dose = Var(self.flowsheet().time,
-                                    units=pyunits.mg / pyunits.L,
-                                    bounds=(0, None),
-                                    doc="Dosing rate of cationic polymer")
 
         self.anion_to_cation_polymer_ratio = Var(
             bounds=(0, None),
@@ -102,7 +92,6 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
         self._perf_var_dict["Rapid Mix Retention Time (s)"] = self.rapid_mix_retention_time
         self._perf_var_dict["Floc Retention Time (min)"] = self.floc_retention_time
 
-
         def rule_rapid_mix_basin_vol(blk, t):
             return (blk.rapid_mix_basin_vol[t] ==
                     pyunits.convert(blk.properties[t].flow_vol
@@ -131,6 +120,21 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
         self.chemical_flow_constraint = Constraint(self.flowsheet().time,
                                                    ["alum", "polymer"],
                                                    rule=rule_chem_flow)
+
+        def rule_anionic_polymer_dose(blk, t):
+            return (blk.anion_to_cation_polymer_ratio * blk.polymer_dose[t]
+                    / (blk.anion_to_cation_polymer_ratio + 1))
+        self.anionic_polymer_dose = Expression(self.flowsheet().config.time,
+                                               rule=rule_anionic_polymer_dose)
+
+        def rule_cationic_polymer_dose(blk, t):
+            return (blk.polymer_dose[t]
+                    / (blk.anion_to_cation_polymer_ratio + 1))
+        self.cationic_polymer_dose = Expression(self.flowsheet().config.time,
+                                                rule=rule_cationic_polymer_dose)
+
+        self._perf_expr_dict["Anionic Polymer Dosage (mg/L)"] = self.anionic_polymer_dose
+        self._perf_expr_dict["Cationic Polymer Dosage (mg/L)"] = self.cationic_polymer_dose
 
         # pump_electricity(self, self.chemical_flow_vol)
 

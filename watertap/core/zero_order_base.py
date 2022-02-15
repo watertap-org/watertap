@@ -90,6 +90,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
         # Attributed for storing contents of reporting output
         self._stream_table_dict = {}
         self._perf_var_dict = {}
+        self._perf_expr_dict = {}
 
         # Check that property package meets requirements
         if self.config.property_package.phase_list != ["Liq"]:
@@ -264,6 +265,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
+        expr_dict = {}
 
         for k, v in self._perf_var_dict.items():
             if k == "Solute Removal":
@@ -274,4 +276,10 @@ class ZeroOrderBaseData(UnitModelBlockData):
             else:
                 var_dict[k] = v
 
-        return {"vars": var_dict}
+        for k, v in self._perf_expr_dict.items():
+            if v.is_indexed():
+                expr_dict[k] = v[time_point]
+            else:
+                expr_dict[k] = v
+
+        return {"vars": var_dict, "exprs": expr_dict}
