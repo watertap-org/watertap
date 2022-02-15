@@ -42,10 +42,10 @@ default:
   num_floc_injection_processes:
     value: 1
     units: dimensionless
-  G_rapid_mix:
+  velocity_gradient_rapid_mix:
     value: 900
     units: 1/s
-  G_floc:
+  velocity_gradient_floc:
     value: 80
     units: 1/s
 

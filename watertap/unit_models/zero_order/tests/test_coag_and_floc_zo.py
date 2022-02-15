@@ -69,22 +69,21 @@ class TestCoagFlocZO:
                 'num_floc_processes',
                 'num_coag_processes',
                 'num_floc_injection_processes',
-                'G_rapid_mix',
-                'G_floc',
+                'velocity_gradient_rapid_mix',
+                'velocity_gradient_floc',
                 'power_rapid_mix',
                 'power_floc',
-                'energy_electric_flow_vol_inlet'
-                }
-        exprs = {'anionic_polymer_dose',
-                 'cationic_polymer_dose',
-                 'total_power'}
+                'anionic_polymer_dose',
+                'cationic_polymer_dose'}
+        exprs = {'total_power'}
         cons = {'rapid_mix_basin_vol_constraint',
                 'floc_basin_vol_constraint',
                 'chemical_flow_constraint',
                 'chemical_flow_constraint',
                 'rule_power_rapid_mix',
                 'rule_power_floc',
-                'rule_energy_electric_flow_vol_inlet'}
+                'anionic_polymer_dose_constraint',
+                'cationic_polymer_dose_constraint'}
         for var in vars:
             assert isinstance(getattr(model.fs.unit, var), Var)
         for expr in exprs:
@@ -141,15 +140,13 @@ class TestCoagFlocZO:
         assert value(model.fs.unit.num_floc_injection_processes) == \
                data['num_floc_injection_processes']['value']
 
-        assert model.fs.unit.G_rapid_mix[0].fixed
-        assert value(model.fs.unit.G_rapid_mix[0]) == \
-               data['G_rapid_mix']['value']
+        assert model.fs.unit.velocity_gradient_rapid_mix[0].fixed
+        assert value(model.fs.unit.velocity_gradient_rapid_mix[0]) == \
+               data['velocity_gradient_rapid_mix']['value']
 
-        assert model.fs.unit.G_floc[0].fixed
-        assert value(model.fs.unit.G_floc[0]) == \
-               data['G_floc']['value']
-
-        assert not model.fs.unit.energy_electric_flow_vol_inlet[0].fixed
+        assert model.fs.unit.velocity_gradient_floc[0].fixed
+        assert value(model.fs.unit.velocity_gradient_floc[0]) == \
+               data['velocity_gradient_floc']['value']
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -195,9 +192,6 @@ class TestCoagFlocZO:
         assert (pytest.approx(0.237627, rel=1e-5) ==
                 value(model.fs.unit.total_power[0]))
 
-        assert (pytest.approx(5.0775e-3, rel=1e-5) ==
-                value(model.fs.unit.energy_electric_flow_vol_inlet[0]))
-
         assert (pytest.approx(0.071500, rel=1e-5) ==
                 value(model.fs.unit.rapid_mix_basin_vol))
 
@@ -205,10 +199,10 @@ class TestCoagFlocZO:
                 value(model.fs.unit.floc_basin_vol))
 
         assert (pytest.approx(900, rel=1e-5) ==
-                value(model.fs.unit.G_rapid_mix[0]))
+                value(model.fs.unit.velocity_gradient_rapid_mix[0]))
 
         assert (pytest.approx(80, rel=1e-5) ==
-                value(model.fs.unit.G_floc[0]))
+                value(model.fs.unit.velocity_gradient_floc[0]))
 
     @pytest.mark.component
     def test_report(self, model):
@@ -224,33 +218,32 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                                                : Value      : Fixed : Bounds
-                                    Alum Dosage (mg/L) :     10.000 :  True : (0, None)
-                                      Alum Flow (kg/s) : 0.00013000 : False : (0, None)
-    Electricity intensity per Feed Flow Rate (kWh/m^3) :  0.0050775 : False : (None, None)
-                               Floc Basin Volume (m^3) :     9.3600 : False : (None, None)
-                                       Floc Power (kW) :    0.17971 : False : (None, None)
-                             Floc Retention Time (min) :     12.000 :  True : (None, None)
-                          Floc Velocity Gradient (1/s) :     80.000 :  True : (None, None)
-                       Number of Coagulation Processes :     1.0000 :  True : (None, None)
-                    Number of Floc Injection Processes :     1.0000 :  True : (None, None)
-                                 Number of Floc Mixers :     3.0000 :  True : (None, None)
-                              Number of Floc Processes :     2.0000 :  True : (None, None)
-                         Number of Rapid Mix Processes :     1.0000 :  True : (None, None)
-                                Number of Rapid Mixers :     1.0000 :  True : (None, None)
-                                 Polymer Dosage (mg/L) :    0.10000 :  True : (0, None)
-                                   Polymer Flow (kg/s) : 1.3000e-06 : False : (0, None)
-                          Rapid Mix Basin Volume (m^3) :   0.071500 : False : (None, None)
-                                  Rapid Mix Power (kW) :   0.057915 : False : (None, None)
-                          Rapid Mix Retention Time (s) :     5.5000 :  True : (None, None)
-                     Rapid Mix Velocity Gradient (1/s) :     900.00 :  True : (None, None)
+    Key                                : Value      : Fixed : Bounds
+                    Alum Dosage (mg/L) :     10.000 :  True : (0, None)
+                      Alum Flow (kg/s) : 0.00013000 : False : (0, None)
+         Anionic Polymer Dosage (mg/L) :   0.050000 : False : (0, None)
+        Cationic Polymer Dosage (mg/L) :   0.050000 : False : (0, None)
+               Floc Basin Volume (m^3) :     9.3600 : False : (None, None)
+                       Floc Power (kW) :    0.17971 : False : (None, None)
+             Floc Retention Time (min) :     12.000 :  True : (None, None)
+          Floc Velocity Gradient (1/s) :     80.000 :  True : (None, None)
+       Number of Coagulation Processes :     1.0000 :  True : (None, None)
+    Number of Floc Injection Processes :     1.0000 :  True : (None, None)
+                 Number of Floc Mixers :     3.0000 :  True : (None, None)
+              Number of Floc Processes :     2.0000 :  True : (None, None)
+         Number of Rapid Mix Processes :     1.0000 :  True : (None, None)
+                Number of Rapid Mixers :     1.0000 :  True : (None, None)
+                 Polymer Dosage (mg/L) :    0.10000 :  True : (0, None)
+                   Polymer Flow (kg/s) : 1.3000e-06 : False : (0, None)
+          Rapid Mix Basin Volume (m^3) :   0.071500 : False : (None, None)
+                  Rapid Mix Power (kW) :   0.057915 : False : (None, None)
+          Rapid Mix Retention Time (s) :     5.5000 :  True : (None, None)
+     Rapid Mix Velocity Gradient (1/s) :     900.00 :  True : (None, None)
 
     Expressions: 
 
-    Key                            : Value
-     Anionic Polymer Dosage (mg/L) : 0.050000
-    Cationic Polymer Dosage (mg/L) : 0.050000
-      Total Power Consumption (kW) :  0.23763
+    Key                          : Value
+    Total Power Consumption (kW) : 0.23763
 
 ------------------------------------------------------------------------------------
     Stream Table

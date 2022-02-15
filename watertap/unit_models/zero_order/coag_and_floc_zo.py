@@ -55,6 +55,16 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
             units=pyunits.dimensionless,
             doc="Ratio of anionic to cationic polymer in dosage")
 
+        self.anionic_polymer_dose = Var(self.flowsheet().config.time,
+                                        bounds=(0, None),
+                                        units=pyunits.mg/pyunits.L,
+                                        doc="Dosing rate of anionic polymer")
+
+        self.cationic_polymer_dose = Var(self.flowsheet().config.time,
+                                        bounds=(0, None),
+                                        units=pyunits.mg / pyunits.L,
+                                        doc="Dosing rate of cationic polymer")
+
         self.chemical_flow_mass = Var(
             self.flowsheet().time,
             ["alum", "polymer"],
@@ -94,11 +104,11 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
         self.num_floc_injection_processes = Var(units=pyunits.dimensionless,
                                                 doc="Number of Floc Injection Processes")
 
-        self.G_rapid_mix = Var(self.flowsheet().config.time,
+        self.velocity_gradient_rapid_mix = Var(self.flowsheet().config.time,
                                units=pyunits.s**-1,
                                doc="Rapid Mix Velocity Gradient")
 
-        self.G_floc = Var(self.flowsheet().config.time,
+        self.velocity_gradient_floc = Var(self.flowsheet().config.time,
                           units=pyunits.s**-1,
                           doc="Floc Velocity Gradient")
 
@@ -109,10 +119,6 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
         self.power_floc = Var(self.flowsheet().config.time,
                               units=pyunits.kW,
                               doc="Floc Power Consumption")
-
-        self.energy_electric_flow_vol_inlet = Var(self.flowsheet().config.time,
-                                                  units=pyunits.kWh/pyunits.m**3,
-                                                  doc="Electricity intensity per inlet flowrate")
 
         self._fixed_perf_vars.append(self.alum_dose)
         self._fixed_perf_vars.append(self.polymer_dose)
@@ -125,8 +131,8 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.num_coag_processes)
         self._fixed_perf_vars.append(self.num_floc_mixers)
         self._fixed_perf_vars.append(self.num_rapid_mix_processes)
-        self._fixed_perf_vars.append(self.G_rapid_mix)
-        self._fixed_perf_vars.append(self.G_floc)
+        self._fixed_perf_vars.append(self.velocity_gradient_rapid_mix)
+        self._fixed_perf_vars.append(self.velocity_gradient_floc)
 
         self._perf_var_dict["Alum Dosage (mg/L)"] = self.alum_dose
         self._perf_var_dict["Polymer Dosage (mg/L)"] = self.polymer_dose
@@ -142,11 +148,12 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
         self._perf_var_dict["Number of Coagulation Processes"] = self.num_coag_processes
         self._perf_var_dict["Number of Floc Mixers"] = self.num_floc_mixers
         self._perf_var_dict["Number of Rapid Mix Processes"] = self.num_rapid_mix_processes
-        self._perf_var_dict["Rapid Mix Velocity Gradient (1/s)"] = self.G_rapid_mix
-        self._perf_var_dict["Floc Velocity Gradient (1/s)"] = self.G_floc
+        self._perf_var_dict["Rapid Mix Velocity Gradient (1/s)"] = self.velocity_gradient_rapid_mix
+        self._perf_var_dict["Floc Velocity Gradient (1/s)"] = self.velocity_gradient_floc
         self._perf_var_dict["Rapid Mix Power (kW)"] = self.power_rapid_mix
         self._perf_var_dict["Floc Power (kW)"] = self.power_floc
-        self._perf_var_dict["Electricity intensity per Feed Flow Rate (kWh/m^3)"] = self.energy_electric_flow_vol_inlet
+        self._perf_var_dict["Anionic Polymer Dosage (mg/L)"] = self.anionic_polymer_dose
+        self._perf_var_dict["Cationic Polymer Dosage (mg/L)"] = self.cationic_polymer_dose
 
         def rule_rapid_mix_basin_vol(blk):
             return (blk.rapid_mix_basin_vol ==
@@ -172,19 +179,18 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
                                                    rule=rule_chem_flow)
 
         def rule_anionic_polymer_dose(blk, t):
-            return (blk.anion_to_cation_polymer_ratio[t] * blk.polymer_dose[t]
+            return (blk.anionic_polymer_dose[t] ==
+                    blk.anion_to_cation_polymer_ratio[t]
+                    * blk.polymer_dose[t]
                     / (blk.anion_to_cation_polymer_ratio[t] + 1))
-        self.anionic_polymer_dose = Expression(self.flowsheet().config.time,
-                                               rule=rule_anionic_polymer_dose)
+        self.anionic_polymer_dose_constraint = Constraint(self.flowsheet().config.time,
+                                                          rule=rule_anionic_polymer_dose)
 
         def rule_cationic_polymer_dose(blk, t):
-            return (blk.polymer_dose[t]
+            return (blk.cationic_polymer_dose[t] == blk.polymer_dose[t]
                     / (blk.anion_to_cation_polymer_ratio[t] + 1))
-        self.cationic_polymer_dose = Expression(self.flowsheet().config.time,
-                                                rule=rule_cationic_polymer_dose)
-
-        self._perf_expr_dict["Anionic Polymer Dosage (mg/L)"] = self.anionic_polymer_dose
-        self._perf_expr_dict["Cationic Polymer Dosage (mg/L)"] = self.cationic_polymer_dose
+        self.cationic_polymer_dose_constraint = Constraint(self.flowsheet().config.time,
+                                                           rule=rule_cationic_polymer_dose)
 
         # TODO: WT3 doesn't include pump electricity. Consider adding after case study validation
         # pump_electricity(self, self.chemical_flow_vol)
@@ -196,7 +202,7 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
                     pyunits.convert(b.num_rapid_mixers
                     * b.properties[t].visc_d
                     * b.rapid_mix_basin_vol
-                    * b.G_rapid_mix[t] ** 2, to_units=pyunits.kW))
+                    * b.velocity_gradient_rapid_mix[t] ** 2, to_units=pyunits.kW))
 
         @self.Constraint(self.flowsheet().time,
                          doc='Constraint for floc power consumption')
@@ -205,7 +211,7 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
                     pyunits.convert(b.num_floc_mixers
                     * b.properties[t].visc_d
                     * b.floc_basin_vol
-                    * b.G_floc[t] ** 2, to_units=pyunits.kW))
+                    * b.velocity_gradient_floc[t] ** 2, to_units=pyunits.kW))
 
         @self.Expression(self.flowsheet().time,
                          doc='Total power consumption')
@@ -214,13 +220,6 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
 
         self._perf_expr_dict["Total Power Consumption (kW)"] = self.total_power
 
-        @self.Constraint(self.flowsheet().time,
-                         doc='Electricity intensity with respect to inlet flowrate of unit')
-        def rule_energy_electric_flow_vol_inlet(b, t):
-            return (b.total_power[t] ==
-                    b.energy_electric_flow_vol_inlet[t]
-                    * pyunits.convert(b.properties[t].flow_vol,
-                                      to_units=pyunits.m**3/pyunits.hour))
 
 
 
