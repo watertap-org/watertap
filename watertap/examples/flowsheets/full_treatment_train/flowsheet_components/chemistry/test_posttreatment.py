@@ -29,6 +29,9 @@ from watertap.examples.flowsheets.full_treatment_train.util import check_dof
 from pyomo.environ import TransformationFactory
 from pyomo.network import Arc
 
+from idaes.config import bin_directory as idaes_bin_directory
+is_solver_from_idaes_ext = idaes_bin_directory in solver.executable()
+
 __author__ = "Austin Ladshaw"
 
 @pytest.mark.component
@@ -53,6 +56,11 @@ def test_ideal_naocl_chlorination():
 
 @pytest.mark.component
 def test_ideal_naocl_chlorination_full_block():
+    if not is_solver_from_idaes_ext:
+        pytest.xfail(
+            "This test is known to be failing with solver: "
+            f"{solver}, {solver.executable()}"
+        )
     model = run_chlorination_block_example(fix_free_chlorine=True)
     assert model.fs.ideal_naocl_mixer_unit.dosing_rate.value == \
             pytest.approx(0.9504457542440085, rel=1e-3)
