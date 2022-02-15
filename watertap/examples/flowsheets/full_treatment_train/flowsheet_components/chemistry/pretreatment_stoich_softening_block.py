@@ -747,19 +747,23 @@ def initialize_stoich_softening_mixer(unit, debug_out=False):
     if not unit.lime_stream.flow_mol[0].is_fixed():
         unit.lime_stream.flow_mol[0].fix()
         was_fixed = True
+    init_options = {**solver.options}
+    init_options['bound_relax_factor'] = 1.0e-04
     if debug_out:
-        unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+        unit.initialize(optarg=init_options, outlvl=idaeslog.DEBUG)
     else:
-        unit.initialize(optarg=solver.options)
+        unit.initialize(optarg=init_options)
     if was_fixed:
         unit.lime_stream.flow_mol[0].unfix()
 
 
 def initialize_stoich_softening_reactor(unit, debug_out=False):
+    init_options = {**solver.options}
+    init_options['bound_relax_factor'] = 1.0e-04
     if debug_out:
-        unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+        unit.initialize(optarg=init_options, outlvl=idaeslog.DEBUG)
     else:
-        unit.initialize(optarg=solver.options)
+        unit.initialize(optarg=init_options)
 
 
 def initialize_stoich_softening_separator(unit, debug_out=False):
