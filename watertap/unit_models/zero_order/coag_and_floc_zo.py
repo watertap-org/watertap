@@ -50,16 +50,17 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
                              doc="Dosing rate of polymer")
 
         self.anion_to_cation_polymer_ratio = Var(
+            self.flowsheet().time,
             bounds=(0, None),
             units=pyunits.dimensionless,
             doc="Ratio of anionic to cationic polymer in dosage")
 
-        self.chemical_flow_vol = Var(
+        self.chemical_flow_mass = Var(
             self.flowsheet().time,
             ["alum", "polymer"],
-            units=pyunits.m ** 3 / pyunits.s,
+            units=pyunits.kg/pyunits.s,
             bounds=(0, None),
-            doc="Volumetric flow rate of chemical solution")
+            doc="Mass flow rate of chemical solution")
 
         self.rapid_mix_retention_time = Var(self.flowsheet().config.time,
                                             units=pyunits.seconds,
@@ -69,76 +70,157 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
                                        units=pyunits.minutes,
                                        doc="Floc Retention Time")
 
-        self.rapid_mix_basin_vol = Var(self.flowsheet().config.time,
-                                          units=pyunits.gallons,
-                                          doc="Rapid Mix Basin Volume")
+        self.rapid_mix_basin_vol = Var(units=pyunits.m**3,
+                                       doc="Rapid Mix Basin Volume")
 
-        self.floc_basin_vol = Var(self.flowsheet().config.time,
-                                  units=pyunits.gallons,
+        self.floc_basin_vol = Var(units=pyunits.m**3,
                                   doc="Floc Basin Volume")
+
+        self.num_rapid_mixers = Var(units=pyunits.dimensionless,
+                                    doc="Number of Rapid Mixers")
+
+        self.num_floc_mixers = Var(units=pyunits.dimensionless,
+                                    doc="Number of Floc Mixers")
+
+        self.num_rapid_mix_processes = Var(units=pyunits.dimensionless,
+                                           doc="Number of Rapid Mix Processes")
+
+        self.num_floc_processes = Var(units=pyunits.dimensionless,
+                                       doc="Number of Floc Processes")
+
+        self.num_coag_processes = Var(units=pyunits.dimensionless,
+                                       doc="Number of Coagulation Processes")
+
+        self.num_floc_injection_processes = Var(units=pyunits.dimensionless,
+                                                doc="Number of Floc Injection Processes")
+
+        self.G_rapid_mix = Var(self.flowsheet().config.time,
+                               units=pyunits.s**-1,
+                               doc="Rapid Mix Velocity Gradient")
+
+        self.G_floc = Var(self.flowsheet().config.time,
+                          units=pyunits.s**-1,
+                          doc="Floc Velocity Gradient")
+
+        self.power_rapid_mix = Var(self.flowsheet().config.time,
+                                   units=pyunits.kW,
+                                   doc="Rapid Mix Power Consumption")
+
+        self.power_floc = Var(self.flowsheet().config.time,
+                              units=pyunits.kW,
+                              doc="Floc Power Consumption")
+
+        self.energy_electric_flow_vol_inlet = Var(self.flowsheet().config.time,
+                                                  units=pyunits.kWh/pyunits.m**3,
+                                                  doc="Electricity intensity per inlet flowrate")
 
         self._fixed_perf_vars.append(self.alum_dose)
         self._fixed_perf_vars.append(self.polymer_dose)
         self._fixed_perf_vars.append(self.anion_to_cation_polymer_ratio)
         self._fixed_perf_vars.append(self.rapid_mix_retention_time)
         self._fixed_perf_vars.append(self.floc_retention_time)
+        self._fixed_perf_vars.append(self.num_floc_injection_processes)
+        self._fixed_perf_vars.append(self.num_floc_processes)
+        self._fixed_perf_vars.append(self.num_rapid_mixers)
+        self._fixed_perf_vars.append(self.num_coag_processes)
+        self._fixed_perf_vars.append(self.num_floc_mixers)
+        self._fixed_perf_vars.append(self.num_rapid_mix_processes)
+        self._fixed_perf_vars.append(self.G_rapid_mix)
+        self._fixed_perf_vars.append(self.G_floc)
 
         self._perf_var_dict["Alum Dosage (mg/L)"] = self.alum_dose
         self._perf_var_dict["Polymer Dosage (mg/L)"] = self.polymer_dose
-        self._perf_var_dict["Alum Flow (lb/h)"] = self.chemical_flow_vol[0, "alum"]
-        self._perf_var_dict["Polymer Flow (lb/d)"] = self.chemical_flow_vol[0, "polymer"]
-        self._perf_var_dict["Rapid Mix Basin Volume (gal)"] = self.rapid_mix_basin_vol
-        self._perf_var_dict["Floc Basin Volume (gal)"] = self.floc_basin_vol
+        self._perf_var_dict["Alum Flow (kg/s)"] = self.chemical_flow_mass[0, "alum"]
+        self._perf_var_dict["Polymer Flow (kg/s)"] = self.chemical_flow_mass[0, "polymer"]
+        self._perf_var_dict["Rapid Mix Basin Volume (m^3)"] = self.rapid_mix_basin_vol
+        self._perf_var_dict["Floc Basin Volume (m^3)"] = self.floc_basin_vol
         self._perf_var_dict["Rapid Mix Retention Time (s)"] = self.rapid_mix_retention_time
         self._perf_var_dict["Floc Retention Time (min)"] = self.floc_retention_time
+        self._perf_var_dict["Number of Floc Injection Processes"] = self.num_floc_injection_processes
+        self._perf_var_dict["Number of Floc Processes"] = self.num_floc_processes
+        self._perf_var_dict["Number of Rapid Mixers"] = self.num_rapid_mixers
+        self._perf_var_dict["Number of Coagulation Processes"] = self.num_coag_processes
+        self._perf_var_dict["Number of Floc Mixers"] = self.num_floc_mixers
+        self._perf_var_dict["Number of Rapid Mix Processes"] = self.num_rapid_mix_processes
+        self._perf_var_dict["Rapid Mix Velocity Gradient (1/s)"] = self.G_rapid_mix
+        self._perf_var_dict["Floc Velocity Gradient (1/s)"] = self.G_floc
+        self._perf_var_dict["Rapid Mix Power (kW)"] = self.power_rapid_mix
+        self._perf_var_dict["Floc Power (kW)"] = self.power_floc
+        self._perf_var_dict["Electricity intensity per Feed Flow Rate (kWh/m^3)"] = self.energy_electric_flow_vol_inlet
 
-        def rule_rapid_mix_basin_vol(blk, t):
-            return (blk.rapid_mix_basin_vol[t] ==
-                    pyunits.convert(blk.properties[t].flow_vol
-                                    * blk.rapid_mix_retention_time[t],
-                                    to_units=pyunits.gallons))
-        self.rapid_mix_basin_vol_constraint = Constraint(self.flowsheet().config.time, rule=rule_rapid_mix_basin_vol)
+        def rule_rapid_mix_basin_vol(blk):
+            return (blk.rapid_mix_basin_vol ==
+                    blk.properties[0].flow_vol * blk.rapid_mix_retention_time[0])
+        self.rapid_mix_basin_vol_constraint = Constraint(rule=rule_rapid_mix_basin_vol)
 
-        def rule_floc_basin_vol(blk, t):
-            return (blk.floc_basin_vol[t] ==
-                    pyunits.convert(blk.properties[t].flow_vol
-                                    * blk.floc_retention_time[t],
-                                    to_units=pyunits.gallons))
-        self.floc_basin_vol_constraint = Constraint(self.flowsheet().config.time, rule=rule_floc_basin_vol)
+        def rule_floc_basin_vol(blk):
+            return (blk.floc_basin_vol ==
+                    pyunits.convert(blk.properties[0].flow_vol * blk.floc_retention_time[0],
+                                    to_units=pyunits.m**3))
+        self.floc_basin_vol_constraint = Constraint(rule=rule_floc_basin_vol)
 
         def rule_chem_flow(blk, t, j):
             if j == 'alum':
                 chemical_dosage = blk.alum_dose[t]
-                units= pyunits.lb/pyunits.hour
             elif j == 'polymer':
                 chemical_dosage = blk.polymer_dose[t]
-                units = pyunits.lb / pyunits.day
-            return (blk.chemical_flow_vol[t, j] ==
-                    pyunits.convert(
-                        chemical_dosage * blk.properties[t].flow_vol,
-                        to_units=units))
+            return (blk.chemical_flow_mass[t, j] ==
+                    pyunits.convert(chemical_dosage * blk.properties[t].flow_vol,
+                                    to_units=pyunits.kg/pyunits.s))
         self.chemical_flow_constraint = Constraint(self.flowsheet().time,
                                                    ["alum", "polymer"],
                                                    rule=rule_chem_flow)
 
         def rule_anionic_polymer_dose(blk, t):
-            return (blk.anion_to_cation_polymer_ratio * blk.polymer_dose[t]
-                    / (blk.anion_to_cation_polymer_ratio + 1))
+            return (blk.anion_to_cation_polymer_ratio[t] * blk.polymer_dose[t]
+                    / (blk.anion_to_cation_polymer_ratio[t] + 1))
         self.anionic_polymer_dose = Expression(self.flowsheet().config.time,
                                                rule=rule_anionic_polymer_dose)
 
         def rule_cationic_polymer_dose(blk, t):
             return (blk.polymer_dose[t]
-                    / (blk.anion_to_cation_polymer_ratio + 1))
+                    / (blk.anion_to_cation_polymer_ratio[t] + 1))
         self.cationic_polymer_dose = Expression(self.flowsheet().config.time,
                                                 rule=rule_cationic_polymer_dose)
 
         self._perf_expr_dict["Anionic Polymer Dosage (mg/L)"] = self.anionic_polymer_dose
         self._perf_expr_dict["Cationic Polymer Dosage (mg/L)"] = self.cationic_polymer_dose
 
+        # TODO: WT3 doesn't include pump electricity. Consider adding after case study validation
         # pump_electricity(self, self.chemical_flow_vol)
 
+        @self.Constraint(self.flowsheet().time,
+                         doc='Constraint for rapid mix power consumption')
+        def rule_power_rapid_mix(b, t):
+            return (b.power_rapid_mix[t] ==
+                    pyunits.convert(b.num_rapid_mixers
+                    * b.properties[t].visc_d
+                    * b.rapid_mix_basin_vol
+                    * b.G_rapid_mix[t] ** 2, to_units=pyunits.kW))
 
+        @self.Constraint(self.flowsheet().time,
+                         doc='Constraint for floc power consumption')
+        def rule_power_floc(b, t):
+            return (b.power_floc[t] ==
+                    pyunits.convert(b.num_floc_mixers
+                    * b.properties[t].visc_d
+                    * b.floc_basin_vol
+                    * b.G_floc[t] ** 2, to_units=pyunits.kW))
+
+        @self.Expression(self.flowsheet().time,
+                         doc='Total power consumption')
+        def total_power(b, t):
+            return b.power_floc[t] + b.power_rapid_mix[t]
+
+        self._perf_expr_dict["Total Power Consumption (kW)"] = self.total_power
+
+        @self.Constraint(self.flowsheet().time,
+                         doc='Electricity intensity with respect to inlet flowrate of unit')
+        def rule_energy_electric_flow_vol_inlet(b, t):
+            return (b.total_power[t] ==
+                    b.energy_electric_flow_vol_inlet[t]
+                    * pyunits.convert(b.properties[t].flow_vol,
+                                      to_units=pyunits.m**3/pyunits.hour))
 
 
 

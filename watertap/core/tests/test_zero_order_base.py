@@ -46,6 +46,7 @@ def test_private_attributes():
     assert m.fs.unit._get_Q is None
     assert m.fs.unit._stream_table_dict == {}
     assert m.fs.unit._perf_var_dict == {}
+    assert m.fs.unit._perf_expr_dict == {}
 
 
 class TestZOBase:
