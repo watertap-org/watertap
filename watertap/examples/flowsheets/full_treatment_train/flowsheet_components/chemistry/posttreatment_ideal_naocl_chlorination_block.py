@@ -550,7 +550,7 @@ def initialize_ideal_naocl_mixer(unit, debug_out=False):
 
 def initialize_ideal_naocl_chlorination(unit, state_args, debug_out=False):
     init_options = {**solver.options}
-    init_options["bound_relax_factor"] = 1.0e-02
+    init_options["bound_relax_factor"] = 1.0e-04
     if debug_out:
         unit.initialize(state_args=state_args, optarg=init_options, outlvl=idaeslog.DEBUG)
     else:
