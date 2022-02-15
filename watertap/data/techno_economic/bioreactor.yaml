@@ -21,7 +21,7 @@ default:
     cost_function_form:
       function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
       units: $
-  recovery_vol:
+  recovery_frac_mass_H2O:
     value: 0.97
     units: dimensionless
     reference: Defined based on the San Luis case study data.

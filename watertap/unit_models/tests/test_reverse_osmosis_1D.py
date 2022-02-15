@@ -47,12 +47,9 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
                                      badly_scaled_var_generator,
                                      )
 
-from idaes.config import bin_directory as idaes_bin_directory
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
-is_solver_from_idaes_ext = idaes_bin_directory in solver.executable()
 # -----------------------------------------------------------------------------
 
 @pytest.mark.unit
@@ -309,8 +306,8 @@ class TestReverseOsmosis():
 
         # test statistics
         assert number_variables(m) == 250
-        assert number_total_constraints(m) == 207
-        assert number_unused_variables(m) == 20
+        assert number_total_constraints(m) == 205
+        assert number_unused_variables(m) == 22
 
     @pytest.mark.integration
     def test_units(self, RO_frame):
@@ -343,11 +340,6 @@ class TestReverseOsmosis():
     def test_var_scaling(self, RO_frame):
         m = RO_frame
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
-        if not is_solver_from_idaes_ext:
-            pytest.xfail(
-                "This test is known to be failing with solver: "
-                f"{solver}, {solver.executable()}"
-            )
         assert badly_scaled_var_lst == []
 
     @pytest.mark.component
@@ -484,8 +476,8 @@ class TestReverseOsmosis():
 
         # test statistics
         assert number_variables(m) == 200
-        assert number_total_constraints(m) == 159
-        assert number_unused_variables(m) == 27
+        assert number_total_constraints(m) == 157
+        assert number_unused_variables(m) == 29
 
         # Test units
         assert_units_consistent(m.fs.unit)
@@ -634,8 +626,8 @@ class TestReverseOsmosis():
 
        # test statistics
         assert number_variables(m) == 204
-        assert number_total_constraints(m) == 159
-        assert number_unused_variables(m) == 28
+        assert number_total_constraints(m) == 157
+        assert number_unused_variables(m) == 30
 
         assert_units_consistent(m.fs.unit)
 
@@ -782,8 +774,8 @@ class TestReverseOsmosis():
 
         # test statistics
         assert number_variables(m) == 204
-        assert number_total_constraints(m) == 159
-        assert number_unused_variables(m) == 28
+        assert number_total_constraints(m) == 157
+        assert number_unused_variables(m) == 30
 
         assert_units_consistent(m.fs.unit)
 
@@ -939,8 +931,8 @@ class TestReverseOsmosis():
 
         # test statistics
         assert number_variables(m) == 227
-        assert number_total_constraints(m) == 184
-        assert number_unused_variables(m) == 20
+        assert number_total_constraints(m) == 182
+        assert number_unused_variables(m) == 22
 
         assert_units_consistent(m.fs.unit)
 
@@ -1103,8 +1095,8 @@ class TestReverseOsmosis():
 
         # test statistics
         assert number_variables(m) == 232
-        assert number_total_constraints(m) == 185
-        assert number_unused_variables(m) == 21
+        assert number_total_constraints(m) == 183
+        assert number_unused_variables(m) == 23
 
         assert_units_consistent(m.fs.unit)
 
@@ -1267,8 +1259,8 @@ class TestReverseOsmosis():
 
         # test statistics
         assert number_variables(m) == 232
-        assert number_total_constraints(m) == 188
-        assert number_unused_variables(m) == 20
+        assert number_total_constraints(m) == 186
+        assert number_unused_variables(m) == 22
 
         assert_units_consistent(m.fs.unit)
 
