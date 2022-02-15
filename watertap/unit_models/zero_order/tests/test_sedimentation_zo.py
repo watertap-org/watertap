@@ -123,7 +123,7 @@ class TestSedimentationZO:
                 value(model.fs.unit.properties_byproduct[0].flow_vol))
         assert (pytest.approx(999.66, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(0, rel=1e-5) ==
+        assert (pytest.approx(0, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
         assert (pytest.approx(27.986, rel=1e-5) ==
                 value(model.fs.unit.basin_surface_area[0]))
@@ -270,9 +270,9 @@ class TestSedimentationZO_w_default_removal:
                 value(model.fs.unit.properties_byproduct[0].flow_vol))
         assert (pytest.approx(999.66, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(0, rel=1e-5) ==
+        assert (pytest.approx(0, abs=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0, rel=1e-5) ==
+        assert (pytest.approx(0, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
         assert (pytest.approx(30.139, rel=1e-5) ==
                 value(model.fs.unit.basin_surface_area[0]))
@@ -312,10 +312,10 @@ Unit : fs.unit                                                             Time:
 ------------------------------------------------------------------------------------
     Stream Table
                              Inlet   Treated  Byproduct
-    Volumetric Flowrate    0.014000 0.011027 0.0029735 
-    Mass Concentration H2O   714.29   906.81   0.33631 
-    Mass Concentration tss   214.29   2.4960    999.66 
-    Mass Concentration foo   71.429   90.690    0.0000 
+    Volumetric Flowrate    0.014000 0.011027  0.0029735
+    Mass Concentration H2O   714.29   906.81    0.33631
+    Mass Concentration tss   214.29   2.4960     999.66
+    Mass Concentration foo   71.429   90.690 2.6905e-07
 ====================================================================================
 """
 

@@ -115,7 +115,7 @@ class TestClarifierZO:
                 value(model.fs.unit.properties_byproduct[0].flow_vol))
         assert (pytest.approx(996.648, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(0, rel=1e-5) ==
+        assert (pytest.approx(0, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
 
     @pytest.mark.solver
@@ -250,9 +250,9 @@ class TestClarifierZO_w_default_removal:
                 value(model.fs.unit.properties_byproduct[0].flow_vol))
         assert (pytest.approx(996.648, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(0, rel=1e-5) ==
+        assert (pytest.approx(0, abs=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0, rel=1e-5) ==
+        assert (pytest.approx(0, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
 
     @pytest.mark.solver
@@ -289,10 +289,10 @@ Unit : fs.unit                                                             Time:
 ------------------------------------------------------------------------------------
     Stream Table
                              Inlet   Treated  Byproduct
-    Volumetric Flowrate    0.014000 0.011018 0.0029825 
-    Mass Concentration H2O   714.29   906.74    3.3529 
-    Mass Concentration tss   214.29   2.4980    996.65 
-    Mass Concentration foo   71.429   90.765    0.0000 
+    Volumetric Flowrate    0.014000 0.011018  0.0029825
+    Mass Concentration H2O   714.29   906.74     3.3529
+    Mass Concentration tss   214.29   2.4980     996.65
+    Mass Concentration foo   71.429   90.765 2.6823e-07
 ====================================================================================
 """
 

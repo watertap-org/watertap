@@ -59,6 +59,3 @@ class SedimentationZOData(ZeroOrderBaseData):
                         / b.settling_velocity[t],
                         to_units=pyunits.ft**2))
         self.basin_surface_area_constraint = Constraint(self.flowsheet().time, rule=rule_basin_surface_area)
-
-
-
