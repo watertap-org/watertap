@@ -289,10 +289,10 @@ Unit : fs.unit                                                             Time:
 ------------------------------------------------------------------------------------
     Stream Table
                              Inlet   Treated  Byproduct
-    Volumetric Flowrate    0.014000 0.011018 0.0029825 
-    Mass Concentration H2O   714.29   906.74    3.3529 
-    Mass Concentration tss   214.29   2.4980    996.65 
-    Mass Concentration foo   71.429   90.765    0.0000 
+    Volumetric Flowrate    0.014000 0.011018  0.0029825
+    Mass Concentration H2O   714.29   906.74     3.3529
+    Mass Concentration tss   214.29   2.4980     996.65
+    Mass Concentration foo   71.429   90.765 2.6823e-07
 ====================================================================================
 """
 
