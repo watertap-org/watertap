@@ -672,12 +672,12 @@ class DSPMDEStateBlockData(StateBlockData):
 
         # these variables should have user input
         if iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O'], default=1e0)
+            sf = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O'], default=1, warning=True)
             iscale.set_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O'], sf)
 
         for j in self.params.solute_set:
             if iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j]) is None:
-                sf = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j], default=1)
+                sf = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j], default=1, warning=True)
                 iscale.set_scaling_factor(self.flow_mol_phase_comp['Liq', j], sf)
 
         # scaling factors for parameters
