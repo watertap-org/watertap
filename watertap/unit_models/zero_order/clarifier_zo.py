@@ -11,22 +11,23 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a nanofiltration unit
+This module contains a zero-order representation of a clarifier unit.
 operation.
 """
 
+from pyomo.environ import Constraint, units as pyunits, Var
 from idaes.core import declare_process_block_class
 
 from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
 
 # Some more information about this module
-__author__ = "Andrew Lee"
+__author__ = "Adam Atia"
 
 
-@declare_process_block_class("NanofiltrationZO")
-class NanofiltrationZOData(ZeroOrderBaseData):
+@declare_process_block_class("ClarifierZO")
+class ClarifierZOData(ZeroOrderBaseData):
     """
-    Zero-Order model for a Nanofiltration unit operation.
+    Zero-Order model for a Clarifier unit operation.
     """
 
     CONFIG = ZeroOrderBaseData.CONFIG()
@@ -34,7 +35,7 @@ class NanofiltrationZOData(ZeroOrderBaseData):
     def build(self):
         super().build()
 
-        self._tech_type = "nanofiltration"
+        self._tech_type = "clarifier"
 
         build_sido(self)
         constant_intensity(self)
