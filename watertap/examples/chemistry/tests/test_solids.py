@@ -323,7 +323,9 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
     #End scaling if statement
 
     solver.options['max_iter'] = 200
-    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+    init_options = {**solver.options}
+    init_options["bound_relax_factor"] = 1.0e-02
+    model.fs.unit.initialize(optarg=init_options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
