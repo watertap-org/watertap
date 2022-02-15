@@ -318,10 +318,10 @@ Product             : 0.180 kg/s, 1592 ppm, 1.0 bar
         fs = model.fs
 
         data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.385923
-        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.482333e-3
+        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.4824263e-3
         data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.544077
         data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.695177e-1
-        data[fs.costing.LCOW]   = 1.32260
+        data[fs.costing.LCOW]   = 1.32264
         data[fs.water_recovery] = 0.386405
 
         return data
@@ -406,7 +406,7 @@ Product             : 0.297 kg/s, 926 ppm, 1.0 bar
         data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.451041e-3
         data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.197947
         data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.695486e-1
-        data[fs.costing.LCOW]   = 1.21780
+        data[fs.costing.LCOW]   = 1.21781
         data[fs.water_recovery] = 0.732504
 
         return data

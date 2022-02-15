@@ -26,11 +26,11 @@ class TestIpoptWaterTAP:
     @pytest.fixture(scope="class")
     def m(self):
         m = pyo.ConcreteModel()
-        m.a = pyo.Var(initialize=1)
+        m.a = pyo.Var(initialize=0.25, bounds=(-0.5, 0.5))
         m.b = b = pyo.Block()
-        b.a = pyo.Var([1,2])
+        b.a = pyo.Var([1,2], bounds=(-10, 10))
 
-        m.c = pyo.Constraint(expr=(0, 1./(m.a**2) ,1))
+        m.c = pyo.Constraint(expr=(0, 1./(m.a**2), 100))
         b.c = pyo.Constraint([1,2], rule= lambda b,i: (i-1, b.a[i], i+2))
         b.d = pyo.Constraint(expr=b.a[1]**4 + b.a[2]**4 <= 4)
         set_scaling_factor(b.d, 1e6)
@@ -40,6 +40,14 @@ class TestIpoptWaterTAP:
         m.o = pyo.Objective(expr=m.a+b.o)
 
         return m
+
+    def _test_bounds(self, m):
+        assert m.a.lb == -0.5
+        assert m.a.ub == 0.5
+        assert m.b.a[1].lb == -10
+        assert m.b.a[1].ub == 10
+        assert m.b.a[2].lb == -10
+        assert m.b.a[2].ub == 10
 
     @pytest.fixture(scope="class")
     def s(self):
@@ -54,7 +62,7 @@ class TestIpoptWaterTAP:
         assert get_solver().__class__ is IpoptWaterTAP
 
     @pytest.mark.unit
-    def test_presolve_scales_constraints(self, m, s):
+    def test_presolve_scales_constraints_and_relaxes_bounds(self, m, s):
         s._presolve(m, tee=True)
         for c, sf in s._scaling_cache:
             if c is m.b.d:
@@ -70,8 +78,15 @@ class TestIpoptWaterTAP:
 
         assert s._model is m
 
+        assert m.a.lb == -0.5 - 1e-08
+        assert m.a.ub == 0.5 + 1e-08
+        assert m.b.a[1].lb == -10 - 1e-07
+        assert m.b.a[1].ub == 10 + 1e-07
+        assert m.b.a[2].lb == -10 - 1e-07
+        assert m.b.a[2].ub == 10 + 1e-07
+
     @pytest.mark.unit
-    def test_postsolve_unscaled_constraints_cleanup(self, m, s):
+    def test_postsolve_unscaled_constraints_and_bounds_cleanup(self, m, s):
         assert hasattr(s, '_postsolve')
         # for the Pyomo implementation
         try:
@@ -79,6 +94,7 @@ class TestIpoptWaterTAP:
         except AttributeError:
             pass
 
+        self._test_bounds(m)
         assert not hasattr(s, '_scaling_cache')
         
         cons_with_sf = list(constraints_with_scale_factor_generator(m))
@@ -91,6 +107,8 @@ class TestIpoptWaterTAP:
         s.options['ignore_variable_scaling'] = True
         results = s.solve(m, tee=True)
         pyo.assert_optimal_termination(results)
+        self._test_bounds(m)
+        assert not hasattr(s, "_scaling_cache")
         del s.options['ignore_variable_scaling']
 
     @pytest.mark.unit
@@ -105,6 +123,7 @@ class TestIpoptWaterTAP:
     def test_presolve_passthrough(self, m, s):
         s.options["nlp_scaling_method"] = "gradient-based"
         s._presolve(m, tee=True)
+        self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
         s.options["nlp_scaling_method"] = "user-scaling"
 
@@ -113,6 +132,8 @@ class TestIpoptWaterTAP:
         s.options["nlp_scaling_method"] = "gradient-based"
         pyo.assert_optimal_termination(s.solve(m, tee=True))
         del s.options["nlp_scaling_method"]
+        self._test_bounds(m)
+        assert not hasattr(s, "_scaling_cache")
 
     @pytest.mark.unit
     def test_passthrough_negative(self, m, s):
@@ -122,6 +143,8 @@ class TestIpoptWaterTAP:
             pyo.assert_optimal_termination(s.solve(m, tee=True))
         del s.options["nlp_scaling_method"]
         del s.options['ignore_variable_scaling']
+        self._test_bounds(m)
+        assert not hasattr(s, "_scaling_cache")
 
     @pytest.mark.unit
     def test_presolve_incorrect_number_of_arguments(self, m, s):
@@ -140,6 +163,8 @@ class TestIpoptWaterTAP:
         m.a.value = 0
         with pytest.raises(RuntimeError):
             s.solve(m)
+        self._test_bounds(m)
+        assert not hasattr(s, "_scaling_cache")
         m.a.value = 1
 
     @pytest.mark.unit
@@ -155,6 +180,7 @@ class TestIpoptWaterTAP:
         m.a.value = 0
         with pytest.raises(RuntimeError):
             s.solve(m)
+        self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
         m.a.value = 1
 
@@ -168,6 +194,7 @@ class TestIpoptWaterTAP:
         IPOPT._presolve = _bad_presolve
         with pytest.raises(IpoptErrorException):
             s.solve(m)
+        self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
         IPOPT._presolve = IPOPT_presolve
 
@@ -181,5 +208,77 @@ class TestIpoptWaterTAP:
         iscale.constraint_autoscale_large_jac = _bad_constraint_autoscale_large_jac
         with pytest.raises(CALJErrorException):
             s.solve(m)
+        self._test_bounds(m)
         assert not hasattr(s, "_scaling_cache")
         iscale.constraint_autoscale_large_jac = constraint_autoscale_large_jac
+
+    @pytest.mark.unit
+    def test_honor_original_bounds(self, m, s):
+        s.options["honor_original_bounds"] = "yes"
+        with pytest.raises(ValueError):
+            s.solve(m)
+        self._test_bounds(m)
+        assert not hasattr(s, "_scaling_cache")
+        del s.options["honor_original_bounds"]
+
+    @pytest.mark.unit
+    def test_invalid_bound_relax_raises_error(self, m, s):
+        s.options["bound_relax_factor"] = -1e-12
+        with pytest.raises(ValueError):
+            s.solve(m)
+        self._test_bounds(m)
+        assert not hasattr(s, "_scaling_cache")
+        del s.options["bound_relax_factor"]
+
+    @pytest.fixture(scope="class")
+    def m2(self):
+        m = pyo.ConcreteModel()
+        m.factor = pyo.Param(initialize=1.0e-16, mutable=True)
+        m.x = pyo.Var(bounds=(0.5*m.factor, 1.5*m.factor), initialize=m.factor)
+        m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        m.scaling_factor[m.x] = pyo.value(1./m.factor)
+        m.o = pyo.Objective(expr=m.x/m.factor)
+        return m
+
+    @pytest.mark.unit
+    def test_default_bound_relax_small(self, m2, s):
+        s.solve(m2, tee=True)
+        assert pyo.value(m2.x) == pytest.approx(4.9999999e-17, abs=0, rel=1e-8)
+
+    @pytest.mark.unit
+    def test_set_bound_relax_1_small(self, m2, s):
+        s.options["bound_relax_factor"] = 1e-2
+        s.solve(m2, tee=True)
+        assert pyo.value(m2.x) == pytest.approx(4.9e-17, abs=0, rel=1e-8)
+        del s.options["bound_relax_factor"]
+
+    @pytest.mark.unit
+    def test_set_bound_relax_2_small(self, m2, s):
+        s.options["bound_relax_factor"] = 1e-12
+        s.solve(m2, tee=True)
+        assert pyo.value(m2.x) == pytest.approx(5.0e-17, abs=0, rel=1e-8)
+        del s.options["bound_relax_factor"]
+
+    @pytest.mark.unit
+    def test_default_bound_relax_big(self, m2, s):
+        m2.factor = 1.0e+16
+        m2.x.value = 1.0e+16
+        m2.x.lb = 0.5*m2.factor
+        m2.x.ub = 1.5*m2.factor
+        m2.scaling_factor[m2.x] = pyo.value(1./m2.factor)
+        s.solve(m2, tee=True)
+        assert pyo.value(m2.x) == pytest.approx(4.9999999e+15, abs=0, rel=1e-8)
+
+    @pytest.mark.unit
+    def test_set_bound_relax_1_big(self, m2, s):
+        s.options["bound_relax_factor"] = 1e-2
+        s.solve(m2, tee=True)
+        assert pyo.value(m2.x) == pytest.approx(4.9e+15, abs=0, rel=1e-8)
+        del s.options["bound_relax_factor"]
+
+    @pytest.mark.unit
+    def test_set_bound_relax_2_big(self, m2, s):
+        s.options["bound_relax_factor"] = 0.
+        s.solve(m2, tee=True)
+        assert pyo.value(m2.x) == pytest.approx(5.0e+15, abs=0, rel=1e-8)
+        del s.options["bound_relax_factor"]
