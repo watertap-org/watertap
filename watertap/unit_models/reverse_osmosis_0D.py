@@ -199,8 +199,6 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
 
         # constraints for additional variables (i.e. variables not used in other constraints)
 
-        # Not in 1DRO
-
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
