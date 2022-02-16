@@ -137,15 +137,6 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         solvent_set = self.config.property_package.solvent_set
         solute_set = self.config.property_package.solute_set
 
-        self.rejection_phase_comp = Var(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            solute_set,
-            initialize=0.9,
-            bounds=(1e-2, 1 - 1e-6),
-            units=pyunits.dimensionless,
-            doc='Observed solute rejection')
-
         if self.config.pressure_change_type == PressureChangeType.calculated:
             self.dP_dx = Var(
                 self.flowsheet().config.time,
@@ -209,12 +200,6 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         # constraints for additional variables (i.e. variables not used in other constraints)
 
         # Not in 1DRO
-        @self.Constraint(self.flowsheet().config.time,
-                         solute_set)
-        def eq_rejection_phase_comp(b, t, j):
-            return (b.rejection_phase_comp[t, 'Liq', j] ==
-                    1 - (b.mixed_permeate[t].conc_mass_phase_comp['Liq', j] /
-                         b.feed_side.properties_in[t].conc_mass_phase_comp['Liq', j]))
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
@@ -497,10 +482,6 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                     sf = (iscale.get_scaling_factor(self.B_comp[t, j])
                           * iscale.get_scaling_factor(self.feed_side.properties_in[t].conc_mass_phase_comp[p, j]))
                     iscale.set_scaling_factor(v, sf)
-
-        for v in self.rejection_phase_comp.values():
-            if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(v, 1)
 
         if hasattr(self, 'area_cross'):
             if iscale.get_scaling_factor(self.area_cross) is None:

@@ -312,16 +312,13 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         # Feed and permeate-side mass transfer connection --> Mp,j = Mf,transfer = Jj * W * L/n
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.length_domain,
+                         self.difference_elements,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Mass transfer from feed to permeate")
         def eq_connect_mass_transfer(b, t, x, p, j):
-            if x == b.feed_side.length_domain.first():
-                return Constraint.Skip
-            else:
-                return (b.permeate_side[t, x].get_material_flow_terms(p, j)
-                        == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length / b.nfe)
+            return (b.permeate_side[t, x].get_material_flow_terms(p, j)
+                    == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length / b.nfe)
 
         ## ==========================================================================
         # Pressure drop
@@ -535,25 +532,6 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             iscale.set_scaling_factor(self.length, sf)
 
         # setting scaling factors for variables
-<<<<<<< HEAD
-        for v in self.permeate_side[0, 0].flow_mass_phase_comp['Liq',:]:
-            iscale.set_scaling_factor(v, 1e+5)
-=======
-        for sb in (self.mixed_permeate, self.permeate_side):
-            for blk in sb.values():
-                for j in self.config.property_package.solute_set:
-                    self._rescale_permeate_variable(blk.flow_mass_phase_comp['Liq', j])
-                    if blk.is_property_constructed('mass_frac_phase_comp'):
-                        self._rescale_permeate_variable(blk.mass_frac_phase_comp['Liq', j])
-                    if blk.is_property_constructed('conc_mass_phase_comp'):
-                        self._rescale_permeate_variable(blk.conc_mass_phase_comp['Liq', j])
-                    if blk.is_property_constructed('mole_frac_phase_comp'):
-                        self._rescale_permeate_variable(blk.mole_frac_phase_comp[j])
-                    if blk.is_property_constructed('molality_comp'):
-                        self._rescale_permeate_variable(blk.molality_comp[j])
-                if blk.is_property_constructed('pressure_osm'):
-                    self._rescale_permeate_variable(blk.pressure_osm)
->>>>>>> upstream/main
 
         # will not override if the user provides the scaling factor
         ## default of 1 set by ControlVolume1D

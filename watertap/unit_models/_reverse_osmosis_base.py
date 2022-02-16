@@ -314,6 +314,15 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc='Volumetric recovery rate')
 
+        self.rejection_phase_comp = Var(
+            self.flowsheet().config.time,
+            self.config.property_package.phase_list,
+            solute_set,
+            initialize=0.9,
+            bounds=(1e-2, 1 - 1e-6),
+            units=pyunits.dimensionless,
+            doc='Observed solute rejection')
+
         self.flux_mass_phase_comp = Var(
             self.flowsheet().config.time,
             self.length_domain,
@@ -508,6 +517,14 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
         def eq_permeate_outlet_isobaric(b, t, x):
             return b.permeate_side[t, x].pressure == \
                    b.mixed_permeate[t].pressure
+
+        # rejection
+        @self.Constraint(self.flowsheet().config.time,
+                         solute_set)
+        def eq_rejection_phase_comp(b, t, j):
+            return (b.rejection_phase_comp[t, 'Liq', j] ==
+                    1 - (b.mixed_permeate[t].conc_mass_phase_comp['Liq', j] /
+                         b.feed_side.properties[t, self.first_element].conc_mass_phase_comp['Liq', j]))
 
         # ==========================================================================
         # Membrane area equation
@@ -792,6 +809,10 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                 sf = 100
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
+
+        for v in self.rejection_phase_comp.values():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, 1)
 
         if hasattr(self, 'channel_height'):
             if iscale.get_scaling_factor(self.channel_height) is None:

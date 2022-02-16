@@ -241,6 +241,7 @@ class TestReverseOsmosis():
                                'length': Var,
                                'recovery_vol_phase': Var,
                                'recovery_mass_phase_comp': Var,
+                               'rejection_phase_comp': Var,
                                'Kf': Var,
                                'channel_height': Var,
                                'spacer_porosity': Var,
@@ -266,6 +267,7 @@ class TestReverseOsmosis():
                                'eq_mass_flux_equal_mass_transfer': Constraint,
                                'eq_permeate_outlet_isothermal': Constraint,
                                'eq_permeate_outlet_isobaric': Constraint,
+                               'eq_rejection_phase_comp': Constraint,
                                'eq_Kf': Constraint,
                                'eq_N_Re': Constraint,
                                'eq_N_Sc': Constraint,
@@ -305,8 +307,8 @@ class TestReverseOsmosis():
             assert isinstance(sb, props.NaClStateBlock)
 
         # test statistics
-        assert number_variables(m) == 250
-        assert number_total_constraints(m) == 205
+        assert number_variables(m) == 251
+        assert number_total_constraints(m) == 206
         assert number_unused_variables(m) == 22
 
     @pytest.mark.integration
@@ -395,6 +397,7 @@ class TestReverseOsmosis():
         assert (pytest.approx(371.01, rel=1e-3) == value(m.fs.unit.N_Re_avg[0]))
         assert (pytest.approx(107.48, rel=1e-3) == value(m.fs.unit.Kf_avg[0, 'NaCl'] * 3.6e6))
         assert (pytest.approx(26.63, rel=1e-3) == value(m.fs.unit.area))
+
     @pytest.mark.component
     def testReverseOsmosis_basic(self):
         m = ConcreteModel()
@@ -447,6 +450,7 @@ class TestReverseOsmosis():
                                'length': Var,
                                'recovery_vol_phase': Var,
                                'recovery_mass_phase_comp': Var,
+                               'rejection_phase_comp' : Var,
                                'mass_transfer_phase_comp': Var,
                                'nfe': Param,
                                'eq_mass_transfer_term': Constraint,
@@ -456,6 +460,7 @@ class TestReverseOsmosis():
                                'eq_feed_isothermal': Constraint,
                                'eq_permeate_isothermal': Constraint,
                                'eq_recovery_vol_phase': Constraint,
+                               'eq_rejection_phase_comp': Constraint,
                                'eq_recovery_mass_phase_comp': Constraint,
                                'eq_area': Constraint,
                                'eq_mass_flux_equal_mass_transfer': Constraint,
@@ -475,8 +480,8 @@ class TestReverseOsmosis():
             assert obj_str in unit_objs_type_dict
 
         # test statistics
-        assert number_variables(m) == 200
-        assert number_total_constraints(m) == 157
+        assert number_variables(m) == 205
+        assert number_total_constraints(m) == 162
         assert number_unused_variables(m) == 29
 
         # Test units
@@ -596,6 +601,7 @@ class TestReverseOsmosis():
                                'length': Var,
                                'recovery_vol_phase': Var,
                                'recovery_mass_phase_comp': Var,
+                               'rejection_phase_comp': Var,
                                'cp_modulus': Var,
                                'mass_transfer_phase_comp': Var,
                                'nfe': Param,
@@ -607,6 +613,7 @@ class TestReverseOsmosis():
                                'eq_permeate_isothermal': Constraint,
                                'eq_recovery_vol_phase': Constraint,
                                'eq_recovery_mass_phase_comp': Constraint,
+                               'eq_rejection_phase_comp': Constraint,
                                'eq_area': Constraint,
                                'eq_mass_flux_equal_mass_transfer': Constraint,
                                'eq_permeate_outlet_isothermal': Constraint,
@@ -625,8 +632,8 @@ class TestReverseOsmosis():
             assert obj_str in unit_objs_type_dict
 
        # test statistics
-        assert number_variables(m) == 204
-        assert number_total_constraints(m) == 157
+        assert number_variables(m) == 209
+        assert number_total_constraints(m) == 162
         assert number_unused_variables(m) == 30
 
         assert_units_consistent(m.fs.unit)
@@ -743,6 +750,7 @@ class TestReverseOsmosis():
                                'length': Var,
                                'recovery_vol_phase': Var,
                                'recovery_mass_phase_comp': Var,
+                               'rejection_phase_comp': Var,
                                'Kf': Var,
                                'mass_transfer_phase_comp': Var,
                                'nfe': Param,
@@ -754,6 +762,7 @@ class TestReverseOsmosis():
                                'eq_permeate_isothermal': Constraint,
                                'eq_recovery_vol_phase': Constraint,
                                'eq_recovery_mass_phase_comp': Constraint,
+                               'eq_rejection_phase_comp': Constraint,
                                'eq_area': Constraint,
                                'eq_mass_flux_equal_mass_transfer': Constraint,
                                'eq_permeate_outlet_isothermal': Constraint,
@@ -773,8 +782,8 @@ class TestReverseOsmosis():
             assert obj_str in unit_objs_type_dict
 
         # test statistics
-        assert number_variables(m) == 204
-        assert number_total_constraints(m) == 157
+        assert number_variables(m) == 209
+        assert number_total_constraints(m) == 162
         assert number_unused_variables(m) == 30
 
         assert_units_consistent(m.fs.unit)
@@ -887,6 +896,7 @@ class TestReverseOsmosis():
                                'length': Var,
                                'recovery_vol_phase': Var,
                                'recovery_mass_phase_comp': Var,
+                               'rejection_phase_comp': Var,
                                'Kf': Var,
                                'channel_height': Var,
                                'spacer_porosity': Var,
@@ -904,6 +914,7 @@ class TestReverseOsmosis():
                                'eq_permeate_isothermal': Constraint,
                                'eq_recovery_vol_phase': Constraint,
                                'eq_recovery_mass_phase_comp': Constraint,
+                               'eq_rejection_phase_comp': Constraint,
                                'eq_area': Constraint,
                                'eq_mass_flux_equal_mass_transfer': Constraint,
                                'eq_permeate_outlet_isothermal': Constraint,
@@ -930,8 +941,8 @@ class TestReverseOsmosis():
             assert obj_str in unit_objs_type_dict
 
         # test statistics
-        assert number_variables(m) == 227
-        assert number_total_constraints(m) == 182
+        assert number_variables(m) == 232
+        assert number_total_constraints(m) == 187
         assert number_unused_variables(m) == 22
 
         assert_units_consistent(m.fs.unit)
@@ -1048,6 +1059,7 @@ class TestReverseOsmosis():
                                'length': Var,
                                'recovery_vol_phase': Var,
                                'recovery_mass_phase_comp': Var,
+                               'rejection_phase_comp': Var,
                                'Kf': Var,
                                'channel_height': Var,
                                'spacer_porosity': Var,
@@ -1067,6 +1079,7 @@ class TestReverseOsmosis():
                                'eq_permeate_isothermal': Constraint,
                                'eq_recovery_vol_phase': Constraint,
                                'eq_recovery_mass_phase_comp': Constraint,
+                               'eq_rejection_phase_comp': Constraint,
                                'eq_area': Constraint,
                                'eq_mass_flux_equal_mass_transfer': Constraint,
                                'eq_permeate_outlet_isothermal': Constraint,
@@ -1094,8 +1107,8 @@ class TestReverseOsmosis():
             assert obj_str in unit_objs_type_dict
 
         # test statistics
-        assert number_variables(m) == 232
-        assert number_total_constraints(m) == 183
+        assert number_variables(m) == 237
+        assert number_total_constraints(m) == 188
         assert number_unused_variables(m) == 23
 
         assert_units_consistent(m.fs.unit)
@@ -1212,6 +1225,7 @@ class TestReverseOsmosis():
                                'length': Var,
                                'recovery_vol_phase': Var,
                                'recovery_mass_phase_comp': Var,
+                               'rejection_phase_comp': Var,
                                'Kf': Var,
                                'channel_height': Var,
                                'spacer_porosity': Var,
@@ -1231,6 +1245,7 @@ class TestReverseOsmosis():
                                'eq_permeate_isothermal': Constraint,
                                'eq_recovery_vol_phase': Constraint,
                                'eq_recovery_mass_phase_comp': Constraint,
+                               'eq_rejection_phase_comp': Constraint,
                                'eq_area': Constraint,
                                'eq_mass_flux_equal_mass_transfer': Constraint,
                                'eq_permeate_outlet_isothermal': Constraint,
@@ -1258,8 +1273,8 @@ class TestReverseOsmosis():
             assert obj_str in unit_objs_type_dict
 
         # test statistics
-        assert number_variables(m) == 232
-        assert number_total_constraints(m) == 186
+        assert number_variables(m) == 237
+        assert number_total_constraints(m) == 191
         assert number_unused_variables(m) == 22
 
         assert_units_consistent(m.fs.unit)
