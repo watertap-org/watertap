@@ -247,10 +247,10 @@ class TestReverseOsmosis():
                                'eq_recovery_vol_phase': Constraint,
                                'eq_recovery_mass_phase_comp': Constraint,
                                'eq_rejection_phase_comp': Constraint,
-                               'eq_mass_frac_permeate_io': Constraint,
+                               'eq_mass_frac_permeate': Constraint,
                                'eq_permeate_outlet_isothermal': Constraint,
                                'eq_permeate_outlet_isobaric': Constraint,
-                               'eq_flow_vol_permeate_io': Constraint,
+                               'eq_flow_vol_permeate': Constraint,
                                'nfe': Param,
                                }
         for (obj_str, obj_type) in unit_objs_type_dict.items():

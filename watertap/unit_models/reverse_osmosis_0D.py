@@ -237,9 +237,8 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                          self.length_domain,
                          solute_set,
                          doc="Permeate mass fraction")
-        def eq_mass_frac_permeate_io(b, t, x, j):
-            prop_io = b.permeate_side[t,x]
-            return (prop_io.mass_frac_phase_comp['Liq', j]
+        def eq_mass_frac_permeate(b, t, x, j):
+            return (b.permeate_side[t, x].mass_frac_phase_comp['Liq', j]
                     * sum(self.flux_mass_phase_comp[t, x, 'Liq', jj]
                           for jj in self.config.property_package.component_list)
                     == self.flux_mass_phase_comp[t, x, 'Liq', j])
@@ -248,7 +247,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
                          doc="Permeate flowrate")
-        def eq_flow_vol_permeate_io(b, t, x):
+        def eq_flow_vol_permeate(b, t, x):
             return b.permeate_side[t, x].flow_vol_phase['Liq'] == b.mixed_permeate[t].flow_vol_phase['Liq']
 
         if self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length:
@@ -406,13 +405,9 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             if iscale.get_scaling_factor(v) is None:
                 comp = self.config.property_package.get_component(j)
                 if comp.is_solvent():  # scaling based on solvent flux equation
-                    if x == 0.:
-                        prop_io = self.feed_side.properties_in[t]
-                    elif x == 1.:
-                        prop_io = self.feed_side.properties_out[t]
                     sf = (iscale.get_scaling_factor(self.A_comp[t, j])
                           * iscale.get_scaling_factor(self.dens_solvent)
-                          * iscale.get_scaling_factor(prop_io.pressure))
+                          * iscale.get_scaling_factor(self.feed_side.properties[t, x].pressure))
                     iscale.set_scaling_factor(v, sf)
                 elif comp.is_solute():  # scaling based on solute flux equation
                     sf = (iscale.get_scaling_factor(self.B_comp[t, j])
