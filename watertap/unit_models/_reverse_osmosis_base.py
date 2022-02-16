@@ -804,53 +804,53 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
         var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[time_point, 'Liq']
         var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[time_point, 'Liq', 'H2O']
         var_dict["Membrane Area"] = self.area
-        if hasattr(self, "length") or self.config.has_full_reporting:
+        if hasattr(self, "length") and self.config.has_full_reporting:
             var_dict["Membrane Length"] = self.length
-        if hasattr(self, "width") or self.config.has_full_reporting:
+        if hasattr(self, "width") and self.config.has_full_reporting:
             var_dict["Membrane Width"] = self.width
-        if hasattr(self, "deltaP") or self.config.has_full_reporting:
+        if hasattr(self, "deltaP") and self.config.has_full_reporting:
             var_dict["Pressure Change"] = self.deltaP[time_point]
-        if hasattr(self, "N_Re") or self.config.has_full_reporting:
+        if hasattr(self, "N_Re") and self.config.has_full_reporting:
             var_dict["Reynolds Number @Inlet"] = self.N_Re[time_point, x_in]
             var_dict["Reynolds Number @Outlet"] = self.N_Re[time_point, x_out]
-        if hasattr(self, "velocity") or self.config.has_full_reporting:
+        if hasattr(self, "velocity") and self.config.has_full_reporting:
             var_dict["Velocity @Inlet"] = self.velocity[time_point, x_in]
             var_dict["Velocity @Outlet"] = self.velocity[time_point, x_out]
         for j in self.config.property_package.solute_set:
-            if interface_inlet.is_property_constructed('conc_mass_phase_comp') or self.config.has_full_reporting:
+            if interface_inlet.is_property_constructed('conc_mass_phase_comp') and self.config.has_full_reporting:
                 var_dict[f'{j} Concentration @Inlet,Membrane-Interface '] = (
                     interface_inlet.conc_mass_phase_comp['Liq', j])
-            if interface_outlet.is_property_constructed('conc_mass_phase_comp') or self.config.has_full_reporting:
+            if interface_outlet.is_property_constructed('conc_mass_phase_comp') and self.config.has_full_reporting:
                 var_dict[f'{j} Concentration @Outlet,Membrane-Interface '] = (
                     interface_outlet.conc_mass_phase_comp['Liq', j])
-            if feed_inlet.is_property_constructed('conc_mass_phase_comp') or self.config.has_full_reporting:
+            if feed_inlet.is_property_constructed('conc_mass_phase_comp') and self.config.has_full_reporting:
                 var_dict[f'{j} Concentration @Inlet,Bulk'] = (
                     feed_inlet.conc_mass_phase_comp['Liq', j])
-            if feed_outlet.is_property_constructed('conc_mass_phase_comp') or self.config.has_full_reporting:
+            if feed_outlet.is_property_constructed('conc_mass_phase_comp') and self.config.has_full_reporting:
                 var_dict[f'{j} Concentration @Outlet,Bulk'] = (
                     feed_outlet.conc_mass_phase_comp['Liq', j])
-            if permeate.is_property_constructed('conc_mass_phase_comp') or self.config.has_full_reporting:
+            if permeate.is_property_constructed('conc_mass_phase_comp') and self.config.has_full_reporting:
                 var_dict[f'{j} Permeate Concentration'] = (
                     permeate.conc_mass_phase_comp['Liq', j])
-        if interface_outlet.is_property_constructed('pressure_osm') or self.config.has_full_reporting:
+        if interface_outlet.is_property_constructed('pressure_osm') and self.config.has_full_reporting:
             var_dict['Osmotic Pressure @Outlet,Membrane-Interface '] = (
                 interface_outlet.pressure_osm)
-        if feed_outlet.is_property_constructed('pressure_osm') or self.config.has_full_reporting:
+        if feed_outlet.is_property_constructed('pressure_osm') and self.config.has_full_reporting:
             var_dict['Osmotic Pressure @Outlet,Bulk'] = (
                 feed_outlet.pressure_osm)
-        if interface_inlet.is_property_constructed('pressure_osm') or self.config.has_full_reporting:
+        if interface_inlet.is_property_constructed('pressure_osm') and self.config.has_full_reporting:
             var_dict['Osmotic Pressure @Inlet,Membrane-Interface'] = (
                 interface_inlet.pressure_osm)
-        if feed_inlet.is_property_constructed('pressure_osm') or self.config.has_full_reporting:
+        if feed_inlet.is_property_constructed('pressure_osm') and self.config.has_full_reporting:
             var_dict['Osmotic Pressure @Inlet,Bulk'] = (
                 feed_inlet.pressure_osm)
-        if feed_inlet.is_property_constructed('flow_vol_phase') or self.config.has_full_reporting:
+        if feed_inlet.is_property_constructed('flow_vol_phase') and self.config.has_full_reporting:
             var_dict['Volumetric Flowrate @Inlet'] = (
                 feed_inlet.flow_vol_phase['Liq'])
-        if feed_outlet.is_property_constructed('flow_vol_phase') or self.config.has_full_reporting:
+        if feed_outlet.is_property_constructed('flow_vol_phase') and self.config.has_full_reporting:
             var_dict['Volumetric Flowrate @Outlet'] = (
                 feed_outlet.flow_vol_phase['Liq'])
-        if hasattr(self, 'dh') or self.config.has_full_reporting:
+        if hasattr(self, 'dh') and self.config.has_full_reporting:
             var_dict["Hydraulic Diameter"] = self.dh
 
         if self.config.has_full_reporting:
