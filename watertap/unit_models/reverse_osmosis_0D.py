@@ -385,68 +385,6 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )
 
-    def _get_performance_contents(self, time_point=0):
-        var_dict = {}
-        var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[time_point, 'Liq']
-        var_dict["Solvent Mass Recovery Rate"] = self.recovery_mass_phase_comp[time_point, 'Liq', 'H2O']
-        var_dict["Membrane Area"] = self.area
-        if hasattr(self, "length"):
-            var_dict["Membrane Length"] = self.length
-        if hasattr(self, "width"):
-            var_dict["Membrane Width"] = self.width
-        if hasattr(self, "deltaP"):
-            var_dict["Pressure Change"] = self.deltaP[time_point]
-        if hasattr(self, "N_Re"):
-            var_dict["Reynolds Number @Inlet"] = self.N_Re[time_point, 0.]
-            var_dict["Reynolds Number @Outlet"] = self.N_Re[time_point, 1.]
-        if hasattr(self, "velocity"):
-            var_dict["Velocity @Inlet"] = self.velocity[time_point, 0.]
-            var_dict["Velocity @Outlet"] = self.velocity[time_point, 1.]
-        for j in self.config.property_package.solute_set:
-            cin_mem_name=f'{j} Concentration @Inlet,Membrane-Interface '
-            var_dict[cin_mem_name] = (
-                        self.feed_side.properties_interface[time_point, 0.].conc_mass_phase_comp['Liq', j])
-            cout_mem_name=f'{j} Concentration @Outlet,Membrane-Interface '
-            var_dict[cout_mem_name] = (
-                self.feed_side.properties_interface[time_point, 1.].conc_mass_phase_comp['Liq', j])
-            cin_bulk_name=f'{j} Concentration @Inlet,Bulk '
-            var_dict[cin_bulk_name] = (
-                        self.feed_side.properties_in[time_point].conc_mass_phase_comp['Liq', j])
-            cout_bulk_name=f'{j} Concentration @Outlet,Bulk '
-            var_dict[cout_bulk_name] = (
-                self.feed_side.properties_out[time_point].conc_mass_phase_comp['Liq', j])
-            cp_name=f'{j} Permeate Concentration '
-            var_dict[cp_name] = (
-                self.mixed_permeate[time_point].conc_mass_phase_comp['Liq', j])
-        if self.feed_side.properties_interface[time_point, 1.].is_property_constructed('pressure_osm'):
-            var_dict['Osmotic Pressure @Outlet,Membrane-Interface '] = (
-                self.feed_side.properties_interface[time_point, 1.].pressure_osm)
-        if self.feed_side.properties_out[time_point].is_property_constructed('pressure_osm'):
-            var_dict['Osmotic Pressure @Outlet,Bulk'] = (
-                self.feed_side.properties_out[time_point].pressure_osm)
-        if self.feed_side.properties_interface[time_point, 0.].is_property_constructed('pressure_osm'):
-            var_dict['Osmotic Pressure @Inlet,Membrane-Interface'] = (
-                self.feed_side.properties_interface[time_point, 0.].pressure_osm)
-        if self.feed_side.properties_in[time_point].is_property_constructed('pressure_osm'):
-            var_dict['Osmotic Pressure @Inlet,Bulk'] = (
-                self.feed_side.properties_in[time_point].pressure_osm)
-        if self.feed_side.properties_in[time_point].is_property_constructed('flow_vol_phase'):
-            var_dict['Volumetric Flowrate @Inlet'] = (
-                self.feed_side.properties_in[time_point].flow_vol_phase['Liq'])
-        if self.feed_side.properties_out[time_point].is_property_constructed('flow_vol_phase'):
-            var_dict['Volumetric Flowrate @Outlet'] = (
-                self.feed_side.properties_out[time_point].flow_vol_phase['Liq'])
-
-        # TODO: (1) add more vars, (2) would be nice to add units to output, and (3) should be able to report output of
-        #  "NaN" or "Not Reported", mainly for properties that exist but are not necessarily constructed within model
-        #  constraints. One example in this case is the osmotic pressure of the bulk feed, which would certainly be of
-        #  interest to users with a background in desalination (it is currently not reported because it is not directly
-        #  used in any model constraints). Furthermore, the report() method seems to be limited to Pyomo Var objects for
-        #  which the pyomo value() method is applied to. That is, a Pyomo Var object must be used; e.g., providing a
-        #  list as output would yield an error.
-
-        return {"vars": var_dict}
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 

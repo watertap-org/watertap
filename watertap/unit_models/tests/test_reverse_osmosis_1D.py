@@ -307,8 +307,8 @@ class TestReverseOsmosis():
             assert isinstance(sb, props.NaClStateBlock)
 
         # test statistics
-        assert number_variables(m) == 251
-        assert number_total_constraints(m) == 206
+        assert number_variables(m) == 245
+        assert number_total_constraints(m) == 200
         assert number_unused_variables(m) == 22
 
     @pytest.mark.integration
