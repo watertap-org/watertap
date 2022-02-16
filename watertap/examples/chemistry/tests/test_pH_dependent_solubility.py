@@ -367,7 +367,8 @@ def run_case1(xOH=1e-7/55.2, xH=1e-7/55.2, xCaOH2=1e-20, xCa=1e-20,
 
     ## ==================== END Scaling for this problem ===========================
     init_options = {**solver.options}
-    init_options["bound_relax_factor"] = 1.0e-04
+    init_options["constr_viol_tol"] = 1.0e-04
+    init_options["tol"] = 1.0e-06
     model.fs.unit.initialize(optarg=init_options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
@@ -1921,14 +1922,13 @@ def run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
     assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
     ## ==================== END Scaling for this problem ===========================
-
-    init_options = {**solver.options}
-    init_options["bound_relax_factor"] = 1.0e-02
-    model.fs.unit.initialize(optarg=init_options, outlvl=idaeslog.DEBUG)
+    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
-    results = solver.solve(model, tee=True)
+    with idaes.temporary_config_ctx():
+        solver.options["tol"] = 1.0e-12
+        results = solver.solve(model, tee=True)
 
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert results.solver.status == SolverStatus.ok
