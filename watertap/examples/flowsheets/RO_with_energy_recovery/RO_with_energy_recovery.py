@@ -342,7 +342,7 @@ def optimize_set_up(m):
         expr=m.fs.product.properties[0].mass_frac_phase_comp['Liq', 'NaCl'] <= m.fs.product_salinity)
     iscale.constraint_scaling_transform(m.fs.eq_product_quality, 1e3)  # scaling constraint
     m.fs.eq_minimum_water_flux = Constraint(
-        expr=m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'] >= m.fs.minimum_water_flux)
+        expr=m.fs.RO.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'] >= m.fs.minimum_water_flux)
 
     # ---checking model---
     assert_degrees_of_freedom(m, 1)
