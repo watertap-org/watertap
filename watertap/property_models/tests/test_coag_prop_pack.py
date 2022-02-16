@@ -67,8 +67,6 @@ class TestCoagulationPropPack():
         assert model.fs.properties._state_block_class is CoagulationStateBlock
 
         # Assert that we have the expected set of parameters
-        assert isinstance(model.fs.properties.mw_comp, Param)
-        assert model.fs.properties.mw_comp['H2O'].value == 18.01528e-3
         assert isinstance(model.fs.properties.cp, Param)
         assert isinstance(model.fs.properties.ref_dens_liq, Param)
         assert isinstance(model.fs.properties.dens_slope, Param)
@@ -202,3 +200,25 @@ class TestCoagulationPropPack():
         # run solver and check for optimal solution
         results = solver.solve(model)
         assert_optimal_termination(results)
+
+    @pytest.mark.component
+    def test_solution(self, coag_obj):
+        model = coag_obj
+
+        assert value(model.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O']) == pytest.approx(1,  rel=1e-4)
+        assert value(model.fs.stream[0].flow_mass_phase_comp['Liq', 'TSS']) == pytest.approx(0.01,  rel=1e-4)
+        assert value(model.fs.stream[0].flow_mass_phase_comp['Liq', 'TDS']) == pytest.approx(0.01,  rel=1e-4)
+        assert value(model.fs.stream[0].flow_mass_phase_comp['Sol', 'Sludge']) == pytest.approx(0.001,  rel=1e-4)
+
+        assert value(model.fs.stream[0].mass_frac_phase_comp['Liq', 'H2O']) == pytest.approx(0.980392,  rel=1e-4)
+        assert value(model.fs.stream[0].mass_frac_phase_comp['Liq', 'TSS']) == pytest.approx(0.009803,  rel=1e-4)
+        assert value(model.fs.stream[0].mass_frac_phase_comp['Liq', 'TDS']) == pytest.approx(0.009803,  rel=1e-4)
+        assert value(model.fs.stream[0].mass_frac_phase_comp['Sol', 'Sludge']) == pytest.approx(1,  rel=1e-4)
+
+        assert value(model.fs.stream[0].dens_mass_phase['Liq']) == pytest.approx(1013.11599,  rel=1e-4)
+        assert value(model.fs.stream[0].dens_mass_phase['Sol']) == pytest.approx(2600,  rel=1e-4)
+
+        assert value(model.fs.stream[0].conc_mass_phase_comp['Liq', 'H2O']) == pytest.approx(993.250979,  rel=1e-4)
+        assert value(model.fs.stream[0].conc_mass_phase_comp['Liq', 'TSS']) == pytest.approx(9.932509,  rel=1e-4)
+        assert value(model.fs.stream[0].conc_mass_phase_comp['Liq', 'TDS']) == pytest.approx(9.932509,  rel=1e-4)
+        assert value(model.fs.stream[0].conc_mass_phase_comp['Sol', 'Sludge']) == pytest.approx(2600,  rel=1e-4)
