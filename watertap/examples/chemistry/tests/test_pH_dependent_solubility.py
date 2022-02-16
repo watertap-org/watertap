@@ -1926,9 +1926,9 @@ def run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
 
     assert degrees_of_freedom(model) == 0
 
-    with idaes.temporary_config_ctx():
-        solver.options["tol"] = 1.0e-12
-        results = solver.solve(model, tee=True)
+    solver.options["tol"] = 1.0e-12
+    results = solver.solve(model, tee=True)
+    del solver.options["tol"]
 
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert results.solver.status == SolverStatus.ok
