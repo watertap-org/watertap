@@ -48,7 +48,8 @@ def test_unit_parameter_files(tech):
     pass_through = ["chemical_addition",
                     "pump"]
     siso = ["uv_aop"]
-    no_electricity = ["energy_recovery",
+    no_electricity = ["uv_aop",
+                      "energy_recovery",
                       "mbr_denitrification",
                       "mbr_nitrification",
                       "multi_stage_bubble_aeration",
@@ -113,7 +114,8 @@ def test_unit_parameter_files(tech):
                 assert k[e]["value"] >= 0
                 assert k[e]["value"] <= 1
             elif tech in siso:
-                assert "recovery_frac_mass_H2O" not in k.keys()
+                if e == "default_removal_frac_mass_solute":
+                    assert e in k.keys()
             else:
                 assert e not in k.keys()
 

@@ -181,7 +181,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
         try:
             self.set_param_from_data(self.recovery_frac_mass_H2O, data)
         except AttributeError:
-            pass
+            pass  # this assumes the model does not include recovery_frac_mass_H2O
 
         for t, j in self.removal_frac_mass_solute:
             self.set_param_from_data(
