@@ -599,11 +599,6 @@ class TestParallelManager():
                 optimize_function=_optimization,
                 optimize_kwargs={'relax_feasibility':True},
                 mpi_comm = comm)
-        # parameter_sweep(m, sweep_params, outputs,
-        #         results_file = results_file,
-        #         optimize_function=_optimization,
-        #         optimize_kwargs={'relax_feasibility':True},
-        #         mpi_comm = comm)
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
         #       responsible for doing any output file checking
@@ -709,7 +704,7 @@ class TestParallelManager():
                                       'fs.output[d]': {'lower bound': 0,
                                                        'units': 'non-dimensional',
                                                        'upper bound': 0,
-                                                       'value': np.array([0.00000000e+00, 7.50000000e-01, 1.00000000e+00, 9.77756334e-09, 7.50000010e-01, 1.00000000e+00, 9.98605188e-09, 7.50000010e-01, 1.00000000e+00])},
+                                                       'value': np.array([0., 7.50000000e-01, 1., 9.77756334e-09, 7.50000010e-01, 1., 9.98605188e-09, 7.50000010e-01, 1.0])},
                                       'fs.performance': {'value': np.array([0.2, 0.95, 1.20000001, 1.00000001, 1.75000001, 2., 1.00000001, 1.75000001, 2.])},
                                       'fs.slack[ab_slack]': {'lower bound': 0,
                                                              'units': 'non-dimensional',

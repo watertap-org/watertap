@@ -95,13 +95,14 @@ Once the problem is setup and the parameters are identified, the parameter_sweep
 
 .. testcode::
 
-    parameter_sweep(m, sweep_params, outputs, csv_results_file='results.csv')
+    parameter_sweep(m, sweep_params, outputs, csv_results_file='results.csv', results_fname='output_dict')
 
 .. testcleanup::
 
     import os
     os.remove('results.csv')
     os.remove('output_dict.h5')
+    os.remove('output_dict.txt')
 
 Note that there are additional keyword arguments that can be passed to this function if you desire more control or debugging outputs, especially with regard to the restart logic used after a previous optimization attempt has failed or with managing local outputs computed on parallel hardware.  For more information, consult the technical reference for the parameter sweep tool.
 

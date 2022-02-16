@@ -286,10 +286,6 @@ def _default_optimize(model, options=None, tee=False):
     solver = get_solver(options=options)
     results = solver.solve(model, tee=tee)
 
-    # if results.solver.termination_condition != pyo.TerminationCondition.optimal:
-    #     raise RuntimeError("The solver failed to converge to an optimal solution. "
-    #                        "This suggests that the user provided infeasible inputs "
-    #                        "or that the model is poorly scaled.")
     return results
 
 # ================================================================
@@ -373,7 +369,6 @@ def _create_local_output_skeleton(model, sweep_params, outputs, num_samples):
 # ================================================================
 
 def _create_component_output_skeleton(component, num_samples):
-    # TODO: Revisit thie variable "component" name
 
     comp_dict = {}
     comp_dict["value"] = np.zeros(num_samples, dtype=np.float)
@@ -480,38 +475,35 @@ def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_pr
 
 # ================================================================
 
-def _write_outputs(output_dict, output_directory, fname_no_extension="output_dict",
-        write_h5=True, write_txt=True, txt_options="metadata"):
+def _write_outputs(output_dict, output_directory, fname_no_extension, txt_options="metadata"):
 
-        if write_h5:
-            h5_fname = fname_no_extension + ".h5"
-            _write_output_to_h5(output_dict, output_directory=output_directory,
-                                fname=h5_fname)
+    h5_fname = fname_no_extension + ".h5"
+    _write_output_to_h5(output_dict, output_directory, h5_fname)
 
-        if write_txt:
-            txt_fname = fname_no_extension + ".txt"
-            txt_fpath = os.path.join(output_directory, txt_fname)
-            if "solve_status" in output_dict.keys():
-                output_dict.pop("solve_status")
-            if txt_options == "metadata":
-                my_dict = copy.deepcopy(output_dict)
-                for key, value in my_dict.items():
-                    for subkey, subvalue in value.items():
-                        subvalue.pop('value')
-            elif txt_options == "keys":
-                my_dict = {}
-                for key, value in output_dict.items():
-                    my_dict[key] = list(value.keys())
-            else:
-                my_dict = output_dict
+    # We will also create a companion txt file by default which contains
+    # the metadata of the h5 file in a user readable format.
+    txt_fname = fname_no_extension + ".txt"
+    txt_fpath = os.path.join(output_directory, txt_fname)
+    if "solve_status" in output_dict.keys():
+        output_dict.pop("solve_status")
+    if txt_options == "metadata":
+        my_dict = copy.deepcopy(output_dict)
+        for key, value in my_dict.items():
+            for subkey, subvalue in value.items():
+                subvalue.pop('value')
+    elif txt_options == "keys":
+        my_dict = {}
+        for key, value in output_dict.items():
+            my_dict[key] = list(value.keys())
+    else:
+        my_dict = output_dict
 
-            with open(txt_fpath, "w") as log_file:
-                pprint.pprint(my_dict, log_file)
+    with open(txt_fpath, "w") as log_file:
+        pprint.pprint(my_dict, log_file)
 
 # ================================================================
 
-def _write_output_to_h5(output_dict, output_directory="./output/",
-                        fname="output_dict.h5"):
+def _write_output_to_h5(output_dict, output_directory, fname):
 
     fpath = os.path.join(output_directory, fname)
     f = h5py.File(fpath, 'w')
@@ -689,11 +681,6 @@ def _save_results(sweep_params, outputs, local_values, global_values, local_resu
         # Save the global data
         np.savetxt(csv_results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
 
-        # Save the data of output dictionary
-        _write_outputs(global_output_dict, dirname, fname_no_extension=results_fname_no_ext, txt_options="keys")
-        # _read_output_h5("./output/output_dict.h5")
-
-
         if interpolate_nan_outputs:
             global_results_clean = _interp_nan_values(global_values, global_results)
             global_save_data_clean = np.hstack((global_values, global_results_clean))
@@ -707,14 +694,18 @@ def _save_results(sweep_params, outputs, local_values, global_values, local_resu
 
             np.savetxt(interp_file, global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
 
+    if rank == 0 and results_fname_no_ext is not None:
+        # Save the data of output dictionary
+        _write_outputs(global_output_dict, dirname, results_fname_no_ext, txt_options="keys")
+
     return global_save_data
 
 
 # ================================================================
 
-def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, results_fname="output_dict", optimize_function=_default_optimize,
-        optimize_kwargs=None, reinitialize_function=None, reinitialize_kwargs=None,
-        reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
+def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, results_fname=None,
+        optimize_function=_default_optimize, optimize_kwargs=None, reinitialize_function=None,
+        reinitialize_kwargs=None, reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
         interpolate_nan_outputs=False, num_samples=None, seed=None):
 
     '''
@@ -745,7 +736,10 @@ def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, re
         csv_results_file (optional) : The path and file name where the results are to be saved;
                                    subdirectories will be created as needed.
 
-        results_fname ()
+        results_fname (optional) : The file name without the extension where the results are to be saved;
+                                   The path is identified from the arguments of `csv_results_file`. This
+                                   filename is used when creating the H5 file and the companion text file
+                                   which contains the variable names contained within the H5 file.
 
         optimize_function (optional) : A user-defined function to perform the optimization of flowsheet
                                        ``model`` and loads the results back into ``model``. The first
@@ -831,10 +825,6 @@ def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, re
     # Aggregate results on Master
     global_results, global_output_dict = _aggregate_local_results(global_values, local_results, local_output_dict,
             num_samples, local_num_cases, fail_counter, comm, rank, num_procs)
-
-    # import pprint
-    # print("global_output_dict =")
-    # pprint.pprint(global_output_dict)
 
     # Save to file
     global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results, global_results, global_output_dict,
