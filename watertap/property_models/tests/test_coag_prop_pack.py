@@ -222,3 +222,53 @@ class TestCoagulationPropPack():
         assert value(model.fs.stream[0].conc_mass_phase_comp['Liq', 'TSS']) == pytest.approx(9.932509,  rel=1e-4)
         assert value(model.fs.stream[0].conc_mass_phase_comp['Liq', 'TDS']) == pytest.approx(9.932509,  rel=1e-4)
         assert value(model.fs.stream[0].conc_mass_phase_comp['Sol', 'Sludge']) == pytest.approx(2600,  rel=1e-4)
+
+
+class TestCoagulationPropPackFailures():
+    @pytest.fixture(scope="class")
+    def coag_obj_fail(self):
+        model = ConcreteModel()
+        model.fs = FlowsheetBlock(default={"dynamic": False})
+        model.fs.properties = CoagulationParameterBlock()
+
+        return model
+
+    @pytest.mark.unit
+    def test_default_scaling(self, coag_obj_fail):
+        model = coag_obj_fail
+
+        model.fs.stream = model.fs.properties.build_state_block([0], default={})
+
+        # call scaling without setting defaults
+        iscale.calculate_scaling_factors(model.fs)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(iscale.unscaled_variables_generator(model))
+        assert len(unscaled_var_list) == 0
+
+        # check that all constraints have been scaled
+        unscaled_constraint_list = list(iscale.unscaled_constraints_generator(model))
+        assert len(unscaled_constraint_list) == 0
+
+        # check if any variables are badly scaled
+        badly_scaled_var_list = list(iscale.badly_scaled_var_generator(model, large=1e2, small=1e-2))
+        if len(badly_scaled_var_list) != 0:
+            lst = []
+            for (var, val) in badly_scaled_var_list:
+                lst.append((var.name, val))
+                print(var.name, var.value)
+            print("The following variable(s) are poorly scaled: {lst}".format(lst=lst))
+        assert len(badly_scaled_var_list) == 0
+
+    @pytest.mark.unit
+    def test_state_fail(self, coag_obj_fail):
+        model = coag_obj_fail
+
+        args = {('temperature', None): 298,
+                ('pressure', None): 101325,
+                ('flow_mass_phase_comp', ('Liq','H2O')): 1,
+                ('flow_mass_phase_comp', ('Liq','TDS')): 0.01,
+                ('flow_mass_phase_comp', ('Liq','TSS')): 0.01,
+                ('flow_mass_phase_comp', ('Sol','Sludge')): 0.001}
+        with pytest.raises(ValueError):
+            results = model.fs.stream.calculate_state(var_args=args)
