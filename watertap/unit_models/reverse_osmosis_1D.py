@@ -328,7 +328,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         #       in the tests for this unit
         @self.Constraint(self.flowsheet().config.time,
                          self.difference_elements,
-                         doc="Isothermal assumption for permeate")
+                         doc="Isothermal assumption for feed channel")
         def eq_feed_isothermal(b, t, x):
             return b.feed_side.properties[t, b.first_element].temperature == \
                    b.feed_side.properties[t, x].temperature
