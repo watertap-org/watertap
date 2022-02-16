@@ -56,7 +56,7 @@ def constant_intensity(self):
         doc="Electricity intensity with respect to inlet flowrate of unit")
 
     @self.Constraint(self.flowsheet().time,
-                     doc='Constraint for electricity consumption base on '
+                     doc='Constraint for electricity consumption based on '
                      'feed flowrate.')
     def electricity_consumption(b, t):
         return b.electricity[t] == (
