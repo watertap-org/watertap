@@ -564,6 +564,19 @@ class TestParallelManager():
             _assert_dictionary_correctness(truth_dict, read_dict)
             _assert_h5_csv_agreement(results_file, read_dict)
 
+            # Check if there is a text file created
+            import ast
+
+            truth_txt_dict = {'outputs': ['fs.output[c]', 'fs.output[d]', 'fs.performance'],
+                              'sweep_params': ['fs.input[a]', 'fs.input[b]']}
+
+            txt_fpath = os.path.join(tmp_path, '{0}.txt'.format(h5_fname))
+            assert os.path.exists(txt_fpath)
+            f = open(txt_fpath)
+            f_contents = f.read()
+            read_txt_dict = ast.literal_eval(f_contents)
+            assert read_txt_dict == truth_txt_dict
+
 
     @pytest.mark.component
     def test_parameter_sweep_optimize(self, model, tmp_path):
