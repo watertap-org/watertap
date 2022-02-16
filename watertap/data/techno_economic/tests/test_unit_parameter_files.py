@@ -48,8 +48,7 @@ def test_unit_parameter_files(tech):
     pass_through = ["chemical_addition",
                     "pump"]
     siso = ["uv_aop"]
-    no_electricity = ["uv_aop",
-                      "energy_recovery",
+    no_electricity = ["energy_recovery",
                       "mbr_denitrification",
                       "mbr_nitrification",
                       "multi_stage_bubble_aeration",
@@ -78,7 +77,6 @@ def test_unit_parameter_files(tech):
                       "gac_gravity",
                       "iron_and_manganese_removal",
                       "fluidized_bed",
-                      "uv_irradiation",
                       "cation_exchange",
                       "surface_discharge",
                       "solution_distribution_and_recovery_plant",

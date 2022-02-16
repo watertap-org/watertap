@@ -38,23 +38,13 @@ class UVAOPZOData(ZeroOrderBaseData):
         self._tech_type = "uv_aop"
 
         build_siso(self)
-        # constant_intensity(self)
+        constant_intensity(self)
 
-        # self.basin_surface_area = Var(self.flowsheet().config.time,
-        #                               units=pyunits.ft**2,
-        #                               doc="Surface area of sedimentation tank")
-        #
-        #
-        #
-        # self._fixed_perf_vars.append(self.settling_velocity)
-        #
-        # self._perf_var_dict["Basin Surface Area (ft^2)"] = self.basin_surface_area
-        # self._perf_var_dict["Settling Velocity (m/s)"] = self.settling_velocity
-
-        # def rule_basin_surface_area(b, t):
-        #     return (b.basin_surface_area[t] ==
-        #             pyunits.convert(
-        #                 b.properties_in[t].flow_vol
-        #                 / b.settling_velocity[t],
-        #                 to_units=pyunits.ft**2))
-        # self.basin_surface_area_constraint = Constraint(self.flowsheet().time, rule=rule_basin_surface_area)
+        if self.config.process_subtype != "default":
+            oxidant_name = self.config.process_subtype
+            self.chemical_flow_mass = Var(
+                self.flowsheet().time,
+                oxidant_name,
+                units=pyunits.kg/pyunits.s,
+                bounds=(0, None),
+                doc="Mass flow rate of chemical solution")
