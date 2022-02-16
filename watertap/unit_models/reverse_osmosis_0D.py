@@ -385,13 +385,13 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
         )
 
     def calculate_scaling_factors(self):
-        super().calculate_scaling_factors()
-
         # setting scaling factors for variables
         # will not override if the user does provide the scaling factor
         if iscale.get_scaling_factor(self.dens_solvent) is None:
             sf = iscale.get_scaling_factor(self.feed_side.properties_in[0].dens_mass_phase['Liq'])
             iscale.set_scaling_factor(self.dens_solvent, sf)
+
+        super().calculate_scaling_factors()
 
         for (t, p, j), v in self.mass_transfer_phase_comp.items():
             sf = iscale.get_scaling_factor(self.feed_side.properties_in[t].get_material_flow_terms(p, j))
@@ -400,19 +400,6 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             v = self.feed_side.mass_transfer_term[t,p,j]
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
-
-        for (t, x, p, j), v in self.flux_mass_phase_comp.items():
-            if iscale.get_scaling_factor(v) is None:
-                comp = self.config.property_package.get_component(j)
-                if comp.is_solvent():  # scaling based on solvent flux equation
-                    sf = (iscale.get_scaling_factor(self.A_comp[t, j])
-                          * iscale.get_scaling_factor(self.dens_solvent)
-                          * iscale.get_scaling_factor(self.feed_side.properties[t, x].pressure))
-                    iscale.set_scaling_factor(v, sf)
-                elif comp.is_solute():  # scaling based on solute flux equation
-                    sf = (iscale.get_scaling_factor(self.B_comp[t, j])
-                          * iscale.get_scaling_factor(self.feed_side.properties_in[t].conc_mass_phase_comp[p, j]))
-                    iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, 'area_cross'):
             if iscale.get_scaling_factor(self.area_cross) is None:

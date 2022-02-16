@@ -429,6 +429,10 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         )
 
     def calculate_scaling_factors(self):
+        if iscale.get_scaling_factor(self.dens_solvent) is None:
+            sf = iscale.get_scaling_factor(self.feed_side.properties[0, 0].dens_mass_phase['Liq'])
+            iscale.set_scaling_factor(self.dens_solvent, sf)
+
         super().calculate_scaling_factors()
 
         # these variables should have user input, if not there will be a warning
@@ -447,10 +451,6 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
         if iscale.get_scaling_factor(self.area_cross) == 1:
             iscale.set_scaling_factor(self.area_cross, 100)
 
-        if iscale.get_scaling_factor(self.dens_solvent) is None:
-            sf = iscale.get_scaling_factor(self.feed_side.properties[0, 0].dens_mass_phase['Liq'])
-            iscale.set_scaling_factor(self.dens_solvent, sf)
-
         for (t, x, p, j), v in self.mass_transfer_phase_comp.items():
             sf = (iscale.get_scaling_factor(self.feed_side.properties[t, x].get_material_flow_terms(p, j)) /
                   iscale.get_scaling_factor(self.feed_side.length)) * value(self.nfe)
@@ -459,25 +459,6 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
             v = self.feed_side.mass_transfer_term[t,x,p,j]
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
-
-        for (t, x, p, j), v in self.flux_mass_phase_comp.items():
-            if iscale.get_scaling_factor(v) is None:
-                comp = self.config.property_package.get_component(j)
-                if x == self.first_element:
-                    if comp.is_solvent():
-                        iscale.set_scaling_factor(v, 5e4)  # inverse of initial value from flux_mass_phase_comp_initialize
-                    elif comp.is_solute():
-                        iscale.set_scaling_factor(v, 1e6)  # inverse of initial value from flux_mass_phase_comp_initialize
-                else:
-                    if comp.is_solvent():  # scaling based on solvent flux equation
-                        sf = (iscale.get_scaling_factor(self.A_comp[t, j])
-                              * iscale.get_scaling_factor(self.dens_solvent)
-                              * iscale.get_scaling_factor(self.feed_side.properties[t, x].pressure))
-                        iscale.set_scaling_factor(v, sf)
-                    elif comp.is_solute():  # scaling based on solute flux equation
-                        sf = (iscale.get_scaling_factor(self.B_comp[t, j])
-                              * iscale.get_scaling_factor(self.feed_side.properties[t, x].conc_mass_phase_comp[p, j]))
-                        iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, 'deltaP'):
             for v in self.deltaP.values():

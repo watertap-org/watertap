@@ -961,3 +961,16 @@ class _ReverseOsmosisBaseData(UnitModelBlockData):
                         self._rescale_permeate_variable(blk.molality_comp[j])
                 if blk.is_property_constructed('pressure_osm'):
                     self._rescale_permeate_variable(blk.pressure_osm)
+
+        for (t, x, p, j), v in self.flux_mass_phase_comp.items():
+            if iscale.get_scaling_factor(v) is None:
+                comp = self.config.property_package.get_component(j)
+                if comp.is_solvent():  # scaling based on solvent flux equation
+                    sf = (iscale.get_scaling_factor(self.A_comp[t, j])
+                          * iscale.get_scaling_factor(self.dens_solvent)
+                          * iscale.get_scaling_factor(self.feed_side.properties[t, x].pressure))
+                    iscale.set_scaling_factor(v, sf)
+                elif comp.is_solute():  # scaling based on solute flux equation
+                    sf = (iscale.get_scaling_factor(self.B_comp[t, j])
+                          * iscale.get_scaling_factor(self.feed_side.properties[t, x].conc_mass_phase_comp[p, j]))
+                    iscale.set_scaling_factor(v, sf)
