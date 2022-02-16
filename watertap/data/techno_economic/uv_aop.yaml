@@ -1,6 +1,6 @@
 default:
   recovery_frac_mass_H2O:
-    value: 0.9999
+    value: 1
     units: dimensionless
     reference: Texas Water Development Board IT3PR User Manual
   default_removal_frac_mass_solute:
@@ -30,5 +30,4 @@ default:
     total_coliforms_fecal_ecoli:
       value: 0.999994
       units: dimensionless
-      constituent_longform: "Total Coliforms (including fecal coliform and\uFFFD E.\
-        \ Coli)"
+      constituent_longform: "Total Coliforms (including fecal coliform and E. Coli)"

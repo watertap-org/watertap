@@ -166,7 +166,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
 
     def set_recovery_and_removal(self, data, use_default_removal=False):
         """
-        Common utiltiy method for setting values of recovery and removal
+        Common utility method for setting values of recovery and removal
         fractions.
 
         Args:
