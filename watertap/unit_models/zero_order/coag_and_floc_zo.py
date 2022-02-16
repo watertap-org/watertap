@@ -120,6 +120,10 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
                               units=pyunits.kW,
                               doc="Floc Power Consumption")
 
+        self.total_power = Var(self.flowsheet().config.time,
+                               units=pyunits.kW,
+                               doc="Total Power Consumption")
+
         self._fixed_perf_vars.append(self.alum_dose)
         self._fixed_perf_vars.append(self.polymer_dose)
         self._fixed_perf_vars.append(self.anion_to_cation_polymer_ratio)
@@ -142,18 +146,11 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
         self._perf_var_dict["Floc Basin Volume (m^3)"] = self.floc_basin_vol
         self._perf_var_dict["Rapid Mix Retention Time (s)"] = self.rapid_mix_retention_time
         self._perf_var_dict["Floc Retention Time (min)"] = self.floc_retention_time
-        self._perf_var_dict["Number of Floc Injection Processes"] = self.num_floc_injection_processes
-        self._perf_var_dict["Number of Floc Processes"] = self.num_floc_processes
-        self._perf_var_dict["Number of Rapid Mixers"] = self.num_rapid_mixers
-        self._perf_var_dict["Number of Coagulation Processes"] = self.num_coag_processes
-        self._perf_var_dict["Number of Floc Mixers"] = self.num_floc_mixers
-        self._perf_var_dict["Number of Rapid Mix Processes"] = self.num_rapid_mix_processes
         self._perf_var_dict["Rapid Mix Velocity Gradient (1/s)"] = self.velocity_gradient_rapid_mix
         self._perf_var_dict["Floc Velocity Gradient (1/s)"] = self.velocity_gradient_floc
         self._perf_var_dict["Rapid Mix Power (kW)"] = self.power_rapid_mix
         self._perf_var_dict["Floc Power (kW)"] = self.power_floc
-        self._perf_var_dict["Anionic Polymer Dosage (mg/L)"] = self.anionic_polymer_dose
-        self._perf_var_dict["Cationic Polymer Dosage (mg/L)"] = self.cationic_polymer_dose
+        self._perf_var_dict["Total Power Consumption (kW)"] = self.total_power
 
         def rule_rapid_mix_basin_vol(blk):
             return (blk.rapid_mix_basin_vol ==
@@ -213,13 +210,7 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
                     * b.floc_basin_vol
                     * b.velocity_gradient_floc[t] ** 2, to_units=pyunits.kW))
 
-        @self.Expression(self.flowsheet().time,
+        @self.Constraint(self.flowsheet().time,
                          doc='Total power consumption')
-        def total_power(b, t):
-            return b.power_floc[t] + b.power_rapid_mix[t]
-
-        self._perf_expr_dict["Total Power Consumption (kW)"] = self.total_power
-
-
-
-
+        def total_power_constraint(b, t):
+            return b.total_power[t] == b.power_floc[t] + b.power_rapid_mix[t]
