@@ -39,6 +39,11 @@ class TestIpoptWaterTAP:
 
         m.o = pyo.Objective(expr=m.a+b.o)
 
+        # references are tricky, could cause a variable
+        # to be iterated over several times in
+        # component_data_objects
+        m.b_a = pyo.Reference(b.a)
+
         return m
 
     def _test_bounds(self, m):
