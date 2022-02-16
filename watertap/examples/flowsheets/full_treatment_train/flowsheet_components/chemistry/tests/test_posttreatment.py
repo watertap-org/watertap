@@ -58,11 +58,6 @@ def test_ideal_naocl_chlorination():
 
 @pytest.mark.component
 def test_ideal_naocl_chlorination_full_block():
-    if not is_solver_from_idaes_ext:
-        pytest.xfail(
-            "This test is known to be failing with solver: "
-            f"{solver}, {solver.executable()}"
-        )
     model = run_chlorination_block_example(fix_free_chlorine=True)
     assert model.fs.ideal_naocl_mixer_unit.dosing_rate.value == \
             pytest.approx(0.9504457542440085, rel=1e-3)

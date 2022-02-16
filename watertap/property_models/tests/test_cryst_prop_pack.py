@@ -146,11 +146,6 @@ class TestDefaultNaClwaterProperty:
 
     @pytest.mark.component
     def test_default_initialization(self):
-        if not is_solver_from_idaes_ext:
-            pytest.xfail(
-                "This test is known to be failing with solver: "
-                f"{solver}, {solver.executable()}"
-            )
         self.xv.test_default_initialization(self.m)
 
     @pytest.mark.component
