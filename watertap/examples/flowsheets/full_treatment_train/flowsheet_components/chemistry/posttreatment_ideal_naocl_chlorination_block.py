@@ -549,12 +549,10 @@ def initialize_ideal_naocl_mixer(unit, debug_out=False):
         unit.naocl_stream.flow_mol[0].unfix()
 
 def initialize_ideal_naocl_chlorination(unit, state_args, debug_out=False):
-    init_options = {**solver.options}
-    init_options["bound_relax_factor"] = 1.0e-04
     if debug_out:
-        unit.initialize(state_args=state_args, optarg=init_options, outlvl=idaeslog.DEBUG)
+        unit.initialize(state_args=state_args, optarg=solver.options, outlvl=idaeslog.DEBUG)
     else:
-        unit.initialize(state_args=state_args, optarg=init_options)
+        unit.initialize(state_args=state_args, optarg=solver.options)
 
 def setup_block_to_solve_naocl_dosing_rate(model, free_chlorine_mg_per_L = 2):
     model.fs.ideal_naocl_chlorination_unit.free_chlorine.fix(free_chlorine_mg_per_L)
