@@ -366,10 +366,8 @@ def run_case1(xOH=1e-7/55.2, xH=1e-7/55.2, xCaOH2=1e-20, xCa=1e-20,
     assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
     ## ==================== END Scaling for this problem ===========================
-    init_options = {**solver.options}
-    init_options["constr_viol_tol"] = 1.0e-04
-    init_options["tol"] = 1.0e-06
-    model.fs.unit.initialize(optarg=init_options, outlvl=idaeslog.DEBUG)
+
+    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
