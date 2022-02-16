@@ -155,14 +155,13 @@ class TestCoagulationPropPack():
         assert len(unscaled_constraint_list) == 0
 
         # check if any variables are badly scaled
-        badly_scaled_var_list = list(iscale.badly_scaled_var_generator(model, large=1e2, small=1e-2))
-        if len(badly_scaled_var_list) != 0:
-            lst = []
-            for (var, val) in badly_scaled_var_list:
-                lst.append((var.name, val))
-                print(var.name, var.value)
-            print("The following variable(s) are poorly scaled: {lst}".format(lst=lst))
-        assert len(badly_scaled_var_list) == 0
+        badly_scaled_var_values = {
+        var.name: val
+        for (var, val) in iscale.badly_scaled_var_generator(
+            model, large=1e2, small=1e-2
+            )
+        }
+        assert not badly_scaled_var_values
 
     @pytest.mark.component
     def test_initialization(self, coag_obj):
@@ -188,14 +187,13 @@ class TestCoagulationPropPack():
         model = coag_obj
 
         # first, check to make sure that after initialized, the scaling is still good
-        badly_scaled_var_list = list(iscale.badly_scaled_var_generator(model, large=1e2, small=1e-2))
-        if len(badly_scaled_var_list) != 0:
-            lst = []
-            for (var, val) in badly_scaled_var_list:
-                lst.append((var.name, val))
-                print(var.name, var.value)
-            print("The following variable(s) are poorly scaled: {lst}".format(lst=lst))
-        assert len(badly_scaled_var_list) == 0
+        badly_scaled_var_values = {
+        var.name: val
+        for (var, val) in iscale.badly_scaled_var_generator(
+            model, large=1e2, small=1e-2
+            )
+        }
+        assert not badly_scaled_var_values
 
         # run solver and check for optimal solution
         results = solver.solve(model)
@@ -251,14 +249,13 @@ class TestCoagulationPropPackFailures():
         assert len(unscaled_constraint_list) == 0
 
         # check if any variables are badly scaled
-        badly_scaled_var_list = list(iscale.badly_scaled_var_generator(model, large=1e2, small=1e-2))
-        if len(badly_scaled_var_list) != 0:
-            lst = []
-            for (var, val) in badly_scaled_var_list:
-                lst.append((var.name, val))
-                print(var.name, var.value)
-            print("The following variable(s) are poorly scaled: {lst}".format(lst=lst))
-        assert len(badly_scaled_var_list) == 0
+        badly_scaled_var_values = {
+        var.name: val
+        for (var, val) in iscale.badly_scaled_var_generator(
+            model, large=1e2, small=1e-2
+            )
+        }
+        assert not badly_scaled_var_values
 
     @pytest.mark.unit
     def test_state_fail(self, coag_obj_fail):
