@@ -4,6 +4,7 @@ How to use the Electrolyte Database (EDB)
 For information on how to install and set up the EDB, see :ref:`install-edb`.
 
 .. _use-cloud-edb:
+
 Using the public cloud EDB
 --------------------------
 The EDB requires a running database (MongoDB) server that is loaded with the correct data.
