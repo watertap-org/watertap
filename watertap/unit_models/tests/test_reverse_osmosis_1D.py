@@ -336,6 +336,7 @@ class TestReverseOsmosis():
     def test_initialize(self, RO_frame):
         initialization_tester(RO_frame, fail_on_warning=True)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_var_scaling(self, RO_frame):
         m = RO_frame

@@ -3,6 +3,7 @@ import enum
 from typing import Container, Optional, Callable
 
 import pytest
+from _pytest.nodes import Item
 from _pytest.config import Config
 from _pytest.config.argparsing import Parser
 
@@ -26,10 +27,36 @@ class MarkerSpec(enum.Enum):
                 found.append(cls[marker.name])
         return found
 
+
+def _handle_requires_idaes_solver(solver: Optional = None, action: Optional[Callable[[str], None]] = pytest.xfail) -> None:
+    from idaes.core.util import get_solver
+    from idaes.config import bin_directory
+
+    solver = solver or get_solver()
+    idaes_bin_dir = Path(bin_directory).resolve()
+    solver_bin_path = Path(solver.executable()).resolve()
+
+    if not idaes_bin_dir in solver_bin_path.parents:
+        action(
+            f"This test is known to be failing with {solver_bin_path}"
+        )
+    else:
+        pytest.skip("Just testing")
+
+
 def pytest_configure(config: Config):
 
     for marker_spec in MarkerSpec:
         config.addinivalue_line("markers", f"{marker_spec.name}: {marker_spec.description}")
+
+
+def pytest_runtest_setup(item: Item):
+
+    if MarkerSpec.requires_idaes_solver in MarkerSpec.for_item(item):
+        # TODO we could get some more information about a specific solver,
+        # either by providing args to the marker
+        # or by inspecting the current value of the `solver` fixture
+        _handle_requires_idaes_solver()
 
 
 def pytest_addoption(parser: Parser):
