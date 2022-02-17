@@ -14,16 +14,11 @@ import pytest
 import watertap.property_models.cryst_prop_pack as props
 from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition
 from idaes.core import FlowsheetBlock, ControlVolume0DBlock
-from idaes.core.util import get_solver
-from idaes.config import bin_directory as idaes_bin_directory
 from idaes.generic_models.properties.tests.test_harness import \
     PropertyTestHarness as PropertyTestHarness_idaes
 from watertap.property_models.tests.property_test_harness import \
     (PropertyTestHarness, PropertyRegressionTest, PropertyCalculateStateTest)
 
-
-solver = get_solver()
-is_solver_from_idaes_ext = idaes_bin_directory in solver.executable()
 
 # -----------------------------------------------------------------------------
 

@@ -29,11 +29,6 @@ from watertap.examples.flowsheets.full_treatment_train.util import check_dof
 from pyomo.environ import TransformationFactory
 from pyomo.network import Arc
 
-from idaes.core.util import get_solver
-from idaes.config import bin_directory as idaes_bin_directory
-solver = get_solver()
-is_solver_from_idaes_ext = idaes_bin_directory in solver.executable()
-
 __author__ = "Austin Ladshaw"
 
 @pytest.mark.component

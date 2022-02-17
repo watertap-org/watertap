@@ -20,11 +20,6 @@ from watertap.examples.flowsheets.full_treatment_train.analysis import (flowshee
                                                                flowsheet_softening,
                                                                flowsheet_softening_two_stage)
 
-from idaes.core.util import get_solver
-from idaes.config import bin_directory as idaes_bin_directory
-solver = get_solver()
-is_solver_from_idaes_ext = idaes_bin_directory in solver.executable()
-
 @pytest.mark.component
 def test_flowsheet_NF():
     m = flowsheet_NF.optimize_flowsheet(system_recovery=0.5)
