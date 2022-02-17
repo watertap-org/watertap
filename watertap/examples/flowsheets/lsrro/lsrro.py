@@ -611,15 +611,15 @@ if __name__ == "__main__":
     #     m = main(int(sys.argv[1]), float(sys.argv[2]))
     # else:
     #     print("Usage 3 (specify inputs in main before running): python lsrro.py")
-    m = main(number_of_stages=4,
+    m = main(number_of_stages=5,
              water_recovery=None,
              Cin=35,
              Cbrine=250,# mg/L
              A_case="optimize",
              B_case="optimize",
-             AB_tradeoff="no constraint",
+             AB_tradeoff="inequality constraint",
              nacl_solubility_limit=True,
-             permeate_quality_limit=500e-6,
+             permeate_quality_limit=None,
              has_CP=True,
              has_Pdrop=True,
              A_fixed=2.78e-12

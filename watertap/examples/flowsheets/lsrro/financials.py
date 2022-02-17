@@ -167,7 +167,10 @@ def pressure_changer_costing(self,
     if pump_type == 'High pressure':
         # capital cost
         self.eq_capital_cost = Constraint(
-            expr=self.capital_cost == b_fs.costing_param.hp_pump_cost * b_PC.work_mechanical[0] / pyunits.W)
+            expr=self.capital_cost ==
+                 b_fs.costing_param.hp_pump_cost
+                 * b_PC.outlet.pressure[0] * b_PC.control_volume.properties_out[0].flow_vol
+                 * pyunits.s/(pyunits.m**3 * pyunits.pascal))
         iscale.set_scaling_factor(self.eq_capital_cost, iscale.get_scaling_factor(self.capital_cost))
 
         # operating cost
