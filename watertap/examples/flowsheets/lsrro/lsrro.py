@@ -516,7 +516,7 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
     if water_recovery is not None:
         m.fs.water_recovery.fix(water_recovery) # product mass flow rate fraction of feed [-]
     if Cbrine is not None:
-        m.fs.ROUnits[m.fs.StageSet.last()].feed_side.properties[0, 1].mass_frac_phase_comp['Liq', 'NaCl'].fix(Cbrine) # product mass flow rate fraction of feed [-]
+        m.fs.ROUnits[m.fs.StageSet.last()].feed_side.properties[0, 1].conc_mass_phase_comp['Liq', 'NaCl'].fix(Cbrine) # product mass flow rate fraction of feed [-]
 
     # add upper bound for permeate concentration
     if permeate_quality_limit is not None:
@@ -614,7 +614,7 @@ if __name__ == "__main__":
     m = main(number_of_stages=4,
              water_recovery=None,
              Cin=35,
-             Cbrine=250000e-6 ,# mass fraction
+             Cbrine=250,# mg/L
              A_case="optimize",
              B_case="optimize",
              AB_tradeoff="no constraint",
