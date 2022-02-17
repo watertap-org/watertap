@@ -75,14 +75,56 @@ class UVAOPZOData(ZeroOrderBaseData):
                 bounds=(0, None),
                 doc="Mass flow rate of oxidant solution")
 
-            self._fixed_perf_vars.append(self.oxidant_dose)
 
-            self._perf_var_dict["Oxidant Dosage (mg/L)"] = self.chemical_dosage
-            self._perf_var_dict["Oxidant Flow (kg/s)"] = self.chemical_flow_mass
+            self._fixed_perf_vars.append(self.oxidant_dose)
 
             @self.Constraint(self.flowsheet().time,
                              doc="Chemical mass flow constraint")
             def chemical_flow_mass_constraint(b, t):
                 return (b.chemical_flow_mass[t] ==
-                        b.oxidant_dose[t]
-                        * b.properties_in[t].flow_vol)
+                        pyunits.convert(b.oxidant_dose[t]
+                        * b.properties_in[t].flow_vol, to_units=pyunits.kg/pyunits.s))
+
+            self._perf_var_dict["Oxidant Dosage (mg/L)"] = self.oxidant_dose
+            self._perf_var_dict["Oxidant Flow (kg/s)"] = self.chemical_flow_mass
+
+    def load_parameters_from_database(self, use_default_removal=False):
+        """
+                Method to load parameters from database, with modification for UV-AOP.
+
+                Args:
+                    use_default_removal - (optional) indicate whether to use defined
+                                          default removal fraction if no specific value
+                                          defined in database
+
+                Returns:
+                    None
+                """
+        # Get parameter dict from database
+        if self._tech_type is None:
+            raise NotImplementedError(
+                f"{self.name} derived zero order unit model has not "
+                f"implemented the _tech_type attribute. This is required "
+                f"to identify the database file to load parameters from.")
+
+        # Get parameter dict from database
+        pdict = self.config.database.get_unit_operation_parameters(
+            self._tech_type, subtype=self.config.process_subtype)
+
+        if not self.config.has_aop:
+            # make sure that a subtype WITH advanced oxidation is not selected when has_aop is False
+            if 'oxidant_dose' in pdict:
+                raise KeyError(f'{self.name} - database provided contains an entry'
+                               f' for oxidant_dose, but has_aop was set to False.')
+
+        if self._has_recovery_removal:
+            self.set_recovery_and_removal(pdict, use_default_removal)
+
+        for v in self._fixed_perf_vars:
+            self.set_param_from_data(v, pdict)
+            # set_param_from_data will handle exception when a subtype WITHOUT advanced oxidation is
+            # selected when has_aop is True
+
+
+
+
