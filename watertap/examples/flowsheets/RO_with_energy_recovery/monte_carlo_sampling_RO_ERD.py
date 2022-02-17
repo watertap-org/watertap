@@ -39,7 +39,7 @@ def get_sweep_params(m, use_LHS=False):
 
     return sweep_params
 
-def run_parameter_sweep(results_file, seed=None, use_LHS=False, read_sweep_params_from_file=False,
+def run_parameter_sweep(results_file, h5_fname=None, seed=None, use_LHS=False, read_sweep_params_from_file=False,
         sweep_params_fname='mc_sweep_params.yaml', read_model_defauls_from_file=False,
         defaults_fname='default_configuration.yaml'):
 
@@ -73,7 +73,7 @@ def run_parameter_sweep(results_file, seed=None, use_LHS=False, read_sweep_param
     num_samples = 10
 
     # Filename of the h5 file that we want to write but without the extension
-    h5_fname = "monte_carlo_results"
+    # h5_fname = "monte_carlo_results"
 
     # Run the parameter sweep
     global_results = parameter_sweep(m, sweep_params, outputs, csv_results_file=results_file,
