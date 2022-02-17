@@ -27,15 +27,15 @@ default: # UV irradiation alone
       value: 0.999994
       units: dimensionless
       constituent_longform: Total Coliforms (including fecal coliform and E. Coli)
-    uv_reduced_equivalent_dose:
-      value: 100  #todo: not provided in uv_irradiation yaml
-      units: mJ/cm^2
-    uvt_in:  # making this unit model specific but really is a stream property
-      value: 0.9
-      units: dimensionless
-    energy_electric_flow_vol_inlet:
-      value: 0.1      #todo: revisit this value later on
-      units: kWh/m^3
+  uv_reduced_equivalent_dose:
+    value: 100  #todo: not provided in uv_irradiation yaml
+    units: mJ/cm^2
+  uvt_in:  # making this unit model specific but really is a stream property
+    value: 0.9
+    units: dimensionless
+  energy_electric_flow_vol_inlet:
+    value: 0.1      #todo: revisit this value later on
+    units: kWh/m^3
 
 hydrogen_peroxide:
   default_removal_frac_mass_solute:
@@ -66,18 +66,21 @@ hydrogen_peroxide:
       value: 0.999994
       units: dimensionless
       constituent_longform: Total Coliforms (including fecal coliform and E. Coli)
-    uv_reduced_equivalent_dose:
-      value: 100  #todo:  double check the default on this
-      units: mJ/cm^2
-    uvt_in:  # making this unit model specific but really is a stream property
-      value: 0.9
-      units: dimensionless
-    oxidant_dose:
-      value: 5
-      units: mg/L
-    energy_electric_flow_vol_inlet:
-      value: 0.1      #todo: revisit this value later on
-      units: kWh/m^3
+  uv_reduced_equivalent_dose:
+    value: 100  #todo:  double check the default on this
+    units: mJ/cm^2
+  uvt_in:  # making this unit model specific but really is a stream property
+    value: 0.9
+    units: dimensionless
+  oxidant_name:
+    value: hydrogen_peroxide
+    units: dimensionless
+  oxidant_dose:
+    value: 5
+    units: mg/L
+  energy_electric_flow_vol_inlet:
+    value: 0.1      #todo: revisit this value later on
+    units: kWh/m^3
 
 
 

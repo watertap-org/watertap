@@ -32,7 +32,7 @@ from watertap.core.zero_order_properties import WaterParameterBlock
 solver = get_solver()
 
 
-class TestUVAOPZO:
+class TestUVonlyZO_w_default_removal:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -40,27 +40,33 @@ class TestUVAOPZO:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["sulfur", "toc", "tss"]})
+            default={"solute_list": ["viruses_enteric",
+                                     "tss",
+                                     "toc",
+                                     "cryptosporidium",
+                                     "total_coliforms_fecal_ecoli"]})
 
         m.fs.unit = UVAOPZO(default={
             "property_package": m.fs.params,
-            "database": m.db})
+            "database": m.db,
+            "process_subtype": "default"})
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-        m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(1)
+        m.fs.unit.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(2)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(3)
-
+        m.fs.unit.inlet.flow_mass_comp[0, "cryptosporidium"].fix(5)
+        m.fs.unit.inlet.flow_mass_comp[0, "total_coliforms_fecal_ecoli"].fix(3)
         return m
 
     @pytest.mark.unit
     def test_build(self, model):
         assert model.fs.unit.config.database == model.db
 
-        # assert isinstance(model.fs.unit.electricity, Var)
-        # assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
-        #
-        # assert isinstance(model.fs.unit.electricity_consumption, Constraint)
+        assert isinstance(model.fs.unit.electricity, Var)
+        assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
+
+        assert isinstance(model.fs.unit.electricity_consumption, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -75,9 +81,15 @@ class TestUVAOPZO:
             else:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
-        # assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        # assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-        #     "energy_electric_flow_vol_inlet"]["value"]
+        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
+        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
+            "energy_electric_flow_vol_inlet"]["value"]
+        assert model.fs.unit.uv_reduced_equivalent_dose[0].fixed
+        assert model.fs.unit.uv_reduced_equivalent_dose[0].value == data[
+            "uv_reduced_equivalent_dose"]["value"]
+        assert model.fs.unit.uvt_in[0].fixed
+        assert model.fs.unit.uvt_in[0].value == data[
+            "uvt_in"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -104,17 +116,52 @@ class TestUVAOPZO:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(10.00565, rel=1e-5) ==
+        assert (pytest.approx(10.004926, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(0.099944, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["sulfur"]))
-        assert (pytest.approx(0.16498537, rel=1e-5) == value(
+        assert (pytest.approx(0.1889939, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["toc"]))
-        assert (pytest.approx(0.299831, rel=1e-5) == value(
+        assert (pytest.approx(0.299852, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp["tss"]))
+        assert (pytest.approx(3605.04, rel=1e-5) ==
+                value(model.fs.unit.electricity[0]))
 
-        # assert (pytest.approx(8333.42, rel=1e-5) ==
-        #         value(model.fs.unit.electricity[0]))
+    @pytest.mark.component
+    def test_report(self, model):
+        stream = StringIO()
+
+        model.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                                          : Value    : Fixed : Bounds
+                              Electricity Demand :   3605.0 : False : (None, None)
+                           Electricity Intensity :  0.10000 :  True : (None, None)
+                Solute Removal [cryptosporidium] :  0.99999 :  True : (0, None)
+                            Solute Removal [toc] : 0.054565 :  True : (0, None)
+    Solute Removal [total_coliforms_fecal_ecoli] :  0.99999 :  True : (0, None)
+                            Solute Removal [tss] :   0.0000 :  True : (0, None)
+                Solute Removal [viruses_enteric] :  0.96540 :  True : (0, None)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                                                     Inlet    Treated 
+    Volumetric Flowrate                              10.014     10.005
+    Mass Concentration H2O                           998.60     999.51
+    Mass Concentration viruses_enteric             0.099860  0.0034580
+    Mass Concentration tss                          0.29958    0.29985
+    Mass Concentration toc                          0.19972    0.18899
+    Mass Concentration cryptosporidium              0.49930 5.4973e-06
+    Mass Concentration total_coliforms_fecal_ecoli  0.29958 1.7991e-06
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
     # @pytest.mark.solver
     # @pytest.mark.skipif(solver is None, reason="Solver not available")
