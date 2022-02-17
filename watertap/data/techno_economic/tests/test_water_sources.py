@@ -51,13 +51,13 @@ def test_default_source():
 
     assert pytest.approx(source_data[DEFAULT_SOURCE]["default_flow"]["value"],
                          rel=1e-12) == value(
-        m.fs.unit.outlet.flow_vol[0])
-    assert m.fs.unit.outlet.flow_vol[0].fixed
+        m.fs.unit.flow_vol[0])
+    assert m.fs.unit.flow_vol[0].fixed
 
     for j, v in source_data[DEFAULT_SOURCE]["solutes"].items():
         assert pytest.approx(v["value"], rel=1e-12) == value(
-            m.fs.unit.outlet.conc_mass_comp[0, j])
-        assert m.fs.unit.outlet.conc_mass_comp[0, j].fixed
+            m.fs.unit.conc_mass_comp[0, j])
+        assert m.fs.unit.conc_mass_comp[0, j].fixed
 
     assert_units_consistent(m)
 
@@ -82,12 +82,12 @@ def test_all_sources(source):
 
     assert pytest.approx(source_data[source]["default_flow"]["value"],
                          rel=1e-12) == value(
-        m.fs.unit.outlet.flow_vol[0])
-    assert m.fs.unit.outlet.flow_vol[0].fixed
+        m.fs.unit.flow_vol[0])
+    assert m.fs.unit.flow_vol[0].fixed
 
     for j, v in source_data[source]["solutes"].items():
         assert pytest.approx(v["value"], rel=1e-12) == value(
-            m.fs.unit.outlet.conc_mass_comp[0, j])
-        assert m.fs.unit.outlet.conc_mass_comp[0, j].fixed
+            m.fs.unit.conc_mass_comp[0, j])
+        assert m.fs.unit.conc_mass_comp[0, j].fixed
 
         assert j in m.db.component_list.keys()

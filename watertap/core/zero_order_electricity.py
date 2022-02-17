@@ -17,7 +17,7 @@ and demand for zero-order unit models.
 
 import idaes.logger as idaeslog
 
-from pyomo.environ import Var, units as pyunits
+from pyomo.environ import Param, Var, units as pyunits
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
@@ -56,7 +56,7 @@ def constant_intensity(self):
         doc="Electricity intensity with respect to inlet flowrate of unit")
 
     @self.Constraint(self.flowsheet().time,
-                     doc='Constraint for electricity consumption base on '
+                     doc='Constraint for electricity consumption based on '
                      'feed flowrate.')
     def electricity_consumption(b, t):
         return b.electricity[t] == (
@@ -67,3 +67,42 @@ def constant_intensity(self):
     self._fixed_perf_vars.append(self.energy_electric_flow_vol_inlet)
     self._perf_var_dict["Electricity Intensity"] = \
         self.energy_electric_flow_vol_inlet
+
+
+def pump_electricity(self, flow_rate):
+    """
+    Helper method for calculating electricity demand based on a
+    pump flow equation.
+
+    E[t] = (0.746 * Q[t] * H / (3960 * eta_pump * eta_motor))
+
+    Here Q is the volumetric flowrate to be used to calculate electricity demand,
+    H is the lift height for the pump and eta_pump and eta_motor are the
+    efficiencies of the pump and motor respectively.
+
+    Args:
+        flow_rate - term to use for Q in the equation above.
+    """
+    _common(self)
+
+    self.lift_height = Param(initialize=100,
+                             units=pyunits.feet,
+                             mutable=True,
+                             doc="Lift height for pump")
+    self.eta_pump = Param(initialize=0.9,
+                          units=pyunits.dimensionless,
+                          mutable=True,
+                          doc="Efficiency of pump")
+    self.eta_motor = Param(initialize=0.9,
+                           units=pyunits.dimensionless,
+                           mutable=True,
+                           doc="Efficiency of motor")
+
+    @self.Constraint(self.flowsheet().time,
+                     doc='Constraint for electricity consumption based on '
+                     'pump flowrate.')
+    def electricity_consumption(b, t):
+        A = 3960*pyunits.gallon*pyunits.foot/pyunits.minute/pyunits.horsepower
+        return b.electricity[t] == pyunits.convert(
+            flow_rate[t]*self.lift_height/(A*self.eta_pump*self.eta_motor),
+            to_units=pyunits.kW)

@@ -11,6 +11,10 @@
 #
 ###############################################################################
 
+from .chemical_addition_zo import ChemicalAdditionZO
 from .feed_zo import FeedZO
 from .nanofiltration_zo import NanofiltrationZO
+from .clarifier_zo import ClarifierZO
 from .pump_zo import PumpZO
+from .sedimentation_zo import SedimentationZO
+from .coag_and_floc_zo import CoagulationFlocculationZO

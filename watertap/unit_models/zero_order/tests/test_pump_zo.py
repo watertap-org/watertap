@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-Tests for zero-order nanofiltration model
+Tests for zero-order pump model
 """
 import pytest
 from io import StringIO
@@ -45,10 +45,10 @@ class TestPumpZOdefault:
             "property_package": m.fs.params,
             "database": m.db})
 
-        m.fs.unit.inlet.flow_vol.fix(10)
-        m.fs.unit.inlet.conc_mass_comp[0, "sulfur"].fix(1)
-        m.fs.unit.inlet.conc_mass_comp[0, "toc"].fix(2)
-        m.fs.unit.inlet.conc_mass_comp[0, "tss"].fix(3)
+        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
+        m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(1)
+        m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(2)
+        m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(3)
 
         return m
 
@@ -87,15 +87,12 @@ class TestPumpZOdefault:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(value(
-            model.fs.unit.inlet.flow_vol[0]), rel=1e-5) ==
-            value(model.fs.unit.outlet.flow_vol[0]))
-        for j in ["sulfur", "toc", "tss"]:
+        for t, j in model.fs.unit.inlet.flow_mass_comp:
             assert (pytest.approx(value(
-                model.fs.unit.inlet.conc_mass_comp[0, j]), rel=1e-5) ==
-                value(model.fs.unit.outlet.conc_mass_comp[0, j]))
+                model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5) ==
+                value(model.fs.unit.outlet.flow_mass_comp[t, j]))
 
-        assert (pytest.approx(10*0.051*3600, rel=1e-5) ==
+        assert (pytest.approx(1.0060*0.051*3600, rel=1e-5) ==
                 value(model.fs.unit.electricity[0]))
 
     @pytest.mark.component
@@ -113,16 +110,17 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                   : Value    : Fixed : Bounds
-       Electricity Demand :   1836.0 : False : (None, None)
+       Electricity Demand :   184.70 : False : (None, None)
     Electricity Intensity : 0.051000 :  True : (None, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
-                               Inlet  Outlet
-    Volumetric Flowrate         10      10  
-    Mass Concentration sulfur    1       1  
-    Mass Concentration toc       2       2  
-    Mass Concentration tss       3       3  
+                                Inlet  Outlet
+    Volumetric Flowrate        1.0060  1.0060
+    Mass Concentration H2O     994.04  994.04
+    Mass Concentration sulfur 0.99404 0.99404
+    Mass Concentration toc     1.9881  1.9881
+    Mass Concentration tss     2.9821  2.9821
 ====================================================================================
 """
 
