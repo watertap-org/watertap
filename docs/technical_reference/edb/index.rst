@@ -12,8 +12,10 @@ Overview
 The Electrolyte Database (EDB) stores metadata and data about chemical species, called here 
 `components`, and `reactions`. It is accessed through a Python API to return well-defined Python objects.
 
-The data are stored in `MongoDB <https://mongodb.org>`_, so they can be queried in a number of ways, and the 
-system is extensible to new use-cases. The native storage format for MongoDB is a `JSON <https://json.org>`_ document, 
+The data are stored in `MongoDB <https://mongodb.org>`_.  For information on using a cloud-hosted version of
+the database or your own local copy, please see :ref:`use-cloud-edb`.
+
+The native storage format for MongoDB is a `JSON <https://json.org>`_ document,
 and the expected structure and fields of the *component* and *reaction* data is defined by a 
 `JSON Schema <https://json-schema.org>`_. Validation using those schemas is built into the API (though it can be disabled).
 
