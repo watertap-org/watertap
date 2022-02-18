@@ -227,8 +227,6 @@ def build_sido_reactive(self):
                     f"order w.r.t. species {j} in reaction {r}.")
             p.set_value(cratio)
 
-    # TODO: Need to test error mesasges abaove
-
     # Add performance constraints
     # Water recovery
     @self.Constraint(self.flowsheet().time, doc='Water recovery equation')
