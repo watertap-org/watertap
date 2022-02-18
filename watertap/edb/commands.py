@@ -453,7 +453,7 @@ def info(data_type, url, database):
                 "GenericReactionParameterBlock\n")
         print("Loaded base options:")
         print("--------------------")
-        db.list_bases()
+        edb.list_bases()
     elif data_type == "component":
         print("Info: Components are chemical species registered "
                 "within the database. They are stored with their \n"
