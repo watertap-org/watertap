@@ -15,7 +15,6 @@ import watertap.property_models.cryst_prop_pack as props
 from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition
 from idaes.core import FlowsheetBlock, ControlVolume0DBlock
 from idaes.core.util import get_solver
-from idaes.config import bin_directory as idaes_bin_directory
 from idaes.generic_models.properties.tests.test_harness import \
     PropertyTestHarness as PropertyTestHarness_idaes
 from watertap.property_models.tests.property_test_harness import \
@@ -23,7 +22,6 @@ from watertap.property_models.tests.property_test_harness import \
 
 
 solver = get_solver()
-is_solver_from_idaes_ext = idaes_bin_directory in solver.executable()
 
 # -----------------------------------------------------------------------------
 
@@ -144,13 +142,9 @@ class TestDefaultNaClwaterProperty:
     def test_scaling(self):
         self.xv.test_scaling(self.m)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_default_initialization(self):
-        if not is_solver_from_idaes_ext:
-            pytest.xfail(
-                "This test is known to be failing with solver: "
-                f"{solver}, {solver.executable()}"
-            )
         self.xv.test_default_initialization(self.m)
 
     @pytest.mark.component

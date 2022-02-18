@@ -21,9 +21,8 @@ from watertap.examples.flowsheets.full_treatment_train.analysis import (flowshee
                                                                flowsheet_softening_two_stage)
 
 from idaes.core.util import get_solver
-from idaes.config import bin_directory as idaes_bin_directory
 solver = get_solver()
-is_solver_from_idaes_ext = idaes_bin_directory in solver.executable()
+
 
 @pytest.mark.component
 def test_flowsheet_NF():
@@ -74,13 +73,9 @@ def test_flowsheet_softening():
     assert value(m.fs.costing.LCOW) == pytest.approx(0.3837, rel=1e-3)
 
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_flowsheet_softening_two_stage():
-    if not is_solver_from_idaes_ext:
-        pytest.xfail(
-            "This test is known to be failing with solver: "
-            f"{solver}, {solver.executable()}"
-        )
     desal_kwargs = flowsheet_two_stage.desal_kwargs
     m = flowsheet_softening_two_stage.optimize_flowsheet(system_recovery=0.80, **desal_kwargs)
     assert value(m.fs.costing.LCOW) == pytest.approx(0.9277, rel=1e-3)
