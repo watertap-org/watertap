@@ -180,8 +180,12 @@ class ZeroOrderBaseData(UnitModelBlockData):
         """
         try:
             self.set_param_from_data(self.recovery_frac_mass_H2O, data)
-        except AttributeError:
-            pass  # this assumes the model does not include recovery_frac_mass_H2O
+        except KeyError:
+            if self.recovery_frac_mass_H2O[:].fixed:
+                pass
+            else:
+                raise KeyError('fs.unit - database provided does not contain '
+                               'an entry for recovery_frac_mass_H2O for technology.')
 
         for t, j in self.removal_frac_mass_solute:
             self.set_param_from_data(

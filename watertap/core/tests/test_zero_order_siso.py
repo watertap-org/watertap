@@ -63,6 +63,7 @@ class TestSISO:
         m.fs.unit.inlet.flow_mass_comp[0, "B"].fix(20)
         m.fs.unit.inlet.flow_mass_comp[0, "C"].fix(30)
 
+        m.fs.unit.recovery_frac_mass_H2O.fix(1)
         m.fs.unit.removal_frac_mass_solute[0, "A"].fix(0.1)
         m.fs.unit.removal_frac_mass_solute[0, "B"].fix(0.2)
         m.fs.unit.removal_frac_mass_solute[0, "C"].fix(0.3)
@@ -91,17 +92,19 @@ class TestSISO:
         assert isinstance(model.fs.unit.inlet, Port)
         assert isinstance(model.fs.unit.treated, Port)
 
-        assert not hasattr(model.fs.unit, 'recovery_frac_mass_H2O')
+        assert isinstance(model.fs.unit.recovery_frac_mass_H2O, Var)
         assert isinstance(model.fs.unit.removal_frac_mass_solute, Var)
         assert len(model.fs.unit.removal_frac_mass_solute) == 3
 
-        assert isinstance(model.fs.unit.water_balance, Constraint)
-        assert len(model.fs.unit.water_balance) == 1
+        assert isinstance(model.fs.unit.water_recovery_equation, Constraint)
+        assert len(model.fs.unit.water_recovery_equation) == 1
         assert isinstance(model.fs.unit.solute_treated_equation, Constraint)
         assert len(model.fs.unit.solute_treated_equation) == 3
 
     @pytest.mark.unit
     def test_degrees_of_freedom(self, model):
+        from idaes.core.util.model_statistics import unfixed_variables_set
+        [print(i) for i in unfixed_variables_set(model)]
         assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
@@ -113,7 +116,7 @@ class TestSISO:
         iscale.calculate_scaling_factors(model)
 
         assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.water_balance[0]) == 1e5
+            model.fs.unit.water_recovery_equation[0]) == 1e5
         assert iscale.get_constraint_transform_applied_scaling_factor(
             model.fs.unit.solute_treated_equation[0, "A"]) == 1e5
         assert iscale.get_constraint_transform_applied_scaling_factor(

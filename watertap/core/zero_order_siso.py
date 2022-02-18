@@ -38,13 +38,13 @@ def build_siso(self):
         * properties_in --> inlet
         * properties_treated ---> treated
 
-#todo: revisit this after formulation complete
 
-    One additional variable is added:
+    Two additional variables are added:
+        * recovery_frac_mass_H2O (indexed by time)
         * removal_frac_mass_solute (indexed by time and solute)
 
     Two additional constraints are added to represent the material balances
-        * flow_balance (indexed by time)
+        * water_recovery_equation (indexed by time)
         * solute_treated_equation (indexed by time and solute)
 
     This method also sets private attributes on the unit model with references
@@ -81,6 +81,13 @@ def build_siso(self):
                   doc="Treated water outlet port")
 
     # Add performance variables
+    self.recovery_frac_mass_H2O = Var(
+        self.flowsheet().time,
+        initialize=0.8,
+        domain=NonNegativeReals,
+        units=pyunits.dimensionless,
+        bounds=(1E-8, 1.0000001),
+        doc='Mass recovery fraction of water in the treated stream')
     self.removal_frac_mass_solute = Var(
         self.flowsheet().time,
         self.config.property_package.solute_set,
@@ -89,12 +96,13 @@ def build_siso(self):
         units=pyunits.dimensionless,
         doc='Solute removal fraction on a mass basis')
 
-    # Add performance constraints
 
-    # Flow balance
-    @self.Constraint(self.flowsheet().time, doc='Overall flow balance')
-    def water_balance(b, t):
-        return (b.properties_in[t].flow_mass_comp["H2O"] ==
+    # Add performance constraints
+    # Water recovery
+    @self.Constraint(self.flowsheet().time, doc='Water recovery equation')
+    def water_recovery_equation(b, t):
+        return (b.recovery_frac_mass_H2O[t] *
+                b.properties_in[t].flow_mass_comp["H2O"] ==
                 b.properties_treated[t].flow_mass_comp["H2O"])
 
     # Solute concentration of treated stream
@@ -197,12 +205,13 @@ def initialize_siso(blk, state_args=None, outlvl=idaeslog.NOTSET,
 
 def calculate_scaling_factors_siso(self):
     # Get default scale factors and do calculations from base classes
-    for t, v in self.water_balance.items():
+    for t, v in self.water_recovery_equation.items():
         iscale.constraint_scaling_transform(
             v, iscale.get_scaling_factor(
                 self.properties_in[t].flow_mass_comp["H2O"],
                 default=1,
-                warning=False))  # would just be a duplicate of above
+                warning=True,
+                hint=" for water recovery"))
 
     for (t, j), v in self.solute_treated_equation.items():
         iscale.constraint_scaling_transform(
