@@ -329,7 +329,9 @@ def run_case1(xA, xB, xAB=1e-25, scaling=True, rxn_config=None):
 
     assert degrees_of_freedom(model) == 0
 
+    solver.options["bound_relax_factor"] = 1.0e-02
     results = solver.solve(model, tee=True)
+    del solver.options["bound_relax_factor"]
 
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert results.solver.status == SolverStatus.ok
