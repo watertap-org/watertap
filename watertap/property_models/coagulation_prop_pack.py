@@ -141,7 +141,6 @@ class CoagulationParameterData(PhysicalParameterBlock):
         # ---default scaling---
         self.set_default_scaling('temperature', 1e-2)
         self.set_default_scaling('pressure', 1e-6)
-        self.set_default_scaling('dens_mass_phase', 1e-3)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -504,11 +503,14 @@ class CoagulationStateBlockData(StateBlockData):
         # enthalpy flow expression for get_enthalpy_flow_terms method
         temperature_ref = 273.15 * pyunits.K
 
-        def rule_enth_flow(b):  # enthalpy flow [J/s]
-            return (b.params.cp
-                    * sum(b.flow_mass_phase_comp[pair] for pair in b.flow_mass_phase_comp)
-                    * (b.temperature - temperature_ref))
-        self.enth_flow = Expression(rule=rule_enth_flow)
+        def rule_enth_flow(b, p):  # enthalpy flow [J/s]
+            if (p == 'Liq'):
+                return (b.params.cp
+                        * sum(b.flow_mass_phase_comp[pair] for pair in b.flow_mass_phase_comp)
+                        * (b.temperature - temperature_ref))
+            else:
+                return 0
+        self.enth_flow = Expression(self.params.phase_list, rule=rule_enth_flow)
 
     # -----------------------------------------------------------------------------
     # General Methods
@@ -521,7 +523,7 @@ class CoagulationStateBlockData(StateBlockData):
 
     def get_enthalpy_flow_terms(self, p):
         """Create enthalpy flow terms."""
-        return self.enth_flow
+        return self.enth_flow[p]
 
     def default_material_balance_type(self):
         return MaterialBalanceType.componentTotal
@@ -568,22 +570,22 @@ class CoagulationStateBlockData(StateBlockData):
         # will not override if the user does provide the scaling factor
 
         if self.is_property_constructed('mass_frac_phase_comp'):
+            #Apply variable scaling
             for pair in self.seawater_mass_frac_dict.keys():
                 if iscale.get_scaling_factor(self.mass_frac_phase_comp[pair]) is None:
                     if pair[1] == 'H2O':
                         iscale.set_scaling_factor(self.mass_frac_phase_comp[pair], 1)
-                        # transforming constraints
-                        iscale.constraint_scaling_transform(self.eq_mass_frac_phase_comp[pair], 1)
                     elif pair[1] == 'Sludge':
                         iscale.set_scaling_factor(self.mass_frac_phase_comp[pair], 1)
-                        # transforming constraints
-                        iscale.constraint_scaling_transform(self.eq_mass_frac_phase_comp[pair], 1)
                     else:
                         sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp[pair])
                               / iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O']))
                         iscale.set_scaling_factor(self.mass_frac_phase_comp[pair], sf)
-                        # transforming constraints
-                        iscale.constraint_scaling_transform(self.eq_mass_frac_phase_comp[pair], sf/10)
+
+            #Apply constraint scaling
+            for pair in self.seawater_mass_frac_dict.keys():
+                sf = iscale.get_scaling_factor(self.mass_frac_phase_comp[pair], default=1, warning=True)
+                iscale.constraint_scaling_transform(self.eq_mass_frac_phase_comp[pair], sf)
 
         if self.is_property_constructed('dens_mass_phase'):
             if iscale.get_scaling_factor(self.dens_mass_phase) is None:
@@ -609,22 +611,24 @@ class CoagulationStateBlockData(StateBlockData):
             iscale.constraint_scaling_transform(self.eq_flow_vol_phase['Sol'], sf)
 
         if self.is_property_constructed('conc_mass_phase_comp'):
+            #Apply variable scaling
             for pair in self.seawater_mass_frac_dict.keys():
                 if iscale.get_scaling_factor(self.conc_mass_phase_comp[pair]) is None:
                     if pair[0] == 'Liq':
                         sf = (iscale.get_scaling_factor(self.mass_frac_phase_comp[pair])
                               * iscale.get_scaling_factor(self.dens_mass_phase['Liq']))
                         iscale.set_scaling_factor(self.conc_mass_phase_comp[pair], sf)
-                        # transforming constraints
-                        iscale.constraint_scaling_transform(self.eq_conc_mass_phase_comp[pair], sf)
                     elif pair[0] == 'Sol':
                         sf = (iscale.get_scaling_factor(self.mass_frac_phase_comp[pair])
                               * iscale.get_scaling_factor(self.dens_mass_phase['Sol']))
                         iscale.set_scaling_factor(self.conc_mass_phase_comp[pair], sf*10)
-                        # transforming constraints
-                        iscale.constraint_scaling_transform(self.eq_conc_mass_phase_comp[pair], sf*10)
                     else:
                         raise PropertyPackageError("Unsupported phase for CoagulationParameterData property package")
+
+            #Apply constraint scaling
+            for pair in self.seawater_mass_frac_dict.keys():
+                sf = iscale.get_scaling_factor(self.conc_mass_phase_comp[pair], default=1, warning=True)
+                iscale.constraint_scaling_transform(self.eq_conc_mass_phase_comp[pair], sf)
 
 
         if self.is_property_constructed('enth_flow'):

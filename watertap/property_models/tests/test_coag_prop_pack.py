@@ -112,7 +112,7 @@ class TestCoagulationPropPack():
         assert model.fs.stream[0].default_energy_balance_type() == EnergyBalanceType.enthalpyTotal
         assert model.fs.stream[0].get_material_flow_basis() == MaterialFlowBasis.mass
         assert model.fs.stream[0].get_enthalpy_flow_terms('Liq') == \
-            model.fs.stream[0].enth_flow
+            model.fs.stream[0].enth_flow['Liq']
 
         # NOTE: At this point, all property methods have been touched, so
         #       all will now be built
