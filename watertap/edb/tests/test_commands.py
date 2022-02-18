@@ -1,6 +1,5 @@
 import contextlib
 from dataclasses import dataclass, field, asdict
-import enum
 from functools import singledispatch
 import logging
 import os
@@ -23,13 +22,9 @@ def runner():
 
 
 # TODO move this to edb.commands
-class ExitCode(enum.IntEnum):
-    OK = 0
-    ERROR = 1
-    INVALID_USAGE = 2
-
 
 LogLevel = type(logging.INFO)
+ExitCode = commands.ExitCode
 
 
 @dataclass

@@ -2,6 +2,7 @@
 Commands for Electrolyte Database
 """
 # stdlib
+import enum
 import json
 import logging
 import pathlib
@@ -22,6 +23,12 @@ from .schemas import schemas as edb_schemas
 
 _log = logging.getLogger(__name__)
 
+
+class ExitCode(enum.IntEnum):
+    OK = 0
+    ERROR = 1
+    INVALID_USAGE = 2
+    DATABASE_ERROR = 3
 
 def get_edb_data(filename: str) -> pathlib.Path:
     """Get an installed electrolyte DB data file `filename`.
