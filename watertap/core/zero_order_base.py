@@ -266,9 +266,9 @@ class ZeroOrderBaseData(UnitModelBlockData):
         var_dict = {}
 
         for k, v in self._perf_var_dict.items():
-            if k == "Solute Removal":
-                for j, vd in self.removal_frac_mass_solute[time_point, :].wildcard_items():
-                    var_dict[f"Solute Removal [{j}]"] = vd
+            if k in ["Solute Removal", "Reaction Extent"]:
+                for j, vd in v[time_point, :].wildcard_items():
+                    var_dict[f"{k} [{j}]"] = vd
             elif v.is_indexed():
                 var_dict[k] = v[time_point]
             else:
