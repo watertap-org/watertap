@@ -1,6 +1,7 @@
 import contextlib
 from dataclasses import dataclass, field, asdict
 from functools import singledispatch
+import json
 import logging
 import os
 from pathlib import Path
@@ -78,7 +79,7 @@ class Invocation:
 def _display_param(obj: Any) -> str:
     if isinstance(obj, Invocation):
         args = " ".join(obj.args)
-        return f"{args!r}, exp.={obj.expected}"
+        return f"{args!r}, {obj.expected}"
     if isinstance(obj, tuple):
         return _display_param(Invocation(*obj))
     return str(obj)
@@ -87,6 +88,7 @@ def _display_param(obj: Any) -> str:
 class _INVALID:
     url: str = "__INVALID__"
     file_name: str = "__INVALID__"
+    data_type: str = "__INVALID__"
 
 
 EDBClient = pymongo.MongoClient
@@ -98,7 +100,7 @@ class EDBClientFactory:
 
     def __call__(self, url=None, **kwargs) -> EDBClient:
         if url == _INVALID.url:
-            raise ConnectionFailure(f"Invalid url: {url}")
+            raise pymongo.errors.ConnectionFailure(f"Invalid url: {url}")
         return self.instance
 
 
@@ -144,6 +146,12 @@ def _changing_cwd(dest: Path) -> Path:
         yield dest
     finally:
         os.chdir(origin)
+
+
+@pytest.fixture(scope="function")
+def run_in_empty_dir(tmp_path: Path) -> Path:
+    with _changing_cwd(tmp_path) as dest:
+        yield dest
 
 
 class TestBaseCommand:
@@ -198,12 +206,19 @@ class TestLoad:
                 marks=pytest.mark.xfail(reason="Validation for 'base' not yet available")
             ),
             Invocation(["load", "--bootstrap", "--no-validate"]),
-            Invocation(["load"], Expected(ExitCode.ERROR)),
+            Invocation(["load"], Expected(ExitCode.INVALID_USAGE)),
             Invocation(["load", "--file", "reaction.json", "--type", "reaction"]),
             Invocation(["load", "--file", "component.json", "--type", "component"]),
             Invocation(["load", "--file", "base.json", "--type", "base"]),
-            Invocation(["load", "--file", "base.json"], Expected(ExitCode.ERROR)),
-            Invocation(["load", "--bootstrap", "--url", _INVALID.url], Expected(ExitCode.ERROR))
+            Invocation(["load", "--file", "base.json"], Expected(ExitCode.INVALID_USAGE)),
+            # to test the validation from the point of view of the command line, we use valid files and data types,
+            # but switched, e.g. base.json as component.
+            # the command should fail unless the validation is turned off (default is on)
+            Invocation(["load", "--file", "base.json", "--type", "component", "--no-validate"], Expected(ExitCode.OK)),
+            Invocation(["load", "--file", "base.json", "--type", "component", "--validate"], Expected(ExitCode.DATABASE_ERROR)),
+            # this tests that the default behavior is to validate if no flag is given
+            Invocation(["load", "--file", "base.json", "--type", "component"], Expected(ExitCode.DATABASE_ERROR)),
+            Invocation(["load", "--bootstrap", "--url", _INVALID.url], Expected(ExitCode.DATABASE_ERROR)),
         ],
         ids=_display_param
     )
@@ -219,6 +234,24 @@ class TestLoad:
         if expected.success:
             assert not edb.is_empty()
 
+    @pytest.fixture(
+        scope="function",
+        params=[
+            (["load", "--bootstrap"], Expected(ExitCode.DATABASE_ERROR)),
+        ],
+        ids=_display_param
+    )
+    def run_from_populated_db(self, request, runner, populated_edb) -> Outcome:
+        args, expected = request.param
+        result = runner.invoke(commands.command_base, args)
+        return result, expected
+
+    @pytest.mark.unit
+    def test_from_populated_db(self, run_from_populated_db: Outcome, edb: ElectrolyteDB):
+        result, expected = run_from_populated_db
+        assert result == expected, result.stdout
+        assert not edb.is_empty()
+
 
 class TestDump:
 
@@ -228,7 +261,7 @@ class TestDump:
             (["dump", "--type", "reaction", "--file", "reaction.json"], Expected(file_name="reaction.json")),
             (["dump", "--type", "base", "--file", "base.json"], Expected(file_name="base.json")),
             (["dump", "--type", "component", "--file", "component.json"], Expected(file_name="component.json")),
-            (["dump", "--type", "INVALID", "--file", "invalid.json"], Expected(ExitCode.INVALID_USAGE)),
+            (["dump", "--type", _INVALID.data_type, "--file", "invalid.json"], Expected(ExitCode.INVALID_USAGE)),
         ],
         ids=_display_param
     )
@@ -279,7 +312,7 @@ class TestInfo:
             (["info", "--type", "base"], Expected(ExitCode.OK)),
             (["info", "--type", "component"], Expected(ExitCode.OK)),
             (["info", "--type", "reaction"], Expected(ExitCode.OK)),
-            (["info", "--type", "INVALID"], Expected(ExitCode.INVALID_USAGE)),
+            (["info", "--type", _INVALID.data_type], Expected(ExitCode.INVALID_USAGE)),
         ],
         ids=_display_param
     )
@@ -324,10 +357,15 @@ class TestSchema:
         params=[
             (["schema", "--type", "component"], Expected(ExitCode.OK)),
             (["schema", "--type", "reaction"], Expected(ExitCode.OK)),
+            (["schema", "--type", "base"], Expected(ExitCode.INVALID_USAGE)),
+            (
+                ["schema", "--type", "component", "--file", "component.json"],
+                Expected(ExitCode.OK, file_name="component.json"),
+            ),
         ],
         ids=_display_param,
     )
-    def run_command(self, request, output_format: str, runner, edb) -> Outcome:
+    def run_command(self, request, output_format: str, runner, edb, run_in_empty_dir) -> Outcome:
         args, expected = request.param
         args.extend(["--format", output_format])
         result = runner.invoke(commands.command_base, args)
@@ -338,4 +376,6 @@ class TestSchema:
         result, expected = run_command
         assert result == expected, result.stdout
         if expected.success:
-            assert len(result.stdout) >= min_text_length
+            text = expected.file_path.read_text() if expected.file_path else result.stdout
+            assert len(text) >= min_text_length
+            
