@@ -93,6 +93,11 @@ class CoagulationParameterData(PhysicalParameterBlock):
             doc='Relative increase in liquid density with mass fraction of salts')
 
         #   adjustment parameters for density change with temperature
+        #   Density calculation as a function of temperature and pressure
+        #   --------------------------------------------------------------
+        #   Engineering Toolbox. Water - Density, Specific Weight, and
+        #   Thermal Expansion Coefficients. (2003) https://www.engineeringtoolbox.com/
+        #   water-density-specific-weight-d_595.html [Accessed 02-01-2022]
         self.dens_param_A = Param(
             domain=Reals,
             initialize=-2.9335E-6,
@@ -450,6 +455,11 @@ class CoagulationStateBlockData(StateBlockData):
             units=pyunits.kg * pyunits.m**-3,
             doc="Mass density")
 
+        #   Density calculation as a function of temperature and pressure
+        #   --------------------------------------------------------------
+        #   Engineering Toolbox. Water - Density, Specific Weight, and
+        #   Thermal Expansion Coefficients. (2003) https://www.engineeringtoolbox.com/
+        #   water-density-specific-weight-d_595.html [Accessed 02-01-2022]
         def rule_dens_mass_phase(b, p):
             if (p == 'Liq'):
                 return (b.dens_mass_phase[p] == (b.params.ref_dens_liq +
