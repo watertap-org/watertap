@@ -194,7 +194,12 @@ class TestLoad:
     def access_loadable_data(self, tmp_path: Path) -> Path:
         src = commands.get_edb_data("filename").parent
         dest = tmp_path / "data"
-        shutil.copytree(src, dest, dirs_exist_ok=False)
+
+        # TODO: dirs_exist_ok is only available for Python 3.8+, so we use a workaround
+        # until we can drop support for 3.7
+        # shutil.copytree(src, dest, dirs_exist_ok=False)
+        assert list(dest.rglob("*")) == [], f"Directory {dest} is not empty"
+        shutil.copytree(src, dest)
         with _changing_cwd(dest):
             yield dest
 
