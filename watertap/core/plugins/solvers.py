@@ -142,12 +142,16 @@ class IpoptWaterTAP(IPOPT):
         del self._scaling_cache
 
     def _cache_and_set_relaxed_bounds(self, bound_relax_factor):
-        self._bound_cache = [] 
+        self._bound_cache = pyo.ComponentMap()
         val = pyo.value
         for v in self._model.component_data_objects(pyo.Var, active=True, descend_into=True):
+            # we could hit a variable more
+            # than once because of References
+            if v in self._bound_cache:
+                continue
             if v.lb is None and v.ub is None:
                 continue
-            self._bound_cache.append((v, v.lb, v.ub))
+            self._bound_cache[v] = (v.lb, v.ub)
             sf = get_scaling_factor(v, default=1)
             if v.lb is not None:
                 v.lb = val((v.lb*sf - bound_relax_factor*max(1, abs(val(v.lb*sf))))/sf)
@@ -155,7 +159,7 @@ class IpoptWaterTAP(IPOPT):
                 v.ub = val((v.ub*sf + bound_relax_factor*max(1, abs(val(v.ub*sf))))/sf)
 
     def _reset_bounds(self):
-        for v, lb, ub in self._bound_cache:
+        for v, (lb, ub) in self._bound_cache.items():
             v.lb = lb
             v.ub = ub
         del self._bound_cache
