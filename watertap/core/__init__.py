@@ -17,3 +17,4 @@ from .zero_order_properties import WaterParameterBlock, WaterStateBlock
 from .zero_order_electricity import constant_intensity, pump_electricity
 from .zero_order_pt import build_pt
 from .zero_order_sido import build_sido
+from .zero_order_sido_reactive import build_sido_reactive
