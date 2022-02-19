@@ -81,12 +81,3 @@ hydrogen_peroxide:
   energy_electric_flow_vol_inlet:
     value: 0.1      #todo: revisit this value later on
     units: kWh/m^3
-
-
-
-
-
-
-
-
-
