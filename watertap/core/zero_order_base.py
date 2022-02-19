@@ -184,8 +184,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
             if self.recovery_frac_mass_H2O[:].fixed:
                 pass
             else:
-                raise KeyError('fs.unit - database provided does not contain '
-                               'an entry for recovery_frac_mass_H2O for technology.')
+                raise
 
         for t, j in self.removal_frac_mass_solute:
             self.set_param_from_data(
