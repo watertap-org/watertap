@@ -595,7 +595,10 @@ def display_system(m):
     print('Volumetric water recovery: %.1f%%' % (value(m.fs.water_recovery) * 100))
     print('Energy Consumption: %.1f kWh/m3' % value(m.fs.specific_energy_consumption))
     print('Levelized cost of water: %.2f $/m3' % value(m.fs.costing.LCOW))
-
+    print(f'Number of Stages: {value(m.fs.NumberOfStages)}')
+    total_area = value(sum(m.fs.ROUnits[a].area for a in range(1,m.fs.NumberOfStages+1)))
+    print(f'Total Membrane Area: {total_area:.2f}')
+    print('\n')
 def display_RO_reports(m):
     for stage in m.fs.ROUnits.values():
         stage.report()
@@ -611,16 +614,16 @@ if __name__ == "__main__":
     #     m = main(int(sys.argv[1]), float(sys.argv[2]))
     # else:
     #     print("Usage 3 (specify inputs in main before running): python lsrro.py")
-    m = main(number_of_stages=5,
-             water_recovery=None,
+    m = main(number_of_stages=8,
+             # water_recovery=0.7,
              Cin=35,
              Cbrine=250,# mg/L
              A_case="optimize",
              B_case="optimize",
-             AB_tradeoff="inequality constraint",
+             AB_tradeoff="no constraint",
              nacl_solubility_limit=True,
              permeate_quality_limit=None,
              has_CP=True,
              has_Pdrop=True,
-             A_fixed=2.78e-12
+             A_fixed=1.5/3.6e11 #2.78e-12
              )
