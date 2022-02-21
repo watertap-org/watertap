@@ -136,6 +136,42 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         # Add unit variables
+        # Linear relationship between TSS (mg/L) and Turbidity (NTU)
+        #           TSS (mg/L) = Turbidity (NTU) * slope + intercept
+        #   Default values come from the following paper:
+        #       H. Rugner, M. Schwientek,B. Beckingham, B. Kuch, P. Grathwohl,
+        #       Environ. Earth Sci. 69 (2013) 373-380. DOI: 10.1007/s12665-013-2307-1
+        self.slope = Var(
+            self.flowsheet().config.time,
+            initialize=1.86,
+            bounds=(1e-8, 10),
+            domain=NonNegativeReals,
+            units=pyunits.mg/pyunits.L,
+            doc='Slope relation between TSS (mg/L) and Turbidity (NTU)')
+
+        self.intercept = Var(
+            self.flowsheet().config.time,
+            initialize=0,
+            bounds=(0, 10),
+            domain=NonNegativeReals,
+            units=pyunits.mg/pyunits.L,
+            doc='Intercept relation between TSS (mg/L) and Turbidity (NTU)')
+
+        self.initial_turbidity_ntu = Var(
+            self.flowsheet().config.time,
+            initialize=50,
+            bounds=(0, 1000),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc='Initial measured Turbidity (NTU) from Jar Test')
+
+        self.final_turbidity_ntu = Var(
+            self.flowsheet().config.time,
+            initialize=1,
+            bounds=(0, 1000),
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc='Final measured Turbidity (NTU) from Jar Test')
 
 
         # Build control volume for feed side
@@ -165,9 +201,38 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
         self.add_outlet_port(name='outlet', block=self.feed_side)
 
         # Add constraints
-        self.feed_side.material_balances.pprint()
-        self.feed_side.enthalpy_balances.pprint()
-        self.feed_side.pressure_balance.pprint()
+        self.tss_loss_rate = Var(
+            self.flowsheet().config.time,
+            initialize=1,
+            bounds=(0, 100),
+            domain=NonNegativeReals,
+            units=units_meta('mass')*units_meta('time')**-1,
+            doc='testing')
+
+        @self.Constraint(self.flowsheet().config.time,
+                         doc="test")
+        def eq_tss_loss_rate(self, t):
+            tss_in = pyunits.convert(self.slope[t]*self.initial_turbidity_ntu[t] + self.intercept[t],
+                                    to_units=units_meta('mass')*units_meta('length')**-3)
+            tss_out = pyunits.convert(self.slope[t]*self.final_turbidity_ntu[t] + self.intercept[t],
+                                    to_units=units_meta('mass')*units_meta('length')**-3)
+            input_rate = self.feed_side.properties_in[t].flow_vol_phase['Liq']*tss_in
+            exit_rate = self.feed_side.properties_out[t].flow_vol_phase['Liq']*tss_out
+
+            return (self.tss_loss_rate[t] == input_rate - exit_rate)
+
+        self.eq_tss_loss_rate.pprint()
+
+        #self.feed_side.material_balances.pprint()
+        #self.feed_side.enthalpy_balances.pprint()
+        #self.feed_side.pressure_balance.pprint()
+
+        # enthalpy transfer
+        #@self.Constraint(self.flowsheet().config.time,
+        #                self.config.property_package.phase_list,
+        #                 doc="Enthalpy transfer from inlet to outlet")
+        #def eq_connect_enthalpy_transfer(b, t, p):
+        #    return (0.0 == b.feed_side.enthalpy_transfer[t])
 
 
 
