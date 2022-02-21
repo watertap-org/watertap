@@ -425,9 +425,23 @@ def test_seawater_data():
 
     check_dof(m, fail_flag=True)
 
+    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', 'H2O'))
+    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', 'Na_+'))
+    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', 'Cl_-'))
+    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e1, index=('Liq', 'Ca_2+'))
+    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e1, index=('Liq', 'SO4_2-'))
+    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', 'Mg_2+'))
     calculate_scaling_factors(m)
 
+    # check if any variables are badly scaled
+    badly_scaled_var_list = list(badly_scaled_var_generator(m))
+    assert len(badly_scaled_var_list) == 0
+
     stream.initialize()
+
+    # check if any variables are badly scaled
+    badly_scaled_var_list = list(badly_scaled_var_generator(m))
+    assert len(badly_scaled_var_list) == 0
 
     results = solver.solve(m)
     assert_optimal_termination(results)

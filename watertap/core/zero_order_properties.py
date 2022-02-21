@@ -109,8 +109,11 @@ class WaterParameterBlockData(PhysicalParameterBlock):
         for j in solute_list:
             self.add_component(str(j), Solute())
 
-        # DEfine default vlaue for mass density of solution
+        # Define default value for mass density of solution
         self.dens_mass_default = 1000*pyunits.kg/pyunits.m**3
+        # Define default value for dynamic viscosity of solution
+        self.visc_d_default = 0.001*pyunits.kg/pyunits.m/pyunits.s
+
 
         # ---------------------------------------------------------------------
         # Set default scaling factors
@@ -132,7 +135,8 @@ class WaterParameterBlockData(PhysicalParameterBlock):
             {'flow_mass_comp': {'method': None},
              'flow_vol': {'method': '_flow_vol'},
              'conc_mass_comp': {'method': '_conc_mass_comp'},
-             'dens_mass': {'method': '_dens_mass'}})
+             'dens_mass': {'method': '_dens_mass'},
+             'visc_d': {'method': '_visc_d'}})
 
 
 class _WaterStateBlock(StateBlock):
@@ -261,6 +265,12 @@ class WaterStateBlockData(StateBlockData):
         self.flow_vol = Expression(
             expr=sum(self.flow_mass_comp[j] for j in self.component_list) /
             self.dens_mass)
+
+    def _visc_d(self):
+        self.visc_d = Param(initialize=self.params.visc_d_default,
+                            units=pyunits.kg/pyunits.m/pyunits.s,
+                            mutable=True,
+                            doc="Dynamic viscosity of solution")
 
     def get_material_flow_terms(blk, p, j):
         return blk.flow_mass_comp[j]
