@@ -65,7 +65,6 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
         doc="""Indicates whether holdup terms should be constructed or not.
     **default** - False. The filtration unit does not have defined volume, thus
     this must be False."""))
-    # ## TODO: Consider removing these material balance config stuff
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
@@ -82,27 +81,30 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
     **MaterialBalanceType.total** - use total material balance.}"""))
     CONFIG.declare("energy_balance_type", ConfigValue(
         default=EnergyBalanceType.useDefault,
-        domain=In([EnergyBalanceType.enthalpyTotal,
-                    EnergyBalanceType.useDefault,
-                    EnergyBalanceType.none]),
-        description="Energy balance construction flag for 0D control volume only",
+        domain=In(EnergyBalanceType),
+        description="Energy balance construction flag",
         doc="""Indicates what type of energy balance should be constructed,
     **default** - EnergyBalanceType.useDefault.
     **Valid values:** {
     **EnergyBalanceType.useDefault - refer to property package for default
     balance type
     **EnergyBalanceType.none** - exclude energy balances,
-    **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material}"""))
+    **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
+    **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
+    **EnergyBalanceType.energyTotal** - single energy balance for material,
+    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
     CONFIG.declare("momentum_balance_type", ConfigValue(
-        default=MomentumBalanceType.none,
-        domain=In([MomentumBalanceType.none,
-                    MomentumBalanceType.pressureTotal]),
-        description="Momentum balance construction flag for 0D control volume only",
+        default=MomentumBalanceType.pressureTotal,
+        domain=In(MomentumBalanceType),
+        description="Momentum balance construction flag",
         doc="""Indicates what type of momentum balance should be constructed,
     **default** - MomentumBalanceType.pressureTotal.
     **Valid values:** {
     **MomentumBalanceType.none** - exclude momentum balances,
-    **MomentumBalanceType.pressureTotal** - single pressure balance for material"""))
+    **MomentumBalanceType.pressureTotal** - single pressure balance for material,
+    **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
+    **MomentumBalanceType.momentumTotal** - single momentum balance for material,
+    **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -163,27 +165,9 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
         self.add_outlet_port(name='outlet', block=self.feed_side)
 
         # Add constraints
-        '''
-        @self.Constraint(self.flowsheet().config.time,
-                         self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
-                         doc="Mass balance")
-        def eq_mass_balance(b, t, p, j):
-            if (p,j) in b.feed_side.properties_in[t].flow_mass_phase_comp:
-                return b.feed_side.properties_in[t].flow_mass_phase_comp[p, j] == b.feed_side.properties_out[t].flow_mass_phase_comp[p, j]
-            else:
-                return 0
-
-        @self.Constraint(self.flowsheet().config.time,
-                        doc="Isothermal assumption")
-        def eq_isothermal(b, t):
-            return b.feed_side.properties_in[t].temperature == b.feed_side.properties_out[t].temperature
-
-        @self.Constraint(self.flowsheet().config.time,
-                        doc="Isobaric assumption")
-        def eq_isobaric(b, t):
-            return b.feed_side.properties_in[t].pressure == b.feed_side.properties_out[t].pressure
-        '''
+        self.feed_side.material_balances.pprint()
+        self.feed_side.enthalpy_balances.pprint()
+        self.feed_side.pressure_balance.pprint()
 
 
 
