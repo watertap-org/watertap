@@ -111,7 +111,7 @@ if __name__ == '__main__':
 
     # Fix other inlet state variables
     m.fs.unit.inlet.temperature[0].fix(298.15)
-    m.fs.unit.inlet.pressure[0].fix(4e5)
+    m.fs.unit.inlet.pressure[0].fix(10e5)
 
     # Fix the membrane variables that are usually fixed for the DSPM-DE model
     m.fs.unit.radius_pore.fix(0.5e-9)
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     # m.fs.unit.length.fix(1)
     m.fs.unit.channel_height.fix(5e-4)
     # m.fs.unit.velocity[0, 0].fix(0.1)
-    # m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.5)
+    m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.5)
     # m.fs.unit.rejection_intrinsic_phase_comp[0, 'Liq', 'Ca_2+'].setlb(.2)
 
 
@@ -217,6 +217,7 @@ if __name__ == '__main__':
     # print('---------------- AFTER AUTOMATE RESCALE---------------------------------------')
     [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
     print('\nNUMBER OF badly scaled variables:', len(list(iscale.badly_scaled_var_generator(m))))
+    print('\nRecalculate scaling factors---------------------------------------')
 
 
     # solver.options['max_iter'] = 0

@@ -61,8 +61,8 @@ _log = idaeslog.getLogger(__name__)
 # - Refine scaling
 # - See if there is one more DOF that I can add when Kf is assumed and fixed and act coeff = 1
 # - Add/refine tests
-# - Add Davies Model to prop pack to compute activity coefficients
-# -Add constraints for computing mass transfer coefficient
+# - Add Davies Model to prop pack to compute activity coefficients - DONE
+# -Add constraints for computing mass transfer coefficient - DONE
 # -Add constraints for computing pressure drop in spiral wound membrane
 
 class MassTransferCoefficient(Enum):
@@ -194,7 +194,7 @@ class NanofiltrationData(UnitModelBlockData):
 
         if (hasattr(self.config.property_package,'ion_set') and len(self.config.property_package.ion_set) == 0) \
                 or (hasattr(self.config.property_package,'solute_set') and len(self.config.property_package.solute_set) == 0):
-            raise ConfigurationError("This NF model was expecting ions and did not receive any.")
+            raise ConfigurationError("This NF model was expecting ions/solutes and did not receive any.")
 
     def build(self):
         # Call UnitModel.build to setup dynamics
@@ -1401,8 +1401,9 @@ class NanofiltrationData(UnitModelBlockData):
                 print(f'{var} is missing a scaling factor')
                 continue
             sf = iscale.get_scaling_factor(var)
-            iscale.unset_scaling_factor(var) # not sure I need to do this, but just to be safe
             iscale.set_scaling_factor(var, sf / sv * rescale_factor)
+            iscale.calculate_scaling_factors(self)
+
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
