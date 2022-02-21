@@ -536,10 +536,10 @@ class CoagulationStateBlockData(StateBlockData):
         return self.enth_flow[p]
 
     def default_material_balance_type(self):
-        return MaterialBalanceType.componentTotal
+        return MaterialBalanceType.none
 
     def default_energy_balance_type(self):
-        return EnergyBalanceType.enthalpyTotal
+        return EnergyBalanceType.none
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.mass
