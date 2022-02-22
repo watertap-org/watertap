@@ -29,6 +29,7 @@ from idaes.core.util.model_statistics import (variables_in_activated_equalities_
     expressions_set, total_objectives_set)
 from pyomo.core.base.block import TraversalStrategy
 from pyomo.opt import TerminationCondition as _TerminationCondition
+from pyomo.common.tee import capture_output
 
 np.set_printoptions(linewidth=200)
 
@@ -356,9 +357,7 @@ def _create_local_output_skeleton(model, sweep_params, outputs, num_samples):
     if outputs is None:
         # No outputs are specified, so every Var, Expression, and Objective on the model should be saved
         for pyo_obj in model.component_data_objects((pyo.Var, pyo.Expression, pyo.Objective), active=True):
-            # Only need to save this variable if it isn't one of the value in sweep_params
-            if pyo_obj.name not in var_str_list:
-                output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
+            output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
     else:
         # Save only the outputs specified in the outputs dictionary
         for pyo_obj in outputs.values():
@@ -591,7 +590,8 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
 
         try:
             # Simulate/optimize with this set of parameter
-            results = optimize_function(model, **optimize_kwargs)
+            with capture_output():
+                results = optimize_function(model, **optimize_kwargs)
             pyo.assert_optimal_termination(results)
 
         except:
@@ -609,7 +609,8 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
         if reinitialize_before_sweep == False and previous_run_failed and (reinitialize_function is not None):
             try:
                 reinitialize_function(model, **reinitialize_kwargs)
-                results = optimize_function(model, **optimize_kwargs)
+                with capture_output():
+                    results = optimize_function(model, **optimize_kwargs)
                 pyo.assert_optimal_termination(results)
 
             except:
