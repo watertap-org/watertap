@@ -838,6 +838,121 @@ class TestParallelManager():
             _assert_dictionary_correctness(truth_dict, read_dict)
             _assert_h5_csv_agreement(results_file, read_dict)
 
+    @pytest.mark.component
+    def test_parameter_sweep_force_initialize(self, model, tmp_path):
+        comm, rank, num_procs = _init_mpi()
+        tmp_path = _get_rank0_path(comm, tmp_path)
+
+        m = model
+        m.fs.slack_penalty = 1000.
+        m.fs.slack.setub(0)
+
+        A = m.fs.input['a']
+        B = m.fs.input['b']
+        sweep_params = {A.name : (A, 0.1, 0.9, 3),
+                        B.name : (B, 0.0, 0.5, 3)}
+        # outputs = {'output_c':m.fs.output['c'],
+        #            'output_d':m.fs.output['d'],
+        #            'performance':m.fs.performance,
+        #            'objective':m.objective}
+        results_file = os.path.join(tmp_path, 'global_results_recover.csv')
+        h5_fname = "output_dict_recover"
+
+        # Call the parameter_sweep function
+        parameter_sweep(m, sweep_params, outputs=None,
+                csv_results_file = results_file,
+                results_fname = h5_fname,
+                optimize_function=_optimization,
+                reinitialize_before_sweep=True,
+                reinitialize_function=_reinitialize,
+                reinitialize_kwargs={'slack_penalty':10.},
+                mpi_comm = comm)
+
+        # NOTE: rank 0 "owns" tmp_path, so it needs to be
+        #       responsible for doing any output file checking
+        #       tmp_path can be deleted as soon as this method
+        #       returns
+        if rank == 0:
+            # Check that the global results file is created
+            assert os.path.isfile(results_file)
+
+            # Attempt to read in the data
+            data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
+
+            # Compare the last row of the imported data to truth
+            truth_data = [  0.9,   0.5, -11. ,   1. ,   1. ,   0.8,   0.5,   2. ]
+            assert np.allclose(data[-1], truth_data, equal_nan=True)
+
+        if rank == 0:
+
+            truth_dict = {'outputs': {'fs.output[c]': {'lower bound': 0,
+                                                       'units': 'non-dimensional',
+                                                       'upper bound': 0,
+                                                       'value': np.array([0.2, 0.2, 0.2, 1., 1., 1., 1., 1., 1.])},
+                                      'fs.output[d]': {'lower bound': 0,
+                                                       'units': 'non-dimensional',
+                                                       'upper bound': 0,
+                                                       'value': np.array([0., 0.75, 1., 9.77756334e-09, 0.75, 1., 9.98605188e-09, 0.75, 1.0])},
+                                      'fs.performance': {'value': np.array([0.2, 0.95, 1.2, 1., 1.75, 2., 1., 1.75, 2.])},
+                                      'fs.slack[ab_slack]': {'lower bound': 0,
+                                                             'units': 'non-dimensional',
+                                                             'upper bound': 0,
+                                                             'value': np.array([0., 0., 0., 0., 0., 0., 0.8, 0.8, 0.8])},
+                                      'fs.slack[cd_slack]': {'lower bound': 0,
+                                                             'units': 'non-dimensional',
+                                                             'upper bound': 0,
+                                                             'value': np.array([0., 0., 0.5, 0., 0., 0.5, 0., 0., 0.5])},
+                                      'objective': {'value': np.array([0.2, 0.95,  -3.79999989, 1., 1.75,  -3.,  -6.99999989,  -6.24999989, -11.])}},
+                          'solve_status': ['optimal',
+                                           'optimal',
+                                           'optimal',
+                                           'optimal',
+                                           'optimal',
+                                           'optimal',
+                                           'optimal',
+                                           'optimal',
+                                           'optimal'],
+                          'sweep_params': {'fs.input[a]': {'lower bound': 0,
+                                                           'units': 'non-dimensional',
+                                                           'upper bound': 0,
+                                                           'value': np.array([0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9])},
+                                           'fs.input[b]': {'lower bound': 0,
+                                                           'units': 'non-dimensional',
+                                                           'upper bound': 0,
+                                                           'value': np.array([0., 0.25, 0.5 , 0., 0.25, 0.5 , 0., 0.25, 0.5])}}}
+
+            h5_fpath = os.path.join(tmp_path, '{0}.h5'.format(h5_fname))
+            read_dict = _read_output_h5(h5_fpath)
+            _assert_dictionary_correctness(truth_dict, read_dict)
+            _assert_h5_csv_agreement(results_file, read_dict)
+
+    @pytest.mark.component
+    def test_parameter_sweep_bad_force_initialize(self, model, tmp_path):
+        comm, rank, num_procs = _init_mpi()
+        tmp_path = _get_rank0_path(comm, tmp_path)
+
+        m = model
+        m.fs.slack_penalty = 1000.
+        m.fs.slack.setub(0)
+
+        A = m.fs.input['a']
+        B = m.fs.input['b']
+        sweep_params = {A.name : (A, 0.1, 0.9, 3),
+                        B.name : (B, 0.0, 0.5, 3)}
+
+        results_file = os.path.join(tmp_path, 'global_results_recover.csv')
+        h5_fname = "output_dict_recover"
+
+        with pytest.raises(ValueError):
+            # Call the parameter_sweep function
+            parameter_sweep(m, sweep_params, outputs=None,
+                    csv_results_file = results_file,
+                    results_fname = h5_fname,
+                    optimize_function=_optimization,
+                    reinitialize_before_sweep=True,
+                    reinitialize_function=None,
+                    reinitialize_kwargs=None,
+                    mpi_comm = comm)
 
 def _optimization(m, relax_feasibility=False):
     if relax_feasibility:

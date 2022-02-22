@@ -246,7 +246,7 @@ def _update_model_values(m, param_dict, values):
 
 def _aggregate_results(local_results, global_values, comm, num_procs):
 
-    if num_procs > 1:
+    if num_procs > 1: # pragma: no cover
         local_results = local_results.astype(np.float64)
 
         global_results = np.zeros((np.shape(global_values)[0], np.shape(local_results)[1]), dtype=np.float64)
@@ -415,7 +415,7 @@ def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_pr
 
     if num_procs == 1:
         global_output_dict = local_output_dict
-    else:
+    else: # pragma: no cover
         # We make the assumption that the parameter sweep is running the same
         # flowsheet num_samples number of times, i.e., the structure of the
         # local_output_dict remains the same across all mpi_ranks
