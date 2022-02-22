@@ -275,12 +275,8 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
             mutable=True,
             initialize=molar_rat,
             domain=NonNegativeReals,
-            units=pyunits.dimensionless,
+            units=pyunits.mol/pyunits.mol,
             doc='Moles of the produced salts from 1 mole of chemical additives')
-
-        self.chemical_mw.pprint()
-        self.salt_mw.pprint()
-        self.salt_from_additive_mole_ratio.pprint()
 
 
         # Build control volume for feed side
@@ -359,8 +355,16 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
         @self.Constraint(self.flowsheet().config.time,
                          doc="Constraint for the loss rate of TSS to be used in mass_transfer_term")
         def eq_tds_gain_rate(self, t):
+            sum = 0
+            for j in self.config.chemical_additives.keys():
+                chem_dose = pyunits.convert(self.chemical_doses[t, j],
+                                to_units=units_meta('mass')*units_meta('length')**-3)
+                chem_dose = chem_dose/self.chemical_mw[j] * \
+                        self.salt_from_additive_mole_ratio[j] * \
+                        self.salt_mw[j]*self.feed_side.properties_out[t].flow_vol_phase['Liq']
+                sum = sum+chem_dose
 
-            return (self.tds_gain_rate[t] == 0.0)
+            return (self.tds_gain_rate[t] == sum)
 
         # Add constraints for mass transfer terms
         @self.Constraint(self.flowsheet().config.time,
@@ -377,30 +381,9 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
             else:
                 return self.feed_side.mass_transfer_term[t, p, j] == 0.0
 
-        self.eq_tss_loss_rate.pprint()
-
-        self.eq_mass_transfer_term.pprint()
-
-        self.eq_tds_gain_rate.pprint()
-
-        self.feed_side.material_balances.pprint()
-        self.feed_side.enthalpy_balances.pprint()
-        self.feed_side.pressure_balance.pprint()
-
-        # enthalpy transfer
-        #@self.Constraint(self.flowsheet().config.time,
-        #                self.config.property_package.phase_list,
-        #                 doc="Enthalpy transfer from inlet to outlet")
-        #def eq_connect_enthalpy_transfer(b, t, p):
-        #    return (0.0 == b.feed_side.enthalpy_transfer[t])
-
-
-
-
     # # TODO: Add user access functions for setting up the problem
 
     # # TODO: Add initialize method
-
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
