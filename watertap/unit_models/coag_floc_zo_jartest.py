@@ -383,7 +383,57 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
 
     # # TODO: Add user access functions for setting up the problem
 
-    # # TODO: Add initialize method
+    # initialize method
+    def initialize(
+            blk,
+            state_args=None,
+            outlvl=idaeslog.NOTSET,
+            solver=None,
+            optarg=None):
+        """
+        General wrapper for pressure changer initialization routines
+
+        Keyword Arguments:
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for
+                         initialization (see documentation of the specific
+                         property package) (default = {}).
+            outlvl : sets output level of initialization routine
+            optarg : solver options dictionary object (default=None)
+            solver : str indicating which solver to use during
+                     initialization (default = None)
+
+        Returns: None
+        """
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        # Set solver options
+        opt = get_solver(solver, optarg)
+
+        # ---------------------------------------------------------------------
+        # Initialize holdup block
+        flags = blk.feed_side.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+        )
+        init_log.info_high("Initialization Step 1 Complete.")
+        # ---------------------------------------------------------------------
+
+        # ---------------------------------------------------------------------
+        # Solve unit
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+        init_log.info_high(
+            "Initialization Step 2 {}.".format(idaeslog.condition(res)))
+
+        # ---------------------------------------------------------------------
+        # Release Inlet state
+        blk.feed_side.release_state(flags, outlvl + 1)
+        init_log.info(
+            "Initialization Complete: {}".format(idaeslog.condition(res))
+        )
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
