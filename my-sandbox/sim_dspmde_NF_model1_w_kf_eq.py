@@ -35,7 +35,7 @@ if __name__ == '__main__':
             # 'Y',
         ],
         "diffusivity_data": {
-            ("Liq", "Ca_2+"): 0.792e-9,
+            ("Liq", "Ca_2+"): 9.2e-10,  # this value is an order of magnitude smaller than MIT's paper (0.792e-9) according to NanoFiltran (9.20E-10)
             ("Liq", "SO4_2-"): 1.06e-9,
             ("Liq", "Mg_2+"): 0.706e-9,
             ("Liq", "Na_+"): 1.33e-9,
@@ -108,6 +108,8 @@ if __name__ == '__main__':
                                                                   adjust_by_ion='Cl_-',
                                                                   get_property='mass_frac_phase_comp')
 
+
+
     # Fix other inlet state variables
     m.fs.unit.inlet.temperature[0].fix(298.15)
     m.fs.unit.inlet.pressure[0].fix(4e5)
@@ -128,7 +130,7 @@ if __name__ == '__main__':
     # m.fs.unit.length.fix(50)
     m.fs.unit.channel_height.fix(5e-4)
     # m.fs.unit.velocity[0, 0].fix(0.1)
-    m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.01)
+    m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.5)
     # m.fs.unit.flux_vol_water_avg.fix(1.67e-06)
     # m.fs.unit.rejection_intrinsic_phase_comp[0, 'Liq', 'Ca_2+'].setlb(.2)
 
@@ -189,7 +191,7 @@ if __name__ == '__main__':
     # m.fs.unit.eq_area.activate()
     #
     # m.fs.unit.eq_interfacial_partitioning_feed.activate()
-    # m.fs.unit.eq_interfacial_partitioning_permeate.activate()
+    # m.fs.unit.eq_interfacial_partitioning_permeate.deactivate() # deactivating yields higher, more practical rejection rates
     # m.fs.unit.eq_electroneutrality_interface.activate()
     # m.fs.unit.eq_electroneutrality_pore.activate()
     # m.fs.unit.eq_electroneutrality_permeate.activate()
@@ -226,8 +228,8 @@ if __name__ == '__main__':
         print('SUCCESSFUL FIRST SOLVE!!!!!!!!!!!')
         # Check that electroneutrality is satisfied for feed outlet and mixed permeate- constraints that
         # are deactivated because they lead to failed solve
-        b.feed_side.properties_out[0].assert_electroneutrality(defined_state=False, tee=True, solve=False)
-        b.mixed_permeate[0].assert_electroneutrality(defined_state=False, tee=True, solve=False)
+        # b.feed_side.properties_out[0].assert_electroneutrality(defined_state=False, tee=True, solve=False)
+        # b.mixed_permeate[0].assert_electroneutrality(defined_state=False, tee=True, solve=False)
     else:
         print('FIRST SOLVE FAILED..............')
         print('Badly scaled vars after FIRST failed solve:')

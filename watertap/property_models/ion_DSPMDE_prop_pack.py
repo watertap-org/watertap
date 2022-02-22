@@ -795,7 +795,7 @@ class DSPMDEStateBlockData(StateBlockData):
                                  get_property=None, solve=True):
         #TODO: technically, this should be charge*concentration instead of charge*mole flow
         if tol is None:
-            tol = 1e-6
+            tol = 0
         if adjust_by_ion is not None:
             if adjust_by_ion in self.params.solute_set:
                 self.charge_balance = Constraint(expr=sum(self.charge_comp[j] * self.conc_mol_phase_comp['Liq', j]

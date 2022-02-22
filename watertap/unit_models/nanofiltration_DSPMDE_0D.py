@@ -340,7 +340,7 @@ class NanofiltrationData(UnitModelBlockData):
         self.electric_potential = Var(
             self.flowsheet().config.time,
             io_list,
-            ['pore_entrance','pore_exit', 'permeate'], #TODO: revisit - build in property model w/o constraint?
+            ['pore_entrance','pore_exit', 'permeate'],
             initialize=0.1, #TODO:revisit
             domain=Reals,
             bounds=(-1.001, 1.001),
@@ -455,7 +455,7 @@ class NanofiltrationData(UnitModelBlockData):
                 self.io_list,
                 solute_set,
                 initialize=1e5,
-                bounds=(5e3, 1e6), # #TODO:unsure of value ranges at the moment
+                bounds=(5e3, None), # #TODO:unsure of value ranges at the moment
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="Peclet number at inlet and outlet")
@@ -492,7 +492,7 @@ class NanofiltrationData(UnitModelBlockData):
                          doc="Donnan exclusion contribution to partitioning on permeate side")
         def partition_factor_donnan_comp_permeate(b, t, x, j):
             return (exp(-b.feed_side.properties_in[t].charge_comp[j] * Constants.faraday_constant
-                    / (Constants.gas_constant * b.pore_exit[t, x].temperature) #todo: switch to permeate side temp
+                    / (Constants.gas_constant * b.pore_exit[t, x].temperature)
                     * (b.electric_potential[t, x, 'pore_exit'] - b.electric_potential[t, x, 'permeate'])))
 
         # Volumetric Water Flux at inlet and outlet ------------------------------------#
@@ -867,21 +867,29 @@ class NanofiltrationData(UnitModelBlockData):
                    b.properties_out[t].temperature
 
 
-        # Experimental constraint
-        @self.Constraint(self.flowsheet().config.time,
-                         io_list,
-                         doc="Equal volumetric flow for pore exit and permeate at inlet and outlet")
-        def eq_equal_flow_vol_pore_permeate(b, t, x):
-            return b.permeate_side[t, x].flow_vol_phase['Liq'] ==\
-                   b.pore_exit[t, x].flow_vol_phase['Liq']
+        # # Experimental constraint
+        # @self.Constraint(self.flowsheet().config.time,
+        #                  io_list,
+        #                  doc="Equal volumetric flow for pore exit and permeate at inlet and outlet")
+        # def eq_equal_flow_vol_pore_exit_permeate(b, t, x):
+        #     return b.permeate_side[t, x].flow_vol_phase['Liq'] ==\
+        #            b.pore_exit[t, x].flow_vol_phase['Liq']
+
+        # # Experimental constraint
+        # @self.Constraint(self.flowsheet().config.time,
+        #                  io_list,
+        #                  doc="Equal volumetric flow for pore exit and permeate at inlet and outlet")
+        # def eq_equal_flow_vol_pore(b, t, x):
+        #     return b.pore_entrance[t, x].flow_vol_phase['Liq'] ==\
+        #            b.pore_exit[t, x].flow_vol_phase['Liq']
         #
-        # # # Experimental constraint
-        @self.Constraint(self.flowsheet().config.time,
-                         io_list,
-                         doc="Volumetric flow at permeate of inlet and outlet equal to mixed permeate")
-        def eq_equal_flow_vol_permeate(b, t, x):
-            return b.permeate_side[t, x].flow_vol_phase['Liq'] ==\
-                   b.mixed_permeate[t].flow_vol_phase['Liq']
+        # Experimental constraint
+        # @self.Constraint(self.flowsheet().config.time,
+        #                  io_list,
+        #                  doc="Volumetric flow at permeate of inlet and outlet equal to mixed permeate")
+        # def eq_equal_flow_vol_permeate(b, t, x):
+        #     return b.permeate_side[t, x].flow_vol_phase['Liq'] ==\
+        #            b.mixed_permeate[t].flow_vol_phase['Liq']
 
         # 14. Experimental constraint: Electroneutrality of final permeate
         @self.Constraint(self.flowsheet().config.time,
@@ -977,18 +985,23 @@ class NanofiltrationData(UnitModelBlockData):
                          doc="Diffusive hindered transport coefficient")
         def hindrance_factor_diffusive_comp(b, t, j):
             eps = 1e-8
-            return Expr_if(b.lambda_comp[t, j] > 0.95,
-                           0.984 * ((1 - b.lambda_comp[t, j]) / b.lambda_comp[t, j]) ** (5 / 2),
-                           (1 + 9. / 8. * b.lambda_comp[t, j] * log(b.lambda_comp[t, j])
-                            - 1.56034 * b.lambda_comp[t, j]
-                            + 0.528155 * b.lambda_comp[t, j] ** 2
-                            + 1.91521 * b.lambda_comp[t, j] ** 3
-                            - 2.81903 * b.lambda_comp[t, j] ** 4
-                            + 0.270788 * b.lambda_comp[t, j] ** 5
-                            - 1.10115 * b.lambda_comp[t, j] ** 6
-                            - 0.435933 * b.lambda_comp[t, j] ** 7) /
-                           (1 - b.lambda_comp[t, j] + eps) ** 2,
-                           )
+            return (1
+                    - 2.3 * b.lambda_comp[t, j]
+                    + 1.154 * b.lambda_comp[t, j] ** 2
+                    + 0.224 * b.lambda_comp[t, j] ** 3
+                    )
+            # return Expr_if(b.lambda_comp[t, j] > 0.95,
+            #                0.984 * ((1 - b.lambda_comp[t, j]) / b.lambda_comp[t, j]) ** (5 / 2),
+            #                (1 + 9. / 8. * b.lambda_comp[t, j] * log(b.lambda_comp[t, j])
+            #                 - 1.56034 * b.lambda_comp[t, j]
+            #                 + 0.528155 * b.lambda_comp[t, j] ** 2
+            #                 + 1.91521 * b.lambda_comp[t, j] ** 3
+            #                 - 2.81903 * b.lambda_comp[t, j] ** 4
+            #                 + 0.270788 * b.lambda_comp[t, j] ** 5
+            #                 - 1.10115 * b.lambda_comp[t, j] ** 6
+            #                 - 0.435933 * b.lambda_comp[t, j] ** 7) /
+            #                (1 - b.lambda_comp[t, j] + eps) ** 2,
+            #                )
 
         @self.Expression(self.flowsheet().config.time,
                          solute_set,
@@ -1152,8 +1165,8 @@ class NanofiltrationData(UnitModelBlockData):
             res = opt.solve(blk, tee=slc.tee)
             if not check_optimal_termination(res):
                 init_log.warn("Trouble solving NanofiltrationDSPMDE0D unit model. Trying one more time.")
-        #         if automate_rescale:
-        #             blk._automate_rescale_variables()
+                # if automate_rescale:
+                #     blk._automate_rescale_variables()
                 res = opt.solve(blk, tee=slc.tee)
         check_solve(res, checkpoint='Solve in Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
         # # ---------------------------------------------------------------------
@@ -1178,7 +1191,7 @@ class NanofiltrationData(UnitModelBlockData):
         blk.feed_side.release_state(flags_feed_side, outlvl)
         # Rescale any badly scaled vars
         blk._automate_rescale_variables()
-        # init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
+        init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
     def _get_performance_contents(self, time_point=0):
         pass
@@ -1287,8 +1300,8 @@ class NanofiltrationData(UnitModelBlockData):
                     self.permeate_side[time_point, x].pressure_osm
 
                 var_dict[f'Electric Potential @ Pore Entrance, {io}'] = self.electric_potential[0, x, 'pore_entrance']
-                var_dict[f'Electric Potential @ Pore Exit, {io}'] = self.electric_potential[0, x, 'pore_entrance']
-                var_dict[f'Electric Potential @ Permeate, {io}'] = self.electric_potential[0, x, 'pore_entrance']
+                var_dict[f'Electric Potential @ Pore Exit, {io}'] = self.electric_potential[0, x, 'pore_exit']
+                var_dict[f'Electric Potential @ Permeate, {io}'] = self.electric_potential[0, x, 'permeate']
                 var_dict[f'Electric Potential Gradient @ Feed-Membrane Interface, {io}'] = self.electric_potential_grad_feed_interface[0, x]
 
         return {"vars": var_dict, "exprs": expr_dict}
@@ -1441,7 +1454,7 @@ class NanofiltrationData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.radius_pore) is None:
             iscale.set_scaling_factor(self.radius_pore, 1e10)
         if iscale.get_scaling_factor(self.membrane_thickness_effective) is None:
-            iscale.set_scaling_factor(self.membrane_thickness_effective, 1e6)
+            iscale.set_scaling_factor(self.membrane_thickness_effective, 1e7)
 
         # # setting scaling factors for variables
         # # these variables should have user input, if not there will be a warning
