@@ -16,7 +16,7 @@ How to use the Electrolyte Database (EDB)
 
 Installation
 ------------
-Before running any of the EDB example Jupyter Notebooks, you **must** have MongoDB :ref:`installed locally <install-mongo-local>` and you need to load the 'bootstrap' data.
+Before running any of the EDB example Jupyter Notebooks, you **must** have MongoDB :ref:`installed locally <install-mongodb-local>` and you need to load the 'bootstrap' data.
 See the :ref:`EDB CLI How-to <how_to_use_edb_cli>` for information on loading the default (i.e., 'bootstrap' data).
 For your own work, you can also use the public cloud database, which has the data pre-loaded, as described below.
 
@@ -29,6 +29,8 @@ At the time of this writing, the web page for this is `here <https://www.mongodb
 Any recent version should work.
 The default settings should work out of the box with the EDB client tools and API.
 MongoDB now ships with a useful graphical user interface called Compass (see `Compass documentation here <https://docs.mongodb.com/compass/master/>`_), that you can use to view and even modify the database.
+
+For more details on setting up the EDB, see :ref:`install-edb`.
 
 .. _use-cloud-edb:
 
