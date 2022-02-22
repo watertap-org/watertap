@@ -166,7 +166,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
 
     def set_recovery_and_removal(self, data, use_default_removal=False):
         """
-        Common utiltiy method for setting values of recovery and removal
+        Common utility method for setting values of recovery and removal
         fractions.
 
         Args:
@@ -178,7 +178,13 @@ class ZeroOrderBaseData(UnitModelBlockData):
         Returns:
             None
         """
-        self.set_param_from_data(self.recovery_frac_mass_H2O, data)
+        try:
+            self.set_param_from_data(self.recovery_frac_mass_H2O, data)
+        except KeyError:
+            if self.recovery_frac_mass_H2O[:].fixed:
+                pass
+            else:
+                raise
 
         for t, j in self.removal_frac_mass_solute:
             self.set_param_from_data(
