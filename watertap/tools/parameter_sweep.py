@@ -29,6 +29,7 @@ from idaes.core.util.model_statistics import (variables_in_activated_equalities_
     expressions_set, total_objectives_set)
 from pyomo.core.base.block import TraversalStrategy
 from pyomo.opt import TerminationCondition as _TerminationCondition
+from pyomo.common.tee import capture_output
 
 np.set_printoptions(linewidth=200)
 
@@ -344,13 +345,13 @@ def _create_local_output_skeleton(model, sweep_params, outputs, num_samples):
     output_dict["sweep_params"] = {}
     output_dict["outputs"] = {}
 
-    var_str_list = []
+    var_str_list = set()
 
     # Store the inputs
     for key in sweep_params.keys():
         var = sweep_params[key].pyomo_object
         var_str = sweep_params[key].pyomo_object.name
-        var_str_list.append(var_str)
+        var_str_list.add(var_str)
         output_dict["sweep_params"][var_str] =  _create_component_output_skeleton(var, num_samples)
 
     if outputs is None:
@@ -590,7 +591,8 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
 
         try:
             # Simulate/optimize with this set of parameter
-            results = optimize_function(model, **optimize_kwargs)
+            with capture_output():
+                results = optimize_function(model, **optimize_kwargs)
             pyo.assert_optimal_termination(results)
 
         except:
@@ -608,7 +610,8 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
         if reinitialize_before_sweep == False and previous_run_failed and (reinitialize_function is not None):
             try:
                 reinitialize_function(model, **reinitialize_kwargs)
-                results = optimize_function(model, **optimize_kwargs)
+                with capture_output():
+                    results = optimize_function(model, **optimize_kwargs)
                 pyo.assert_optimal_termination(results)
 
             except:

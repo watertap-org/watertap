@@ -8,6 +8,9 @@ from watertap.tools.parameter_sweep import (LinearSample,
 import yaml
 import warnings
 import numpy as np
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 def _yaml_to_dict(yaml_filename):
     """ Reads and stores a yaml file as a dictionary
@@ -134,6 +137,8 @@ def set_defaults_from_yaml(m, yaml_filename, verbose=False):
 
     fail_ct = 0
 
+    debugging = _log.isEnabledFor(idaeslog.DEBUG)
+
     for key, default_value in input_dict.items():
 
         # Find the specified component on the model 
@@ -145,9 +150,9 @@ def set_defaults_from_yaml(m, yaml_filename, verbose=False):
         old_value = value(component)
         new_value = default_value
 
-        if verbose:
-            print(f'Property: {key}')
-            print(f'New Value: {new_value:.6e}, Old Value: {old_value:.6e}')
+        if debugging:
+            _log.debug(f'Property: {key}')
+            _log.debug(f'New Value: {new_value:.6e}, Old Value: {old_value:.6e}')
 
         if component.is_variable_type() or component.is_parameter_type() or component.is_expression_type():
             component.set_value(new_value)
