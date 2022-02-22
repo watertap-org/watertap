@@ -135,7 +135,24 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
         description="""Dictionary of chemical additives used in coagulation process,
         along with their molecular weights, the moles of salt produced per mole of
         chemical added, and the molecular weights of the salt produced by the chemical
-        additive with the format of: {'chem': (mw_chem, moles_salt_added, mw_salt)} """))
+        additive with the format of: \n
+            {'chem_name_1':
+                {'parameter_data':
+                    {
+                    'mw_additive': (value, units),
+                    'moles_salt_per_mole_additive': value,
+                    'mw_salt': (value, units)
+                    }
+                },
+            'chem_name_2':
+                {'parameter_data':
+                    {
+                    'mw_additive': (value, units),
+                    'moles_salt_per_mole_additive': value,
+                    'mw_salt': (value, units)
+                    }
+                },
+            } """))
 
 
     def build(self):
@@ -150,17 +167,45 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         # check the optional config arg 'chemical_additives'
-        common_msg = "The 'chemical_additives' dict MUST contain a tuple of 3 numbers for each key " + \
-                     "in the following format: " + \
-                     "\n {'chem': (mw_chem, moles_salt_added_per_mole_chem, mw_salt)}.\n"
+        common_msg = "The 'chemical_additives' dict MUST contain a dict of 'parameter_data' for " + \
+                     "each chemical name. That 'parameter_data' dict MUST contain 'mw_chem', " + \
+                     "'moles_salt_per_mole_additive', and 'mw_salt' as keys. Users are also " + \
+                     "required to provide the values for the molecular weights and the units " + \
+                     "within a tuple arg. Example format provided below.\n\n" + \
+                     "{'chem_name_1': \n" + \
+                     "     {'parameter_data': \n" + \
+                     "        {'mw_additive': (value, units), \n" + \
+                     "         'moles_salt_per_mole_additive': value, \n" + \
+                     "         'mw_salt': (value, units)} \n" + \
+                     "     }, \n" + \
+                     "}\n\n"
+        mw_adds = {}
+        mw_salts = {}
+        molar_rat = {}
         for j in self.config.chemical_additives:
-            if type(self.config.chemical_additives[j]) != tuple:
-                raise ConfigurationError(common_msg + "\n Did not provide a 'tuple'\n")
-            if len(self.config.chemical_additives[j]) != 3:
-                raise ConfigurationError(common_msg + "\n Did not provide 3 args in 'tuple'\n")
-            for item in self.config.chemical_additives[j]:
-                if not isinstance(item, (int,float)):
-                    raise ConfigurationError(common_msg + "\n Provided arg is not a number\n")
+            if type(self.config.chemical_additives[j]) != dict:
+                raise ConfigurationError("\n Did not provide a 'dict' for chemical \n" + common_msg)
+            if 'parameter_data' not in self.config.chemical_additives[j]:
+                raise ConfigurationError("\n Did not provide a 'parameter_data' for chemical \n" + common_msg)
+            if 'mw_additive' not in self.config.chemical_additives[j]['parameter_data']:
+                raise ConfigurationError("\n Did not provide a 'mw_additive' for chemical \n" + common_msg)
+            if 'moles_salt_per_mole_additive' not in self.config.chemical_additives[j]['parameter_data']:
+                raise ConfigurationError("\n Did not provide a 'moles_salt_per_mole_additive' for chemical \n" + common_msg)
+            if 'mw_salt' not in self.config.chemical_additives[j]['parameter_data']:
+                raise ConfigurationError("\n Did not provide a 'mw_salt' for chemical \n" + common_msg)
+            if type(self.config.chemical_additives[j]['parameter_data']['mw_additive']) != tuple:
+                raise ConfigurationError("\n Did not provide a tuple for 'mw_additive' \n" + common_msg)
+            if type(self.config.chemical_additives[j]['parameter_data']['mw_salt']) != tuple:
+                raise ConfigurationError("\n Did not provide a tuple for 'mw_salt' \n" + common_msg)
+            if not isinstance(self.config.chemical_additives[j]['parameter_data']['moles_salt_per_mole_additive'], (int,float)):
+                raise ConfigurationError("\n Did not provide a number for 'moles_salt_per_mole_additive' \n" + common_msg)
+
+            #Populate temp dicts for parameter and variable setting
+            mw_adds[j] = pyunits.convert_value(self.config.chemical_additives[j]['parameter_data']['mw_additive'][0],
+                        from_units=self.config.chemical_additives[j]['parameter_data']['mw_additive'][1], to_units=pyunits.kg/pyunits.mol)
+            mw_salts[j] = pyunits.convert_value(self.config.chemical_additives[j]['parameter_data']['mw_salt'][0],
+                        from_units=self.config.chemical_additives[j]['parameter_data']['mw_salt'][1], to_units=pyunits.kg/pyunits.mol)
+            molar_rat[j] = self.config.chemical_additives[j]['parameter_data']['moles_salt_per_mole_additive']
 
         # Add unit variables
         # Linear relationship between TSS (mg/L) and Turbidity (NTU)
@@ -208,6 +253,34 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
             domain=NonNegativeReals,
             units=pyunits.mg/pyunits.L,
             doc='Dosages of the set of chemical additives')
+
+        self.chemical_mw = Param(
+            self.config.chemical_additives.keys(),
+            mutable=True,
+            initialize=mw_adds,
+            domain=NonNegativeReals,
+            units=pyunits.kg/pyunits.mol,
+            doc='Molecular weights of the set of chemical additives')
+
+        self.salt_mw = Param(
+            self.config.chemical_additives.keys(),
+            mutable=True,
+            initialize=mw_salts,
+            domain=NonNegativeReals,
+            units=pyunits.kg/pyunits.mol,
+            doc='Molecular weights of the produced salts from chemical additives')
+
+        self.salt_from_additive_mole_ratio = Param(
+            self.config.chemical_additives.keys(),
+            mutable=True,
+            initialize=molar_rat,
+            domain=NonNegativeReals,
+            units=pyunits.dimensionless,
+            doc='Moles of the produced salts from 1 mole of chemical additives')
+
+        self.chemical_mw.pprint()
+        self.salt_mw.pprint()
+        self.salt_from_additive_mole_ratio.pprint()
 
 
         # Build control volume for feed side
@@ -274,6 +347,21 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
 
             return (self.tss_loss_rate[t] == input_rate - exit_rate)
 
+        # Constraint for tds gain rate based on 'chemical_doses' and 'chemical_additives'
+        self.tds_gain_rate = Var(
+            self.flowsheet().config.time,
+            initialize=0,
+            bounds=(0, 100),
+            domain=NonNegativeReals,
+            units=units_meta('mass')*units_meta('time')**-1,
+            doc='Mass per time gain rate of TDS based on the chemicals added for coagulation')
+
+        @self.Constraint(self.flowsheet().config.time,
+                         doc="Constraint for the loss rate of TSS to be used in mass_transfer_term")
+        def eq_tds_gain_rate(self, t):
+
+            return (self.tds_gain_rate[t] == 0.0)
+
         # Add constraints for mass transfer terms
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
@@ -284,12 +372,16 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
                 return self.feed_side.mass_transfer_term[t, p, j] == -self.tss_loss_rate[t]
             elif (p, j) == ('Liq', 'Sludge'):
                 return self.feed_side.mass_transfer_term[t, p, j] == self.tss_loss_rate[t]
+            elif (p, j) == ('Liq', 'TDS'):
+                return self.feed_side.mass_transfer_term[t, p, j] == self.tds_gain_rate[t]
             else:
                 return self.feed_side.mass_transfer_term[t, p, j] == 0.0
 
         self.eq_tss_loss_rate.pprint()
 
         self.eq_mass_transfer_term.pprint()
+
+        self.eq_tds_gain_rate.pprint()
 
         self.feed_side.material_balances.pprint()
         self.feed_side.enthalpy_balances.pprint()
