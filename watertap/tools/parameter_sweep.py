@@ -345,19 +345,21 @@ def _create_local_output_skeleton(model, sweep_params, outputs, num_samples):
     output_dict["sweep_params"] = {}
     output_dict["outputs"] = {}
 
-    var_str_list = []
+    var_str_list = set()
 
     # Store the inputs
     for key in sweep_params.keys():
         var = sweep_params[key].pyomo_object
         var_str = sweep_params[key].pyomo_object.name
-        var_str_list.append(var_str)
+        var_str_list.add(var_str)
         output_dict["sweep_params"][var_str] =  _create_component_output_skeleton(var, num_samples)
 
     if outputs is None:
         # No outputs are specified, so every Var, Expression, and Objective on the model should be saved
         for pyo_obj in model.component_data_objects((pyo.Var, pyo.Expression, pyo.Objective), active=True):
-            output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
+            # Only need to save this variable if it isn't one of the value in sweep_params
+            if pyo_obj.name not in var_str_list:
+                output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
     else:
         # Save only the outputs specified in the outputs dictionary
         for pyo_obj in outputs.values():
