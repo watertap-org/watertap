@@ -58,6 +58,7 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
         doc="""Indicates whether this model will be dynamic or not,
     **default** = False. The filtration unit does not support dynamic
     behavior, thus this must be False."""))
+
     CONFIG.declare("has_holdup", ConfigValue(
         default=False,
         domain=In([False]),
@@ -65,6 +66,7 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
         doc="""Indicates whether holdup terms should be constructed or not.
     **default** - False. The filtration unit does not have defined volume, thus
     this must be False."""))
+
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
@@ -79,6 +81,7 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
     **MaterialBalanceType.componentTotal** - use total component balances,
     **MaterialBalanceType.elementTotal** - use total element balances,
     **MaterialBalanceType.total** - use total material balance.}"""))
+
     CONFIG.declare("energy_balance_type", ConfigValue(
         default=EnergyBalanceType.useDefault,
         domain=In(EnergyBalanceType),
@@ -93,6 +96,7 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
     **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
     **EnergyBalanceType.energyTotal** - single energy balance for material,
     **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
+
     CONFIG.declare("momentum_balance_type", ConfigValue(
         default=MomentumBalanceType.pressureTotal,
         domain=In(MomentumBalanceType),
@@ -105,6 +109,7 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
     **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
     **MomentumBalanceType.momentumTotal** - single momentum balance for material,
     **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
+
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -114,6 +119,7 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
     **Valid values:** {
     **useDefault** - use default package from parent model or flowsheet,
     **PhysicalParameterObject** - a PhysicalParameterBlock object.}"""))
+
     CONFIG.declare("property_package_args", ConfigBlock(
         implicit=True,
         description="Arguments to use for constructing property packages",
@@ -122,6 +128,14 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
     **default** - None.
     **Valid values:** {
     see property package for documentation.}"""))
+
+    CONFIG.declare("chemical_additives", ConfigValue(
+        default={},
+        domain=dict,
+        description="""Dictionary of chemical additives used in coagulation process,
+        along with their molecular weights, the moles of salt produced per mole of
+        chemical added, and the molecular weights of the salt produced by the chemical
+        additive with the format of: {'chem': (mw_chem, moles_salt_added, mw_salt)} """))
 
 
     def build(self):
@@ -134,6 +148,19 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
 
         # Next, get the base units of measurement from the property definition
         units_meta = self.config.property_package.get_metadata().get_derived_units
+
+        # check the optional config arg 'chemical_additives'
+        common_msg = "The 'chemical_additives' dict MUST contain a tuple of 3 numbers for each key " + \
+                     "in the following format: " + \
+                     "\n {'chem': (mw_chem, moles_salt_added_per_mole_chem, mw_salt)}.\n"
+        for j in self.config.chemical_additives:
+            if type(self.config.chemical_additives[j]) != tuple:
+                raise ConfigurationError(common_msg + "\n Did not provide a 'tuple'\n")
+            if len(self.config.chemical_additives[j]) != 3:
+                raise ConfigurationError(common_msg + "\n Did not provide 3 args in 'tuple'\n")
+            for item in self.config.chemical_additives[j]:
+                if not isinstance(item, (int,float)):
+                    raise ConfigurationError(common_msg + "\n Provided arg is not a number\n")
 
         # Add unit variables
         # Linear relationship between TSS (mg/L) and Turbidity (NTU)
@@ -173,6 +200,15 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
             units=pyunits.dimensionless,
             doc='Final measured Turbidity (NTU) from Jar Test')
 
+        self.chemical_doses = Var(
+            self.flowsheet().config.time,
+            self.config.chemical_additives.keys(),
+            initialize=0,
+            bounds=(0, 100),
+            domain=NonNegativeReals,
+            units=pyunits.mg/pyunits.L,
+            doc='Dosages of the set of chemical additives')
+
 
         # Build control volume for feed side
         self.feed_side = ControlVolume0DBlock(default={
@@ -186,7 +222,7 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
 
         self.feed_side.add_material_balances(
             balance_type=self.config.material_balance_type,
-            has_mass_transfer=False)
+            has_mass_transfer=True)
 
         self.feed_side.add_energy_balances(
             balance_type=self.config.energy_balance_type,
@@ -200,32 +236,64 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
         self.add_inlet_port(name='inlet', block=self.feed_side)
         self.add_outlet_port(name='outlet', block=self.feed_side)
 
-        # Add constraints
+        # Check _phase_component_set for required items
+        if ('Liq', 'TSS') not in self.config.property_package._phase_component_set:
+            raise ConfigurationError(
+                "Coagulation-Flocculation model MUST contain ('Liq','TSS') as a component, but "
+                "the property package has only specified the following components {}"
+                    .format([p for p in self.config.property_package._phase_component_set]))
+        if ('Liq', 'TDS') not in self.config.property_package._phase_component_set:
+            raise ConfigurationError(
+                "Coagulation-Flocculation model MUST contain ('Liq','TDS') as a component, but "
+                "the property package has only specified the following components {}"
+                    .format([p for p in self.config.property_package._phase_component_set]))
+        if ('Liq', 'Sludge') not in self.config.property_package._phase_component_set:
+            raise ConfigurationError(
+                "Coagulation-Flocculation model MUST contain ('Liq','Sludge') as a component, but "
+                "the property package has only specified the following components {}"
+                    .format([p for p in self.config.property_package._phase_component_set]))
+
+        # -------- Add constraints ---------
+
+        # Constraint for tss loss rate based on measured final turbidity
         self.tss_loss_rate = Var(
             self.flowsheet().config.time,
             initialize=1,
             bounds=(0, 100),
             domain=NonNegativeReals,
             units=units_meta('mass')*units_meta('time')**-1,
-            doc='testing')
+            doc='Mass per time loss rate of TSS based on the measured final turbidity')
 
         @self.Constraint(self.flowsheet().config.time,
-                         doc="test")
+                         doc="Constraint for the loss rate of TSS to be used in mass_transfer_term")
         def eq_tss_loss_rate(self, t):
-            tss_in = pyunits.convert(self.slope[t]*self.initial_turbidity_ntu[t] + self.intercept[t],
-                                    to_units=units_meta('mass')*units_meta('length')**-3)
             tss_out = pyunits.convert(self.slope[t]*self.final_turbidity_ntu[t] + self.intercept[t],
                                     to_units=units_meta('mass')*units_meta('length')**-3)
-            input_rate = self.feed_side.properties_in[t].flow_vol_phase['Liq']*tss_in
+            input_rate = self.feed_side.properties_in[t].flow_mass_phase_comp['Liq','TSS']
             exit_rate = self.feed_side.properties_out[t].flow_vol_phase['Liq']*tss_out
 
             return (self.tss_loss_rate[t] == input_rate - exit_rate)
 
+        # Add constraints for mass transfer terms
+        @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.phase_list,
+                         self.config.property_package.component_list,
+                         doc="Mass transfer term")
+        def eq_mass_transfer_term(self, t, p, j):
+            if (p, j) == ('Liq', 'TSS'):
+                return self.feed_side.mass_transfer_term[t, p, j] == -self.tss_loss_rate[t]
+            elif (p, j) == ('Liq', 'Sludge'):
+                return self.feed_side.mass_transfer_term[t, p, j] == self.tss_loss_rate[t]
+            else:
+                return self.feed_side.mass_transfer_term[t, p, j] == 0.0
+
         self.eq_tss_loss_rate.pprint()
 
-        #self.feed_side.material_balances.pprint()
-        #self.feed_side.enthalpy_balances.pprint()
-        #self.feed_side.pressure_balance.pprint()
+        self.eq_mass_transfer_term.pprint()
+
+        self.feed_side.material_balances.pprint()
+        self.feed_side.enthalpy_balances.pprint()
+        self.feed_side.pressure_balance.pprint()
 
         # enthalpy transfer
         #@self.Constraint(self.flowsheet().config.time,
@@ -236,6 +304,8 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
 
 
 
+
+    # # TODO: Add user access functions for setting up the problem
 
     # # TODO: Add initialize method
 
