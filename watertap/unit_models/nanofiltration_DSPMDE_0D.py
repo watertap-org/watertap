@@ -787,7 +787,7 @@ class NanofiltrationData(UnitModelBlockData):
         def eq_rejection_intrinsic_phase_comp(b, t, p, j):
             return (b.rejection_intrinsic_phase_comp[t, p, j] ==
                     1 - b.mixed_permeate[t].conc_mol_phase_comp[p, j]
-                    / b.feed_side.properties_interface[t,0].conc_mol_phase_comp[p, j])
+                    / b.feed_side.properties_interface[t, 0].conc_mol_phase_comp[p, j])
 
         if self.config.mass_transfer_coefficient == MassTransferCoefficient.spiral_wound:
             # 17. Mass transfer coefficient
@@ -1129,11 +1129,11 @@ class NanofiltrationData(UnitModelBlockData):
 
         # # Double-check for poorly scaled variables after state block initialization
         # # and rescale them so that scaled variable values = 1:
-        # badly_scaled_vars = list(iscale.badly_scaled_var_generator(blk))
-        # if len(badly_scaled_vars) > 0:
-        #     init_log.warn(f"{len(badly_scaled_vars)} poorly scaled "
-        #                   f"variable(s) will be rescaled so that each scaled variable value = 1")
-        # blk._automate_rescale_variables()
+        badly_scaled_vars = list(iscale.badly_scaled_var_generator(blk))
+        if len(badly_scaled_vars) > 0:
+            init_log.warn(f"{len(badly_scaled_vars)} poorly scaled "
+                          f"variable(s) will be rescaled so that each scaled variable value = 1")
+            blk._automate_rescale_variables()
         #
         # # Deactivate electroneutrality and interfacial-partitioning constraints for first solve in order to get
         # # a better starting point:
@@ -1144,17 +1144,18 @@ class NanofiltrationData(UnitModelBlockData):
         # blk.eq_electroneutrality_pore.deactivate()
         # blk.eq_electroneutrality_permeate.deactivate()
         # blk.eq_electroneutrality_feed_outlet.deactivate()
-        #
+        # blk.eq_solute_solvent_flux.deactivate()
+
         # # ---------------------------------------------------------------------
         # # Solve unit
-        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        #     res = opt.solve(blk, tee=slc.tee)
-        #     if not check_optimal_termination(res):
-        #         init_log.warn("Trouble solving NanofiltrationDSPMDE0D unit model. Trying one more time.")
-        # #         if automate_rescale:
-        # #             blk._automate_rescale_variables()
-        #         res = opt.solve(blk, tee=slc.tee)
-        # check_solve(res, checkpoint='1/2 solves in Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+            if not check_optimal_termination(res):
+                init_log.warn("Trouble solving NanofiltrationDSPMDE0D unit model. Trying one more time.")
+        #         if automate_rescale:
+        #             blk._automate_rescale_variables()
+                res = opt.solve(blk, tee=slc.tee)
+        check_solve(res, checkpoint='Solve in Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
         # # ---------------------------------------------------------------------
         # # Reactivate constraints and perform second and final solve:
         # blk.eq_interfacial_partitioning_feed.activate()
@@ -1175,6 +1176,8 @@ class NanofiltrationData(UnitModelBlockData):
         # check_solve(res, checkpoint='2/2 solves in Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
         # Release Inlet state
         blk.feed_side.release_state(flags_feed_side, outlvl)
+        # Rescale any badly scaled vars
+        blk._automate_rescale_variables()
         # init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
     def _get_performance_contents(self, time_point=0):
@@ -1485,7 +1488,7 @@ class NanofiltrationData(UnitModelBlockData):
                     sf = 1e5
                     iscale.set_scaling_factor(v, sf)
 
-        for (_, _, j), v in self.rejection_intrinsic_phase_comp.items():
+        for v in self.rejection_intrinsic_phase_comp.values():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, 1e1)
 

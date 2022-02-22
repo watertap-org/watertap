@@ -833,8 +833,13 @@ class DSPMDEStateBlockData(StateBlockData):
             if adjust_by_ion is not None:
                 # self.flow_mol_phase_comp['Liq', adjust_by_ion].fix()
                 ion_adjusted = self.flow_mol_phase_comp['Liq', adjust_by_ion].value
-                msg = f"{adjust_by_ion} was adjusted and flow_mol_phase_comp['Liq',{adjust_by_ion}] was fixed " \
-                      f"to {ion_adjusted}."
+                if defined_state:
+                    self.flow_mol_phase_comp['Liq', adjust_by_ion].fix(ion_adjusted)
+                    msg = f"{adjust_by_ion} was adjusted and flow_mol_phase_comp['Liq',{adjust_by_ion}] was fixed " \
+                          f"to {ion_adjusted}."
+                else:
+                    msg = f"{adjust_by_ion} was adjusted and the value computed for flow_mol_phase_comp['Liq',{adjust_by_ion}]" \
+                          f" is {ion_adjusted}."
                 del self.charge_balance
             else:
                 msg = ""

@@ -107,17 +107,16 @@ if __name__ == '__main__':
     m.fs.unit.feed_side.properties_in[0].assert_electroneutrality(defined_state=True,
                                                                   adjust_by_ion='Cl_-',
                                                                   get_property='mass_frac_phase_comp')
-    # m.fs.unit.feed_side.properties_in[0].mass_frac_phase_comp.display()
 
     # Fix other inlet state variables
     m.fs.unit.inlet.temperature[0].fix(298.15)
-    m.fs.unit.inlet.pressure[0].fix(10e5)
+    m.fs.unit.inlet.pressure[0].fix(4e5)
 
     # Fix the membrane variables that are usually fixed for the DSPM-DE model
     m.fs.unit.radius_pore.fix(0.5e-9)
-    m.fs.unit.membrane_thickness_effective.fix(2.5e-6)
+    m.fs.unit.membrane_thickness_effective.fix(1.33e-6)
     m.fs.unit.membrane_charge_density.fix(-27)
-    m.fs.unit.dielectric_constant_pore.fix(60)
+    m.fs.unit.dielectric_constant_pore.fix(41.3)
 
     # Fix final permeate pressure to be ~atmospheric
     m.fs.unit.mixed_permeate[0].pressure.fix(101325)
@@ -126,10 +125,11 @@ if __name__ == '__main__':
     m.fs.unit.spacer_porosity.fix(1)
     m.fs.unit.spacer_mixing_efficiency.fix()
     m.fs.unit.spacer_mixing_length.fix()
-    # m.fs.unit.length.fix(1)
+    # m.fs.unit.length.fix(50)
     m.fs.unit.channel_height.fix(5e-4)
     # m.fs.unit.velocity[0, 0].fix(0.1)
-    m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.5)
+    m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.01)
+    # m.fs.unit.flux_vol_water_avg.fix(1.67e-06)
     # m.fs.unit.rejection_intrinsic_phase_comp[0, 'Liq', 'Ca_2+'].setlb(.2)
 
 
@@ -162,16 +162,16 @@ if __name__ == '__main__':
     # for con in m.fs.unit.component_data_objects(Constraint, descend_into=False):
     #     con.deactivate()
     # #
-    # m.fs.unit.eq_water_flux.activate()
-    # m.fs.unit.eq_solute_solvent_flux.deactivate()
-    # m.fs.unit.eq_solute_flux_concentration_polarization.activate()
+    # m.fs.unit.eq_water_flux.deactivate()
+    # m.fs.unit.eq_solute_solvent_flux.deactivate()   # deactivating yields higher, more practical rejection rates
+    # m.fs.unit.eq_solute_flux_concentration_polarization.deactivate()
     # m.fs.unit.eq_permeate_isothermal.activate()
     # m.fs.unit.eq_permeate_isothermal_mixed.activate()
     # m.fs.unit.eq_pressure_permeate_io.activate()
     # m.fs.unit.eq_mass_transfer_feed.activate()
     # m.fs.unit.eq_permeate_production.activate()
     # #
-    # m.fs.unit.eq_solute_flux_pore_domain.deactivate()
+    # m.fs.unit.eq_solute_flux_pore_domain.deactivate()  # deactivating yields higher, more practical rejection rates
     # m.fs.unit.eq_recovery_mol_phase_comp.activate()
     # m.fs.unit.eq_pore_isothermal.activate()
     # m.fs.unit.feed_side.eq_feed_interface_isothermal.activate()
@@ -209,15 +209,14 @@ if __name__ == '__main__':
     # m.fs.unit.eq_equal_flow_vol_pore_permeate.deactivate()
     # m.fs.unit.recovery_vol_phase[0, 'Liq'].unfix()
     # m.fs.unit.area.unfix()
-
     # print('---------------- BEFORE AUTOMATE RESCALE---------------------------------------')
+    # [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
+    # print('\nNUMBER OF badly scaled variables:', len(list(iscale.badly_scaled_var_generator(m))))
+    # m.fs.unit._automate_rescale_variables(rescale_factor=1)
+    # # print('---------------- AFTER AUTOMATE RESCALE---------------------------------------')
     [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
-    print('\nNUMBER OF badly scaled variables:', len(list(iscale.badly_scaled_var_generator(m))))
-    m.fs.unit._automate_rescale_variables(rescale_factor=1)
-    # print('---------------- AFTER AUTOMATE RESCALE---------------------------------------')
-    [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
-    print('\nNUMBER OF badly scaled variables:', len(list(iscale.badly_scaled_var_generator(m))))
-    print('\nRecalculate scaling factors---------------------------------------')
+    print('\nNUMBER OF badly scaled variables BEFORE SOLVE:', len(list(iscale.badly_scaled_var_generator(m))))
+    # print('\nRecalculate scaling factors---------------------------------------')
 
 
     # solver.options['max_iter'] = 0
