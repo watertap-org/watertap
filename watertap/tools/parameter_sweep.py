@@ -387,8 +387,7 @@ def _create_component_output_skeleton(component, num_samples):
 
 # ================================================================
 
-def _update_local_output_dict(model, sweep_params, case_number, sweep_vals,
-        solver_termination_condition, output_dict):
+def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, results, output_dict):
 
     # Get the inputs
     op_ps_dict = output_dict["sweep_params"]
@@ -397,7 +396,7 @@ def _update_local_output_dict(model, sweep_params, case_number, sweep_vals,
         op_ps_dict[var_name]['value'][case_number] = item.pyomo_object.value
 
     # Get the outputs from model
-    if solver_termination_condition == "optimal":
+    if pyo.check_optimal_termination(results):
         for key in output_dict['outputs'].keys():
             outcome = model.find_component(key)
             output_dict["outputs"][key]["value"][case_number] = pyo.value(outcome)
@@ -622,8 +621,7 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
             pass
 
         # Update the loop based on the reinitialization
-        _update_local_output_dict(model, sweep_params, k, local_values[k, :],
-            results.solver.termination_condition.name, local_output_dict)
+        _update_local_output_dict(model, sweep_params, k, local_values[k, :], results, local_output_dict)
 
         # We will store status as a string
         local_solve_status_list.append(results.solver.termination_condition.name)
