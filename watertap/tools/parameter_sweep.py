@@ -381,7 +381,7 @@ def _create_component_output_skeleton(component, num_samples):
         if unit_obj is not None:
             comp_dict["units"] = component.get_units().name
         else:
-            comp_dict["units"] = "non-dimensional"
+            comp_dict["units"] = "None"
 
     return comp_dict
 
