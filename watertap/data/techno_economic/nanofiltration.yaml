@@ -1,0 +1,107 @@
+default:
+  energy_electric_flow_vol_inlet:
+    value: 0.231344952
+    units: kWh/m^3
+  specific_capital_cost_flow_vol_inlet:
+    flow_basis_par:
+      value: 4731.764235
+      units: m^3/hr
+    cap_basis_par:
+      value: 75.0
+      units: M$
+    cap_exp_par:
+      value: 1.0
+      units: dimensionless
+    vol units:
+      value: m^3/hr
+    capital cost units:
+      value: M$
+    year:
+      value: 2014
+    cost_function_form:
+      function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
+      units: $
+  recovery_frac_mass_H2O:
+    value: 0.85
+    units: dimensionless
+    reference: Based on Vogtle case study data.
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_solute:
+    ndma:
+      value: 0.05
+      units: dimensionless
+      constituent_longform: N-nitrosodimethylamine (NDMA)
+    eeq:
+      value: 0.75
+      units: dimensionless
+      constituent_longform: Estradiol Equivalency (EEQ)
+    toc:
+      value: 0.75
+      units: dimensionless
+      constituent_longform: Total Organic Carbon (TOC)
+    endothall:
+      value: 0.8
+      units: dimensionless
+      constituent_longform: Endothall
+    endrin:
+      value: 0.8
+      units: dimensionless
+      constituent_longform: Endrin
+    iron:
+      value: 0.8
+      units: dimensionless
+      constituent_longform: Iron
+    manganese:
+      value: 0.8
+      units: dimensionless
+      constituent_longform: Manganese
+    perfluorooctane_sulfonate_pfos:
+      value: 0.9
+      units: dimensionless
+      constituent_longform: Perfluorooctane sulfonate (PFOS)
+    perfluorootanoate_pfoa:
+      value: 0.9
+      units: dimensionless
+      constituent_longform: Perfluorootanoate (PFOA)
+    nonvolatile_toc:
+      value: 0.93
+      units: dimensionless
+      constituent_longform: Nonvolatile TOC
+    hardness:
+      value: 0.97
+      units: dimensionless
+      constituent_longform: Hardness
+    hydroxide_alkalinity_as_caco3:
+      value: 0.97
+      units: dimensionless
+      constituent_longform: Hydroxide Alkalinity as CaCO3
+    sodium:
+      value: 0.97
+      units: dimensionless
+      constituent_longform: Sodium, Dissolved
+    sulfate:
+      value: 0.97
+      units: dimensionless
+      constituent_longform: Sulfate, Dissolved
+    sulfur:
+      value: 0.97
+      units: dimensionless
+      constituent_longform: Sulfur
+    tss:
+      value: 0.97
+      units: dimensionless
+      constituent_longform: Total Suspended Solids (TSS)
+    magnesium:
+      value: 0.99
+      units: dimensionless
+      constituent_longform: Magnesium, Dissolved
+    phosphates:
+      value: 0.99
+      units: dimensionless
+      constituent_longform: Phosphates, Dissolved
+    potassium:
+      value: 0.99
+      units: dimensionless
+      constituent_longform: Potassium

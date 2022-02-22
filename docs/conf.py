@@ -23,9 +23,9 @@ copyright = '2021, NAWI'
 author = 'NAWI'
 
 # The full version, including alpha/beta/rc tags
-release = '0.3.0dev'
+release = '0.4.0dev'
 # The short X.Y version
-version = '0.3.0dev'
+version = '0.4.0dev'
 # -- General configuration ---------------------------------------------------
 
 
@@ -44,7 +44,8 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinx.ext.autosectionlabel',
     'sphinx.ext.doctest',
-    'myst_parser'
+    'myst_parser',
+    'nbsphinx',  # Jupyter notebooks as docs
 ]
 
 autosectionlabel_prefix_document = True

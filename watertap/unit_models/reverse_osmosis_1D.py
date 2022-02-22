@@ -11,37 +11,32 @@
 #
 ###############################################################################
 
-
 # Import Pyomo libraries
 from pyomo.environ import (Var,
                            Param,
-                           Suffix,
                            NonNegativeReals,
                            NegativeReals,
                            units as pyunits,
                            exp,
                            value,
                            Constraint,
-                           Block)
-
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+                           check_optimal_termination,
+                          )
+from pyomo.common.config import ConfigValue, In
 # Import IDAES cores
 from idaes.core import (ControlVolume1DBlock,
                         declare_process_block_class,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
                         MomentumBalanceType,
-                        UnitModelBlockData,
                         useDefault)
 from idaes.core.control_volume1d import DistributedVars
-from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.initialization import solve_indexed_blocks
-from enum import Enum, auto
-from watertap.util.initialization import check_solve, check_dof
+from watertap.core.util.initialization import check_solve, check_dof
+from watertap.unit_models._reverse_osmosis_base import (ConcentrationPolarizationType,
+        MassTransferCoefficient,
+        PressureChangeType,
+        _ReverseOsmosisBaseData)
 import idaes.logger as idaeslog
 
 
@@ -51,56 +46,11 @@ __author__ = "Adam Atia"
 _log = idaeslog.getLogger(__name__)
 
 
-class ConcentrationPolarizationType(Enum):
-    none = auto()                    # no concentration polarization
-    fixed = auto()                   # concentration polarization modulus is a user specified value
-    calculated = auto()              # calculate concentration polarization (concentration at membrane interface)
-
-
-class MassTransferCoefficient(Enum):
-    none = auto()                    # mass transfer coefficient not utilized for concentration polarization effect
-    fixed = auto()                   # mass transfer coefficient is a user specified value
-    calculated = auto()              # mass transfer coefficient is calculated
-
-
-class PressureChangeType(Enum):
-    fixed_per_stage = auto()         # pressure drop across channel is user-specified value
-    fixed_per_unit_length = auto()   # pressure drop per unit length is user-specified value
-    calculated = auto()              # pressure drop across membrane channel is calculated
-
-
 @declare_process_block_class("ReverseOsmosis1D")
-class ReverseOsmosis1DData(UnitModelBlockData):
+class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
     """Standard 1D Reverse Osmosis Unit Model Class."""
 
-    CONFIG = ConfigBlock()
-
-    CONFIG.declare("dynamic", ConfigValue(
-        default=False,
-        domain=In([False]),
-        description="Dynamic model flag - must be False",
-        doc="""Indicates whether this model will be dynamic or not.
-    **default** = False. RO units do not yet support dynamic
-    behavior."""))
-
-    CONFIG.declare("has_holdup", ConfigValue(
-            default=False,
-            domain=In([False]),
-            description="Holdup construction flag",
-            doc="""Indicates whether holdup terms should be constructed or not.
-    **default** - False. RO units do not have defined volume, thus
-    this must be False."""))
-
-    CONFIG.declare("has_pressure_change", ConfigValue(
-            default=False,
-            domain=In([True, False]),
-            description="Pressure change term construction flag",
-            doc="""Indicates whether terms for pressure change should be
-    constructed,
-    **default** - False.
-    **Valid values:** {
-    **True** - include pressure change terms,
-    **False** - exclude pressure change terms.}"""))
+    CONFIG = _ReverseOsmosisBaseData.CONFIG()
 
     CONFIG.declare("area_definition", ConfigValue(
             default=DistributedVars.uniform,
@@ -112,122 +62,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
     DistributedVars.uniform - area does not vary across spatial domain,
     DistributedVars.variant - area can vary over the domain and is indexed
     by time and space.}"""))
-
-    CONFIG.declare("property_package", ConfigValue(
-            default=None,
-            domain=is_physical_parameter_block,
-            description="Property package to use for control volume",
-            doc="""Property parameter object used to define property calculations
-    **default** - useDefault.
-    **Valid values:** {
-    **useDefault** - use default package from parent model or flowsheet,
-    **PhysicalParameterObject** - a PhysicalParameterBlock object.}"""))
-
-    CONFIG.declare("property_package_args", ConfigValue(
-            default={},
-            description="Arguments for constructing property packages",
-            doc="""A ConfigBlock with arguments to be passed to a property block(s)
-    and used when constructing these.
-    **default** - None.
-    **Valid values:** {
-    see property package for documentation.}"""))
-
-    CONFIG.declare("material_balance_type", ConfigValue(
-            default=MaterialBalanceType.useDefault,
-            domain=In(MaterialBalanceType),
-            description="Material balance construction flag",
-            doc="""Indicates what type of mass balance should be constructed,
-    **default** - MaterialBalanceType.useDefault.
-    **Valid values:** {
-    **MaterialBalanceType.useDefault - refer to property package for default
-    balance type
-    **MaterialBalanceType.none** - exclude material balances,
-    **MaterialBalanceType.componentPhase** - use phase component balances,
-    **MaterialBalanceType.componentTotal** - use total component balances,
-    **MaterialBalanceType.elementTotal** - use total element balances,
-    **MaterialBalanceType.total** - use total material balance.}"""))
-
-    CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.useDefault,
-        domain=In(EnergyBalanceType),
-        description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed.
-    **default** - EnergyBalanceType.useDefault.
-    **Valid values:** {
-    **EnergyBalanceType.useDefault - refer to property package for default
-    balance type
-    **EnergyBalanceType.none** - exclude energy balances,
-    **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
-    **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
-    **EnergyBalanceType.energyTotal** - single energy balance for material,
-    **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-
-    CONFIG.declare("momentum_balance_type", ConfigValue(
-            default=MomentumBalanceType.pressureTotal,
-            domain=In(MomentumBalanceType),
-            description="Momentum balance construction flag",
-            doc="""Indicates what type of momentum balance should be constructed,
-    **default** - MomentumBalanceType.pressureTotal.
-    **Valid values:** {
-    **MomentumBalanceType.none** - exclude momentum balances,
-    **MomentumBalanceType.pressureTotal** - single pressure balance for material,
-    **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
-    **MomentumBalanceType.momentumTotal** - single momentum balance for material,
-    **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-
-    CONFIG.declare("pressure_change_type", ConfigValue(
-        default=PressureChangeType.fixed_per_stage,
-        domain=In(PressureChangeType),
-        description="Pressure change term construction flag",
-        doc="""
-            Indicates what type of pressure change calculation will be made. To use any of the 
-            ``pressure_change_type`` options to account for pressure drop, the configuration keyword 
-            ``has_pressure_change`` must also be set to ``True``. Also, if a value is specified for pressure 
-            change, it should be negative to represent pressure drop. 
-
-            **default** - ``PressureChangeType.calculated`` 
-
-
-        .. csv-table::
-            :header: "Configuration Options", "Description"
-
-            "``PressureChangeType.fixed``", "Specify an estimated value for pressure drop across the membrane feed channel or per unit_length"
-            "``PressureChangeType.calculated``", "Allow model to perform calculation of pressure drop across the membrane feed channel"
-        """))
-
-    CONFIG.declare("concentration_polarization_type", ConfigValue(
-        default=ConcentrationPolarizationType.calculated,
-        domain=In(ConcentrationPolarizationType),
-        description="External concentration polarization effect in RO",
-        doc="""
-            Options to account for concentration polarization.
-
-            **default** - ``ConcentrationPolarizationType.calculated`` 
-
-        .. csv-table::
-            :header: "Configuration Options", "Description"
-
-            "``ConcentrationPolarizationType.none``", "Simplifying assumption to ignore concentration polarization"
-            "``ConcentrationPolarizationType.fixed``", "Specify an estimated value for the concentration polarization modulus"
-            "``ConcentrationPolarizationType.calculated``", "Allow model to perform calculation of membrane-interface concentration"
-        """))
-
-    CONFIG.declare("mass_transfer_coefficient", ConfigValue(
-        default=MassTransferCoefficient.calculated,
-        domain=In(MassTransferCoefficient),
-        description="Mass transfer coefficient in RO feed channel",
-        doc="""
-            Options to account for mass transfer coefficient.
-
-            **default** - ``MassTransferCoefficient.calculated`` 
-
-        .. csv-table::
-            :header: "Configuration Options", "Description"
-
-            "``MassTransferCoefficient.none``", "Mass transfer coefficient not used in calculations"
-            "``MassTransferCoefficient.fixed``", "Specify an estimated value for the mass transfer coefficient in the feed channel"
-            "``MassTransferCoefficient.calculated``", "Allow model to perform calculation of mass transfer coefficient"
-        """))
 
     CONFIG.declare(
         "transformation_method",
@@ -268,13 +102,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             **True** - report additional properties of interest that aren't constructed by
             the unit model by default. Also, report averaged expression values"""))
 
+
     def _process_config(self):
         #TODO: add config errors here:
-        if len(self.config.property_package.solvent_set) > 1:
-            raise ConfigurationError("RO model only supports one solvent component,"
-                                     "the provided property package has specified {} solvent components"
-                                     .format(len(self.config.property_package.solvent_set)))
-
         if self.config.transformation_method is useDefault:
             _log.warning(
                 "Discretization method was "
@@ -295,35 +125,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             )
             self.config.transformation_scheme = "BACKWARD"
 
-        if (self.config.concentration_polarization_type == ConcentrationPolarizationType.calculated
-                and self.config.mass_transfer_coefficient == MassTransferCoefficient.none):
-            raise ConfigurationError(
-                "\n'mass_transfer_coefficient' and 'concentration_polarization_type' options configured incorrectly:\n"
-                "'mass_transfer_coefficient' cannot be set to MassTransferCoefficient.none "
-                "while 'concentration_polarization_type' is set to ConcentrationPolarizationType.calculated.\n "
-                "\n\nSet 'mass_transfer_coefficient' to MassTransferCoefficient.fixed or "
-                "MassTransferCoefficient.calculated "
-                "\nor set 'concentration_polarization_type' to ConcentrationPolarizationType.fixed or "
-                "ConcentrationPolarizationType.none")
-        if (self.config.concentration_polarization_type != ConcentrationPolarizationType.calculated
-                and self.config.mass_transfer_coefficient != MassTransferCoefficient.none):
-            raise ConfigurationError(
-                "\nConflict between configuration options:\n"
-                "'mass_transfer_coefficient' cannot be set to {} "
-                "while 'concentration_polarization_type' is set to {}.\n\n"
-                "'mass_transfer_coefficient' must be set to MassTransferCoefficient.none\nor "
-                "'concentration_polarization_type' must be set to ConcentrationPolarizationType.calculated"
-                    .format(self.config.mass_transfer_coefficient, self.config.concentration_polarization_type))
-        if (self.config.pressure_change_type is not PressureChangeType.fixed_per_stage
-                and self.config.has_pressure_change is False):
-            raise ConfigurationError(
-                "\nConflict between configuration options:\n"
-                "'has_pressure_change' cannot be False "
-                "while 'pressure_change_type' is set to {}.\n\n"
-                "'pressure_change_type' must be set to PressureChangeType.fixed_per_stage\nor "
-                "'has_pressure_change' must be set to True"
-                    .format(self.config.pressure_change_type))
-
     def build(self):
         """
         Build 1D RO model (pre-DAE transformation).
@@ -337,12 +138,11 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # Call UnitModel.build to setup dynamics
         super().build()
 
-        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
-
+        # Check configuration errors
         self._process_config()
 
         # Build 1D Control volume for feed side
-        self.feed_side = ControlVolume1DBlock(default={
+        self.feed_side = feed_side = ControlVolume1DBlock(default={
             "dynamic": self.config.dynamic,
             "has_holdup": self.config.has_holdup,
             "area_definition": self.config.area_definition,
@@ -354,7 +154,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             "collocation_points": self.config.collocation_points
         })
 
-        feed_side = self.feed_side
         # Add geometry to feed side
         feed_side.add_geometry()
         # Add state blocks to feed side
@@ -404,7 +203,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != MomentumBalanceType.none):
             add_object_reference(self, 'deltaP', feed_side.deltaP)
-            self.deltaP.setub(0)
 
         self._make_performance()
 
@@ -454,6 +252,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         Returns:
             None
         """
+
         solvent_set = self.config.property_package.solvent_set
         solute_set = self.config.property_package.solute_set
 
@@ -467,90 +266,15 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             doc="Number of finite elements")
 
         # ==========================================================================
-        """ Unit model variables"""
-        self.A_comp = Var(
-            self.flowsheet().config.time,
-            solvent_set,
-            initialize=1e-12,
-            bounds=(1e-18, 1e-6),
-            domain=NonNegativeReals,
-            units=units_meta('length') * units_meta('pressure') ** -1 * units_meta('time') ** -1,
-            doc="""Solvent permeability coeff.""")
-        self.B_comp = Var(
-            self.flowsheet().config.time,
-            solute_set,
-            initialize=1e-8,
-            bounds=(1e-11, 1e-5),
-            domain=NonNegativeReals,
-            units=units_meta('length')*units_meta('time')**-1,
-            doc='Solute permeability coeff.')
-        # TODO: add water density to NaCl prop model and remove here (or use IDAES version)
-        self.dens_solvent = Param(
-            initialize=1000,
-            units=units_meta('mass')*units_meta('length')**-3,
-            doc='Pure water density')
-        self.recovery_vol_phase = Var(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            initialize=0.4,
-            bounds=(1e-2, 1 - 1e-6),
-            units=pyunits.dimensionless,
-            doc='Volumetric recovery rate')
-
-        def recovery_mass_phase_comp_initialize(b, t, p, j):
-            if j in solvent_set:
-                return 0.4037
-            elif j in solute_set:
-                return 0.0033
-
-        def recovery_mass_phase_comp_bounds(b, t, p, j):
-            ub = 1 - 1e-6
-            if j in solvent_set:
-                lb = 1e-2
-            elif j in solute_set:
-                lb = 1e-5
-            return lb, ub
-
-        self.recovery_mass_phase_comp = Var(
-            self.flowsheet().config.time,
-            self.config.property_package.phase_list,
-            self.config.property_package.component_list,
-            initialize=recovery_mass_phase_comp_initialize,
-            bounds=recovery_mass_phase_comp_bounds,
-            units=pyunits.dimensionless,
-            doc='Mass-based component recovery')
-
-        def flux_mass_phase_comp_initialize(b, t, x, p, j):
-            if j in solvent_set:
-                return 5e-4
-            elif j in solute_set:
-                return 1e-6
-
-        def flux_mass_phase_comp_bounds(b, t, x, p, j):
-            if j in solvent_set:
-                ub = 3e-2
-                lb = 1e-4
-            elif j in solute_set:
-                ub = 1e-3
-                lb = 1e-8
-            return lb, ub
-
         self.flux_mass_phase_comp = Var(
             self.flowsheet().config.time,
             self.feed_side.length_domain,
             self.config.property_package.phase_list,
             self.config.property_package.component_list,
-            initialize=flux_mass_phase_comp_initialize,
-            bounds=flux_mass_phase_comp_bounds,
+            initialize=lambda b,t,x,p,j : 5e-4 if j in solvent_set else 1e-6,
+            bounds=lambda b,t,x,p,j : (1e-4, 3e-2) if j in solvent_set else (1e-8, 1e-3),
             units=units_meta('mass')*units_meta('length')**-2*units_meta('time')**-1,
             doc='Mass flux across membrane')
-
-        self.area = Var(
-            initialize=10,
-            bounds=(1e-1, 1e3),
-            domain=NonNegativeReals,
-            units=units_meta('length')**2,
-            doc='Membrane area')
 
         self.width = Var(
             initialize=1,
@@ -583,7 +307,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 bounds=(-1e6, 0),
                 domain=NegativeReals,
                 units=units_meta('pressure'),
-                doc='''Pressure drop across unit''')
+                doc='Pressure drop across unit')
 
         if self.config.concentration_polarization_type == ConcentrationPolarizationType.fixed:
             self.cp_modulus = Var(
@@ -610,24 +334,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         if ((self.config.mass_transfer_coefficient == MassTransferCoefficient.calculated)
                 or (self.config.pressure_change_type == PressureChangeType.calculated
                     and self.config.has_pressure_change)):
-            self.channel_height = Var(
-                initialize=1e-3,
-                bounds=(1e-4, 5e-3),
-                domain=NonNegativeReals,
-                units=units_meta('length'),
-                doc='Feed-channel height')
-            self.dh = Var(
-                initialize=1e-3,
-                bounds=(1e-4, 5e-3),
-                domain=NonNegativeReals,
-                units=units_meta('length'),
-                doc='Hydraulic diameter of feed channel')
-            self.spacer_porosity = Var(
-                initialize=0.95,
-                bounds=(0.1, 0.99),
-                domain=NonNegativeReals,
-                units=pyunits.dimensionless,
-                doc='Feed-channel spacer porosity')
             self.N_Re = Var(
                 self.flowsheet().config.time,
                 self.feed_side.length_domain,
@@ -768,7 +474,7 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                          doc="Mass transfer from feed to permeate")
         def eq_connect_mass_transfer(b, t, x, p, j):
             if x == b.feed_side.length_domain.first():
-                return b.permeate_side[t, x].get_material_flow_terms(p, j) == 0
+                return Constraint.Skip
             else:
                 return (b.permeate_side[t, x].get_material_flow_terms(p, j)
                         == -b.feed_side.mass_transfer_term[t, x, p, j] * b.length / b.nfe)
@@ -847,12 +553,6 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                         sum(bulk.flow_mass_phase_comp['Liq', j] for j in b.config.property_package.component_list)
                         * b.dh)
 
-            @self.Constraint(doc="Hydraulic diameter")  # eqn. 17 in Schock & Miquel, 1987
-            def eq_dh(b):
-                return (b.dh ==
-                        4 * b.spacer_porosity
-                        / (2 / b.channel_height
-                           + (1 - b.spacer_porosity) * 8 / b.channel_height))
         ## ==========================================================================
         # Pressure drop
         if ((self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length
@@ -982,9 +682,8 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                    bulk.flow_vol_phase['Liq']
 
     def initialize(blk,
-                   feed_side_args=None,
-                   permeate_side_args=None,
-                   permeate_block_args=None,
+                   initialize_guess=None,
+                   state_args=None,
                    outlvl=idaeslog.NOTSET,
                    solver=None,
                    optarg=None,
@@ -994,18 +693,19 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         Initialization routine for 1D-RO unit.
 
         Keyword Arguments:
-            feed_side_args : a dict of arguments to be passed to the property
-             package(s) of the feed_side to provide an initial state for
-             initialization (see documentation of the specific
-             property package)
-            permeate_side_args : a dict of arguments to be passed to the property
-             package(s) of the permeate_side to provide an initial state for
-             initialization (see documentation of the specific
-             property package)
-            permeate_block_args : a dict of arguments to be passed to the property
-             package(s) of the final permeate StateBlock to provide an initial state for
-             initialization (see documentation of the specific
-             property package)
+            initialize_guess : a dict of guesses for solvent_recovery, solute_recovery,
+                               and cp_modulus. These guesses offset the initial values
+                               for the retentate, permeate, and membrane interface
+                               state blocks from the inlet feed
+                               (default =
+                               {'deltaP': -1e4,
+                               'solvent_recovery': 0.5,
+                               'solute_recovery': 0.01,
+                               'cp_modulus': 1.1})
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for the inlet
+                         feed side state block (see documentation of the specific
+                         property package) (default = None).
             outlvl : sets output level of initialization routine
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
@@ -1021,48 +721,59 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
-        if optarg is None:
-            optarg = {'bound_push': 1e-8}
-
         opt = get_solver(solver, optarg)
 
-        init_log.info('Starting Initialization Step 1: initialize blocks.')
+        source = blk.feed_side.properties[blk.flowsheet().config.time.first(), blk.feed_side.length_domain.first()]
+        state_args = blk._get_state_args(source, blk.mixed_permeate[0], initialize_guess, state_args)
+
         # ---------------------------------------------------------------------
         # Step 1: Initialize feed_side, permeate_side, and mixed_permeate blocks
         flags_feed_side = blk.feed_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=feed_side_args)
-        init_log.info('Feed-side initialization complete. Initialize permeate-side. ')
+            state_args=state_args['feed_side'],
+            hold_state=True)
+
+        init_log.info("Initialization Step 1 Complete")
+        if not ignore_dof:
+            check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
+        # ---------------------------------------------------------------------
+        # Initialize other state blocks
+        # base properties on inlet state block
+
+        flag_feed_side_properties_interface = blk.feed_side.properties_interface.initialize(
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                state_args=state_args['interface_out'])
         flags_permeate_side = blk.permeate_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=permeate_side_args)
-        init_log.info('Permeate-side initialization complete. Initialize permeate outlet. ')
+            state_args=state_args['permeate'])
         flags_mixed_permeate = blk.mixed_permeate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=permeate_block_args)
-        init_log.info('Permeate outlet initialization complete. Initialize permeate outlet. ')
+            state_args=state_args['permeate'])
+        init_log.info("Initialization Step 2 Complete.")
 
-        if not ignore_dof:
-           check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
         # ---------------------------------------------------------------------
-        # Step 2: Solve unit
-        init_log.info('Initialization Step 1 complete: all state blocks initialized.'
-                      'Starting Initialization Step 2: solve indexed blocks.')
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        check_solve(results, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 2: solve indexed blocks')
-        init_log.info('Starting Initialization Step 3: perform final solve.')
+        # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-        check_solve(res, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 3: final solve')
+            # occasionally it might be worth retrying a solve
+            if not check_optimal_termination(res):
+                init_log.warn("Trouble solving ReverseOsmosis1D unit model, trying one more time")
+                res = opt.solve(blk, tee=slc.tee)
+        check_solve(res, logger=init_log, fail_flag=fail_on_warning, checkpoint='Initialization Step 3')
+        # ---------------------------------------------------------------------
         # Release Inlet state
         blk.feed_side.release_state(flags_feed_side, outlvl)
+        init_log.info(
+            "Initialization Complete: {}".format(idaeslog.condition(res))
+        )
 
     def _get_performance_contents(self, time_point=0):
         x_in = self.feed_side.length_domain.first()
@@ -1138,31 +849,10 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         # TODO: add more vars
         return {"vars": var_dict, "exprs": expr_dict}
 
-    def _get_stream_table_contents(self, time_point=0):
-        return create_stream_table_dataframe(
-            {
-                "Feed Inlet": self.inlet,
-                "Feed Outlet": self.retentate,
-                "Permeate Outlet": self.permeate,
-            },
-            time_point=time_point,
-        )
-
-    def get_costing(self, module=None, **kwargs):
-        self.costing = Block()
-        module.ReverseOsmosis_costing(self.costing, **kwargs)
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-        # setting scaling factors for variables
-        for j in self.config.property_package.component_list:
-            iscale.set_scaling_factor(self.permeate_side[0, 0].flow_mass_phase_comp['Liq', j], 1e+5)
 
         # these variables should have user input, if not there will be a warning
-        if iscale.get_scaling_factor(self.area) is None:
-            sf = iscale.get_scaling_factor(self.area, default=10, warning=True)
-            iscale.set_scaling_factor(self.area, sf)
-
         if iscale.get_scaling_factor(self.width) is None:
             sf = iscale.get_scaling_factor(self.width, default=1, warning=True)
             iscale.set_scaling_factor(self.width, sf)
@@ -1171,29 +861,37 @@ class ReverseOsmosis1DData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.length, default=10, warning=True)
             iscale.set_scaling_factor(self.length, sf)
 
+        # setting scaling factors for variables
+        for sb in (self.mixed_permeate, self.permeate_side):
+            for blk in sb.values():
+                for j in self.config.property_package.solute_set:
+                    self._rescale_permeate_variable(blk.flow_mass_phase_comp['Liq', j])
+                    if blk.is_property_constructed('mass_frac_phase_comp'):
+                        self._rescale_permeate_variable(blk.mass_frac_phase_comp['Liq', j])
+                    if blk.is_property_constructed('conc_mass_phase_comp'):
+                        self._rescale_permeate_variable(blk.conc_mass_phase_comp['Liq', j])
+                    if blk.is_property_constructed('mole_frac_phase_comp'):
+                        self._rescale_permeate_variable(blk.mole_frac_phase_comp[j])
+                    if blk.is_property_constructed('molality_comp'):
+                        self._rescale_permeate_variable(blk.molality_comp[j])
+                if blk.is_property_constructed('pressure_osm'):
+                    self._rescale_permeate_variable(blk.pressure_osm)
+
         # will not override if the user provides the scaling factor
         ## default of 1 set by ControlVolume1D
         if iscale.get_scaling_factor(self.area_cross) == 1:
             iscale.set_scaling_factor(self.area_cross, 100)
 
-        if iscale.get_scaling_factor(self.A_comp) is None:
-            iscale.set_scaling_factor(self.A_comp, 1e12)
-
-        if iscale.get_scaling_factor(self.B_comp) is None:
-            iscale.set_scaling_factor(self.B_comp, 1e8)
-
         if iscale.get_scaling_factor(self.dens_solvent) is None:
             sf = iscale.get_scaling_factor(self.feed_side.properties[0, 0].dens_mass_phase['Liq'])
             iscale.set_scaling_factor(self.dens_solvent, sf)
 
-        if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
-            iscale.set_scaling_factor(self.recovery_vol_phase, 1)
-
-        for (t, p, j), v in self.recovery_mass_phase_comp.items():
-            if j in self.config.property_package.solvent_set:
-                sf = 1
-            elif j in self.config.property_package.solute_set:
-                sf = 100
+        for (t, x, p, j), v in self.mass_transfer_phase_comp.items():
+            sf = (iscale.get_scaling_factor(self.feed_side.properties[t, x].get_material_flow_terms(p, j)) /
+                  iscale.get_scaling_factor(self.feed_side.length)) * value(self.nfe)
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, sf)
+            v = self.feed_side.mass_transfer_term[t,x,p,j]
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(v, sf)
 
@@ -1219,35 +917,22 @@ class ReverseOsmosis1DData(UnitModelBlockData):
         if hasattr(self, 'cp_modulus'):
             for v in self.cp_modulus.values():
                 if iscale.get_scaling_factor(v) is None:
-                    sf = iscale.get_scaling_factor(v)
-                    iscale.set_scaling_factor(v, sf)
+                    iscale.set_scaling_factor(v, 1)
 
         if hasattr(self, 'Kf'):
             for v in self.Kf.values():
                 if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, 1e5)
-
-        if hasattr(self, 'channel_height'):
-            if iscale.get_scaling_factor(self.channel_height) is None:
-                iscale.set_scaling_factor(self.channel_height, 1e3)
-
-        if hasattr(self, 'spacer_porosity'):
-            if iscale.get_scaling_factor(self.spacer_porosity) is None:
-                iscale.set_scaling_factor(self.spacer_porosity, 1)
-
-        if hasattr(self, 'dh'):
-            if iscale.get_scaling_factor(self.dh) is None:
-                iscale.set_scaling_factor(self.dh, 1e3)
+                    iscale.set_scaling_factor(v, 1e4)
 
         if hasattr(self, 'N_Re'):
             for t, x in self.N_Re.keys():
                 if iscale.get_scaling_factor(self.N_Re[t, x]) is None:
-                    iscale.set_scaling_factor(self.N_Re[t, x], 1e-1)
+                    iscale.set_scaling_factor(self.N_Re[t, x], 1e-2)
 
         if hasattr(self, 'N_Sc'):
             for t, x in self.N_Sc.keys():
                 if iscale.get_scaling_factor(self.N_Sc[t, x]) is None:
-                    iscale.set_scaling_factor(self.N_Sc[t, x], 1e-1)
+                    iscale.set_scaling_factor(self.N_Sc[t, x], 1e-2)
 
         if hasattr(self, 'N_Sh'):
             for t, x in self.N_Sh.keys():
@@ -1269,147 +954,9 @@ class ReverseOsmosis1DData(UnitModelBlockData):
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, 1)
 
-        for (t, x, p, j), v in self.eq_mass_flux_equal_mass_transfer.items():
-            if iscale.get_scaling_factor(v) is None:
-                if x == self.feed_side.length_domain.first():
-                    pass
-                else:
-                    sf = iscale.get_scaling_factor(self.flux_mass_phase_comp[t, x, p, j])\
-                         * iscale.get_scaling_factor(self.width)
-                    iscale.set_scaling_factor(v, sf/100.)
-
-        for (t, x, p, j), v in self.mass_transfer_phase_comp.items():
-            if iscale.get_scaling_factor(v) is None:
-                sf = iscale.get_scaling_factor(self.feed_side.properties[t, x].get_material_flow_terms(p, j)) \
-                     / iscale.get_scaling_factor(self.feed_side.length)
-                if x == 0:
-                    sf *= 10.
-                iscale.set_scaling_factor(v, sf)
-
         if hasattr(self, 'deltaP'):
             for v in self.feed_side.pressure_dx.values():
                 iscale.set_scaling_factor(v, 1e-5)
         else:
             for v in self.feed_side.pressure_dx.values():
                 iscale.set_scaling_factor(v, 1e5)
-
-        # Scale constraints
-        for ind, c in self.eq_mass_transfer_term.items():
-            sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
-            iscale.constraint_scaling_transform(c, sf)
-
-        for ind, c in self.eq_connect_mass_transfer.items():
-            sf = iscale.get_scaling_factor(self.mass_transfer_phase_comp[ind])
-            iscale.constraint_scaling_transform(c, sf*10.)
-
-        sf = iscale.get_scaling_factor(self.area)
-        iscale.constraint_scaling_transform(self.eq_area, sf/10.)
-
-        for ind, c in self.eq_permeate_production.items():
-            # TODO: revise this scaling factor; setting to 100 for now
-            iscale.constraint_scaling_transform(c, 100.)
-
-        for ind, c in self.eq_flux_mass.items():
-            sf = iscale.get_scaling_factor(self.flux_mass_phase_comp[ind])
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x), c in self.eq_feed_isothermal.items():
-            sf = iscale.get_scaling_factor(self.feed_side.properties[t, x].temperature)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x), c in self.eq_permeate_isothermal.items():
-            sf = iscale.get_scaling_factor(self.feed_side.properties[t, x].temperature)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for t, c in self.eq_permeate_outlet_isothermal.items():
-            sf = iscale.get_scaling_factor(self.feed_side.properties[t, 0].temperature)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x), c in self.eq_permeate_outlet_isobaric.items():
-            sf = iscale.get_scaling_factor(self.permeate_side[t, x].pressure)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for t, c in self.eq_recovery_vol_phase.items():
-            iscale.constraint_scaling_transform(self.eq_recovery_vol_phase[t], 1)
-
-        for (t, j), c in self.eq_recovery_mass_phase_comp.items():
-            sf = (iscale.get_scaling_factor(self.recovery_mass_phase_comp[t, 'Liq', j])
-                  * iscale.get_scaling_factor(self.inlet.flow_mass_phase_comp[0, 'Liq', j]))
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x, j), c in self.feed_side.eq_concentration_polarization.items():
-            prop_interface = self.feed_side.properties_interface[t, x]
-            sf = iscale.get_scaling_factor(prop_interface.conc_mass_phase_comp['Liq', j])
-            iscale.constraint_scaling_transform(c, sf*10.)
-
-        for (t, x), c in self.feed_side.eq_equal_temp_interface.items():
-            prop_interface = self.feed_side.properties_interface[t, x]
-            sf = iscale.get_scaling_factor(prop_interface.temperature)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x), c in self.feed_side.eq_equal_pressure_interface.items():
-            prop_interface = self.feed_side.properties_interface[t, x]
-            sf = iscale.get_scaling_factor(prop_interface.pressure)
-            iscale.constraint_scaling_transform(c, sf)
-
-        for (t, x), c in self.feed_side.eq_equal_flow_vol_interface.items():
-            prop_interface = self.feed_side.properties_interface[t, x]
-            sf = iscale.get_scaling_factor(prop_interface.flow_vol_phase['Liq'])
-            iscale.constraint_scaling_transform(c, sf)
-
-        if hasattr(self, 'eq_Kf'):
-            for ind, c in self.eq_Kf.items():
-                sf = iscale.get_scaling_factor(self.Kf[ind])
-                iscale.constraint_scaling_transform(c, sf*10.)
-
-        if hasattr(self, 'eq_N_Re'):
-            for ind, c in self.eq_N_Re.items():
-                sf = iscale.get_scaling_factor(self.N_Re[ind])
-                iscale.constraint_scaling_transform(c, sf*1e4)
-
-        if hasattr(self, 'eq_N_Sc'):
-            for ind, c in self.eq_N_Sc.items():
-                sf = iscale.get_scaling_factor(self.N_Sc[ind])
-                iscale.constraint_scaling_transform(c, sf*1e4)
-
-        if hasattr(self, 'eq_N_Sh'):
-            for ind, c in self.eq_N_Sh.items():
-                sf = iscale.get_scaling_factor(self.N_Sh[ind])
-                iscale.constraint_scaling_transform(c, sf*1e1)
-
-        if hasattr(self, 'eq_area_cross'):
-            sf = iscale.get_scaling_factor(self.area_cross)
-            iscale.constraint_scaling_transform(self.eq_area_cross, sf*10.)
-
-        if hasattr(self, 'eq_dh'):
-            sf = iscale.get_scaling_factor(self.dh)
-            iscale.constraint_scaling_transform(self.eq_dh, sf)
-
-        if hasattr(self, 'eq_pressure_drop'):
-            if (self.config.pressure_change_type == PressureChangeType.calculated
-                or self.config.pressure_change_type == PressureChangeType.fixed_per_unit_length):
-                for t, c in self.eq_pressure_drop.items():
-                    sf = iscale.get_scaling_factor(self.deltaP_stage[t])
-                    iscale.constraint_scaling_transform(c, sf)
-            elif self.config.pressure_change_type == PressureChangeType.fixed_per_stage:
-                for (t, x), c in self.eq_pressure_drop.items():
-                    sf = iscale.get_scaling_factor(self.deltaP_stage[t])
-                    iscale.constraint_scaling_transform(c, sf)
-
-        if hasattr(self, 'eq_velocity'):
-            for ind, c in self.eq_velocity.items():
-                sf = iscale.get_scaling_factor(self.velocity[ind])
-                iscale.constraint_scaling_transform(c, sf*1e4)
-
-        if hasattr(self, 'eq_friction_factor_darcy'):
-            for ind, c in self.eq_friction_factor_darcy.items():
-                sf = iscale.get_scaling_factor(self.friction_factor_darcy[ind])
-                iscale.constraint_scaling_transform(c, sf/10.)
-
-        if hasattr(self, 'eq_dP_dx'):
-            for ind, c in self.eq_dP_dx.items():
-                sf = (iscale.get_scaling_factor(self.deltaP[ind])
-                      * iscale.get_scaling_factor(self.dh))
-                iscale.constraint_scaling_transform(c, sf)
-
-

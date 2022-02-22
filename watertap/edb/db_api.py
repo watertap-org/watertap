@@ -20,11 +20,16 @@ import re
 from typing import Dict, List, Optional, Union
 
 # third-party
+try:
+    import certifi
+except ImportError:
+    certifi = None
 from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, PyMongoError
 
 # package
 from .data_model import Result, Component, Reaction, Base, DataWrapper
+from .error import BadConfiguration
 
 __author__ = "Dan Gunter (LBNL)"
 
@@ -44,16 +49,58 @@ class ElectrolyteDB:
 
     # Default timeout, in ms, for sockets, connections, and server selection
     timeout_ms = 5000
+    timeout_args = {
+        "socketTimeoutMS": timeout_ms,
+        "connectTimeoutMS": timeout_ms,
+        "serverSelectionTimeoutMS": timeout_ms,
+    }
 
     # make sure these match lowercase names of the DataWrapper subclasses in
     # the `data_model` module
     _known_collections = ("base", "component", "reaction")
 
-    def __init__(self, url=DEFAULT_URL, db=DEFAULT_DB):
-        self._client = MongoClient(host=url)
+    def __init__(
+        self,
+        url: str = DEFAULT_URL,
+        db: str = DEFAULT_DB,
+        check_connection: bool = True,
+    ):
+        """Constructor.
+
+        Args:
+            url: MongoDB server URL
+            db: MongoDB 'database' (namespace) to use
+            check_connection: If True, check immediately if we can connect to the
+                server at the provided url. Otherwise defer this check until the
+                first operation (at which point a stack trace may occur).
+
+        Raises:
+            pymongo.errors.ConnectionFailure: if check_connection is True,
+                 and the connection fails
+        """
+        self._mongoclient_connect_status = {"initial": "untried", "retry": "untried"}
+        self._client = self._mongoclient(url, check_connection, **self.timeout_args)
+        if self._client is None:
+            msg = self.connect_status_str
+            _log.error(msg)
+            raise ConnectionFailure(msg)
+        self._db = getattr(self._client, db)
         self._db = getattr(self._client, db)
         self._database_name = db
         self._server_url = url
+
+    def is_empty(self) -> bool:
+        if self._database_name not in self._client.list_database_names():
+            return True
+        collections = set(self._db.list_collection_names())
+        if not collections:
+            return True
+        if not {"base", "component", "reaction"}.intersection(collections):
+            _log.warning(
+                "Bootstrapping into non-empty database, but without any EDB collections"
+            )
+            return True
+        return False
 
     @staticmethod
     def drop_database(url, db):
@@ -73,34 +120,71 @@ class ElectrolyteDB:
         client.drop_database(db)
 
     @classmethod
-    def can_connect(cls, host=None, port=None, **kwargs):
+    def can_connect(cls, url=None, db=None) -> bool:
+        """Convenience method to check if a connection can be made without having
+           to instantiate the database object.
+
+        Args:
+            url: Same as constructor
+            db: Same as constructor
+
+        Returns:
+            True, yes can connect; False: cannot connect
+        """
+        url = url or f"mongodb://{cls.DEFAULT_HOST}:{cls.DEFAULT_PORT}"
+        db = db or cls.DEFAULT_DB
         result = True
-
-        if host is None:
-            host = cls.DEFAULT_HOST
-        if port is None:
-            port = cls.DEFAULT_PORT
-
-        # add timeouts (probably shorter than defaults)
-        timeout_args = {
-            "socketTimeoutMS": cls.timeout_ms,
-            "connectTimeoutMS": cls.timeout_ms,
-            "serverSelectionTimeoutMS": cls.timeout_ms,
-        }
-        kwargs.update(timeout_args)
-
-        client = MongoClient(host=host, port=port, **kwargs)
-
-        # This approach is taken directly from MongoClient docstring -dang
         try:
-            # The ismaster command is cheap and does not require auth.
-            client.admin.command("ismaster")
-            _log.debug(f"MongoDB server at {host}:{port} is available")
+            _ = cls(url=url, db=db, check_connection=True)
         except ConnectionFailure:
-            _log.error(f"MongoDB server at {host}:{port} is NOT available")
             result = False
-
         return result
+
+    def _mongoclient(self, url: str, check, **client_kw) -> Union[MongoClient, None]:
+        _log.debug(f"Begin: Create MongoDB client. url={url}")
+        mc = MongoClient(url, **client_kw)
+        if not check:
+            _log.info(f"Skipping connection check for MongoDB client. url={url}")
+            _log.debug(f"End: Create MongoDB client. url={url}")
+            return mc
+        # check that client actually works
+        _log.info(f"Connection check MongoDB client url={url}")
+        try:
+            mc.admin.command("ismaster")
+            self._mongoclient_connect_status["initial"] = "ok"
+            _log.info("MongoDB connection succeeded")
+        except ConnectionFailure as conn_err:
+            mc = None
+            self._mongoclient_connect_status["initial"] = str(conn_err)
+            if "CERTIFICATE_VERIFY_FAILED" in str(conn_err):
+                _log.warning(f"MongoDB connection failed due to certificate "
+                             f"verification.")
+                if certifi is not None:
+                    _log.info("Retrying MongoDB connection with explicit location "
+                              f"for client certificates ({certifi.where()})")
+                    try:
+                        mc = MongoClient(url, tlsCAFile=certifi.where(), **client_kw)
+                        mc.admin.command("ismaster")
+                        _log.info("Retried MongoDB connection succeeded")
+                    except ConnectionFailure as err:
+                        mc = None
+                        self._mongoclient_connect_status["retry"] = str(err)
+                        _log.error(self.connect_status_str)
+        _log.debug(f"End: Create MongoDB client. url={url}")
+        return mc
+
+    @property
+    def connect_status(self) -> Dict:
+        return self._mongoclient_connect_status.copy()
+
+    @property
+    def connect_status_str(self) -> str:
+        e = self._mongoclient_connect_status
+        if e["initial"] == "ok":
+            return "Connection succeeded"
+        if e["retry"] == "ok":
+            return "Initial connection failed, but retry succeeded"
+        return f"Initial connection error ({e['initial']}), retry error ({e['retry']})"
 
     @property
     def database(self):
@@ -150,18 +234,21 @@ class ElectrolyteDB:
         component_names: Optional[List] = None,
         phases: Union[List[str], str] = None,
         any_components: bool = False,
+        include_new_components: bool = False,
         reaction_names: Optional[List] = None,
     ) -> Result:
         """Get reaction information.
 
         Args:
             component_names: List of component names
-            phases: Phase(s) to include; if not given allow any. Currently implemented
-                    only when `any_components` is False.
+            phases: Phase(s) to include; if not given allow any.
             any_components: If False, the default, only return reactions where
                one side of the reaction has all components provided.
                If true, return the (potentially larger) set of reactions where
                any of the components listed are present.
+            include_new_components: If False, the default, only return reactions where
+               all given components are found in that reaction (and no new components)
+               are used in that reaction.
             reaction_names: List of reaction names instead of component names
 
         Returns:
@@ -179,33 +266,53 @@ class ElectrolyteDB:
                 allow_phases = set(phases)
             # build a set of normalized component names
             cnames = {c.replace(" ", "_") for c in component_names}
-            _log.debug(f"Get reaction with {'any' if any_components else 'all'} "
-                       f"components {cnames}")
+            _log.debug(
+                f"Get reaction with {'any' if any_components else 'all'} "
+                f"components {cnames}"
+            )
             # Brute force table scan: need to restructure DB for this to be
             # easy to do with a MongoDB query, i.e. need to put all the
             # *keys* for stoichiometry.Liq as *values* in an array, then do a:
             # {$not: {$elemMatch: { $nin: [<components>] } } } on that array
             stoich_field = Reaction.NAMES.stoich
             for item in collection.find():
+                stoich = {}
+                disallow = False
                 for phase in item[stoich_field].keys():
                     if allow_phases is not None and phase not in allow_phases:
-                        continue
-                    stoich = item[stoich_field][phase]
-                    if any_components:
-                        # look for non-empty intersection
-                        if set(stoich.keys()) & cnames:
-                            found.append(item)
+                        disallow = True
+                    for n in item[stoich_field][phase]:
+                        stoich[n] = item[stoich_field][phase][n]
+                #If the item involves a phase that is not allowed, then move on to next item
+                if (disallow):
+                    continue
+                #If stoich is empty, then move on to next item
+                if (stoich == {}):
+                    continue
+                if any_components:
+                    # look for non-empty intersection
+                    if set(stoich.keys()) & cnames:
+                        found.append(item)
+                else:
+                    # ok if it matches both sides
+                    if set(stoich.keys()) == cnames:
+                        found.append(item)
+                    # also ok if it matches everything on one side
                     else:
-                        # ok if it matches both sides
-                        if set(stoich.keys()) == cnames:
-                            found.append(item)
-                        # also ok if it matches everything on one side
-                        else:
+                        # Add a reaction if all the products/reactants
+                        #   can be formed. This allows addition of reactions
+                        #   that may include species not yet considered.
+                        if (include_new_components == True):
                             for side in -1, 1:
-                                side_keys = (k for k, v in stoich.items() if v == side)
-                                if set(side_keys) == cnames:
+                                side_keys = (k for k, v in stoich.items() if abs(v)/v == side)
+                                if set(side_keys).issubset(cnames):
                                     found.append(item)
                                     break  # found; stop
+                        # Otherwise, only include reactions that are subsets of
+                        #   the given component list
+                        else:
+                            if set(stoich.keys()).issubset(cnames):
+                                found.append(item)
             it = iter(found)
         elif reaction_names:
             query = {"name": {"$in": reaction_names}}
@@ -215,19 +322,70 @@ class ElectrolyteDB:
             it = collection.find()
         return Result(iterator=it, item_class=Reaction)
 
-    def get_base(self, name: str = None) -> Result:
-        """Get base information by name of its type."""
+    def get_base(self, name: str = None) -> Union[Result, Base]:
+        """Get base information by name of its type.
+
+        Args:
+            name: Name of the base type.
+        Returns:
+            If no name is given, a Result iterator over all the bases.
+            Otherwise, a single `Base` object.
+        """
         if name:
             query = {"name": name}
         else:
             query = {}
         collection = self._db.base
         result = Result(iterator=collection.find(filter=query), item_class=Base)
-        return result
-
-    def get_one_base(self, *args):
-        for result in self.get_base(*args):
+        if name:
+            try:
+                return list(result)[0]
+            except IndexError:
+                raise IndexError("No bases found in DB")
+        else:
             return result
+
+    def list_bases(self):
+        """List the currently loaded bases and provide brief description
+
+        Args:
+            None
+        Returns:
+            No return, just display info to console
+        """
+        for item in self.get_base():
+            print(f"base name: {item.name}\t\tdescription -> {self._base_desc(item.name)}")
+
+    def _base_desc(self, name) -> str:
+        """Creates a description of a base based on the standard naming
+
+        Args:
+            name: Name of the base to describe
+        Returns:
+            desc: String of the description of the base
+        """
+        if name == "default_thermo":
+            desc = "ThermoConfig: Default uses FTPx state vars for Liq phase"
+        elif name == "reaction":
+            desc = "ReactionConfig: Blank reaction template"
+        else:
+            items = name.split("_")
+            if len(items) < 3:
+                raise BadConfiguration("ElectrolyteDB._base_desc", self.get_base(name).idaes_config,
+                    missing=None,why="\nName of base ("+name+") is of unknown format\n")
+            if items[0] == "thermo":
+                desc = "ThermoConfig: "
+            else:
+                desc = "ReactionConfig: "
+            desc += "uses " + items[-1] + " state vars for "
+            for i in range(1,len(items)-1):
+                desc += items[i] + ","
+            desc += " phases"
+
+        return desc
+
+    # older method name
+    get_one_base = get_base
 
     def load(
         self,
@@ -274,12 +432,27 @@ class ElectrolyteDB:
 
     @staticmethod
     def _process_component(rec):
-        rec["elements"] = get_elements([rec["name"]])
+        rec["elements"] = get_elements_from_components([rec["name"]])
         return rec
 
     @staticmethod
     def _process_reaction(rec):
-        rec["reactant_elements"] = get_elements(rec["components"])
+        rec["reactant_elements"] = get_elements_from_components(
+            rec.get("components", []))
+
+        # If reaction_order is not present in parameters, create it by
+        # copying the stoichiometry (or empty for each phase, if stoich. not found)
+        if Reaction.NAMES.param in rec:
+            param = rec[Reaction.NAMES.param]
+            if Reaction.NAMES.reaction_order not in param:
+                if Reaction.NAMES.stoich in rec:
+                    param[Reaction.NAMES.reaction_order] = rec[
+                        Reaction.NAMES.stoich].copy()
+                else:
+                    param[Reaction.NAMES.reaction_order] = {
+                        phase: {} for phase in Reaction.PHASES
+                    }
+
         return rec
 
     @staticmethod
@@ -306,7 +479,7 @@ class ElectrolyteDB:
         return f"{symbols}{charge}"
 
 
-def get_elements(components):
+def get_elements_from_components(components):
     elements = set()
     for comp in components:
         # print(f"Get elements from: {comp}")

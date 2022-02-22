@@ -14,22 +14,19 @@
 import pytest
 from pyomo.environ import (ConcreteModel,
                            value,
-                           Param,
                            Var,
-                           Expression,
                            Constraint,
                            assert_optimal_termination)
 from pyomo.network import Port
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
-                        MomentumBalanceType,
-                        ControlVolume0DBlock)
+                        MomentumBalanceType)
 from watertap.unit_models.nanofiltration_ZO import NanofiltrationZO
 from idaes.generic_models.properties.core.generic.generic_property import GenericParameterBlock
 from watertap.property_models.seawater_ion_generic import configuration
-import watertap.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as props
-from watertap.util.initialization import assert_no_degrees_of_freedom
+import watertap.examples.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as props
+from watertap.core.util.initialization import assert_no_degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util import get_solver
@@ -265,7 +262,6 @@ class TestNanofiltration():
 
         initialization_tester(m)
 
-        solver.options = {'bound_push': 1e-8}
         results = solver.solve(m)
 
         # Check for optimal solution

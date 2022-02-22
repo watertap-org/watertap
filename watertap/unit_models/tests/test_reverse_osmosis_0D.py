@@ -45,7 +45,7 @@ from idaes.core.util.scaling import (calculate_scaling_factors,
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver(options={'bound_push':1e-8})
+solver = get_solver()
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
@@ -69,9 +69,9 @@ def test_config():
     assert m.fs.unit.config.property_package is \
            m.fs.properties
     assert m.fs.unit.config.concentration_polarization_type == \
-           ConcentrationPolarizationType.none
+           ConcentrationPolarizationType.calculated
     assert m.fs.unit.config.mass_transfer_coefficient == \
-           MassTransferCoefficient.none
+           MassTransferCoefficient.calculated
     assert m.fs.unit.config.pressure_change_type == \
            PressureChangeType.fixed_per_stage
 
@@ -95,7 +95,8 @@ def test_option_concentration_polarization_type_fixed():
     m.fs.unit = ReverseOsmosis0D(default={
         "property_package": m.fs.properties,
         "has_pressure_change": True,
-        "concentration_polarization_type": ConcentrationPolarizationType.fixed})
+        "concentration_polarization_type": ConcentrationPolarizationType.fixed,
+        "mass_transfer_coefficient": MassTransferCoefficient.none})
 
     assert m.fs.unit.config.concentration_polarization_type == \
            ConcentrationPolarizationType.fixed
@@ -182,7 +183,8 @@ class TestReverseOsmosis():
         m.fs.unit = ReverseOsmosis0D(default={
             "property_package": m.fs.properties,
             "has_pressure_change": True,
-            "concentration_polarization_type": ConcentrationPolarizationType.fixed})
+            "concentration_polarization_type": ConcentrationPolarizationType.fixed,
+            "mass_transfer_coefficient": MassTransferCoefficient.none})
 
         # fully specify system
         feed_flow_mass = 1
@@ -309,18 +311,13 @@ class TestReverseOsmosis():
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m))
         assert len(unscaled_var_list) == 0
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
 
-        # check repeated scaling does not create badly scaled vars
-        calculate_scaling_factors(m)
         for _ in badly_scaled_var_generator(m):
             assert False
 
     @pytest.mark.component
     def test_initialize(self, RO_frame):
-        initialization_tester(RO_frame)
+        initialization_tester(RO_frame, fail_on_warning=True)
 
     @pytest.mark.component
     def test_var_scaling(self, RO_frame):
@@ -445,12 +442,8 @@ class TestReverseOsmosis():
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
         assert len(unscaled_var_list) == 0
 
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
-
         # # test initialization
-        initialization_tester(m)
+        initialization_tester(m, fail_on_warning=True)
 
         # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
@@ -542,12 +535,8 @@ class TestReverseOsmosis():
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
         assert len(unscaled_var_list) == 0
 
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
-
         # test initialization
-        initialization_tester(m)
+        initialization_tester(m, fail_on_warning=True)
 
         # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
@@ -637,12 +626,8 @@ class TestReverseOsmosis():
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
         assert len(unscaled_var_list) == 0
 
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
-
         # test initialization
-        initialization_tester(m)
+        initialization_tester(m, fail_on_warning=True)
 
         # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
@@ -740,12 +725,8 @@ class TestReverseOsmosis():
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
         assert len(unscaled_var_list) == 0
 
-        # check that all constraints have been scaled
-        unscaled_constraint_list = list(unscaled_constraints_generator(m))
-        assert len(unscaled_constraint_list) == 0
-
         # test initialization
-        initialization_tester(m)
+        initialization_tester(m, fail_on_warning=True)
 
         # test variable scaling
         badly_scaled_var_lst = list(badly_scaled_var_generator(m))
@@ -777,3 +758,10 @@ class TestReverseOsmosis():
     @pytest.mark.unit
     def test_report(self, RO_frame):
         RO_frame.fs.unit.report()
+
+    @pytest.mark.unit
+    def test_repeated_scaling(self, RO_frame):
+        # check repeated scaling does not create badly scaled vars
+        calculate_scaling_factors(RO_frame)
+        for _ in badly_scaled_var_generator(RO_frame):
+            assert False

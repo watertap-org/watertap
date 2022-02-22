@@ -36,14 +36,14 @@ for active use by water treatment researchers and engineers.""".replace(
 
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=1.11.0",  # from PyPI
+    "idaes-pse>=1.12.0",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse[prerelease] @ https://github.com/watertap-org/idaes-pse/archive/1.11.0.watertap.2021.10.11.zip",
+    "idaes-pse[prerelease] @ https://github.com/watertap-org/idaes-pse/archive/1.12.1.watertap.2022.02.04.zip",
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -52,7 +52,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="0.3.0dev",
+    version="0.4.0dev",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/plain",
@@ -75,9 +75,9 @@ setup(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",
@@ -86,12 +86,12 @@ setup(
     ],
     keywords="water systems, chemical engineering, process modeling, filtration, desalination, nawi",
     packages=find_namespace_packages(),
-    python_requires=">=3.6, <4",
+    python_requires=">=3.7, <4",
     install_requires=[
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
         *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
-        "pyomo",  # (also needed for units in electrolyte database (edb))
+        "pyomo>=6.2",  # (also needed for units in electrolyte database (edb))
         # the following requirements are for the electrolyte database (edb)
         "pymongo>3",  # database interface
         "fastjsonschema",  # schema validation
@@ -110,10 +110,11 @@ setup(
         ],
         "dev": [
             "myst-parser",  # markdown support for Sphinx
-            # other requirements
-            "linkify-it-py",
+            "nbsphinx",  # jupyter notebook support for sphinx
             "Sphinx",  # docs
             "sphinx_rtd_theme",  # docs
+            # other requirements
+            "linkify-it-py",
             "json-schema-for-humans",  # pretty JSON schema in HTML
             "black",  # code formatting
             # other requirements
@@ -125,6 +126,8 @@ setup(
     package_data={  # Optional
         "": [
             "*.json",
+            "*.yaml",
+            "*.yml",
         ],
     },
     entry_points={

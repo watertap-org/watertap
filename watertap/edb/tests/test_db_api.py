@@ -16,6 +16,7 @@ Test of db_api module
 import pytest
 from ..db_api import ElectrolyteDB
 from ..data_model import Component, Reaction, Base
+from ..commands import _load_bootstrap
 from pymongo import MongoClient
 from .util import MockDB
 
@@ -52,24 +53,33 @@ def edb():
 @requires_mongo
 def test_edb_init(edb):
     assert edb is not None
+    assert edb.connect_status_str == "Connection succeeded"
+    assert type(edb.connect_status) is dict
+
+
+@pytest.mark.component
+@requires_mongo
+def test_edb_load(edb):
+    # Load bootstrap for temporary testing purposes
+    _load_bootstrap(edb)
+    base = edb.get_base("default_thermo")
+    assert type(base) is Base
+    edb.list_bases()
 
 
 @pytest.mark.component
 @requires_mongo
 def test_edb_get_components(edb):
-    pass
+    res_obj_comps = edb.get_components(element_names=["H","O"])
+    for comp_obj in res_obj_comps:
+        assert type(comp_obj) is Component
+    assert edb._process_species("H2O") == "H2O"
+    assert edb._process_species("H_+") == "H"
+    assert edb._process_species("OH_-") == "OH"
 
-
-@pytest.mark.component
-@requires_mongo
-def test_edb_get_reactions():
-    pass
-
-
-@pytest.mark.component
-@requires_mongo
-def test_edb_load():
-    pass
+    # Drop the bootstrap database for cleaning
+    edb.drop_database(edb.DEFAULT_URL, edb.DEFAULT_DB)
+    assert edb.is_empty()
 
 
 @pytest.mark.unit
@@ -154,15 +164,19 @@ data2 = data1.copy() + [{
 #   With these 'components' and this 'data' in the DB,
 #   getting reactions with *any* component should return 'any_num' records,
 #   and getting reactions with *all* components should return 'all_num' records
+#   and getting reactions with *all* components and *new* components should
+#   return 'new_num' records
 @pytest.mark.unit
-@pytest.mark.parametrize("components,data,any_num,all_num", [
-    (["H2O", "CO2", "H2CO3"], data1, 2, 1),
-    (["H2O", "H +", "OH -", "H2CO3", "HCO3 -"], data2, 3, 0),
-    (["H2CO3"], data2, 2, 2),
+@pytest.mark.parametrize("components,data,any_num,all_num,new_num", [
+    (["H2O", "CO2", "H2CO3"], data1, 2, 1, 2),
+    (["H2O", "H +", "OH -", "H2CO3", "HCO3 -"], data2, 3, 2, 3),
+    (["H2CO3"], data2, 2, 0, 2),
 ])
-def test_get_reactions(mockdb, components, data, any_num, all_num):
+def test_get_reactions(mockdb, components, data, any_num, all_num, new_num):
     insert_reactions(mockdb._db.reaction, data)
     reactions = mockdb.get_reactions(components, any_components=True)
     assert len(list(reactions)) == any_num
     reactions = mockdb.get_reactions(components, any_components=False)
     assert len(list(reactions)) == all_num
+    reactions = mockdb.get_reactions(components, any_components=False, include_new_components = True)
+    assert len(list(reactions)) == new_num

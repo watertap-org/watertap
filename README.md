@@ -1,5 +1,5 @@
 # WaterTAP
-The WaterTAP development repository.
+This is the WaterTAP development repository.
 
 WaterTAP is developed as part of the [National Alliance for Water Innovation](https://nawihub.org/) project.
 
@@ -22,3 +22,9 @@ The WaterTAP documentation is available online at <https://watertap.readthedocs.
 ## Developer notes
 
 Refer to the [Getting Started for Developers](https://watertap.readthedocs.io/en/latest/getting_started/install.html#for-watertap-developers) section of the documentation.
+
+## Funding Acknowledgements
+
+This work is being conducted as part of the [National Alliance for Water Innovation
+(NAWI)](https://www.nawihub.org/) with support through the U.S. Department of Energy’s [Advanced
+Manufacturing Office](https://www.energy.gov/eere/amo/advanced-manufacturing-office).
