@@ -25,10 +25,6 @@ from abc import abstractmethod, ABC
 from idaes.core.util import get_solver
 
 from idaes.surrogate.pysmo import sampling
-from idaes.core.util.model_statistics import (variables_in_activated_equalities_set,
-    expressions_set, total_objectives_set)
-from pyomo.core.base.block import TraversalStrategy
-from pyomo.opt import TerminationCondition as _TerminationCondition
 from pyomo.common.collections import ComponentSet
 from pyomo.common.tee import capture_output
 
