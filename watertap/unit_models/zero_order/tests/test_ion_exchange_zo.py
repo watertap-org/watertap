@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-Tests for zero-order anion exchange model
+Tests for zero-order Ion exchange model
 """
 import pytest
 from io import StringIO
@@ -25,14 +25,14 @@ from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 
-from watertap.unit_models.zero_order import AnionExchangeZO
+from watertap.unit_models.zero_order import IonExchangeZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 
 solver = get_solver()
 
 
-class TestAnionExchangeZO_w_o_default_removal:
+class TestIonExchangeZO_w_o_default_removal:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -42,7 +42,7 @@ class TestAnionExchangeZO_w_o_default_removal:
         m.fs.params = WaterParameterBlock(
             default={"solute_list": ["tds"]})
 
-        m.fs.unit = AnionExchangeZO(default={
+        m.fs.unit = IonExchangeZO(default={
             "property_package": m.fs.params,
             "database": m.db})
 
@@ -63,7 +63,7 @@ class TestAnionExchangeZO_w_o_default_removal:
 
     @pytest.mark.component
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("anion_exchange")
+        data = model.db.get_unit_operation_parameters("ion_exchange")
 
         model.fs.unit.load_parameters_from_database()
 
@@ -137,7 +137,7 @@ Unit : fs.unit                                                             Time:
 
         assert output in stream.getvalue()
 
-class TestAnionExchangeZO_w_default_removal:
+class TestIonExchangeZO_w_default_removal:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -147,7 +147,7 @@ class TestAnionExchangeZO_w_default_removal:
         m.fs.params = WaterParameterBlock(
             default={"solute_list": ["tds", "foo"]})
 
-        m.fs.unit = AnionExchangeZO(default={
+        m.fs.unit = IonExchangeZO(default={
             "property_package": m.fs.params,
             "database": m.db})
 
@@ -169,7 +169,7 @@ class TestAnionExchangeZO_w_default_removal:
 
     @pytest.mark.component
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("anion_exchange")
+        data = model.db.get_unit_operation_parameters("ion_exchange")
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].value == 1
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
@@ -245,3 +245,35 @@ Unit : fs.unit                                                             Time:
 ====================================================================================
 """
         assert output in stream.getvalue()
+
+
+db = Database()
+params = db._get_technology("ion_exchange")
+
+
+class TestIXZOsubtype:
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.params = WaterParameterBlock(
+            default={"solute_list": ["tds"]})
+
+        m.fs.unit = IonExchangeZO(default={
+            "property_package": m.fs.params,
+            "database": db})
+
+        return m
+
+    @pytest.mark.parametrize("subtype", [params.keys()])
+    @pytest.mark.component
+    def test_load_parameters(self, model, subtype):
+        model.fs.unit.config.process_subtype = subtype
+        data = db.get_unit_operation_parameters("ion_exchange", subtype=subtype)
+
+        model.fs.unit.load_parameters_from_database()
+
+        for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
+            assert v.fixed
+            assert v.value == data["removal_frac_mass_solute"][j]["value"]
