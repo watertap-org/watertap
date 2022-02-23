@@ -25,9 +25,9 @@ __author__ = "Chenyu Wang"
 
 
 @declare_process_block_class("DualMediaFiltrationZO")
-class DualMediaFiltrationZO(ZeroOrderBaseData):
+class DualMediaFiltrationZOData(ZeroOrderBaseData):
     """
-    Zero-Order model for a Clarifier unit operation.
+    Zero-Order model for a Dual Media Filtration unit operation.
     """
 
     CONFIG = ZeroOrderBaseData.CONFIG()
