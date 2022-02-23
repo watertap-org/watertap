@@ -46,7 +46,7 @@ def test_unit_parameter_files(tech):
     # TODO : Need to check up on this once everything is done
     pass_through = ["chemical_addition",
                     "pump"]
-    siso_full_recovery = ["uv_aop", "uv", "anion_exchange"]
+    siso_full_recovery = ["uv_aop", "uv", "ion_exchange"]
 
     no_energy_electric_flow_vol_inlet = ["energy_recovery",
                                          "mbr_denitrification",
@@ -56,7 +56,7 @@ def test_unit_parameter_files(tech):
                                          "cartridge_filtration_with_backflush",
                                          "landfill",
                                          "well_field",
-                                         "anion_exchange",
+                                         "ion_exchange",
                                          "ozone_aop",
                                          "fixed_bed_pressure_vessel",
                                          "holding_tank",
@@ -77,7 +77,6 @@ def test_unit_parameter_files(tech):
                                          "gac_gravity",
                                          "iron_and_manganese_removal",
                                          "fluidized_bed",
-                                         "cation_exchange",
                                          "surface_discharge",
                                          "solution_distribution_and_recovery_plant",
                                          "chemical_addition",
