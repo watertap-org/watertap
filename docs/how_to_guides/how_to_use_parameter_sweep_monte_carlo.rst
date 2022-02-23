@@ -78,7 +78,7 @@ where the ``spacer_porosity`` attribute will be randomly selected from a uniform
     outputs['LCOW'] = m.fs.costing.LCOW
 
 
-With the flowsheet defined and suitably initialized, along with the definitions for ``sweep_params`` and ``outputs`` on hand, we can call the ``parameter_sweep`` function as before, where we exercise four new keyword arguments: (1) the ability to pass in custom optimization routines to be executed for each sample, (2) the ability to save per-process results for parallel debugging, (3) the specification of the number of samples to draw, and (4) the ability to set a seed for the randomly-generated values which allows consistency to be enforced between runs.
+With the flowsheet defined and suitably initialized, along with the definitions for ``sweep_params`` and ``outputs`` on hand, we can call the ``parameter_sweep`` function as before, where we exercise four new keyword arguments: (1) the ability to pass in custom optimization routines to be executed for each sample, (2) the ability to save per-process results for parallel debugging, (3) the specification of the number of samples to draw, and (4) the ability to set a seed for the randomly-generated values which allows consistency to be enforced between runs. The function passed in to `optimize_function` should return a Pyomo results object (i.e., the return value from calling the `solve` method).
 
 .. testcode::
 

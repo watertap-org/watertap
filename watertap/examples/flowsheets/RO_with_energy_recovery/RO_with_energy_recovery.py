@@ -253,11 +253,12 @@ def calculate_operating_pressure(feed_state_block=None, over_pressure=0.15,
     return value(t.brine[0].pressure_osm) * (1 + over_pressure)
 
 
-def solve(blk, solver=None, tee=False):
+def solve(blk, solver=None, tee=False, check_termination=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-
+    if check_termination:
+        assert_optimal_termination(results)
     return results
 
 
@@ -348,10 +349,9 @@ def optimize_set_up(m):
     # ---checking model---
     assert_degrees_of_freedom(m, 1)
 
-def optimize(m, solver=None):
+def optimize(m, solver=None, check_termination=True):
     # --solve---
-    results = solve(m, solver=solver)
-    return results
+    return solve(m, solver=solver, check_termination=check_termination)
 
 def display_system(m):
     print('---system metrics---')
