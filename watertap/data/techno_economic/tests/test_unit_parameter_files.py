@@ -47,6 +47,8 @@ def test_unit_parameter_files(tech):
     # TODO : Need to check up on this once everything is done
     pass_through = ["chemical_addition",
                     "pump"]
+    siso_full_recovery = ["uv_aop", "uv"]
+
     no_electricity = ["energy_recovery",
                       "mbr_denitrification",
                       "mbr_nitrification",
@@ -55,7 +57,6 @@ def test_unit_parameter_files(tech):
                       "cartridge_filtration_with_backflush",
                       "landfill",
                       "well_field",
-                      "uv_aop",
                       "anion_exchange",
                       "ozone_aop",
                       "fixed_bed_pressure_vessel",
@@ -77,7 +78,6 @@ def test_unit_parameter_files(tech):
                       "gac_gravity",
                       "iron_and_manganese_removal",
                       "fluidized_bed",
-                      "uv_irradiation",
                       "cation_exchange",
                       "surface_discharge",
                       "solution_distribution_and_recovery_plant",
@@ -104,7 +104,7 @@ def test_unit_parameter_files(tech):
     for k in data.values():
 
         for e in expected:
-            if tech not in pass_through:
+            if tech not in pass_through and tech not in siso_full_recovery:
                 assert e in k.keys()
                 assert "units" in k[e].keys()
                 assert_units_equivalent(
@@ -112,6 +112,9 @@ def test_unit_parameter_files(tech):
                 assert "value" in k[e].keys()
                 assert k[e]["value"] >= 0
                 assert k[e]["value"] <= 1
+            elif tech in siso_full_recovery:
+                if e == "default_removal_frac_mass_solute":
+                    assert e in k.keys()
             else:
                 assert e not in k.keys()
 
