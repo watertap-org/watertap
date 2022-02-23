@@ -63,7 +63,7 @@ def test_monte_carlo_sampling_with_files():
     print("default_config_fpath = ", default_config_fpath)
 
     # Run the parameter sweep
-    global_results = run_parameter_sweep(None, seed=1, read_sweep_params_from_file=True,
+    global_results = run_parameter_sweep(seed=1, read_sweep_params_from_file=True,
         sweep_params_fname=sweep_params_fpath, read_model_defauls_from_file=True,
         defaults_fname=default_config_fpath)
 
@@ -88,7 +88,7 @@ def test_lhs_sampling():
 
 
     # Run the parameter sweep
-    global_results = run_parameter_sweep(None, seed=1, use_LHS=True)
+    global_results = run_parameter_sweep(seed=1, use_LHS=True)
 
     # Compare individual values for specificity
     for value, truth_value in zip(global_results.flatten(), truth_values.flatten()):

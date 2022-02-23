@@ -29,23 +29,10 @@ from idaes.core.util.model_statistics import (variables_in_activated_equalities_
     expressions_set, total_objectives_set)
 from pyomo.core.base.block import TraversalStrategy
 from pyomo.opt import TerminationCondition as _TerminationCondition
+from pyomo.common.collections import ComponentSet
 from pyomo.common.tee import capture_output
 
 np.set_printoptions(linewidth=200)
-
-# ================================================================
-
-class TerminationConditionMapping:
-
-    def __init__(self):
-        '''
-        This class contains a one-to-one mapping between the string value and an
-        equivalent integer for gathering the solve status across all MPI ranks.
-        The mapping string values are obtained from TerminationCondition from
-        pyomo.opt
-        '''
-        self.str_to_int = { condition.name : idx for idx, condition in enumerate(_TerminationCondition) }
-        self.int_to_str = { idx : condition.name for idx, condition in enumerate(_TerminationCondition) }
 
 # ================================================================
 
@@ -67,6 +54,8 @@ class _Sample(ABC):
         # Make sure we are a Var() or Param()
         if not (pyomo_object.is_parameter_type() or pyomo_object.is_variable_type()):
             raise ValueError(f"The sweep parameter needs to be a pyomo Param or Var but {type(pyomo_object)} was provided instead.")
+        if pyomo_object.is_parameter_type() and not pyomo_object.mutable:
+            raise ValueError(f"Parameter {pyomo_object} is not mutable, and so cannot be set by parameter_sweep")
         self.pyomo_object = pyomo_object
         self.setup(*args, **kwargs)
 
@@ -150,10 +139,9 @@ def _init_mpi(mpi_comm=None):
 
 # ================================================================
 
-def _check_fname_no_extension(file_name):
-
-    if file_name.lower().endswith(('.h5', '.csv')):
-        return os.path.splitext(file_name)[0]
+def _strip_extension(file_name, extension):
+    if file_name.lower().endswith(extension):
+        return file_name[:-len(extension)]
     else:
         return file_name
 
@@ -295,7 +283,6 @@ def _default_optimize(model, options=None, tee=False):
     '''
     solver = get_solver(options=options)
     results = solver.solve(model, tee=tee)
-
     return results
 
 # ================================================================
@@ -354,20 +341,19 @@ def _create_local_output_skeleton(model, sweep_params, outputs, num_samples):
     output_dict["sweep_params"] = {}
     output_dict["outputs"] = {}
 
-    var_str_list = set()
+    sweep_param_objs = ComponentSet()
 
     # Store the inputs
-    for key in sweep_params.keys():
-        var = sweep_params[key].pyomo_object
-        var_str = sweep_params[key].pyomo_object.name
-        var_str_list.add(var_str)
-        output_dict["sweep_params"][var_str] =  _create_component_output_skeleton(var, num_samples)
+    for sweep_param in sweep_params.values():
+        var = sweep_param.pyomo_object
+        sweep_param_objs.add(var)
+        output_dict["sweep_params"][var.name] =  _create_component_output_skeleton(var, num_samples)
 
     if outputs is None:
         # No outputs are specified, so every Var, Expression, and Objective on the model should be saved
         for pyo_obj in model.component_data_objects((pyo.Var, pyo.Expression, pyo.Objective), active=True):
             # Only need to save this variable if it isn't one of the value in sweep_params
-            if pyo_obj.name not in var_str_list:
+            if pyo_obj not in sweep_param_objs:
                 output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
     else:
         # Save only the outputs specified in the outputs dictionary
@@ -397,7 +383,7 @@ def _create_component_output_skeleton(component, num_samples):
 
 # ================================================================
 
-def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, results, output_dict):
+def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, run_successful, output_dict):
 
     # Get the inputs
     op_ps_dict = output_dict["sweep_params"]
@@ -406,7 +392,7 @@ def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, resu
         op_ps_dict[var_name]['value'][case_number] = item.pyomo_object.value
 
     # Get the outputs from model
-    if pyo.check_optimal_termination(results):
+    if run_successful:
         for key in output_dict['outputs'].keys():
             outcome = model.find_component(key)
             output_dict["outputs"][key]["value"][case_number] = pyo.value(outcome)
@@ -415,8 +401,6 @@ def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, resu
         for key in output_dict['outputs'].keys():
             outcome = model.find_component(key)
             output_dict["outputs"][key]["value"][case_number] = np.nan
-
-    return None
 
 # ================================================================
 
@@ -428,7 +412,7 @@ def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_pr
         # We make the assumption that the parameter sweep is running the same
         # flowsheet num_samples number of times, i.e., the structure of the
         # local_output_dict remains the same across all mpi_ranks
-        local_num_cases = len(local_output_dict["solve_status"])
+        local_num_cases = len(local_output_dict["solve_successful"])
 
         # Gather the size of the value array on each MPI rank
         sample_split_arr = comm.allgather(local_num_cases)
@@ -439,18 +423,16 @@ def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_pr
             global_output_dict = copy.deepcopy(local_output_dict)
             # Create a global value array of inputs in the dictionary
             for key, item in global_output_dict.items():
-                if key != "solve_status":
+                if key != "solve_successful":
                     for subkey, subitem in item.items():
                         subitem['value'] = np.zeros(num_total_samples, dtype=np.float)
 
         else:
             global_output_dict = local_output_dict
 
-        tc_map = TerminationConditionMapping() # We will need this for gathering solve status
-
         # Finally collect the values
         for key, item in local_output_dict.items(): # This probably doesnt work
-            if key != "solve_status":
+            if key != "solve_successful":
                 for subkey, subitem in item.items():
                     comm.Gatherv(sendbuf=subitem["value"],
                                  recvbuf=(global_output_dict[key][subkey]["value"], sample_split_arr),
@@ -459,42 +441,38 @@ def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_pr
                     # Trim to the exact number
                     global_output_dict[key][subkey]["value"] = global_output_dict[key][subkey]["value"][0:req_num_samples]
 
-            elif key == "solve_status":
-                # There may be a smarter implementation using pyomo tools for this,
-                # but the current implementation converts the termination condition
-                # string into a numeric value, gathers it using MPI, and then
-                # converts it back to a string.
-                local_tc_int = [tc_map.str_to_int[i] for i in item]
-                local_tc_int = np.asarray(local_tc_int, dtype=np.int64)
+            elif key == "solve_successful":
+                local_solve_successful = np.fromiter(item, dtype=np.bool, count=len(item))
 
                 if rank == 0:
-                    global_tc_int = np.zeros(num_total_samples, dtype=np.int64)
+                    global_solve_successful = np.empty(num_total_samples, dtype=np.bool)
                 else:
-                    global_tc_int = None
+                    global_solve_successful = None
 
-                comm.Gatherv(sendbuf=local_tc_int,
-                             recvbuf=(global_tc_int, sample_split_arr),
+                comm.Gatherv(sendbuf=local_solve_successful,
+                             recvbuf=(global_solve_successful, sample_split_arr),
                              root=0)
 
                 if rank == 0:
-                    global_tc_str = [tc_map.int_to_str[i] for i in global_tc_int]
-                    global_output_dict[key] = global_tc_str[0:req_num_samples]
+                    global_output_dict[key] = global_solve_successful[0:req_num_samples]
 
     return global_output_dict
 
 # ================================================================
 
-def _write_outputs(output_dict, output_directory, fname_no_extension, txt_options="metadata"):
+def _write_outputs(output_dict, output_directory, h5_results_file, txt_options="metadata"):
 
-    h5_fname = fname_no_extension + ".h5"
-    _write_output_to_h5(output_dict, output_directory, h5_fname)
+    if not h5_results_file.endswith(".h5"):
+        h5_results_file += ".h5"
+
+    _write_output_to_h5(output_dict, output_directory, h5_results_file)
 
     # We will also create a companion txt file by default which contains
     # the metadata of the h5 file in a user readable format.
-    txt_fname = fname_no_extension + ".txt"
+    txt_fname = _strip_extension(h5_results_file,".h5") + ".txt"
     txt_fpath = os.path.join(output_directory, txt_fname)
-    if "solve_status" in output_dict.keys():
-        output_dict.pop("solve_status")
+    if "solve_successful" in output_dict.keys():
+        output_dict.pop("solve_successful")
     if txt_options == "metadata":
         my_dict = copy.deepcopy(output_dict)
         for key, value in my_dict.items():
@@ -518,7 +496,7 @@ def _write_output_to_h5(output_dict, output_directory, fname):
     f = h5py.File(fpath, 'w')
     for key, item in output_dict.items():
         grp = f.create_group(key)
-        if key != "solve_status":
+        if key != "solve_successful":
             for subkey, subitem in item.items():
                 subgrp = grp.create_group(subkey)
                 for subsubkey, subsubitem in subitem.items():
@@ -528,7 +506,7 @@ def _write_output_to_h5(output_dict, output_directory, fname):
                         subgrp.create_dataset(subsubkey, data=np.finfo('d').max)
                     else:
                         subgrp.create_dataset(subsubkey, data=output_dict[key][subkey][subsubkey])
-        elif key == 'solve_status':
+        elif key == 'solve_successful':
             grp.create_dataset(key, data=output_dict[key])
 
     f.close()
@@ -542,7 +520,7 @@ def _read_output_h5(filepath):
     l1_keys = list(f.keys())
     output_dict = {}
     for key in l1_keys: # Input or Output
-        if key != 'solve_status':
+        if key != 'solve_successful':
             output_dict[key] = {}
             l2_keys = list(f[key].keys())
             for subkey in l2_keys: # Variable name
@@ -553,9 +531,8 @@ def _read_output_h5(filepath):
                     if subsubkey == "units":
                         # The strings are recovered in bytes. we choose to convert it to utf-8
                         output_dict[key][subkey][subsubkey] = output_dict[key][subkey][subsubkey].decode("utf-8")
-        elif key == 'solve_status':
-            output_dict[key] = [x.decode("utf-8") for x in list(f[key]['solve_status'][()])]
-            output_dict[key] = output_dict[key]
+        elif key == 'solve_successful':
+            output_dict[key] = list(f[key]['solve_successful'][()])
 
     f.close()
 
@@ -579,7 +556,7 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
 
     local_results = np.zeros((local_num_cases, len(outputs)))
 
-    local_solve_status_list = []
+    local_solve_successful_list = []
 
     # ================================================================
     # Run all optimization cases
@@ -588,6 +565,8 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
     for k in range(local_num_cases):
         # Update the model values with a single combination from the parameter space
         _update_model_values(model, sweep_params, local_values[k, :])
+
+        run_successful = False #until proven otherwise
 
         # Forced reinitialization of the flowsheet if enabled
         if reinitialize_before_sweep:
@@ -607,16 +586,15 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
         except:
             # If the run is infeasible, report nan
             local_results[k, :] = np.nan
-            previous_run_failed = True
 
         else:
             # If the simulation suceeds, report stats
             local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
-            previous_run_failed = False
+            run_successful = True
 
         # If the initial attempt failed and additional conditions are met, try
         # to reinitialize and resolve.
-        if reinitialize_before_sweep == False and previous_run_failed and (reinitialize_function is not None):
+        if not run_successful and (reinitialize_function is not None):
             try:
                 reinitialize_function(model, **reinitialize_kwargs)
                 with capture_output():
@@ -627,27 +605,21 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
                 pass
             else:
                 local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
-
-
-        elif reinitialize_before_sweep and previous_run_failed:
-            pass
+                run_successful = True
 
         # Update the loop based on the reinitialization
-        _update_local_output_dict(model, sweep_params, k, local_values[k, :], results, local_output_dict)
+        _update_local_output_dict(model, sweep_params, k, local_values[k, :], run_successful, local_output_dict)
 
-        # We will store status as a string
-        local_solve_status_list.append(results.solver.termination_condition.name)
+        local_solve_successful_list.append(run_successful)
 
-    n_optimal = local_solve_status_list.count("optimal")
-    fail_counter = local_num_cases - n_optimal
-    local_output_dict["solve_status"] = local_solve_status_list
+    local_output_dict["solve_successful"] = local_solve_successful_list
 
-    return local_results, local_output_dict, fail_counter
+    return local_results, local_output_dict
 
 # ================================================================
 
 def _aggregate_local_results(global_values, local_results, local_output_dict,
-        num_samples, local_num_cases, fail_counter, comm, rank, num_procs):
+        num_samples, local_num_cases, comm, rank, num_procs):
 
     global_results = _aggregate_results(local_results, global_values, comm, num_procs)
     global_output_dict = _create_global_output(local_output_dict, num_samples, comm, rank, num_procs)
@@ -657,12 +629,14 @@ def _aggregate_local_results(global_values, local_results, local_output_dict,
 # ================================================================
 
 def _save_results(sweep_params, outputs, local_values, global_values, local_results,
-        global_results, global_output_dict, csv_results_file, results_fname,
+        global_results, global_output_dict, csv_results_file, h5_results_file,
         debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
 
     # Make a directory for saved outputs
     if rank == 0:
         if csv_results_file is not None:
+            if not csv_results_file.endswith(".csv"):
+                csv_results_file += ".csv"
             dirname = os.path.dirname(csv_results_file)
             if dirname != '':
                 os.makedirs(dirname, exist_ok=True)
@@ -704,17 +678,16 @@ def _save_results(sweep_params, outputs, local_values, global_values, local_resu
 
             np.savetxt(interp_file, global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
 
-    if rank == 0 and results_fname is not None:
-        results_fname_no_ext = _check_fname_no_extension(results_fname)
+    if rank == 0 and h5_results_file is not None:
         # Save the data of output dictionary
-        _write_outputs(global_output_dict, dirname, results_fname_no_ext, txt_options="keys")
+        _write_outputs(global_output_dict, dirname, h5_results_file, txt_options="keys")
 
     return global_save_data
 
 
 # ================================================================
 
-def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, results_fname=None,
+def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, h5_results_file=None,
         optimize_function=_default_optimize, optimize_kwargs=None, reinitialize_function=None,
         reinitialize_kwargs=None, reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
         interpolate_nan_outputs=False, num_samples=None, seed=None):
@@ -747,7 +720,7 @@ def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, re
         csv_results_file (optional) : The path and file name where the results are to be saved;
                                    subdirectories will be created as needed.
 
-        results_fname (optional) : The file name without the extension where the results are to be saved;
+        h5_results_file (optional) : The file name without the extension where the results are to be saved;
                                    The path is identified from the arguments of `csv_results_file`. This
                                    filename is used when creating the H5 file and the companion text file
                                    which contains the variable names contained within the H5 file.
@@ -829,17 +802,17 @@ def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, re
         reinitialize_kwargs = dict()
 
     # Do the Loop
-    local_results, local_output_dict, fail_counter = _do_param_sweep(model, sweep_params, outputs, local_values,
+    local_results, local_output_dict = _do_param_sweep(model, sweep_params, outputs, local_values,
         optimize_function, optimize_kwargs, reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep,
         comm)
 
     # Aggregate results on Master
     global_results, global_output_dict = _aggregate_local_results(global_values, local_results, local_output_dict,
-            num_samples, local_num_cases, fail_counter, comm, rank, num_procs)
+            num_samples, local_num_cases, comm, rank, num_procs)
 
     # Save to file
     global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results, global_results, global_output_dict,
-        csv_results_file, results_fname, debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs)
+        csv_results_file, h5_results_file, debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs)
 
     return global_save_data
 

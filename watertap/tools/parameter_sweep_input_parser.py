@@ -6,7 +6,6 @@ from watertap.tools.parameter_sweep import (LinearSample,
                                             LatinHypercubeSample,
                                             _read_output_h5)
 import yaml
-import warnings
 import numpy as np
 import idaes.logger as idaeslog
 
@@ -109,6 +108,11 @@ def get_sweep_params_from_yaml(m, yaml_filename):
     return sweep_params
 
 
+def _set_value(component, key, default_value):
+   _log.debug(f'Property: {key}')
+   _log.debug(f'New Value: {default_value:.6e}, Old Value: {component.value:.6e}')
+   component.value = default_value
+
 
 def set_defaults_from_yaml(m, yaml_filename, verbose=False):
     """ Sets default model values using values stored in a yaml file
@@ -135,9 +139,7 @@ def set_defaults_from_yaml(m, yaml_filename, verbose=False):
 
     input_dict = _yaml_to_dict(yaml_filename)
 
-    fail_ct = 0
-
-    debugging = _log.isEnabledFor(idaeslog.DEBUG)
+    fail_count = 0
 
     for key, default_value in input_dict.items():
 
@@ -145,28 +147,19 @@ def set_defaults_from_yaml(m, yaml_filename, verbose=False):
         component = m.find_component(key)
 
         if component is None:
-            raise ValueError(f"Could not acccess attribute {key}")
+            raise ValueError(f"Could not acccess component {key} on model {m}")
 
-        old_value = value(component)
-        new_value = default_value
-
-        if debugging:
-            _log.debug(f'Property: {key}')
-            _log.debug(f'New Value: {new_value:.6e}, Old Value: {old_value:.6e}')
-
-        if component.is_variable_type() or component.is_parameter_type() or component.is_expression_type():
-            component.set_value(new_value)
-            failed_to_set_value = False
-
+        if component.is_variable_type():
+            _set_value(component, key, default_value)
+        elif component.is_parameter_type():
+            if component.mutable:
+                _set_value(component, key, default_value)
+            else:
+                _log.warn(f"Cannot set value of non-mutable Param {component}")
+                fail_count += 1
         else:
-            failed_to_set_value = True
+            _log.warn(f"Cannot set value of component {component}")
+            fail_count += 1
 
-        fail_ct += failed_to_set_value
-
-        if failed_to_set_value:
-            warning_msg = f'WARNING: Could not set value of parameter {key}'
-            warnings.warn(warning_msg)
-
-    nn = len(input_dict)
-    print(f'Set {nn-fail_ct} of {nn} options to default values ({fail_ct} failures, see warnings)')
-
+    number_defaults = len(input_dict)
+    print(f'Set {number_defaults-fail_count} of {number_defaults} options to default values ({fail_count} failures, see warnings)')

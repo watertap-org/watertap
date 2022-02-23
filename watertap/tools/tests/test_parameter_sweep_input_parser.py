@@ -34,7 +34,8 @@ class TestInputParser():
         m = pyo.ConcreteModel()
         m.fs = pyo.Block()
         m.fs.x = pyo.Var(initialize=-0.5)
-        m.fs.a = pyo.Param(initialize=1.0, mutable=True)        
+        m.fs.a = pyo.Param(initialize=1.0, mutable=True)
+        m.fs.b = pyo.Param(initialize=2.0, mutable=False)
         m.fs.sum = pyo.Expression(expr = m.fs.a + m.fs.x)
         m.fs.lim = pyo.Constraint(expr = m.fs.sum >= 0.0)
         m.fs.obj = pyo.Objective(expr = m.fs.x, sense=pyo.minimize)
@@ -86,7 +87,7 @@ class TestInputParser():
 
         dict_to_write = {}
 
-        for pyo_obj in m.component_data_objects((pyo.Var, pyo.Expression, pyo.Objective), active=True):
+        for pyo_obj in m.component_data_objects((pyo.Var, pyo.Param), active=True):
             for k in range(10):
                 dict_to_write[pyo_obj.name] = np.random.rand()
 
@@ -154,7 +155,10 @@ class TestInputParser():
 
         for key, truth_value in truth_values.items():
             component = m.find_component(key)
-            assert value(component) == truth_value
+            if component is m.fs.b: # don't set non-mutable params
+                assert value(component) == 2.0
+            else:
+                assert value(component) == truth_value
 
 
     @pytest.mark.unit

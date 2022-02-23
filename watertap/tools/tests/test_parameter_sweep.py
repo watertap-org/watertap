@@ -19,7 +19,7 @@ import pyomo.environ as pyo
 from pyomo.environ import value
 
 from watertap.tools.parameter_sweep import (_init_mpi,
-                                            _check_fname_no_extension,
+                                            _strip_extension,
                                             _build_combinations,
                                             _divide_combinations,
                                             _update_model_values,
@@ -31,7 +31,6 @@ from watertap.tools.parameter_sweep import (_init_mpi,
                                             _create_local_output_skeleton,
                                             _create_global_output,
                                             parameter_sweep,
-                                            TerminationConditionMapping,
                                             LinearSample,
                                             UniformSample,
                                             NormalSample,
@@ -74,10 +73,11 @@ class TestParallelManager():
         assert 0 <= rank < num_procs
 
     @pytest.mark.unit
-    def test_check_fname_no_extension(self):
+    def test_strip_extension(self):
         input_list = ['/my_dir/my_file.h5', 'my_file.csv', '/my_dir/myfile']
+        extension_list = ['.h5', '.csv', '.h5']
         true_list = ['/my_dir/my_file', 'my_file', '/my_dir/myfile']
-        output_list = [_check_fname_no_extension(fname) for fname in input_list]
+        output_list = [_strip_extension(fname, ext) for fname,ext in zip(input_list,extension_list)]
         assert true_list == output_list
 
     @pytest.mark.unit
@@ -236,44 +236,6 @@ class TestParallelManager():
             assert local_combo_array[-1, 2] == pytest.approx(range_C[1])
 
     @pytest.mark.component
-    def test_termination_condition_mapping(self):
-
-        pyomo_termination_condition = TerminationConditionMapping()
-        tc_strings = ['unknown',
-                       # OK
-                       'maxTimeLimit',
-                       'maxIterations',
-                       'minFunctionValue',
-                       'minStepLength',
-                       'globallyOptimal',
-                       'locallyOptimal',
-                       'feasible',
-                       'optimal',
-                       'maxEvaluations',
-                       'other',
-                       # WARNING
-                       'unbounded',
-                       'infeasible',
-                       'infeasibleOrUnbounded',
-                       'invalidProblem',
-                       'intermediateNonInteger',
-                       'noSolution',
-                       # ERROR
-                       'solverFailure',
-                       'internalSolverError',
-                       'error',
-                       # ABORTED
-                       'userInterrupt',
-                       'resourceInterrupt',
-                       'licensingProblems']
-        tc_int_arr = np.arange(0,23)
-
-        return_arr = np.array([pyomo_termination_condition.str_to_int[str_val] for str_val in tc_strings])
-        return_list = [pyomo_termination_condition.int_to_str[tc_int] for tc_int in tc_int_arr]
-        assert (return_arr == tc_int_arr).all()
-        assert return_list == tc_strings
-
-    @pytest.mark.component
     def test_update_model_values(self, model):
         m = model
 
@@ -366,15 +328,7 @@ class TestParallelManager():
                                                             'units': 'None',
                                                             'upper bound': 0,
                                                             'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])}},
-                         'solve_status': ['optimal',
-                                          'optimal',
-                                          'optimal',
-                                          'optimal',
-                                          'optimal',
-                                          'optimal',
-                                          'optimal',
-                                          'optimal',
-                                          'optimal'],
+                         'solve_successful': [ True ]*9,
                          'sweep_params': {'fs.input[a]': {'lower bound': 0,
                                                           'units': 'None',
                                                           'upper bound': 0,
@@ -467,9 +421,9 @@ class TestParallelManager():
             for subkey, subvalue in value.items():
                 subvalue['value'][:] = rank
 
-        # Local output dict also contains the solve_status. The solve status is
+        # Local output dict also contains the solve_successful. The solve status is
         # based on the
-        local_output_dict['solve_status'] = ['optimal' for i in range(local_num_cases)]
+        local_output_dict['solve_successful'] = [True]*local_num_cases
 
         # Get the global output dictionary, This is properly created only on rank 0
         global_output_dict = _create_global_output(local_output_dict, global_num_cases, comm, rank, num_procs)
@@ -482,12 +436,12 @@ class TestParallelManager():
                 assert global_output_dict == local_output_dict
             else:
                 test_array = np.repeat(np.arange(0,num_procs, dtype=float), 2)
-                test_list = ['optimal' for i in range(global_num_cases)]
+                test_list = [True]*global_num_cases
                 for key, value in global_output_dict.items():
-                    if key != 'solve_status':
+                    if key != 'solve_successful':
                         for subkey, subvalue in value.items():
                             assert np.allclose(subvalue['value'], test_array)
-                    elif key == 'solve_status':
+                    elif key == 'solve_successful':
                         assert value == test_list
             comm.Barrier()
 
@@ -514,7 +468,7 @@ class TestParallelManager():
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs=outputs,
                 csv_results_file = results_file,
-                results_fname = h5_fname,
+                h5_results_file = h5_fname,
                 optimize_function=_optimization,
                 debugging_data_dir = tmp_path,
                 mpi_comm = comm)
@@ -549,15 +503,15 @@ class TestParallelManager():
                                                        'upper bound': 0,
                                                        'value': np.array([0.  , 0.75,  np.nan, 0., 0.75,  np.nan, np.nan, np.nan, np.nan])},
                                       'fs.performance': {'value': np.array([0.2 , 0.95,  np.nan, 1., 1.75,  np.nan, np.nan,  np.nan, np.nan])}},
-                          'solve_status': ['optimal',
-                                           'optimal',
-                                           'infeasible',
-                                           'optimal',
-                                           'optimal',
-                                           'infeasible',
-                                           'infeasible',
-                                           'infeasible',
-                                           'infeasible'],
+                          'solve_successful': [True,
+                                               True,
+                                               False,
+                                               True,
+                                               True,
+                                               False,
+                                               False,
+                                               False,
+                                               False],
                           'sweep_params': {'fs.input[a]': {'lower bound': 0,
                                                            'units': 'None',
                                                            'upper bound': 0,
@@ -616,7 +570,7 @@ class TestParallelManager():
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs=outputs,
                 csv_results_file = results_file,
-                results_fname = h5_fname,
+                h5_results_file = h5_fname,
                 optimize_function=_optimization,
                 optimize_kwargs={'relax_feasibility':True},
                 mpi_comm = comm)
@@ -648,15 +602,7 @@ class TestParallelManager():
                                                        'value': np.array([9.98580690e-09, 0.75, 1., 9.99872731e-09, 0.75, 1., 9.99860382e-09, 0.75, 1.])},
                                       'fs.performance': {'value': np.array([0.2, 0.95, 1.2, 1., 1.75, 2., 1., 1.75, 2.])},
                                       'objective': {'value': np.array([ 0.2,  9.50000020e-01, -4.98799990e+02,  1.,  1.75, -4.97999990e+02, -7.98999990e+02, -7.98249990e+02, 2.0 - 1000.*((2.*0.9 - 1.) + (3.*0.5 - 1.))])}},
-                          'solve_status': ['optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal'],
+                          'solve_successful': [True]*9,
                           'sweep_params': {'fs.input[a]': {'lower bound': 0,
                                                            'units': 'None',
                                                            'upper bound': 0,
@@ -695,7 +641,7 @@ class TestParallelManager():
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs=None,
                 csv_results_file = results_file,
-                results_fname = h5_fname,
+                h5_results_file = h5_fname,
                 optimize_function=_optimization,
                 reinitialize_function=_reinitialize,
                 reinitialize_kwargs={'slack_penalty':10.},
@@ -736,15 +682,7 @@ class TestParallelManager():
                                                              'upper bound': 0,
                                                              'value': np.array([0., 0., 0.5, 0., 0., 0.5, 0., 0., 0.5])},
                                       'objective': {'value': np.array([0.2, 0.95,  -3.79999989, 1., 1.75,  -3.,  -6.99999989,  -6.24999989, -11.])}},
-                          'solve_status': ['optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal'],
+                          'solve_successful': [True]*9,
                           'sweep_params': {'fs.input[a]': {'lower bound': 0,
                                                            'units': 'None',
                                                            'upper bound': 0,
@@ -783,7 +721,7 @@ class TestParallelManager():
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs=None,
                 csv_results_file = results_file,
-                results_fname = h5_fname,
+                h5_results_file = h5_fname,
                 optimize_function=_optimization,
                 reinitialize_function=_bad_reinitialize,
                 reinitialize_kwargs={'slack_penalty':10.},
@@ -823,15 +761,15 @@ class TestParallelManager():
                                                              'upper bound': 0,
                                                              'value': np.array([ 0.,  0., np.nan,  0.,  0., np.nan, np.nan, np.nan, np.nan])},
                                       'objective': {'value': np.array([0.2 , 0.95, np.nan, 1., 1.75,  np.nan,  np.nan,  np.nan,  np.nan])}},
-                          'solve_status': ['optimal',
-                                           'optimal',
-                                           'infeasible',
-                                           'optimal',
-                                           'optimal',
-                                           'infeasible',
-                                           'infeasible',
-                                           'infeasible',
-                                           'infeasible'],
+                          'solve_successful': [True,
+                                           True,
+                                           False,
+                                           True,
+                                           True,
+                                           False,
+                                           False,
+                                           False,
+                                           False],
                           'sweep_params': {'fs.input[a]': {'lower bound': 0,
                                                            'units': 'None',
                                                            'upper bound': 0,
@@ -869,7 +807,7 @@ class TestParallelManager():
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs=None,
                 csv_results_file = results_file,
-                results_fname = h5_fname,
+                h5_results_file = h5_fname,
                 optimize_function=_optimization,
                 reinitialize_before_sweep=True,
                 reinitialize_function=_reinitialize,
@@ -911,15 +849,7 @@ class TestParallelManager():
                                                              'upper bound': 0,
                                                              'value': np.array([0., 0., 0.5, 0., 0., 0.5, 0., 0., 0.5])},
                                       'objective': {'value': np.array([0.2, 0.95,  -3.79999989, 1., 1.75,  -3.,  -6.99999989,  -6.24999989, -11.])}},
-                          'solve_status': ['optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal',
-                                           'optimal'],
+                          'solve_successful': [True]*9,
                           'sweep_params': {'fs.input[a]': {'lower bound': 0,
                                                            'units': 'None',
                                                            'upper bound': 0,
@@ -955,7 +885,7 @@ class TestParallelManager():
             # Call the parameter_sweep function
             parameter_sweep(m, sweep_params, outputs=None,
                     csv_results_file = results_file,
-                    results_fname = h5_fname,
+                    h5_results_file = h5_fname,
                     optimize_function=_optimization,
                     reinitialize_before_sweep=True,
                     reinitialize_function=None,
@@ -986,14 +916,14 @@ def _get_rank0_path(comm, tmp_path):
 def _assert_dictionary_correctness(truth_dict, test_dict):
 
     for key, item in truth_dict.items():
-        if key != 'solve_status':
+        if key != 'solve_successful':
             for subkey, subitem in item.items():
                 for subsubkey, subsubitem in subitem.items():
                     if subsubkey == 'value':
                         assert np.allclose(test_dict[key][subkey]['value'], subitem['value'], equal_nan=True)
                     else:
                         assert subsubitem == test_dict[key][subkey][subsubkey]
-        elif key == "solve_status":
+        elif key == "solve_successful":
             assert item == test_dict[key]
 
 def _assert_h5_csv_agreement(csv_filename, h5_dict):
