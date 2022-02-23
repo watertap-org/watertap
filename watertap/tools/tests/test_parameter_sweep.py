@@ -442,7 +442,7 @@ class TestParallelManager():
                         for subkey, subvalue in value.items():
                             assert np.allclose(subvalue['value'], test_array)
                     elif key == 'solve_successful':
-                        assert value == test_list
+                        assert list(value) == test_list
             comm.Barrier()
 
 
