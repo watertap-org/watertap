@@ -631,10 +631,6 @@ class TestParallelManager():
         B = m.fs.input['b']
         sweep_params = {A.name : (A, 0.1, 0.9, 3),
                         B.name : (B, 0.0, 0.5, 3)}
-        # outputs = {'output_c':m.fs.output['c'],
-        #            'output_d':m.fs.output['d'],
-        #            'performance':m.fs.performance,
-        #            'objective':m.objective}
         results_file = os.path.join(tmp_path, 'global_results_recover.csv')
         h5_fname = "output_dict_recover"
 
@@ -711,10 +707,6 @@ class TestParallelManager():
         B = m.fs.input['b']
         sweep_params = {A.name : (A, 0.1, 0.9, 3),
                         B.name : (B, 0.0, 0.5, 3)}
-        # outputs = {'output_c':m.fs.output['c'],
-        #            'output_d':m.fs.output['d'],
-        #            'performance':m.fs.performance,
-        #            'objective':m.objective}
         results_file = os.path.join(tmp_path, 'global_results_bad_recover.csv')
         h5_fname = "output_dict_bad_recover"
 
@@ -797,10 +789,6 @@ class TestParallelManager():
         B = m.fs.input['b']
         sweep_params = {A.name : (A, 0.1, 0.9, 3),
                         B.name : (B, 0.0, 0.5, 3)}
-        # outputs = {'output_c':m.fs.output['c'],
-        #            'output_d':m.fs.output['d'],
-        #            'performance':m.fs.performance,
-        #            'objective':m.objective}
         results_file = os.path.join(tmp_path, 'global_results_recover.csv')
         h5_fname = "output_dict_recover"
 
