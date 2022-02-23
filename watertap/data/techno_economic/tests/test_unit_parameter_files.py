@@ -47,7 +47,7 @@ def test_unit_parameter_files(tech):
     # TODO : Need to check up on this once everything is done
     pass_through = ["chemical_addition",
                     "pump"]
-    siso_full_recovery = ["uv_aop", "uv"]
+    siso_full_recovery = ["uv_aop", "uv", "fixed_bed"]
 
     no_electricity = ["energy_recovery",
                       "mbr_denitrification",
@@ -59,7 +59,7 @@ def test_unit_parameter_files(tech):
                       "well_field",
                       "anion_exchange",
                       "ozone_aop",
-                      "fixed_bed_pressure_vessel",
+                      "fixed_bed",
                       "holding_tank",
                       "heap_leaching",
                       "nuclear_cooling_tower",
@@ -94,7 +94,6 @@ def test_unit_parameter_files(tech):
                       "evaporation_pond",
                       "lime_addition",
                       "brine_concentrator",
-                      "fixed_bed_gravity_basin",
                       "agglom_stacking",
                       "landfill_zld"]
 
