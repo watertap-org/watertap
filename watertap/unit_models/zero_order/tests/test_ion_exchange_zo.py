@@ -53,7 +53,7 @@ class TestIonExchangeZO_w_o_default_removal:
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.fs.unit.config.database == model.db
+        assert model.fs.unit.config.database is model.db
 
         assert isinstance(model.fs.unit.lift_height, Param)
         assert isinstance(model.fs.unit.eta_pump, Param)
@@ -162,7 +162,7 @@ class TestIonExchangeZO_w_default_removal:
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.fs.unit.config.database == model.db
+        assert model.fs.unit.config.database is model.db
 
         assert isinstance(model.fs.unit.lift_height, Param)
         assert isinstance(model.fs.unit.eta_pump, Param)
