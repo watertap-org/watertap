@@ -60,6 +60,8 @@ class TestIonExchangeZO_w_o_default_removal:
         assert isinstance(model.fs.unit.eta_motor, Param)
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
+        assert isinstance(model.fs.unit.water_recovery_equation, Constraint)
+        assert isinstance(model.fs.unit.solute_treated_equation, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -74,7 +76,6 @@ class TestIonExchangeZO_w_o_default_removal:
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
-
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -107,6 +108,8 @@ class TestIonExchangeZO_w_o_default_removal:
             model.fs.unit.properties_treated[0].conc_mass_comp["tds"]))
         assert (pytest.approx(2898.4, rel=1e-5) ==
                 value(model.fs.unit.electricity[0]))
+        assert (model.fs.unit.properties_in[0].flow_mass_comp["H2O"].value ==
+                model.fs.unit.properties_treated[0].flow_mass_comp["H2O"].value)
 
     @pytest.mark.component
     def test_report(self, model):
@@ -166,6 +169,8 @@ class TestIonExchangeZO_w_default_removal:
         assert isinstance(model.fs.unit.eta_motor, Param)
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
+        assert isinstance(model.fs.unit.water_recovery_equation, Constraint)
+        assert isinstance(model.fs.unit.solute_treated_equation, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -215,6 +220,8 @@ class TestIonExchangeZO_w_default_removal:
             model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
         assert (pytest.approx(2899.6, rel=1e-5) ==
                 value(model.fs.unit.electricity[0]))
+        assert (model.fs.unit.properties_in[0].flow_mass_comp["H2O"].value ==
+                model.fs.unit.properties_treated[0].flow_mass_comp["H2O"].value)
 
     @pytest.mark.component
     def test_report(self, model):
