@@ -19,22 +19,23 @@ import pyomo.environ as pyo
 from pyomo.environ import value
 
 from watertap.tools.parameter_sweep import (_init_mpi,
-                                               _build_combinations,
-                                               _divide_combinations,
-                                               _update_model_values,
-                                               _aggregate_results,
-                                               _interp_nan_values,
-                                               _process_sweep_params,
-                                               _write_output_to_h5,
-                                               _read_output_h5,
-                                               _create_local_output_skeleton,
-                                               _create_global_output,
-                                               parameter_sweep,
-                                               TerminationConditionMapping,
-                                               LinearSample,
-                                               UniformSample,
-                                               NormalSample,
-                                               SamplingType)
+                                            _check_fname_no_extension,
+                                            _build_combinations,
+                                            _divide_combinations,
+                                            _update_model_values,
+                                            _aggregate_results,
+                                            _interp_nan_values,
+                                            _process_sweep_params,
+                                            _write_output_to_h5,
+                                            _read_output_h5,
+                                            _create_local_output_skeleton,
+                                            _create_global_output,
+                                            parameter_sweep,
+                                            TerminationConditionMapping,
+                                            LinearSample,
+                                            UniformSample,
+                                            NormalSample,
+                                            SamplingType)
 
 # Imports for conditional fails
 from idaes.config import bin_directory as idaes_bin_directory
@@ -71,6 +72,13 @@ class TestParallelManager():
         assert type(rank) == int
         assert type(num_procs) == int
         assert 0 <= rank < num_procs
+
+    @pytest.mark.unit
+    def test_check_fname_no_extension(self):
+        input_list = ['/my_dir/my_file.h5', 'my_file.csv', '/my_dir/myfile']
+        true_list = ['/my_dir/my_file', 'my_file', '/my_dir/myfile']
+        output_list = [_check_fname_no_extension(fname) for fname in input_list]
+        assert true_list == output_list
 
     @pytest.mark.unit
     def test_single_index_unrolled(self):

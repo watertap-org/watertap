@@ -150,6 +150,15 @@ def _init_mpi(mpi_comm=None):
 
 # ================================================================
 
+def _check_fname_no_extension(file_name):
+
+    if file_name.lower().endswith(('.h5', '.csv')):
+        return os.path.splitext(file_name)[0]
+    else:
+        return file_name
+
+# ================================================================
+
 def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
     num_var_params = len(d)
 
@@ -648,7 +657,7 @@ def _aggregate_local_results(global_values, local_results, local_output_dict,
 # ================================================================
 
 def _save_results(sweep_params, outputs, local_values, global_values, local_results,
-        global_results, global_output_dict, csv_results_file, results_fname_no_ext,
+        global_results, global_output_dict, csv_results_file, results_fname,
         debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
 
     # Make a directory for saved outputs
@@ -695,7 +704,8 @@ def _save_results(sweep_params, outputs, local_values, global_values, local_resu
 
             np.savetxt(interp_file, global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
 
-    if rank == 0 and results_fname_no_ext is not None:
+    if rank == 0 and results_fname is not None:
+        results_fname_no_ext = _check_fname_no_extension(results_fname)
         # Save the data of output dictionary
         _write_outputs(global_output_dict, dirname, results_fname_no_ext, txt_options="keys")
 
