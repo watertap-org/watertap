@@ -1,0 +1,30 @@
+default:  # TODO: should have removal rates for (e.g.) sulfate, nitrate, arsenic, etc.
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+    reference: 'EPA model: https://www.epa.gov/sdwa/drinking-water-treatment-technology-unit-cost-models'
+  removal_frac_mass_solute:
+    tds:
+      value: 0.9
+      units: dimensionless
+      constituent_longform: Total Dissolved Solids (TDS)
+anion_exchange:  # TODO: add some differentiation between default, anion, and cation exchange.
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+    reference: 'EPA model: https://www.epa.gov/sdwa/drinking-water-treatment-technology-unit-cost-models'
+  removal_frac_mass_solute:
+    tds:
+      value: 0.9
+      units: dimensionless
+      constituent_longform: Total Dissolved Solids (TDS)
+cation_exchange:
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+    reference: 'EPA model: https://www.epa.gov/sdwa/drinking-water-treatment-technology-unit-cost-models'
+  removal_frac_mass_solute:
+    tds:
+      value: 0.9
+      units: dimensionless
+      constituent_longform: Total Dissolved Solids (TDS)
