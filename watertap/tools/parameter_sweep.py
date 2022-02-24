@@ -379,12 +379,7 @@ def _create_component_output_skeleton(component, num_samples):
 
 # ================================================================
 
-<<<<<<< HEAD
-def _update_local_output_dict(model, sweep_params, case_number, sweep_vals,
-        solver_termination_condition, output_dict):
-=======
 def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, run_successful, output_dict):
->>>>>>> ff2725efd9a54553ba61bc0d7af937a285cfd3ff
 
     # Get the inputs
     op_ps_dict = output_dict["sweep_params"]
@@ -609,21 +604,6 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
                 run_successful = True
 
         # Update the loop based on the reinitialization
-<<<<<<< HEAD
-        solver_termination_condition = results.solver.termination_condition.name
-        _update_local_output_dict(model, sweep_params, k, local_values[k, :], solver_termination_condition, local_output_dict)
-
-        # We will store status as a string
-        # UNCOMMENT BELOW
-        # local_solve_status_list.append(results.solver.termination_condition.name)
-        local_solve_status_list.append(solver_termination_condition)
-
-    n_optimal = local_solve_status_list.count("optimal")
-    fail_counter = local_num_cases - n_optimal
-    local_output_dict["solve_status"] = local_solve_status_list
-
-    return local_results, local_output_dict, fail_counter
-=======
         _update_local_output_dict(model, sweep_params, k, local_values[k, :], run_successful, local_output_dict)
 
         local_solve_successful_list.append(run_successful)
@@ -631,7 +611,6 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
     local_output_dict["solve_successful"] = local_solve_successful_list
 
     return local_results, local_output_dict
->>>>>>> ff2725efd9a54553ba61bc0d7af937a285cfd3ff
 
 # ================================================================
 
@@ -829,11 +808,7 @@ def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, h5
 
     # Save to file
     global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results, global_results, global_output_dict,
-<<<<<<< HEAD
-        csv_results_file, results_fname, debugging_data_dir, comm, interpolate_nan_outputs)
-=======
         csv_results_file, h5_results_file, debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs)
->>>>>>> ff2725efd9a54553ba61bc0d7af937a285cfd3ff
 
     return global_save_data
 
