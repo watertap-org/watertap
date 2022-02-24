@@ -38,73 +38,42 @@ Variables
 
 The build_sido method creates the following variables in addition to those created by the `StateBlocks`.
 
-=============================== ==================== ============== ===================================================================
-Variable                        Name                 Indices        Notes
-=============================== ==================== ============== ===================================================================
-:math:`r_{t}`                   recovery_vol         time           Fraction of volumetric flow in inlet that goes to treated
-:math:`f_{t,j}`                 removal_mass_solute  time, solutes  Fraction of mass flow of each solute that goes to byproduct stream
-:math:`\Delta P_{treated,t}`    deltaP_treated       time           Pressure difference between inlet and treated stream. Optional.
-:math:`\Delta P_{byproduct,t}`  deltaP_byproduct     time           Pressure difference between inlet and byproduct stream. Optional.
-=============================== ==================== ============== ===================================================================
-
-The :math:`\Delta P_{treated,t}` and :math:`\Delta P_{byproduct,t}` terms are optional and are only created if the `self._has_deltaP_treated` and `self._has_deltaP_byproduct` attributes are `True` respectively.
+=============================== ========================= ============== =====================================================================
+Variable                        Name                      Indices        Notes
+=============================== ========================= ============== =====================================================================
+:math:`r_{t}`                   recovery_frac_mass_H2O    time           Fraction of mass flow of water in inlet that goes to treated stream.
+:math:`f_{t,j}`                 removal_frac_mass_solute  time, solutes  Fraction of mass flow of each solute that goes to byproduct stream.
+=============================== ========================= ============== =====================================================================
 
 Constraints
 -----------
 
-The build_sido method writes the following constraints which relate the inlet state to those in the treated and byproduct streams. As mentioned previously, these constraints are formulated such that they will be linear if `flow_vol`, `conc_mass_comp`, `pressure` and `temperature` are the state variables used by the property package and the recovery and removal fractions are fixed.
-
-First, a volumetric flow recovery equation is written to relate the flowrate at the treated to that at the inlet:
+The build_sido method writes the following constraints which relate the inlet state to those in the treated and byproduct streams.
+First, a mass recovery equation for water is written to relate the flowrate at the treated outlet to that at the inlet:
 
 `water_recovery_equation(t)`:
 
-.. math:: r_t \times Q_{inlet,t} = Q_{treated,t}
+.. math:: r_t \times M_{inlet,t,H2O} = M_{treated,t,H2O}
 
-where :math:`Q_t` is volumetric flowrate at time :math:`t`.
+where :math:`M_{t,H2O}` is mass flowrate of water at time :math:`t`.
 
-Next, a volumetric flow balance is written to relate the flowrate in the byproduct stream to that in the inlet and treated.
+Next, a mass balance for water is written to relate the flowrate in the byproduct stream to that in the inlet and treated streams.
 
 `flow_balance(t)`:
 
-.. math:: Q_{inlet,t} = Q_{treated,t} + Q_{byproduct,t}
+.. math:: M_{inlet,t,H2O} = M_{treated,t,H2O} + M_{byproduct,t,H2O}
 
 Removal constraints are then written for each solute to relate the solute concentration in the byproduct stream to that in the inlet stream.
 
 `solute_removal_equation(t, j)`:
 
-.. math:: f_{t, j} \times C_{inlet,t, j} = (1-r_t) \times C_{byproduct,t,j}
+.. math:: f_{t, j} \times M_{inlet,t,j} = M_{byproduct,t,j}
 
-where :math:`C_{t,j}` is mass concentration of solute :math:`j` at time :math:`t`.
-
-A similar constraint is then written for each solute to relate the solute concentration in the treated stream to that in the inlet stream.
+A mass balance constraint is then written for each solute.
 
 `solute_treated_equation(t, j)`:
 
-.. math:: (1-f_{t, j}) \times C_{inlet,t, j} = r_t \times C_{treated,t,j}
-
-Pressure balances are then written for each stream, including the :math:`\Delta P` terms if present.
-
-`treated_pressure_constraint(t)`:
-
-.. math:: P_{inlet,t} = P_{treated,t} [+ \Delta P_{treated,t}]
-
-`byproduct_pressure_constraint(t)`:
-
-.. math:: P_{inlet,t} = P_{byproduct,t} [+ \Delta P_{byproduct,t}]
-
-where :math:`P_t` is the pressure at time :math:`t`.
-
-Finally, temperature equality constraints are written to equate the temperature in the treated and byproduct streams to that in the inlet.
-
-`treated_temperature_equality(t)`:
-
-.. math:: T_{inlet,t} = T_{treated,t}
-
-`byproduct_temperature_equality(t)`:
-
-.. math:: T_{inlet,t} = T_{byproduct,t}
-
-where :math:`T_t` is the temperature at time :math:`t`.
+.. math:: M_{inlet,t,j} = M_{treated,t,j} + M_{byproduct,t,j}
 
 Module Documentation
 --------------------
