@@ -74,14 +74,8 @@ class TestOzoneZO_with_default_removal:
                                                                         "eeq"]})
         with pytest.raises(ConfigurationError,
                             match="TOC must be in solute list for Ozonation or Ozone/AOP"):
-
-
             model.fs.unit = OzoneZO(default={ "property_package": model.fs.params,
                                             "database": model.db})
-
-        
-        
-
 
     @pytest.mark.unit
     def test_build(self, model):
@@ -97,7 +91,6 @@ class TestOzoneZO_with_default_removal:
         assert isinstance(model.fs.unit.ozone_consumption_constraint, Constraint)
         assert isinstance(model.fs.unit.ozone_flow_mass_constraint, Constraint)
         assert isinstance(model.fs.unit.ozone_generation_power_constraint, Constraint)
-        
 
 
     @pytest.mark.component
@@ -244,8 +237,6 @@ class TestOzoneZO_w_o_default_removal:
         model.fs.params = WaterParameterBlock(default={"solute_list": ["cryptosporidium", "viruses_enteric"]})
         with pytest.raises(ConfigurationError,
                             match="TOC must be in solute list for Ozonation or Ozone/AOP"):
-
-
             model.fs.unit = OzoneZO(default={ "property_package": model.fs.params,
                                             "database": model.db})
 

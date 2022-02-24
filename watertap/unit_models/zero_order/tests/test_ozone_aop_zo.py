@@ -73,15 +73,13 @@ class TestOzoneZO_with_default_removal:
                                                                         "eeq"]})
         with pytest.raises(ConfigurationError,
                             match="TOC must be in solute list for Ozonation or Ozone/AOP"):
-
-
             model.fs.unit = OzoneAOPZO(default={ "property_package": model.fs.params,
                                                 "database": model.db})
 
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.fs.unit.config.database == model.db
+        assert model.fs.unit.config.database is model.db
         assert model.fs.unit._tech_type == "ozone_aop"
         assert isinstance(model.fs.unit.contact_time, Var)
         assert isinstance(model.fs.unit.concentration_time, Var)
@@ -255,7 +253,7 @@ class TestOzoneZO_w_o_default_removal:
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.fs.unit.config.database == model.db
+        assert model.fs.unit.config.database is model.db
         assert model.fs.unit._tech_type == "ozone_aop"
         assert isinstance(model.fs.unit.contact_time, Var)
         assert isinstance(model.fs.unit.concentration_time, Var)
