@@ -197,23 +197,23 @@ def build_sido_reactive(self):
                 if j == key_reactant:
                     cratio = -1
                 else:
-                    nu_j = cratio = stoich[j]["order"]
+                    nu_j = stoich[j]["order"]
                     try:
-                        nu_k = cratio = stoich[key_reactant]["order"]
+                        nu_k = stoich[key_reactant]["order"]
                     except KeyError:
                         raise KeyError(
                             f"{self.name} - database provided does not "
                             f"contain an entry for order w.r.t. species "
                             f"{key_reactant} in reaction {r}.")
                     try:
-                        MW_j = cratio = stoich[j]["molecular_weight"]
+                        MW_j = stoich[j]["molecular_weight"]
                     except KeyError:
                         raise KeyError(
                             f"{self.name} - database provided does not "
                             f"contain an entry for molecular_weight w.r.t. "
                             f"species {j} in reaction {r}.")
                     try:
-                        MW_k = cratio = stoich[key_reactant]["molecular_weight"]
+                        MW_k = stoich[key_reactant]["molecular_weight"]
                     except KeyError:
                         raise KeyError(
                             f"{self.name} - database provided does not "
@@ -227,13 +227,21 @@ def build_sido_reactive(self):
                     f"order w.r.t. species {j} in reaction {r}.")
             p.set_value(cratio)
 
+    # Add Expression for generation of each species
+    @self.Expression(self.flowsheet().time,
+                     self.reaction_set,
+                     self.config.property_package.component_list,
+                     doc='Water recovery equation')
+    def generation_rxn_comp(b, t, r, j):
+        return b.generation_ratio[r, j]*b.extent_of_reaction[t, r]
+
     # Add performance constraints
     # Water recovery
     @self.Constraint(self.flowsheet().time, doc='Water recovery equation')
     def water_recovery_equation(b, t):
         return (b.recovery_frac_mass_H2O[t] *
                 (b.properties_in[t].flow_mass_comp["H2O"] +
-                 sum(b.generation_ratio[r, "H2O"]*b.extent_of_reaction[t, r]
+                 sum(b.generation_rxn_comp[t, r, "H2O"]
                      for r in self.reaction_set)) ==
                 b.properties_treated[t].flow_mass_comp["H2O"])
 
@@ -241,7 +249,7 @@ def build_sido_reactive(self):
     @self.Constraint(self.flowsheet().time, doc='Overall flow balance')
     def water_balance(b, t):
         return (b.properties_in[t].flow_mass_comp["H2O"] +
-                sum(b.generation_ratio[r, "H2O"]*b.extent_of_reaction[t, r]
+                sum(b.generation_rxn_comp[t, r, "H2O"]
                     for r in self.reaction_set) ==
                 b.properties_treated[t].flow_mass_comp["H2O"] +
                 b.properties_byproduct[t].flow_mass_comp["H2O"])
@@ -253,7 +261,7 @@ def build_sido_reactive(self):
     def solute_removal_equation(b, t, j):
         return (b.removal_frac_mass_solute[t, j] *
                 (b.properties_in[t].flow_mass_comp[j] +
-                 sum(b.generation_ratio[r, j]*b.extent_of_reaction[t, r]
+                 sum(b.generation_rxn_comp[t, r, j]
                      for r in self.reaction_set)) ==
                 b.properties_byproduct[t].flow_mass_comp[j])
 
@@ -264,7 +272,7 @@ def build_sido_reactive(self):
                      'stream.')
     def solute_treated_equation(b, t, j):
         return (b.properties_in[t].flow_mass_comp[j] +
-                sum(b.generation_ratio[r, j]*b.extent_of_reaction[t, r]
+                sum(b.generation_rxn_comp[t, r, j]
                     for r in self.reaction_set) ==
                 b.properties_treated[t].flow_mass_comp[j] +
                 b.properties_byproduct[t].flow_mass_comp[j])

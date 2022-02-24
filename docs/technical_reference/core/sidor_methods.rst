@@ -60,6 +60,19 @@ Parameter            Name              Indices              Notes
 
 Note that :math:`\nu_{r, j}` should be negative for reactants and positive for products. Generation ratio can either be specified directly as a parameter, or by providing stoichiometric coefficients and molecular weights for each component.
 
+Expressions
+-----------
+
+The build_sido_reactive method creates an Expression for the generation of each species in each reaction. 
+
+===================  ==================== ========================== ===============================================
+Parameter            Name                 Indices                    Notes
+===================  ==================== ========================== ===============================================
+:math:`G_{t, r, j}`  generation_rxn_comp  time, reaction, component  Mass generation for component j in reaction r.
+===================  ==================== ========================== ===============================================
+
+.. math:: G_{t, r, j} = \nu_{r,j} \times \xi_{t,r}
+
 Constraints
 -----------
 
@@ -74,25 +87,25 @@ Next, a mass recovery equation for water is written to relate the flowrate at th
 
 `water_recovery_equation(t)`:
 
-.. math:: r_t \times (M_{inlet,t,H2O} + \sum{\nu_{r,H2O} \times \xi_{t,r}}_r) = M_{treated,t,H2O}
+.. math:: r_t \times (M_{inlet,t,H2O} + \sum{G_{t, r, H2O}}_r) = M_{treated,t,H2O}
 
 Next, a mass balance for water is written to relate the flowrate in the byproduct stream to that in the inlet and treated streams.
 
 `flow_balance(t)`:
 
-.. math:: M_{inlet,t,H2O} + \sum{\nu_{r,H2O} \times \xi_{t,r}}_r = M_{treated,t,H2O} + M_{byproduct,t,H2O}
+.. math:: M_{inlet,t,H2O} + \sum{G_{t, r, H2O}}_r = M_{treated,t,H2O} + M_{byproduct,t,H2O}
 
 Removal constraints are then written for each solute to relate the solute concentration in the byproduct stream to that in the inlet stream. Again, removal is applied after any reactions have occured.
 
 `solute_removal_equation(t, j)`:
 
-.. math:: f_{t, j} \times (M_{inlet,t,j} + \sum{\nu_{r,j} \times \xi_{t,r}}_r) = M_{byproduct,t,j}
+.. math:: f_{t, j} \times (M_{inlet,t,j} + \sum{G_{t, r, j}}_r) = M_{byproduct,t,j}
 
 A mass balance constraint is then written for each solute.
 
 `solute_treated_equation(t, j)`:
 
-.. math:: M_{inlet,t,j} + \sum{\nu_{r,j} \times \xi_{t,r}}_r = M_{treated,t,j} + M_{byproduct,t,j}
+.. math:: M_{inlet,t,j} + \sum{G_{t, r, j}}_r = M_{treated,t,j} + M_{byproduct,t,j}
 
 Module Documentation
 --------------------
