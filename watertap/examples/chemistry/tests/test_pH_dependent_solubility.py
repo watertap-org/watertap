@@ -73,6 +73,7 @@ from idaes.core.components import Solvent, Solute, Cation, Anion, Component
 from idaes.core.phases import PhaseType as PT
 
 # Imports from idaes generic models
+import idaes
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
 from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
 from idaes.generic_models.properties.core.state_definitions import FTPx, FpcTP
@@ -365,8 +366,10 @@ def run_case1(xOH=1e-7/55.2, xH=1e-7/55.2, xCaOH2=1e-20, xCa=1e-20,
     assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
     ## ==================== END Scaling for this problem ===========================
-
-    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+    init_options = {**solver.options}
+    init_options["constr_viol_tol"] = 1.0e-04
+    init_options["tol"] = 1.0e-06
+    model.fs.unit.initialize(optarg=init_options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
@@ -1211,9 +1214,10 @@ def run_case3(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCaOH2 = 1e-20, xCa=1e-
     assert (degrees_of_freedom(model) == 0)
 
     ## ==================== Start Scaling for this problem ===========================
-    _set_eps_vals(model.fs.rxn_params, rxn_config)
-    _set_equ_rxn_scaling(model.fs.unit, rxn_config)
-    _set_mat_bal_scaling_FpcTP(model.fs.unit)
+    #   Modify some of the default scaling factors with function args
+    _set_eps_vals(model.fs.rxn_params, rxn_config, factor=1e-2, max_k_eq_ref=1e-16)
+    _set_equ_rxn_scaling(model.fs.unit, rxn_config, min_k_eq_ref=1e-3)
+    _set_mat_bal_scaling_FpcTP(model.fs.unit, min_flow_mol_phase_comp=1e-2)
     if has_energy_balance == True:
         _set_ene_bal_scaling(model.fs.unit)
 
@@ -1223,8 +1227,13 @@ def run_case3(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCaOH2 = 1e-20, xCa=1e-
     assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
     ## ==================== END Scaling for this problem ===========================
-
-    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+    #   Loosen the tolerances for initialization stage by passing a temporary
+    #       config dict replacing default values (this does so without any
+    #       changes to the global solver options in WaterTAP)
+    temp_config = {"constr_viol_tol": 1e-5,
+                    "tol": 1e-5,
+                   }
+    model.fs.unit.initialize(optarg=temp_config, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
@@ -1913,12 +1922,13 @@ def run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
     assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
     ## ==================== END Scaling for this problem ===========================
-
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
+    solver.options["tol"] = 1.0e-12
     results = solver.solve(model, tee=True)
+    del solver.options["tol"]
 
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert results.solver.status == SolverStatus.ok

@@ -284,18 +284,26 @@ class PropertyTestHarness():
 
         # check results
         for (v_name, ind), val in m._test_objs.default_solution.items():
-            var = getattr(m.fs.stream[0], v_name)
-            if not pytest.approx(val, rel=1e-3) == value(var[ind]):
+            var = getattr(m.fs.stream[0], v_name)[ind]
+            # relative tolerance doesn't mean anything for 0-valued things
+            if val == 0:
+                if not pytest.approx(val, abs=1.0e-08) == value(var):
+                    raise PropertyValueError(
+                        "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, "
+                        "but it has a value of {val_t}. \nUpdate default_solution dict in the "
+                        "configure function that sets up the PropertyTestHarness".format(
+                            v_name=v_name, ind=ind, val=val, val_t=value(var)))
+            elif not pytest.approx(val, rel=1e-3) == value(var):
                 raise PropertyValueError(
                     "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, "
                     "but it has a value of {val_t}. \nUpdate default_solution dict in the "
                     "configure function that sets up the PropertyTestHarness".format(
-                        v_name=v_name, ind=ind, val=val, val_t=value(var[ind])))
+                        v_name=v_name, ind=ind, val=val, val_t=value(var)))
 
     @pytest.mark.component
     def test_badly_scaled(self, frame_stateblock):
         m = frame_stateblock
-        badly_scaled_var_list = list(badly_scaled_var_generator(m, large=1e2, small=1e-2))
+        badly_scaled_var_list = list(badly_scaled_var_generator(m, large=1e2, small=1e-2, zero=1e-8))
         if len(badly_scaled_var_list) != 0:
             lst = []
             for (var, val) in badly_scaled_var_list:
@@ -321,13 +329,21 @@ class PropertyTestHarness():
 
         # check results
         for (v_name, ind), val in m._test_objs.default_solution.items():
-            var = getattr(m.fs.stream[0], v_name)
-            if not pytest.approx(val, rel=1e-3) == value(var[ind]):
+            var = getattr(m.fs.stream[0], v_name)[ind]
+            # relative tolerance doesn't mean anything for 0-valued things
+            if val == 0:
+                if not pytest.approx(val, abs=1.0e-08) == value(var):
+                    raise PropertyValueError(
+                        "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, "
+                        "but it has a value of {val_t}. \nUpdate default_solution dict in the "
+                        "configure function that sets up the PropertyTestHarness".format(
+                            v_name=v_name, ind=ind, val=val, val_t=value(var)))
+            elif not pytest.approx(val, rel=1e-3) == value(var):
                 raise PropertyValueError(
                     "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, "
                     "but it has a value of {val_t}. \nUpdate default_solution dict in the "
                     "configure function that sets up the PropertyTestHarness".format(
-                        v_name=v_name, ind=ind, val=val, val_t=value(var[ind])))
+                        v_name=v_name, ind=ind, val=val, val_t=value(var)))
 
     @pytest.fixture(scope='class')
     def frame_control_volume(self):
@@ -371,15 +387,23 @@ class PropertyTestHarness():
         for (v_name, ind), val in m._test_objs.default_solution.items():
             for sb in [m.fs.cv.properties_in[0], m.fs.cv.properties_out[0]]:
                 if sb.is_property_constructed(v_name):
-                    var = getattr(sb, v_name)  # get property if it was created
+                    var = getattr(sb, v_name)[ind]  # get property if it was created
                 else:
-                    continue  # skip property if it was not created
-                if not pytest.approx(val, rel=1e-3) == value(var[ind]):
+                    continue
+                # relative tolerance doesn't mean anything for 0-valued things
+                if val == 0:
+                    if not pytest.approx(val, abs=1.0e-08) == value(var):
+                        raise PropertyValueError(
+                            "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, "
+                            "but it has a value of {val_t}. \nUpdate default_solution dict in the "
+                            "configure function that sets up the PropertyTestHarness".format(
+                                v_name=v_name, ind=ind, val=val, val_t=value(var)))
+                elif not pytest.approx(val, rel=1e-3) == value(var):
                     raise PropertyValueError(
                         "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, "
                         "but it has a value of {val_t}. \nUpdate default_solution dict in the "
                         "configure function that sets up the PropertyTestHarness".format(
-                            v_name=v_name, ind=ind, val=val, val_t=value(var[ind])))
+                            v_name=v_name, ind=ind, val=val, val_t=value(var)))
 
 
 class PropertyRegressionTest():
@@ -446,21 +470,29 @@ class PropertyRegressionTest():
         assert_optimal_termination(results)
 
         # check results
-        for (v_str, ind), val in self.regression_solution.items():
-            var = getattr(m.fs.stream[0], v_str)
-            if not pytest.approx(val, rel=1e-3) == value(var[ind]):
+        for (v_name, ind), val in self.regression_solution.items():
+            var = getattr(m.fs.stream[0], v_name)[ind]
+            # relative tolerance doesn't mean anything for 0-valued things
+            if val == 0:
+                if not pytest.approx(val, abs=1.0e-08) == value(var):
+                    raise PropertyValueError(
+                        "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, but it "
+                        "has a value of {val_t}. \nUpdate regression_solution in the configure function "
+                        "that sets up the PropertyRegressionTest".format(
+                            v_name=v_name, ind=ind, val=val, val_t=value(var)))
+            elif not pytest.approx(val, rel=1e-3) == value(var):
                 raise PropertyValueError(
-                    "Variable {v_str} with index {ind} is expected to have a value of {val} +/- 0.1%, but it "
+                    "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, but it "
                     "has a value of {val_t}. \nUpdate regression_solution in the configure function "
                     "that sets up the PropertyRegressionTest".format(
-                        v_str=v_str, ind=ind, val=val, val_t=value(var[ind])))
+                        v_name=v_name, ind=ind, val=val, val_t=value(var)))
 
         # check if any variables are badly scaled
-        badly_scaled_var_list = list(badly_scaled_var_generator(m, large=1e2, small=1e-2))
-        if len(badly_scaled_var_list) != 0:
-            lst = []
-            for (var, val) in badly_scaled_var_list:
-                lst.append((var.name, val))
+        lst = []
+        for (var, val) in badly_scaled_var_generator(m, large=1e2, small=1e-2, zero=1e-8):
+            lst.append((var.name, val))
+            print(var.name, var.value)
+        if lst:
             raise PropertyValueError(
                 "The following variable(s) are poorly scaled: {lst}".format(lst=lst))
 
@@ -522,21 +554,28 @@ class PropertyCalculateStateTest():
         assert_optimal_termination(results)
 
         # check results
-        for (v_str, ind), val in self.state_solution.items():
-            var = getattr(m.fs.stream[0], v_str)
-            if not pytest.approx(val, rel=1e-3) == value(var[ind]):
+        for (v_name, ind), val in self.state_solution.items():
+            var = getattr(m.fs.stream[0], v_name)[ind]
+            # relative tolerance doesn't mean anything for 0-valued things
+            if val == 0:
+                if not pytest.approx(val, abs=1.0e-08) == value(var):
+                    raise PropertyValueError(
+                        "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 1.0e-08, but it "
+                        "has a value of {val_t}. \nUpdate state_solution in the configure function "
+                        "that sets up the PropertyCalculateStateTest".format(
+                            v_name=v_name, ind=ind, val=val, val_t=value(var)))
+            elif not pytest.approx(val, rel=1e-3) == value(var):
                 raise PropertyValueError(
-                    "Variable {v_str} with index {ind} is expected to have a value of {val} +/- 0.1%, but it "
+                    "Variable {v_name} with index {ind} is expected to have a value of {val} +/- 0.1%, but it "
                     "has a value of {val_t}. \nUpdate state_solution in the configure function "
                     "that sets up the PropertyCalculateStateTest".format(
-                        v_str=v_str, ind=ind, val=val, val_t=value(var[ind])))
+                        v_name=v_name, ind=ind, val=val, val_t=value(var)))
 
         # check if any variables are badly scaled
-        badly_scaled_var_list = list(badly_scaled_var_generator(m, large=1e2, small=1e-2))
-        if len(badly_scaled_var_list) != 0:
-            lst = []
-            for (var, val) in badly_scaled_var_list:
-                lst.append((var.name, val))
-                print(var.name, var.value)
+        lst = []
+        for (var, val) in badly_scaled_var_generator(m, large=1e2, small=1e-2, zero=1e-8):
+            lst.append((var.name, val))
+            print(var.name, var.value)
+        if lst:
             raise PropertyValueError(
                 "The following variable(s) are poorly scaled: {lst}".format(lst=lst))

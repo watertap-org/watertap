@@ -19,10 +19,9 @@ import os
 from pyomo.environ import units
 from pyomo.util.check_units import assert_units_equivalent
 
-from watertap.core.wt_database import Database
+from watertap.core import Database
 
 dbpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-
 
 db = Database()
 
@@ -44,10 +43,81 @@ def test_unit_parameter_files(tech):
     assert "default" in data
 
     # Iterate overall entries in tech data and check for expected contents
-    expected = ["recovery_vol", "default_removal_frac_mass_solute"]
+    # TODO : Need to check up on this once everything is done
+    pass_through = ["chemical_addition",
+                    "pump"]
+    siso_full_recovery = ["uv_aop", "uv", "ion_exchange"]
+
+    no_energy_electric_flow_vol_inlet = ["energy_recovery",
+                                         "mbr_denitrification",
+                                         "mbr_nitrification",
+                                         "multi_stage_bubble_aeration",
+                                         "tri_media_filtration",
+                                         "cartridge_filtration_with_backflush",
+                                         "landfill",
+                                         "well_field",
+                                         "ion_exchange",
+                                         "ozone_aop",
+                                         "fixed_bed_pressure_vessel",
+                                         "holding_tank",
+                                         "heap_leaching",
+                                         "nuclear_cooling_tower",
+                                         "lime_softening",
+                                         "ozonation",
+                                         "cooling_tower",
+                                         "gac_pressure_vessel",
+                                         "tri_media_filtration_with_backflush",
+                                         "sedimentation",
+                                         "backwash_solids_handling",
+                                         "ph_decrease",
+                                         "ph_increase",
+                                         "co2_addition",
+                                         "coag_and_floc",
+                                         "crystallizer",
+                                         "gac_gravity",
+                                         "iron_and_manganese_removal",
+                                         "fluidized_bed",
+                                         "surface_discharge",
+                                         "solution_distribution_and_recovery_plant",
+                                         "chemical_addition",
+                                         "cartridge_filtration",
+                                         "injection_well",
+                                         "sw_onshore_intake",
+                                         "filter_press",
+                                         "municipal_drinking",
+                                         "gac_pressure_30_min",
+                                         "packed_tower_aeration",
+                                         "treated_storage",
+                                         "gac_gravity_60_min",
+                                         "evaporation_pond",
+                                         "lime_addition",
+                                         "brine_concentrator",
+                                         "fixed_bed_gravity_basin",
+                                         "agglom_stacking",
+                                         "landfill_zld"]
+
+    expected = ["recovery_frac_mass_H2O",
+                "default_removal_frac_mass_solute"]
+
     for k in data.values():
 
         for e in expected:
+            if tech not in pass_through and tech not in siso_full_recovery:
+                assert e in k.keys()
+                assert "units" in k[e].keys()
+                assert_units_equivalent(
+                    k[e]["units"], units.dimensionless)
+                assert "value" in k[e].keys()
+                assert k[e]["value"] >= 0
+                assert k[e]["value"] <= 1
+            elif tech in siso_full_recovery:
+                if e == "default_removal_frac_mass_solute":
+                    assert e in k.keys()
+            else:
+                assert e not in k.keys()
+
+        if tech not in no_energy_electric_flow_vol_inlet:
+            e = "energy_electric_flow_vol_inlet"
             assert e in k.keys()
             assert "units" in k[e].keys()
             assert_units_equivalent(

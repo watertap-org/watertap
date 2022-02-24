@@ -20,7 +20,7 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
     solve,
     optimize)
 
-from watertap.examples.flowsheets.RO_with_energy_recovery.parameter_sweep_input_parser import (get_sweep_params_from_yaml,
+from watertap.tools.parameter_sweep_input_parser import (get_sweep_params_from_yaml,
     set_defaults_from_yaml)
 
 def get_sweep_params(m, use_LHS=False):
@@ -39,7 +39,7 @@ def get_sweep_params(m, use_LHS=False):
 
     return sweep_params
 
-def run_parameter_sweep(results_file, seed=None, use_LHS=False, read_sweep_params_from_file=False,
+def run_parameter_sweep(csv_results_file=None, h5_results_file=None, seed=None, use_LHS=False, read_sweep_params_from_file=False,
         sweep_params_fname='mc_sweep_params.yaml', read_model_defauls_from_file=False,
         defaults_fname='default_configuration.yaml'):
 
@@ -72,13 +72,10 @@ def run_parameter_sweep(results_file, seed=None, use_LHS=False, read_sweep_param
     # Run the parameter sweep study using num_samples randomly drawn from the above range
     num_samples = 10
 
-    # Filename of the h5 file that we want to write but without the extension
-    h5_fname = "monte_carlo_results"
-
     # Run the parameter sweep
-    global_results = parameter_sweep(m, sweep_params, outputs, csv_results_file=results_file,
-        results_fname=h5_fname, optimize_function=optimize, optimize_kwargs={'solver':solver},
-        num_samples=num_samples, seed=seed)
+    global_results = parameter_sweep(m, sweep_params, outputs, csv_results_file=csv_results_file,
+            h5_results_file=h5_results_file, optimize_function=optimize, optimize_kwargs={'solver':solver, 'check_termination':False},
+            num_samples=num_samples, seed=seed)
 
     return global_results
 

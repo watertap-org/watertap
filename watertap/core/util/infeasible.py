@@ -13,8 +13,44 @@
 """
 This module contains utility functions for infeasibility diagnostics of WaterTAP models.
 """
+import logging, sys
+
+from contextlib import contextmanager
 from math import isclose
 from pyomo.environ import Var, Constraint, value
+from pyomo.util.infeasible import log_infeasible_constraints, log_infeasible_bounds
+
+_logger = logging.getLogger('watertap.core.util.infeasible.print')
+_logger.setLevel(logging.DEBUG)
+
+@contextmanager
+def _logging_handler(output_file):
+    if output_file is None:
+        _handler = logging.StreamHandler(stream=sys.stdout)
+    else:
+        _handler = logging.FileHandler(output_file, mode='w')
+    _handler.setFormatter(logging.Formatter('%(message)s'))
+    _logger.addHandler(_handler)
+    try:
+        yield _logger
+    finally:
+        _logger.removeHandler(_handler)
+
+def print_infeasible_constraints(m, tol=1e-6, print_expression=False,
+        print_variables=False, output_file=None):
+    """
+    print the infeasble constraints in the model
+    """
+    with _logging_handler(output_file) as logger:
+        log_infeasible_constraints(m, tol=tol, logger=logger,
+                log_expression=print_expression, log_variables=print_variables)
+
+def print_infeasible_bounds(m, tol=1e-6, output_file=None):
+    """
+    print the infeasible variable bounds in the model
+    """
+    with _logging_handler(output_file) as logger:
+        log_infeasible_bounds(m, tol=tol, logger=logger)
 
 def print_variables_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-12):
     """
@@ -26,7 +62,8 @@ def print_variables_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-12):
         val = var.value
         if val is None:
             print(f"No value for Var {var.name}")
-        _eval_close(var, val, rel_tol, abs_tol)
+        else:
+            _eval_close(var, val, rel_tol, abs_tol)
 
 def print_constraints_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-5):
     """
@@ -39,7 +76,8 @@ def print_constraints_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-5):
         val = value(con.body, exception=False)
         if val is None:
             print(f"Cannot evaluate Constraint {con.name}: missing variable value")
-        _eval_close(con, val, rel_tol, abs_tol)
+        else:
+            _eval_close(con, val, rel_tol, abs_tol)
 
 def print_close_to_bounds(m, rel_tol=1e-04, abs_tol=1e-12):
     """
