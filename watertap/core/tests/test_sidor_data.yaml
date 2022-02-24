@@ -1,0 +1,36 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 0.85
+    units: dimensionless
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_solute:
+    A:
+      value: 0.50
+      units: dimensionless
+    B:
+      value: 0.40
+      units: dimensionless
+  reactions:
+    Rxn1:
+      key_reactant: A
+      conversion: 0.8
+      stoichiometry:
+        A:
+          conversion_ratio: -1
+        B:
+          conversion_ratio: 1
+    Rxn2:
+      key_reactant: B
+      conversion: 0.1
+      stoichiometry:
+        H2O:
+          order: -1
+          molecular_weight: 18
+        B:
+          order: -1
+          molecular_weight: 20
+        C:
+          order: 2
+          molecular_weight: 22
