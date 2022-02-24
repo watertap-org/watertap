@@ -294,7 +294,7 @@ db = Database()
 params = db._get_technology("gac")
 
 
-class TestIXZOsubtype:
+class TestGACZOsubtype:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
