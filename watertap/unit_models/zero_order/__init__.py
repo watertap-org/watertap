@@ -23,4 +23,4 @@ from .uv_aop_zo import UVAOPZO
 from .fixed_bed_zo import FixedBedZO
 from .ion_exchange_zo import IonExchangeZO
 from .gac_zo import GACZO
-
+from .dual_media_filtration_zo import DualMediaFiltrationZO
