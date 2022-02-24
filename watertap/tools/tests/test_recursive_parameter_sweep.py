@@ -41,42 +41,78 @@ from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recover
     solve,
     optimize)
 
+# import logging
+# logging.getLogger('pyomo.core').setLevel(logging.ERROR)
+
 # -----------------------------------------------------------------------------
 
+
+@pytest.fixture
+def model():
+
+    # Initialize a model and solver
+    m = pyo.ConcreteModel()
+
+    m.fs = pyo.Block()
+
+    # Declare decision variable and param
+    m.fs.x = pyo.Var()
+    m.fs.a = pyo.Param(mutable=True)
+    m.fs.success_prob = pyo.Param(initialize=0.7)
+
+    # Define expressions and constraints:
+    # Numbers must sum to success_prob and x must be positive
+    m.fs.err = pyo.Expression(expr = m.fs.a + m.fs.x - m.fs.success_prob)
+    m.fs.sum = pyo.Constraint(expr = m.fs.err == 0.0)
+    m.fs.pos = pyo.Constraint(expr = m.fs.x >= 0.0)
+
+    return m
+
+    '''
+    # Example Usage:
+    # Set the number of trials
+    nn = 50
+    results = np.zeros((nn, 2))
+
+    for k in range(nn):
+        # Set a random value for the parameter a
+        m.fs.a.set_value(np.random.fs.rand())
+    
+        # Attempt to solve the model (infeasible if m.fs.a > success_prob)
+        solver.solve(m)
+    
+        # Store the value of a and the solution x
+        a = pyo.value(m.fs.a)
+        x = pyo.value(m.fs.x)
+        
+        if np.abs(pyo.value(m.fs.err)) < 1e-6:
+            results[k, :] = [a, x]
+        else:
+            results[k, :] = [a, np.nan]
+    '''
+
+
 @pytest.mark.component
-def test_recursive_parameter_sweep():
+def test_recursive_parameter_sweep(model):
 
-    seed = None
-    results_file = "monte_carlo_results.csv"
-    read_from_file = False
+    m = model
 
-    # Set up the solver
-    solver = get_solver()
+    solver = pyo.SolverFactory('ipopt')
 
-    # Build, set, and initialize the system (these steps will change depending on the underlying model)
-    m = build()
-    set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3, solver=solver)
-    initialize_system(m, solver=solver)
+    sweep_params = {}
+    sweep_params['a_val'] = UniformSample(m.fs.a, 0.0, 1.0)
 
-    # Simulate once outside the parameter sweep to ensure everything is appropriately initialized
-    solve(m, solver=solver)
-
-    # Define the sampling type and ranges for three different variables
-    if read_from_file:
-        sweep_params = get_sweep_params_from_yaml(m, 'mc_sweep_params.yaml')
-    else:
-        sweep_params = get_sweep_params(m, use_LHS=use_LHS)
-
-    # Define the outputs to be saved
     outputs = {}
-    outputs['EC'] = m.fs.specific_energy_consumption
-    outputs['LCOW'] = m.fs.costing.LCOW
+    outputs['x_val'] = m.fs.x
 
     # Run the parameter sweep study using num_samples randomly drawn from the above range
-    num_samples = 2
+    num_samples = 10
+    seed = 0
 
     # Run the parameter sweep
-    recursive_parameter_sweep(m, sweep_params, outputs, results_file=results_file,
-        optimize_function=optimize, optimize_kwargs={'solver':solver}, req_num_samples=num_samples,
-        seed=seed, reinitialize_before_sweep=False, reinitialize_function=initialize_system,
-        reinitialize_kwargs={'solver':solver}
+    # recursive_parameter_sweep(m, sweep_params, outputs, results_file='recursive_sweep.csv',
+    #     optimize_function=optimize, optimize_kwargs={'solver':solver}, req_num_samples=num_samples,
+    #     seed=seed, reinitialize_before_sweep=False, reinitialize_function=initialize_system,
+    #     reinitialize_kwargs={'solver':solver}
+    recursive_parameter_sweep(m, sweep_params, outputs, results_fname='recursive_sweep.csv',
+        req_num_samples=num_samples, seed=seed)

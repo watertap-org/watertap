@@ -28,7 +28,13 @@ from idaes.surrogate.pysmo import sampling
 from idaes.core.util.model_statistics import (variables_in_activated_equalities_set,
     expressions_set, total_objectives_set)
 from pyomo.core.base.block import TraversalStrategy
-from watertap.tools.parameter_sweep import *
+from watertap.tools.parameter_sweep import (_default_optimize,
+                                            _init_mpi,
+                                            _process_sweep_params,
+                                            _build_combinations,
+                                            _divide_combinations,
+                                            _do_param_sweep,
+                                            _create_local_output_skeleton)
 
 np.set_printoptions(linewidth=200)
 
@@ -126,8 +132,9 @@ def recursive_parameter_sweep(model, sweep_params, outputs, results_dir=None, re
         if loop_ctr == 0:
             true_local_num_cases = local_num_cases
 
-        _, local_output_collection[loop_ctr], fail_counter = _do_param_sweep(model, sweep_params, outputs, local_values,
+        _, local_output_collection[loop_ctr] = _do_param_sweep(model, sweep_params, outputs, local_values,
             optimize_function, optimize_kwargs, reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep, comm)
+        fail_counter = sum(local_output_collection[loop_ctr]["solve_successful"])
 
         n_successful_solves = local_num_cases - fail_counter
         n_successful_list = comm.allgather(n_successful_solves)
