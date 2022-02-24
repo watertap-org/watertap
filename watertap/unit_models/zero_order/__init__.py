@@ -23,3 +23,4 @@ from .uv_aop_zo import UVAOPZO
 from .ozone_zo import OzoneZO
 from .ozone_aop_zo import OzoneAOPZO
 from .ion_exchange_zo import IonExchangeZO
+from .dual_media_filtration_zo import DualMediaFiltrationZO
