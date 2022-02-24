@@ -242,7 +242,7 @@ class WaterStateBlockData(StateBlockData):
         self.flow_mass_comp = Var(self.component_list,
                                   initialize=1,
                                   domain=PositiveReals,
-                                  doc='Mass fowrate of each component',
+                                  doc='Mass flowrate of each component',
                                   units=pyunits.kg/pyunits.s)
 
     # -------------------------------------------------------------------------
