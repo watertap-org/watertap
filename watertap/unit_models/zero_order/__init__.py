@@ -20,3 +20,4 @@ from .sedimentation_zo import SedimentationZO
 from .coag_and_floc_zo import CoagulationFlocculationZO
 from .uv_zo import UVZO
 from .uv_aop_zo import UVAOPZO
+from .chlorination import ChlorinationZO
