@@ -14,24 +14,3 @@ Spacer_porosity:
   param: fs.RO.spacer_porosity
   lower_limit: 0.95
   upper_limit: 0.99
-#================================================================
-# A_comp:
-#   type: LinearSample
-#   param: m.fs.RO.A_comp
-#   lower_limit: 3.0e-12
-#   upper_limit: 5.0e-12
-#   num_samples: 4
-# B_comp:
-#   type: LinearSample
-#   param: m.fs.RO.B_comp
-#   lower_limit: 2.5e-8
-#   upper_limit: 4.5e-8
-#   num_samples: 4
-#================================================================
-# Spacer_porosity:
-#   type: LatinHypercubeSample
-#   # param: m.fs.RO.feed_side.properties_interface_out[0.0].conc_mass_phase_comp['Liq','H2O']
-#   param: m.fs.RO.spacer_porosity
-#   lower_limit: 0.95
-#   upper_limit: 0.99
-#================================================================
