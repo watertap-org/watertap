@@ -39,8 +39,16 @@ class ClarifierZOData(ZeroOrderBaseData):
         build_sido(self)
 
         if "tds" not in self.config.property_package.solute_set:
-            raise KeyError('TDS must be included in the solute list for the brine concentrator unit.')
+            raise KeyError('TDS must be included in the solute list for determining'
+                           ' electricity intensity and power consumption of the brine concentrator unit.')
 
+        # Fitting parameters based on regressions for capital and electricity developed from
+        # data in Table 5.1, Table A2.3 in
+        # Survey of High-Recovery and Zero Liquid Discharge Technologies for Water Utilities (2008).
+        # WateReuse Foundation:
+        # https://www.waterboards.ca.gov/water_issues/programs/grants_loans/water_recycling/research/02_006a_01.pdf
+        # Capital = f(TDS, recovery, flow)
+        # Electricity = f(TDS, recovery, flow)
         self.elec_coeff_1 = Param(initialize=9.73,
                                   units=pyunits.kWh/pyunits.m**3,
                                   doc="Constant 1 in electricity intensity equation")

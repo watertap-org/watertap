@@ -301,3 +301,16 @@ class Testbrine_concentratorZOsubtype:
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
+
+@pytest.mark.unit
+def test_no_tds_in_solute_list_error():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.params = WaterParameterBlock(
+        default={"solute_list": ["foo"]})
+
+    with pytest.raises(KeyError,
+                       match="TDS must be included in the solute list for determining "
+                             "electricity intensity and power consumption of the brine concentrator unit."):
+        m.fs.unit = BrineConcentratorZO(default={"property_package": m.fs.params,
+                                                 "database": db})
