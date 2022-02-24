@@ -29,9 +29,6 @@ from watertap.examples.flowsheets.full_treatment_train.util import check_dof
 from pyomo.environ import TransformationFactory
 from pyomo.network import Arc
 
-from idaes.core.util import get_solver
-
-solver = get_solver()
 
 __author__ = "Austin Ladshaw"
 
@@ -55,7 +52,6 @@ def test_ideal_naocl_chlorination():
     assert model.fs.ideal_naocl_chlorination_unit.outlet.mole_frac_comp[0,'H_+'].value == \
             pytest.approx(5.6407676871845223e-11, rel=1e-3)
 
-@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_ideal_naocl_chlorination_full_block():
     model = run_chlorination_block_example(fix_free_chlorine=True)

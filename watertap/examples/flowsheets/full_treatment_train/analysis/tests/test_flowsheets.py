@@ -20,9 +20,6 @@ from watertap.examples.flowsheets.full_treatment_train.analysis import (flowshee
                                                                flowsheet_softening,
                                                                flowsheet_softening_two_stage)
 
-from idaes.core.util import get_solver
-solver = get_solver()
-
 
 @pytest.mark.component
 def test_flowsheet_NF():
@@ -73,7 +70,6 @@ def test_flowsheet_softening():
     assert value(m.fs.costing.LCOW) == pytest.approx(0.3837, rel=1e-3)
 
 
-@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_flowsheet_softening_two_stage():
     desal_kwargs = flowsheet_two_stage.desal_kwargs

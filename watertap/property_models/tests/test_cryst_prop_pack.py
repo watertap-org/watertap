@@ -14,14 +14,11 @@ import pytest
 import watertap.property_models.cryst_prop_pack as props
 from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition
 from idaes.core import FlowsheetBlock, ControlVolume0DBlock
-from idaes.core.util import get_solver
 from idaes.generic_models.properties.tests.test_harness import \
     PropertyTestHarness as PropertyTestHarness_idaes
 from watertap.property_models.tests.property_test_harness import \
     (PropertyTestHarness, PropertyRegressionTest, PropertyCalculateStateTest)
 
-
-solver = get_solver()
 
 # -----------------------------------------------------------------------------
 
@@ -98,8 +95,8 @@ class TestDefaultNaClwaterProperty:
                             ('mass_frac_phase_comp', ('Vap', 'H2O')) : 1.0,
                             ('flow_mol_phase_comp', ('Liq', 'H2O')) : 53.57,
                             ('flow_mol_phase_comp', ('Liq', 'NaCl')) : 0.5989,
-                            ('flow_mol_phase_comp', ('Sol', 'NaCl')) : 3.811504179523017e-08,
-                            ('flow_mol_phase_comp', ('Vap', 'H2O')) : 3.8114854951498772e-06,
+                            ('flow_mol_phase_comp', ('Sol', 'NaCl')) : 1.6318503332497833e-09,
+                            ('flow_mol_phase_comp', ('Vap', 'H2O')) : 1.6318424528638692e-07,
                             ('mole_frac_phase_comp', ('Liq', 'H2O')) : 0.9889,
                             ('mole_frac_phase_comp', ('Liq', 'NaCl')) : 0.01106,
                             ('mole_frac_phase_comp', ('Sol', 'NaCl')) : 1.0,
@@ -142,7 +139,6 @@ class TestDefaultNaClwaterProperty:
     def test_scaling(self):
         self.xv.test_scaling(self.m)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_default_initialization(self):
         self.xv.test_default_initialization(self.m)
