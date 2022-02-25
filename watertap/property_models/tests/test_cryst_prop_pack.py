@@ -14,18 +14,11 @@ import pytest
 import watertap.property_models.cryst_prop_pack as props
 from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition
 from idaes.core import FlowsheetBlock, ControlVolume0DBlock
-from idaes.core.util import get_solver
-from idaes.config import bin_directory as idaes_bin_directory
 from idaes.generic_models.properties.tests.test_harness import \
     PropertyTestHarness as PropertyTestHarness_idaes
 from watertap.property_models.tests.property_test_harness import \
     (PropertyTestHarness, PropertyRegressionTest, PropertyCalculateStateTest)
 
-
-solver = get_solver()
-is_solver_from_idaes_ext = idaes_bin_directory in solver.executable()
-
-eps = 1e-15 # eps value for mass fractions in property package
 
 # -----------------------------------------------------------------------------
 
@@ -98,12 +91,12 @@ class TestDefaultNaClwaterProperty:
                             ('dh_crystallization', 'NaCl'): -520,
                             ('mass_frac_phase_comp', ('Liq', 'H2O')) : 0.965,
                             ('mass_frac_phase_comp', ('Liq', 'NaCl')) : 0.035,
-                            ('mass_frac_phase_comp', ('Sol', 'NaCl')) : 0,
-                            ('mass_frac_phase_comp', ('Vap', 'H2O')) : 0,
+                            ('mass_frac_phase_comp', ('Sol', 'NaCl')) : 1.0,
+                            ('mass_frac_phase_comp', ('Vap', 'H2O')) : 1.0,
                             ('flow_mol_phase_comp', ('Liq', 'H2O')) : 53.57,
                             ('flow_mol_phase_comp', ('Liq', 'NaCl')) : 0.5989,
-                            ('flow_mol_phase_comp', ('Sol', 'NaCl')) : 3.1587684297974355e-08,
-                            ('flow_mol_phase_comp', ('Vap', 'H2O')) : 3.810585153916729e-06,
+                            ('flow_mol_phase_comp', ('Sol', 'NaCl')) : 1.6318503332497833e-09,
+                            ('flow_mol_phase_comp', ('Vap', 'H2O')) : 1.6318424528638692e-07,
                             ('mole_frac_phase_comp', ('Liq', 'H2O')) : 0.9889,
                             ('mole_frac_phase_comp', ('Liq', 'NaCl')) : 0.01106,
                             ('mole_frac_phase_comp', ('Sol', 'NaCl')) : 1.0,
@@ -148,11 +141,6 @@ class TestDefaultNaClwaterProperty:
 
     @pytest.mark.component
     def test_default_initialization(self):
-        if not is_solver_from_idaes_ext:
-            pytest.xfail(
-                "This test is known to be failing with solver: "
-                f"{solver}, {solver.executable()}"
-            )
         self.xv.test_default_initialization(self.m)
 
     @pytest.mark.component
@@ -277,11 +265,6 @@ class TestNaClPropertySolution_3(PropertyRegressionTest):
 class TestNaClPropertySolution_4(PropertyRegressionTest):
     # Test pure solid solution 1 - check solid properties
     def configure(self):
-        if not is_solver_from_idaes_ext:
-            pytest.xfail(
-                "This test is known to be failing with solver: "
-                f"{solver}, {solver.executable()}"
-            )
 
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
@@ -314,11 +297,6 @@ class TestNaClPropertySolution_4(PropertyRegressionTest):
 class TestNaClPropertySolution_5(PropertyRegressionTest):
     # Test pure vapor solution 1 - check vapor properties
     def configure(self):
-        if not is_solver_from_idaes_ext:
-            pytest.xfail(
-                "This test is known to be failing with solver: "
-                f"{solver}, {solver.executable()}"
-            )
 
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}
@@ -329,7 +307,7 @@ class TestNaClPropertySolution_5(PropertyRegressionTest):
                              ('flow_mass_phase_comp', ('Vap', 'H2O')): 1e0
                              }
 
-        self.state_args = {('flow_vol_phase', 'Liq'): eps,
+        self.state_args = {('flow_vol_phase', 'Liq'): 0,
                            ('flow_vol_phase', 'Sol'): 0,
                            ('mass_frac_phase_comp', ('Liq', 'NaCl')): 0.05,
                            ('flow_mass_phase_comp', ('Vap', 'H2O')): 1.0,
@@ -601,8 +579,8 @@ class TestNaClCalculateState_1(PropertyCalculateStateTest):
 
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e-1,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e0,
-                             ('flow_mass_phase_comp', ('Vap', 'H2O')): 1/eps,
-                             ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1/eps,
+                             ('flow_mass_phase_comp', ('Vap', 'H2O')): 1,
+                             ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1,
                              }
 
         self.var_args = {('flow_vol_phase', 'Liq'): 2e-2,
@@ -629,8 +607,8 @@ class TestNaClCalculateState_2(PropertyCalculateStateTest):
         self.scaling_args = {('flow_mass_phase_comp', ('Liq', 'H2O')): 1e1,
                              ('flow_mass_phase_comp', ('Liq', 'NaCl')): 1e2,
                              # The rest are expected to be zero
-                             ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1/eps,
-                             ('flow_mass_phase_comp', ('Vap', 'H2O')): 1/eps,
+                             ('flow_mass_phase_comp', ('Sol', 'NaCl')): 1,
+                             ('flow_mass_phase_comp', ('Vap', 'H2O')): 1,
                              }
         self.var_args = {('flow_vol_phase', 'Liq'): 2e-4,
                          ('flow_vol_phase', 'Sol'): 0,
@@ -676,11 +654,6 @@ class TestNaClCalculateState_3(PropertyCalculateStateTest):
 class TestNaClCalculateState_4(PropertyCalculateStateTest):
     # Test pure solid solution with mass fractions
     def configure(self):
-        if not is_solver_from_idaes_ext:
-            pytest.xfail(
-                "This test is known to be failing with solver: "
-                f"{solver}, {solver.executable()}"
-            )
 
         self.prop_pack = props.NaClParameterBlock
         self.param_args = {}

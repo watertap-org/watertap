@@ -573,10 +573,12 @@ class NaClStateBlockData(StateBlockData):
                                     doc='Mass fraction')
 
         def rule_mass_frac_phase_comp(b, p, j):  
-            eps = 1e-15 * pyunits.kg/pyunits.s # Small value added to denominator ensure denominator is always greater than zero.
-            return (b.mass_frac_phase_comp[p, j] ==  b.flow_mass_phase_comp[p, j] / 
-                (eps + sum(b.flow_mass_phase_comp[p, j] for j in self.params.component_list if (p, j) in b.phase_component_set)))
-
+            phase_comp_list = [(p, j) for j in self.params.component_list if (p, j) in b.phase_component_set]
+            if len(phase_comp_list) == 1: # one component in this phase
+                return b.mass_frac_phase_comp[p, j] == 1
+            else:
+                return (b.mass_frac_phase_comp[p, j] ==  b.flow_mass_phase_comp[p, j] /
+                    sum(b.flow_mass_phase_comp[p_j] for p_j in phase_comp_list))
         
         self.eq_mass_frac_phase_comp = Constraint(self.phase_component_set, rule=rule_mass_frac_phase_comp)
 
@@ -1034,9 +1036,12 @@ class NaClStateBlockData(StateBlockData):
             doc="Mole fraction")
 
         def rule_mole_frac_phase_comp(b, p, j):  
-            eps = 1e-15 * pyunits.mol/pyunits.s # Small value added to denominator ensure denominator is always greater than zero.
-            return (b.mole_frac_phase_comp[p, j] == b.flow_mol_phase_comp[p, j] / 
-                (eps + sum(b.flow_mol_phase_comp[p, j] for j in self.params.component_list if (p, j) in b.phase_component_set)))
+            phase_comp_list = [(p,j) for j in self.params.component_list if (p,j) in b.phase_component_set]
+            if len(phase_comp_list) == 1: # one component in this phase
+                return b.mole_frac_phase_comp[p, j] == 1
+            else:
+                return (b.mole_frac_phase_comp[p, j] == b.flow_mol_phase_comp[p, j] /
+                    sum(b.flow_mol_phase_comp[p_j] for (p_j) in phase_comp_list))
         
         self.eq_mole_frac_phase_comp = Constraint(self.phase_component_set, rule=rule_mole_frac_phase_comp)
 
