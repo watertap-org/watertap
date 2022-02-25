@@ -30,4 +30,5 @@ from .ion_exchange_zo import IonExchangeZO
 from .brine_concentrator_zo import BrineConcentratorZO
 from .gac_zo import GACZO
 from .dual_media_filtration_zo import DualMediaFiltrationZO
+from .storage_tank_zo import StorageTankZO
 from .chlorination_zo import ChlorinationZO
