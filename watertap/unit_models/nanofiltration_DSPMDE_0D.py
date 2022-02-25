@@ -993,7 +993,7 @@ class NanofiltrationData(UnitModelBlockData):
                             + 1.91521 * b.lambda_comp[t, j] ** 3
                             - 2.81903 * b.lambda_comp[t, j] ** 4
                             + 0.270788 * b.lambda_comp[t, j] ** 5
-                            - 1.10115 * b.lambda_comp[t, j] ** 6
+                            + 1.10115 * b.lambda_comp[t, j] ** 6
                             - 0.435933 * b.lambda_comp[t, j] ** 7) /
                            (1 - b.lambda_comp[t, j] + eps) ** 2,
                            )
