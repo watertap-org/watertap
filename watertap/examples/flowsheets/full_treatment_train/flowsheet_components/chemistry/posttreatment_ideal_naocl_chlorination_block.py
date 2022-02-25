@@ -25,12 +25,13 @@
 """
 
 # Importing the object for units from pyomo
-from pyomo.environ import units as pyunits
+from pyomo.environ import units as pyunits, assert_optimal_termination
 
 # Imports from idaes core
 from idaes.core import AqueousPhase
 from idaes.core.components import Solvent, Solute, Cation, Anion
 from idaes.core.phases import PhaseType as PT
+from idaes.core.util import get_solver
 
 # Imports from idaes generic models
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
@@ -390,7 +391,7 @@ ideal_naocl_reaction_config = {
     # End reaction_config definition
 
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver(options={"tol":1e-11})
 
 def build_ideal_naocl_prop(model):
     model.fs.ideal_naocl_thermo_params = GenericParameterBlock(default=ideal_naocl_thermo_config)
@@ -541,20 +542,14 @@ def initialize_ideal_naocl_mixer(unit, debug_out=False):
     if not unit.naocl_stream.flow_mol[0].is_fixed():
         unit.naocl_stream.flow_mol[0].fix()
         was_fixed = True
-    if debug_out:
-        unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
-    else:
-        unit.initialize(optarg=solver.options)
+    unit.initialize(optarg=solver.options,
+            outlvl=idaeslog.DEBUG if debug_out else idaeslog.NOTSET)
     if was_fixed:
         unit.naocl_stream.flow_mol[0].unfix()
 
 def initialize_ideal_naocl_chlorination(unit, state_args, debug_out=False):
-    init_options = {**solver.options}
-    init_options["bound_relax_factor"] = 1.0e-04
-    if debug_out:
-        unit.initialize(state_args=state_args, optarg=init_options, outlvl=idaeslog.DEBUG)
-    else:
-        unit.initialize(state_args=state_args, optarg=init_options)
+    unit.initialize(state_args=state_args, optarg=solver.options,
+            outlvl=idaeslog.DEBUG if debug_out else idaeslog.NOTSET)
 
 def setup_block_to_solve_naocl_dosing_rate(model, free_chlorine_mg_per_L = 2):
     model.fs.ideal_naocl_chlorination_unit.free_chlorine.fix(free_chlorine_mg_per_L)
@@ -718,7 +713,8 @@ def run_ideal_naocl_chlorination_example():
     # initialize the unit
     initialize_ideal_naocl_chlorination(model.fs.ideal_naocl_chlorination_unit, state_args, debug_out=False)
 
-    solve_block(model, tee=True)
+    results = solver.solve(model, tee=True)
+    assert_optimal_termination(results)
 
     display_results_of_chlorination_unit(model.fs.ideal_naocl_chlorination_unit)
 
@@ -769,7 +765,8 @@ def run_chlorination_block_example(fix_free_chlorine=False):
     if fix_free_chlorine:
         setup_block_to_solve_naocl_dosing_rate(model)
 
-    solve_block(model, tee=True)
+    results = solver.solve(model, tee=True)
+    assert_optimal_termination(results)
 
     display_results_of_ideal_naocl_mixer(model.fs.ideal_naocl_mixer_unit)
     display_results_of_chlorination_unit(model.fs.ideal_naocl_chlorination_unit)
