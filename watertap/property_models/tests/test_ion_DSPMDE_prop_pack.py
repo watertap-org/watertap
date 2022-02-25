@@ -316,8 +316,7 @@ def test_default_scaling(model3):
     default_scaling_var_dict = {('temperature', None): 1e-2,
                                 ('pressure', None): 1e-6,
                                 ('dens_mass_phase', 'Liq'): 1e-3,
-                                ('visc_d_phase', 'Liq'): 1e3,
-                                ('diffus_phase_comp', 'Liq'): 1e9}
+                                ('visc_d_phase', 'Liq'): 1e3}
     assert len(default_scaling_var_dict) == len(m.fs.properties.default_scaling_factor)
     for t, sf in default_scaling_var_dict.items():
         assert t in m.fs.properties.default_scaling_factor.keys()
