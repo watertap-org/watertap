@@ -517,7 +517,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=lambda b,p,j : 0.4037 if j == "H2O" else 0.0033, #todo: revisit
-            bounds=(1e-6, 1.001),
+            bounds=(1e-8, 1.001),
             units=pyunits.kg/pyunits.kg,
             doc='Mass fraction')
 
@@ -593,7 +593,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=10,
-            bounds=(1e-6, None),
+            bounds=(1e-8, None),
             units=pyunits.mol * pyunits.m ** -3,
             doc="Molar concentration")
 
@@ -607,7 +607,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=10,
-            bounds=(1e-3, 2e3),
+            bounds=(1e-8, 2e3),
             units=pyunits.kg * pyunits.m ** -3,
             doc="Mass concentration")
 
@@ -635,7 +635,7 @@ class DSPMDEStateBlockData(StateBlockData):
             self.params.phase_list,
             self.params.component_list,
             initialize=0.1,
-            bounds=(1e-6, 1.001),
+            bounds=(1e-8, 1.001),
             units=pyunits.dimensionless,
             doc="Mole fraction")
 
@@ -648,7 +648,7 @@ class DSPMDEStateBlockData(StateBlockData):
         self.molality_comp = Var(
             self.params.solute_set,
             initialize=1,
-            bounds=(1e-4, 10),
+            bounds=(1e-8, 10),
             units=pyunits.mole / pyunits.kg,
             doc="Molality")
 

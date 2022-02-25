@@ -1015,7 +1015,7 @@ class NanofiltrationData(UnitModelBlockData):
             return ((1 + 3.867 * b.lambda_comp[t, j]
                      - 1.907 * b.lambda_comp[t, j] ** 2
                      - 0.834 * b.lambda_comp[t, j] ** 3)
-                    / (1 + 1.867 * b.lambda_comp[t, j] - 0.741 * b.lambda_comp[t, j]))
+                    / (1 + 1.867 * b.lambda_comp[t, j] - 0.741 * b.lambda_comp[t, j]**2))
 
         @self.Expression(self.flowsheet().config.time,
                          solute_set,
@@ -1559,7 +1559,14 @@ class NanofiltrationData(UnitModelBlockData):
         for (t, x, p, j), con in self.eq_solute_solvent_flux.items():
             sf = (iscale.get_constraint_transform_applied_scaling_factor(self.eq_water_flux[t, x, p])
                   * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
-            iscale.constraint_scaling_transform(con, sf)
+            #todo: revisit sf
+            iscale.constraint_scaling_transform(con, 1e2)
+
+        for (t, x, p, j), con in self.eq_solute_flux_concentration_polarization.items():
+            sf = (iscale.get_constraint_transform_applied_scaling_factor(self.eq_water_flux[t, x, p])
+                  * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
+            #todo: revisit sf
+            iscale.constraint_scaling_transform(con, 1e2)
 
         if self.config.mass_transfer_coefficient == MassTransferCoefficient.spiral_wound:
             for ind, con in self.eq_Kf_comp.items():

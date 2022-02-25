@@ -80,6 +80,7 @@ if __name__ == '__main__':
 
     m.fs.unit = NanofiltrationDSPMDE0D(default={"property_package": m.fs.properties,
                                                 "mass_transfer_coefficient": MassTransferCoefficient.spiral_wound})
+    b = m.fs.unit
     mass_flow_in = 1 * pyunits.kg / pyunits.s
     feed_mass_frac = {
                       'Ca_2+': 382e-6,
@@ -157,10 +158,6 @@ if __name__ == '__main__':
 
     m.fs.unit.initialize()
 
-    # Membrane area and recovery haven't typically been included in the literature for DSPM-DE,
-    # but since we include them in our model to simulate/optimize at process level, I chose to fix those here
-
-
     # for con in m.fs.unit.component_data_objects(Constraint, descend_into=False):
     #     con.deactivate()
     # #
@@ -205,7 +202,6 @@ if __name__ == '__main__':
     # m.fs.unit.eq_equal_flowrate_pore_io.activate()
     # m.fs.unit.eq_equal_flowrate_feed_interface_in.activate()
 
-    b = m.fs.unit
 
     # m.fs.unit.eq_equal_flow_vol_permeate.deactivate()
     # m.fs.unit.eq_equal_flow_vol_pore_permeate.deactivate()
