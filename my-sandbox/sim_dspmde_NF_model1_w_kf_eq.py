@@ -162,7 +162,7 @@ if __name__ == '__main__':
     #     con.deactivate()
     # #
     # m.fs.unit.eq_water_flux.deactivate()
-    # m.fs.unit.eq_solute_solvent_flux.deactivate()   # deactivating yields higher, more practical rejection rates
+    m.fs.unit.eq_solute_solvent_flux.deactivate()   # deactivating yields higher, more practical rejection rates
     # m.fs.unit.eq_solute_flux_concentration_polarization.deactivate()
     # m.fs.unit.eq_permeate_isothermal.activate()
     # m.fs.unit.eq_permeate_isothermal_mixed.activate()

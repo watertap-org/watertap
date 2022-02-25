@@ -872,14 +872,6 @@ class NanofiltrationData(UnitModelBlockData):
             return b.permeate_side[t, x].flow_vol_phase['Liq'] ==\
                    b.pore_exit[t, x].flow_vol_phase['Liq']
 
-        # # Experimental constraint
-        # @self.Constraint(self.flowsheet().config.time,
-        #                  io_list,
-        #                  doc="Equal volumetric flow for pore exit and permeate at inlet and outlet")
-        # def eq_equal_flow_vol_pore(b, t, x):
-        #     return b.pore_entrance[t, x].flow_vol_phase['Liq'] ==\
-        #            b.pore_exit[t, x].flow_vol_phase['Liq']
-
         # Experimental constraint
         @self.Constraint(self.flowsheet().config.time,
                          io_list,
