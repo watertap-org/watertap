@@ -193,15 +193,13 @@ class _TestLSRRO:
         assert degrees_of_freedom(model) == 0
         self._test_no_badly_scaled_vars(model)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, model, initialization_data):
         initialize(model)
         for var, val in initialization_data.items():
-            assert pyo.value(var) == pytest.approx(val, rel=1e-5)
+            assert pyo.value(var) == pytest.approx(val, rel=1e-2)
         self._test_no_badly_scaled_vars(model)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_simulation(self, model, simulation_data):
         solve(model)
@@ -209,21 +207,18 @@ class _TestLSRRO:
             assert pyo.value(var) == pytest.approx(val, rel=1e-5)
         self._test_no_badly_scaled_vars(model)
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_display_system(self, model, capsys):
         display_system(model)
         captured = capsys.readouterr()
         assert captured.out == self.display_system
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_display_design(self, model, capsys):
         display_design(model)
         captured = capsys.readouterr()
         assert captured.out == self.display_design
 
-    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_display_state(self, model, capsys):
         display_state(model)
