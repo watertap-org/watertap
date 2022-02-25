@@ -79,7 +79,7 @@ class TestOzoneZO_with_default_removal:
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.fs.unit.config.database == model.db
+        assert model.fs.unit.config.database is model.db
         assert model.fs.unit._tech_type == "ozonation"
         assert isinstance(model.fs.unit.contact_time, Var)
         assert isinstance(model.fs.unit.concentration_time, Var)
@@ -242,7 +242,7 @@ class TestOzoneZO_w_o_default_removal:
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.fs.unit.config.database == model.db
+        assert model.fs.unit.config.database is model.db
         assert model.fs.unit._tech_type == "ozonation"
         assert isinstance(model.fs.unit.contact_time, Var)
         assert isinstance(model.fs.unit.concentration_time, Var)
