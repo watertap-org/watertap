@@ -25,4 +25,5 @@ from .ozone_zo import OzoneZO
 from .ozone_aop_zo import OzoneAOPZO
 from .ion_exchange_zo import IonExchangeZO
 from .brine_concentrator_zo import BrineConcentratorZO
+from .gac_zo import GACZO
 from .dual_media_filtration_zo import DualMediaFiltrationZO
