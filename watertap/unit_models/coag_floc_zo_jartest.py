@@ -84,6 +84,8 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
     **MaterialBalanceType.elementTotal** - use total element balances,
     **MaterialBalanceType.total** - use total material balance.}"""))
 
+    # NOTE: This option is temporarily disabled
+    '''
     CONFIG.declare("energy_balance_type", ConfigValue(
         default=EnergyBalanceType.useDefault,
         domain=In(EnergyBalanceType),
@@ -98,6 +100,7 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
     **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
     **EnergyBalanceType.energyTotal** - single energy balance for material,
     **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
+    '''
 
     CONFIG.declare("momentum_balance_type", ConfigValue(
         default=MomentumBalanceType.pressureTotal,
@@ -295,9 +298,11 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
             balance_type=self.config.material_balance_type,
             has_mass_transfer=True)
 
-        self.feed_side.add_energy_balances(
-            balance_type=self.config.energy_balance_type,
-            has_enthalpy_transfer=False)
+        # NOTE: This checks for if an energy_balance_type is defined
+        if hasattr(self.config, "energy_balance_type"):
+            self.feed_side.add_energy_balances(
+                balance_type=self.config.energy_balance_type,
+                has_enthalpy_transfer=False)
 
         self.feed_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
@@ -325,6 +330,12 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
                     .format([p for p in self.config.property_package._phase_component_set]))
 
         # -------- Add constraints ---------
+        # Adds isothermal constraint if no energy balance present
+        if not hasattr(self.config, "energy_balance_type"):
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Isothermal condition")
+            def eq_isothermal(self, t):
+                return (self.feed_side.properties_out[t].temperature == self.feed_side.properties_in[t].temperature)
 
         # Constraint for tss loss rate based on measured final turbidity
         self.tss_loss_rate = Var(
@@ -518,8 +529,8 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
             for t in self.feed_side.properties_in:
                 sf += value(self.feed_side.properties_in[t].flow_mass_phase_comp['Liq','TSS'])
             sf = sf / len(self.feed_side.properties_in)
-            if sf < 1e-6:
-                sf = 0.001
+            if sf < 0.01:
+                sf = 0.01
             iscale.set_scaling_factor(self.tss_loss_rate, 1/sf)
 
             for ind, c in self.eq_tss_loss_rate.items():
@@ -540,7 +551,7 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
                         sum = sum+chem_dose
                     sf += value(sum)
                 sf = sf / len(self.feed_side.properties_in)
-                if sf < 1e-6:
+                if sf < 0.001:
                     sf = 0.001
                 iscale.set_scaling_factor(self.tds_gain_rate, 1/sf)
 

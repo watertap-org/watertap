@@ -36,6 +36,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
 import idaes.core.util.scaling as iscale
 from idaes.core.util.scaling import badly_scaled_var_generator
+from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
 
 __author__ = "Austin Ladshaw"
@@ -94,6 +95,91 @@ class TestCoagulationZOJarTest_withChemicals():
 
         assert isinstance(model.fs.unit.eq_mass_transfer_term, Constraint)
 
+    @pytest.mark.unit
+    def test_stats(self, coag_obj_w_chems):
+        model = coag_obj_w_chems
+
+        # Check to make sure we have the correct DOF and
+        #   check to make sure the units are correct
+        assert_units_consistent(model)
+        assert degrees_of_freedom(model) == 11
+
+        # set the operational parameters
+        model.fs.unit.fix_tss_turbidity_relation_defaults()
+        model.fs.unit.initial_turbidity_ntu.fix()
+        model.fs.unit.final_turbidity_ntu.fix(5)
+        model.fs.unit.chemical_doses[0, 'Alum'].fix(10)
+        model.fs.unit.chemical_doses[0, 'Poly'].fix(5)
+
+        # set the inlet streams
+        assert degrees_of_freedom(model) == 6
+        model.fs.unit.inlet.pressure.fix(101325)
+        model.fs.unit.inlet.temperature.fix(298.15)
+        model.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(1)
+        model.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS'].fix(0.01)
+        model.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'TSS'].fix(0.01)
+        model.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'Sludge'].fix(0.0)
+
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.unit
+    def test_scaling(self, coag_obj_w_chems):
+        model = coag_obj_w_chems
+
+        # Set some scaling factors and look for 'bad' scaling
+        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
+        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TSS'))
+        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TDS'))
+        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'Sludge'))
+        iscale.calculate_scaling_factors(model.fs)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(iscale.unscaled_variables_generator(model))
+        assert len(unscaled_var_list) == 0
+
+        # check if any variables are badly scaled
+        badly_scaled_var_values = {
+        var.name: val
+        for (var, val) in iscale.badly_scaled_var_generator(
+            model, large=1e2, small=1e-2
+            )
+        }
+        assert not badly_scaled_var_values
+
+    @pytest.mark.component
+    def test_initialization(self, coag_obj_w_chems):
+        model = coag_obj_w_chems
+        initialization_tester(model)
+
+        # check to make sure DOF does not change
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.component
+    def test_solve(self, coag_obj_w_chems):
+        model = coag_obj_w_chems
+
+        # first, check to make sure that after initialized, the scaling is still good
+        badly_scaled_var_values = {
+        var.name: val
+        for (var, val) in iscale.badly_scaled_var_generator(
+            model, large=1e2, small=1e-2
+            )
+        }
+        assert not badly_scaled_var_values
+
+        # run solver and check for optimal solution
+        results = solver.solve(model)
+        assert_optimal_termination(results)
+
+    @pytest.mark.component
+    def test_solution(self, coag_obj_w_chems):
+        model = coag_obj_w_chems
+
+        assert value(model.fs.unit.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(1,  rel=1e-4)
+        assert value(model.fs.unit.outlet.flow_mass_phase_comp[0, 'Liq', 'Sludge']) == pytest.approx(0.00999,  rel=1e-4)
+        assert value(model.fs.unit.outlet.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(0.010015,  rel=1e-4)
+        assert value(model.fs.unit.outlet.flow_mass_phase_comp[0, 'Liq', 'TSS']) == pytest.approx(9.36352e-06,  rel=1e-4)
+
 
 # -----------------------------------------------------------------------------
 # Start test class without chemicals added
@@ -132,6 +218,94 @@ class TestCoagulationZOJarTest_withNoChemicals():
         assert not hasattr(model.fs.unit, "eq_tds_gain_rate")
 
         assert isinstance(model.fs.unit.eq_mass_transfer_term, Constraint)
+
+    @pytest.mark.unit
+    def test_stats(self, coag_obj_wo_chems):
+        model = coag_obj_wo_chems
+
+        # Check to make sure we have the correct DOF and
+        #   check to make sure the units are correct
+        assert_units_consistent(model)
+        assert degrees_of_freedom(model) == 9
+
+        # set the operational parameters
+        model.fs.unit.fix_tss_turbidity_relation_defaults()
+        model.fs.unit.initial_turbidity_ntu.fix(5000)
+        model.fs.unit.final_turbidity_ntu.fix(100)
+
+        # set the inlet streams
+        assert degrees_of_freedom(model) == 6
+
+        tss_in = value(model.fs.unit.compute_inlet_tss_mass_flow(0))
+        assert tss_in == pytest.approx(0.0093,  rel=1e-4)
+        model.fs.unit.inlet.pressure.fix(101325)
+        model.fs.unit.inlet.temperature.fix(298.15)
+        model.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(1)
+        model.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS'].fix(0.01)
+        model.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'TSS'].fix(tss_in)
+        model.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'Sludge'].fix(0.0)
+
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.unit
+    def test_scaling(self, coag_obj_wo_chems):
+        model = coag_obj_wo_chems
+
+        # Set some scaling factors and look for 'bad' scaling
+        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
+        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TSS'))
+        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TDS'))
+        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'Sludge'))
+        #iscale.set_scaling_factor(model.fs.unit.tss_loss_rate, 100)
+        iscale.calculate_scaling_factors(model.fs)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(iscale.unscaled_variables_generator(model))
+        assert len(unscaled_var_list) == 0
+
+        # check if any variables are badly scaled
+        badly_scaled_var_values = {
+        var.name: val
+        for (var, val) in iscale.badly_scaled_var_generator(
+            model, large=1e2, small=1e-2
+            )
+        }
+        print(iscale.get_scaling_factor(model.fs.unit.tss_loss_rate))
+        assert not badly_scaled_var_values
+
+    @pytest.mark.component
+    def test_initialization(self, coag_obj_wo_chems):
+        model = coag_obj_wo_chems
+        initialization_tester(model)
+
+        # check to make sure DOF does not change
+        assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.component
+    def test_solve(self, coag_obj_wo_chems):
+        model = coag_obj_wo_chems
+
+        # first, check to make sure that after initialized, the scaling is still good
+        badly_scaled_var_values = {
+        var.name: val
+        for (var, val) in iscale.badly_scaled_var_generator(
+            model, large=1e2, small=1e-2
+            )
+        }
+        assert not badly_scaled_var_values
+
+        # run solver and check for optimal solution
+        results = solver.solve(model)
+        assert_optimal_termination(results)
+
+    @pytest.mark.component
+    def test_solution(self, coag_obj_wo_chems):
+        model = coag_obj_wo_chems
+
+        assert value(model.fs.unit.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(1,  rel=1e-4)
+        assert value(model.fs.unit.outlet.flow_mass_phase_comp[0, 'Liq', 'Sludge']) == pytest.approx(0.0091127,  rel=1e-4)
+        assert value(model.fs.unit.outlet.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(0.01,  rel=1e-4)
+        assert value(model.fs.unit.outlet.flow_mass_phase_comp[0, 'Liq', 'TSS']) == pytest.approx(0.00018725,  rel=1e-4)
 
 # -----------------------------------------------------------------------------
 # Start test class with bad config
