@@ -565,6 +565,27 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
             iscale.constraint_scaling_transform(c, sf)
             iscale.set_scaling_factor(self.feed_side.mass_transfer_term[ind] , sf)
 
+        # set scaling factors for feed_side.properties_in based on feed_side.properties_out
+        for t in self.feed_side.properties_in:
+            if iscale.get_scaling_factor(self.feed_side.properties_in[t].dens_mass_phase) is None:
+                sf = iscale.get_scaling_factor(self.feed_side.properties_out[t].dens_mass_phase)
+                iscale.set_scaling_factor(self.feed_side.properties_in[t].dens_mass_phase, sf)
+
+            if iscale.get_scaling_factor(self.feed_side.properties_in[t].flow_mass_phase_comp) is None:
+                for ind in self.feed_side.properties_in[t].flow_mass_phase_comp:
+                    sf = iscale.get_scaling_factor(self.feed_side.properties_out[t].flow_mass_phase_comp[ind])
+                    iscale.set_scaling_factor(self.feed_side.properties_in[t].flow_mass_phase_comp[ind], sf)
+
+            if iscale.get_scaling_factor(self.feed_side.properties_in[t].mass_frac_phase_comp) is None:
+                for ind in self.feed_side.properties_in[t].mass_frac_phase_comp:
+                    sf = iscale.get_scaling_factor(self.feed_side.properties_out[t].mass_frac_phase_comp[ind])
+                    iscale.set_scaling_factor(self.feed_side.properties_in[t].mass_frac_phase_comp[ind], sf)
+
+            if iscale.get_scaling_factor(self.feed_side.properties_in[t].flow_vol_phase) is None:
+                for ind in self.feed_side.properties_in[t].flow_vol_phase:
+                    sf = iscale.get_scaling_factor(self.feed_side.properties_out[t].flow_vol_phase[ind])
+                    iscale.set_scaling_factor(self.feed_side.properties_in[t].flow_vol_phase[ind], sf)
+
         # update scaling for feed_side.properties_out
         for t in self.feed_side.properties_out:
             if iscale.get_scaling_factor(self.feed_side.properties_out[t].dens_mass_phase) is None:
@@ -591,24 +612,3 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
                     sf_og = iscale.get_scaling_factor(self.feed_side.properties_out[t].mass_frac_phase_comp[ind])
                     sf_new = iscale.get_scaling_factor(self.tss_loss_rate)
                     iscale.set_scaling_factor(self.feed_side.properties_out[t].mass_frac_phase_comp[ind], 100*sf_new*(sf_new/sf_og))
-
-        # set scaling factors for feed_side.properties_in based on feed_side.properties_out
-        for t in self.feed_side.properties_in:
-            if iscale.get_scaling_factor(self.feed_side.properties_in[t].dens_mass_phase) is None:
-                sf = iscale.get_scaling_factor(self.feed_side.properties_out[t].dens_mass_phase)
-                iscale.set_scaling_factor(self.feed_side.properties_in[t].dens_mass_phase, sf)
-
-            if iscale.get_scaling_factor(self.feed_side.properties_in[t].flow_mass_phase_comp) is None:
-                for ind in self.feed_side.properties_in[t].flow_mass_phase_comp:
-                    sf = iscale.get_scaling_factor(self.feed_side.properties_out[t].flow_mass_phase_comp[ind])
-                    iscale.set_scaling_factor(self.feed_side.properties_in[t].flow_mass_phase_comp[ind], sf)
-
-            if iscale.get_scaling_factor(self.feed_side.properties_in[t].mass_frac_phase_comp) is None:
-                for ind in self.feed_side.properties_in[t].mass_frac_phase_comp:
-                    sf = iscale.get_scaling_factor(self.feed_side.properties_out[t].mass_frac_phase_comp[ind])
-                    iscale.set_scaling_factor(self.feed_side.properties_in[t].mass_frac_phase_comp[ind], sf)
-
-            if iscale.get_scaling_factor(self.feed_side.properties_in[t].flow_vol_phase) is None:
-                for ind in self.feed_side.properties_in[t].flow_vol_phase:
-                    sf = iscale.get_scaling_factor(self.feed_side.properties_out[t].flow_vol_phase[ind])
-                    iscale.set_scaling_factor(self.feed_side.properties_in[t].flow_vol_phase[ind], sf)
