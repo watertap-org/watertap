@@ -45,7 +45,8 @@ def test_unit_parameter_files(tech):
     # Iterate overall entries in tech data and check for expected contents
     # TODO : Need to check up on this once everything is done
     pass_through = ["chemical_addition",
-                    "pump"]
+                    "pump",
+                    "storage_tank"]
     siso_full_recovery = ["uv_aop", "uv", "ion_exchange", "fixed_bed"]
 
     no_energy_electric_flow_vol_inlet = ["energy_recovery",
@@ -92,7 +93,8 @@ def test_unit_parameter_files(tech):
                                          "lime_addition",
                                          "brine_concentrator",
                                          "agglom_stacking",
-                                         "landfill_zld"]
+                                         "landfill_zld",
+                                         "storage_tank"]
 
     expected = ["recovery_frac_mass_H2O",
                 "default_removal_frac_mass_solute"]
