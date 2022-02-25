@@ -687,8 +687,8 @@ class DSPMDEStateBlockData(StateBlockData):
         for ind, v in self.diffus_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.diffus_phase_comp[ind], 1e10)
-            else:
-                raise
+            # else:
+            #     raise
 
         for p, v in self.dens_mass_phase.items():
             if iscale.get_scaling_factor(v) is None:
