@@ -587,10 +587,7 @@ class NanofiltrationData(UnitModelBlockData):
             return (sum(b.feed_side.properties_interface[t, x].conc_mol_phase_comp[p, j] *
                     b.feed_side.properties_interface[t, x].charge_comp[j] for j in solute_set)
                     == b.tol_electroneutrality)
-            #todo: (1) consider adding tol_electroneutrality as property pack param
-            # to match assert_electroneutrality method in dspmde prop pack
-            # (2) probe whether inequality constraint with tolerance improves model stability and
-            # returns optimal solution or if an equality constraint leads to more consistent solution
+            #todo: tolerance should just be 0
 
         # 4. Charge balance inside the membrane, DOF=N nodes across membrane thickness *2 for inlet/outlet: N=2, DOF=4
         @self.Constraint(self.flowsheet().config.time,
@@ -867,13 +864,13 @@ class NanofiltrationData(UnitModelBlockData):
                    b.properties_out[t].temperature
 
 
-        # # Experimental constraint
-        # @self.Constraint(self.flowsheet().config.time,
-        #                  io_list,
-        #                  doc="Equal volumetric flow for pore exit and permeate at inlet and outlet")
-        # def eq_equal_flow_vol_pore_exit_permeate(b, t, x):
-        #     return b.permeate_side[t, x].flow_vol_phase['Liq'] ==\
-        #            b.pore_exit[t, x].flow_vol_phase['Liq']
+        # Experimental constraint
+        @self.Constraint(self.flowsheet().config.time,
+                         io_list,
+                         doc="Equal volumetric flow for pore exit and permeate at inlet and outlet")
+        def eq_equal_flow_vol_pore_exit_permeate(b, t, x):
+            return b.permeate_side[t, x].flow_vol_phase['Liq'] ==\
+                   b.pore_exit[t, x].flow_vol_phase['Liq']
 
         # # Experimental constraint
         # @self.Constraint(self.flowsheet().config.time,
@@ -882,14 +879,14 @@ class NanofiltrationData(UnitModelBlockData):
         # def eq_equal_flow_vol_pore(b, t, x):
         #     return b.pore_entrance[t, x].flow_vol_phase['Liq'] ==\
         #            b.pore_exit[t, x].flow_vol_phase['Liq']
-        #
+
         # Experimental constraint
-        # @self.Constraint(self.flowsheet().config.time,
-        #                  io_list,
-        #                  doc="Volumetric flow at permeate of inlet and outlet equal to mixed permeate")
-        # def eq_equal_flow_vol_permeate(b, t, x):
-        #     return b.permeate_side[t, x].flow_vol_phase['Liq'] ==\
-        #            b.mixed_permeate[t].flow_vol_phase['Liq']
+        @self.Constraint(self.flowsheet().config.time,
+                         io_list,
+                         doc="Volumetric flow at permeate of inlet and outlet equal to mixed permeate")
+        def eq_equal_flow_vol_permeate(b, t, x):
+            return b.permeate_side[t, x].flow_vol_phase['Liq'] ==\
+                   b.mixed_permeate[t].flow_vol_phase['Liq']
 
         # 14. Experimental constraint: Electroneutrality of final permeate
         @self.Constraint(self.flowsheet().config.time,
@@ -1196,11 +1193,7 @@ class NanofiltrationData(UnitModelBlockData):
         init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
     def _get_performance_contents(self, time_point=0):
-        pass
-        for k in ('ion_set', 'solute_set'):
-            if hasattr(self.config.property_package, k):
-                solute_set = getattr(self.config.property_package, k)
-                break
+        # TODO: replace 0 with time_point
         var_dict = {}
         expr_dict = {}
         var_dict["Volumetric Recovery Rate"] = self.recovery_vol_phase[time_point, 'Liq']
@@ -1283,8 +1276,11 @@ class NanofiltrationData(UnitModelBlockData):
             for x in self.io_list:
                 if not x:
                     io = 'Inlet'
+                    prop_feed = self.feed_side.properties_in[0]
                 elif x:
                     io = 'Outlet'
+                    prop_feed = self.feed_side.properties_out[0]
+
                 var_dict[f'Molar Concentration of {j} @ Membrane Interface, {io}'] = \
                     self.feed_side.properties_interface[time_point, x].conc_mol_phase_comp['Liq', j]
                 var_dict[f'Molar Concentration of {j} @ Pore Entrance, {io}'] = \
@@ -1300,7 +1296,10 @@ class NanofiltrationData(UnitModelBlockData):
 
                 var_dict[f"Osmotic Pressure @ Permeate, {io} (Pa)"] = \
                     self.permeate_side[time_point, x].pressure_osm
-
+                expr_dict[f"Net Driving Pressure, {io} (Pa)"] = (prop_feed.pressure
+                                                                 - self.permeate_side[0, x].pressure
+                                                                 - (self.feed_side.properties_interface[0, x].pressure_osm
+                                                                    - self.permeate_side[0, x].pressure_osm))
                 var_dict[f'Electric Potential @ Pore Entrance, {io}'] = self.electric_potential[0, x, 'pore_entrance']
                 var_dict[f'Electric Potential @ Pore Exit, {io}'] = self.electric_potential[0, x, 'pore_exit']
                 var_dict[f'Electric Potential @ Permeate, {io}'] = self.electric_potential[0, x, 'permeate']
