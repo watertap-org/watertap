@@ -46,7 +46,7 @@ def test_unit_parameter_files(tech):
     # TODO : Need to check up on this once everything is done
     pass_through = ["chemical_addition",
                     "pump"]
-    siso_full_recovery = ["uv_aop", "uv", "ion_exchange"]
+    siso_full_recovery = ["uv_aop", "uv", "ion_exchange", "fixed_bed"]
 
     no_energy_electric_flow_vol_inlet = ["energy_recovery",
                                          "mbr_denitrification",
@@ -58,14 +58,14 @@ def test_unit_parameter_files(tech):
                                          "well_field",
                                          "ion_exchange",
                                          "ozone_aop",
-                                         "fixed_bed_pressure_vessel",
+                                         "fixed_bed",
                                          "holding_tank",
                                          "heap_leaching",
                                          "nuclear_cooling_tower",
                                          "lime_softening",
                                          "ozonation",
                                          "cooling_tower",
-                                         "gac_pressure_vessel",
+                                         "gac",
                                          "tri_media_filtration_with_backflush",
                                          "sedimentation",
                                          "backwash_solids_handling",
@@ -74,7 +74,6 @@ def test_unit_parameter_files(tech):
                                          "co2_addition",
                                          "coag_and_floc",
                                          "crystallizer",
-                                         "gac_gravity",
                                          "iron_and_manganese_removal",
                                          "fluidized_bed",
                                          "surface_discharge",
@@ -92,7 +91,6 @@ def test_unit_parameter_files(tech):
                                          "evaporation_pond",
                                          "lime_addition",
                                          "brine_concentrator",
-                                         "fixed_bed_gravity_basin",
                                          "agglom_stacking",
                                          "landfill_zld"]
 
