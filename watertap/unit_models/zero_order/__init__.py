@@ -27,3 +27,4 @@ from .ozone_aop_zo import OzoneAOPZO
 from .ion_exchange_zo import IonExchangeZO
 from .gac_zo import GACZO
 from .dual_media_filtration_zo import DualMediaFiltrationZO
+from .storage_tank_zo import StorageTankZO

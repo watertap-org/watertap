@@ -170,7 +170,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                                          : Value   : Fixed : Bounds
-                     Ozone CT Value (mg/(L*min)) :  1.0000 :  True : (None, None)
+                     Ozone CT Value ((mg*min)/L) :  1.0000 :  True : (None, None)
                         Ozone Contact Time (min) :  1.0000 :  True : (None, None)
                          Ozone Mass Flow (lb/hr) :  9921.9 : False : (0, None)
                   Ozone Mass Transfer Efficiency : 0.80000 :  True : (None, None)
@@ -330,7 +330,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                                          : Value   : Fixed : Bounds
-                     Ozone CT Value (mg/(L*min)) :  1.0000 :  True : (None, None)
+                     Ozone CT Value ((mg*min)/L) :  1.0000 :  True : (None, None)
                         Ozone Contact Time (min) :  1.0000 :  True : (None, None)
                          Ozone Mass Flow (lb/hr) :  9921.9 : False : (0, None)
                   Ozone Mass Transfer Efficiency : 0.80000 :  True : (None, None)

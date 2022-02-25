@@ -12,7 +12,6 @@
 ###############################################################################
 """
 This module contains a zero-order representation of a Ozone reactor unit.
-operation.
 """
 
 from pyomo.environ import units as pyunits, Var
@@ -49,7 +48,7 @@ class OzoneZOData(ZeroOrderBaseData):
                                 doc="Ozone contact time")
 
         self.concentration_time = Var(self.flowsheet().time,
-                                       units=pyunits.mg/(pyunits.liter*pyunits.minute),
+                                       units=(pyunits.mg*pyunits.minute)/pyunits.liter,
                                        doc="CT value for ozone contactor")
 
         self.mass_transfer_efficiency = Var(self.flowsheet().time,
@@ -86,7 +85,7 @@ class OzoneZOData(ZeroOrderBaseData):
         def ozone_consumption_constraint(b, t):
             return (b.ozone_consumption[t] ==
                     ((pyunits.convert(b.properties_in[t].conc_mass_comp['toc'], to_units=pyunits.mg/pyunits.liter)
-                    + self.concentration_time[t] * self.contact_time[t])) / self.mass_transfer_efficiency[t])
+                    + self.concentration_time[t] / self.contact_time[t])) / self.mass_transfer_efficiency[t])
 
         @self.Constraint(self.flowsheet().time,
                     doc='Ozone mass flow constraint')
@@ -99,7 +98,7 @@ class OzoneZOData(ZeroOrderBaseData):
             return b.ozone_generation_power[t] == b.specific_energy_coeff[t] * b.ozone_flow_mass[t]
 
         self._perf_var_dict["Ozone Contact Time (min)"] = self.contact_time
-        self._perf_var_dict["Ozone CT Value (mg/(L*min))"] = self.concentration_time
+        self._perf_var_dict["Ozone CT Value ((mg*min)/L)"] = self.concentration_time
         self._perf_var_dict["Ozone Mass Transfer Efficiency"] = self.mass_transfer_efficiency
         self._perf_var_dict["Ozone Mass Flow (lb/hr)"] = self.ozone_flow_mass
         self._perf_var_dict["Ozone Unit Power Demand (kW)"] = self.ozone_generation_power
