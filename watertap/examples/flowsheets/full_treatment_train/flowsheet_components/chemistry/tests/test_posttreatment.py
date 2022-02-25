@@ -29,7 +29,6 @@ from watertap.examples.flowsheets.full_treatment_train.util import check_dof
 from pyomo.environ import TransformationFactory
 from pyomo.network import Arc
 
-
 __author__ = "Austin Ladshaw"
 
 @pytest.mark.component

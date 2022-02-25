@@ -20,7 +20,6 @@ from watertap.examples.flowsheets.full_treatment_train.analysis import (flowshee
                                                                flowsheet_softening,
                                                                flowsheet_softening_two_stage)
 
-
 @pytest.mark.component
 def test_flowsheet_NF():
     m = flowsheet_NF.optimize_flowsheet(system_recovery=0.5)
