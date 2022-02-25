@@ -16,9 +16,11 @@ from pyomo.environ import (Block,
                            Set,
                            Var,
                            Param,
+                           Expression,
                            Suffix,
                            NonNegativeReals,
                            Reference,
+                           value,
                            units as pyunits)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -232,7 +234,7 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
         self.initial_turbidity_ntu = Var(
             self.flowsheet().config.time,
             initialize=50,
-            bounds=(0, 1000),
+            bounds=(0, 10000),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc='Initial measured Turbidity (NTU) from Jar Test')
@@ -240,7 +242,7 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
         self.final_turbidity_ntu = Var(
             self.flowsheet().config.time,
             initialize=1,
-            bounds=(0, 1000),
+            bounds=(0, 10000),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
             doc='Final measured Turbidity (NTU) from Jar Test')
@@ -344,27 +346,28 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
             return (self.tss_loss_rate[t] == input_rate - exit_rate)
 
         # Constraint for tds gain rate based on 'chemical_doses' and 'chemical_additives'
-        self.tds_gain_rate = Var(
-            self.flowsheet().config.time,
-            initialize=0,
-            bounds=(0, 100),
-            domain=NonNegativeReals,
-            units=units_meta('mass')*units_meta('time')**-1,
-            doc='Mass per time gain rate of TDS based on the chemicals added for coagulation')
+        if self.config.chemical_additives:
+            self.tds_gain_rate = Var(
+                self.flowsheet().config.time,
+                initialize=0,
+                bounds=(0, 100),
+                domain=NonNegativeReals,
+                units=units_meta('mass')*units_meta('time')**-1,
+                doc='Mass per time gain rate of TDS based on the chemicals added for coagulation')
 
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Constraint for the loss rate of TSS to be used in mass_transfer_term")
-        def eq_tds_gain_rate(self, t):
-            sum = 0
-            for j in self.config.chemical_additives.keys():
-                chem_dose = pyunits.convert(self.chemical_doses[t, j],
-                                to_units=units_meta('mass')*units_meta('length')**-3)
-                chem_dose = chem_dose/self.chemical_mw[j] * \
-                        self.salt_from_additive_mole_ratio[j] * \
-                        self.salt_mw[j]*self.feed_side.properties_out[t].flow_vol_phase['Liq']
-                sum = sum+chem_dose
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Constraint for the loss rate of TSS to be used in mass_transfer_term")
+            def eq_tds_gain_rate(self, t):
+                sum = 0
+                for j in self.config.chemical_additives.keys():
+                    chem_dose = pyunits.convert(self.chemical_doses[t, j],
+                                    to_units=units_meta('mass')*units_meta('length')**-3)
+                    chem_dose = chem_dose/self.chemical_mw[j] * \
+                            self.salt_from_additive_mole_ratio[j] * \
+                            self.salt_mw[j]*self.feed_side.properties_out[t].flow_vol_phase['Liq']
+                    sum = sum+chem_dose
 
-            return (self.tds_gain_rate[t] == sum)
+                return (self.tds_gain_rate[t] == sum)
 
         # Add constraints for mass transfer terms
         @self.Constraint(self.flowsheet().config.time,
@@ -377,11 +380,59 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
             elif (p, j) == ('Liq', 'Sludge'):
                 return self.feed_side.mass_transfer_term[t, p, j] == self.tss_loss_rate[t]
             elif (p, j) == ('Liq', 'TDS'):
-                return self.feed_side.mass_transfer_term[t, p, j] == self.tds_gain_rate[t]
+                if self.config.chemical_additives:
+                    return self.feed_side.mass_transfer_term[t, p, j] == self.tds_gain_rate[t]
+                else:
+                    return self.feed_side.mass_transfer_term[t, p, j] == 0.0
             else:
                 return self.feed_side.mass_transfer_term[t, p, j] == 0.0
 
-    # # TODO: Add user access functions for setting up the problem
+    # Return a scalar expression for the inlet concentration of TSS
+    def compute_inlet_tss_mass_concentration(self, t):
+        """
+        Function to generate an expression that would represent the mass
+        concentration of TSS at the inlet port of the unit. Inlet ports
+        are generally established upstream, but this will be useful for
+        establishing the inlet TSS when an upstream TSS is unknown. This
+        level of inlet TSS is based off of measurements made of Turbidity
+        during the Jar Test.
+
+        Keyword Arguments:
+            self : this unit model object
+            t : time index on the flowsheet
+
+        Returns: Expression
+
+        Recover the numeric value by using 'value(Expression)'
+        """
+        units_meta = self.config.property_package.get_metadata().get_derived_units
+        return pyunits.convert(self.slope[t]*self.initial_turbidity_ntu[t] + self.intercept[t],
+                                to_units=units_meta('mass')*units_meta('length')**-3)
+
+    # Return a scale expression for the inlet mass flow rate of TSS
+    def compute_inlet_tss_mass_flow(self, t):
+        """
+        Function to generate an expression that would represent the mass
+        flow rate of TSS at the inlet port of the unit. Inlet ports
+        are generally established upstream, but this will be useful for
+        establishing the inlet TSS when an upstream TSS is unknown. This
+        level of inlet TSS is based off of measurements made of Turbidity
+        during the Jar Test.
+
+        Keyword Arguments:
+            self : this unit model object
+            t : time index on the flowsheet
+
+        Returns: Expression
+
+        Recover the numeric value by using 'value(Expression)'
+        """
+        return self.feed_side.properties_in[t].flow_vol_phase['Liq']*self.compute_inlet_tss_mass_concentration(t)
+
+    # Function to automate fixing of the Turbidity v TSS relation params to defaults
+    def fix_tss_turbidity_relation_defaults(self):
+        self.slope.fix()
+        self.intercept.fix()
 
     # initialize method
     def initialize(
@@ -438,4 +489,126 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        # # TODO:  Fill out scaling
+        units_meta = self.config.property_package.get_metadata().get_derived_units
+
+        # scaling factors for turbidity relationship
+        #       Supressing warning (these factors are not very important)
+        if iscale.get_scaling_factor(self.slope) is None:
+            sf = iscale.get_scaling_factor(self.slope, default=1, warning=False)
+            iscale.set_scaling_factor(self.slope, sf)
+        if iscale.get_scaling_factor(self.intercept) is None:
+            sf = iscale.get_scaling_factor(self.intercept, default=1, warning=False)
+            iscale.set_scaling_factor(self.intercept, sf)
+
+        # scaling factors for turbidity measurements and chemical doses
+        #       Supressing warning
+        if iscale.get_scaling_factor(self.initial_turbidity_ntu) is None:
+            sf = iscale.get_scaling_factor(self.initial_turbidity_ntu, default=1, warning=False)
+            iscale.set_scaling_factor(self.initial_turbidity_ntu, sf)
+        if iscale.get_scaling_factor(self.final_turbidity_ntu) is None:
+            sf = iscale.get_scaling_factor(self.final_turbidity_ntu, default=1, warning=False)
+            iscale.set_scaling_factor(self.final_turbidity_ntu, sf)
+        if iscale.get_scaling_factor(self.chemical_doses) is None:
+            sf = iscale.get_scaling_factor(self.chemical_doses, default=1, warning=False)
+            iscale.set_scaling_factor(self.chemical_doses, sf)
+
+        # set scaling for tss_loss_rate
+        if iscale.get_scaling_factor(self.tss_loss_rate) is None:
+            sf = 0
+            for t in self.feed_side.properties_in:
+                sf += value(self.feed_side.properties_in[t].flow_mass_phase_comp['Liq','TSS'])
+            sf = sf / len(self.feed_side.properties_in)
+            if sf < 1e-6:
+                sf = 0.001
+            iscale.set_scaling_factor(self.tss_loss_rate, 1/sf)
+
+            for ind, c in self.eq_tss_loss_rate.items():
+                iscale.constraint_scaling_transform(c, 1/sf)
+
+        # set scaling for tds_gain_rate
+        if self.config.chemical_additives:
+            if iscale.get_scaling_factor(self.tds_gain_rate) is None:
+                sf = 0
+                for t in self.feed_side.properties_in:
+                    sum = 0
+                    for j in self.config.chemical_additives.keys():
+                        chem_dose = pyunits.convert(self.chemical_doses[t, j],
+                                        to_units=units_meta('mass')*units_meta('length')**-3)
+                        chem_dose = chem_dose/self.chemical_mw[j] * \
+                                self.salt_from_additive_mole_ratio[j] * \
+                                self.salt_mw[j]*self.feed_side.properties_in[t].flow_vol_phase['Liq']
+                        sum = sum+chem_dose
+                    sf += value(sum)
+                sf = sf / len(self.feed_side.properties_in)
+                if sf < 1e-6:
+                    sf = 0.001
+                iscale.set_scaling_factor(self.tds_gain_rate, 1/sf)
+
+                for ind, c in self.eq_tds_gain_rate.items():
+                    iscale.constraint_scaling_transform(c, 1/sf)
+
+        # set scaling for mass transfer terms
+        for ind, c in self.eq_mass_transfer_term.items():
+            if ind[2] == "H2O":
+                sf = 1
+            elif ind[2] == "TDS":
+                if self.config.chemical_additives:
+                    sf = iscale.get_scaling_factor(self.tds_gain_rate)
+                else:
+                    sf = 1
+            elif ind[2] == "TSS":
+                sf = iscale.get_scaling_factor(self.tss_loss_rate)
+            elif ind[2] == "Sludge":
+                sf = iscale.get_scaling_factor(self.tss_loss_rate)
+            else:
+                sf = 1
+            iscale.constraint_scaling_transform(c, sf)
+            iscale.set_scaling_factor(self.feed_side.mass_transfer_term[ind] , sf)
+
+        # update scaling for feed_side.properties_out
+        for t in self.feed_side.properties_out:
+            if iscale.get_scaling_factor(self.feed_side.properties_out[t].dens_mass_phase) is None:
+                iscale.set_scaling_factor(self.feed_side.properties_out[t].dens_mass_phase, 1e-3)
+
+            # need to update scaling factors for TSS, Sludge, and TDS to account for the
+            #   expected change in their respective values from the loss/gain rates
+            for ind in self.feed_side.properties_out[t].flow_mass_phase_comp:
+                if ind[1] == "TSS":
+                    sf_og = iscale.get_scaling_factor(self.feed_side.properties_out[t].flow_mass_phase_comp[ind])
+                    sf_new = iscale.get_scaling_factor(self.tss_loss_rate)
+                    iscale.set_scaling_factor(self.feed_side.properties_out[t].flow_mass_phase_comp[ind], 100*sf_new*(sf_new/sf_og))
+                if ind[1] == "Sludge":
+                    sf_og = iscale.get_scaling_factor(self.feed_side.properties_out[t].flow_mass_phase_comp[ind])
+                    sf_new = iscale.get_scaling_factor(self.tss_loss_rate)
+                    iscale.set_scaling_factor(self.feed_side.properties_out[t].flow_mass_phase_comp[ind], 100*sf_new*(sf_new/sf_og))
+
+            for ind in self.feed_side.properties_out[t].mass_frac_phase_comp:
+                if ind[1] == "TSS":
+                    sf_og = iscale.get_scaling_factor(self.feed_side.properties_out[t].mass_frac_phase_comp[ind])
+                    sf_new = iscale.get_scaling_factor(self.tss_loss_rate)
+                    iscale.set_scaling_factor(self.feed_side.properties_out[t].mass_frac_phase_comp[ind], 100*sf_new*(sf_new/sf_og))
+                if ind[1] == "Sludge":
+                    sf_og = iscale.get_scaling_factor(self.feed_side.properties_out[t].mass_frac_phase_comp[ind])
+                    sf_new = iscale.get_scaling_factor(self.tss_loss_rate)
+                    iscale.set_scaling_factor(self.feed_side.properties_out[t].mass_frac_phase_comp[ind], 100*sf_new*(sf_new/sf_og))
+
+        # set scaling factors for feed_side.properties_in based on feed_side.properties_out
+        for t in self.feed_side.properties_in:
+            if iscale.get_scaling_factor(self.feed_side.properties_in[t].dens_mass_phase) is None:
+                sf = iscale.get_scaling_factor(self.feed_side.properties_out[t].dens_mass_phase)
+                iscale.set_scaling_factor(self.feed_side.properties_in[t].dens_mass_phase, sf)
+
+            if iscale.get_scaling_factor(self.feed_side.properties_in[t].flow_mass_phase_comp) is None:
+                for ind in self.feed_side.properties_in[t].flow_mass_phase_comp:
+                    sf = iscale.get_scaling_factor(self.feed_side.properties_out[t].flow_mass_phase_comp[ind])
+                    iscale.set_scaling_factor(self.feed_side.properties_in[t].flow_mass_phase_comp[ind], sf)
+
+            if iscale.get_scaling_factor(self.feed_side.properties_in[t].mass_frac_phase_comp) is None:
+                for ind in self.feed_side.properties_in[t].mass_frac_phase_comp:
+                    sf = iscale.get_scaling_factor(self.feed_side.properties_out[t].mass_frac_phase_comp[ind])
+                    iscale.set_scaling_factor(self.feed_side.properties_in[t].mass_frac_phase_comp[ind], sf)
+
+            if iscale.get_scaling_factor(self.feed_side.properties_in[t].flow_vol_phase) is None:
+                for ind in self.feed_side.properties_in[t].flow_vol_phase:
+                    sf = iscale.get_scaling_factor(self.feed_side.properties_out[t].flow_vol_phase[ind])
+                    iscale.set_scaling_factor(self.feed_side.properties_in[t].flow_vol_phase[ind], sf)
