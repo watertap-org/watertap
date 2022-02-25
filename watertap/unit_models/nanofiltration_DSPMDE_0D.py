@@ -985,23 +985,25 @@ class NanofiltrationData(UnitModelBlockData):
                          doc="Diffusive hindered transport coefficient")
         def hindrance_factor_diffusive_comp(b, t, j):
             eps = 1e-8
-            return (1
-                    - 2.3 * b.lambda_comp[t, j]
-                    + 1.154 * b.lambda_comp[t, j] ** 2
-                    + 0.224 * b.lambda_comp[t, j] ** 3
-                    )
-            # return Expr_if(b.lambda_comp[t, j] > 0.95,
-            #                0.984 * ((1 - b.lambda_comp[t, j]) / b.lambda_comp[t, j]) ** (5 / 2),
-            #                (1 + 9. / 8. * b.lambda_comp[t, j] * log(b.lambda_comp[t, j])
-            #                 - 1.56034 * b.lambda_comp[t, j]
-            #                 + 0.528155 * b.lambda_comp[t, j] ** 2
-            #                 + 1.91521 * b.lambda_comp[t, j] ** 3
-            #                 - 2.81903 * b.lambda_comp[t, j] ** 4
-            #                 + 0.270788 * b.lambda_comp[t, j] ** 5
-            #                 - 1.10115 * b.lambda_comp[t, j] ** 6
-            #                 - 0.435933 * b.lambda_comp[t, j] ** 7) /
-            #                (1 - b.lambda_comp[t, j] + eps) ** 2,
-            #                )
+            return Expr_if(b.lambda_comp[t, j] > 0.95,
+                           0.984 * ((1 - b.lambda_comp[t, j]) / b.lambda_comp[t, j]) ** (5 / 2),
+                           (1 + 9. / 8. * b.lambda_comp[t, j] * log(b.lambda_comp[t, j])
+                            - 1.56034 * b.lambda_comp[t, j]
+                            + 0.528155 * b.lambda_comp[t, j] ** 2
+                            + 1.91521 * b.lambda_comp[t, j] ** 3
+                            - 2.81903 * b.lambda_comp[t, j] ** 4
+                            + 0.270788 * b.lambda_comp[t, j] ** 5
+                            - 1.10115 * b.lambda_comp[t, j] ** 6
+                            - 0.435933 * b.lambda_comp[t, j] ** 7) /
+                           (1 - b.lambda_comp[t, j] + eps) ** 2,
+                           )
+                # Relationship used by Geraldes & Alves
+                # (1
+                #     - 2.3 * b.lambda_comp[t, j]
+                #     + 1.154 * b.lambda_comp[t, j] ** 2
+                #     + 0.224 * b.lambda_comp[t, j] ** 3
+                #     )
+
 
         @self.Expression(self.flowsheet().config.time,
                          solute_set,
