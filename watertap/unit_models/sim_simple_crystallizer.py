@@ -12,7 +12,7 @@ from idaes.core.util.constants import Constants
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-import cryst_prop_pack as props
+import watertap.property_models.cryst_prop_pack as props
 from crystallizer import Crystallization
 
 from io import StringIO
