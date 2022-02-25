@@ -33,7 +33,7 @@ from watertap.core.zero_order_properties import WaterParameterBlock
 solver = get_solver()
 
 
-class TestOzoneZO_with_default_removal:
+class TestOzoneAOPZO_with_default_removal:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -74,7 +74,7 @@ class TestOzoneZO_with_default_removal:
         with pytest.raises(ConfigurationError,
                             match="TOC must be in solute list for Ozonation or Ozone/AOP"):
             model.fs.unit = OzoneAOPZO(default={ "property_package": model.fs.params,
-                                                "database": model.db})
+                                                 "database": model.db})
 
 
     @pytest.mark.unit
@@ -179,7 +179,7 @@ Unit : fs.unit                                                             Time:
     Key                                          : Value      : Fixed : Bounds
                            Oxidant Dosage (mg/L) :     5.0000 :  True : (None, None)
                              Oxidant Flow (kg/s) : 0.00053500 : False : (0, None)
-                     Ozone CT Value (mg/(L*min)) :     1.0000 :  True : (None, None)
+                     Ozone CT Value ((mg*min)/L) :     1.0000 :  True : (None, None)
                         Ozone Contact Time (min) :     1.0000 :  True : (None, None)
                          Ozone Mass Flow (lb/hr) :     9921.9 : False : (0, None)
                   Ozone Mass Transfer Efficiency :    0.80000 :  True : (None, None)
@@ -210,7 +210,7 @@ Unit : fs.unit                                                             Time:
         assert output in stream.getvalue()
 
 
-class TestOzoneZO_w_o_default_removal:
+class TestOzoneAOPZO_w_o_default_removal:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -246,10 +246,8 @@ class TestOzoneZO_w_o_default_removal:
         model.fs.params = WaterParameterBlock(default={"solute_list": ["cryptosporidium", "viruses_enteric"]})
         with pytest.raises(ConfigurationError,
                             match="TOC must be in solute list for Ozonation or Ozone/AOP"):
-
-
             model.fs.unit = OzoneAOPZO(default={ "property_package": model.fs.params,
-                                            "database": model.db})
+                                                 "database": model.db})
 
     @pytest.mark.unit
     def test_build(self, model):
@@ -272,7 +270,7 @@ class TestOzoneZO_w_o_default_removal:
     @pytest.mark.component
     def test_load_parameters(self, model):
         data = model.db.get_unit_operation_parameters("ozone_aop")
-        model.fs.unit.load_parameters_from_database(use_default_removal=True)
+        model.fs.unit.load_parameters_from_database()
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
         assert model.fs.unit.recovery_frac_mass_H2O[0].value == 1
 
@@ -351,7 +349,7 @@ Unit : fs.unit                                                             Time:
     Key                                          : Value      : Fixed : Bounds
                            Oxidant Dosage (mg/L) :     5.0000 :  True : (None, None)
                              Oxidant Flow (kg/s) : 0.00053500 : False : (0, None)
-                     Ozone CT Value (mg/(L*min)) :     1.0000 :  True : (None, None)
+                     Ozone CT Value ((mg*min)/L) :     1.0000 :  True : (None, None)
                         Ozone Contact Time (min) :     1.0000 :  True : (None, None)
                          Ozone Mass Flow (lb/hr) :     9921.9 : False : (0, None)
                   Ozone Mass Transfer Efficiency :    0.80000 :  True : (None, None)
