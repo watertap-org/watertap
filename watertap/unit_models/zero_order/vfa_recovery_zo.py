@@ -26,7 +26,7 @@ __author__ = "Adam Atia"
 
 
 @declare_process_block_class("VFARecoveryZO")
-class UVZOData(ZeroOrderBaseData):
+class VFARecoveryZOData(ZeroOrderBaseData):
     """
     Zero-Order model for a VFA recovery unit.
     """

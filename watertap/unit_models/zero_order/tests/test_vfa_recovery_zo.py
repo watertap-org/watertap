@@ -103,23 +103,17 @@ class TestVFARecoveryZO_no_default:
     def test_solution(self, model):
         assert (pytest.approx(0.011, rel=1e-5) ==
                 value(model.fs.unit.properties_in[0].flow_vol))
-        assert (pytest.approx(83.3333, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["viruses_enteric"]))
-        assert (pytest.approx(83.3333, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["bod"]))
-        assert (pytest.approx(0.01031, rel=1e-5) ==
+        assert (pytest.approx(90.909090, rel=1e-5) ==
+                value(model.fs.unit.properties_in[0].conc_mass_comp["nonbiodegradable_cod"]))
+        assert (pytest.approx(0.0105, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(0.9699321, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["viruses_enteric"]))
-        assert (pytest.approx(29.097963, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["bod"]))
-        assert (pytest.approx(0.001690, rel=1e-5) ==
+        assert (pytest.approx(47.619047, rel=1e-5) ==
+                value(model.fs.unit.properties_treated[0].conc_mass_comp["nonbiodegradable_cod"]))
+        assert (pytest.approx(0.0005, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(585.798816, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["viruses_enteric"]))
-        assert (pytest.approx(414.201183, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["bod"]))
-        assert (pytest.approx(17.80995, abs=1e-5) ==
+        assert (pytest.approx(1000.0, rel=1e-5) ==
+                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nonbiodegradable_cod"]))
+        assert (pytest.approx(0, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
 
     @pytest.mark.solver
@@ -146,20 +140,18 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                              : Value   : Fixed : Bounds
-                  Electricity Demand :  17.810 : False : (None, None)
-               Electricity Intensity : 0.41227 :  True : (None, None)
-                Solute Removal [bod] : 0.70000 :  True : (0, None)
-    Solute Removal [viruses_enteric] : 0.99000 :  True : (0, None)
-                      Water Recovery :  1.0000 :  True : (1e-08, 1.0000001)
+    Key                                   : Value   : Fixed : Bounds
+                       Electricity Demand :  0.0000 : False : (None, None)
+                    Electricity Intensity :  0.0000 :  True : (None, None)
+    Solute Removal [nonbiodegradable_cod] : 0.50000 :  True : (0, None)
+                           Water Recovery :  1.0000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
-                                         Inlet   Treated  Byproduct
-    Volumetric Flowrate                0.012000 0.010310  0.0016900
-    Mass Concentration H2O               833.33   969.93 4.7337e-07
-    Mass Concentration viruses_enteric   83.333  0.96993     585.80
-    Mass Concentration bod               83.333   29.098     414.20
+                                              Inlet   Treated  Byproduct
+    Volumetric Flowrate                     0.011000 0.010500 0.00050000
+    Mass Concentration H2O                    909.09   952.38 1.6000e-06
+    Mass Concentration nonbiodegradable_cod   90.909   47.619     1000.0
 ====================================================================================
 """
 
@@ -239,31 +231,25 @@ class TestVFARecoveryZO_w_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(1.3e-2, rel=1e-5) ==
+        assert (pytest.approx(0.012, rel=1e-5) ==
                 value(model.fs.unit.properties_in[0].flow_vol))
-        assert (pytest.approx(76.9231, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["viruses_enteric"]))
-        assert (pytest.approx(76.9231, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["bod"]))
-        assert (pytest.approx(76.9231, rel=1e-5) ==
+        assert (pytest.approx(83.333, rel=1e-5) ==
+                value(model.fs.unit.properties_in[0].conc_mass_comp["nonbiodegradable_cod"]))
+        assert (pytest.approx(83.333, rel=1e-5) ==
                 value(model.fs.unit.properties_in[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0.01131, rel=1e-5) ==
+        assert (pytest.approx(0.0115, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(0.884173, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["viruses_enteric"]))
-        assert (pytest.approx(26.52519, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["bod"]))
-        assert (pytest.approx(88.417, rel=1e-5) ==
+        assert (pytest.approx(43.478261, rel=1e-5) ==
+                value(model.fs.unit.properties_treated[0].conc_mass_comp["nonbiodegradable_cod"]))
+        assert (pytest.approx(86.95652, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0.0016900, rel=1e-5) ==
+        assert (pytest.approx(0.0005, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(585.798, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["viruses_enteric"]))
-        assert (pytest.approx(414.20, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["bod"]))
-        assert (pytest.approx(4.7337e-07, rel=1e-5) ==
+        assert (pytest.approx(1000.0, rel=1e-5) ==
+                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nonbiodegradable_cod"]))
+        assert (pytest.approx(1.6e-06, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(19.29411198, abs=1e-5) ==
+        assert (pytest.approx(0, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
 
     @pytest.mark.solver
@@ -290,22 +276,20 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                              : Value   : Fixed : Bounds
-                  Electricity Demand :  19.294 : False : (None, None)
-               Electricity Intensity : 0.41227 :  True : (None, None)
-                Solute Removal [bod] : 0.70000 :  True : (0, None)
-                Solute Removal [foo] :  0.0000 :  True : (0, None)
-    Solute Removal [viruses_enteric] : 0.99000 :  True : (0, None)
-                      Water Recovery :  1.0000 :  True : (1e-08, 1.0000001)
+    Key                                   : Value   : Fixed : Bounds
+                       Electricity Demand :  0.0000 : False : (None, None)
+                    Electricity Intensity :  0.0000 :  True : (None, None)
+                     Solute Removal [foo] :  0.0000 :  True : (0, None)
+    Solute Removal [nonbiodegradable_cod] : 0.50000 :  True : (0, None)
+                           Water Recovery :  1.0000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
-                                         Inlet   Treated  Byproduct
-    Volumetric Flowrate                0.013000 0.011310  0.0016900
-    Mass Concentration H2O               769.23   884.17 4.7337e-07
-    Mass Concentration viruses_enteric   76.923  0.88417     585.80
-    Mass Concentration bod               76.923   26.525     414.20
-    Mass Concentration foo               76.923   88.417 4.7337e-07
+                                              Inlet   Treated  Byproduct
+    Volumetric Flowrate                     0.012000 0.011500 0.00050000
+    Mass Concentration H2O                    833.33   869.57 1.6000e-06
+    Mass Concentration nonbiodegradable_cod   83.333   43.478     1000.0
+    Mass Concentration foo                    83.333   86.957 1.6000e-06
 ====================================================================================
 """
 
