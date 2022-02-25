@@ -1,0 +1,7 @@
+default:
+  storage_time:
+    value: 24
+    units: hours
+  surge_capacity:
+    value: 0
+    units: dimensionless
