@@ -36,7 +36,7 @@ default:
     units: min
   concentration_time:  
     value: 1
-    units: mg/(L*min)
+    units: (mg*min)/L
   mass_transfer_efficiency:
     value: 0.8      
     units: dimensionless
