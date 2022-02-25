@@ -45,7 +45,7 @@ The parameter sweep tool currently offers three random classes:
 We will use the :ref:`same setup steps as before<how_to_use_parameter_sweep>` which returns a flowsheet model ``m``, and performs some initialization
 
 .. testcode::
-   
+
     # replace these function calls with
     # those in your own flowsheet module
 
@@ -78,7 +78,7 @@ where the ``spacer_porosity`` attribute will be randomly selected from a uniform
     outputs['LCOW'] = m.fs.costing.LCOW
 
 
-With the flowsheet defined and suitably initialized, along with the definitions for ``sweep_params`` and ``outputs`` on hand, we can call the ``parameter_sweep`` function as before, where we exercise four new keyword arguments: (1) the ability to pass in custom optimization routines to be executed for each sample, (2) the ability to save per-process results for parallel debugging, (3) the specification of the number of samples to draw, and (4) the ability to set a seed for the randomly-generated values which allows consistency to be enforced between runs.
+With the flowsheet defined and suitably initialized, along with the definitions for ``sweep_params`` and ``outputs`` on hand, we can call the ``parameter_sweep`` function as before, where we exercise four new keyword arguments: (1) the ability to pass in custom optimization routines to be executed for each sample, (2) the ability to save per-process results for parallel debugging, (3) the specification of the number of samples to draw, and (4) the ability to set a seed for the randomly-generated values which allows consistency to be enforced between runs. The function passed in to `optimize_function` should return a Pyomo results object (i.e., the return value from calling the `solve` method).
 
 .. testcode::
 
@@ -88,7 +88,7 @@ With the flowsheet defined and suitably initialized, along with the definitions 
     seed = None
 
     # Run the parameter sweep
-    global_results = parameter_sweep(m, sweep_params, outputs, results_file='monte_carlo_results.csv', 
+    global_results = parameter_sweep(m, sweep_params, outputs, csv_results_file='monte_carlo_results.csv', 
         optimize_function=RO_flowsheet.optimize, debugging_data_dir=debugging_data_dir, num_samples=num_samples, seed=seed)
 
 Note that ``num_samples`` must be provided for any of the random sample classes.  For the very small problem size and simple model used here, parallel hardware is almost certainly not necessary.  However, for larger total numbers of samples or more computationally demanding models, a significant speedup may be attained on a multi-core workstation or high performance computing (HPC) cluster.  To distribute the workload between more than one worker, simply call the scipt using the ``mpirun`` command from the command line

@@ -48,7 +48,7 @@ Thus, these steps are left to the user and handled outside the parameter sweep f
 Depending on how the functions you've defined work, this could be as straightforward as
 
 .. testcode::
-   
+
     # replace these function calls with
     # those in your own flowsheet module
 
@@ -87,18 +87,21 @@ For this RO flowsheet we'll report the levelized cost of water, the optimized RO
     outputs = dict()
     outputs['RO membrane area'] = m.fs.RO.area
     outputs['Pump 1 pressure'] = m.fs.P1.control_volume.properties_out[0].pressure
-    outputs['Levelized Cost of Water'] = m.fs.costing.LCOW 
+    outputs['Levelized Cost of Water'] = m.fs.costing.LCOW
 
-Once the problem is setup and the parameters are identified, the parameter_sweep function can finally be invoked which will perform the adjustment and optimization of the model using each combination of variables specified above and saving to `results.csv` (utilizing the solve method defined in our flowsheet module).
+Once the problem is setup and the parameters are identified, the parameter_sweep function can finally be invoked which will perform the adjustment and optimization of the model using each combination of variables specified above and saving to `outputs_results.csv` (utilizing the solve method defined in our flowsheet module).
+If specified, the full results from each run (the value of every variable and expression) will be reported in `full_results.h5`, along with companion text file containing the metadata of the h5 file in `full_results.txt`.
 
 .. testcode::
 
-    parameter_sweep(m, sweep_params, outputs, 'results.csv')
+    parameter_sweep(m, sweep_params, outputs, csv_results_file='outputs_results.csv', h5_results_file='full_results.h5')
 
 .. testcleanup::
 
     import os
-    os.remove('results.csv')
+    os.remove('outputs_results.csv')
+    os.remove('full_results.h5')
+    os.remove('full_results.txt')
 
 Note that there are additional keyword arguments that can be passed to this function if you desire more control or debugging outputs, especially with regard to the restart logic used after a previous optimization attempt has failed or with managing local outputs computed on parallel hardware.  For more information, consult the technical reference for the parameter sweep tool.
 
