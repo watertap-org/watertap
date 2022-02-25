@@ -11,8 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a UV reactor unit.
-operation.
+This module contains a zero-order representation of a Chlorination unit.
 """
 
 from pyomo.environ import units as pyunits, Var
@@ -21,7 +20,7 @@ from idaes.core import declare_process_block_class
 from watertap.core import build_siso, constant_intensity, ZeroOrderBaseData
 
 # Some more information about this module
-__author__ = "Kurban A. Sitterley"
+__author__ = "Kurban Sitterley"
 
 
 @declare_process_block_class("ChlorinationZO")
@@ -48,16 +47,31 @@ class ChlorinationZOData(ZeroOrderBaseData):
                                               units=pyunits.hour,
                                               doc="Chlorine contact time")
         self.concentration_time = Var(self.flowsheet().time,
-                                       units=pyunits.mg/(pyunits.liter*pyunits.minute),
+                                       units=(pyunits.mg*pyunits.minute)/pyunits.liter,
                                        doc="CT value for chlorination")
         self.chlorine_decay_rate = Var(self.flowsheet().time,
-                                       units=pyunits.dimensionless,
+                                       units=pyunits.mg/(pyunits.L*pyunits.hour),
                                        doc="Chlorine decay rate")
 
+        self._fixed_perf_vars.append(self.initial_chlorine_demand)
         self._fixed_perf_vars.append(self.contact_time)
         self._fixed_perf_vars.append(self.concentration_time)
         self._fixed_perf_vars.append(self.chlorine_decay_rate)
 
+        self.chlorine_dose = Var(self.flowsheet().time,
+                                units=pyunits.mg/pyunits.L,
+                                doc="Chlorine dose")
 
-        self._perf_var_dict["Contact Time "] = self.uv_reduced_equivalent_dose
-        self._perf_var_dict["UV Transmittance of Feed"] = self.uv_transmittance_in
+        @self.Constraint(self.flowsheet().time,
+                         doc="Chlorine dose constraint")
+        def chlorine_dose_constraint(b, t):
+            return (b.chlorine_dose[t] ==
+                    self.initial_chlorine_demand[t] + self.chlorine_decay_rate[t] * self.contact_time[t] + 
+                    (self.concentration_time[t] / pyunits.convert(self.contact_time[t], to_units=pyunits.minute)))
+
+        self._perf_var_dict["Chlorine Dose (mg/L)"] = self.chlorine_dose
+        self._perf_var_dict["Initial Chlorine Demand (mg/L)"] = self.initial_chlorine_demand
+        self._perf_var_dict["Contact Time (hr)"] = self.contact_time
+        self._perf_var_dict["CT Value ((mg*min)/L)"] = self.concentration_time
+        self._perf_var_dict["Chlorine Decay Rate (mg/(L*hr))"] = self.chlorine_decay_rate
+        
