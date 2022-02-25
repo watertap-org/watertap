@@ -1,4 +1,4 @@
-default:
+default: # TODO: confirm any differentiation in removal across subtypes
   default_removal_frac_mass_solute:
     value: 0
     units: dimensionless
