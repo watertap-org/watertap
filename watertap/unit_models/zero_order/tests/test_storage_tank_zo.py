@@ -56,7 +56,7 @@ class TestStorageTankZO:
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.fs.unit.config.database == model.db
+        assert model.fs.unit.config.database is model.db
         assert model.fs.unit._tech_type == "storage_tank"
         assert isinstance(model.fs.unit.storage_time, Var)
         assert isinstance(model.fs.unit.surge_capacity, Var)
