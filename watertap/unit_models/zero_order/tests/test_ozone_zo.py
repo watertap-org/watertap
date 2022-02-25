@@ -79,7 +79,7 @@ class TestOzoneZO_with_default_removal:
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.fs.unit.config.database == model.db
+        assert model.fs.unit.config.database is model.db
         assert model.fs.unit._tech_type == "ozonation"
         assert isinstance(model.fs.unit.contact_time, Var)
         assert isinstance(model.fs.unit.concentration_time, Var)
@@ -170,7 +170,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                                          : Value   : Fixed : Bounds
-                     Ozone CT Value (mg/(L*min)) :  1.0000 :  True : (None, None)
+                     Ozone CT Value ((mg*min)/L) :  1.0000 :  True : (None, None)
                         Ozone Contact Time (min) :  1.0000 :  True : (None, None)
                          Ozone Mass Flow (lb/hr) :  9921.9 : False : (0, None)
                   Ozone Mass Transfer Efficiency : 0.80000 :  True : (None, None)
@@ -242,7 +242,7 @@ class TestOzoneZO_w_o_default_removal:
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.fs.unit.config.database == model.db
+        assert model.fs.unit.config.database is model.db
         assert model.fs.unit._tech_type == "ozonation"
         assert isinstance(model.fs.unit.contact_time, Var)
         assert isinstance(model.fs.unit.concentration_time, Var)
@@ -330,7 +330,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                                          : Value   : Fixed : Bounds
-                     Ozone CT Value (mg/(L*min)) :  1.0000 :  True : (None, None)
+                     Ozone CT Value ((mg*min)/L) :  1.0000 :  True : (None, None)
                         Ozone Contact Time (min) :  1.0000 :  True : (None, None)
                          Ozone Mass Flow (lb/hr) :  9921.9 : False : (0, None)
                   Ozone Mass Transfer Efficiency : 0.80000 :  True : (None, None)
