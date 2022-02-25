@@ -25,11 +25,3 @@ default:
     value: 0.9999
     units: dimensionless
     reference: Texas Water Development Board IT3PR User Manual
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless
-  removal_frac_mass_solute:
-    tss:
-      value: 0.9
-      units: dimensionless
-      constituent_longform: Total Suspended Solids (TSS)
