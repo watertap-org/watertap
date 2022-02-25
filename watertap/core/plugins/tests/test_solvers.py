@@ -83,12 +83,12 @@ class TestIpoptWaterTAP:
 
         assert s._model is m
 
-        assert m.a.lb == -0.5 - 1e-08
-        assert m.a.ub == 0.5 + 1e-08
-        assert m.b.a[1].lb == -10 - 1e-07
-        assert m.b.a[1].ub == 10 + 1e-07
-        assert m.b.a[2].lb == -10 - 1e-07
-        assert m.b.a[2].ub == 10 + 1e-07
+        assert m.a.lb == -0.5 - 1e-10
+        assert m.a.ub == 0.5 + 1e-10
+        assert m.b.a[1].lb == -10 - 1e-09
+        assert m.b.a[1].ub == 10 + 1e-09
+        assert m.b.a[2].lb == -10 - 1e-09
+        assert m.b.a[2].ub == 10 + 1e-09
 
     @pytest.mark.unit
     def test_postsolve_unscaled_constraints_and_bounds_cleanup(self, m, s):
@@ -248,7 +248,7 @@ class TestIpoptWaterTAP:
     @pytest.mark.unit
     def test_default_bound_relax_small(self, m2, s):
         s.solve(m2, tee=True)
-        assert pyo.value(m2.x) == pytest.approx(4.9999999e-17, abs=0, rel=1e-8)
+        assert pyo.value(m2.x) == pytest.approx(5.000000024092977e-17, abs=0, rel=1e-8)
 
     @pytest.mark.unit
     def test_set_bound_relax_1_small(self, m2, s):
@@ -272,7 +272,7 @@ class TestIpoptWaterTAP:
         m2.x.ub = 1.5*m2.factor
         m2.scaling_factor[m2.x] = pyo.value(1./m2.factor)
         s.solve(m2, tee=True)
-        assert pyo.value(m2.x) == pytest.approx(4.9999999e+15, abs=0, rel=1e-8)
+        assert pyo.value(m2.x) == pytest.approx(5.000000024092977e+15, abs=0, rel=1e-8)
 
     @pytest.mark.unit
     def test_set_bound_relax_1_big(self, m2, s):

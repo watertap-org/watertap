@@ -11,6 +11,7 @@
 #
 ###############################################################################
 import pytest
+import os
 import numpy as np
 
 from watertap.examples.flowsheets.RO_with_energy_recovery.monte_carlo_sampling_RO_ERD import run_parameter_sweep
@@ -39,6 +40,38 @@ def test_monte_carlo_sampling():
         assert value == pytest.approx(truth_value)
 
 @pytest.mark.component
+def test_monte_carlo_sampling_with_files():
+
+    # Define truth values (defined with rng_seed=1)
+    truth_values = np.array([[2.849231e-12, 2.950054e-08, 9.800058e-01, 2.735876e+00, 4.586214e-01],
+                             [3.463516e-12, 3.307973e-08, 9.833850e-01, 2.729647e+00, 4.482848e-01],
+                             [3.619397e-12, 3.061071e-08, 9.799266e-01, 2.729649e+00, 4.462111e-01],
+                             [3.694122e-12, 2.469930e-08, 9.626206e-01, 2.734365e+00, 4.449874e-01],
+                             [3.735914e-12, 3.338791e-08, 9.774600e-01, 2.729575e+00, 4.446256e-01],
+                             [3.875315e-12, 3.791408e-08, 9.815712e-01, 2.727602e+00, 4.430653e-01],
+                             [4.159520e-12, 3.521107e-08, 9.612178e-01, 2.731659e+00, 4.395959e-01],
+                             [4.432704e-12, 4.066885e-08, 9.507315e-01, 2.733099e+00, 4.367417e-01],
+                             [4.812173e-12, 4.231054e-08, 9.776751e-01, 2.724421e+00, 4.347062e-01],
+                             [4.872406e-12, 3.413786e-08, 9.895544e-01, 2.721691e+00, 4.350705e-01]])
+
+    # Define the file of a
+    cwd = os.path.dirname(__file__)
+    sweep_params_fpath = os.path.join(cwd, "..", "mc_sweep_params.yaml")
+    default_config_fpath = os.path.join(cwd, "..", "default_configuration.yaml")
+
+    print("sweep_params_fpath = ", sweep_params_fpath)
+    print("default_config_fpath = ", default_config_fpath)
+
+    # Run the parameter sweep
+    global_results = run_parameter_sweep(seed=1, read_sweep_params_from_file=True,
+        sweep_params_fname=sweep_params_fpath, read_model_defauls_from_file=True,
+        defaults_fname=default_config_fpath)
+
+    # Compare individual values for specificity
+    for value, truth_value in zip(global_results.flatten(), truth_values.flatten()):
+        assert value == pytest.approx(truth_value)
+
+@pytest.mark.component
 def test_lhs_sampling():
 
     # Define truth values (defined with rng_seed=1)
@@ -55,7 +88,7 @@ def test_lhs_sampling():
 
 
     # Run the parameter sweep
-    global_results = run_parameter_sweep(None, seed=1, use_LHS=True)
+    global_results = run_parameter_sweep(seed=1, use_LHS=True)
 
     # Compare individual values for specificity
     for value, truth_value in zip(global_results.flatten(), truth_values.flatten()):
