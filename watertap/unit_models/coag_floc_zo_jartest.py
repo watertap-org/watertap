@@ -308,11 +308,6 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
         self.add_outlet_port(name='outlet', block=self.feed_side)
 
         # Check _phase_component_set for required items
-        if ('Liq', 'TSS') not in self.config.property_package._phase_component_set:
-            raise ConfigurationError(
-                "Coagulation-Flocculation model MUST contain ('Liq','TSS') as a component, but "
-                "the property package has only specified the following components {}"
-                    .format([p for p in self.config.property_package._phase_component_set]))
         if ('Liq', 'TDS') not in self.config.property_package._phase_component_set:
             raise ConfigurationError(
                 "Coagulation-Flocculation model MUST contain ('Liq','TDS') as a component, but "
@@ -321,6 +316,11 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
         if ('Liq', 'Sludge') not in self.config.property_package._phase_component_set:
             raise ConfigurationError(
                 "Coagulation-Flocculation model MUST contain ('Liq','Sludge') as a component, but "
+                "the property package has only specified the following components {}"
+                    .format([p for p in self.config.property_package._phase_component_set]))
+        if ('Liq', 'TSS') not in self.config.property_package._phase_component_set:
+            raise ConfigurationError(
+                "Coagulation-Flocculation model MUST contain ('Liq','TSS') as a component, but "
                 "the property package has only specified the following components {}"
                     .format([p for p in self.config.property_package._phase_component_set]))
 
@@ -549,9 +549,7 @@ class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
 
         # set scaling for mass transfer terms
         for ind, c in self.eq_mass_transfer_term.items():
-            if ind[2] == "H2O":
-                sf = 1
-            elif ind[2] == "TDS":
+            if ind[2] == "TDS":
                 if self.config.chemical_additives:
                     sf = iscale.get_scaling_factor(self.tds_gain_rate)
                 else:

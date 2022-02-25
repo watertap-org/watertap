@@ -12,6 +12,8 @@
 ###############################################################################
 import pytest
 from watertap.property_models.coagulation_prop_pack import CoagulationParameterBlock
+from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
+from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
 from watertap.unit_models.coag_floc_zo_jartest import CoagulationFlocculationZO_JarTestModel
 from pyomo.environ import (ConcreteModel,
                            assert_optimal_termination,
@@ -84,6 +86,13 @@ class TestCoagulationZOJarTest_withChemicals():
         assert len(model.fs.unit.salt_mw) == 2
         assert isinstance(model.fs.unit.salt_from_additive_mole_ratio, Param)
         assert len(model.fs.unit.salt_from_additive_mole_ratio) == 2
+        assert isinstance(model.fs.unit.tss_loss_rate, Var)
+        assert isinstance(model.fs.unit.eq_tss_loss_rate, Constraint)
+
+        assert isinstance(model.fs.unit.tds_gain_rate, Var)
+        assert isinstance(model.fs.unit.eq_tds_gain_rate, Constraint)
+
+        assert isinstance(model.fs.unit.eq_mass_transfer_term, Constraint)
 
 
 # -----------------------------------------------------------------------------
@@ -116,6 +125,13 @@ class TestCoagulationZOJarTest_withNoChemicals():
         assert len(model.fs.unit.salt_mw) == 0
         assert isinstance(model.fs.unit.salt_from_additive_mole_ratio, Param)
         assert len(model.fs.unit.salt_from_additive_mole_ratio) == 0
+        assert isinstance(model.fs.unit.tss_loss_rate, Var)
+        assert isinstance(model.fs.unit.eq_tss_loss_rate, Constraint)
+
+        assert not hasattr(model.fs.unit, "tds_gain_rate")
+        assert not hasattr(model.fs.unit, "eq_tds_gain_rate")
+
+        assert isinstance(model.fs.unit.eq_mass_transfer_term, Constraint)
 
 # -----------------------------------------------------------------------------
 # Start test class with bad config
@@ -203,3 +219,27 @@ class TestCoagulationZOJarTest_withBadConfig():
             model.fs.unit = CoagulationFlocculationZO_JarTestModel(default={
                 "property_package": model.fs.properties,
                 "chemical_additives": bad_dict6 })
+
+# -----------------------------------------------------------------------------
+# Start test class with bad config
+class TestCoagulationZOJarTest_withBadProperties():
+    @pytest.fixture(scope="class")
+    def coag_obj_bad_properties(self):
+        model = ConcreteModel()
+        model.fs = FlowsheetBlock(default={"dynamic": False})
+
+        return model
+
+    @pytest.mark.unit
+    def test_build_model_catch_prop_errors(self, coag_obj_bad_properties):
+        model = coag_obj_bad_properties
+
+        with pytest.raises(ConfigurationError):
+            model.fs.properties = NaClParameterBlock()
+            model.fs.unit = CoagulationFlocculationZO_JarTestModel(default={
+                "property_package": model.fs.properties })
+
+        with pytest.raises(ConfigurationError):
+            model.fs.properties = SeawaterParameterBlock()
+            model.fs.unit = CoagulationFlocculationZO_JarTestModel(default={
+                "property_package": model.fs.properties })
