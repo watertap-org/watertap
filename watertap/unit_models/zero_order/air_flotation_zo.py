@@ -10,17 +10,32 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
+"""
+This module contains a zero-order representation of an air flotation unit.
+operation.
+"""
 
-from .air_flotation_zo import AirFlotationZO
-from .chemical_addition_zo import ChemicalAdditionZO
-from .feed_zo import FeedZO
-from .nanofiltration_zo import NanofiltrationZO
-from .clarifier_zo import ClarifierZO
-from .pump_zo import PumpZO
-from .sedimentation_zo import SedimentationZO
-from .coag_and_floc_zo import CoagulationFlocculationZO
-from .uv_zo import UVZO
-from .uv_aop_zo import UVAOPZO
-from .anaerobic_digestion_oxidation_zo import AnaerobicDigestionOxidationZO
-from .ion_exchange_zo import IonExchangeZO
+from pyomo.environ import Constraint, units as pyunits, Var
+from idaes.core import declare_process_block_class
 
+from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
+
+# Some more information about this module
+__author__ = "Chenyu Wang"
+
+
+@declare_process_block_class("AirFlotationZO")
+class AirFlotationZOData(ZeroOrderBaseData):
+    """
+    Zero-Order model for an Air Flotation unit operation.
+    """
+
+    CONFIG = ZeroOrderBaseData.CONFIG()
+
+    def build(self):
+        super().build()
+
+        self._tech_type = "air_flotation"
+
+        build_sido(self)
+        constant_intensity(self)
