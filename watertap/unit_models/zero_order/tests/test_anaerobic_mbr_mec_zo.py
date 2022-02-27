@@ -46,9 +46,16 @@ class TestAnaerobicMBRMECZO:
             "property_package": m.fs.params,
             "database": m.db})
 
-        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
-        m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
-        m.fs.unit.inlet.flow_mass_comp[0, "bod"].fix(1)
+        feed_state = {('flow_vol', None): 4.375e-5,
+                      ('conc_mass_comp', 'cod'): 2.3,
+                      ('conc_mass_comp', 'nonbiodegradable_cod'): 0,
+                      ('conc_mass_comp', 'ammonium_as_nitrogen'): .105,
+                      ('conc_mass_comp', 'phosphate_as_phosphorous'): .05,
+                      }
+        # m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
+        # m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
+        # m.fs.unit.inlet.flow_mass_comp[0, "bod"].fix(1)
+        m.fs.unit.properties_in[0].calculate_state(var_args=feed_state, hold_state=True)
 
         return m
 
