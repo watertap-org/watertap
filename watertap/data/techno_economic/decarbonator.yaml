@@ -25,7 +25,7 @@ default:
     value: 0
     units: dimensionless
   removal_frac_mass_solute:
-    CO2:
+    carbon_dioxide:
       value: 0.5    #todo: revisit this value later on
       units: dimensionless
       constituent_longform: Carbon Dioxide (CO2)

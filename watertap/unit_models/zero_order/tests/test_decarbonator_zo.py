@@ -39,14 +39,14 @@ class TestDecarbonatorZO:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["CO2"]})
+            default={"solute_list": ["carbon_dioxide"]})
 
         m.fs.unit = DecarbonatorZO(default={
             "property_package": m.fs.params,
             "database": m.db})
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
-        m.fs.unit.inlet.flow_mass_comp[0, "CO2"].fix(1)
+        m.fs.unit.inlet.flow_mass_comp[0, "carbon_dioxide"].fix(1)
 
         return m
 
@@ -103,11 +103,11 @@ class TestDecarbonatorZO:
         assert (pytest.approx(1.1e-2, rel=1e-5) ==
                 value(model.fs.unit.properties_in[0].flow_vol))
         assert (pytest.approx(90.9091, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["CO2"]))
+                value(model.fs.unit.properties_in[0].conc_mass_comp["carbon_dioxide"]))
         assert (pytest.approx(0.0105, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].flow_vol))
         assert (pytest.approx(47.6190, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["CO2"]))
+                value(model.fs.unit.properties_treated[0].conc_mass_comp["carbon_dioxide"]))
         assert (pytest.approx(0.0, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
 
@@ -125,17 +125,17 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                   : Value   : Fixed : Bounds
-       Electricity Demand :  0.0000 : False : (None, None)
-    Electricity Intensity :  0.0000 :  True : (None, None)
-     Solute Removal [CO2] : 0.50000 :  True : (0, None)
+    Key                             : Value   : Fixed : Bounds
+                 Electricity Demand :  0.0000 : False : (None, None)
+              Electricity Intensity :  0.0000 :  True : (None, None)
+    Solute Removal [carbon_dioxide] : 0.50000 :  True : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
-                             Inlet   Treated
-    Volumetric Flowrate    0.011000 0.010500
-    Mass Concentration H2O   909.09   952.38
-    Mass Concentration CO2   90.909   47.619
+                                        Inlet   Treated
+    Volumetric Flowrate               0.011000 0.010500
+    Mass Concentration H2O              909.09   952.38
+    Mass Concentration carbon_dioxide   90.909   47.619
 ====================================================================================
 """
 
@@ -149,14 +149,14 @@ class TestDecarbonatorZO_w_default_removal:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["CO2", "foo"]})
+            default={"solute_list": ["carbon_dioxide", "foo"]})
 
         m.fs.unit = DecarbonatorZO(default={
             "property_package": m.fs.params,
             "database": m.db})
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
-        m.fs.unit.inlet.flow_mass_comp[0, "CO2"].fix(1)
+        m.fs.unit.inlet.flow_mass_comp[0, "carbon_dioxide"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(1)
 
         return m
@@ -217,13 +217,13 @@ class TestDecarbonatorZO_w_default_removal:
         assert (pytest.approx(1.2e-2, rel=1e-5) ==
                 value(model.fs.unit.properties_in[0].flow_vol))
         assert (pytest.approx(83.3333, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["CO2"]))
+                value(model.fs.unit.properties_in[0].conc_mass_comp["carbon_dioxide"]))
         assert (pytest.approx(83.3333, rel=1e-5) ==
                 value(model.fs.unit.properties_in[0].conc_mass_comp["foo"]))
         assert (pytest.approx(0.0115, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].flow_vol))
         assert (pytest.approx(43.4783, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["CO2"]))
+                value(model.fs.unit.properties_treated[0].conc_mass_comp["carbon_dioxide"]))
         assert (pytest.approx(86.9565, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
         assert (pytest.approx(0.0, abs=1e-5) ==
@@ -243,19 +243,19 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                   : Value   : Fixed : Bounds
-       Electricity Demand :  0.0000 : False : (None, None)
-    Electricity Intensity :  0.0000 :  True : (None, None)
-     Solute Removal [CO2] : 0.50000 :  True : (0, None)
-     Solute Removal [foo] :  0.0000 :  True : (0, None)
+    Key                             : Value   : Fixed : Bounds
+                 Electricity Demand :  0.0000 : False : (None, None)
+              Electricity Intensity :  0.0000 :  True : (None, None)
+    Solute Removal [carbon_dioxide] : 0.50000 :  True : (0, None)
+               Solute Removal [foo] :  0.0000 :  True : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
-                             Inlet   Treated
-    Volumetric Flowrate    0.012000 0.011500
-    Mass Concentration H2O   833.33   869.57
-    Mass Concentration CO2   83.333   43.478
-    Mass Concentration foo   83.333   86.957
+                                        Inlet   Treated
+    Volumetric Flowrate               0.012000 0.011500
+    Mass Concentration H2O              833.33   869.57
+    Mass Concentration carbon_dioxide   83.333   43.478
+    Mass Concentration foo              83.333   86.957
 ====================================================================================
 """
 

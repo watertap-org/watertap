@@ -117,5 +117,5 @@ viruses_enteric:
   constituent_longform: Viruses (enteric)
 zinc:
   constituent_longform: Zinc
-CO2:
+carbon_dioxide:
   constituent_longform: Carbon Dioxide
