@@ -140,6 +140,16 @@ class ElectrolyteDB:
             result = False
         return result
 
+    def _client_can_connect(self, client: MongoClient) -> bool:
+        # NOTE the "ping" command is chosen because it's the only one available when using mocked MongoClient instances
+        # therefore, having a single commands that works for both mock- and non-mock objects makes the mocking easier
+        server_resp = client.admin.command("ping")
+        try:
+            return bool(server_resp["ok"])
+        except (KeyError, TypeError) as e:
+            _log.exception(f"Unexpected format for server response: {server_resp}")
+        return None
+
     def _mongoclient(self, url: str, check, **client_kw) -> Union[MongoClient, None]:
         _log.debug(f"Begin: Create MongoDB client. url={url}")
         mc = MongoClient(url, **client_kw)
@@ -150,8 +160,8 @@ class ElectrolyteDB:
         # check that client actually works
         _log.info(f"Connection check MongoDB client url={url}")
         try:
-            mc.admin.command("ismaster")
-            self._mongoclient_connect_status["initial"] = "ok"
+            if self._client_can_connect(mc):
+                self._mongoclient_connect_status["initial"] = "ok"
             _log.info("MongoDB connection succeeded")
         except ConnectionFailure as conn_err:
             mc = None
@@ -164,8 +174,8 @@ class ElectrolyteDB:
                               f"for client certificates ({certifi.where()})")
                     try:
                         mc = MongoClient(url, tlsCAFile=certifi.where(), **client_kw)
-                        mc.admin.command("ismaster")
-                        _log.info("Retried MongoDB connection succeeded")
+                        if self._client_can_connect(mc):
+                            _log.info("Retried MongoDB connection succeeded")
                     except ConnectionFailure as err:
                         mc = None
                         self._mongoclient_connect_status["retry"] = str(err)
