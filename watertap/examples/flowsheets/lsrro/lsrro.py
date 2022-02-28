@@ -614,16 +614,29 @@ if __name__ == "__main__":
     #     m = main(int(sys.argv[1]), float(sys.argv[2]))
     # else:
     #     print("Usage 3 (specify inputs in main before running): python lsrro.py")
-    m = main(number_of_stages=7,
-             # water_recovery=0.7,
-             Cin=125,
-             Cbrine=250,# mg/L
-             A_case="optimize",
-             B_case="optimize",
-             AB_tradeoff="no constraint",
-             nacl_solubility_limit=True,
-             permeate_quality_limit=None,
-             has_CP=True,
-             has_Pdrop=True,
-             A_fixed=1.5/3.6e11 #2.78e-12
-             )
+    num_stages = []
+    total_area = []
+    final_lcow = []
+    final_sec = []
+    final_perm = []
+    for n in range(4, 9):
+        m = main(number_of_stages=n,
+                 # water_recovery=0.7,
+                 Cin=70,
+                 Cbrine=250,# mg/L
+                 A_case="optimize",
+                 B_case="optimize",
+                 AB_tradeoff="inequality constraint",
+                 nacl_solubility_limit=True,
+                 permeate_quality_limit=1000e-6,
+                 has_CP=True,
+                 has_Pdrop=True,
+                 A_fixed=1.5/3.6e11 #2.78e-12
+                 )
+
+        num_stages.append(value(m.fs.NumberOfStages))
+        total_area.append(value(sum(m.fs.ROUnits[a].area for a in range(1,m.fs.NumberOfStages+1))))
+        final_lcow.append(value(m.fs.costing.LCOW))
+        final_sec.append(value(m.fs.specific_energy_consumption))
+        final_perm.append(value(m.fs.product.flow_mass_phase_comp[0, 'Liq', 'NaCl']/
+                         sum(m.fs.product.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])))
