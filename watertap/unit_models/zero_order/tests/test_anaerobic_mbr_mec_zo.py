@@ -224,14 +224,28 @@ class Test_AnMBRMEC_ZO_subtype:
 
 
 @pytest.mark.unit
-def test_ffCOD_in_solute_list():
+def test_ffCOD_not_in_solute_list():
     model = ConcreteModel()
     model.db = Database()
 
     model.fs = FlowsheetBlock(default={"dynamic": False})
     model.fs.params = WaterParameterBlock(default={"solute_list": ["cod"]})
-    with pytest.raises(KeyError,
+    with pytest.raises(ValueError,
                        match="nonbiodegradable_cod must be included in the solute list since"
                              " this unit model converts cod to nonbiodegradable_cod."):
+        model.fs.unit = AnaerobicMBRMECZO(default={"property_package": model.fs.params,
+                                                   "database": model.db})
+
+
+@pytest.mark.unit
+def test_COD_not_in_solute_list():
+    model = ConcreteModel()
+    model.db = Database()
+
+    model.fs = FlowsheetBlock(default={"dynamic": False})
+    model.fs.params = WaterParameterBlock(default={"solute_list": ["nonbiodegradable_cod"]})
+    with pytest.raises(ValueError,
+                       match="fs.unit - key_reactant cod for reaction cod_to_nonbiodegradable_cod " 
+                             "is not in the component list used by the assigned property package."):
         model.fs.unit = AnaerobicMBRMECZO(default={"property_package": model.fs.params,
                                                    "database": model.db})
