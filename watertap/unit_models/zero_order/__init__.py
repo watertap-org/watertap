@@ -14,7 +14,6 @@
 from .vfa_recovery_zo import VFARecoveryZO
 from .aeration_basin_zo import AerationBasinZO
 from .air_flotation_zo import AirFlotationZO
-from .buffer_tank_zo import BufferTankZO
 from .chemical_addition_zo import ChemicalAdditionZO
 from .feed_zo import FeedZO
 from .nanofiltration_zo import NanofiltrationZO
