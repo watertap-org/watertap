@@ -12,6 +12,7 @@
 ###############################################################################
 
 from .anaerobic_mbr_mec_zo import AnaerobicMBRMECZO
+from .vfa_recovery_zo import VFARecoveryZO
 from .aeration_basin_zo import AerationBasinZO
 from .air_flotation_zo import AirFlotationZO
 from .chemical_addition_zo import ChemicalAdditionZO
