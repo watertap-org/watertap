@@ -614,9 +614,9 @@ if __name__ == "__main__":
     #     m = main(int(sys.argv[1]), float(sys.argv[2]))
     # else:
     #     print("Usage 3 (specify inputs in main before running): python lsrro.py")
-    m = main(number_of_stages=8,
+    m = main(number_of_stages=7,
              # water_recovery=0.7,
-             Cin=35,
+             Cin=125,
              Cbrine=250,# mg/L
              A_case="optimize",
              B_case="optimize",
