@@ -167,7 +167,6 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         self.set_default_scaling('pressure', 1e-6)
         self.set_default_scaling('dens_mass_phase', 1e-3, index='Liq')
         self.set_default_scaling('visc_d_phase', 1e3, index='Liq')
-        self.set_default_scaling('diffus_phase_comp', 1e9, index='Liq')
 
 
     @classmethod
@@ -687,8 +686,6 @@ class DSPMDEStateBlockData(StateBlockData):
         for ind, v in self.diffus_phase_comp.items():
             if iscale.get_scaling_factor(v) is None:
                 iscale.set_scaling_factor(self.diffus_phase_comp[ind], 1e10)
-            else:
-                raise
 
         for p, v in self.dens_mass_phase.items():
             if iscale.get_scaling_factor(v) is None:
