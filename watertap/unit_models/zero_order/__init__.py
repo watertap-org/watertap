@@ -11,9 +11,12 @@
 #
 ###############################################################################
 
+from .vfa_recovery_zo import VFARecoveryZO
 from .aeration_basin_zo import AerationBasinZO
 from .air_flotation_zo import AirFlotationZO
+from .bioreactor_zo import BioreactorZO
 from .chemical_addition_zo import ChemicalAdditionZO
+from .decarbonator_zo import DecarbonatorZO
 from .feed_zo import FeedZO
 from .nanofiltration_zo import NanofiltrationZO
 from .clarifier_zo import ClarifierZO
