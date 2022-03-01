@@ -20,21 +20,7 @@ for case_num in [1, 2, 3, 4, 8, 9]:
         pytest_parameterize_list.append(test_case)
 
 @pytest.mark.parametrize('case_num, RO_type', pytest_parameterize_list)
+@pytest.mark.integration
 def test_multi_sweep(case_num, RO_type):
-    # Start MPI communicator
-    comm, rank, num_procs = _init_mpi()
     nx = 1
-
-    fail_counter = 0
-    failed_cases = []
-
-    try:
-        # raise ValueError()
-        global_results, sweep_params = run_analysis(case_num, nx, RO_type, interp_nan_outputs=False)
-
-    except:
-        fail_counter += 1
-        failed_cases.append((case_num, RO_type))
-
-    if fail_counter > 0:
-        pytest.fail(f"multi_sweep.py failed for cases {failed_cases} ")
+    global_results, sweep_params = run_analysis(case_num, nx, RO_type, interp_nan_outputs=False)
