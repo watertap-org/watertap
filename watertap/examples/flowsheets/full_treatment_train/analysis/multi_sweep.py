@@ -20,10 +20,10 @@ def run_analysis(case_num, nx, RO_type):
 
     desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
                     'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
-    
+
     sweep_params = {}
     outputs = {}
-    optimize_kwargs=None
+    optimize_kwargs={'check_termination' : False} # None
 
     if case_num == 1:
         # ================================================================
@@ -205,7 +205,7 @@ def run_analysis(case_num, nx, RO_type):
         raise ValueError('case_num = %d not recognized.' % (case_num))
 
 
-    global_results = parameter_sweep(m, sweep_params, outputs, output_filename, 
+    global_results = parameter_sweep(m, sweep_params, outputs, csv_results_file=output_filename,
                                      optimize_function=opt_function,
                                      optimize_kwargs=optimize_kwargs,
                                      debugging_data_dir=os.path.split(output_filename)[0]+'/local',
@@ -250,8 +250,7 @@ if __name__ == "__main__":
 
         for k, v in sweep_params.items():
             total_samples *= v.num_samples
-            
+
         print('Finished case_num = %d.' % (case_num))
         print('Processed %d swept parameters comprising %d total points.' % (len(sweep_params), total_samples))
         print('Elapsed time = %.1f s.' % (toc-tic))
-
