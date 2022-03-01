@@ -12,7 +12,7 @@
 ###############################################################################
 
 from pyomo.environ import (
-    Block, Constraint, Expression, Var, Param, NonNegativeReals, units as pyunits)
+    Block, Constraint, Expression, Var, Param, NonNegativeReals, Reals, units as pyunits)
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 
@@ -45,11 +45,9 @@ def add_costing_param_block(self):
     b.hp_pump_cost = Var(
         initialize=53 / 1e5 * 3600,
         doc='High pressure pump cost [$/W]')
-    b.erd_cost = Var(
-        ['A', 'B'],
-        initialize={'A': 3134.7, 'B': 0.58},
-        doc='Energy recovery device cost parameters')
-
+    b.pxr_cost = Var(
+        initialize=535,
+        doc='Pressure exchanger cost [$/(m3/h)]')
     # traditional parameters are the only Vars on the block and should be fixed
     for v in b.component_data_objects(Var, descend_into=True):
         if v.value is None:
@@ -130,7 +128,7 @@ def _make_vars(self):
                             domain=NonNegativeReals,
                             doc='Unit capital cost [$]')
     self.operating_cost = Var(initialize=1e3,
-                              domain=NonNegativeReals,
+                              domain=Reals,
                               doc='Operating cost [$/year]')
     iscale.set_scaling_factor(self.capital_cost, 1e-3)
     iscale.set_scaling_factor(self.operating_cost, 1e-1)
@@ -184,18 +182,15 @@ def pressure_changer_costing(self,
         # capital cost
         b_cv_in = b_PC.control_volume.properties_in[0]
         self.eq_capital_cost = Constraint(
-            expr=(self.capital_cost == b_fs.costing_param.erd_cost['A']
-                 * (sum(b_cv_in.flow_mass_phase_comp['Liq', j] / (pyunits.kg/pyunits.s)
-                        for j in b_PC.config.property_package.component_list)
-                 / (b_cv_in.dens_mass_phase['Liq'] / (pyunits.kg/pyunits.m**3)) * 3600) ** 0.58))
+            expr=(self.capital_cost == b_fs.costing_param.pxr_cost
+                    * b_cv_in.flow_vol * 3600 / (pyunits.m ** 3 / pyunits.s)))
 
         iscale.set_scaling_factor(self.eq_capital_cost, iscale.get_scaling_factor(self.capital_cost))
 
         # operating cost
-        self.eq_operating_cost.fix(0)
-        # = Constraint(
-        #     expr=self.operating_cost == (b_PC.work_mechanical[0] / pyunits.W
-        #                                  * 3600 * 24 * 365 * b_fs.costing_param.load_factor)
-        #          * b_fs.costing_param.electricity_cost / 3600 / 1000)
-        # iscale.set_scaling_factor(self.eq_operating_cost, iscale.get_scaling_factor(self.operating_cost))
+        self.eq_operating_cost = Constraint(
+            expr=self.operating_cost == (b_PC.work_mechanical[0] / pyunits.W
+                                         * 3600 * 24 * 365 * b_fs.costing_param.load_factor)
+                 * b_fs.costing_param.electricity_cost / 3600 / 1000)
+        iscale.set_scaling_factor(self.eq_operating_cost, iscale.get_scaling_factor(self.operating_cost))
 

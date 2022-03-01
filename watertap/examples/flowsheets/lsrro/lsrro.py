@@ -600,15 +600,15 @@ def display_system(m):
 
     print('Levelized cost of water: %.2f $/m3' % value(m.fs.costing.LCOW))
     print(f'Primary Pump Capital Cost ($/m3):'
-          f'{value(sum(m.fs.PrimaryPumps[stage].costing.capital_cost for stage in m.fs.StageSet)/ m.fs.annual_water_production)}')
+          f'{value(m.fs.costing_param.factor_capital_annualization*sum(m.fs.PrimaryPumps[stage].costing.capital_cost for stage in m.fs.StageSet)/ m.fs.annual_water_production)}')
     print(f'Booster Pump Capital Cost ($/m3): '
-          f'{value(sum(m.fs.BoosterPumps[stage].costing.capital_cost for stage in m.fs.LSRRO_StageSet) / m.fs.annual_water_production)}')
+          f'{value(m.fs.costing_param.factor_capital_annualization*sum(m.fs.BoosterPumps[stage].costing.capital_cost for stage in m.fs.LSRRO_StageSet) / m.fs.annual_water_production)}')
     print(f'ERD Capital Cost ($/m3):'
-          f'{value(m.fs.EnergyRecoveryDevice.costing.capital_cost / m.fs.annual_water_production)}')
+          f'{value(m.fs.costing_param.factor_capital_annualization*m.fs.EnergyRecoveryDevice.costing.capital_cost / m.fs.annual_water_production)}')
     print(f'Membrane Capital Cost ($/m3): '
-          f'{value(sum(m.fs.ROUnits[stage].costing.capital_cost for stage in m.fs.StageSet) / m.fs.annual_water_production)}')
+          f'{value(m.fs.costing_param.factor_capital_annualization*sum(m.fs.ROUnits[stage].costing.capital_cost for stage in m.fs.StageSet) / m.fs.annual_water_production)}')
     print(f'Indirect Capital Cost ($/m3): '
-          f'{value((m.fs.costing.investment_cost_total- m.fs.costing.capital_cost_total) / m.fs.annual_water_production)}')
+          f'{value(m.fs.costing_param.factor_capital_annualization*(m.fs.costing.investment_cost_total- m.fs.costing.capital_cost_total) / m.fs.annual_water_production)}')
     electricity_cost = (value((sum(m.fs.PrimaryPumps[stage].costing.operating_cost for stage in m.fs.StageSet)
                               + sum(m.fs.BoosterPumps[stage].costing.operating_cost for stage in m.fs.LSRRO_StageSet)
                               + m.fs.EnergyRecoveryDevice.costing.operating_cost) / m.fs.annual_water_production))
@@ -635,8 +635,9 @@ if __name__ == "__main__":
     final_lcow = []
     final_sec = []
     final_perm = []
-    for n in range(4, 5):
-        m = main(number_of_stages=n,
+    lcow_breakdown= {}
+    for stage in range(4, 8):
+        m = main(number_of_stages=stage,
                  # water_recovery=0.7,
                  Cin=70,
                  Cbrine=250,# mg/L
@@ -656,3 +657,17 @@ if __name__ == "__main__":
         final_sec.append(value(m.fs.specific_energy_consumption))
         final_perm.append(value(m.fs.product.flow_mass_phase_comp[0, 'Liq', 'NaCl']/
                          sum(m.fs.product.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])))
+        lcow_breakdown[f'primary_pump_capex {stage}'] =(
+            value(m.fs.costing_param.factor_capital_annualization*sum(m.fs.PrimaryPumps[stage].costing.capital_cost for stage in m.fs.StageSet) / m.fs.annual_water_production))
+        lcow_breakdown[f'booster_pump_capex {stage}'] =(
+            value(m.fs.costing_param.factor_capital_annualization*sum(m.fs.BoosterPumps[stage].costing.capital_cost for stage in m.fs.LSRRO_StageSet) / m.fs.annual_water_production))
+        lcow_breakdown[f'erd_capex {stage}'] =(
+              value(m.fs.costing_param.factor_capital_annualization*m.fs.EnergyRecoveryDevice.costing.capital_cost / m.fs.annual_water_production))
+        lcow_breakdown[f'membrane_capex {stage}'] = (
+            value(m.fs.costing_param.factor_capital_annualization*sum(m.fs.ROUnits[stage].costing.capital_cost for stage in m.fs.StageSet) / m.fs.annual_water_production))
+        lcow_breakdown[f'indirect_capex {stage}'] =(
+              value(m.fs.costing_param.factor_capital_annualization*(m.fs.costing.investment_cost_total - m.fs.costing.capital_cost_total) / m.fs.annual_water_production))
+        lcow_breakdown[f'electricity {stage}'] =(
+            value((sum(m.fs.PrimaryPumps[stage].costing.operating_cost for stage in m.fs.StageSet)
+                                   + sum(m.fs.BoosterPumps[stage].costing.operating_cost for stage in m.fs.LSRRO_StageSet)
+                                   + m.fs.EnergyRecoveryDevice.costing.operating_cost) / m.fs.annual_water_production))
