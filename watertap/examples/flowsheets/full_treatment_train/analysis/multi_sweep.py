@@ -94,7 +94,7 @@ def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
 
     elif case_num == 4:
         # ================================================================
-        # NF Two Stage
+        # NF
         # ================================================================
         import watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_NF as fs_NF
 

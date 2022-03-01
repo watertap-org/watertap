@@ -14,7 +14,8 @@ import pytest
 from watertap.examples.flowsheets.full_treatment_train.analysis.multi_sweep import *
 
 pytest_parameterize_list = []
-for case_num in [1, 2, 3, 4, 8, 9]:
+# We are skipping cases 5 & 7 in order to keep the pytests times in check
+for case_num in [1, 2, 3, 4, 6, 8, 9]:
     for ro_type in ['0D', '1D']:
         test_case = (case_num, ro_type)
         pytest_parameterize_list.append(test_case)
