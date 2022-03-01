@@ -12,7 +12,6 @@
 ###############################################################################
 import pytest
 from watertap.examples.flowsheets.full_treatment_train.analysis.multi_sweep import *
-from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
 
 pytest_parameterize_list = []
 for case_num in [1, 2, 3, 4, 8, 9]:
