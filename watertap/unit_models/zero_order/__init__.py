@@ -11,6 +11,8 @@
 #
 ###############################################################################
 
+from .vfa_recovery_zo import VFARecoveryZO
+from .aeration_basin_zo import AerationBasinZO
 from .air_flotation_zo import AirFlotationZO
 from .chemical_addition_zo import ChemicalAdditionZO
 from .feed_zo import FeedZO
@@ -29,4 +31,5 @@ from .ion_exchange_zo import IonExchangeZO
 from .brine_concentrator_zo import BrineConcentratorZO
 from .gac_zo import GACZO
 from .dual_media_filtration_zo import DualMediaFiltrationZO
+from .storage_tank_zo import StorageTankZO
 from .chlorination_zo import ChlorinationZO
