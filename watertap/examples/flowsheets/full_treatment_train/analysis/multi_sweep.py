@@ -90,7 +90,7 @@ def run_analysis(case_num, nx, RO_type):
 
         opt_function = fs_NF_no_bypass.simulate
         # Need to unfix NF area to simulate with fixed NF recovery
-        optimize_kwargs = {'unfix_nf_area': True}
+        optimize_kwargs = {'unfix_nf_area': True, 'check_termination': False}
 
     elif case_num == 4:
         # ================================================================

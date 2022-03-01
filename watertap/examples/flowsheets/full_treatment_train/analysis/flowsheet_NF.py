@@ -117,8 +117,8 @@ def solve_flowsheet(has_bypass=True):
     return m
 
 
-def simulate(m):
-    solve_block(m, tee=False, fail_flag=True)
+def simulate(m, check_termination=True):
+    return solve_block(m, tee=False, fail_flag=check_termination)
 
 
 def set_optimization_components(m, system_recovery, **kwargs):
