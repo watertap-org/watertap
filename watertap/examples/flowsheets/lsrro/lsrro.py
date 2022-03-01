@@ -35,8 +35,9 @@ import watertap.examples.flowsheets.lsrro.financials as financials
 import watertap.property_models.NaCl_prop_pack as props
 
 
-def main(number_of_stages, water_recovery=None, Cin=None, Cbrine=None,A_case=None,B_case=None,AB_tradeoff=None, A_fixed=None,
-         nacl_solubility_limit=None, has_CP=None, has_Pdrop=None, permeate_quality_limit=None):
+def build_lsrro_case(number_of_stages, water_recovery=None, Cin=None, Cbrine=None,
+                     A_case=None, B_case=None, AB_tradeoff=None, A_fixed=None,
+                     nacl_solubility_limit=None, has_CP=None, has_Pdrop=None, permeate_quality_limit=None):
     m = build(number_of_stages, nacl_solubility_limit, has_CP, has_Pdrop)
     set_operating_conditions(m, Cin)
     initialize(m)
@@ -636,20 +637,22 @@ if __name__ == "__main__":
     final_sec = []
     final_perm = []
     lcow_breakdown= {}
-    for stage in range(4, 8):
-        m = main(number_of_stages=stage,
-                 # water_recovery=0.7,
-                 Cin=70,
-                 Cbrine=250,# mg/L
-                 A_case="optimize",
-                 B_case="optimize",
-                 AB_tradeoff="inequality constraint",
-                 nacl_solubility_limit=True,
-                 permeate_quality_limit=1000e-6,
-                 has_CP=True,
-                 has_Pdrop=True,
-                 A_fixed=1.5/3.6e11 #2.78e-12
-                 )
+    a_stage = {}
+    b_stage = {}
+    for stage in range(7, 8):
+        m = build_lsrro_case(number_of_stages=stage,
+                             # water_recovery=0.7,
+                             Cin=70,
+                             Cbrine=250,# mg/L
+                             A_case="optimize",
+                             B_case="optimize",
+                             AB_tradeoff="inequality constraint",
+                             nacl_solubility_limit=True,
+                             permeate_quality_limit=1000e-6,
+                             has_CP=True,
+                             has_Pdrop=True,
+                             A_fixed=1.5/3.6e11 #2.78e-12
+                             )
 
         num_stages.append(value(m.fs.NumberOfStages))
         total_area.append(value(sum(m.fs.ROUnits[a].area for a in range(1,m.fs.NumberOfStages+1))))
@@ -671,3 +674,9 @@ if __name__ == "__main__":
             value((sum(m.fs.PrimaryPumps[stage].costing.operating_cost for stage in m.fs.StageSet)
                                    + sum(m.fs.BoosterPumps[stage].costing.operating_cost for stage in m.fs.LSRRO_StageSet)
                                    + m.fs.EnergyRecoveryDevice.costing.operating_cost) / m.fs.annual_water_production))
+
+        # aval= value(m.fs.ROUnits[n].A_comp[0, 'H2O'] *3.6e11)
+        # bval= value(m.fs.ROUnits[n].B_comp[0, 'NaCl'] *3.6e6)
+        # {f'stage {n}': f'{value(m.fs.ROUnits[n].A_comp[0, "H2O"] * 3.6e11):.2f}' for n in range(1, m.fs.NumberOfStages + 1)}
+        a_stage.update({f'A_value_{stage}_stage_system': {f'stage {n}': f'{value(m.fs.ROUnits[n].A_comp[0, "H2O"] *3.6e11):.2f}' for n in range(1, m.fs.NumberOfStages+1)}})
+        b_stage.update({f'B_value_{stage}_stage_system': {f'stage {n}': f'{value(m.fs.ROUnits[n].B_comp[0, "NaCl"] *3.6e6):.2f}' for n in range(1, m.fs.NumberOfStages+1)}})
