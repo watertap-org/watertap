@@ -11,15 +11,6 @@
 #
 ###############################################################################
 import pytest
-import os
-from pyomo.environ import value
-from watertap.examples.flowsheets.full_treatment_train.analysis import (flowsheet_NF,
-                                                               flowsheet_NF_no_bypass,
-                                                               flowsheet_single_stage,
-                                                               flowsheet_two_stage,
-                                                               flowsheet_NF_two_stage,
-                                                               flowsheet_softening,
-                                                               flowsheet_softening_two_stage)
 from watertap.examples.flowsheets.full_treatment_train.analysis.multi_sweep import *
 from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
 
