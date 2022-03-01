@@ -192,5 +192,10 @@ def pressure_changer_costing(self,
         iscale.set_scaling_factor(self.eq_capital_cost, iscale.get_scaling_factor(self.capital_cost))
 
         # operating cost
-        self.operating_cost.fix(0)
+        self.eq_operating_cost.fix(0)
+        # = Constraint(
+        #     expr=self.operating_cost == (b_PC.work_mechanical[0] / pyunits.W
+        #                                  * 3600 * 24 * 365 * b_fs.costing_param.load_factor)
+        #          * b_fs.costing_param.electricity_cost / 3600 / 1000)
+        # iscale.set_scaling_factor(self.eq_operating_cost, iscale.get_scaling_factor(self.operating_cost))
 

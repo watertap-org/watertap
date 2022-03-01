@@ -593,11 +593,27 @@ def display_system(m):
     print('Brine: %.3f kg/s, %.0f ppm' % (brine_flow_mass, brine_mass_frac_NaCl * 1e6))
 
     print('Volumetric water recovery: %.1f%%' % (value(m.fs.water_recovery) * 100))
-    print('Energy Consumption: %.1f kWh/m3' % value(m.fs.specific_energy_consumption))
-    print('Levelized cost of water: %.2f $/m3' % value(m.fs.costing.LCOW))
     print(f'Number of Stages: {value(m.fs.NumberOfStages)}')
     total_area = value(sum(m.fs.ROUnits[a].area for a in range(1,m.fs.NumberOfStages+1)))
     print(f'Total Membrane Area: {total_area:.2f}')
+    print('Energy Consumption: %.1f kWh/m3' % value(m.fs.specific_energy_consumption))
+
+    print('Levelized cost of water: %.2f $/m3' % value(m.fs.costing.LCOW))
+    print(f'Primary Pump Capital Cost ($/m3):'
+          f'{value(sum(m.fs.PrimaryPumps[stage].costing.capital_cost for stage in m.fs.StageSet)/ m.fs.annual_water_production)}')
+    print(f'Booster Pump Capital Cost ($/m3): '
+          f'{value(sum(m.fs.BoosterPumps[stage].costing.capital_cost for stage in m.fs.LSRRO_StageSet) / m.fs.annual_water_production)}')
+    print(f'ERD Capital Cost ($/m3):'
+          f'{value(m.fs.EnergyRecoveryDevice.costing.capital_cost / m.fs.annual_water_production)}')
+    print(f'Membrane Capital Cost ($/m3): '
+          f'{value(sum(m.fs.ROUnits[stage].costing.capital_cost for stage in m.fs.StageSet) / m.fs.annual_water_production)}')
+    print(f'Indirect Capital Cost ($/m3): '
+          f'{value((m.fs.costing.investment_cost_total- m.fs.costing.capital_cost_total) / m.fs.annual_water_production)}')
+    electricity_cost = (value((sum(m.fs.PrimaryPumps[stage].costing.operating_cost for stage in m.fs.StageSet)
+                              + sum(m.fs.BoosterPumps[stage].costing.operating_cost for stage in m.fs.LSRRO_StageSet)
+                              + m.fs.EnergyRecoveryDevice.costing.operating_cost) / m.fs.annual_water_production))
+    print(f'Electricity cost ($/m3): {electricity_cost}')
+
     print('\n')
 def display_RO_reports(m):
     for stage in m.fs.ROUnits.values():
@@ -619,7 +635,7 @@ if __name__ == "__main__":
     final_lcow = []
     final_sec = []
     final_perm = []
-    for n in range(4, 9):
+    for n in range(4, 5):
         m = main(number_of_stages=n,
                  # water_recovery=0.7,
                  Cin=70,
