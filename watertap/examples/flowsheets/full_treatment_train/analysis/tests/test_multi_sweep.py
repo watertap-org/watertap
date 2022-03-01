@@ -23,22 +23,28 @@ from watertap.examples.flowsheets.full_treatment_train.analysis import (flowshee
 from watertap.examples.flowsheets.full_treatment_train.analysis.multi_sweep import *
 from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
 
-@pytest.mark.component
-def test_multi_sweep():
+pytest_parameterize_list = []
+for case_num in [1, 2, 3, 4, 8, 9]:
+    for ro_type in ['0D', '1D']:
+        test_case = (case_num, ro_type)
+        pytest_parameterize_list.append(test_case)
+
+@pytest.mark.parametrize('case_num, RO_type', pytest_parameterize_list)
+def test_multi_sweep(case_num, RO_type):
     # Start MPI communicator
     comm, rank, num_procs = _init_mpi()
-    nx = 2
-    RO_type = '0D'
+    nx = 1
 
     fail_counter = 0
     failed_cases = []
-    for case_num in [1,2,3,4,8,9]: # range(1,10):
-        try:
-            # raise ValueError()
-            global_results, sweep_params = run_analysis(case_num, nx, RO_type)
-        except:
-            fail_counter += 1
-            failed_cases.append(case_num)
+
+    try:
+        # raise ValueError()
+        global_results, sweep_params = run_analysis(case_num, nx, RO_type, interp_nan_outputs=False)
+
+    except:
+        fail_counter += 1
+        failed_cases.append((case_num, RO_type))
 
     if fail_counter > 0:
         pytest.fail(f"multi_sweep.py failed for cases {failed_cases} ")

@@ -16,7 +16,7 @@ def append_costing_outputs(m, outputs, units_to_cost):
     return outputs
 
 
-def run_analysis(case_num, nx, RO_type):
+def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
 
     desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
                     'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
@@ -209,7 +209,7 @@ def run_analysis(case_num, nx, RO_type):
                                      optimize_function=opt_function,
                                      optimize_kwargs=optimize_kwargs,
                                      debugging_data_dir=os.path.split(output_filename)[0]+'/local',
-                                     interpolate_nan_outputs=True)
+                                     interpolate_nan_outputs=interp_nan_outputs)
 
     return global_results, sweep_params
 
