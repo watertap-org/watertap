@@ -42,8 +42,8 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("NanofiltrationZO")
-class NanofiltrationData(UnitModelBlockData):
+@declare_process_block_class("NanoFiltrationZO")
+class NanoFiltrationData(UnitModelBlockData):
     """
     Zero order nanofiltration model based on specified water flux and ion rejection.
     Default data from Table 9 in Labban et al. (2017) https://doi.org/10.1016/j.memsci.2016.08.062
