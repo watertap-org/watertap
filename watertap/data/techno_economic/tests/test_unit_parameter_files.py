@@ -46,6 +46,7 @@ def test_unit_parameter_files(tech):
     # TODO : Need to check up on this once everything is done
     pass_through = ["chemical_addition",
                     "feed_water_tank",
+                    "landfill",
                     "municipal_drinking",
                     "pump",
                     "storage_tank",
