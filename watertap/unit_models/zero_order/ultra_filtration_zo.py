@@ -18,7 +18,7 @@ operation.
 from pyomo.environ import Constraint, units as pyunits, Var
 from idaes.core import declare_process_block_class
 
-from watertap.core import build_pt, constant_intensity, ZeroOrderBaseData
+from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
 
 # Some more information about this module
 __author__ = "Chenyu Wang"
@@ -37,5 +37,5 @@ class UltraFiltrationZOData(ZeroOrderBaseData):
 
         self._tech_type = "ultra_filtration"
 
-        build_pt(self)
+        build_sido(self)
         constant_intensity(self)
