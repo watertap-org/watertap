@@ -18,6 +18,7 @@ from .bioreactor_zo import BioreactorZO
 from .chemical_addition_zo import ChemicalAdditionZO
 from .decarbonator_zo import DecarbonatorZO
 from .feed_zo import FeedZO
+from .landfill_zo import LandfillZO
 from .media_filtration_zo import MediaFiltrationZO
 from .nanofiltration_zo import NanofiltrationZO
 from .clarifier_zo import ClarifierZO
