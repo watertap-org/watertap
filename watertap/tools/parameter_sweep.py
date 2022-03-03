@@ -384,7 +384,7 @@ def _create_component_output_skeleton(component, num_samples):
 
 # ================================================================
 
-def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, run_successful, output_dict):
+def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, run_successful, output_dict, outputs):
 
     # Get the inputs
     op_ps_dict = output_dict["sweep_params"]
@@ -394,14 +394,12 @@ def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, run_
 
     # Get the outputs from model
     if run_successful:
-        for key in output_dict['outputs'].keys():
-            outcome = model.find_component(key)
-            output_dict["outputs"][key]["value"][case_number] = pyo.value(outcome)
+        for label, pyo_obj in outputs.items():
+            output_dict["outputs"][label]["value"][case_number] = pyo.value(pyo_obj)
 
     else:
-        for key in output_dict['outputs'].keys():
-            outcome = model.find_component(key)
-            output_dict["outputs"][key]["value"][case_number] = np.nan
+        for label in outputs.keys():
+            output_dict["outputs"][label]["value"][case_number] = np.nan
 
 # ================================================================
 
@@ -609,7 +607,7 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
                 run_successful = True
 
         # Update the loop based on the reinitialization
-        _update_local_output_dict(model, sweep_params, k, local_values[k, :], run_successful, local_output_dict)
+        _update_local_output_dict(model, sweep_params, k, local_values[k, :], run_successful, local_output_dict, outputs)
 
         local_solve_successful_list.append(run_successful)
 
