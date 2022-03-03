@@ -51,6 +51,7 @@ def test_unit_parameter_files(tech):
                     "landfill",
                     "pump",
                     "storage_tank",
+                    "co2_addition"
                     ]
 
     siso_full_recovery = ["uv_aop", "uv", "ion_exchange", "fixed_bed", "decarbonator"]

@@ -44,3 +44,4 @@ from .gac_zo import GACZO
 from .dual_media_filtration_zo import DualMediaFiltrationZO
 from .storage_tank_zo import StorageTankZO
 from .chlorination_zo import ChlorinationZO
+from .co2_addition_zo import CO2AdditionZO
