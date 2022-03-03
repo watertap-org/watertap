@@ -397,7 +397,6 @@ class SeawaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling('therm_cond_phase', 1e0, index='Liq')
         self.set_default_scaling('dh_vap', 1e-6)
         self.set_default_scaling('diffus_phase', 1e9)
-        self.set_default_scaling('temp_boil', 1e-2)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -421,7 +420,6 @@ class SeawaterParameterData(PhysicalParameterBlock):
              'enth_mass_phase': {'method': '_enth_mass_phase'},
              'enth_flow': {'method': '_enth_flow'},
              'pressure_sat': {'method': '_pressure_sat'},
-             'temp_boil': {"method": '_temp_boil'},
              'cp_phase': {'method': '_cp_phase'},
              'therm_cond_phase': {'method': '_therm_cond_phase'},
              'dh_vap': {'method': '_dh_vap'},
@@ -928,29 +926,6 @@ class SeawaterStateBlockData(StateBlockData):
                         b.params.pressure_sat_param_B2 * s ** 2))
         self.eq_pressure_sat = Constraint(rule=rule_pressure_sat)
 
-    def _temp_boil(self):
-        self.temp_boil = Var(
-            initialize=4e2,
-            bounds=(1e2,1e3),
-            units=pyunits.K,
-            doc="Boiling temperature")
-
-        def rule_temp_boil(b): # inverse of vapor pressure, eq. 5 and 6 in Nayar et al. (2016)
-            s = b.mass_frac_phase_comp['Liq','TDS'] * 1000 * pyunits.g/pyunits.kg
-            p = b.pressure
-            return (p == exp(b.params.pressure_sat_param_psatw_A1 * b.temp_boil**-1
-                        + b.params.pressure_sat_param_psatw_A2
-                        + b.params.pressure_sat_param_psatw_A3 * b.temp_boil
-                        + b.params.pressure_sat_param_psatw_A4 * b.temp_boil**2
-                        + b.params.pressure_sat_param_psatw_A5 * b.temp_boil**3
-                        + b.params.pressure_sat_param_psatw_A6 * log(b.temp_boil/pyunits.K)) * pyunits.Pa *
-                            exp(b.params.pressure_sat_param_B1 * s +
-                            b.params.pressure_sat_param_B2 * s ** 2))
-            # p = f(Tsatw)
-            # bpe = f(Tsatw, s)
-            # b.temp_boil = Tsatw + bpe
-        self.eq_temp_boil = Constraint(rule=rule_temp_boil)
-
     def _cp_phase(self):
         self.cp_phase = Var(
             self.params.phase_list,
@@ -1139,7 +1114,7 @@ class SeawaterStateBlockData(StateBlockData):
 
         # transforming constraints
         # property relationships with no index, simple constraint
-        v_str_lst_simple = ['dens_mass_solvent','osm_coeff', 'pressure_osm', 'pressure_sat', 'dh_vap', 'temp_boil']
+        v_str_lst_simple = ['dens_mass_solvent','osm_coeff', 'pressure_osm', 'pressure_sat', 'dh_vap']
         for v_str in v_str_lst_simple:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
