@@ -655,7 +655,7 @@ class SeawaterStateBlockData(StateBlockData):
 
         self.pressure = Var(
             initialize=101325,
-            bounds=(1e5, 5e7),
+            bounds=(1e3, 5e7),
             domain=NonNegativeReals,
             units=pyunits.Pa,
             doc='Pressure')
