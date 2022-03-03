@@ -24,7 +24,7 @@ __author__ = "Adam Atia"
 
 
 @declare_process_block_class("SWOnshoreIntakeZO")
-class MunicipalWaterZOData(ZeroOrderBaseData):
+class SWOnshoreIntakeZOData(ZeroOrderBaseData):
     """
     Zero-Order model for SW onshore intake operation.
     """
