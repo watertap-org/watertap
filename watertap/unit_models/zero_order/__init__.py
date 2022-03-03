@@ -16,13 +16,16 @@ from .aeration_basin_zo import AerationBasinZO
 from .air_flotation_zo import AirFlotationZO
 from .bioreactor_zo import BioreactorZO
 from .chemical_addition_zo import ChemicalAdditionZO
+from .cartridge_filtration_zo import CartridgeFiltrationZO
 from .decarbonator_zo import DecarbonatorZO
+from .feed_water_tank_zo import FeedWaterTankZO
 from .feed_zo import FeedZO
 from .media_filtration_zo import MediaFiltrationZO
 from .nanofiltration_zo import NanofiltrationZO
 from .clarifier_zo import ClarifierZO
 from .pump_zo import PumpZO
 from .sedimentation_zo import SedimentationZO
+from .tri_media_filtration_zo import TriMediaFiltrationZO
 from .coag_and_floc_zo import CoagulationFlocculationZO
 from .ultra_filtration_zo import UltraFiltrationZO
 from .uv_zo import UVZO
