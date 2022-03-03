@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of municipal drinking water unit.
+This module contains a zero-order representation of municipal drinking water unit
 operation.
 """
 
