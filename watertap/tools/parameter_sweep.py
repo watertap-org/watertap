@@ -351,17 +351,21 @@ def _create_local_output_skeleton(model, sweep_params, outputs, num_samples):
         output_dict["sweep_params"][var.name] =  _create_component_output_skeleton(var, num_samples)
 
     if outputs is None:
+        outputs = {}
+
         # No outputs are specified, so every Var, Expression, and Objective on the model should be saved
         for pyo_obj in model.component_data_objects((pyo.Var, pyo.Expression, pyo.Objective), active=True):
             # Only need to save this variable if it isn't one of the value in sweep_params
             if pyo_obj not in sweep_param_objs:
                 output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
+                outputs[pyo_obj.name] = pyo_obj
+
     else:
         # Save only the outputs specified in the outputs dictionary
-        for pyo_obj in outputs.values():
-            output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
+        for short_name, pyo_obj in outputs.items():
+            output_dict["outputs"][short_name] = _create_component_output_skeleton(pyo_obj, num_samples)
 
-    return output_dict
+    return output_dict, outputs
 
 # ================================================================
 
@@ -384,7 +388,7 @@ def _create_component_output_skeleton(component, num_samples):
 
 # ================================================================
 
-def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, run_successful, output_dict):
+def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, run_successful, output_dict, outputs):
 
     # Get the inputs
     op_ps_dict = output_dict["sweep_params"]
@@ -394,14 +398,12 @@ def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, run_
 
     # Get the outputs from model
     if run_successful:
-        for key in output_dict['outputs'].keys():
-            outcome = model.find_component(key)
-            output_dict["outputs"][key]["value"][case_number] = pyo.value(outcome)
+        for label, pyo_obj in outputs.items():
+            output_dict["outputs"][label]["value"][case_number] = pyo.value(pyo_obj)
 
     else:
-        for key in output_dict['outputs'].keys():
-            outcome = model.find_component(key)
-            output_dict["outputs"][key]["value"][case_number] = np.nan
+        for label in outputs.keys():
+            output_dict["outputs"][label]["value"][case_number] = np.nan
 
 # ================================================================
 
@@ -548,12 +550,7 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
     local_num_cases = np.shape(local_values)[0]
 
     # Create the output skeleton for storing detailed data
-    local_output_dict = _create_local_output_skeleton(model, sweep_params, outputs, local_num_cases)
-
-    if outputs is None:
-        outputs = {}
-        for key in local_output_dict['outputs'].keys():
-            outputs[key] = model.find_component(key)
+    local_output_dict, outputs = _create_local_output_skeleton(model, sweep_params, outputs, local_num_cases)
 
     local_results = np.zeros((local_num_cases, len(outputs)))
 
@@ -609,7 +606,7 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
                 run_successful = True
 
         # Update the loop based on the reinitialization
-        _update_local_output_dict(model, sweep_params, k, local_values[k, :], run_successful, local_output_dict)
+        _update_local_output_dict(model, sweep_params, k, local_values[k, :], run_successful, local_output_dict, outputs)
 
         local_solve_successful_list.append(run_successful)
 
