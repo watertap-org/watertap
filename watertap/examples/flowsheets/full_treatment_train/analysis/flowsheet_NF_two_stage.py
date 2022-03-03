@@ -89,8 +89,8 @@ def set_up_optimization(m, system_recovery=0.50, **kwargs):
     check_dof(m, 8)
 
 
-def optimize(m):
-    solve_block(m, tee=False, fail_flag=True)
+def optimize(m, check_termination=True):
+    return solve_block(m, tee=False, fail_flag=check_termination)
 
 
 def solve_flowsheet(**desal_kwargs):
