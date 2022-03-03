@@ -26,7 +26,7 @@ __author__ = "Adam Atia"
 @declare_process_block_class("BackwashSolidsHandlingZO")
 class BackwashSolidsHandlingZOData(ZeroOrderBaseData):
     """
-    Zero-Order model for a Dual Media Filtration unit operation.
+    Zero-Order model for a Backwash Solids Handling unit operation.
     """
 
     CONFIG = ZeroOrderBaseData.CONFIG()
