@@ -21,10 +21,3 @@ default:
     cost_function_form:
       function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
       units: $
-  recovery_frac_mass_H2O:
-    value: 0.9999
-    units: dimensionless
-    reference: Based on Vogtle case study data. No costs for WT3 treatment.
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless

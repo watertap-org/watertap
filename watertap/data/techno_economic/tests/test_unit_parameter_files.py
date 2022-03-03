@@ -45,9 +45,13 @@ def test_unit_parameter_files(tech):
     # Iterate overall entries in tech data and check for expected contents
     # TODO : Need to check up on this once everything is done
     pass_through = ["chemical_addition",
+                    "cooling_supply",
+                    "feed_water_tank",
+                    "landfill",
                     "pump",
                     "storage_tank",
-                    "feed_water_tank"]
+                    ]
+
     siso_full_recovery = ["uv_aop", "uv", "ion_exchange", "fixed_bed", "decarbonator"]
 
     no_energy_electric_flow_vol_inlet = ["energy_recovery",
