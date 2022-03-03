@@ -351,17 +351,21 @@ def _create_local_output_skeleton(model, sweep_params, outputs, num_samples):
         output_dict["sweep_params"][var.name] =  _create_component_output_skeleton(var, num_samples)
 
     if outputs is None:
+        outputs = {}
+
         # No outputs are specified, so every Var, Expression, and Objective on the model should be saved
         for pyo_obj in model.component_data_objects((pyo.Var, pyo.Expression, pyo.Objective), active=True):
             # Only need to save this variable if it isn't one of the value in sweep_params
             if pyo_obj not in sweep_param_objs:
                 output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
+                outputs[pyo_obj.name] = pyo_obj
+
     else:
         # Save only the outputs specified in the outputs dictionary
         for short_name, pyo_obj in outputs.items():
             output_dict["outputs"][short_name] = _create_component_output_skeleton(pyo_obj, num_samples)
 
-    return output_dict
+    return output_dict, outputs
 
 # ================================================================
 
@@ -546,12 +550,7 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
     local_num_cases = np.shape(local_values)[0]
 
     # Create the output skeleton for storing detailed data
-    local_output_dict = _create_local_output_skeleton(model, sweep_params, outputs, local_num_cases)
-
-    if outputs is None:
-        outputs = {}
-        for key in local_output_dict['outputs'].keys():
-            outputs[key] = model.find_component(key)
+    local_output_dict, outputs = _create_local_output_skeleton(model, sweep_params, outputs, local_num_cases)
 
     local_results = np.zeros((local_num_cases, len(outputs)))
 
