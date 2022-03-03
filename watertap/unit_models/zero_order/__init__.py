@@ -18,6 +18,7 @@ from .air_flotation_zo import AirFlotationZO
 from .bioreactor_zo import BioreactorZO
 from .chemical_addition_zo import ChemicalAdditionZO
 from .cartridge_filtration_zo import CartridgeFiltrationZO
+from .cooling_supply_zo import CoolingSupplyZO
 from .decarbonator_zo import DecarbonatorZO
 from .feed_water_tank_zo import FeedWaterTankZO
 from .feed_zo import FeedZO
