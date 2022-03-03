@@ -321,11 +321,16 @@ def _interp_nan_values(global_values, global_results):
     # Create a list of points where good data is available
     x0 = global_values[mask, :]
 
-    # Interpolate to get a value for nan points where possible
-    for k in range(n_outs):
-        y0 = global_results[mask, k]
-        yi = griddata(x0, y0, global_values, method='linear', rescale=True).reshape(-1)
-        global_results_clean[~mask, k] = yi[~mask]
+    if np.sum(mask) >= 4:
+        # Interpolate to get a value for nan points where possible
+        for k in range(n_outs):
+            y0 = global_results[mask, k]
+            yi = griddata(x0, y0, global_values, method='linear', rescale=True).reshape(-1)
+            global_results_clean[~mask, k] = yi[~mask]
+
+    else:
+        warnings.warn("Too few points to perform interpolation.")
+
 
     return global_results_clean
 
