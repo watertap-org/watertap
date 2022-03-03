@@ -358,8 +358,8 @@ def _create_local_output_skeleton(model, sweep_params, outputs, num_samples):
                 output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
     else:
         # Save only the outputs specified in the outputs dictionary
-        for pyo_obj in outputs.values():
-            output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
+        for short_name, pyo_obj in outputs.items():
+            output_dict["outputs"][short_name] = _create_component_output_skeleton(pyo_obj, num_samples)
 
     return output_dict
 
