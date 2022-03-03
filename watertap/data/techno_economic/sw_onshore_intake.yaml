@@ -1,7 +1,7 @@
 default:  # needed some parameters as placeholder, so including cost params here
   cap_basis_par:
     value: 0.000215
-    units: M$       # TODO: unsure of the units
+    units: M$
   cap_exp_par:
     value: 0.888803
     units: dimensionless

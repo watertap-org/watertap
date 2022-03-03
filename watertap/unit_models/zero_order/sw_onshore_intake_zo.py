@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of seawater onshore intake unit.
+This module contains a zero-order representation of seawater onshore intake unit
 operation.
 """
 
