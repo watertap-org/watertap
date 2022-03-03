@@ -12,7 +12,6 @@
 ###############################################################################
 """
 This module contains a zero-order representation of a backwash solids handling unit.
-operation.
 """
 
 from idaes.core import declare_process_block_class
