@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-Tests for zero-order buffer tank model
+Tests for zero-order feed water tank model
 """
 import pytest
 
@@ -25,13 +25,13 @@ from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 
-from watertap.unit_models.zero_order import BufferTankZO
+from watertap.unit_models.zero_order import FeedWaterTankZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 
 solver = get_solver()
 
-class TestBufferTankZO:
+class TestFeedWaterTankZO:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -41,7 +41,7 @@ class TestBufferTankZO:
         m.fs.params = WaterParameterBlock(
             default={"solute_list": ["tss"]})
 
-        m.fs.unit = BufferTankZO(default={
+        m.fs.unit = FeedWaterTankZO(default={
             "property_package": m.fs.params,
             "database": m.db})
 
@@ -60,7 +60,7 @@ class TestBufferTankZO:
 
     @pytest.mark.component
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("buffer_tank")
+        data = model.db.get_unit_operation_parameters("feed_water_tank")
 
         model.fs.unit.load_parameters_from_database()
 

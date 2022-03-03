@@ -11,23 +11,19 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a buffer tank unit.
-operation.
+This module contains a zero-order representation of a bioreactor unit operation.
 """
 
 from pyomo.environ import Constraint, units as pyunits, Var
 from idaes.core import declare_process_block_class
 
-from watertap.core import build_pt, constant_intensity, ZeroOrderBaseData
-
-# Some more information about this module
-__author__ = "Chenyu Wang"
+from watertap.core import build_siso, constant_intensity, ZeroOrderBaseData
 
 
-@declare_process_block_class("BufferTankZO")
-class BufferTankZOData(ZeroOrderBaseData):
+@declare_process_block_class("BioreactorZO")
+class BioreactorZOData(ZeroOrderBaseData):
     """
-    Zero-Order model for a Buffer Tank unit operation.
+    Zero-Order model for a bioreactor unit operation.
     """
 
     CONFIG = ZeroOrderBaseData.CONFIG()
@@ -35,7 +31,7 @@ class BufferTankZOData(ZeroOrderBaseData):
     def build(self):
         super().build()
 
-        self._tech_type = "buffer_tank"
+        self._tech_type = "bioreactor"
 
-        build_pt(self)
+        build_siso(self)
         constant_intensity(self)

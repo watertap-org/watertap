@@ -47,8 +47,11 @@ def test_unit_parameter_files(tech):
     pass_through = ["chemical_addition",
                     "pump",
                     "storage_tank",
-                    "buffer_tank"]
-    siso_full_recovery = ["uv_aop", "uv", "ion_exchange", "fixed_bed"]
+                    "buffer_tank",
+                    "feed_water_tank"]
+
+    siso_full_recovery = ["uv_aop", "uv", "ion_exchange", "fixed_bed", "decarbonator"]
+
 
     no_energy_electric_flow_vol_inlet = ["energy_recovery",
                                          "mbr_denitrification",
