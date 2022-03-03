@@ -26,6 +26,7 @@ def solve_block(blk, solver=None, tee=False, fail_flag=True):
     results = solver.solve(blk, tee=tee)
     if fail_flag:
         check_solve(results)
+    return results
 
 
 def check_dof(blk, dof_expected=0):
