@@ -401,7 +401,7 @@ def optimize_set_up(m, water_recovery=None):
         stage.area.setub(1000)
         stage.width.setlb(0.1)
         stage.width.setub(100)
-        stage.N_Re_io[0, 'in'].unfix()
+        stage.N_Re[0, 0].unfix()
 
         if idx > m.fs.StageSet.first():
             stage.B_comp.unfix()
