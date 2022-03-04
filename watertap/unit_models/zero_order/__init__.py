@@ -22,6 +22,7 @@ from .chemical_addition_zo import ChemicalAdditionZO
 from .cartridge_filtration_zo import CartridgeFiltrationZO
 from .cooling_supply_zo import CoolingSupplyZO
 from .decarbonator_zo import DecarbonatorZO
+from .dissolved_air_flotation_zo import DissolvedAirFlotationZO
 from .feed_water_tank_zo import FeedWaterTankZO
 from .feed_zo import FeedZO
 from .landfill_zo import LandfillZO
@@ -47,5 +48,6 @@ from .dual_media_filtration_zo import DualMediaFiltrationZO
 from .storage_tank_zo import StorageTankZO
 from .sw_onshore_intake_zo import SWOnshoreIntakeZO
 from .chlorination_zo import ChlorinationZO
+from .static_mixer_zo import StaticMixerZO
 from .co2_addition_zo import CO2AdditionZO
 from .sludge_tank_zo import SludgeTankZO
