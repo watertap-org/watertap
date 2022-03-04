@@ -1,31 +1,28 @@
 default:
   energy_electric_flow_vol_inlet:
-    value: 0.0
+    value: 0
     units: kWh/m^3
   specific_capital_cost_flow_vol_inlet:
-    flow_basis_par:
-      value: 180.0
-      units: m^3/hr
+    cap_intercept:
+      value: 570
+      units: $
     cap_basis_par:
-      value: 0.020959851
-      units: M$
+      value: 1170
+      units: $/(L/s)
     cap_exp_par:
       value: 0.4
       units: dimensionless
     vol units:
-      value: m^3/hr
+      value: L/s
     capital cost units:
-      value: M$
+      value: $
+    number_units:
+      value: 2
+      units: dimensionless
     year:
       value: 2010
     cost_function_form:
-      function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
+      function f(flow_vol_in): (cap_intercept+cap_basis_par*flow_vol_in^cap_exp_par)*number_units
       units: $
-  recovery_frac_mass_H2O:
-    value: 0.9999
-    units: dimensionless
-    reference: Chemical Engineering Design, 2nd Edition. Principles, Practice and
+    reference: Table 7.2 - Chemical Engineering Design, 2nd Edition. Principles, Practice and
       Economics of Plant and Process Design, https://www.elsevier.com/books/chemical-engineering-design/towler/978-0-08-096659-5
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless
