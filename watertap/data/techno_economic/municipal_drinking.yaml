@@ -1,8 +1,14 @@
-default:
-  recovery_frac_mass_H2O:
-    value: 0.9999
+default:  # needed some parameters as placeholder, so including cost params here
+  cap_basis_par:
+    value: 0.0403
+    units: M$
+  cap_exp_par:
+    value: 0.8657
     units: dimensionless
-    reference: .nan
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless
+  capital cost units:
+    value: M$
+  vol units:
+    value: Mgallons/day
+  cost_function_form:
+    function f(flow_vol_in): cap_basis_par*(flow_vol_in)^cap_exp_par
+    units: $

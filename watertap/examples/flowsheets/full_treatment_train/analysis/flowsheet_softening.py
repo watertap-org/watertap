@@ -98,8 +98,8 @@ def solve_flowsheet():
     return m
 
 
-def simulate(m):
-    solve_block(m, tee=False, fail_flag=True)
+def simulate(m, check_termination=True):
+    return solve_block(m, tee=False, fail_flag=check_termination)
 
 
 if __name__ == "__main__":

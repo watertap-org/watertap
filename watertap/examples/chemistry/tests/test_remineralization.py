@@ -1404,9 +1404,7 @@ class TestRemineralizationCSTR():
     def test_initialize_solver_cstr_kin(self, remineralization_cstr_kin):
         model = remineralization_cstr_kin
 
-        init_options = {**solver.options}
-        init_options["bound_relax_factor"] = 1.0e-06
-        model.fs.unit.initialize(optarg=init_options, outlvl=idaeslog.DEBUG)
+        model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
         assert degrees_of_freedom(model) == 0
 
