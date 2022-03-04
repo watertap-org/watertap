@@ -21,11 +21,6 @@ default:
     cost_function_form:
       function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
       units: $
-  recovery_frac_mass_H2O:
-    value: 1
-    units: dimensionless
-    reference: Based on costs for Chlorine Storage and Feed from Cost Estimating Manual
-      for Water Treatment Facilities (McGivney/Kawamura)
   default_removal_frac_mass_solute:
     value: 0
     units: dimensionless
