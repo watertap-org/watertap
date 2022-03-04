@@ -16,5 +16,5 @@ default:
     year:
       value: 2019
     cost_function_form:
-      function f(flow_vol_in): base_fixed_cap_cost*flow_vol_in^cap_exp
+      function f(flow_vol_in): cap_basis_par*flow_vol_in^cap_exp_par
       units: M$
