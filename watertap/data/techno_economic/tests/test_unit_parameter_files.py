@@ -49,6 +49,7 @@ def test_unit_parameter_files(tech):
                     "cooling_supply",
                     "feed_water_tank",
                     "landfill",
+                    "municipal_drinking",
                     "pump",
                     "storage_tank",
                     ]
