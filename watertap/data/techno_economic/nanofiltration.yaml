@@ -3,7 +3,7 @@ default:
     value: 0.231344952
     units: kWh/m^3
   capital_cost:
-    basis: flow_vol_inlet
+    basis: flow_vol
     units: USD_2014
     reference_state:
       value: 4731.764235

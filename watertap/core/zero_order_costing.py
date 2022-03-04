@@ -16,7 +16,8 @@ General costing package for zero-order processes.
 import pyomo.environ as pyo
 
 from idaes.core import declare_process_block_class
-from idaes.generic_models.costing.costing_base import FlowsheetCostingBlockData
+from idaes.generic_models.costing.costing_base import (
+    FlowsheetCostingBlockData, register_idaes_currency_units)
 
 from watertap.core.zero_order_base import ZeroOrderBase
 
@@ -26,49 +27,14 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
     # Register currency and conversion rates based on CE Index
     # TODO : Consider way to do this from data
-    pyo.units.load_definitions_from_strings([
-        "USD_500 = [currency]",
-        "USD_1990 = 500/357.6 * USD_500",
-        "USD_1991 = 500/361.3 * USD_500",
-        "USD_1992 = 500/358.2 * USD_500",
-        "USD_1993 = 500/359.2 * USD_500",
-        "USD_1994 = 500/368.1 * USD_500",
-        "USD_1995 = 500/381.1 * USD_500",
-        "USD_1996 = 500/381.7 * USD_500",
-        "USD_1997 = 500/386.5 * USD_500",
-        "USD_1998 = 500/389.5 * USD_500",
-        "USD_1999 = 500/390.6 * USD_500",
-        "USD_2000 = 500/394.1 * USD_500",
-        "USD_2001 = 500/394.3 * USD_500",
-        "USD_2002 = 500/395.6 * USD_500",
-        "USD_2003 = 500/402.0 * USD_500",
-        "USD_2004 = 500/444.2 * USD_500",
-        "USD_2005 = 500/468.2 * USD_500",
-        "USD_2006 = 500/499.6 * USD_500",
-        "USD_2007 = 500/525.4 * USD_500",
-        "USD_2008 = 500/575.4 * USD_500",
-        "USD_2009 = 500/521.9 * USD_500",
-        "USD_2010 = 500/550.8 * USD_500",
-        "USD_2011 = 500/585.7 * USD_500",
-        "USD_2012 = 500/584.6 * USD_500",
-        "USD_2013 = 500/567.3 * USD_500",
-        "USD_2014 = 500/576.1 * USD_500",
-        "USD_2015 = 500/556.8 * USD_500",
-        "USD_2016 = 500/541.7 * USD_500",
-        "USD_2017 = 500/567.5 * USD_500",
-        "USD_2018 = 500/671.1 * USD_500",
-        "USD_2019 = 500/680.0 * USD_500"])
-
-    # TODO: Define any default flow costs of interest
+    register_idaes_currency_units()
 
     def build_global_params(self):
         """
-        This is where we can declare any global parameters we need, such as
-        Lang factors, or coefficients for costing methods that should be
-        shared across the process.
+        To minimize overhead, only create global parameters for now.
 
-        You can do what you want here, so you could have e.g. sub-Blocks
-        for each costing method to separate the parameters for each method.
+        Unit-specific parameters will be added as sub-Blocks on a case-by-case
+        basis as a unit of that type is costed.
         """
         # Set the base year for all costs
         self.base_currency = pyo.units.USD_2018
@@ -77,21 +43,54 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         # Define expected flows
         self.defined_flows = {
-            "electricity": 0.0595*pyo.units.USD_2019/pyo.units.kW/pyo.units.hour}
+            "electricity":
+                0.0595*pyo.units.USD_2019/pyo.units.kW/pyo.units.hour}
+
+        # Costing factors
+        self.land_cost_percent_FCI = pyo.Var(initialize=0.07,
+                                             units=pyo.units.dimensionless,
+                                             doc="Land cost as % FCI")
+        self.working_capital_percent_FCI = pyo.Var(
+            initialize=0.008,
+            units=pyo.units.dimensionless,
+            doc="Working capital as % FCI")
+
+        # TODO: Load values from database
+        # Fix all Vars
+        for v in self.component_objects(pyo.Var, descend_into=True):
+            v.fix()
 
     def build_process_costs(self):
         """
-        This is where you do all your process wide costing.
-        This is completely up to you, but you will have access to the
-        following aggregate costs:
-
-            1. blk.aggregate_capital_cost
-            2. blk.aggregate_fixed_operating_cost
-            3. blk.aggregate_variable_operating_cost
-            4. blk.aggregate_flow_costs (indexed by flow type)
+        Calculating process wide costs.
         """
-        # TODO: Do we have any process level methods to add here?
-        pass
+        # Other capital costs
+        self.land_cost = pyo.Var(
+            initialize=0,
+            units=self.base_currency,
+            doc="Land costs - based on aggregate captial costs")
+        self.working_capital = pyo.Var(
+            initialize=0,
+            units=self.base_currency,
+            doc="Working capital - based on aggregate captial costs")
+        self.total_capital_cost = pyo.Var(
+            initialize=0,
+            units=self.base_currency,
+            doc="Total capital cost of process")
+
+        self.land_cost_constraint = pyo.Constraint(
+            expr=self.land_cost ==
+            self.aggregate_capital_cost*self.land_cost_percent_FCI)
+        self.working_capital_constraint = pyo.Constraint(
+            expr=self.working_capital ==
+            self.aggregate_capital_cost*self.working_capital_percent_FCI)
+        self.total_capital_cost_constraint = pyo.Constraint(
+            expr=self.total_capital_cost ==
+            self.aggregate_capital_cost+self.land_cost+self.working_capital)
+
+        # Other fixed costs
+
+        # Other variable costs
 
     def initialize(self):
         """
@@ -105,7 +104,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
     # -------------------------------------------------------------------------
     # Unit operation costing methods
-    def exponential_form(blk):
+    def exponential_flow_form(blk):
         # Get parameter dict from database
         parameter_dict = \
             blk.unit_model.config.database.get_unit_operation_parameters(
@@ -123,6 +122,19 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         # Get reference state for capital calculation
         basis = parameter_dict["capital_cost"]["basis"]
 
+        # Get costing parameter sub-block for this technology
+        try:
+            # Try to get parameter Block from costing package
+            pblock = getattr(blk.config.flowsheet_costing_block,
+                             blk.unit_model._tech_type)
+        except AttributeError:
+            # If not present, call emthod to create parameter Block
+            pblock = _add_tech_parameter_block(blk, parameter_dict)
+
+        A = pblock.capital_a_parameter
+        B = pblock.capital_b_parameter
+
+        # Get state block for flow bases
         try:
             sblock = blk.unit_model.properties_in[t0]
         except AttributeError:
@@ -130,66 +142,24 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             sblock = blk.unit_model.properties[t0]
 
         # TODO: More bases
-        if basis == "flow_vol_inlet":
+        if basis == "flow_vol":
             state = sblock.flow_vol
+            state_ref = pblock.reference_state
+            sizing_term = state/state_ref
+        elif basis == "flow_mass":
+            state = sum(sblock.flow_mass_comp[j]
+                        for j in sblock.component_list)
+            state_ref = pblock.reference_state
+            sizing_term = state/state_ref
         else:
             raise ValueError(
                 f"{blk.name} - unrecognized basis in parameter declaration: "
                 f"{basis}.")
 
-        # Get reference flow and parameters
-        try:
-            pblock = getattr(blk.config.flowsheet_costing_block,
-                             blk.unit_model._tech_type)
-        except AttributeError:
-            # Parameters for this tehcnology haven't been added yet
-            pblock = pyo.Block()
-
-            # Add block to FlowsheetCostingBlock
-            blk.config.flowsheet_costing_block.add_component(
-                blk.unit_model._tech_type, pblock)
-
-            # Add requried parameters
-            pblock.capital_a_parameter = pyo.Var(
-                initialize=float(
-                    parameter_dict[
-                        "capital_cost"]["capital_a_parameter"]["value"]),
-                units=getattr(
-                    pyo.units,
-                    parameter_dict[
-                        "capital_cost"]["capital_a_parameter"]["units"]),
-                bounds=(0, None),
-                doc="Pre-exponential factor for capital cost expression")
-            pblock.capital_b_parameter = pyo.Var(
-                initialize=float(
-                    parameter_dict[
-                        "capital_cost"]["capital_b_parameter"]["value"]),
-                units=getattr(
-                    pyo.units,
-                    parameter_dict[
-                        "capital_cost"]["capital_b_parameter"]["units"]),
-                doc="Exponential factor for capital cost expression")
-            pblock.reference_state = pyo.Var(
-                initialize=float(
-                    parameter_dict[
-                        "capital_cost"]["reference_state"]["value"]),
-                units=getattr(
-                    pyo.units,
-                    parameter_dict[
-                        "capital_cost"]["reference_state"]["units"]),
-                doc="Reference state for capital cost expression")
-
-            pblock.capital_a_parameter.fix()
-            pblock.capital_b_parameter.fix()
-            pblock.reference_state.fix()
-
-        A = pblock.capital_a_parameter
-        B = pblock.capital_b_parameter
-        state_ref = pblock.reference_state
-
+        # TODO: Include TPEC/TIC
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost ==
-            A*pyo.units.convert(state/state_ref,
+            A*pyo.units.convert(sizing_term,
                                 to_units=pyo.units.dimensionless)**B)
 
         # Register flows if present
@@ -199,4 +169,53 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
     # -------------------------------------------------------------------------
     # Map costing methods to unit model classes
-    unit_mapping = {ZeroOrderBase: exponential_form}
+    unit_mapping = {ZeroOrderBase: exponential_flow_form}
+
+
+def _add_tech_parameter_block(blk, parameter_dict):
+    # Parameters for this technology haven't been added yet
+    pblock = pyo.Block()
+
+    # Add block to FlowsheetCostingBlock
+    blk.config.flowsheet_costing_block.add_component(
+        blk.unit_model._tech_type, pblock)
+
+    # Add required parameters
+    pblock.capital_a_parameter = pyo.Var(
+        initialize=float(
+            parameter_dict[
+                "capital_cost"]["capital_a_parameter"]["value"]),
+        units=getattr(
+            pyo.units,
+            parameter_dict[
+                "capital_cost"]["capital_a_parameter"]["units"]),
+        bounds=(0, None),
+        doc="Pre-exponential factor for capital cost expression")
+    pblock.capital_b_parameter = pyo.Var(
+        initialize=float(
+            parameter_dict[
+                "capital_cost"]["capital_b_parameter"]["value"]),
+        units=getattr(
+            pyo.units,
+            parameter_dict[
+                "capital_cost"]["capital_b_parameter"]["units"]),
+        doc="Exponential factor for capital cost expression")
+
+    pblock.capital_a_parameter.fix()
+    pblock.capital_b_parameter.fix()
+
+    if parameter_dict["capital_cost"]["basis"] in ["flow_vol", "flow_mass"]:
+        # Flow based costing requires a reference flow
+        pblock.reference_state = pyo.Var(
+            initialize=float(
+                parameter_dict[
+                    "capital_cost"]["reference_state"]["value"]),
+            units=getattr(
+                pyo.units,
+                parameter_dict[
+                    "capital_cost"]["reference_state"]["units"]),
+            doc="Reference state for capital cost expression")
+
+        pblock.reference_state.fix()
+
+    return pblock
