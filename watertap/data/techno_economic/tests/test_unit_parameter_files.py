@@ -52,7 +52,7 @@ def test_unit_parameter_files(tech):
                     "municipal_drinking",
                     "pump",
                     "storage_tank",
-                    "static_mixer"
+                    "static_mixer",
                     "sw_onshore_intake",
                     ]
 
