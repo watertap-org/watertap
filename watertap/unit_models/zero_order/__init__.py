@@ -12,10 +12,12 @@
 ###############################################################################
 
 from .anaerobic_mbr_mec_zo import AnaerobicMBRMECZO
+from .backwash_solids_handling_zo import BackwashSolidsHandlingZO
 from .vfa_recovery_zo import VFARecoveryZO
 from .aeration_basin_zo import AerationBasinZO
 from .air_flotation_zo import AirFlotationZO
 from .bioreactor_zo import BioreactorZO
+from .buffer_tank_zo import BufferTankZO
 from .chemical_addition_zo import ChemicalAdditionZO
 from .cartridge_filtration_zo import CartridgeFiltrationZO
 from .cooling_supply_zo import CoolingSupplyZO
@@ -35,6 +37,7 @@ from .uv_zo import UVZO
 from .uv_aop_zo import UVAOPZO
 from .anaerobic_digestion_oxidation_zo import AnaerobicDigestionOxidationZO
 from .fixed_bed_zo import FixedBedZO
+from .municipal_drinking_zo import MunicipalDrinkingZO
 from .ozone_zo import OzoneZO
 from .ozone_aop_zo import OzoneAOPZO
 from .ion_exchange_zo import IonExchangeZO
