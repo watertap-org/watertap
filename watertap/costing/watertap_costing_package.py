@@ -71,43 +71,63 @@ class WaterTAPCostingPackage(CostingPackageBase):
     def build_global_params(blk):
         # Build flowsheet level costing components
         # This is package specific
-        blk.load_factor = Var(
+        blk.load_factor = Param(
+                mutable=True,
                 initialize=0.9,
                 doc='Load factor [fraction of uptime]',
                 units=pyunits.dimensionless)
-        blk.factor_total_investment = Var(
+        blk.factor_total_investment = Param(
+                mutable=True,
                 initialize=2,
                 doc='Total investment factor [investment cost/equipment cost]',
                 units=pyunits.dimensionless)
-        blk.factor_maintenance_labor_chemical = Var(
+        blk.factor_maintenance_labor_chemical = Param(
+                mutable=True,
                 initialize=0.03,
                 doc='Maintenance-labor-chemical factor [fraction of investment cost/year]',
                 units=pyunits.year**-1)
-        blk.factor_capital_annualization = Var(
+        blk.factor_capital_annualization = Param(
+                mutable=True,
                 initialize=0.1,
                 doc='Capital annualization factor [fraction of investment cost/year]',
                 units=pyunits.year**-1)
-        blk.factor_membrane_replacement = Var(
+        blk.factor_membrane_replacement = Param(
+                mutable=True,
                 initialize=0.2,
                 doc='Membrane replacement factor [fraction of membrane replaced/year]',
                 units=pyunits.year**-1)
-        blk.reverse_osmosis_membrane_cost = Var(
+        blk.reverse_osmosis_membrane_cost = Param(
+                mutable=True,
                 initialize=30,
                 doc='Membrane cost [$/m2]',
                 units=pyunits.USD_500/(pyunits.meter**2))
-        blk.reverse_osmosis_high_pressure_membrane_cost = Var(
+        blk.reverse_osmosis_high_pressure_membrane_cost = Param(
+                mutable=True,
                 initialize=75,
                 doc='Membrane cost [$/m2]',
                 units=pyunits.USD_500/(pyunits.meter**2))
-        blk.nanofiltration_membrane_cost = Var(
+        blk.nanofiltration_membrane_cost = Param(
+                mutable=True,
                 initialize=15,
                 doc='Membrane cost [$/m2]',
                 units=pyunits.USD_500/(pyunits.meter**2))
-        blk.high_pressure_pump_cost = Var(
+        blk.high_pressure_pump_cost = Param(
+                mutable=True,
                 initialize=53 / 1e5 * 3600,
                 doc='High pressure pump cost [$/W]',
                 units=pyunits.USD_500/pyunits.watt)
-        blk.pressure_exchanger_cost = Var(
+        blk.low_pressure_pump_cost = Param(
+                mutable=True,
+                initialize=889,
+                doc='Low pressure pump cost [$/(Liter/second)]',
+                units=pyunits.USD_500/(pyunits.liter/pyunits.second))
+        blk.pump_pressure_exchanger_cost = Param(
+                mutable=True,
+                initialize=535,
+                doc='Pressure exchanger cost [$/(m3/h)]',
+                units=pyunits.USD_500/(pyunits.meter**3/pyunits.hours))
+        blk.pressure_exchanger_cost = Param(
+                mutable=True,
                 initialize=535,
                 doc='Pressure exchanger cost [$/(m3/h)]',
                 units=pyunits.USD_500/(pyunits.meter**3/pyunits.hours))
@@ -205,17 +225,45 @@ class WaterTAPCostingPackage(CostingPackageBase):
 
     @staticmethod
     def cost_low_pressure_pump(blk):
-        ## TODO
-        pass
+        """
+        High pressure pump costing method
+
+        TODO: describe equations
+        """
+        _make_captial_cost_var(blk)
+        fcb = blk.config.flowsheet_costing_block
+        cost_by_flow_volume(blk, pyunits.conver(fcb.low_pressure_pump_cost, pyunits.USD_500/(pyunits.m**3/pyunits.s)),
+                blk.unit_model.control_volume.properties_in[0].flow_vol)
 
     @staticmethod
     def cost_pressure_exchanger_pump(blk):
-        ## TODO
-        pass
+        """
+        Pump pressure exchanger costing method
+
+        TODO: describe equations
+        """
+        _make_captial_cost_var(blk)
+        fcb = blk.config.flowsheet_costing_block
+        cost_by_flow_volume(blk, fcb.pump_pressure_exchanger_cost, blk.unit_model.control_volume.properties_in[0].flow_vol)
+
+    @staticmethod
+    def cost_pressure_exchanger(blk):
+        """
+        Pressure exchanger costing method
+
+        TODO: describe equations
+        """
+        _make_captial_cost_var(blk)
+        fcb = blk.config.flowsheet_costing_block
+        cost_by_flow_volume(blk, fcb.pressure_exchanger_cost, blk.unit_model.low_pressure_side.properties_in[0].flow_vol)
+
+
+    ## TODO; Mixer and Separator
 
     # Define default mapping of costing methods to unit models
     unit_mapping = {
         Pump: cost_pump,  # TODO: this may be carrying over a limitation of IDAES
+        PressureExchanger: cost_pressure_exchanger,
         ReverseOsmosis0D: cost_reverse_osmosis,
         ReverseOsmosis1D: cost_reverse_osmosis,
         NanoFiltration0D: cost_nanofiltration,
@@ -252,3 +300,15 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
             blk.capital_cost == blk.membrane_cost * blk.unit_model.area)
     blk.eq_fixed_operating_cost = Constraint(expr = \
             blk.fixed_operating_cost == blk.factor_membrane_replacement * blk.membrane_cost * blk.unit_model.area)
+
+def cost_pump_by_flow_volume(blk, flow_cost, flow_to_cost):
+    """
+    Generic function for costing a pump by flow volume.
+
+    Args:
+        flow_cost - The cost of the pump in [currency]/([volume]/[time])
+        flow_to_cost - The flow costed in [volume]/[time]
+    """
+    blk.flow_cost = Expression(expr=flow_cost)
+    blk.eq_capital_cost = Constraint(expr = \
+            capital_cost = blk.flow_cost * flow_to_cost)
