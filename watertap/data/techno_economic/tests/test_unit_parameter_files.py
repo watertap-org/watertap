@@ -44,10 +44,12 @@ def test_unit_parameter_files(tech):
 
     # Iterate overall entries in tech data and check for expected contents
     # TODO : Need to check up on this once everything is done
-    pass_through = ["chemical_addition",
+    pass_through = ["buffer_tank",
+                    "chemical_addition",
                     "cooling_supply",
                     "feed_water_tank",
                     "landfill",
+                    "municipal_drinking",
                     "pump",
                     "storage_tank",
                     ]
