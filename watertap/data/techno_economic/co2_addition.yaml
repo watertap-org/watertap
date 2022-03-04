@@ -3,7 +3,7 @@ default:
     value: 0.0
     units: kWh/m^3
   specific_capital_cost_flow_vol_inlet:
-    base_fixed_cap_cost:
+    cap_basis_par:
       value: 0.464
       units: M$
     cap_exp_par:
