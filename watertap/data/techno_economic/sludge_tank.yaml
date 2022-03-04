@@ -24,7 +24,12 @@ default:
   recovery_frac_mass_H2O:
     value: 0.99999
     units: dimensionless
-    reference: .nan
+    reference: 
   default_removal_frac_mass_solute:
     value: 0
     units: dimensionless
+  removal_frac_mass_solute:
+    tss:
+      value: 0.99 # todo: other contaminant removal
+      units: dimensionless
+      constituent_longform: Total Suspended Solids (TSS)

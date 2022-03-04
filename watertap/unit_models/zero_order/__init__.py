@@ -47,3 +47,4 @@ from .dual_media_filtration_zo import DualMediaFiltrationZO
 from .storage_tank_zo import StorageTankZO
 from .sw_onshore_intake_zo import SWOnshoreIntakeZO
 from .chlorination_zo import ChlorinationZO
+from .sludge_tank_zo import SludgeTankZO
