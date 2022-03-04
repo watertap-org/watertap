@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of an air flotation unit.
+This module contains a zero-order representation of a dissolved air flotation unit.
 operation.
 """
 
@@ -24,10 +24,10 @@ from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
 __author__ = "Chenyu Wang"
 
 
-@declare_process_block_class("AirFlotationZO")
-class AirFlotationZOData(ZeroOrderBaseData):
+@declare_process_block_class("DissolvedAirFlotationZO")
+class DissolvedAirFlotationZOData(ZeroOrderBaseData):
     """
-    Zero-Order model for an Air Flotation unit operation.
+    Zero-Order model for a Dissolved Air Flotation unit operation.
     """
 
     CONFIG = ZeroOrderBaseData.CONFIG()
@@ -35,7 +35,7 @@ class AirFlotationZOData(ZeroOrderBaseData):
     def build(self):
         super().build()
 
-        self._tech_type = "air_flotation"
+        self._tech_type = "dissolved_air_flotation"
 
         build_sido(self)
         constant_intensity(self)
