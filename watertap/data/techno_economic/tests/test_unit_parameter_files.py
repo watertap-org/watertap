@@ -53,6 +53,7 @@ def test_unit_parameter_files(tech):
                     "pump",
                     "storage_tank",
                     "static_mixer",
+                    "co2_addition",
                     "sw_onshore_intake",
                     ]
 

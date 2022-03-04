@@ -48,3 +48,5 @@ from .storage_tank_zo import StorageTankZO
 from .sw_onshore_intake_zo import SWOnshoreIntakeZO
 from .chlorination_zo import ChlorinationZO
 from .static_mixer_zo import StaticMixerZO
+from .co2_addition_zo import CO2AdditionZO
+from .sludge_tank_zo import SludgeTankZO

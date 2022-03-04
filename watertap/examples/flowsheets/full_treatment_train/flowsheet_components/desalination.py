@@ -342,7 +342,7 @@ def solve_desalination(**kwargs):
 
 
 if __name__ == "__main__":
-    solve_desalination(
+    m = solve_desalination(
         has_desal_feed=True,
         is_twostage=True,
         has_ERD=True,
