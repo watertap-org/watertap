@@ -47,6 +47,10 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                 0.0595*pyo.units.USD_2019/pyo.units.kW/pyo.units.hour}
 
         # Costing factors
+        self.plant_lifetime = pyo.Var(initialize=30,
+                                      units=self.base_period,
+                                      doc="Plant lifetime")
+
         self.land_cost_percent_FCI = pyo.Var(initialize=0.07,
                                              units=pyo.units.dimensionless,
                                              doc="Land cost as % FCI")
@@ -54,6 +58,26 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             initialize=0.008,
             units=pyo.units.dimensionless,
             doc="Working capital as % FCI")
+        self.salaries_percent_FCI = pyo.Var(
+            initialize=0.07,
+            units=1/self.base_period,
+            doc="Salaries as % FCI")
+        self.benefit_percent_of_salary = pyo.Var(
+            initialize=0.07,
+            units=pyo.units.dimensionless,
+            doc="Benefits as % salaries")
+        self.maintenance_costs_percent_FCI = pyo.Var(
+            initialize=0.07,
+            units=1/self.base_period,
+            doc="Maintenance and contingency costs as % FCI")
+        self.laboratory_fees_percent_FCI = pyo.Var(
+            initialize=0.07,
+            units=1/self.base_period,
+            doc="Laboratory fees as % FCI")
+        self.insurance_and_taxes_percent_FCI = pyo.Var(
+            initialize=0.07,
+            units=1/self.base_period,
+            doc="Insurance and taxes as % FCI")
 
         # TODO: Load values from database
         # Fix all Vars
@@ -64,6 +88,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         """
         Calculating process wide costs.
         """
+        # TODO: Global reduction and uncertainty parameters
+
         # Other capital costs
         self.land_cost = pyo.Var(
             initialize=0,
@@ -89,17 +115,71 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             self.aggregate_capital_cost+self.land_cost+self.working_capital)
 
         # Other fixed costs
+        self.salary_cost = pyo.Var(
+            initialize=0,
+            units=self.base_currency/self.base_period,
+            doc="Salary costs - based on aggregate captial costs")
+        self.benefits_cost = pyo.Var(
+            initialize=0,
+            units=self.base_currency/self.base_period,
+            doc="Benefits costs - based on percentage of salary costs")
+        self.maintenance_cost = pyo.Var(
+            initialize=0,
+            units=self.base_currency/self.base_period,
+            doc="Maintenance costs - based on aggregate captial costs")
+        self.laboratory_cost = pyo.Var(
+            initialize=0,
+            units=self.base_currency/self.base_period,
+            doc="Laboratory costs - based on aggregate captial costs")
+        self.insurance_and_taxes_cost = pyo.Var(
+            initialize=0,
+            units=self.base_currency/self.base_period,
+            doc="Insurance and taxes costs - based on aggregate captial costs")
+        self.total_fixed_operating_cost = pyo.Var(
+            initialize=0,
+            units=self.base_currency/self.base_period,
+            doc="Total fixed operating costs")
+
+        self.salary_cost_constraint = pyo.Constraint(
+            expr=self.salary_cost ==
+            self.aggregate_capital_cost*self.salaries_percent_FCI)
+        self.benefits_cost_constraint = pyo.Constraint(
+            expr=self.benefits_cost ==
+            self.salary_cost*self.benefit_percent_of_salary)
+        self.maintenance_cost_constraint = pyo.Constraint(
+            expr=self.maintenance_cost ==
+            self.aggregate_capital_cost*self.maintenance_costs_percent_FCI)
+        self.laboratory_cost_constraint = pyo.Constraint(
+            expr=self.laboratory_cost ==
+            self.aggregate_capital_cost*self.laboratory_fees_percent_FCI)
+        self.insurance_and_taxes_cost_constraint = pyo.Constraint(
+            expr=self.insurance_and_taxes_cost ==
+            self.aggregate_capital_cost*self.insurance_and_taxes_percent_FCI)
+
+        self.total_fixed_operating_cost_constraint = pyo.Constraint(
+            expr=self.total_fixed_operating_cost ==
+            self.aggregate_fixed_operating_cost +
+            self.salary_cost +
+            self.benefits_cost +
+            self.maintenance_cost +
+            self.laboratory_cost +
+            self.insurance_and_taxes_cost)
 
         # Other variable costs
+        self.total_variable_operating_cost = pyo.Expression(
+            expr=self.aggregate_variable_operating_cost +
+            sum(self.aggregate_flow_costs[f] for f in self.flow_types),
+            doc="Total variable operating cost of process per operating period")
+
+        self.total_operating_cost = pyo.Expression(
+            expr=(self.total_fixed_operating_cost +
+                  self.total_variable_operating_cost),
+            doc="Total operating cost of process per operating period")
 
     def initialize(self):
         """
-        Here we can add intialization steps for the things we built in
-        build_process_costs.
-
-        Note that the aggregate costs will be initialized by the framework.
+        Not needed for now, but can add custom initialization here.
         """
-        # TODO: For now, no additional process level costs to initialize
         pass
 
     # -------------------------------------------------------------------------
@@ -157,6 +237,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                 f"{basis}.")
 
         # TODO: Include TPEC/TIC
+        # TODO: Reduction parameter, uncertainty parameter
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost ==
             A*pyo.units.convert(sizing_term,
