@@ -52,7 +52,7 @@ def test_unit_parameter_files(tech):
                     "municipal_drinking",
                     "pump",
                     "storage_tank",
-                    "co2_addition"
+                    "co2_addition",
                     "sw_onshore_intake",
                     ]
 
