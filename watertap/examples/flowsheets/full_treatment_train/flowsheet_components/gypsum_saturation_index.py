@@ -40,21 +40,12 @@ def build(m, section='desalination', pretrt_type='NF', **kwargs):
         sb_dilute = m.fs.tb_pretrt_to_desal.properties_in[0]
         if kwargs['is_twostage']:
             sb_perm = m.fs.mixer_permeate.mixed_state[0]
-            if kwargs['RO_type'] == '0D':
-                sb_conc = m.fs.RO2.feed_side.properties_out[0]
-                sb_conc_inter = m.fs.RO2.feed_side.properties_interface_out[0]
-            elif kwargs['RO_type'] == '1D':
-                sb_conc = m.fs.RO2.feed_side.properties[0, 1]
-                sb_conc_inter = m.fs.RO2.feed_side.properties_interface[0, 1]
+            sb_conc = m.fs.RO2.feed_side.properties[0, 1]
+            sb_conc_inter = m.fs.RO2.feed_side.properties_interface[0, 1]
         else:
-            if kwargs['RO_type'] == '0D':
-                sb_perm = m.fs.RO.permeate_side.properties_mixed[0]
-                sb_conc = m.fs.RO.feed_side.properties_out[0]
-                sb_conc_inter = m.fs.RO.feed_side.properties_interface_out[0]
-            elif kwargs['RO_type'] == '1D':
-                sb_perm = m.fs.RO.mixed_permeate[0]
-                sb_conc = m.fs.RO.feed_side.properties[0, 1]
-                sb_conc_inter = m.fs.RO.feed_side.properties_interface[0, 1]
+            sb_perm = m.fs.RO.mixed_permeate[0]
+            sb_conc = m.fs.RO.feed_side.properties[0, 1]
+            sb_conc_inter = m.fs.RO.feed_side.properties_interface[0, 1]
 
         m.fs.desal_saturation.cp_modulus = Expression(
             expr=sb_conc_inter.conc_mass_phase_comp['Liq', 'TDS'] / sb_conc.conc_mass_phase_comp['Liq', 'TDS'])

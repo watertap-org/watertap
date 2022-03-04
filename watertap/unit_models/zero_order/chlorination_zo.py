@@ -52,7 +52,8 @@ class ChlorinationZOData(ZeroOrderBaseData):
         self.chlorine_decay_rate = Var(self.flowsheet().time,
                                        units=pyunits.mg/(pyunits.L*pyunits.hour),
                                        doc="Chlorine decay rate")
-
+        
+        self.recovery_frac_mass_H2O.fix(1)
         self._fixed_perf_vars.append(self.initial_chlorine_demand)
         self._fixed_perf_vars.append(self.contact_time)
         self._fixed_perf_vars.append(self.concentration_time)
