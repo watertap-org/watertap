@@ -65,7 +65,7 @@ def build_RO(m, base='TDS', level='simple', name_str='RO'):
         blk.permeate.pressure[0].fix(101325)
         blk.channel_height.fix(1e-3)
         blk.spacer_porosity.fix(0.97)
-        blk.N_Re_io[0, 'in'].fix(500)
+        blk.N_Re[0, 0].fix(500)
 
     else:
         raise ValueError('Unexpected argument {level} for level in build_RO'
