@@ -50,6 +50,10 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         self.plant_lifetime = pyo.Var(initialize=30,
                                       units=self.base_period,
                                       doc="Plant lifetime")
+        self.utilization_factor = pyo.Var(
+            initialize=1,
+            units=pyo.units.dimensionless,
+            doc='Plant capacity utilization [%]')
 
         self.land_cost_percent_FCI = pyo.Var(initialize=0.07,
                                              units=pyo.units.dimensionless,
@@ -78,6 +82,15 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             initialize=0.07,
             units=1/self.base_period,
             doc="Insurance and taxes as % FCI")
+
+        self.wacc = pyo.Var(initialize=0.05,
+                            units=pyo.units.dimensionless,
+                            doc='Weighted Average Cost of Capital (WACC)')
+        self.capital_recovery_factor = pyo.Expression(
+            expr=((self.wacc *
+                   (1 + self.wacc)**(self.plant_lifetime/self.base_period)) /
+                  (((1 + self.wacc)**(self.plant_lifetime/self.base_period)) -
+                   1) / self.base_period))
 
         # TODO: Load values from database
         # Fix all Vars
@@ -182,6 +195,23 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         """
         pass
 
+    def add_LCOW(self, flow_rate):
+        """
+        Add Levelized Cost of Water (LCOW) to costing block.
+
+        Args:
+            flow_rate - flow rate of water (volumetric) to be used in
+                        calculating LCOW
+        """
+        self.LCOW = pyo.Expression(
+            expr=(self.total_capital_cost*self.capital_recovery_factor +
+                  self.total_operating_cost) /
+                 (pyo.units.convert(
+                     flow_rate,
+                     to_units=pyo.units.m**3/self.base_period) *
+                  self.utilization_factor),
+            doc='Levelized Cost of Water [$/m3]')
+
     # -------------------------------------------------------------------------
     # Unit operation costing methods
     def exponential_flow_form(blk):
@@ -237,6 +267,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                 f"{basis}.")
 
         # TODO: Include TPEC/TIC
+        # TODO: Chemical addition
         # TODO: Reduction parameter, uncertainty parameter
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost ==

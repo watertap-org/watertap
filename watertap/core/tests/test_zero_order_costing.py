@@ -15,8 +15,13 @@ Tests for general zero-order costing methods
 """
 import pytest
 
-from pyomo.environ import (
-    Block, ConcreteModel, Constraint, Var, check_optimal_termination, value)
+from pyomo.environ import (Block,
+                           check_optimal_termination,
+                           ConcreteModel,
+                           Constraint,
+                           Expression,
+                           value,
+                           Var)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -108,6 +113,15 @@ class TestWorkflow:
         assert_units_consistent(model.fs)
         assert degrees_of_freedom(model.fs) == 0
 
+    @pytest.mark.component
+    def test_add_LCOW(self, model):
+        model.fs.costing.add_LCOW(model.fs.unit.properties_in[0].flow_vol)
+
+        assert isinstance(model.fs.costing.LCOW, Expression)
+
+        assert_units_consistent(model.fs)
+        assert degrees_of_freedom(model.fs) == 0
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -126,3 +140,5 @@ class TestWorkflow:
         assert pytest.approx(644334000, rel=1e-5) == value(
             model.fs.costing.total_capital_cost)
 
+        assert pytest.approx(0.685694, rel=1e-5) == value(
+            model.fs.costing.LCOW)
