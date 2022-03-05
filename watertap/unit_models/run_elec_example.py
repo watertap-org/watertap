@@ -15,6 +15,17 @@ from electrodialysis_0D import Electrodialysis0D
 
 from idaes.core.util import get_solver
 
+use_regular = False
+
+if use_regular:
+    import idaes
+    _default_solver_config_value = idaes.cfg.get("default_solver")
+    _idaes_default_solver = _default_solver_config_value._default
+
+    _default_solver_config_value.set_default_value("ipopt")
+    if not _default_solver_config_value._userSet:
+        _default_solver_config_value.reset()
+
 solver = get_solver()
 
 # create model, flowsheet
