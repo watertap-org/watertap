@@ -20,6 +20,20 @@ def build_mass_frac(blk, state_blk):
 
     blk.mass_frac_comp = Expression(mw_comp.keys(), rule=mass_frac_calc)
 
+def build_mass_conc(blk, state_blk):
+    mw_comp = {'H2O': 18.015e-3,
+               'Na_+': 22.990e-3,
+               'Ca_2+': 40.078e-3,
+               'Mg_2+': 24.305e-3,
+               'SO4_2-': 96.06e-3,
+               'Cl_-': 35.453e-3}
+
+    def mass_conc_calc(blk, j):
+        return (state_blk.conc_mol_phase_comp['Liq', j] * mw_comp[j])
+
+    blk.mass_conc_comp = Expression(mw_comp.keys(), rule=mass_conc_calc)
+
+
 def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
 
     desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
@@ -40,10 +54,10 @@ def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
         m.fs.eq_max_saturation_index_desal.deactivate()
 
         build_mass_frac(m.fs, m.fs.desal_saturation.properties[0])
-
+        build_mass_conc(m.fs, m.fs.desal_saturation.properties[0])
         sweep_params['System Recovery'] = LinearSample(m.fs.system_recovery_target, 0.3, 0.85, nx)
 
-        for (j, v) in m.fs.mass_frac_comp.items():
+        for (j, v) in m.fs.mass_conc_comp.items():
             outputs[j] = v
         outputs['LCOW'] = m.fs.costing.LCOW
 
