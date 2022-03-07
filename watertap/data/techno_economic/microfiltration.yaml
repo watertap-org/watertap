@@ -1,25 +1,17 @@
 default:
   energy_electric_flow_vol_inlet:
-    value: 0.30735
+    value: 0.18
     units: kWh/m^3
   specific_capital_cost_flow_vol_inlet:
-    flow_basis_par:
-      value: 4731.764235
-      units: m^3/hr
     cap_basis_par:
-      value: 112.5
+      value: 2.5
       units: M$
-    cap_exp_par:
-      value: 1.0
-      units: dimensionless
     vol units:
       value: m^3/hr
     capital cost units:
       value: M$
-    year:
-      value: 2014
     cost_function_form:
-      function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
+      function f(flow_vol_in): cap_basis_par*flow_vol_in
       units: $
   recovery_frac_mass_H2O:
     value: 0.95
