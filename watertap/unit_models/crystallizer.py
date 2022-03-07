@@ -11,6 +11,7 @@
 #
 ###############################################################################
 
+from copy import deepcopy
 # Import Pyomo libraries
 from pyomo.environ import (Block,
                            Set,
@@ -183,6 +184,12 @@ class CrystallizationData(UnitModelBlockData):
             doc="Minimum circulation flow rate through crystallizer heat exchanger"
             )
 
+        self.relative_supersaturation = Var(
+            solute_set,
+            initialize=0.1,
+            bounds=(0, 100),
+            units=pyunits.dimensionless
+        )
 
         # Add state blocks for inlet, outlet, and waste
         # These include the state variables and any other properties on demand
@@ -286,6 +293,27 @@ class CrystallizationData(UnitModelBlockData):
         def eq_operating_pressure_constraint(b):
             return (self.pressure_operating - b.properties_out[0].pressure_sat == 0)
 
+        # (d) Relative supersaturation 
+        @self.Constraint(solute_set, doc="Relative supersaturation created via evaporation, g/g (solution)")
+        def eq_relative_supersaturation(b, j):
+            #  mass_frac_after_evap = SOLIDS IN + LIQUID IN - VAPOUR OUT
+            mass_frac_after_evap = b.properties_in[0].flow_mass_phase_comp['Liq', j] \
+            / (sum(b.properties_in[0].flow_mass_phase_comp['Liq', j] for j in solute_set)
+                + b.properties_in[0].flow_mass_phase_comp['Liq', 'H2O']
+                - b.properties_vapor[0].flow_mass_phase_comp['Vap', 'H2O']
+                )
+            # return (b.relative_supersaturation[j] * b.properties_out[0].solubility_mass_frac_phase_comp['Liq', j] == 
+            # (mass_frac_after_evap - b.properties_out[0].solubility_mass_frac_phase_comp['Liq', j])
+            # )
+            return (b.relative_supersaturation[j] == 
+                (mass_frac_after_evap - b.properties_out[0].solubility_mass_frac_phase_comp['Liq', j])
+                / b.properties_out[0].solubility_mass_frac_phase_comp['Liq', j]
+                )
+
+
+
+
+
 
         # 4. Fix flows of empty solid, liquid and vapour streams
         # (i) Fix solids: liquid and vapour flows must be zero
@@ -293,7 +321,7 @@ class CrystallizationData(UnitModelBlockData):
             doc="Empty components in solids stream")
         def eq_solids_composition(b, p, j):
             if p != 'Sol':
-                return (b.properties_solids[0].flow_mass_phase_comp[p, j] == 0)
+                return (b.properties_solids[0].flow_mass_phase_comp[p, j] == 1e-8 * pyunits.kg/pyunits.s)
             else:
                 return Constraint.Skip
 
@@ -302,7 +330,7 @@ class CrystallizationData(UnitModelBlockData):
             doc="Empty components in liquid stream")
         def eq_liquid_composition(b, p, j):
             if p != 'Liq':
-                return (b.properties_out[0].flow_mass_phase_comp[p, j] == 0)
+                return (b.properties_out[0].flow_mass_phase_comp[p, j] == 1e-8 * pyunits.kg/pyunits.s)
             else:
                 return Constraint.Skip
 
@@ -311,7 +339,7 @@ class CrystallizationData(UnitModelBlockData):
             doc="Empty components in vapour stream")
         def eq_vapor_composition(b, p, j):
             if p != 'Vap':
-                return (b.properties_vapor[0].flow_mass_phase_comp[p, j] == 0)
+                return (b.properties_vapor[0].flow_mass_phase_comp[p, j] == 1e-8 * pyunits.kg/pyunits.s)
             else:
                 return Constraint.Skip
 
@@ -394,19 +422,108 @@ class CrystallizationData(UnitModelBlockData):
 
 
 
+    def initialize(
+                blk,
+                state_args=None,
+                outlvl=idaeslog.NOTSET,
+                solver=None,
+                optarg=None):
+            """
+            General wrapper for pressure changer initialization routines
+            Keyword Arguments:
+                state_args : a dict of arguments to be passed to the property
+                             package(s) to provide an initial state for
+                             initialization (see documentation of the specific
+                             property package) (default = {}).
+                outlvl : sets output level of initialization routine
+                optarg : solver options dictionary object (default=None)
+                solver : str indicating which solver to use during
+                         initialization (default = None)
+            Returns: None
+            """
+            init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+            solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
+            opt = get_solver(solver, optarg)
 
+            # ---------------------------------------------------------------------
+            # Initialize holdup block
+            flags = blk.properties_in.initialize(
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                state_args=state_args,
+                hold_state=True)
+            init_log.info_high("Initialization Step 1 Complete.")
+            # ---------------------------------------------------------------------
+            # Initialize other state blocks
+            # Set state_args from inlet state
+            if state_args is None:
+                state_args = {}
+                state_dict = blk.properties_in[
+                    blk.flowsheet().config.time.first()].define_port_members()
 
+                for k in state_dict.keys():
+                    if state_dict[k].is_indexed():
+                        state_args[k] = {}
+                        for m in state_dict[k].keys():
+                            state_args[k][m] = state_dict[k][m].value
+                    else:
+                        state_args[k] = state_dict[k].value
 
+            blk.properties_out.initialize(
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                state_args=state_args,
+            )
 
+            state_args_solids = deepcopy(state_args)
+            for p, j in blk.properties_solids.phase_component_set:
+                if p == 'Sol':
+                    state_args_solids['flow_mass_phase_comp'][p, j] = state_args['flow_mass_phase_comp']['Liq', j]
+                elif p == 'Liq' or p == 'Vap':
+                    state_args_solids['flow_mass_phase_comp'][p, j] = 1e-8
+            blk.properties_solids.initialize(
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                state_args=state_args_solids,
+            )
+
+            state_args_vapor = deepcopy(state_args)
+            for p, j in blk.properties_vapor.phase_component_set:
+                if p == 'Vap':
+                    state_args_vapor['flow_mass_phase_comp'][p, j] = state_args['flow_mass_phase_comp']['Liq', j]
+                elif p == 'Liq' or p == 'Sol':
+                    state_args_vapor['flow_mass_phase_comp'][p, j] = 1e-8
+            blk.properties_vapor.initialize(
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                state_args=state_args_vapor,
+            )
+            init_log.info_high("Initialization Step 2 Complete.")
+            # ---------------------------------------------------------------------
+            # Solve unit
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(blk, tee=slc.tee)
+            init_log.info_high(
+                "Initialization Step 3 {}.".format(idaeslog.condition(res)))
+            # ---------------------------------------------------------------------
+            # Release Inlet state
+            blk.properties_in.release_state(flags, outlvl=outlvl)
+            init_log.info(
+                "Initialization Complete: {}".format(idaeslog.condition(res))
+            )
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
         iscale.set_scaling_factor(self.crystallization_yield, 1)
         iscale.set_scaling_factor(self.product_volumetric_solids_fraction, 1)
-        iscale.set_scaling_factor(self.temperature, iscale.get_scaling_factor(self.properties_in[0].temperature))
-        iscale.set_scaling_factor(self.pressure, iscale.get_scaling_factor(self.properties_in[0].pressure_sat))
+        iscale.set_scaling_factor(self.temperature_operating, iscale.get_scaling_factor(self.properties_in[0].temperature))
+        iscale.set_scaling_factor(self.pressure_operating, 1e-3)#iscale.get_scaling_factor(self.properties_in[0].pressure_sat))
         iscale.set_scaling_factor(self.magma_density, iscale.get_scaling_factor(self.properties_in[0].dens_mass_phase['Liq']))
         iscale.set_scaling_factor(self.slurry_density, iscale.get_scaling_factor(self.properties_in[0].dens_mass_phase['Liq']))
         # Temporary scale for work - scale by vapor mass*enthalpy because vapor typically has the largest enthalpy
@@ -456,42 +573,12 @@ class CrystallizationData(UnitModelBlockData):
             iscale.constraint_scaling_transform(c, sf)
 
 
-        # for j, c in self.eq_removal_balance.items():
-        #     sf = iscale.get_scaling_factor(self.properties_in[0].flow_mass_phase_comp['Liq', j])
-        #     iscale.constraint_scaling_transform(c, sf)
+        for j, c in self.eq_removal_balance.items():
+            sf = iscale.get_scaling_factor(self.properties_in[0].flow_mass_phase_comp['Liq', j])
+            iscale.constraint_scaling_transform(c, sf)
 
 
-        # Scaling for energy balance needed
-
-
-
-
-
-
-
-
-
-
-        # self.relative_supersaturation = Var(
-        #     solute_set,
-        #     initialize=0.1,
-        #     bounds=(0, 1),
-        #     units=pyunits.dimensionless
-        # )
-
-
-        # # (d) Relative supersaturation 
-        # @self.Constraint(solute_set, doc="Relative supersaturation at evaporation point, kg (solute) per kg (solution)")
-        # def eq_relative_supersaturation(b, j):
-        #     mass_frac_after_evap = b.properties_in[0].flow_mass_phase_comp['Liq', j] \
-        #     / (sum(b.properties_in[0].flow_mass_phase_comp['Liq', j] for j in solute_set)
-        #         + b.properties_in[0].flow_mass_phase_comp['Liq', 'H2O']
-        #         - b.properties_vapor[0].flow_mass_phase_comp['Vap', 'H2O']
-        #         )
-        #     return (b.relative_supersaturation[j] == 
-        #     (mass_frac_after_evap - b.properties_out[0].solubility_mass_frac_phase_comp['Liq', j])
-        #     / b.properties_out[0].solubility_mass_frac_phase_comp['Liq', j]
-        #     )
+    #     # Scaling for energy balance needed
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
@@ -506,16 +593,18 @@ class CrystallizationData(UnitModelBlockData):
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
-        var_dict["Operating Temperature"] = self.temperature_operating
-        var_dict["Operating Pressure"] = self.pressure_operating
-        var_dict["Magma density of solution"] = self.magma_density
-        var_dict["Slurry density"] = self.slurry_density
-        var_dict["Heat requirement"] = self.work_mechanical[time_point]
-        var_dict["Crystallizer diameter"] = self.d_crystallizer
-        var_dict["Heat exchanger solution-side flow rate"] = self.hex_circulation_flow_vol
+        var_dict["Operating Temperature (K)"] = self.temperature_operating
+        var_dict["Operating Pressure (Pa)"] = self.pressure_operating
+        var_dict["Magma density of solution (Kg/m**3)"] = self.magma_density
+        var_dict["Slurry density (Kg/m3)"] = self.slurry_density
+        var_dict["Heat requirement (kW)"] = self.work_mechanical[time_point]
+        var_dict["Crystallizer diameter (m)"] = self.d_crystallizer
+        var_dict["Heat exchanger solution-side flow rate (m**3/s)"] = self.hex_circulation_flow_vol
         var_dict["Vol. frac. of solids in suspension, 1-E"] = self.product_volumetric_solids_fraction
         for j in self.config.property_package.solute_set:
-            cin_mem_name=f'{j} yield (fraction)'
-            var_dict[cin_mem_name] = (self.crystallization_yield[j])
+            yield_mem_name=f'{j} yield (fraction)'
+            var_dict[yield_mem_name] = (self.crystallization_yield[j])
+            supersat_mem_name=f'{j} relative supersaturation (g/g solution)'
+            var_dict[supersat_mem_name] = (self.relative_supersaturation[j])
 
         return {"vars": var_dict}

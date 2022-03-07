@@ -20,7 +20,7 @@ import idaes.logger as idaeslog
 from enum import Enum, auto
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, \
+from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, PositiveReals,\
     Var, Param, exp, log, Suffix, value, check_optimal_termination
 from pyomo.environ import units as pyunits
 from pyomo.common.config import ConfigValue, In
@@ -565,7 +565,7 @@ class NaClStateBlockData(StateBlockData):
     # 1 Mass fraction: From NaCl property package 
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(self.phase_component_set,
-                                    domain=NonNegativeReals,
+                                    domain=PositiveReals,
                                     initialize={('Liq', 'H2O'): 0.965, ('Liq', 'NaCl'): 0.035, ('Vap', 'H2O'): 1.0, 
                                     ('Sol', 'NaCl'): 1.0},
                                     bounds=(0, 1.0001),  
@@ -1141,13 +1141,15 @@ class NaClStateBlockData(StateBlockData):
         # Scaling material heat capacities
         if self.is_property_constructed('cp_solute'):
             for p in ['Sol', 'Liq']:
-                if iscale.get_scaling_factor(self.cp_solute) is None:
-                    iscale.set_scaling_factor(self.cp_solute[p], iscale.get_scaling_factor(self.cp_phase['Liq']))
+                if iscale.get_scaling_factor(self.cp_solute[p]) is None:
+                    iscale.set_scaling_factor(self.cp_solute[p], iscale.get_scaling_factor(self.cp_phase['Liq'], 
+                        default=1, warning=True))
 
         if self.is_property_constructed('cp_solvent'):
-            for p in ['Vap', 'Liq']:
-                if iscale.get_scaling_factor(self.cp_solvent) is None:
-                    iscale.set_scaling_factor(self.cp_solvent[p], iscale.get_scaling_factor(self.cp_phase['Liq']))
+            for p in ['Liq', 'Vap']:
+                if iscale.get_scaling_factor(self.cp_solvent[p]) is None:
+                    iscale.set_scaling_factor(self.cp_solvent[p], iscale.get_scaling_factor(self.cp_phase['Liq'], 
+                        default=1, warning=True))
 
         # Scaling saturation temperature
         if self.is_property_constructed('temperature_sat_solvent'):
