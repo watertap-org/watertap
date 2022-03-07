@@ -101,8 +101,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         """
         Calculating process wide costs.
         """
-        # TODO: Global reduction and uncertainty parameters
-
         # Other capital costs
         self.land_cost = pyo.Var(
             initialize=0,
@@ -210,7 +208,21 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                      flow_rate,
                      to_units=pyo.units.m**3/self.base_period) *
                   self.utilization_factor),
-            doc='Levelized Cost of Water [$/m3]')
+            doc='Levelized Cost of Water')
+
+    def add_electricity_intensity(self, flow_rate):
+        """
+        Add calculation of overall electricity intensity to costing block.
+
+        Args:
+            flow_rate - flow rate of water (volumetric) to be used in
+                        calculating electricity intensity
+        """
+        self.electricity_intensity = pyo.Expression(
+            expr=pyo.units.convert(
+                self.aggregate_flow_electricity / flow_rate,
+                to_units=pyo.units.kWh/pyo.units.m**3),
+            doc='Overall electricity intensity')
 
     # -------------------------------------------------------------------------
     # Unit operation costing methods
@@ -268,7 +280,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         # TODO: Include TPEC/TIC
         # TODO: Chemical addition
-        # TODO: Reduction parameter, uncertainty parameter
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost ==
             A*pyo.units.convert(sizing_term,

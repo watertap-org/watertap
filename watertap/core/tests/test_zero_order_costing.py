@@ -122,6 +122,16 @@ class TestWorkflow:
         assert_units_consistent(model.fs)
         assert degrees_of_freedom(model.fs) == 0
 
+    @pytest.mark.component
+    def test_add_electricity_intensity(self, model):
+        model.fs.costing.add_electricity_intensity(
+            model.fs.unit.properties_in[0].flow_vol)
+
+        assert isinstance(model.fs.costing.electricity_intensity, Expression)
+
+        assert_units_consistent(model.fs)
+        assert degrees_of_freedom(model.fs) == 0
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -135,10 +145,13 @@ class TestWorkflow:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        model.fs.costing.display()
-
         assert pytest.approx(644334000, rel=1e-5) == value(
             model.fs.costing.total_capital_cost)
 
         assert pytest.approx(0.685694, rel=1e-5) == value(
             model.fs.costing.LCOW)
+
+        nf_intensity = model.db._cached_files[
+            "nanofiltration"]["default"]["energy_electric_flow_vol_inlet"]
+        assert pytest.approx(nf_intensity["value"], rel=1e-5) == value(
+            model.fs.costing.electricity_intensity)
