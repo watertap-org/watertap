@@ -35,6 +35,7 @@ from watertap.tools.parameter_sweep import (_init_mpi,
                                             NormalSample,
                                             SamplingType)
 from watertap.tools.recursive_parameter_sweep import *
+from watertap.tools.tests.test_parameter_sweep import _get_rank0_path
 from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (build,
     set_operating_conditions,
     initialize_system,
@@ -93,7 +94,9 @@ def model():
 
 
 @pytest.mark.component
-def test_recursive_parameter_sweep(model):
+def test_recursive_parameter_sweep(model, tmp_path):
+    comm, rank, num_procs = _init_mpi()
+    tmp_path = _get_rank0_path(comm, tmp_path)
 
     m = model
 
@@ -115,5 +118,5 @@ def test_recursive_parameter_sweep(model):
     #     seed=seed, reinitialize_before_sweep=False, reinitialize_function=initialize_system,
     #     reinitialize_kwargs={'solver':solver}
     recursive_parameter_sweep(m, sweep_params, outputs=outputs,
-        # csv_results_file='recursive_sweep.csv', h5_results_file=None,
+        results_dir=tmp_path, results_fname='recursive_output',
         req_num_samples=num_samples, seed=seed)

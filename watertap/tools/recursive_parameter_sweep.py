@@ -159,8 +159,9 @@ def recursive_parameter_sweep(model, sweep_params, outputs, results_dir=None, re
     comm.Barrier()
     if rank == 0:
         if results_fname is not None:
-            _write_outputs(global_filtered_dict, results_dir, fname_no_extension=results_fname,
-                write_h5=True, write_txt=True, txt_options="keys")
+            if results_dir is None:
+                results_dir = "."
+            _write_outputs(global_filtered_dict, results_dir, results_fname, txt_options="keys")
 
     return
 
