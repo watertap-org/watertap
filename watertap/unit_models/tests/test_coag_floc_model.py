@@ -38,6 +38,7 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util.scaling import badly_scaled_var_generator
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
+import re
 
 __author__ = "Austin Ladshaw"
 
@@ -51,6 +52,9 @@ class TestCoagulation_withChemicals():
         model = ConcreteModel()
         model.fs = FlowsheetBlock(default={"dynamic": False})
         model.fs.properties = CoagulationParameterBlock()
+        ## NOTE: These values provided are just DUMMY values for the purposes
+        #        of testing. They are not meant to be representative of any
+        #        particular chemicals or real-world addatives.
         chem_dict = {'Alum':
                         {"parameter_data":
                             {"mw_additive": (200, pyunits.g/pyunits.mol),
@@ -329,7 +333,7 @@ class TestCoagulation_withBadConfig():
                             "mw_salt": (100, pyunits.g/pyunits.mol)}
                         }
                      }
-        with pytest.raises(ConfigurationError):
+        with pytest.raises(ConfigurationError, match="Did not provide a 'parameter_data' for chemical"):
             model.fs.unit = CoagulationFlocculation(default={
                 "property_package": model.fs.properties,
                 "chemical_additives": bad_dict1 })
@@ -341,7 +345,7 @@ class TestCoagulation_withBadConfig():
                             "mw_salt": (100, pyunits.g/pyunits.mol)}
                         }
                      }
-        with pytest.raises(ConfigurationError):
+        with pytest.raises(ConfigurationError, match="Did not provide a 'mw_additive' for chemical"):
             model.fs.unit = CoagulationFlocculation(default={
                 "property_package": model.fs.properties,
                 "chemical_additives": bad_dict2 })
@@ -353,7 +357,7 @@ class TestCoagulation_withBadConfig():
                             "mw_salt": (100, pyunits.g/pyunits.mol)}
                         }
                      }
-        with pytest.raises(ConfigurationError):
+        with pytest.raises(ConfigurationError, match="Did not provide a number for 'moles_salt_per_mole_additive'"):
             model.fs.unit = CoagulationFlocculation(default={
                 "property_package": model.fs.properties,
                 "chemical_additives": bad_dict3 })
@@ -365,7 +369,7 @@ class TestCoagulation_withBadConfig():
                             "mw_salt": (100, pyunits.g/pyunits.mol)}
                         }
                      }
-        with pytest.raises(ConfigurationError):
+        with pytest.raises(ConfigurationError, match="Did not provide a 'moles_salt_per_mole_additive' for chemical"):
             model.fs.unit = CoagulationFlocculation(default={
                 "property_package": model.fs.properties,
                 "chemical_additives": bad_dict4 })
@@ -377,7 +381,7 @@ class TestCoagulation_withBadConfig():
                             "foo-bar": (100, pyunits.g/pyunits.mol)}
                         }
                      }
-        with pytest.raises(ConfigurationError):
+        with pytest.raises(ConfigurationError, match="Did not provide a 'mw_salt' for chemical"):
             model.fs.unit = CoagulationFlocculation(default={
                 "property_package": model.fs.properties,
                 "chemical_additives": bad_dict5 })
@@ -389,7 +393,7 @@ class TestCoagulation_withBadConfig():
                             "mw_salt": (100, pyunits.g/pyunits.mol)}
                         }
                      }
-        with pytest.raises(ConfigurationError):
+        with pytest.raises(ConfigurationError, match="Did not provide a tuple for 'mw_additive'"):
             model.fs.unit = CoagulationFlocculation(default={
                 "property_package": model.fs.properties,
                 "chemical_additives": bad_dict6 })
@@ -408,12 +412,20 @@ class TestCoagulation_withBadProperties():
     def test_build_model_catch_prop_errors(self, coag_obj_bad_properties):
         model = coag_obj_bad_properties
 
-        with pytest.raises(ConfigurationError):
+        error_msg = ("Coagulation-Flocculation model MUST contain ('Liq','TDS') "
+                    "as a component, but the property package has only specified "
+                    "the following components [('Liq', 'H2O'), ('Liq', 'NaCl')]")
+        with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
             model.fs.properties = NaClParameterBlock()
             model.fs.unit = CoagulationFlocculation(default={
                 "property_package": model.fs.properties })
 
-        with pytest.raises(ConfigurationError):
+        error_msg = ("Coagulation-Flocculation model MUST contain ('Liq','Sludge') "
+                    "as a component, but the property package has only specified "
+                    "the following components [('Liq', 'H2O'), ('Liq', 'TDS')]")
+        with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
             model.fs.properties = SeawaterParameterBlock()
             model.fs.unit = CoagulationFlocculation(default={
                 "property_package": model.fs.properties })
+
+        # NOTE: package must also contain ('Liq','TSS') as a component
