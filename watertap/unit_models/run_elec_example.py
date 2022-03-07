@@ -81,7 +81,7 @@ m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e2, index=('Liq', 'N
 m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e2, index=('Liq', 'Cl_-'))
 
 # NOTE: We have to skip this step for now due to an error in Adams' Prop Pack
-#iscale.calculate_scaling_factors(m.fs)
+iscale.calculate_scaling_factors(m.fs)
 
 # Intialize the model
 m.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
