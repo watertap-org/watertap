@@ -45,7 +45,7 @@ solver = get_solver()
 
 # -----------------------------------------------------------------------------
 # Start test class
-class TestCoagulationZOJarTest_withChemicals():
+class TestCoagulation_withChemicals():
     @pytest.fixture(scope="class")
     def coag_obj_w_chems(self):
         model = ConcreteModel()
@@ -183,7 +183,7 @@ class TestCoagulationZOJarTest_withChemicals():
 
 # -----------------------------------------------------------------------------
 # Start test class without chemicals added
-class TestCoagulationZOJarTest_withNoChemicals():
+class TestCoagulation_withNoChemicals():
     @pytest.fixture(scope="class")
     def coag_obj_wo_chems(self):
         model = ConcreteModel()
@@ -309,7 +309,7 @@ class TestCoagulationZOJarTest_withNoChemicals():
 
 # -----------------------------------------------------------------------------
 # Start test class with bad config
-class TestCoagulationZOJarTest_withBadConfig():
+class TestCoagulation_withBadConfig():
     @pytest.fixture(scope="class")
     def coag_obj_bad_config(self):
         model = ConcreteModel()
@@ -396,7 +396,7 @@ class TestCoagulationZOJarTest_withBadConfig():
 
 # -----------------------------------------------------------------------------
 # Start test class with bad config
-class TestCoagulationZOJarTest_withBadProperties():
+class TestCoagulation_withBadProperties():
     @pytest.fixture(scope="class")
     def coag_obj_bad_properties(self):
         model = ConcreteModel()
