@@ -26,22 +26,23 @@ from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (solve_indexed_blocks,
                                             propagate_state)
+from idaes.generic_models.unit_models.translator import Translator
 from idaes.generic_models.unit_models import Mixer, Separator, Product
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-# import watertap.property_models.NaCl_prop_pack as props
-# from watertap.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
-#                                                      ConcentrationPolarizationType,
-#                                                      MassTransferCoefficient,
-#                                                      PressureChangeType)
-# from watertap.unit_models.pressure_exchanger import PressureExchanger
-# from watertap.unit_models.pump_isothermal import Pump
+import watertap.property_models.seawater_prop_pack as prop_SW
+from watertap.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
+                                                     ConcentrationPolarizationType,
+                                                     MassTransferCoefficient,
+                                                     PressureChangeType)
+from watertap.unit_models.pressure_exchanger import PressureExchanger
+from watertap.unit_models.pump_isothermal import Pump
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
 from watertap.core.wt_database import Database
-from watertap.core.zero_order_properties import WaterParameterBlock
+import watertap.core.zero_order_properties as prop_ZO
 from watertap.unit_models.zero_order import (FeedZO,
                                              SWOnshoreIntakeZO,
                                              ChemicalAdditionZO,
@@ -55,6 +56,7 @@ from watertap.unit_models.zero_order import (FeedZO,
                                              CO2AdditionZO,
                                              MunicipalDrinkingZO,
                                              LandfillZO)
+
 
 
 def main():
@@ -83,9 +85,11 @@ def build():
     m.db = Database()
 
     m.fs = FlowsheetBlock(default={'dynamic': False})
-    m.fs.prop_ZO = WaterParameterBlock(default={"solute_list": ["tds", "tss"]})
-    density = 1023.5 * pyunits.kg/pyunits.m**3
-    m.fs.prop_ZO.dens_mass_default = density
+    m.fs.prop_prtrt = prop_ZO.WaterParameterBlock(default={"solute_list": ["tds", "tss"]})
+    density = 1023.5 * pyunits.kg / pyunits.m ** 3
+    m.fs.prop_prtrt.dens_mass_default = density
+    m.fs.prop_psttrt = prop_ZO.WaterParameterBlock(default={"solute_list": ["tds"]})
+    m.fs.prop_SW = prop_SW.SeawaterParameterBlock()
 
     # block structure
     prtrt = m.fs.pretreatment = Block()
@@ -93,34 +97,34 @@ def build():
     psttrt = m.fs.posttreatment = Block()
 
     # unit models
-    m.fs.feed = FeedZO(default={'property_package': m.fs.prop_ZO})
+    m.fs.feed = FeedZO(default={'property_package': m.fs.prop_prtrt})
     # pretreatment
-    prtrt.intake = SWOnshoreIntakeZO(default={'property_package': m.fs.prop_ZO})
+    prtrt.intake = SWOnshoreIntakeZO(default={'property_package': m.fs.prop_prtrt})
     prtrt.ferric_chloride_addition = ChemicalAdditionZO(default={
-            "property_package": m.fs.prop_ZO,
+            "property_package": m.fs.prop_prtrt,
             "database": m.db,
             "process_subtype": "ferric_chloride"})
     prtrt.chlorination = ChlorinationZO(default={
-            "property_package": m.fs.prop_ZO,
+            "property_package": m.fs.prop_prtrt,
             "database": m.db})
     prtrt.static_mixer = StaticMixerZO(default={
-            "property_package": m.fs.prop_ZO,
+            "property_package": m.fs.prop_prtrt,
             "database": m.db})
     prtrt.storage_tank_1 = StorageTankZO(default={
-            "property_package": m.fs.prop_ZO,
+            "property_package": m.fs.prop_prtrt,
             "database": m.db})
     prtrt.media_filtration = MediaFiltrationZO(default={
-            "property_package": m.fs.prop_ZO,
+            "property_package": m.fs.prop_prtrt,
             "database": m.db})
     prtrt.backwash_handling = BackwashSolidsHandlingZO(default={
-            "property_package": m.fs.prop_ZO,
+            "property_package": m.fs.prop_prtrt,
             "database": m.db})
     prtrt.anti_scalant_addition = ChemicalAdditionZO(default={
-            "property_package": m.fs.prop_ZO,
+            "property_package": m.fs.prop_prtrt,
             "database": m.db,
             "process_subtype": "anti-scalant"})
     prtrt.cartridge_filtration = CartridgeFiltrationZO(default={
-        "property_package": m.fs.prop_ZO,
+        "property_package": m.fs.prop_prtrt,
         "database": m.db})
 
     # desalination
@@ -144,30 +148,39 @@ def build():
 
     # posttreatment
     psttrt.storage_tank_2 = StorageTankZO(default={
-            "property_package": m.fs.prop_ZO,
+            "property_package": m.fs.prop_psttrt,
             "database": m.db})
     psttrt.uv_aop = UVAOPZO(default={
-        "property_package": m.fs.prop_ZO,
+        "property_package": m.fs.prop_psttrt,
         "database": m.db,
         "process_subtype": "hydrogen_peroxide"})
     psttrt.co2_addition = CO2AdditionZO(default={
-        "property_package": m.fs.prop_ZO,
+        "property_package": m.fs.prop_psttrt,
         "database": m.db})
     psttrt.lime_addition = ChemicalAdditionZO(default={
-            "property_package": m.fs.prop_ZO,
+            "property_package": m.fs.prop_psttrt,
             "database": m.db,
             "process_subtype": "lime"})
     psttrt.storage_tank_3 = StorageTankZO(default={
-        "property_package": m.fs.prop_ZO,
+        "property_package": m.fs.prop_psttrt,
         "database": m.db})
 
     # product and disposal
     m.fs.municipal = MunicipalDrinkingZO(default={
-        "property_package": m.fs.prop_ZO,
+        "property_package": m.fs.prop_psttrt,
         "database": m.db})
     m.fs.landfill = LandfillZO(default={
-        "property_package": m.fs.prop_ZO,
+        "property_package": m.fs.prop_prtrt,
         "database": m.db})
+
+    # translator blocks
+    m.fs.tb_prtrt_psttrt = Translator(
+        default={"inlet_property_package": m.fs.prop_prtrt,
+                 "outlet_property_package": m.fs.prop_psttrt})
+
+    @m.fs.tb_prtrt_psttrt.Constraint(['H2O', 'tds'])
+    def eq_flow_mass_comp(blk, j):
+        return blk.properties_in[0].flow_mass_comp[j] == blk.properties_out[0].flow_mass_comp[j]
 
     # connections
     prtrt.s01 = Arc(source=m.fs.feed.outlet, destination=prtrt.intake.inlet)
@@ -179,9 +192,10 @@ def build():
     prtrt.s07 = Arc(source=prtrt.media_filtration.byproduct, destination=prtrt.backwash_handling.inlet)
     prtrt.s08 = Arc(source=prtrt.media_filtration.treated, destination=prtrt.anti_scalant_addition.inlet)
     prtrt.s09 = Arc(source=prtrt.anti_scalant_addition.outlet, destination=prtrt.cartridge_filtration.inlet)
-    prtrt.s10 = Arc(source=prtrt.backwash_handling.byproduct, destination=m.fs.landfill.inlet)
+    prtrt.s10 = Arc(source=prtrt.cartridge_filtration.treated, destination=m.fs.tb_prtrt_psttrt.inlet)
+    prtrt.s11 = Arc(source=prtrt.backwash_handling.byproduct, destination=m.fs.landfill.inlet)
 
-    psttrt.s01 = Arc(source=prtrt.cartridge_filtration.treated, destination=psttrt.storage_tank_2.inlet)
+    psttrt.s01 = Arc(source=m.fs.tb_prtrt_psttrt.outlet, destination=psttrt.storage_tank_2.inlet)
     psttrt.s02 = Arc(source=psttrt.storage_tank_2.outlet, destination=psttrt.uv_aop.inlet)
     psttrt.s03 = Arc(source=psttrt.uv_aop.treated, destination=psttrt.co2_addition.inlet)
     psttrt.s04 = Arc(source=psttrt.co2_addition.outlet, destination=psttrt.lime_addition.inlet)
