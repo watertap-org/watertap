@@ -1,0 +1,15 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 1
+    units: dimensionless
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_solute:
+    nonbiodegradable_cod:
+      value: 0.5    # Todo: revisit this value later
+      units: dimensionless
+      constituent_longform: Nonbiodegradable Chemical Oxygen Demand (ffCOD) representing volatile fatty acids (VFAs)
+  energy_electric_flow_vol_inlet:
+    value: 0      #todo: revisit this value later on
+    units: kWh/m^3

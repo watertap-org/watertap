@@ -1,10 +1,14 @@
-default:
-  recovery_frac_mass_H2O:
-    value: 0.9999
+default:  # needed some parameters as placeholder, so including cost params here
+  cap_basis_par:
+    value: 0.000215
+    units: M$
+  cap_exp_par:
+    value: 0.888803
     units: dimensionless
-    reference: Intake and Pump Costs from Voutchkov (see capital cost curves in VAR).
-      Energy consumption value based on 100-ft head pump and is consistent with reported
-      Carlsbad data.
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless
+  capital cost units:
+    value: M$
+  vol units:
+    value: m^3/day
+  cost_function_form:
+    function f(flow_vol_in): cap_basis_par*(flow_vol_in)^cap_exp_par
+    units: $

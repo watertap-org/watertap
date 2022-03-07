@@ -1,6 +1,9 @@
 How to use apparent and true chemical species
 =============================================
 
+.. note:: This page provides a manual approach to building an IDAES configuration dictionary.
+    The same result can be achieved by using the :doc:`Electrolyte Database (EDB)</technical_reference/edb/index>`.
+
 In WaterTAP, most all chemical processes simulated will be considered "true"
 species, i.e., species that actually exist in an aqueous solution (e.g., Na+ and Cl- for NaCl). However, there
 may be times when you want to have your system report the "apparent" species
