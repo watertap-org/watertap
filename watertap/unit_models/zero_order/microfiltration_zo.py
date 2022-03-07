@@ -27,7 +27,7 @@ __author__ = "Chenyu Wang"
 @declare_process_block_class("MicroFiltrationZO")
 class MicroFiltrationZOData(ZeroOrderBaseData):
     """
-    Zero-Order model for a mircrofiltration unit operation.
+    Zero-Order model for a microfiltration unit operation.
     """
 
     CONFIG = ZeroOrderBaseData.CONFIG()
