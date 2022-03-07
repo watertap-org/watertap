@@ -14,7 +14,7 @@ import pytest
 from watertap.property_models.coagulation_prop_pack import CoagulationParameterBlock
 from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
 from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
-from watertap.unit_models.coag_floc_zo_jartest import CoagulationFlocculationZO_JarTestModel
+from watertap.unit_models.coag_floc_model import CoagulationFlocculation
 from pyomo.environ import (ConcreteModel,
                            assert_optimal_termination,
                            value,
@@ -64,7 +64,7 @@ class TestCoagulationZOJarTest_withChemicals():
                             "mw_salt": (23, pyunits.g/pyunits.mol)}
                         }
                      }
-        model.fs.unit = CoagulationFlocculationZO_JarTestModel(default={
+        model.fs.unit = CoagulationFlocculation(default={
             "property_package": model.fs.properties,
             "chemical_additives": chem_dict })
 
@@ -189,7 +189,7 @@ class TestCoagulationZOJarTest_withNoChemicals():
         model = ConcreteModel()
         model.fs = FlowsheetBlock(default={"dynamic": False})
         model.fs.properties = CoagulationParameterBlock()
-        model.fs.unit = CoagulationFlocculationZO_JarTestModel(default={
+        model.fs.unit = CoagulationFlocculation(default={
             "property_package": model.fs.properties})
 
         return model
@@ -330,7 +330,7 @@ class TestCoagulationZOJarTest_withBadConfig():
                         }
                      }
         with pytest.raises(ConfigurationError):
-            model.fs.unit = CoagulationFlocculationZO_JarTestModel(default={
+            model.fs.unit = CoagulationFlocculation(default={
                 "property_package": model.fs.properties,
                 "chemical_additives": bad_dict1 })
 
@@ -342,7 +342,7 @@ class TestCoagulationZOJarTest_withBadConfig():
                         }
                      }
         with pytest.raises(ConfigurationError):
-            model.fs.unit = CoagulationFlocculationZO_JarTestModel(default={
+            model.fs.unit = CoagulationFlocculation(default={
                 "property_package": model.fs.properties,
                 "chemical_additives": bad_dict2 })
 
@@ -354,7 +354,7 @@ class TestCoagulationZOJarTest_withBadConfig():
                         }
                      }
         with pytest.raises(ConfigurationError):
-            model.fs.unit = CoagulationFlocculationZO_JarTestModel(default={
+            model.fs.unit = CoagulationFlocculation(default={
                 "property_package": model.fs.properties,
                 "chemical_additives": bad_dict3 })
 
@@ -366,7 +366,7 @@ class TestCoagulationZOJarTest_withBadConfig():
                         }
                      }
         with pytest.raises(ConfigurationError):
-            model.fs.unit = CoagulationFlocculationZO_JarTestModel(default={
+            model.fs.unit = CoagulationFlocculation(default={
                 "property_package": model.fs.properties,
                 "chemical_additives": bad_dict4 })
 
@@ -378,7 +378,7 @@ class TestCoagulationZOJarTest_withBadConfig():
                         }
                      }
         with pytest.raises(ConfigurationError):
-            model.fs.unit = CoagulationFlocculationZO_JarTestModel(default={
+            model.fs.unit = CoagulationFlocculation(default={
                 "property_package": model.fs.properties,
                 "chemical_additives": bad_dict5 })
 
@@ -390,7 +390,7 @@ class TestCoagulationZOJarTest_withBadConfig():
                         }
                      }
         with pytest.raises(ConfigurationError):
-            model.fs.unit = CoagulationFlocculationZO_JarTestModel(default={
+            model.fs.unit = CoagulationFlocculation(default={
                 "property_package": model.fs.properties,
                 "chemical_additives": bad_dict6 })
 
@@ -410,10 +410,10 @@ class TestCoagulationZOJarTest_withBadProperties():
 
         with pytest.raises(ConfigurationError):
             model.fs.properties = NaClParameterBlock()
-            model.fs.unit = CoagulationFlocculationZO_JarTestModel(default={
+            model.fs.unit = CoagulationFlocculation(default={
                 "property_package": model.fs.properties })
 
         with pytest.raises(ConfigurationError):
             model.fs.properties = SeawaterParameterBlock()
-            model.fs.unit = CoagulationFlocculationZO_JarTestModel(default={
+            model.fs.unit = CoagulationFlocculation(default={
                 "property_package": model.fs.properties })

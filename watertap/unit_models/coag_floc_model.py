@@ -45,8 +45,8 @@ __author__ = "Austin Ladshaw"
 _log = idaeslog.getLogger(__name__)
 
 # Name of the unit model
-@declare_process_block_class("CoagulationFlocculationZO_JarTestModel")
-class CoagulationFlocculationZO_JarTestModelData(UnitModelBlockData):
+@declare_process_block_class("CoagulationFlocculation")
+class CoagulationFlocculationData(UnitModelBlockData):
     """
     Zero order Coagulation-Flocculation model based on Jar Tests
     """
