@@ -54,7 +54,7 @@ class TestCoagulation_withChemicals():
         model.fs.properties = CoagulationParameterBlock()
         ## NOTE: These values provided are just DUMMY values for the purposes
         #        of testing. They are not meant to be representative of any
-        #        particular chemicals or real-world addatives.
+        #        particular chemicals or real-world additives.
         chem_dict = {'Alum':
                         {"parameter_data":
                             {"mw_additive": (200, pyunits.g/pyunits.mol),
