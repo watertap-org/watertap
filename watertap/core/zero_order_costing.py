@@ -13,7 +13,11 @@
 """
 General costing package for zero-order processes.
 """
+import os
+import yaml
+
 import pyomo.environ as pyo
+from pyomo.common.config import ConfigValue
 
 from idaes.core import declare_process_block_class
 from idaes.generic_models.costing.costing_base import (
@@ -22,12 +26,26 @@ from idaes.generic_models.costing.costing_base import (
 from watertap.core.zero_order_base import ZeroOrderBase
 
 
+global_params = ["plant_lifetime",
+                 "utilization_factor",
+                 "land_cost_percent_FCI",
+                 "working_capital_percent_FCI",
+                 "salaries_percent_FCI",
+                 "benefit_percent_of_salary",
+                 "maintenance_costs_percent_FCI",
+                 "laboratory_fees_percent_FCI",
+                 "insurance_and_taxes_percent_FCI",
+                 "wacc"]
+
+
 @declare_process_block_class("ZeroOrderCosting")
 class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
-    # Register currency and conversion rates based on CE Index
-    # TODO : Consider way to do this from data
-    register_idaes_currency_units()
+    CONFIG = FlowsheetCostingBlockData.CONFIG()
+    CONFIG.declare("case_study_definition", ConfigValue(
+        default=None,
+        doc="Path to YAML file defining global parameters for case study. If "
+        "not provided, default values from the WaterTap database are used."))
 
     def build_global_params(self):
         """
@@ -36,15 +54,25 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         Unit-specific parameters will be added as sub-Blocks on a case-by-case
         basis as a unit of that type is costed.
         """
+        # Load case study definition from file
+        cs_def = _load_case_study_definition(self)
+
+        # Register currency and conversion rates
+        if "currency_definitions" in cs_def:
+            pyo.units.load_definitions_from_strings(
+                cs_def["currency_definitions"])
+        else:
+            register_idaes_currency_units()
+
         # Set the base year for all costs
-        self.base_currency = pyo.units.USD_2018
+        self.base_currency = getattr(pyo.units, cs_def["base_currency"])
         # Set a base period for all operating costs
-        self.base_period = pyo.units.year
+        self.base_period = getattr(pyo.units, cs_def["base_period"])
 
         # Define expected flows
-        self.defined_flows = {
-            "electricity":
-                0.0595*pyo.units.USD_2019/pyo.units.kW/pyo.units.hour}
+        self.defined_flows = {}
+        for f, v in cs_def["defined_flows"].items():
+            self.defined_flows[f] = v["value"]*getattr(pyo.units, v["units"])
 
         # Costing factors
         self.plant_lifetime = pyo.Var(initialize=30,
@@ -92,10 +120,16 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                   (((1 + self.wacc)**(self.plant_lifetime/self.base_period)) -
                    1) / self.base_period))
 
-        # TODO: Load values from database
-        # Fix all Vars
-        for v in self.component_objects(pyo.Var, descend_into=True):
-            v.fix()
+        # Fix all Vars from database
+        for v in global_params:
+            try:
+                value = cs_def["global_parameters"][v]["value"]
+                units = cs_def["global_parameters"][v]["units"]
+                getattr(self, v).fix(value*getattr(pyo.units, units))
+            except KeyError:
+                raise KeyError(
+                    f"Invalid case study definition file - no entry found "
+                    f"for {v}, or entyr lacks value and units.")
 
     def build_process_costs(self):
         """
@@ -250,7 +284,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             pblock = getattr(blk.config.flowsheet_costing_block,
                              blk.unit_model._tech_type)
         except AttributeError:
-            # If not present, call emthod to create parameter Block
+            # If not present, call method to create parameter Block
             pblock = _add_tech_parameter_block(blk, parameter_dict)
 
         A = pblock.capital_a_parameter
@@ -342,3 +376,22 @@ def _add_tech_parameter_block(blk, parameter_dict):
         pblock.reference_state.fix()
 
     return pblock
+
+
+def _load_case_study_definition(self):
+    source_file = self.config.case_study_definition
+    if source_file is None:
+        source_file = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "..", "data", "techno_economic", "default_case_study.yaml")
+
+    try:
+        with open(source_file, "r") as f:
+            lines = f.read()
+            f.close()
+    except OSError:
+        raise KeyError(
+            "Could not find specified case study definition file. "
+            "Please check the path provided.")
+
+    return yaml.load(lines, yaml.Loader)

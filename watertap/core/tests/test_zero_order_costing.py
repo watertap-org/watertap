@@ -73,7 +73,7 @@ class TestWorkflow:
         assert isinstance(model.fs.costing.nanofiltration, Block)
         assert isinstance(model.fs.costing.nanofiltration.capital_a_parameter,
                           Var)
-        assert isinstance(model.fs.costing.nanofiltration.capital_a_parameter,
+        assert isinstance(model.fs.costing.nanofiltration.capital_b_parameter,
                           Var)
         assert isinstance(model.fs.costing.nanofiltration.reference_state, Var)
 
