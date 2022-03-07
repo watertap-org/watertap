@@ -19,21 +19,21 @@ import pyomo.environ as pyo
 from pyomo.environ import value
 
 from watertap.tools.parameter_sweep import (_init_mpi,
-                                               _build_combinations,
-                                               _divide_combinations,
-                                               _update_model_values,
-                                               _aggregate_results,
-                                               _interp_nan_values,
-                                               _process_sweep_params,
-                                               _write_output_to_h5,
-                                               _read_output_h5,
-                                               _create_local_output_skeleton,
-                                               _create_global_output,
-                                               parameter_sweep,
-                                               LinearSample,
-                                               UniformSample,
-                                               NormalSample,
-                                               SamplingType)
+                                            _build_combinations,
+                                            _divide_combinations,
+                                            _update_model_values,
+                                            _aggregate_results,
+                                            _interp_nan_values,
+                                            _process_sweep_params,
+                                            _write_output_to_h5,
+                                            _read_output_h5,
+                                            _create_local_output_skeleton,
+                                            _create_global_output,
+                                            parameter_sweep,
+                                            LinearSample,
+                                            UniformSample,
+                                            NormalSample,
+                                            SamplingType)
 from watertap.tools.recursive_parameter_sweep import *
 from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (build,
     set_operating_conditions,
@@ -77,14 +77,14 @@ def model():
     for k in range(nn):
         # Set a random value for the parameter a
         m.fs.a.set_value(np.random.fs.rand())
-    
+
         # Attempt to solve the model (infeasible if m.fs.a > success_prob)
         solver.solve(m)
-    
+
         # Store the value of a and the solution x
         a = pyo.value(m.fs.a)
         x = pyo.value(m.fs.x)
-        
+
         if np.abs(pyo.value(m.fs.err)) < 1e-6:
             results[k, :] = [a, x]
         else:
@@ -114,5 +114,6 @@ def test_recursive_parameter_sweep(model):
     #     optimize_function=optimize, optimize_kwargs={'solver':solver}, req_num_samples=num_samples,
     #     seed=seed, reinitialize_before_sweep=False, reinitialize_function=initialize_system,
     #     reinitialize_kwargs={'solver':solver}
-    recursive_parameter_sweep(m, sweep_params, outputs, results_fname='recursive_sweep.csv',
+    recursive_parameter_sweep(m, sweep_params, outputs=outputs,
+        # csv_results_file='recursive_sweep.csv', h5_results_file=None,
         req_num_samples=num_samples, seed=seed)

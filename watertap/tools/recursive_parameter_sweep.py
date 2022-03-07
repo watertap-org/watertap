@@ -34,7 +34,9 @@ from watertap.tools.parameter_sweep import (_default_optimize,
                                             _build_combinations,
                                             _divide_combinations,
                                             _do_param_sweep,
-                                            _create_local_output_skeleton)
+                                            _create_local_output_skeleton,
+                                            _create_global_output,
+                                            _write_outputs)
 
 np.set_printoptions(linewidth=200)
 
@@ -54,41 +56,40 @@ def _force_exception(ctr):
 
 # ================================================================
 
-def _filter_recursive_solves(model, sweep_params, recursive_local_dict, true_local_num_cases, comm, filter_keyword="optimal"):
+def _filter_recursive_solves(model, sweep_params, outputs, recursive_local_dict, true_local_num_cases, comm):
 
-    pyomo_termination_condition = TerminationConditionMapping()
-    try:
-        assert filter_keyword in pyomo_termination_condition.mapping.keys()
-    except:
-        warnings.warn("Invalid filtering option specified. Filtering optimal values")
-        filter_keyword = "optimal"
+    # pyomo_termination_condition = TerminationConditionMapping()
+    # try:
+    #     assert filter_keyword in pyomo_termination_condition.mapping.keys()
+    # except:
+    #     warnings.warn("Invalid filtering option specified. Filtering optimal values")
+    #     filter_keyword = "optimal"
 
     # Figure out how many filtered solves did this rank actually do
     filter_counter = 0
     for case, content in recursive_local_dict.items():
-        filter_counter += content["solve_status"].count(filter_keyword)
+        filter_counter += sum(content["solve_successful"]) # content["solve_successful"].count(filter_keyword)
 
     # Now that we have all of the local output dictionaries, we need to construct
     # a consolidated dictionary of successful solves.
-    local_filtered_dict = _create_local_output_skeleton(model, sweep_params, filter_counter,
-                                                          variable_type="unfixed")
-    local_filtered_dict["solve_status"] = []
+    local_filtered_dict, local_filtered_outputs = _create_local_output_skeleton(model, sweep_params, outputs, filter_counter)
+    local_filtered_dict["solve_successful"] = []
 
     # Populate local_successful_outputs
     offset = 0
     for case_number, content in recursive_local_dict.items():
         # Filter all of the sucessful solves
-        optimal_indices = [idx for idx, status in enumerate(content["solve_status"]) if status == "optimal"]
+        optimal_indices = list(itertools.compress(range(len(content["solve_successful"])), content["solve_successful"])) # [idx for idx, status in enumerate(content["solve_status"]) if status == "optimal"]
         n_successful_solves = len(optimal_indices)
         stop = offset+n_successful_solves
 
         for key, item in content.items():
-            if key != "solve_status":
+            if key != "solve_successful":
                 for subkey, subitem in item.items():
                     local_filtered_dict[key][subkey]['value'][offset:stop] = subitem['value'][optimal_indices]
 
         # Place the solve status
-        local_filtered_dict["solve_status"].extend([content["solve_status"][i] for i in optimal_indices])
+        local_filtered_dict["solve_successful"].extend([content["solve_successful"][i] for i in optimal_indices])
 
         offset += n_successful_solves
 
@@ -144,19 +145,22 @@ def recursive_parameter_sweep(model, sweep_params, outputs, results_dir=None, re
 
     # Now that we have all of the local output dictionaries, we need to construct
     # a consolidated dictionary based on a filter, e.g., optimal solves.
-    local_filtered_dict = _filter_recursive_solves(model, sweep_params, local_output_collection,
-        true_local_num_cases, comm, "optimal")
+    print("local_output_collection[0] = \n")
+    pprint.pprint(local_output_collection[0])
+    local_filtered_dict = _filter_recursive_solves(model, sweep_params, outputs, local_output_collection,
+        true_local_num_cases, comm)
 
     # Not that we have all of the successful outputs in a consolidated dictionary locally,
     # we can now construct a global dictionary of successful solves.
-    global_filtered_dict = _create_global_output(local_filtered_dict, req_num_samples, comm)
+    global_filtered_dict = _create_global_output(local_filtered_dict, req_num_samples, comm, rank, num_procs)
 
 
     # Now we can save this
     comm.Barrier()
     if rank == 0:
-        _write_outputs(global_filtered_dict, results_dir, fname_no_extension=results_fname,
-            write_h5=True, write_txt=True, txt_options="keys")
+        if results_fname is not None:
+            _write_outputs(global_filtered_dict, results_dir, fname_no_extension=results_fname,
+                write_h5=True, write_txt=True, txt_options="keys")
 
     return
 
