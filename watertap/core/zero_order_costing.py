@@ -18,12 +18,14 @@ import yaml
 
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigValue
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core import declare_process_block_class
 from idaes.generic_models.costing.costing_base import (
     FlowsheetCostingBlockData, register_idaes_currency_units)
 
 from watertap.core.zero_order_base import ZeroOrderBase
+from watertap.unit_models.zero_order import ChemicalAdditionZO
 
 
 global_params = ["plant_lifetime",
@@ -35,7 +37,9 @@ global_params = ["plant_lifetime",
                  "maintenance_costs_percent_FCI",
                  "laboratory_fees_percent_FCI",
                  "insurance_and_taxes_percent_FCI",
-                 "wacc"]
+                 "wacc",
+                 "TPEC",
+                 "TIC"]
 
 
 @declare_process_block_class("ZeroOrderCosting")
@@ -119,6 +123,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                    (1 + self.wacc)**(self.plant_lifetime/self.base_period)) /
                   (((1 + self.wacc)**(self.plant_lifetime/self.base_period)) -
                    1) / self.base_period))
+
+        self.TPEC = pyo.Var(initialize=3.4,
+                            units=pyo.units.dimensionless,
+                            doc='Total Purchased Equipment Cost (TPEC)')
+        self.TIC = pyo.Var(initialize=1.65,
+                           units=pyo.units.dimensionless,
+                           doc='Total Installed Cost (TIC)')
 
         # Fix all Vars from database
         for v in global_params:
@@ -221,11 +232,32 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                   self.total_variable_operating_cost),
             doc="Total operating cost of process per operating period")
 
-    def initialize(self):
+    def initialize_build(self):
         """
-        Not needed for now, but can add custom initialization here.
+        Basic initialization for flowsheet level quantities
         """
-        pass
+        calculate_variable_from_constraint(
+            self.land_cost, self.land_cost_constraint)
+        calculate_variable_from_constraint(
+            self.working_capital, self.working_capital_constraint)
+        calculate_variable_from_constraint(
+            self.total_capital_cost, self.total_capital_cost_constraint)
+
+        calculate_variable_from_constraint(
+            self.salary_cost, self.salary_cost_constraint)
+        calculate_variable_from_constraint(
+            self.benefits_cost, self.benefits_cost_constraint)
+        calculate_variable_from_constraint(
+            self.maintenance_cost, self.maintenance_cost_constraint)
+        calculate_variable_from_constraint(
+            self.laboratory_cost, self.laboratory_cost_constraint)
+        calculate_variable_from_constraint(
+            self.insurance_and_taxes_cost,
+            self.insurance_and_taxes_cost_constraint)
+
+        calculate_variable_from_constraint(
+            self.total_fixed_operating_cost,
+            self.total_fixed_operating_cost_constraint)
 
     def add_LCOW(self, flow_rate):
         """
@@ -260,7 +292,33 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
     # -------------------------------------------------------------------------
     # Unit operation costing methods
-    def exponential_flow_form(blk):
+    def cost_exponential_flow(blk):
+        t0 = blk.flowsheet().time.first()
+        ZeroOrderCostingData._general_exponential_form(blk, time=t0)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
+
+    def cost_chemical_addition(blk):
+        chem_name = blk.unit_model.config.process_subtype
+
+        t0 = blk.flowsheet().time.first()
+        chem_flow_mass = (blk.unit_model.chemical_dosage[t0] *
+                          blk.unit_model.properties[t0].flow_vol /
+                          blk.unit_model.ratio_in_solution)
+        sizing_term = chem_flow_mass / (pyo.units.lb/pyo.units.day)
+
+        ZeroOrderCostingData._general_exponential_form(
+            blk, time=t0, sizing_term=sizing_term)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
+        blk.config.flowsheet_costing_block.cost_flow(
+            chem_flow_mass, chem_name)
+
+    def _general_exponential_form(blk, time=None, sizing_term=None):
         # Get parameter dict from database
         parameter_dict = \
             blk.unit_model.config.database.get_unit_operation_parameters(
@@ -269,16 +327,12 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         blk.capital_cost = pyo.Var(
             initialize=1,
-            units=getattr(pyo.units, parameter_dict["capital_cost"]["units"]),
+            units=blk.config.flowsheet_costing_block.base_currency,
             bounds=(0, None),
             doc="Capital cost of unit operation")
 
-        t0 = blk.flowsheet().time.first()
-
-        # Get reference state for capital calculation
-        basis = parameter_dict["capital_cost"]["basis"]
-
         # Get costing parameter sub-block for this technology
+        # TODO: Process Sub-types
         try:
             # Try to get parameter Block from costing package
             pblock = getattr(blk.config.flowsheet_costing_block,
@@ -290,43 +344,48 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         A = pblock.capital_a_parameter
         B = pblock.capital_b_parameter
 
-        # Get state block for flow bases
-        try:
-            sblock = blk.unit_model.properties_in[t0]
-        except AttributeError:
-            # Pass-through case
-            sblock = blk.unit_model.properties[t0]
+        if sizing_term is None:
+            # Get reference state for capital calculation
+            basis = parameter_dict["capital_cost"]["basis"]
 
-        # TODO: More bases
-        if basis == "flow_vol":
-            state = sblock.flow_vol
-            state_ref = pblock.reference_state
-            sizing_term = state/state_ref
-        elif basis == "flow_mass":
-            state = sum(sblock.flow_mass_comp[j]
-                        for j in sblock.component_list)
-            state_ref = pblock.reference_state
-            sizing_term = state/state_ref
-        else:
-            raise ValueError(
-                f"{blk.name} - unrecognized basis in parameter declaration: "
-                f"{basis}.")
+            # Get state block for flow bases
+            try:
+                sblock = blk.unit_model.properties_in[time]
+            except AttributeError:
+                # Pass-through case
+                sblock = blk.unit_model.properties[time]
 
-        # TODO: Include TPEC/TIC
-        # TODO: Chemical addition
-        blk.capital_cost_constraint = pyo.Constraint(
-            expr=blk.capital_cost ==
+            if basis == "flow_vol":
+                state = sblock.flow_vol
+                state_ref = pblock.reference_state
+                sizing_term = state/state_ref
+            elif basis == "flow_mass":
+                state = sum(sblock.flow_mass_comp[j]
+                            for j in sblock.component_list)
+                state_ref = pblock.reference_state
+                sizing_term = state/state_ref
+            else:
+                raise ValueError(
+                    f"{blk.name} - unrecognized basis in parameter "
+                    f"declaration: {basis}.")
+
+        expr = pyo.units.convert(
             A*pyo.units.convert(sizing_term,
-                                to_units=pyo.units.dimensionless)**B)
+                                to_units=pyo.units.dimensionless)**B,
+            to_units=blk.config.flowsheet_costing_block.base_currency)
 
-        # Register flows if present
-        if hasattr(blk.unit_model, "electricity"):
-            blk.config.flowsheet_costing_block.cost_flow(
-                blk.unit_model.electricity[t0], "electricity")
+        if parameter_dict["capital_cost"]["cost_factor"] == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif parameter_dict["capital_cost"]["cost_factor"] == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == expr)
 
     # -------------------------------------------------------------------------
     # Map costing methods to unit model classes
-    unit_mapping = {ZeroOrderBase: exponential_flow_form}
+    unit_mapping = {ZeroOrderBase: cost_exponential_flow,
+                    ChemicalAdditionZO: cost_chemical_addition}
 
 
 def _add_tech_parameter_block(blk, parameter_dict):
@@ -361,7 +420,7 @@ def _add_tech_parameter_block(blk, parameter_dict):
     pblock.capital_a_parameter.fix()
     pblock.capital_b_parameter.fix()
 
-    if parameter_dict["capital_cost"]["basis"] in ["flow_vol", "flow_mass"]:
+    if "reference_state" in parameter_dict["capital_cost"]:
         # Flow based costing requires a reference flow
         pblock.reference_state = pyo.Var(
             initialize=float(
