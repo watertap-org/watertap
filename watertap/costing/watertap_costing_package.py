@@ -27,7 +27,7 @@ from watertap.unit_models import (
         ReverseOsmosis0D,
         ReverseOsmosis1D,
         NanoFiltration0D,
-        NanoFiltrationZO,
+        NanofiltrationZO,
         PressureExchanger,
         Pump,
         )
@@ -308,7 +308,7 @@ WaterTAPCostingData.unit_mapping = {
         ReverseOsmosis0D: WaterTAPCostingData.cost_reverse_osmosis,
         ReverseOsmosis1D: WaterTAPCostingData.cost_reverse_osmosis,
         NanoFiltration0D: WaterTAPCostingData.cost_nanofiltration,
-        NanoFiltrationZO: WaterTAPCostingData.cost_nanofiltration,
+        NanofiltrationZO: WaterTAPCostingData.cost_nanofiltration,
         }
 
 def _make_captial_cost_var(blk):
