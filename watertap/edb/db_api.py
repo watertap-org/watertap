@@ -442,14 +442,19 @@ class ElectrolyteDB:
 
     @staticmethod
     def _process_component(rec):
+        # This line is needed
         rec["elements"] = get_elements_from_components([rec["name"]])
         return rec
 
     @staticmethod
     def _process_reaction(rec):
-        rec["reactant_elements"] = get_elements_from_components(
-            rec.get("components", []))
+        # This line beloc doesn't appear to do anything of value
+        # ------------------------------------------------------
+        #rec["reactant_elements"] = get_elements_from_components(
+        #    rec.get("components", []))
 
+        # These lines seems integral to loading the database
+        # ------------------------------------------------
         # If reaction_order is not present in parameters, create it by
         # copying the stoichiometry (or empty for each phase, if stoich. not found)
         if Reaction.NAMES.param in rec:
@@ -465,10 +470,14 @@ class ElectrolyteDB:
 
         return rec
 
+    # This function does nothing 
     @staticmethod
     def _process_base(rec):
         return rec
 
+    # This function appears to be done implicitly by data_model.Component
+    # and is never actually called from the above 'load' function
+    '''
     @staticmethod
     def _process_species(s):
         """Make species match https://jess.murdoch.edu.au/jess_spcdoc.shtml"""
@@ -487,6 +496,7 @@ class ElectrolyteDB:
             charge = input_charge
         # print(f"{s} -> {symbols}{charge}")
         return f"{symbols}{charge}"
+    '''
 
 
 def get_elements_from_components(components):
