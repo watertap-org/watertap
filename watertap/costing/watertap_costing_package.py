@@ -141,7 +141,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.total_investment_cost_constraint = pyo.Constraint(expr = \
                 self.total_investment_cost == self.factor_total_investment * self.total_capital_cost)
         self.maintenance_labor_chemical_operating_cost_constraint = pyo.Constraint(expr = \
-                self.maintenance_labor_chemical_operating_cost == self.factor_maintenance_labor_chemical * self.total_capital_cost)
+                self.maintenance_labor_chemical_operating_cost == self.factor_maintenance_labor_chemical * self.total_investment_cost)
 
         self.total_operating_cost_constraint = pyo.Constraint(expr = \
                 self.total_operating_cost == self.maintenance_labor_chemical_operating_cost \
@@ -270,7 +270,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         _make_calculate_scaling_factors_pressure_changer_workaround(blk)
 
         blk.capital_cost_constraint = pyo.Constraint(expr = \
-                blk.capital_cost == blk.costing_package.high_pressure_pump_cost * blk.unit_model.work_mechanical[0])
+                blk.capital_cost == blk.costing_package.high_pressure_pump_cost * pyo.units.convert(blk.unit_model.work_mechanical[0], pyo.units.W))
 
     @staticmethod
     def cost_low_pressure_pump(blk):
@@ -282,8 +282,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         _make_captial_cost_var(blk)
         # workaround for now
         _make_calculate_scaling_factors_pressure_changer_workaround(blk)
-        cost_by_flow_volume(blk, pyo.units.convert(blk.costing_package.low_pressure_pump_cost, pyo.units.USD_CE500/(pyo.units.m**3/pyo.units.s)),
-                blk.unit_model.control_volume.properties_in[0].flow_vol)
+        cost_by_flow_volume(blk, blk.costing_package.low_pressure_pump_cost,
+                pyo.units.convert(blk.unit_model.control_volume.properties_in[0].flow_vol, (pyo.units.m**3/pyo.units.s)))
 
     @staticmethod
     def cost_pressure_exchanger_pump(blk):
@@ -295,7 +295,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         _make_captial_cost_var(blk)
         # workaround for now
         _make_calculate_scaling_factors_pressure_changer_workaround(blk)
-        cost_by_flow_volume(blk, blk.costing_package.pump_pressure_exchanger_cost, blk.unit_model.control_volume.properties_in[0].flow_vol)
+        cost_by_flow_volume(blk, blk.costing_package.pump_pressure_exchanger_cost,
+                pyo.units.convert(blk.unit_model.control_volume.properties_in[0].flow_vol, (pyo.units.meter**3/pyo.units.hours)))
 
     @staticmethod
     def cost_pressure_exchanger(blk):
@@ -305,7 +306,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         TODO: describe equations
         """
         _make_captial_cost_var(blk)
-        cost_by_flow_volume(blk, blk.costing_package.pressure_exchanger_cost, blk.unit_model.low_pressure_side.properties_in[0].flow_vol)
+        cost_by_flow_volume(blk, blk.costing_package.pressure_exchanger_cost,
+                pyo.units.convert(blk.unit_model.low_pressure_side.properties_in[0].flow_vol, (pyo.units.meter**3/pyo.units.hours)))
 
     ## TODO; Mixer and Separator
 
@@ -346,9 +348,9 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
     blk.factor_membrane_replacement = pyo.Expression(expr=factor_membrane_replacement)
 
     blk.capital_cost_constraint = pyo.Constraint(expr = \
-            blk.capital_cost == blk.membrane_cost * blk.unit_model.area)
+            blk.capital_cost == blk.membrane_cost * pyo.units.convert(blk.unit_model.area, pyo.units.m**2))
     blk.fixed_operating_cost_constraint = pyo.Constraint(expr = \
-            blk.fixed_operating_cost == blk.factor_membrane_replacement * blk.membrane_cost * blk.unit_model.area)
+            blk.fixed_operating_cost == blk.factor_membrane_replacement * blk.membrane_cost * pyo.units.convert(blk.unit_model.area, pyo.units.m**2))
 
 def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
     """
