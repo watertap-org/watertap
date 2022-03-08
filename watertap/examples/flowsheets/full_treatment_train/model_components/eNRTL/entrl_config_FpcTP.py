@@ -39,7 +39,7 @@ from idaes.generic_models.properties.core.pure.electrolyte import \
     relative_permittivity_constant
 
 
-class ConstantVolMol():
+class VolMolH2O():
     def build_parameters(b):
         b.vol_mol_pure = Param(initialize=18e-6,
                                units=pyunits.m**3/pyunits.mol,
@@ -48,38 +48,131 @@ class ConstantVolMol():
     def return_expression(b, cobj, T):
         return cobj.vol_mol_pure
 
+class VolMolNaCl():
+    def build_parameters(b):
+        b.vol_mol_pure = Param(initialize=58.44e-6,
+                               units=pyunits.m**3/pyunits.mol,
+                               mutable=True)
+
+    def return_expression(b, cobj, T):
+        return cobj.vol_mol_pure
+
+class VolMolNa2SO4():
+    def build_parameters(b):
+        b.vol_mol_pure = Param(initialize=142.04e-6,
+                               units=pyunits.m**3/pyunits.mol,
+                               mutable=True)
+
+    def return_expression(b, cobj, T):
+        return cobj.vol_mol_pure
+
+
+class VolMolCaCl2():
+    def build_parameters(b):
+        b.vol_mol_pure = Param(initialize=110.98e-6,
+                               units=pyunits.m**3/pyunits.mol,
+                               mutable=True)
+
+    def return_expression(b, cobj, T):
+        return cobj.vol_mol_pure
+
+class VolMolCaSO4():
+    def build_parameters(b):
+        b.vol_mol_pure = Param(initialize=136.14e-6,
+                               units=pyunits.m**3/pyunits.mol,
+                               mutable=True)
+
+    def return_expression(b, cobj, T):
+        return cobj.vol_mol_pure
+
+class VolMolMgCl2():
+    def build_parameters(b):
+        b.vol_mol_pure = Param(initialize=95.21e-6,
+                               units=pyunits.m**3/pyunits.mol,
+                               mutable=True)
+
+    def return_expression(b, cobj, T):
+        return cobj.vol_mol_pure
+
+class VolMolMgSO4():
+    def build_parameters(b):
+        b.vol_mol_pure = Param(initialize=120.37e-6,
+                               units=pyunits.m**3/pyunits.mol,
+                               mutable=True)
+
+    def return_expression(b, cobj, T):
+        return cobj.vol_mol_pure
 
 configuration = {
     "components": {
         "H2O": {"type": Solvent,
-                "vol_mol_liq_comp": ConstantVolMol,
+                "vol_mol_liq_comp": VolMolH2O,
                 "relative_permittivity_liq_comp":
                     relative_permittivity_constant,
                 "parameter_data": {
                     "mw": (18E-3, pyunits.kg/pyunits.mol),
                     "relative_permittivity_liq_comp": 78.54}},
         "NaCl": {"type": Apparent,
-                 "dissociation_species": {"Na_+": 1, "Cl_-": 1}},
+                 "dissociation_species": {"Na_+": 1, "Cl_-": 1},
+                 "vol_mol_liq_comp": VolMolNaCl,
+                 "parameter_data": {
+                     "mw": (58.44E-3, pyunits.kg / pyunits.mol)
+                 }},
         "Na2SO4": {"type": Apparent,
-                   "dissociation_species": {"Na_+": 2, "SO4_2-": 1}},
+                   "dissociation_species": {"Na_+": 2, "SO4_2-": 1},
+                   "vol_mol_liq_comp": VolMolNa2SO4,
+                   "parameter_data": {
+                       "mw": (142.04E-3, pyunits.kg / pyunits.mol)
+                   }},
         "CaCl2": {"type": Apparent,
-                  "dissociation_species": {"Ca_2+": 1, "Cl_-": 2}},
+                  "dissociation_species": {"Ca_2+": 1, "Cl_-": 2},
+                  "vol_mol_liq_comp": VolMolCaCl2,
+                  "parameter_data": {
+                      "mw": (110.98E-3, pyunits.kg / pyunits.mol)
+                  }},
         "CaSO4": {"type": Apparent,
-                  "dissociation_species": {"Ca_2+": 1, "SO4_2-": 1}},
+                  "dissociation_species": {"Ca_2+": 1, "SO4_2-": 1},
+                  "vol_mol_liq_comp": VolMolCaSO4,
+                  "parameter_data": {
+                      "mw": (136.14E-3, pyunits.kg / pyunits.mol)
+                  }},
         "MgCl2": {"type": Apparent,
-                  "dissociation_species": {"Mg_2+": 1, "Cl_-": 2}},
+                  "dissociation_species": {"Mg_2+": 1, "Cl_-": 2},
+                  "vol_mol_liq_comp": VolMolMgCl2,
+                  "parameter_data": {
+                      "mw": (95.21E-3, pyunits.kg / pyunits.mol)
+                  }},
         "MgSO4": {"type": Apparent,
-                  "dissociation_species": {"Mg_2+": 1, "SO4_2-": 1}},
+                  "dissociation_species": {"Mg_2+": 1, "SO4_2-": 1},
+                  "vol_mol_liq_comp": VolMolMgSO4,
+                  "parameter_data": {
+                      "mw": (120.37E-3, pyunits.kg / pyunits.mol)
+                  }},
         "Na_+": {"type": Cation,
-                 "charge": +1},
+                 "charge": +1,
+                 "parameter_data":{
+                     "mw": 23e-3
+                 }},
         "Ca_2+": {"type": Cation,
-                  "charge": +2},
+                  "charge": +2,
+                  "parameter_data": {
+                      "mw": 40e-3
+                  }},
         "Mg_2+": {"type": Cation,
-                  "charge": +2},
+                  "charge": +2,
+                  "parameter_data":{
+                      "mw": 24.3e-3
+                  }},
         "Cl_-": {"type": Anion,
-                 "charge": -1},
+                 "charge": -1,
+                 "parameter_data": {
+                     "mw": 35.45e-3
+                 }},
         "SO4_2-": {"type": Anion,
-                   "charge": -2}},
+                   "charge": -2,
+                   "parameter_data": {
+                       "mw": 96.06e-3
+                   }}},
     "phases": {
         "Liq": {"type": AqueousPhase,
                 "equation_of_state": ENRTL,
