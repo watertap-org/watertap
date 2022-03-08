@@ -61,7 +61,7 @@ class TestCoagulationPropPack():
             assert j in ["H2O", "TDS", "TSS", "Sludge"]
         assert isinstance(model.fs.properties.phase_list, Set)
         for p in model.fs.properties.phase_list:
-            assert p in ["Liq", "Sol"]
+            assert p in ["Liq"]
 
         # Check for existance of the state block object
         assert model.fs.properties._state_block_class is CoagulationStateBlock
@@ -108,7 +108,7 @@ class TestCoagulationPropPack():
         assert res["temperature"] == model.fs.stream[0].temperature
         assert model.fs.stream[0].get_material_flow_terms('Liq','H2O') == \
             model.fs.stream[0].flow_mass_phase_comp['Liq','H2O']
-        assert model.fs.stream[0].default_material_balance_type() == MaterialBalanceType.componentTotal
+        assert model.fs.stream[0].default_material_balance_type() == MaterialBalanceType.componentPhase
         assert model.fs.stream[0].default_energy_balance_type() == EnergyBalanceType.enthalpyTotal
         assert model.fs.stream[0].get_material_flow_basis() == MaterialFlowBasis.mass
         assert model.fs.stream[0].get_enthalpy_flow_terms('Liq') == \
@@ -132,7 +132,7 @@ class TestCoagulationPropPack():
         model.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O'].fix(1)
         model.fs.stream[0].flow_mass_phase_comp['Liq', 'TSS'].fix(0.01)
         model.fs.stream[0].flow_mass_phase_comp['Liq', 'TDS'].fix(0.01)
-        model.fs.stream[0].flow_mass_phase_comp['Sol', 'Sludge'].fix(0.001)
+        model.fs.stream[0].flow_mass_phase_comp['Liq', 'Sludge'].fix(0.001)
         assert degrees_of_freedom(model) == 0
 
     @pytest.mark.unit
@@ -143,7 +143,7 @@ class TestCoagulationPropPack():
         model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
         model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TSS'))
         model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TDS'))
-        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Sol', 'Sludge'))
+        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq', 'Sludge'))
         iscale.calculate_scaling_factors(model.fs)
 
         # check that all variables have scaling factors
@@ -174,7 +174,7 @@ class TestCoagulationPropPack():
                 ('flow_mass_phase_comp', ('Liq','H2O')): 1,
                 ('flow_mass_phase_comp', ('Liq','TDS')): 0.01,
                 ('flow_mass_phase_comp', ('Liq','TSS')): 0.01,
-                ('flow_mass_phase_comp', ('Sol','Sludge')): 0.001}
+                ('flow_mass_phase_comp', ('Liq','Sludge')): 0.001}
         results = model.fs.stream.calculate_state(var_args=args)
         assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
@@ -206,20 +206,19 @@ class TestCoagulationPropPack():
         assert value(model.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O']) == pytest.approx(1,  rel=1e-4)
         assert value(model.fs.stream[0].flow_mass_phase_comp['Liq', 'TSS']) == pytest.approx(0.01,  rel=1e-4)
         assert value(model.fs.stream[0].flow_mass_phase_comp['Liq', 'TDS']) == pytest.approx(0.01,  rel=1e-4)
-        assert value(model.fs.stream[0].flow_mass_phase_comp['Sol', 'Sludge']) == pytest.approx(0.001,  rel=1e-4)
+        assert value(model.fs.stream[0].flow_mass_phase_comp['Liq', 'Sludge']) == pytest.approx(0.001,  rel=1e-4)
 
-        assert value(model.fs.stream[0].mass_frac_phase_comp['Liq', 'H2O']) == pytest.approx(0.980392,  rel=1e-4)
-        assert value(model.fs.stream[0].mass_frac_phase_comp['Liq', 'TSS']) == pytest.approx(0.009803,  rel=1e-4)
-        assert value(model.fs.stream[0].mass_frac_phase_comp['Liq', 'TDS']) == pytest.approx(0.009803,  rel=1e-4)
-        assert value(model.fs.stream[0].mass_frac_phase_comp['Sol', 'Sludge']) == pytest.approx(1,  rel=1e-4)
+        assert value(model.fs.stream[0].mass_frac_phase_comp['Liq', 'H2O']) == pytest.approx(0.979431,  rel=1e-4)
+        assert value(model.fs.stream[0].mass_frac_phase_comp['Liq', 'TSS']) == pytest.approx(0.009794,  rel=1e-4)
+        assert value(model.fs.stream[0].mass_frac_phase_comp['Liq', 'TDS']) == pytest.approx(0.009794,  rel=1e-4)
+        assert value(model.fs.stream[0].mass_frac_phase_comp['Liq', 'Sludge']) == pytest.approx(0.0009794,  rel=1e-4)
 
-        assert value(model.fs.stream[0].dens_mass_phase['Liq']) == pytest.approx(1013.11599,  rel=1e-4)
-        assert value(model.fs.stream[0].dens_mass_phase['Sol']) == pytest.approx(2600,  rel=1e-4)
+        assert value(model.fs.stream[0].dens_mass_phase['Liq']) == pytest.approx(1013.95727,  rel=1e-4)
 
-        assert value(model.fs.stream[0].conc_mass_phase_comp['Liq', 'H2O']) == pytest.approx(993.250979,  rel=1e-4)
-        assert value(model.fs.stream[0].conc_mass_phase_comp['Liq', 'TSS']) == pytest.approx(9.932509,  rel=1e-4)
-        assert value(model.fs.stream[0].conc_mass_phase_comp['Liq', 'TDS']) == pytest.approx(9.932509,  rel=1e-4)
-        assert value(model.fs.stream[0].conc_mass_phase_comp['Sol', 'Sludge']) == pytest.approx(2600,  rel=1e-4)
+        assert value(model.fs.stream[0].conc_mass_phase_comp['Liq', 'H2O']) == pytest.approx(993.1021,  rel=1e-4)
+        assert value(model.fs.stream[0].conc_mass_phase_comp['Liq', 'TSS']) == pytest.approx(9.931021,  rel=1e-4)
+        assert value(model.fs.stream[0].conc_mass_phase_comp['Liq', 'TDS']) == pytest.approx(9.931021,  rel=1e-4)
+        assert value(model.fs.stream[0].conc_mass_phase_comp['Liq', 'Sludge']) == pytest.approx(0.9931021,  rel=1e-4)
 
 
 class TestCoagulationPropPackFailures():
@@ -266,6 +265,6 @@ class TestCoagulationPropPackFailures():
                 ('flow_mass_phase_comp', ('Liq','H2O')): 1,
                 ('flow_mass_phase_comp', ('Liq','TDS')): 0.01,
                 ('flow_mass_phase_comp', ('Liq','TSS')): 0.01,
-                ('flow_mass_phase_comp', ('Sol','Sludge')): 0.001}
+                ('flow_mass_phase_comp', ('Liq','Sludge')): 0.001}
         with pytest.raises(ValueError):
             results = model.fs.stream.calculate_state(var_args=args)
