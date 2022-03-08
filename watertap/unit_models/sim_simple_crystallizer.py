@@ -66,7 +66,6 @@ if __name__ == '__main__':
     m.fs.crystallizer.solids.flow_mass_phase_comp[0, 'Sol', 'NaCl'].fix(5.556)
     # m.fs.crystallizer.vapor.flow_mass_phase_comp[0, 'Vap', 'H2O'].fix(20.56)
 
-
     # # Scaling
     m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e-1, index=('Liq', 'H2O'))
     m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e-1, index=('Liq', 'NaCl'))
@@ -74,6 +73,7 @@ if __name__ == '__main__':
     m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e-1, index=('Sol', 'NaCl'))
     iscale.calculate_scaling_factors(m.fs) 
 
+    #  m.fs.crystallizer.k_param = 0.06
     # solving
     m.fs.crystallizer.initialize(outlvl=idaeslog.DEBUG)
     assert_units_consistent(m)  # check that units are consistent

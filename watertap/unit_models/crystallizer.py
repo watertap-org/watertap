@@ -41,6 +41,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+from idaes.core.util.math import smooth_max
 
 
 _log = idaeslog.getLogger(__name__)
@@ -103,13 +104,6 @@ class CrystallizationData(UnitModelBlockData):
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         # Add unit variables
-        ## TO-DO: Add slurry density?
-
-        self.k_param = Param(
-            initialize=0.04,
-            units=pyunits.m/pyunits.s,
-            doc="Sounders-Brown constant, set at 0.04 m/s based on Dutta et al. \
-            Lewis et al suggests 0.024 m/s, while Tavare suggests about 0.06 m/s ")
 
         self.hex_max_temp_increase = Param(
             initialize=4,
@@ -118,7 +112,30 @@ class CrystallizationData(UnitModelBlockData):
             Lewis et al. suggests 1-2 degC but use 5degC in example; Tavare example used 4 degC.\
             Default is 4 degC")
 
+        # ====== Crystallizer sizing parameters ================= #
+        self.L_d = Param(
+            initialize=0.5e-3, # From Mersmann et al., Tavare et al. example
+            # bounds=(0.2e-3, 0.6e-3), # Limits for FC crystallizers based on Bermingham et al.
+            units=pyunits.m,
+            doc="Desired median crystal size, m"
+            )
 
+        self.G_rate = Param(
+            initialize=3.7e-8, # From Mersmann et al. for NaCl. Perry has values between 0.5e-8 to 13e-8 for NaCl
+            # bounds=(1e-9, 1e-6), # Based on Mersmann and Kind diagram. 
+            units=pyunits.m/pyunits.s,
+            doc="Crystal growth rate, m/s"
+            )
+
+
+        self.k_param = Param(
+            initialize=0.04,
+            units=pyunits.m/pyunits.s,
+            doc="Sounders-Brown constant, set at 0.04 m/s based on Dutta et al. \
+            Lewis et al suggests 0.024 m/s, while Tavare suggests about 0.06 m/s ")
+
+
+        # ====== Model variables ================= #
         self.crystallization_yield = Var(
             solute_set,
             initialize=0.5,
@@ -170,14 +187,29 @@ class CrystallizationData(UnitModelBlockData):
             doc="Crystallizer thermal energy requirement"
             )
 
-        self.d_crystallizer = Var(
+        self.D_crystallizer = Var(
             initialize=3,
             bounds=(0, 25),
             units=pyunits.m,
             doc="Minimum diameter of crystallizer"
             )
 
-        self.hex_circulation_flow_vol = Var(
+
+        self.h_slurry = Var(
+            initialize=3,
+            bounds=(0, 25),
+            units=pyunits.m,
+            doc="Slurry height in crystallizer"
+            )
+
+        self.H_crystallizer = Var(
+            initialize=3,
+            bounds=(0, 25),
+            units=pyunits.m,
+            doc="Crystallizer height"
+            )
+
+        self.magma_circulation_flow_vol = Var(
             initialize=1,
             bounds=(0, 100),
             units=pyunits.m**3/pyunits.s,
@@ -190,6 +222,22 @@ class CrystallizationData(UnitModelBlockData):
             bounds=(0, 100),
             units=pyunits.dimensionless
         )
+
+        self.t_res =  Var(
+            initialize=1,
+            bounds=(0, 10),
+            units=pyunits.hr,
+            doc="Residence time in crystallizer"
+            )
+
+        self.V_suspension = Var(
+            initialize=0,
+            bounds=(0, None),
+            units=pyunits.m**3,
+            doc="Volume of liquid-solid suspension"
+            )
+
+
 
         # Add state blocks for inlet, outlet, and waste
         # These include the state variables and any other properties on demand
@@ -293,7 +341,7 @@ class CrystallizationData(UnitModelBlockData):
         def eq_operating_pressure_constraint(b):
             return (self.pressure_operating - b.properties_out[0].pressure_sat == 0)
 
-        # (d) Relative supersaturation 
+        # (e) Relative supersaturation 
         @self.Constraint(solute_set, doc="Relative supersaturation created via evaporation, g/g (solution)")
         def eq_relative_supersaturation(b, j):
             #  mass_frac_after_evap = SOLIDS IN + LIQUID IN - VAPOUR OUT
@@ -392,7 +440,7 @@ class CrystallizationData(UnitModelBlockData):
                 + (1 - b.product_volumetric_solids_fraction) * b.properties_out[0].dens_mass_phase['Liq'] * b.properties_out[0].cp_phase['Liq']
                 )
             return (
-                b.hex_circulation_flow_vol * rho_cp_dt == pyunits.convert(b.work_mechanical[0], to_units=pyunits.J / pyunits.s)
+                b.magma_circulation_flow_vol * rho_cp_dt == pyunits.convert(b.work_mechanical[0], to_units=pyunits.J / pyunits.s)
                 )
 
         # 8. Suspension density
@@ -404,19 +452,55 @@ class CrystallizationData(UnitModelBlockData):
                 )
 
 
+        # 9. Residence time calculation
+        @self.Constraint(doc="Residence time")
+        def eq_residence_time(b):
+            return (
+                b.t_res == b.L_d / (3.67 * pyunits.convert(b.G_rate, to_units=pyunits.m/pyunits.hr))
+                )
 
-        # 9. Minimum diameter of evaporation zone
+        # 10. Suspension volume calculation
+        @self.Constraint(doc="Suspension volume")
+        def eq_suspension_volume(b):
+            return (
+                b.V_suspension == (b.properties_solids[0].flow_vol + b.properties_out[0].flow_vol) * pyunits.convert(b.t_res, to_units=pyunits.s)
+                )
+
+
+        # 11. Minimum diameter of evaporation zone
         def eq_max_allowable_velocity(b):
             return b.k_param * \
             (b.properties_out[0].dens_mass_phase['Liq']/ b.properties_vapor[0].dens_mass_solvent['Vap']) ** 0.5
         
         self.v_max = Expression(rule=eq_max_allowable_velocity, doc='maximum allowable vapour linear velocity in m/s') 
 
-        @self.Constraint(doc="Mimimum diameter of evaporation zone")
+        @self.Constraint(doc="Crystallizer diameter (based on minimum diameter of evaporation zone)")
         def eq_vapor_head_diameter_constraint(b):
-            return self.d_crystallizer == \
+            return self.D_crystallizer == \
             (4 * b.properties_vapor[0].flow_vol_phase['Vap'] / (Constants.pi * b.v_max)) ** 0.5
 
+
+        # 12. Minimum crystallizer height
+        @self.Constraint(doc="Slurry height based on crystallizer diameter")
+        def eq_slurry_height_constraint(b):
+            return self.h_slurry == 4 * b.V_suspension / (Constants.pi * b.D_crystallizer ** 2)
+
+        def eq_vapor_space_height(b):
+            return 0.75 * b.D_crystallizer
+        self.h_vapor_space =  Expression(rule=eq_vapor_space_height, doc='Recommended height of vapor space (0.75*D) based on Tavares et. al.')
+
+        def eq_minimum_height_diameter_ratio(b):
+            return 1.5 * b.D_crystallizer
+        self.h_min = Expression(rule=eq_minimum_height_diameter_ratio, doc='Height to diameter ratio constraint for evaporative crystallizers (Wilson et. al.)')
+
+
+        @self.Constraint(doc="Crystallizer height")
+        def eq_crystallizer_height_constraint(b):
+            # Height is max(). Manual smooth max implementation used here: max(a,b) = 0.5(a + b + |a-b|)
+            a = b.h_vapor_space + b.h_slurry
+            b = b.h_min
+            eps = 1e-20 * pyunits.m
+            return self.H_crystallizer == 0.5 * (a + b + ((a-b)**2 + eps**2)**0.5)
 
 
 
@@ -577,9 +661,6 @@ class CrystallizationData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.properties_in[0].flow_mass_phase_comp['Liq', j])
             iscale.constraint_scaling_transform(c, sf)
 
-
-    #     # Scaling for energy balance needed
-
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
             {
@@ -598,13 +679,18 @@ class CrystallizationData(UnitModelBlockData):
         var_dict["Magma density of solution (Kg/m**3)"] = self.magma_density
         var_dict["Slurry density (Kg/m3)"] = self.slurry_density
         var_dict["Heat requirement (kW)"] = self.work_mechanical[time_point]
-        var_dict["Crystallizer diameter (m)"] = self.d_crystallizer
-        var_dict["Heat exchanger solution-side flow rate (m**3/s)"] = self.hex_circulation_flow_vol
+        var_dict["Crystallizer diameter (m)"] = self.D_crystallizer
+        var_dict["Magma circulation flow rate (m**3/s)"] = self.magma_circulation_flow_vol
         var_dict["Vol. frac. of solids in suspension, 1-E"] = self.product_volumetric_solids_fraction
+        var_dict["Residence time (h)"] = self.t_res
+        var_dict["Volume of suspension (m**3)"] = self.V_suspension
+        var_dict["Suspension height in crystallizer (m)"] = self.h_slurry
+        var_dict["Crystallizer height (m)"] = self.H_crystallizer
+
         for j in self.config.property_package.solute_set:
             yield_mem_name=f'{j} yield (fraction)'
             var_dict[yield_mem_name] = (self.crystallization_yield[j])
-            supersat_mem_name=f'{j} relative supersaturation (g/g solution)'
+            supersat_mem_name=f'{j} relative supersaturation (mass fraction basis)'
             var_dict[supersat_mem_name] = (self.relative_supersaturation[j])
 
         return {"vars": var_dict}
