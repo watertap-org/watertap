@@ -253,11 +253,13 @@ def calculate_operating_pressure(feed_state_block=None, over_pressure=0.15,
     return value(t.brine[0].pressure_osm) * (1 + over_pressure)
 
 
-def solve(blk, solver=None, tee=False):
+def solve(blk, solver=None, tee=False, check_termination=True):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
-    assert_optimal_termination(results)
+    if check_termination:
+        assert_optimal_termination(results)
+    return results
 
 
 def initialize_system(m, solver=None):
@@ -342,14 +344,14 @@ def optimize_set_up(m):
         expr=m.fs.product.properties[0].mass_frac_phase_comp['Liq', 'NaCl'] <= m.fs.product_salinity)
     iscale.constraint_scaling_transform(m.fs.eq_product_quality, 1e3)  # scaling constraint
     m.fs.eq_minimum_water_flux = Constraint(
-        expr=m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'] >= m.fs.minimum_water_flux)
+        expr=m.fs.RO.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'] >= m.fs.minimum_water_flux)
 
     # ---checking model---
     assert_degrees_of_freedom(m, 1)
 
-def optimize(m, solver=None):
+def optimize(m, solver=None, check_termination=True):
     # --solve---
-    solve(m, solver=solver)
+    return solve(m, solver=solver, check_termination=check_termination)
 
 def display_system(m):
     print('---system metrics---')

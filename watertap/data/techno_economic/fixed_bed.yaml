@@ -1,0 +1,28 @@
+default: # TODO: confirm any differentiation in removal across subtypes
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+    reference: 'EPA model: https://www.epa.gov/sdwa/drinking-water-treatment-technology-unit-cost-models'
+  removal_frac_mass_solute:
+    bod:
+      value: 0.90  # adding this arbitrary default since no removal data provided
+      units: dimensionless
+      constituent_longform: "Biological Oxygen Demand"
+gravity_basin:
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_solute:
+    bod:
+      value: 0.90  # adding this arbitrary default since no removal data provided
+      units: dimensionless
+      constituent_longform: "Biological Oxygen Demand"
+fixed bed:
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_solute:
+    bod:
+      value: 0.90  # adding this arbitrary default since no removal data provided
+      units: dimensionless
+      constituent_longform: "Biological Oxygen Demand"

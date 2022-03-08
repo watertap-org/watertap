@@ -1,6 +1,6 @@
 default:
   energy_electric_flow_vol_inlet:
-    value: 0.0
+    value: 0.00005
     units: kWh/m^3
   specific_capital_cost_flow_vol_inlet:
     flow_basis_par:
@@ -21,11 +21,6 @@ default:
     cost_function_form:
       function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
       units: $
-  recovery_frac_mass_H2O:
-    value: 0.9999
-    units: dimensionless
-    reference: Based on costs for Chlorine Storage and Feed from Cost Estimating Manual
-      for Water Treatment Facilities (McGivney/Kawamura)
   default_removal_frac_mass_solute:
     value: 0
     units: dimensionless
@@ -33,9 +28,20 @@ default:
     total_coliforms_fecal_ecoli:
       value: 0.999148
       units: dimensionless
-      constituent_longform: "Total Coliforms (including fecal coliform and\uFFFD E.\
-        \ Coli)"
+      constituent_longform: "Total Coliforms (including fecal coliform and E.Coli)"
     viruses_enteric:
       value: 0.999664
       units: dimensionless
       constituent_longform: Viruses (enteric)
+  initial_chlorine_demand:
+    value: 0
+    units: mg/L
+  contact_time:
+    value: 1.5
+    units: hr
+  concentration_time:
+    value: 450
+    units: (mg*min)/L
+  chlorine_decay_rate:
+    value: 3
+    units: mg/(L*hr)
