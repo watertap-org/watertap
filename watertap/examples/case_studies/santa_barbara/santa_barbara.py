@@ -70,22 +70,8 @@ def main():
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
     initialize_system(m)
-    m.fs.desalination.S1.report()
-    m.fs.desalination.P1.report()
-    m.fs.desalination.P2.report()
-    m.fs.desalination.M1.report()
-    m.fs.desalination.RO.report()
-    m.fs.desalination.PXR.report()
-
-    # m.fs.display()
-    assert False
-    #
-    # # simulate
-    # solve(m, solver=solver)
-    # print('\n***---Simulation results---***')
-    # display_system(m)
-    # display_design(m)
-    # display_state(m)
+    solve(m)
+    display_results(m)
 
 def build():
     # flowsheet set up
@@ -154,32 +140,33 @@ def build():
     desal.PXR = PressureExchanger(default={'property_package': m.fs.prop_desal})
     desal.P2 = Pump(default={'property_package': m.fs.prop_desal})
 
-    # # posttreatment
-    # psttrt.storage_tank_2 = StorageTankZO(default={
-    #         "property_package": m.fs.prop_psttrt,
-    #         "database": m.db})
-    # psttrt.uv_aop = UVAOPZO(default={
-    #     "property_package": m.fs.prop_psttrt,
-    #     "database": m.db,
-    #     "process_subtype": "hydrogen_peroxide"})
-    # psttrt.co2_addition = CO2AdditionZO(default={
-    #     "property_package": m.fs.prop_psttrt,
-    #     "database": m.db})
-    # psttrt.lime_addition = ChemicalAdditionZO(default={
-    #         "property_package": m.fs.prop_psttrt,
-    #         "database": m.db,
-    #         "process_subtype": "lime"})
-    # psttrt.storage_tank_3 = StorageTankZO(default={
-    #     "property_package": m.fs.prop_psttrt,
-    #     "database": m.db})
-    #
-    # # product and disposal
-    # m.fs.municipal = MunicipalDrinkingZO(default={
-    #     "property_package": m.fs.prop_psttrt,
-    #     "database": m.db})
+    # posttreatment
+    psttrt.storage_tank_2 = StorageTankZO(default={
+            "property_package": m.fs.prop_psttrt,
+            "database": m.db})
+    psttrt.uv_aop = UVAOPZO(default={
+        "property_package": m.fs.prop_psttrt,
+        "database": m.db,
+        "process_subtype": "hydrogen_peroxide"})
+    psttrt.co2_addition = CO2AdditionZO(default={
+        "property_package": m.fs.prop_psttrt,
+        "database": m.db})
+    psttrt.lime_addition = ChemicalAdditionZO(default={
+            "property_package": m.fs.prop_psttrt,
+            "database": m.db,
+            "process_subtype": "lime"})
+    psttrt.storage_tank_3 = StorageTankZO(default={
+        "property_package": m.fs.prop_psttrt,
+        "database": m.db})
+
+    # product and disposal
+    m.fs.municipal = MunicipalDrinkingZO(default={
+        "property_package": m.fs.prop_psttrt,
+        "database": m.db})
     m.fs.landfill = LandfillZO(default={
         "property_package": m.fs.prop_prtrt,
         "database": m.db})
+    m.fs.disposal = Product(default={'property_package': m.fs.prop_desal})
 
     # translator blocks
     m.fs.tb_prtrt_desal = Translator(
@@ -193,6 +180,18 @@ def build():
         else:
             jj = j
         return blk.properties_in[0].flow_mass_comp[j] == blk.properties_out[0].flow_mass_phase_comp['Liq', jj]
+
+    m.fs.tb_desal_psttrt = Translator(
+        default={"inlet_property_package": m.fs.prop_desal,
+                 "outlet_property_package": m.fs.prop_psttrt})
+
+    @m.fs.tb_desal_psttrt.Constraint(['H2O', 'TDS'])
+    def eq_flow_mass_comp(blk, j):
+        if j == 'TDS':
+            jj = 'tds'
+        else:
+            jj = j
+        return blk.properties_in[0].flow_mass_phase_comp['Liq', j] == blk.properties_out[0].flow_mass_comp[jj]
 
     # connections
     m.fs.s_feed = Arc(source=m.fs.feed.outlet, destination=prtrt.intake.inlet)
@@ -215,15 +214,15 @@ def build():
     desal.s05 = Arc(source=desal.S1.PXR, destination=desal.PXR.low_pressure_inlet)
     desal.s06 = Arc(source=desal.PXR.low_pressure_outlet, destination=desal.P2.inlet)
     desal.s07 = Arc(source=desal.P2.outlet, destination=desal.M1.P2)
-    # desal.s05 = Arc(source=desal.RO.permeate, destination=desal.product.inlet)
-    # desal.s07 = Arc(source=desal.PXR.high_pressure_outlet, destination=desal.disposal.inlet)
+    m.fs.s_desal_tb = Arc(source=desal.RO.permeate, destination=m.fs.tb_desal_psttrt.inlet)
+    m.fs.s_disposal = Arc(source=desal.PXR.high_pressure_outlet, destination=m.fs.disposal.inlet)
 
-    # psttrt.s01 = Arc(source=m.fs.tb_prtrt_psttrt.outlet, destination=psttrt.storage_tank_2.inlet)
-    # psttrt.s02 = Arc(source=psttrt.storage_tank_2.outlet, destination=psttrt.uv_aop.inlet)
-    # psttrt.s03 = Arc(source=psttrt.uv_aop.treated, destination=psttrt.co2_addition.inlet)
-    # psttrt.s04 = Arc(source=psttrt.co2_addition.outlet, destination=psttrt.lime_addition.inlet)
-    # psttrt.s05 = Arc(source=psttrt.lime_addition.outlet, destination=psttrt.storage_tank_3.inlet)
-    # psttrt.s06 = Arc(source=psttrt.storage_tank_3.outlet, destination=m.fs.municipal.inlet)
+    m.fs.s_tb_psttrt = Arc(source=m.fs.tb_desal_psttrt.outlet, destination=psttrt.storage_tank_2.inlet)
+    psttrt.s01 = Arc(source=psttrt.storage_tank_2.outlet, destination=psttrt.uv_aop.inlet)
+    psttrt.s02 = Arc(source=psttrt.uv_aop.treated, destination=psttrt.co2_addition.inlet)
+    psttrt.s03 = Arc(source=psttrt.co2_addition.outlet, destination=psttrt.lime_addition.inlet)
+    psttrt.s04 = Arc(source=psttrt.lime_addition.outlet, destination=psttrt.storage_tank_3.inlet)
+    m.fs.s_municipal = Arc(source=psttrt.storage_tank_3.outlet, destination=m.fs.municipal.inlet)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scaling
@@ -240,7 +239,7 @@ def build():
 
     return m
 
-def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3):
+def set_operating_conditions(m):
     prtrt = m.fs.pretreatment
     desal = m.fs.desalination
     psttrt = m.fs.posttreatment
@@ -323,44 +322,35 @@ def set_operating_conditions(m, water_recovery=0.5, over_pressure=0.3):
     desal.RO.width.fix(5)  # stage width [m]
     desal.RO.area.fix(flow_vol * 4e4 * pyunits.s/pyunits.m)  # stage area [m2] TODO: replace with actual area
 
-    # # ---posttreatment---
-    # # storage tank 2
-    # psttrt.storage_tank_2.load_parameters_from_database(use_default_removal=True)
-    # psttrt.storage_tank_2.storage_time.fix(1)
-    #
-    # # uv aop
-    # m.db.get_unit_operation_parameters("uv_aop")
-    # psttrt.uv_aop.load_parameters_from_database(use_default_removal=True)
-    # psttrt.uv_aop.uv_reduced_equivalent_dose.fix(350)  # TODO: check this was the right thing to fix
-    # psttrt.uv_aop.uv_transmittance_in.fix(0.95)  # TODO: check this was the right thing to fix
-    #
-    # # uv aop
-    # m.db.get_unit_operation_parameters("co2_addition")
-    # psttrt.co2_addition.load_parameters_from_database(use_default_removal=True)
-    #
-    # # lime
-    # psttrt.lime_addition.load_parameters_from_database()
-    # psttrt.lime_addition.chemical_dosage.fix(2.3)
-    #
-    # # storage tank 3
-    # psttrt.storage_tank_3.load_parameters_from_database(use_default_removal=True)
-    # psttrt.storage_tank_3.storage_time.fix(1)
-    #
-    # # ---product and disposal---
-    # m.db.get_unit_operation_parameters("municipal_drinking")
-    # m.fs.municipal.load_parameters_from_database()
-    #
+    # ---posttreatment---
+    # storage tank 2
+    psttrt.storage_tank_2.load_parameters_from_database(use_default_removal=True)
+    psttrt.storage_tank_2.storage_time.fix(1)
+
+    # uv aop
+    m.db.get_unit_operation_parameters("uv_aop")
+    psttrt.uv_aop.load_parameters_from_database(use_default_removal=True)
+    psttrt.uv_aop.uv_reduced_equivalent_dose.fix(350)  # TODO: check this was the right thing to fix
+    psttrt.uv_aop.uv_transmittance_in.fix(0.95)  # TODO: check this was the right thing to fix
+
+    # uv aop
+    m.db.get_unit_operation_parameters("co2_addition")
+    psttrt.co2_addition.load_parameters_from_database(use_default_removal=True)
+
+    # lime
+    psttrt.lime_addition.load_parameters_from_database()
+    psttrt.lime_addition.chemical_dosage.fix(2.3)
+
+    # storage tank 3
+    psttrt.storage_tank_3.load_parameters_from_database(use_default_removal=True)
+    psttrt.storage_tank_3.storage_time.fix(1)
+
+    # ---product and disposal---
+    m.db.get_unit_operation_parameters("municipal_drinking")
+    m.fs.municipal.load_parameters_from_database()
+
     m.db.get_unit_operation_parameters("landfill")
     m.fs.landfill.load_parameters_from_database()
-
-
-def solve(blk, solver=None, tee=False, check_termination=True):
-    if solver is None:
-        solver = get_solver()
-    results = solver.solve(blk, tee=tee)
-    if check_termination:
-        assert_optimal_termination(results)
-    return results
 
 
 def initialize_system(m):
@@ -398,6 +388,52 @@ def initialize_system(m):
     solve(desal)
     revert_state_vars(desal.S1.mixed_state, flags)
 
+    # initialize posttreatment
+    propagate_state(m.fs.s_desal_tb)
+    m.fs.tb_desal_psttrt.properties_out[0].flow_mass_comp['H2O'] = value(
+        m.fs.tb_desal_psttrt.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'])
+    m.fs.tb_desal_psttrt.properties_out[0].flow_mass_comp['tds'] = value(
+        m.fs.tb_desal_psttrt.properties_in[0].flow_mass_phase_comp['Liq', 'TDS'])
+
+    propagate_state(m.fs.s_tb_psttrt)
+    flags = fix_state_vars(psttrt.storage_tank_2.properties)
+    solve(psttrt)
+    revert_state_vars(psttrt.storage_tank_2.properties, flags)
+
+
+def solve(blk, solver=None, tee=False, check_termination=True):
+    if solver is None:
+        solver = get_solver()
+    results = solver.solve(blk, tee=tee)
+    if check_termination:
+        assert_optimal_termination(results)
+    return results
+
+def display_results(m):
+    m.fs.feed.report()
+    m.fs.pretreatment.intake.report()
+    m.fs.pretreatment.ferric_chloride_addition.report()
+    m.fs.pretreatment.chlorination.report()
+    m.fs.pretreatment.static_mixer.report()
+    m.fs.pretreatment.storage_tank_1.report()
+    m.fs.pretreatment.media_filtration.report()
+    m.fs.pretreatment.backwash_handling.report()
+    m.fs.pretreatment.anti_scalant_addition.report()
+    m.fs.pretreatment.cartridge_filtration.report()
+    m.fs.desalination.S1.report()
+    m.fs.desalination.P1.report()
+    m.fs.desalination.P2.report()
+    m.fs.desalination.M1.report()
+    m.fs.desalination.RO.report()
+    m.fs.desalination.PXR.report()
+    m.fs.posttreatment.storage_tank_2.report()
+    m.fs.posttreatment.uv_aop.report()
+    m.fs.posttreatment.co2_addition.report()
+    m.fs.posttreatment.lime_addition.report()
+    m.fs.posttreatment.storage_tank_3.report()
+    m.fs.municipal.report()
+    m.fs.landfill.report()
+    m.fs.disposal.report()
 
 
 if __name__ == "__main__":
