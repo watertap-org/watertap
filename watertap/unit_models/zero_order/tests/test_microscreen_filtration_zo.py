@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-Tests for zero-order microfiltration model
+Tests for zero-order microscreen filtration model
 """
 import pytest
 
