@@ -28,6 +28,16 @@ if use_regular:
 
 solver = get_solver()
 
+import pyomo.environ as pyo
+from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+
+m = pyo.ConcreteModel()
+m.x = pyo.Var()
+m.c = pyo.Constraint(expr=(0, m.x, 1))
+m.o = pyo.Objective(expr=m.x)
+
+nlp = PyomoNLP(m)
+
 # create model, flowsheet
 m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
