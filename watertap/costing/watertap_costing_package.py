@@ -10,12 +10,17 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
+
 from enum import Enum
-from pyomo.environ import (
-    Block, Constraint, Expression, Var, Param, Reals, NonNegativeReals, units as pyunits)
+
+import pyomo.environ as pyo
+
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
+
 from idaes.core.util.exceptions import BurntToast, ConfigurationError
-from idaes.core.util.misc import register_units_of_measurement
-from idaes.generic_models.costing import CostingPackageBase
+from idaes.core import declare_process_block_class
+from idaes.generic_models.costing.costing_base import (
+    FlowsheetCostingBlockData, register_idaes_currency_units)
 
 from watertap.unit_models import (
         ReverseOsmosis0D,
@@ -41,108 +46,152 @@ class PumpType(str, Enum):
     def __str__(self):
         return self.value
 
-class WaterTAPCostingPackage(CostingPackageBase):
+@declare_process_block_class("WaterTAPCosting")
+class WaterTAPCostingData(FlowsheetCostingBlockData):
 
-    # TODO: this is in SSLW -- we need an equivalent
     # Register currency and conversion rates based on CE Index
-    register_units_of_measurement("USD_500", "[currency]")  # base USD @ CEI 500
-    register_units_of_measurement("USD2010", "500/550.8 * USD_500")
-    register_units_of_measurement("USD2011", "500/585.7 * USD_500")
-    register_units_of_measurement("USD2012", "500/584.6 * USD_500")
-    register_units_of_measurement("USD2013", "500/567.3 * USD_500")
-    register_units_of_measurement("USD2014", "500/576.1* USD_500")
-    register_units_of_measurement("USD2015", "500/556.8 * USD_500")
-    register_units_of_measurement("USD2016", "500/541.7 * USD_500")
-    register_units_of_measurement("USD2017", "500/567.5 * USD_500")
-    register_units_of_measurement("USD2018", "500/671.1 * USD_500")
-    register_units_of_measurement("USD2019", "500/680.0 * USD_500")
-    register_units_of_measurement("USD_394", "500/394 * USD_500")  # required for pump costing
+    register_idaes_currency_units()
 
-    # Set the base year for all costs
-    base_currency = pyunits.USD2018
-    # Set a base period for all operating costs
-    base_period = pyunits.year
 
-    # Define standard material flows and costs
-    defined_flows = {
-        "electricity": 0.07 * pyunits.USD2018 / pyunits.kWh}
+    def build_global_params(self):
 
-    @staticmethod
-    def build_global_params(blk):
+        # Set the base year for all costs
+        self.base_currency = pyo.units.USD_CE500
+        # Set a base period for all operating costs
+        self.base_period = pyo.units.year
+
+        # Define standard material flows and costs
+        self.defined_flows["electricity"] = 0.07 * pyo.units.USD_CE500 / pyo.units.kWh
+
         # Build flowsheet level costing components
         # This is package specific
-        blk.load_factor = Param(
-                mutable=True,
+        self.load_factor = pyo.Var(
                 initialize=0.9,
                 doc='Load factor [fraction of uptime]',
-                units=pyunits.dimensionless)
-        blk.factor_total_investment = Param(
-                mutable=True,
+                units=pyo.units.dimensionless)
+        self.factor_total_investment = pyo.Var(
                 initialize=2,
                 doc='Total investment factor [investment cost/equipment cost]',
-                units=pyunits.dimensionless)
-        blk.factor_maintenance_labor_chemical = Param(
-                mutable=True,
+                units=pyo.units.dimensionless)
+        self.factor_maintenance_labor_chemical = pyo.Var(
                 initialize=0.03,
                 doc='Maintenance-labor-chemical factor [fraction of investment cost/year]',
-                units=pyunits.year**-1)
-        blk.factor_capital_annualization = Param(
-                mutable=True,
+                units=pyo.units.year**-1)
+        self.factor_capital_annualization = pyo.Var(
                 initialize=0.1,
                 doc='Capital annualization factor [fraction of investment cost/year]',
-                units=pyunits.year**-1)
-        blk.factor_membrane_replacement = Param(
-                mutable=True,
+                units=pyo.units.year**-1)
+        self.factor_membrane_replacement = pyo.Var(
                 initialize=0.2,
                 doc='Membrane replacement factor [fraction of membrane replaced/year]',
-                units=pyunits.year**-1)
-        blk.reverse_osmosis_membrane_cost = Param(
-                mutable=True,
+                units=pyo.units.year**-1)
+        self.reverse_osmosis_membrane_cost = pyo.Var(
                 initialize=30,
                 doc='Membrane cost [$/m2]',
-                units=pyunits.USD_500/(pyunits.meter**2))
-        blk.reverse_osmosis_high_pressure_membrane_cost = Param(
-                mutable=True,
+                units=pyo.units.USD_CE500/(pyo.units.meter**2))
+        self.reverse_osmosis_high_pressure_membrane_cost = pyo.Var(
                 initialize=75,
                 doc='Membrane cost [$/m2]',
-                units=pyunits.USD_500/(pyunits.meter**2))
-        blk.nanofiltration_membrane_cost = Param(
-                mutable=True,
+                units=pyo.units.USD_CE500/(pyo.units.meter**2))
+        self.nanofiltration_membrane_cost = pyo.Var(
                 initialize=15,
                 doc='Membrane cost [$/m2]',
-                units=pyunits.USD_500/(pyunits.meter**2))
-        blk.high_pressure_pump_cost = Param(
-                mutable=True,
+                units=pyo.units.USD_CE500/(pyo.units.meter**2))
+        self.high_pressure_pump_cost = pyo.Var(
                 initialize=53 / 1e5 * 3600,
                 doc='High pressure pump cost [$/W]',
-                units=pyunits.USD_500/pyunits.watt)
-        blk.low_pressure_pump_cost = Param(
-                mutable=True,
+                units=pyo.units.USD_CE500/pyo.units.watt)
+        self.low_pressure_pump_cost = pyo.Var(
                 initialize=889,
                 doc='Low pressure pump cost [$/(Liter/second)]',
-                units=pyunits.USD_500/(pyunits.liter/pyunits.second))
-        blk.pump_pressure_exchanger_cost = Param(
-                mutable=True,
+                units=pyo.units.USD_CE500/(pyo.units.liter/pyo.units.second))
+        self.pump_pressure_exchanger_cost = pyo.Var(
                 initialize=535,
                 doc='Pressure exchanger cost [$/(m3/h)]',
-                units=pyunits.USD_500/(pyunits.meter**3/pyunits.hours))
-        blk.pressure_exchanger_cost = Param(
-                mutable=True,
+                units=pyo.units.USD_CE500/(pyo.units.meter**3/pyo.units.hours))
+        self.pressure_exchanger_cost = pyo.Var(
                 initialize=535,
                 doc='Pressure exchanger cost [$/(m3/h)]',
-                units=pyunits.USD_500/(pyunits.meter**3/pyunits.hours))
+                units=pyo.units.USD_CE500/(pyo.units.meter**3/pyo.units.hours))
 
-    @staticmethod
-    def build_process_costs(blk):
-        # Build flowsheet level total costs
-        blk.total_capital_cost = Expression(expr = blk.factor_total_investment * blk.aggregate_capital_cost )
-        blk.total_fixed_operating_cost = Expression(expr = \
-                 blk.aggregate_fixed_operating_cost + blk.factor_maintenance_labor_chemical * blk.total_capital_cost)
+        # fix the parameters
+        for var in self.component_objects(pyo.Var):
+            var.fix()
 
-        blk.total_variable_operating_cost = Expression(expr = blk.aggregate_variable_operating_cost)
-        blk.total_flow_costs = Expression(expr = blk.aggregate_flow_costs)
+    def build_process_costs(self):
+        self.total_capital_cost = pyo.Expression(
+                expr = self.aggregate_capital_cost,
+                doc='Total capital cost [$]')
+        self.total_investment_cost = pyo.Var(
+                initialize=1e3,
+                domain=pyo.NonNegativeReals,
+                doc='Total investment cost [$]',
+                units=pyo.units.USD_CE500)
+        self.maintenance_labor_chemical_operating_cost = pyo.Var(
+                initialize=1e3,
+                domain=pyo.NonNegativeReals,
+                doc='Maintenance-labor-chemical operating cost [$/year]',
+                units=pyo.units.USD_CE500/pyo.units.year)
+        self.total_operating_cost= pyo.Var(
+                initialize=1e3,
+                domain=pyo.NonNegativeReals,
+                doc='Total operating cost [$/year]',
+                units=pyo.units.USD_CE500/pyo.units.year)
 
-    @staticmethod
+        self.total_investment_cost_constraint = pyo.Constraint(expr = \
+                self.total_investment_cost == self.factor_total_investment * self.total_capital_cost)
+        self.maintenance_labor_chemical_operating_cost_constraint = pyo.Constraint(expr = \
+                self.maintenance_labor_chemical_operating_cost == self.factor_maintenance_labor_chemical * self.total_capital_cost)
+
+        self.total_operating_cost_constraint = pyo.Constraint(expr = \
+                self.total_operating_cost == self.maintenance_labor_chemical_operating_cost \
+                + self.aggregate_fixed_operating_cost \
+                + self.aggregate_variable_operating_cost \
+                + sum(self.aggregate_flow_costs.values())*self.load_factor )
+
+    def initialize_build(self):
+        calculate_variable_from_constraint(self.total_investment_cost, self.total_investment_cost_constraint)
+        calculate_variable_from_constraint(self.maintenance_labor_chemical_operating_cost,
+                self.maintenance_labor_chemical_operating_cost_constraint)
+        calculate_variable_from_constraint(self.total_operating_cost,
+                self.total_operating_cost_constraint)
+
+        if hasattr(self, "LCOW"):
+            calculate_variable_from_constraint(self.LCOW, self.LCOW_constraint)
+
+    def add_LCOW(self, flow_rate):
+        """
+        Add Levelized Cost of Water (LCOW) to costing block.
+        Args:
+            flow_rate - flow rate of water (volumetric) to be used in
+                        calculating LCOW
+        """
+
+        self.annual_water_production = pyo.Expression( expr=
+                 (pyo.units.convert(
+                     flow_rate,
+                     to_units=pyo.units.m**3/self.base_period) *
+                  self.load_factor))
+
+        self.LCOW = pyo.Var(
+            doc='Levelized Cost of Water',
+            units=self.base_currency/pyo.units.m**3)
+
+        self.LCOW_constraint = pyo.Constraint(expr = self.LCOW == 
+            (self.total_investment_cost*self.factor_capital_annualization +
+                  self.total_operating_cost) / self.annual_water_production)
+
+    def add_specific_energy_consumption(self, flow_rate):
+        """
+        Add specific energy consumption (kWh/m**3) to costing block.
+        Args:
+            flow_rate - flow rate of water (volumetric) to be used in
+                        calculating specific energy consumption
+        """
+
+        self.specific_energy_consumption = pyo.Expression(expr = 
+                self.aggregate_flow_electricity / pyo.units.convert(flow_rate, to_units=pyo.units.m**3/pyo.units.hr))
+
     def cost_nanofiltration(blk):
         """
         Nanofiltration costing method
@@ -152,8 +201,7 @@ class WaterTAPCostingPackage(CostingPackageBase):
         _make_captial_cost_var(blk)
         _make_fixed_operating_cost_var(blk)
 
-        fcb = blk.config.flowsheet_costing_block
-        _cost_membrane(blk, fcb.nanofiltration_membrane_cost, fcb.factor_membrane_replacement)
+        cost_membrane(blk, blk.costing_package.nanofiltration_membrane_cost, blk.costing_package.factor_membrane_replacement)
 
     # Define costing methods supported by package
     @staticmethod
@@ -176,14 +224,13 @@ class WaterTAPCostingPackage(CostingPackageBase):
         _make_captial_cost_var(blk)
         _make_fixed_operating_cost_var(blk)
 
-        fcb = blk.config.flowsheet_costing_block
         if ro_type == ROType.standard:
-            membrane_cost = fcb.reverse_osmosis_membrane_cost
+            membrane_cost = blk.costing_package.reverse_osmosis_membrane_cost
         elif ro_type == ROType.high_pressure:
-            membrane_cost = fac.reverse_osmosis_high_pressure_membrane_cost
+            membrane_cost = blk.costing_package.reverse_osmosis_high_pressure_membrane_cost
         else:
             raise BurntToast(f"Unrecognized ro_type: {ro_type}")
-        _cost_membrane(blk, membrane_cost, fcb.factor_membrane_replacement)
+        cost_membrane(blk, membrane_cost, blk.costing_package.factor_membrane_replacement)
 
     @staticmethod
     def cost_pump(blk, pump_type=PumpType.high_pressure):
@@ -201,12 +248,12 @@ class WaterTAPCostingPackage(CostingPackageBase):
                 f"{blk.unit_model.name} received invalid argument for pump_type:"
                 f" {pump_type}. Argument must be a member of the PumpType Enum.")
 
-        if pump_type=PumpType.high_pressure:
-            WaterTAPCostingPackage.cost_high_pressure_pump(blk)
-        elif pump_type=PumpType.low_pressure:
-            WaterTAPCostingPackage.cost_low_pressure_pump(blk)
-        elif pump_type=PumpType.pressure_exchanger:
-            WaterTAPCostingPackage.cost_pressure_exchanger_pump(blk)
+        if pump_type == PumpType.high_pressure:
+            WaterTAPCostingData.cost_high_pressure_pump(blk)
+        elif pump_type == PumpType.low_pressure:
+            WaterTAPCostingData.cost_low_pressure_pump(blk)
+        elif pump_type == PumpType.pressure_exchanger:
+            WaterTAPCostingData.cost_pressure_exchanger_pump(blk)
         else:
             raise BurntToast(f"Unrecognized pump_type: {pump_type}")
 
@@ -219,9 +266,11 @@ class WaterTAPCostingPackage(CostingPackageBase):
         """
         _make_captial_cost_var(blk)
 
-        fcb = blk.config.flowsheet_costing_block
-        blk.eq_capital_cost = Constraint(expr = \
-                capital_cost == fcb.high_pressure_pump_cost * blk.unit_model.work_mechanical[0])
+        # workaround for now
+        _make_calculate_scaling_factors_pressure_changer_workaround(blk)
+
+        blk.capital_cost_constraint = pyo.Constraint(expr = \
+                blk.capital_cost == blk.costing_package.high_pressure_pump_cost * blk.unit_model.work_mechanical[0])
 
     @staticmethod
     def cost_low_pressure_pump(blk):
@@ -231,8 +280,9 @@ class WaterTAPCostingPackage(CostingPackageBase):
         TODO: describe equations
         """
         _make_captial_cost_var(blk)
-        fcb = blk.config.flowsheet_costing_block
-        cost_by_flow_volume(blk, pyunits.conver(fcb.low_pressure_pump_cost, pyunits.USD_500/(pyunits.m**3/pyunits.s)),
+        # workaround for now
+        _make_calculate_scaling_factors_pressure_changer_workaround(blk)
+        cost_by_flow_volume(blk, pyo.units.conver(blk.costing_package.low_pressure_pump_cost, pyo.units.USD_CE500/(pyo.units.m**3/pyo.units.s)),
                 blk.unit_model.control_volume.properties_in[0].flow_vol)
 
     @staticmethod
@@ -243,8 +293,9 @@ class WaterTAPCostingPackage(CostingPackageBase):
         TODO: describe equations
         """
         _make_captial_cost_var(blk)
-        fcb = blk.config.flowsheet_costing_block
-        cost_by_flow_volume(blk, fcb.pump_pressure_exchanger_cost, blk.unit_model.control_volume.properties_in[0].flow_vol)
+        # workaround for now
+        _make_calculate_scaling_factors_pressure_changer_workaround(blk)
+        cost_by_flow_volume(blk, blk.costing_package.pump_pressure_exchanger_cost, blk.unit_model.control_volume.properties_in[0].flow_vol)
 
     @staticmethod
     def cost_pressure_exchanger(blk):
@@ -254,32 +305,30 @@ class WaterTAPCostingPackage(CostingPackageBase):
         TODO: describe equations
         """
         _make_captial_cost_var(blk)
-        fcb = blk.config.flowsheet_costing_block
-        cost_by_flow_volume(blk, fcb.pressure_exchanger_cost, blk.unit_model.low_pressure_side.properties_in[0].flow_vol)
-
+        cost_by_flow_volume(blk, blk.costing_package.pressure_exchanger_cost, blk.unit_model.low_pressure_side.properties_in[0].flow_vol)
 
     ## TODO; Mixer and Separator
 
     # Define default mapping of costing methods to unit models
-    unit_mapping = {
-        Pump: cost_pump,  # TODO: this may be carrying over a limitation of IDAES
-        PressureExchanger: cost_pressure_exchanger,
-        ReverseOsmosis0D: cost_reverse_osmosis,
-        ReverseOsmosis1D: cost_reverse_osmosis,
-        NanoFiltration0D: cost_nanofiltration,
-        NanoFiltrationZO: cost_nanofiltration,
+WaterTAPCostingData.unit_mapping = {
+        Pump: WaterTAPCostingData.cost_pump,  # TODO: this may be carrying over a limitation of IDAES
+        PressureExchanger: WaterTAPCostingData.cost_pressure_exchanger,
+        ReverseOsmosis0D: WaterTAPCostingData.cost_reverse_osmosis,
+        ReverseOsmosis1D: WaterTAPCostingData.cost_reverse_osmosis,
+        NanoFiltration0D: WaterTAPCostingData.cost_nanofiltration,
+        NanoFiltrationZO: WaterTAPCostingData.cost_nanofiltration,
         }
 
 def _make_captial_cost_var(blk):
-    blk.capital_cost = Var(initialize=1e5,
-                           domain=NonNegativeReals,
-                           units=pyunits.USD2018,
+    blk.capital_cost = pyo.Var(initialize=1e5,
+                           domain=pyo.NonNegativeReals,
+                           units=pyo.units.USD_CE500,
                            doc="Unit capital cost")
 
 def _make_fixed_operating_cost_var(blk):
-    blk.fixed_operating_cost = Var(initialize=1e5,
-                                   domain=NonNegativeReals,
-                                   units=pyunits.USD2018/pyunits.year,
+    blk.fixed_operating_cost = pyo.Var(initialize=1e5,
+                                   domain=pyo.NonNegativeReals,
+                                   units=pyo.units.USD_CE500/pyo.units.year,
                                    doc="Unit fixed operating cost")
 
 def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
@@ -293,22 +342,28 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
                                       [fraction of membrane replaced/year]
 
     """
-    blk.membrane_cost = Expression(expr=membrane_cost)
-    blk.factor_membrane_replacement = Expression(expr=factor_membrane_replacement)
+    blk.membrane_cost = pyo.Expression(expr=membrane_cost)
+    blk.factor_membrane_replacement = pyo.Expression(expr=factor_membrane_replacement)
 
-    blk.eq_capital_cost = Constraint(expr = \
+    blk.capital_cost_constraint = pyo.Constraint(expr = \
             blk.capital_cost == blk.membrane_cost * blk.unit_model.area)
-    blk.eq_fixed_operating_cost = Constraint(expr = \
+    blk.fixed_operating_cost_constraint = pyo.Constraint(expr = \
             blk.fixed_operating_cost == blk.factor_membrane_replacement * blk.membrane_cost * blk.unit_model.area)
 
-def cost_pump_by_flow_volume(blk, flow_cost, flow_to_cost):
+def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
     """
-    Generic function for costing a pump by flow volume.
+    Generic function for costing by flow volume.
 
     Args:
         flow_cost - The cost of the pump in [currency]/([volume]/[time])
         flow_to_cost - The flow costed in [volume]/[time]
     """
-    blk.flow_cost = Expression(expr=flow_cost)
-    blk.eq_capital_cost = Constraint(expr = \
-            capital_cost = blk.flow_cost * flow_to_cost)
+    blk.flow_cost = pyo.Expression(expr=flow_cost)
+    blk.capital_cost_constraint = pyo.Constraint(expr = \
+            blk.capital_cost == blk.flow_cost * flow_to_cost)
+
+def _make_calculate_scaling_factors_pressure_changer_workaround(blk):
+    blk.purchase_cost = pyo.Var(initialize=0,
+            units=pyo.units.USD_CE500,
+            doc="Empty Var for old IDAES costing calculate_scaling_factors")
+    blk.cp_cost_eq = pyo.Constraint(expr=blk.purchase_cost == 0)
