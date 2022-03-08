@@ -39,7 +39,6 @@ from watertap.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pump_isothermal import Pump
 from watertap.core.util.initialization import assert_degrees_of_freedom
-import watertap.examples.flowsheets.RO_with_energy_recovery.financials as financials
 from watertap.costing import WaterTAPCosting
 
 
