@@ -435,6 +435,7 @@ class ElectrolyteDB:
     # XXX: This preprocessing overlaps with data_model.DataWrapper subclasses.
     # XXX: It should all be moved to one place
 
+    # record is a dict and rec_type is a string
     @classmethod
     def preprocess_record(cls, record, rec_type):
         process_func = getattr(cls, f"_process_{rec_type}")
