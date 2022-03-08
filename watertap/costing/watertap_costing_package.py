@@ -18,6 +18,7 @@ import pyomo.environ as pyo
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from idaes.core.util.misc import StrEnum
 from idaes.core import declare_process_block_class
 from idaes.generic_models.costing.costing_base import (
     FlowsheetCostingBlockData, register_idaes_currency_units)
@@ -31,20 +32,17 @@ from watertap.unit_models import (
         Pump,
         )
 
-class ROType(str, Enum):
+
+class ROType(StrEnum):
     standard = "standard"
     high_pressure = "high_pressure"
-    
-    def __str__(self):
-        return self.value
 
-class PumpType(str, Enum):
+
+class PumpType(StrEnum):
     low_pressure = "low_pressure"
     high_pressure = "high_pressure"
-    pressure_exchangers = "pressure_exchanger"
-    
-    def __str__(self):
-        return self.value
+    pressure_exchanger = "pressure_exchanger"
+
 
 @declare_process_block_class("WaterTAPCosting")
 class WaterTAPCostingData(FlowsheetCostingBlockData):
@@ -87,31 +85,31 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 units=pyo.units.year**-1)
         self.reverse_osmosis_membrane_cost = pyo.Var(
                 initialize=30,
-                doc='Membrane cost [$/m2]',
+                doc='Membrane cost',
                 units=pyo.units.USD_CE500/(pyo.units.meter**2))
         self.reverse_osmosis_high_pressure_membrane_cost = pyo.Var(
                 initialize=75,
-                doc='Membrane cost [$/m2]',
+                doc='Membrane cost',
                 units=pyo.units.USD_CE500/(pyo.units.meter**2))
         self.nanofiltration_membrane_cost = pyo.Var(
                 initialize=15,
-                doc='Membrane cost [$/m2]',
+                doc='Membrane cost',
                 units=pyo.units.USD_CE500/(pyo.units.meter**2))
         self.high_pressure_pump_cost = pyo.Var(
                 initialize=53 / 1e5 * 3600,
-                doc='High pressure pump cost [$/W]',
+                doc='High pressure pump cost',
                 units=pyo.units.USD_CE500/pyo.units.watt)
         self.low_pressure_pump_cost = pyo.Var(
                 initialize=889,
-                doc='Low pressure pump cost [$/(Liter/second)]',
+                doc='Low pressure pump cost',
                 units=pyo.units.USD_CE500/(pyo.units.liter/pyo.units.second))
         self.pump_pressure_exchanger_cost = pyo.Var(
                 initialize=535,
-                doc='Pressure exchanger cost [$/(m3/h)]',
+                doc='Pressure exchanger cost',
                 units=pyo.units.USD_CE500/(pyo.units.meter**3/pyo.units.hours))
         self.pressure_exchanger_cost = pyo.Var(
                 initialize=535,
-                doc='Pressure exchanger cost [$/(m3/h)]',
+                doc='Pressure exchanger cost',
                 units=pyo.units.USD_CE500/(pyo.units.meter**3/pyo.units.hours))
 
         # fix the parameters
@@ -192,6 +190,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.specific_energy_consumption = pyo.Expression(expr = 
                 self.aggregate_flow_electricity / pyo.units.convert(flow_rate, to_units=pyo.units.m**3/pyo.units.hr))
 
+    # Define costing methods supported by package
+    @staticmethod
     def cost_nanofiltration(blk):
         """
         Nanofiltration costing method
@@ -203,7 +203,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         cost_membrane(blk, blk.costing_package.nanofiltration_membrane_cost, blk.costing_package.factor_membrane_replacement)
 
-    # Define costing methods supported by package
     @staticmethod
     def cost_reverse_osmosis(blk, ro_type=ROType.standard):
         """
@@ -303,9 +302,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
     ## TODO; Mixer and Separator
 
-    # Define default mapping of costing methods to unit models
+# Define default mapping of costing methods to unit models
 WaterTAPCostingData.unit_mapping = {
-        Pump: WaterTAPCostingData.cost_pump,  # TODO: this may be carrying over a limitation of IDAES
+        Pump: WaterTAPCostingData.cost_pump,
         PressureExchanger: WaterTAPCostingData.cost_pressure_exchanger,
         ReverseOsmosis0D: WaterTAPCostingData.cost_reverse_osmosis,
         ReverseOsmosis1D: WaterTAPCostingData.cost_reverse_osmosis,
