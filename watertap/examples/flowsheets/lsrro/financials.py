@@ -39,7 +39,10 @@ def add_costing_param_block(self):
     b.electricity_cost = Var(
         initialize=0.07,
         doc='Electricity cost [$/kWh]')
-    b.mem_cost = Var(
+    b.ro_mem_cost = Var(
+        initialize=30,
+        doc='Membrane cost [$/m2]')
+    b.lsrro_mem_cost = Var(
         initialize=50,
         doc='Membrane cost [$/m2]')
     b.hp_pump_cost = Var(
@@ -134,21 +137,25 @@ def _make_vars(self):
     iscale.set_scaling_factor(self.operating_cost, 1e-1)
 
 
-def ReverseOsmosis_costing(self):
+def ReverseOsmosis_costing(self, membrane_type='lsrro'):
     _make_vars(self)
 
     b_RO = self.parent_block()
     b_fs = b_RO.parent_block()
 
+    if membrane_type == 'lsrro':
+        mem_cost = b_fs.costing_param.lsrro_mem_cost
+    elif membrane_type == 'ro':
+        mem_cost = b_fs.costing_param.ro_mem_cost
     # capital cost
     self.eq_capital_cost = Constraint(
-        expr=self.capital_cost == b_fs.costing_param.mem_cost * b_RO.area/pyunits.m**2)
+        expr=self.capital_cost == mem_cost * b_RO.area/pyunits.m**2)
     iscale.set_scaling_factor(self.eq_capital_cost, iscale.get_scaling_factor(self.capital_cost))
 
     # operating cost
     self.eq_operating_cost = Constraint(
         expr=self.operating_cost == b_fs.costing_param.factor_membrane_replacement
-             * b_fs.costing_param.mem_cost * b_RO.area / pyunits.m ** 2)
+             * mem_cost * b_RO.area / pyunits.m ** 2)
     iscale.set_scaling_factor(self.eq_operating_cost, iscale.get_scaling_factor(self.operating_cost))
 
 def pressure_changer_costing(self,
