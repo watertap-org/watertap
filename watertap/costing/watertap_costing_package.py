@@ -265,10 +265,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         TODO: describe equations
         """
         _make_captial_cost_var(blk)
-
-        # workaround for now
-        _make_calculate_scaling_factors_pressure_changer_workaround(blk)
-
         blk.capital_cost_constraint = pyo.Constraint(expr = \
                 blk.capital_cost == blk.costing_package.high_pressure_pump_cost * pyo.units.convert(blk.unit_model.work_mechanical[0], pyo.units.W))
 
@@ -280,8 +276,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         TODO: describe equations
         """
         _make_captial_cost_var(blk)
-        # workaround for now
-        _make_calculate_scaling_factors_pressure_changer_workaround(blk)
         cost_by_flow_volume(blk, blk.costing_package.low_pressure_pump_cost,
                 pyo.units.convert(blk.unit_model.control_volume.properties_in[0].flow_vol, (pyo.units.m**3/pyo.units.s)))
 
@@ -293,8 +287,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         TODO: describe equations
         """
         _make_captial_cost_var(blk)
-        # workaround for now
-        _make_calculate_scaling_factors_pressure_changer_workaround(blk)
         cost_by_flow_volume(blk, blk.costing_package.pump_pressure_exchanger_cost,
                 pyo.units.convert(blk.unit_model.control_volume.properties_in[0].flow_vol, (pyo.units.meter**3/pyo.units.hours)))
 
@@ -363,9 +355,3 @@ def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
     blk.flow_cost = pyo.Expression(expr=flow_cost)
     blk.capital_cost_constraint = pyo.Constraint(expr = \
             blk.capital_cost == blk.flow_cost * flow_to_cost)
-
-def _make_calculate_scaling_factors_pressure_changer_workaround(blk):
-    blk.purchase_cost = pyo.Var(initialize=0,
-            units=pyo.units.USD_CE500,
-            doc="Empty Var for old IDAES costing calculate_scaling_factors")
-    blk.cp_cost_eq = pyo.Constraint(expr=blk.purchase_cost == 0)
