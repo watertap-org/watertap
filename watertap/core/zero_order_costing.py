@@ -292,15 +292,31 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
     # -------------------------------------------------------------------------
     # Unit operation costing methods
-    def cost_exponential_flow(blk):
+    def cost_power_law_flow(blk):
+        """
+        General method for costing equipment based on power law form. This is
+        the most common costing form for zero-order models.
+
+        CapCost = A*(F/Fref)**B
+
+        This method also registers electricity demand as a costed flow (if
+        present in the unit operation model).
+        """
         t0 = blk.flowsheet().time.first()
-        ZeroOrderCostingData._general_exponential_form(blk, time=t0)
+        ZeroOrderCostingData._general_power_law_form(blk, time=t0)
 
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity")
 
     def cost_chemical_addition(blk):
+        """
+        General method for costing chemical addition processes. Capital cost is
+        based on the mass flow rate of chemcial added.
+
+        This method also registers the chemical flow and electricity demand as
+        costed flows.
+        """
         chem_name = blk.unit_model.config.process_subtype
 
         t0 = blk.flowsheet().time.first()
@@ -309,7 +325,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                           blk.unit_model.ratio_in_solution)
         sizing_term = chem_flow_mass / (pyo.units.lb/pyo.units.day)
 
-        ZeroOrderCostingData._general_exponential_form(
+        ZeroOrderCostingData._general_power_law_form(
             blk, time=t0, sizing_term=sizing_term)
 
         # Register flows
@@ -318,7 +334,10 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             chem_flow_mass, chem_name)
 
-    def _general_exponential_form(blk, time=None, sizing_term=None):
+    def _general_power_law_form(blk, time=None, sizing_term=None):
+        """
+        General method for bulding power law costing expressions.
+        """
         # Get parameter dict from database
         parameter_dict = \
             blk.unit_model.config.database.get_unit_operation_parameters(
@@ -332,17 +351,10 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             doc="Capital cost of unit operation")
 
         # Get costing parameter sub-block for this technology
-        # TODO: Process Sub-types
-        try:
-            # Try to get parameter Block from costing package
-            pblock = getattr(blk.config.flowsheet_costing_block,
-                             blk.unit_model._tech_type)
-        except AttributeError:
-            # If not present, call method to create parameter Block
-            pblock = _add_tech_parameter_block(blk, parameter_dict)
-
-        A = pblock.capital_a_parameter
-        B = pblock.capital_b_parameter
+        A, B, pblock = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype)
 
         if sizing_term is None:
             # Get reference state for capital calculation
@@ -355,14 +367,14 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                 # Pass-through case
                 sblock = blk.unit_model.properties[time]
 
+            state_ref = pblock.reference_state[
+                blk.unit_model.config.process_subtype]
             if basis == "flow_vol":
                 state = sblock.flow_vol
-                state_ref = pblock.reference_state
                 sizing_term = state/state_ref
             elif basis == "flow_mass":
                 state = sum(sblock.flow_mass_comp[j]
                             for j in sblock.component_list)
-                state_ref = pblock.reference_state
                 sizing_term = state/state_ref
             else:
                 raise ValueError(
@@ -384,60 +396,102 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
     # -------------------------------------------------------------------------
     # Map costing methods to unit model classes
-    unit_mapping = {ZeroOrderBase: cost_exponential_flow,
+    unit_mapping = {ZeroOrderBase: cost_power_law_flow,
                     ChemicalAdditionZO: cost_chemical_addition}
 
 
-def _add_tech_parameter_block(blk, parameter_dict):
-    # Parameters for this technology haven't been added yet
-    pblock = pyo.Block()
+def _get_tech_parameters(blk, parameter_dict, subtype):
+    """
+    First, need to check to see if a Block with parameters for this technology
+    exists.
+    Second, to handle technology subtypes all parameters need to be indexed by
+    subtype. WE will dynamically add subtypes to the indexing set and Vars as
+    required.
+    """
+    # Check to see in parameter Block already exists
+    try:
+        # Try to get parameter Block from costing package
+        pblock = getattr(blk.config.flowsheet_costing_block,
+                         blk.unit_model._tech_type)
+    except AttributeError:
+        # Parameter Block for this technology haven't been added yet, create
+        pblock = pyo.Block()
 
-    # Add block to FlowsheetCostingBlock
-    blk.config.flowsheet_costing_block.add_component(
-        blk.unit_model._tech_type, pblock)
+        # Add block to FlowsheetCostingBlock
+        blk.config.flowsheet_costing_block.add_component(
+            blk.unit_model._tech_type, pblock)
 
-    # Add required parameters
-    pblock.capital_a_parameter = pyo.Var(
-        initialize=float(
-            parameter_dict[
-                "capital_cost"]["capital_a_parameter"]["value"]),
-        units=getattr(
-            pyo.units,
-            parameter_dict[
-                "capital_cost"]["capital_a_parameter"]["units"]),
-        bounds=(0, None),
-        doc="Pre-exponential factor for capital cost expression")
-    pblock.capital_b_parameter = pyo.Var(
-        initialize=float(
-            parameter_dict[
-                "capital_cost"]["capital_b_parameter"]["value"]),
-        units=getattr(
-            pyo.units,
-            parameter_dict[
-                "capital_cost"]["capital_b_parameter"]["units"]),
-        doc="Exponential factor for capital cost expression")
+        # Add subtype Set to Block
+        pblock.subtype_set = pyo.Set()
 
-    pblock.capital_a_parameter.fix()
-    pblock.capital_b_parameter.fix()
-
-    if "reference_state" in parameter_dict["capital_cost"]:
-        # Flow based costing requires a reference flow
-        pblock.reference_state = pyo.Var(
-            initialize=float(
-                parameter_dict[
-                    "capital_cost"]["reference_state"]["value"]),
+        # Add required Vars
+        pblock.capital_a_parameter = pyo.Var(
+            pblock.subtype_set,
             units=getattr(
                 pyo.units,
                 parameter_dict[
-                    "capital_cost"]["reference_state"]["units"]),
-            doc="Reference state for capital cost expression")
+                    "capital_cost"]["capital_a_parameter"]["units"]),
+            bounds=(0, None),
+            doc="Pre-exponential factor for capital cost expression")
+        pblock.capital_b_parameter = pyo.Var(
+            pblock.subtype_set,
+            units=getattr(
+                pyo.units,
+                parameter_dict[
+                    "capital_cost"]["capital_b_parameter"]["units"]),
+            doc="Exponential factor for capital cost expression")
 
-        pblock.reference_state.fix()
+        if "reference_state" in parameter_dict["capital_cost"]:
+            pblock.reference_state = pyo.Var(
+                pblock.subtype_set,
+                units=getattr(
+                    pyo.units,
+                    parameter_dict[
+                        "capital_cost"]["reference_state"]["units"]),
+                doc="Reference state for capital cost expression")
 
-    return pblock
+    # Check to see if requried subtype is in subtype_set
+    if subtype not in pblock.subtype_set:
+        # Need to add subtype and set Vars
+        pblock.subtype_set.add(subtype)
+
+        # Set vars
+        pblock.capital_a_parameter[subtype].fix(
+            float(parameter_dict[
+                "capital_cost"]["capital_a_parameter"]["value"]) *
+            getattr(pyo.units,
+                    parameter_dict[
+                        "capital_cost"]["capital_a_parameter"]["units"]))
+
+        pblock.capital_b_parameter[subtype].fix(
+            float(parameter_dict[
+                "capital_cost"]["capital_b_parameter"]["value"]) *
+            getattr(pyo.units,
+                    parameter_dict[
+                        "capital_cost"]["capital_b_parameter"]["units"]))
+
+        if "reference_state" in parameter_dict["capital_cost"]:
+            pblock.reference_state[subtype].fix(
+                float(parameter_dict[
+                    "capital_cost"]["reference_state"]["value"]) *
+                getattr(pyo.units,
+                        parameter_dict[
+                            "capital_cost"]["reference_state"]["units"]))
+
+    # Get requried element from Vars
+    A = pblock.capital_a_parameter[subtype]
+    B = pblock.capital_b_parameter[subtype]
+
+    return A, B, pblock
 
 
 def _load_case_study_definition(self):
+    """
+    Load data from case study definition file into a Python dict.
+
+    If users did not provide a definition file as a config argument, the
+    default definition from the WaterTap techno-economic database is used.
+    """
     source_file = self.config.case_study_definition
     if source_file is None:
         source_file = os.path.join(
