@@ -60,18 +60,19 @@ from watertap.unit_models.zero_order import (FeedZO,
                                              LandfillZO)
 
 
-
 def main():
-    # set up solver
-    solver = get_solver()
-
-    # build, set, and initialize
     m = build()
+
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
+
     initialize_system(m)
+    assert_degrees_of_freedom(m, 0)
+
     solve(m)
-    display_results(m)
+    # display_results(m)
+
+    return m
 
 def build():
     # flowsheet set up
