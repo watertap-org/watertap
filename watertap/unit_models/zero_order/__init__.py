@@ -28,6 +28,7 @@ from .feed_zo import FeedZO
 from .landfill_zo import LandfillZO
 from .landfill_zld_zo import LandfillZLDZO
 from .media_filtration_zo import MediaFiltrationZO
+from .microfiltration_zo import MicroFiltrationZO
 from .nanofiltration_zo import NanofiltrationZO
 from .clarifier_zo import ClarifierZO
 from .pump_zo import PumpZO
