@@ -15,8 +15,14 @@ def append_costing_outputs(m, outputs, units_to_cost):
 
     return outputs
 
+def get_output_directory(dirpath):
+    if dirpath is None:
+        return './'
+    else:
+        return dirpath
 
-def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
+
+def run_analysis(case_num, nx, RO_type, output_directory=None, interp_nan_outputs=True):
 
     desal_kwargs = {'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,
                     'RO_type': RO_type, 'RO_base': 'TDS', 'RO_level': 'detailed'}
@@ -24,6 +30,7 @@ def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
     sweep_params = {}
     outputs = {}
     optimize_kwargs={'check_termination' : False} # None
+    base_path = get_output_directory(output_directory)
 
     if case_num == 1:
         # ================================================================
@@ -45,7 +52,7 @@ def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
         outputs['Annual Water Production'] = m.fs.annual_water_production
         outputs = append_costing_outputs(m, outputs, ['RO', 'pump_RO', 'ERD'])
 
-        output_filename = 'output/fs_single_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
+        output_filename = base_path + f"output/fs_single_stage/results_{case_num}_{desal_kwargs['RO_type']}RO.csv"
 
         opt_function = fs_single_stage.optimize
 
@@ -69,7 +76,7 @@ def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
         outputs['Annual Water Production'] = m.fs.annual_water_production
         outputs = append_costing_outputs(m, outputs, ['RO', 'pump_RO', 'RO2', 'pump_RO2', 'ERD'])
 
-        output_filename = 'output/fs_two_stage/results_%d_%sRO_no_sat.csv' % (case_num, desal_kwargs['RO_type'])
+        output_filename = base_path + f"output/fs_two_stage/results_{case_num}_{desal_kwargs['RO_type']}RO.csv"
 
         opt_function = fs_two_stage.optimize
 
@@ -86,7 +93,7 @@ def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
         outputs['LCOW'] = m.fs.costing.LCOW
         outputs['Saturation Index'] = m.fs.pretrt_saturation.saturation_index
 
-        output_filename = 'output/fs_NF_no_bypass/results_%d.csv' % case_num
+        output_filename = base_path + f'output/fs_NF_no_bypass/results_{case_num}.csv'
 
         opt_function = fs_NF_no_bypass.simulate
         # Need to unfix NF area to simulate with fixed NF recovery
@@ -106,7 +113,7 @@ def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
         outputs['Ca Removal'] = m.fs.removal_Ca
         outputs['Max Concentration Constraint']  = m.fs.eq_max_conc_NF.body
 
-        output_filename = 'output/fs_NF/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
+        output_filename = base_path + f"output/fs_NF/results_{case_num}_{desal_kwargs['RO_type']}RO.csv"
 
         opt_function = fs_NF.optimize
 
@@ -125,7 +132,7 @@ def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
         outputs['LCOW'] = m.fs.costing.LCOW
         outputs['RO Recovery'] = m.fs.RO_recovery
 
-        output_filename = 'output/fs_NF_two_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
+        output_filename = base_path + f"output/fs_NF_two_stage/results_{case_num}_{desal_kwargs['RO_type']}RO.csv"
 
         opt_function = fs_NF_two_stage.optimize
 
@@ -142,7 +149,7 @@ def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
         outputs['LCOW'] = m.fs.costing.LCOW
         outputs['NF Split Fraction'] = m.fs.splitter.split_fraction[0, 'pretreatment']
 
-        output_filename = 'output/fs_NF_two_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
+        output_filename = base_path + f"output/fs_NF_two_stage/results_{case_num}_{desal_kwargs['RO_type']}RO.csv"
 
         opt_function = fs_NF_two_stage.optimize
 
@@ -159,7 +166,7 @@ def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
 
         outputs['LCOW'] = m.fs.costing.LCOW
 
-        output_filename = 'output/fs_NF_two_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
+        output_filename = base_path + f"output/fs_NF_two_stage/results_{case_num}_{desal_kwargs['RO_type']}RO.csv"
 
         opt_function = fs_NF_two_stage.optimize
 
@@ -180,7 +187,7 @@ def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
         outputs['capital_cost_total'] = m.fs.costing.capital_cost_total
         outputs['operating_cost_total'] = m.fs.costing.operating_cost_total
 
-        output_filename = 'output/fs_softening/results_%d.csv' % case_num
+        output_filename = base_path + f'output/fs_softening/results_{case_num}.csv'
 
         opt_function = fs_softening.simulate
 
@@ -197,7 +204,7 @@ def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
         outputs['LCOW'] = m.fs.costing.LCOW
         outputs['Lime Dosing'] = m.fs.stoich_softening_mixer_unit.lime_stream_state[0].flow_mol
 
-        output_filename = 'output/fs_softening_two_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
+        output_filename = base_path + f"output/fs_softening_two_stage/results_{case_num}_{desal_kwargs['RO_type']}RO.csv"
 
         opt_function = fs_softening_two_stage.optimize
 
