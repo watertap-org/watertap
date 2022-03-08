@@ -106,7 +106,7 @@ jobs:
       run:
         |
         # --pyargs watertap is needed to be able to define the CLI options in watertap/conftest.py
-        # 
+        #
         echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --pyargs watertap --edb-no-mock" >> $GITHUB_ENV
     - name: Test EDB client
       run: pytest -k test_edb_client
@@ -121,7 +121,7 @@ jobs:
       run: pytest $_subset_to_show --verbose
     - name: Test with pytest
       run: |
-        pytest
+        python basic_test.py
     - name: Upload coverage report to Codecov
       if: matrix.cov_report
       uses: codecov/codecov-action@v2
