@@ -227,13 +227,14 @@ def build():
 
     # scaling
     # set default property values
-    m.fs.prop_desal.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-    m.fs.prop_desal.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TDS'))
+    m.fs.prop_desal.set_default_scaling('flow_mass_phase_comp', 1e-3, index=('Liq', 'H2O'))
+    m.fs.prop_desal.set_default_scaling('flow_mass_phase_comp', 1e-1, index=('Liq', 'TDS'))
     # set unit model values
-    iscale.set_scaling_factor(desal.P1.control_volume.work, 1e-3)
-    iscale.set_scaling_factor(desal.P2.control_volume.work, 1e-3)
-    iscale.set_scaling_factor(desal.PXR.low_pressure_side.work, 1e-3)
-    iscale.set_scaling_factor(desal.PXR.high_pressure_side.work, 1e-3)
+    iscale.set_scaling_factor(desal.RO.area, 1e-4)
+    iscale.set_scaling_factor(desal.P1.control_volume.work, 1e-5)
+    iscale.set_scaling_factor(desal.P2.control_volume.work, 1e-5)
+    iscale.set_scaling_factor(desal.PXR.low_pressure_side.work, 1e-5)
+    iscale.set_scaling_factor(desal.PXR.high_pressure_side.work, 1e-5)
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
 
@@ -246,7 +247,7 @@ def set_operating_conditions(m):
 
     # ---specifications---
     # feed
-    flow_vol = 0.3092/100 * pyunits.m**3/pyunits.s  # TODO: remove the divide by 100 - correct scaling
+    flow_vol = 0.3092 * pyunits.m**3/pyunits.s
     conc_mass_tds = 35 * pyunits.kg/pyunits.m**3
     conc_mass_tss = 0.03 * pyunits.kg/pyunits.m**3
     temperature = 298 * pyunits.K
@@ -302,7 +303,7 @@ def set_operating_conditions(m):
 
     # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
     desal.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    operating_pressure = 65e5 * pyunits.Pa
+    operating_pressure = 70e5 * pyunits.Pa
     desal.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
 
     # pressure exchanger
@@ -319,8 +320,8 @@ def set_operating_conditions(m):
     desal.RO.channel_height.fix(1e-3)  # channel height in membrane stage [m]
     desal.RO.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     desal.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
-    desal.RO.width.fix(5)  # stage width [m]
-    desal.RO.area.fix(flow_vol * 4e4 * pyunits.s/pyunits.m)  # stage area [m2] TODO: replace with actual area
+    desal.RO.width.fix(1000)  # stage width [m]
+    desal.RO.area.fix(flow_vol * 4.5e4 * pyunits.s/pyunits.m)  # stage area [m2] TODO: replace with actual area
 
     # ---posttreatment---
     # storage tank 2
@@ -408,6 +409,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
     if check_termination:
         assert_optimal_termination(results)
     return results
+
 
 def display_results(m):
     m.fs.feed.report()
