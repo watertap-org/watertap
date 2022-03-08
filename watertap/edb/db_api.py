@@ -446,6 +446,11 @@ class ElectrolyteDB:
     def _process_component(rec):
         # This line is needed
         rec["elements"] = get_elements_from_components([rec["name"]])
+
+        # this line doesn't add anything, but tests still pass...
+        #       However, the integration tests fail, thus the
+        #       above is still needed.
+        #rec["elements"] = []
         return rec
 
     @staticmethod

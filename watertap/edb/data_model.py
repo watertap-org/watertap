@@ -814,7 +814,6 @@ class Component(DataWrapper):
         super().__init__(data, ThermoConfig, validate_as_type=vtype)
 
     def _preprocess(self):
-        self._data["elements"] = []
         # set "type" field
         if "type" in self._data:
             return  # already present
@@ -911,6 +910,26 @@ class Reaction(DataWrapper):
         """
         vtype = "reaction" if validation else None
         super().__init__(data, ReactionConfig, validate_as_type=vtype)
+
+    def _preprocess(self):
+        #if Reaction.NAMES.param in rec:
+        #    param = rec[Reaction.NAMES.param]
+        #    if Reaction.NAMES.reaction_order not in param:
+        #        if Reaction.NAMES.stoich in rec:
+        #            param[Reaction.NAMES.reaction_order] = rec[
+        #                Reaction.NAMES.stoich].copy()
+        #        else:
+        #            param[Reaction.NAMES.reaction_order] = {
+        #                phase: {} for phase in Reaction.PHASES
+        #            }
+        # If 'reaction_order' key does not exist, then create one as a copy of stoich
+        if self.NAMES.reaction_order in self.data[self.NAMES.param]:
+            ro = self.data[self.NAMES.param][self.NAMES.reaction_order]
+        else:
+            self.data[self.NAMES.param][self.NAMES.reaction_order] = self.data[
+                self.NAMES.stoich
+            ].copy()
+            ro = self.data[self.NAMES.param][self.NAMES.reaction_order]
 
     @property
     def reaction_type(self):
