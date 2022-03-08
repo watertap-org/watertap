@@ -41,8 +41,6 @@ def _handle_requires_idaes_solver(solver: Optional = None, action: Optional[Call
         action(
             f"This test is known to be failing with {solver_bin_path}"
         )
-    else:
-        pytest.skip("Just testing")
 
 
 def pytest_configure(config: Config):
