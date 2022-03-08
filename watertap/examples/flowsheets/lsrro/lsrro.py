@@ -72,6 +72,7 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
     m.fs.StageSet = RangeSet(m.fs.NumberOfStages)
     m.fs.LSRRO_StageSet = RangeSet(2, m.fs.NumberOfStages)
     m.fs.NonFinal_StageSet = RangeSet(m.fs.NumberOfStages-1)
+    m.fs.LSRRO_NonFinal_StageSet = RangeSet(2, m.fs.NumberOfStages-1)
 
     m.fs.feed = Feed(default={'property_package': m.fs.properties})
     m.fs.product = Product(default={'property_package': m.fs.properties})
@@ -123,10 +124,13 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
     for ro_unit in m.fs.ROUnits.values():
         ro_unit.get_costing(module=financials)
 
-    # Add EnergyRecoveryDevice
+    # Add EnergyRecoveryDevices
+    m.fs.ERD_first_stage = Pump(default={"property_package": m.fs.properties})
+    m.fs.ERD_first_stage.get_costing(module=financials, pump_type="Pressure exchanger")
+
     m.fs.EnergyRecoveryDevice = Pump(default={"property_package": m.fs.properties})
     m.fs.EnergyRecoveryDevice.get_costing(module=financials, pump_type="Pressure exchanger")
-    total_pump_work += m.fs.EnergyRecoveryDevice.work_mechanical[0]
+    total_pump_work += m.fs.EnergyRecoveryDevice.work_mechanical[0] + m.fs.ERD_first_stage.work_mechanical[0]
 
     # additional variables or expressions
     # system water recovery
@@ -163,6 +167,12 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
     # Connect the primary RO permeate to the product
     m.fs.primary_RO_to_product = Arc(source=m.fs.ROUnits[1].permeate, destination=m.fs.product.inlet)
 
+    # Connect the primary RO permeate to the product
+    m.fs.primary_RO_to_erd = Arc(source=m.fs.ROUnits[1].retentate, destination=m.fs.ERD_first_stage.inlet)
+
+    # Connect 1st stage ERD to primary pump
+    m.fs.primary_ERD_to_pump = Arc(source=m.fs.ERD_first_stage.outlet, destination=m.fs.PrimaryPumps[2].inlet)
+
     # Connect the Pump n to the Mixer n
     m.fs.pump_to_mixer = Arc(m.fs.NonFinal_StageSet,
             rule=lambda fs,n : {'source':fs.PrimaryPumps[n].outlet,
@@ -174,7 +184,7 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
                                 'destination':fs.ROUnits[n].inlet})
 
     # Connect the Stage n to the Pump n+1
-    m.fs.stage_to_pump = Arc(m.fs.NonFinal_StageSet,
+    m.fs.stage_to_pump = Arc(m.fs.LSRRO_NonFinal_StageSet,
             rule=lambda fs,n : {'source':fs.ROUnits[n].retentate,
                                 'destination':fs.PrimaryPumps[n+1].inlet})
 
@@ -270,9 +280,12 @@ def set_operating_conditions(m, Cin=None):
             stage.channel_height.fix(height)
             stage.spacer_porosity.fix(spacer_porosity)
 
-    # energy recovery device
+    # energy recovery devices
+    m.fs.ERD_first_stage.efficiency_pump.fix(erd_efi)
     m.fs.EnergyRecoveryDevice.efficiency_pump.fix(erd_efi)
+    m.fs.ERD_first_stage.control_volume.properties_out[0].pressure.fix(70e5)
     m.fs.EnergyRecoveryDevice.control_volume.properties_out[0].pressure.fix(pressure_atm)
+    iscale.set_scaling_factor(m.fs.ERD_first_stage.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.EnergyRecoveryDevice.control_volume.work, 1e-3)
 
     # ---scaling---
@@ -332,6 +345,8 @@ def do_initialization_pass(m, optarg, guess_mixers):
 
         if stage == first_stage:
             propagate_state(m.fs.primary_RO_to_product)
+            propagate_state(m.fs.primary_RO_to_erd)
+            propagate_state(m.fs.primary_ERD_to_pump)
         else:
             propagate_state(m.fs.stage_to_eq_pump[stage])
             m.fs.BoosterPumps[stage].initialize(optarg=optarg)
@@ -339,7 +354,7 @@ def do_initialization_pass(m, optarg, guess_mixers):
 
         if stage == last_stage:
             propagate_state(m.fs.stage_to_erd)
-        else:
+        elif stage != first_stage and stage != last_stage:
             propagate_state(m.fs.stage_to_pump[stage])
 
     # for the end stage
@@ -354,10 +369,12 @@ def do_backwards_initialization_pass(m, optarg):
         m.fs.Mixers[stage].initialize(optarg=optarg)
         propagate_state(m.fs.mixer_to_stage[stage])
         m.fs.ROUnits[stage].initialize(optarg=optarg)
-        propagate_state(m.fs.stage_to_pump[stage])
         if stage == first_stage:
+            propagate_state(m.fs.primary_ERD_to_pump)
+            propagate_state(m.fs.primary_RO_to_erd)
             propagate_state(m.fs.primary_RO_to_product)
         else:
+            propagate_state(m.fs.stage_to_pump[stage])
             propagate_state(m.fs.stage_to_eq_pump[stage])
             m.fs.BoosterPumps[stage].initialize(optarg=optarg)
             propagate_state(m.fs.eq_pump_to_mixer[stage])
@@ -417,6 +434,8 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
                  anything else for no constraint applied - no constraint relating B value to A value
     A_fixed: if A_case="fix", then provide a value to fix A with
     '''
+
+    m.fs.ERD_first_stage.control_volume.properties_out[0].pressure.unfix()
 
     for idx, pump in m.fs.PrimaryPumps.items():
         pump.control_volume.properties_out[0].pressure.unfix()
@@ -618,14 +637,15 @@ def display_system(m):
     print(f'Booster Pump Capital Cost ($/m3): '
           f'{value(m.fs.costing_param.factor_capital_annualization*sum(m.fs.BoosterPumps[stage].costing.capital_cost for stage in m.fs.LSRRO_StageSet) / m.fs.annual_water_production)}')
     print(f'ERD Capital Cost ($/m3):'
-          f'{value(m.fs.costing_param.factor_capital_annualization*m.fs.EnergyRecoveryDevice.costing.capital_cost / m.fs.annual_water_production)}')
+          f'{value(m.fs.costing_param.factor_capital_annualization*(m.fs.EnergyRecoveryDevice.costing.capital_cost + m.fs.ERD_first_stage.costing.capital_cost) / m.fs.annual_water_production)}')
     print(f'Membrane Capital Cost ($/m3): '
           f'{value(m.fs.costing_param.factor_capital_annualization*sum(m.fs.ROUnits[stage].costing.capital_cost for stage in m.fs.StageSet) / m.fs.annual_water_production)}')
     print(f'Indirect Capital Cost ($/m3): '
           f'{value(m.fs.costing_param.factor_capital_annualization*(m.fs.costing.investment_cost_total- m.fs.costing.capital_cost_total) / m.fs.annual_water_production)}')
     electricity_cost = (value((sum(m.fs.PrimaryPumps[stage].costing.operating_cost for stage in m.fs.StageSet)
                               + sum(m.fs.BoosterPumps[stage].costing.operating_cost for stage in m.fs.LSRRO_StageSet)
-                              + m.fs.EnergyRecoveryDevice.costing.operating_cost) / m.fs.annual_water_production))
+                              + m.fs.EnergyRecoveryDevice.costing.operating_cost
+                              + m.fs.ERD_first_stage.costing.operating_cost) / m.fs.annual_water_production))
     print(f'Electricity cost ($/m3): {electricity_cost}')
 
     print('\n')
@@ -655,147 +675,141 @@ if __name__ == "__main__":
     import csv
 
     cin=70
-    a_case = "single optimum"
-    b_case = "optimize"
-    ab_tradeoff = "inequality constraint"
-    ab_gamma = 0.1
-    for stage in range(2, 6):
-        m, res = run_lsrro_case(number_of_stages=stage,
-                             water_recovery=0.5,
-                             Cin=cin,
-                             # Cbrine=250,# g/L
-                             A_case=a_case,
-                             B_case=b_case,
-                             AB_tradeoff=ab_tradeoff,
-                             nacl_solubility_limit=True,
-                             permeate_quality_limit=1000e-6,
-                             has_CP=True,
-                             has_Pdrop=True,
-                             A_fixed=10/3.6e11, #2.78e-12
-                             ABgamma_factor=ab_gamma
-                             )
-        if check_optimal_termination(res):
-            num_stages = value(m.fs.NumberOfStages)
-            total_area = value(sum(m.fs.ROUnits[a].area for a in range(1, m.fs.NumberOfStages + 1)))
-            final_lcow = value(m.fs.costing.LCOW)
-            final_sec = value(m.fs.specific_energy_consumption)
-            final_perm = value(m.fs.product.flow_mass_phase_comp[0, 'Liq', 'NaCl'] /
-                                    sum(m.fs.product.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl']))
-            lcow_breakdown =  {'primary_pump_capex':
-                                            value(m.fs.costing_param.factor_capital_annualization
-                                                  * sum(m.fs.PrimaryPumps[n].costing.capital_cost
-                                                        for n in m.fs.StageSet)
-                                                  / m.fs.annual_water_production),
-                                        'booster_pump_capex':
-                                            value(m.fs.costing_param.factor_capital_annualization
-                                                  * sum(m.fs.BoosterPumps[stage].costing.capital_cost
-                                                        for stage in m.fs.LSRRO_StageSet)
-                                                  / m.fs.annual_water_production),
-                                        'erd_capex':
-                                            value(m.fs.costing_param.factor_capital_annualization
-                                                  * m.fs.EnergyRecoveryDevice.costing.capital_cost
-                                                  / m.fs.annual_water_production),
-                                        'membrane_capex':
-                                            value(m.fs.costing_param.factor_capital_annualization
-                                                  * sum(
-                                                m.fs.ROUnits[stage].costing.capital_cost for stage in m.fs.StageSet)
-                                                  / m.fs.annual_water_production),
-                                        'indirect_capex':
-                                            value(m.fs.costing_param.factor_capital_annualization
-                                                  * (
-                                                              m.fs.costing.investment_cost_total - m.fs.costing.capital_cost_total)
-                                                  / m.fs.annual_water_production),
-                                        'electricity':
-                                            value((sum(
-                                                m.fs.PrimaryPumps[stage].costing.operating_cost for stage in
-                                                m.fs.StageSet)
-                                                   + sum(m.fs.BoosterPumps[stage].costing.operating_cost for stage in
-                                                         m.fs.LSRRO_StageSet)
-                                                   + m.fs.EnergyRecoveryDevice.costing.operating_cost) / m.fs.annual_water_production)
-                                        }
+    a_case_lst = ["single optimum", "optimize"]
+    b_case_lst = ["single optimum", "optimize"]
+    ab_tradeoff_lst = ["no constraint", "inequality constraint", "equality constraint"]
+    ab_gamma_factor_lst = [0.1, 1]
 
-            a_stage = {
-                f'A_stage {n}': f'{value(m.fs.ROUnits[n].A_comp[0, "H2O"] * 3.6e11):.2f}' for n in
-                range(1, m.fs.NumberOfStages + 1)}
-            b_stage = {
-                f'B_stage {n}': f'{value(m.fs.ROUnits[n].B_comp[0, "NaCl"] * 3.6e6):.2f}' for n in
-                range(1, m.fs.NumberOfStages + 1)}
+    recovery = .5
 
-            # num_stages.append(value(m.fs.NumberOfStages))
-            # total_area.append(value(sum(m.fs.ROUnits[a].area for a in range(1, m.fs.NumberOfStages+1))))
-            # final_lcow.append(value(m.fs.costing.LCOW))
-            # final_sec.append(value(m.fs.specific_energy_consumption))
-            # final_perm.append(value(m.fs.product.flow_mass_phase_comp[0, 'Liq', 'NaCl']/
-            #                  sum(m.fs.product.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])))
-            # lcow_breakdown.update({f'{stage}_stage_case': \
-            #                       {'primary_pump_capex':
-            #                        value(m.fs.costing_param.factor_capital_annualization
-            #                              * sum(m.fs.PrimaryPumps[n].costing.capital_cost
-            #                                    for n in m.fs.StageSet)
-            #                              / m.fs.annual_water_production),
-            #                        'booster_pump_capex':
-            #                            value(m.fs.costing_param.factor_capital_annualization
-            #                                  * sum(m.fs.BoosterPumps[stage].costing.capital_cost
-            #                                        for stage in m.fs.LSRRO_StageSet)
-            #                                  / m.fs.annual_water_production),
-            #                        'erd_capex':
-            #                            value(m.fs.costing_param.factor_capital_annualization
-            #                                  * m.fs.EnergyRecoveryDevice.costing.capital_cost
-            #                                  / m.fs.annual_water_production),
-            #                        'membrane_capex':
-            #                            value(m.fs.costing_param.factor_capital_annualization
-            #                                  * sum(m.fs.ROUnits[stage].costing.capital_cost for stage in m.fs.StageSet)
-            #                                  / m.fs.annual_water_production),
-            #                        'indirect_capex':
-            #                            value(m.fs.costing_param.factor_capital_annualization
-            #                                  * (m.fs.costing.investment_cost_total - m.fs.costing.capital_cost_total)
-            #                                  / m.fs.annual_water_production),
-            #                        'electricity':
-            #                            value((sum(
-            #                                m.fs.PrimaryPumps[stage].costing.operating_cost for stage in m.fs.StageSet)
-            #                                   + sum(m.fs.BoosterPumps[stage].costing.operating_cost for stage in
-            #                                         m.fs.LSRRO_StageSet)
-            #                                   + m.fs.EnergyRecoveryDevice.costing.operating_cost) / m.fs.annual_water_production)
-            #                        }})
-            #
-            # a_stage.update({f'{stage}_stage_case': {f'stage {n}': f'{value(m.fs.ROUnits[n].A_comp[0, "H2O"] *3.6e11):.2f}' for n in range(1, m.fs.NumberOfStages+1)}})
-            # b_stage.update({f'{stage}_stage_case': {f'stage {n}': f'{value(m.fs.ROUnits[n].B_comp[0, "NaCl"] *3.6e6):.2f}' for n in range(1, m.fs.NumberOfStages+1)}})
+    headers = ["cin (kg/m3)", "recovery (-)", "num_stages", "final perm (ppm)",
+               "Membrane area", "SEC", "LCOW"]
 
-        else:
+    for stage in range(2, 7):
+        with open(f'output_{cin}_{recovery}_{stage}stage.csv', 'w', newline='') as csv_file:
+            csvwriter = csv.writer(csv_file)
+            start = 0
+            for a_case in a_case_lst:
+                for b_case in b_case_lst:
+                    for ab_tradeoff in ab_tradeoff_lst:
+                        for ab_gamma in ab_gamma_factor_lst:
+                            if a_case == "single optimum" and b_case == "single optimum":
+                                continue
+                            if ab_gamma != 1 and ab_tradeoff == "no constraint":
+                                continue
+                            start = start + 1
 
-            num_stages = 'nan'
-            total_area = 'nan'
-            final_lcow = 'nan'
-            final_sec = 'nan'
-            final_perm = 'nan'
-            lcow_breakdown = {'primary_pump_capex': 'nan',
-                            'booster_pump_capex': 'nan',
-                            'erd_capex': 'nan',
-                            'membrane_capex': 'nan',
-                            'indirect_capex': 'nan',
-                            'electricity': 'nan'
-                                        }
+                            m, res = run_lsrro_case(number_of_stages=stage,
+                                                 water_recovery=recovery,
+                                                 Cin=cin,
+                                                 # Cbrine=250,# g/L
+                                                 A_case=a_case,
+                                                 B_case=b_case,
+                                                 AB_tradeoff=ab_tradeoff,
+                                                 nacl_solubility_limit=True,
+                                                 permeate_quality_limit=1000e-6,
+                                                 has_CP=True,
+                                                 has_Pdrop=True,
+                                                 A_fixed=10/3.6e11, #2.78e-12
+                                                 ABgamma_factor=ab_gamma
+                                                 )
+                            if check_optimal_termination(res):
+                                num_stages = value(m.fs.NumberOfStages)
+                                total_area = value(sum(m.fs.ROUnits[a].area for a in range(1, m.fs.NumberOfStages + 1)))
+                                final_lcow = value(m.fs.costing.LCOW)
+                                final_sec = value(m.fs.specific_energy_consumption)
+                                final_perm = value(m.fs.product.flow_mass_phase_comp[0, 'Liq', 'NaCl'] /
+                                                        sum(m.fs.product.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl']))
+                                lcow_breakdown =  {'primary_pump_capex':
+                                                                value(m.fs.costing_param.factor_capital_annualization
+                                                                      * sum(m.fs.PrimaryPumps[n].costing.capital_cost
+                                                                            for n in m.fs.StageSet)
+                                                                      / m.fs.annual_water_production),
+                                                            'booster_pump_capex':
+                                                                value(m.fs.costing_param.factor_capital_annualization
+                                                                      * sum(m.fs.BoosterPumps[stage].costing.capital_cost
+                                                                            for stage in m.fs.LSRRO_StageSet)
+                                                                      / m.fs.annual_water_production),
+                                                            'erd_capex':
+                                                                value(m.fs.costing_param.factor_capital_annualization
+                                                                      * (m.fs.EnergyRecoveryDevice.costing.capital_cost
+                                                                         + m.fs.ERD_first_stage.costing.capital_cost)
+                                                                      / m.fs.annual_water_production),
+                                                            'membrane_capex':
+                                                                value(m.fs.costing_param.factor_capital_annualization
+                                                                      * sum(
+                                                                    m.fs.ROUnits[stage].costing.capital_cost for stage in m.fs.StageSet)
+                                                                      / m.fs.annual_water_production),
+                                                            'indirect_capex':
+                                                                value(m.fs.costing_param.factor_capital_annualization
+                                                                      * (
+                                                                                  m.fs.costing.investment_cost_total - m.fs.costing.capital_cost_total)
+                                                                      / m.fs.annual_water_production),
+                                                            'electricity':
+                                                                value((sum(
+                                                                    m.fs.PrimaryPumps[stage].costing.operating_cost for stage in
+                                                                    m.fs.StageSet)
+                                                                       + sum(m.fs.BoosterPumps[stage].costing.operating_cost for stage in
+                                                                             m.fs.LSRRO_StageSet)
+                                                                       + m.fs.EnergyRecoveryDevice.costing.operating_cost
+                                                                       + m.fs.ERD_first_stage.costing.operating_cost)
+                                                                      / m.fs.annual_water_production)
+                                                            }
 
-            a_stage = {f'A_stage {n}': 'nan' for n in range(1, stage+1)}
+                                a_stage = {
+                                    f'A_stage {n}': f'{value(m.fs.ROUnits[n].A_comp[0, "H2O"] * 3.6e11):.2f}' for n in
+                                    range(1, m.fs.NumberOfStages + 1)}
+                                b_stage = {
+                                    f'B_stage {n}': f'{value(m.fs.ROUnits[n].B_comp[0, "NaCl"] * 3.6e6):.2f}' for n in
+                                    range(1, m.fs.NumberOfStages + 1)}
 
-            b_stage = {f'B_stage {n}': 'nan' for n in range(1, stage+1)}
+                            else:
 
-        recovery = value(m.fs.water_recovery)
-        with open(f'output_{cin}_{recovery}_{stage}stage_{a_case}A_{b_case}B_{ab_tradeoff}_tradeoff_{ab_gamma}_ABfactor.csv', 'w') as csv_file:
-            csvwriter = csv.writer(csv_file, delimiter='\t')
-            headers = ["cin (kg/m3)", "recovery (-)", "num_stages", "final perm (ppm)",
-                       "Membrane area","SEC", "LCOW"]
-            # header.append()
-            row=[cin, recovery, num_stages, final_perm, total_area, final_sec, final_lcow]
-            for ak, a in a_stage.items():
-                headers.append(ak)
-                row.append(a)
-            for bk, b in b_stage.items():
-                headers.append(bk)
-                row.append(b)
-            for item, cost in lcow_breakdown.items():
-                headers.append(item)
-                row.append(cost)
+                                num_stages = 'nan'
+                                total_area = 'nan'
+                                final_lcow = 'nan'
+                                final_sec = 'nan'
+                                final_perm = 'nan'
+                                lcow_breakdown = {'primary_pump_capex': 'nan',
+                                                'booster_pump_capex': 'nan',
+                                                'erd_capex': 'nan',
+                                                'membrane_capex': 'nan',
+                                                'indirect_capex': 'nan',
+                                                'electricity': 'nan'
+                                                            }
 
-            csvwriter.writerow(headers)
-            csvwriter.writerow(row)
+                                a_stage = {f'A_stage {n}': 'nan' for n in range(1, stage+1)}
+
+                                b_stage = {f'B_stage {n}': 'nan' for n in range(1, stage+1)}
+
+                            # recovery = value(m.fs.water_recovery)
+                            # with open(f'output_{cin}_{recovery}_{stage}stage.csv', 'w') as csv_file:
+                            #     csvwriter = csv.writer(csv_file)
+                            #     headers = ["cin (kg/m3)", "recovery (-)", "num_stages", "final perm (ppm)",
+                            #                "Membrane area","SEC", "LCOW"]
+                                # header.append()
+                            row=[cin, recovery, num_stages, final_perm, total_area, final_sec, final_lcow]
+                            for ak, a in a_stage.items():
+                                if start == 1:
+                                    headers.append(ak)
+                                row.append(a)
+                            for bk, b in b_stage.items():
+                                if start ==1:
+                                    headers.append(bk)
+                                row.append(b)
+                            for item, cost in lcow_breakdown.items():
+                                if start ==1:
+                                    headers.append(item)
+                                row.append(cost)
+                            row.append(a_case)
+                            row.append(b_case)
+                            row.append(ab_tradeoff)
+                            row.append(ab_gamma)
+
+                            if start == 1:
+                                headers.append("A_case")
+                                headers.append("B_case")
+                                headers.append("AB_Tradeoff")
+                                headers.append("AB_gamma_factor")
+                                csvwriter.writerow(headers)
+                            csvwriter.writerow(row)
