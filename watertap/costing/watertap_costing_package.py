@@ -47,11 +47,10 @@ class PumpType(StrEnum):
 @declare_process_block_class("WaterTAPCosting")
 class WaterTAPCostingData(FlowsheetCostingBlockData):
 
-    # Register currency and conversion rates based on CE Index
-    register_idaes_currency_units()
-
-
     def build_global_params(self):
+
+        # Register currency and conversion rates based on CE Index
+        register_idaes_currency_units()
 
         # Set the base year for all costs
         self.base_currency = pyo.units.USD_CE500
