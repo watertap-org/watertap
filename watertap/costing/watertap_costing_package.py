@@ -282,7 +282,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         _make_captial_cost_var(blk)
         # workaround for now
         _make_calculate_scaling_factors_pressure_changer_workaround(blk)
-        cost_by_flow_volume(blk, pyo.units.conver(blk.costing_package.low_pressure_pump_cost, pyo.units.USD_CE500/(pyo.units.m**3/pyo.units.s)),
+        cost_by_flow_volume(blk, pyo.units.convert(blk.costing_package.low_pressure_pump_cost, pyo.units.USD_CE500/(pyo.units.m**3/pyo.units.s)),
                 blk.unit_model.control_volume.properties_in[0].flow_vol)
 
     @staticmethod
