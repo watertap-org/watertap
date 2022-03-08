@@ -440,6 +440,7 @@ class ElectrolyteDB:
         process_func = getattr(cls, f"_process_{rec_type}")
         return process_func(record)
 
+    # You each of these are needed because they get checked in 'validate.py'
     @staticmethod
     def _process_component(rec):
         # This line is needed
@@ -470,7 +471,7 @@ class ElectrolyteDB:
 
         return rec
 
-    # This function does nothing 
+    # This function does nothing
     @staticmethod
     def _process_base(rec):
         return rec

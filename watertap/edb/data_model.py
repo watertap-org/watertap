@@ -814,6 +814,7 @@ class Component(DataWrapper):
         super().__init__(data, ThermoConfig, validate_as_type=vtype)
 
     def _preprocess(self):
+        #self.json_data["elements"] = []
         # set "type" field
         if "type" in self._data:
             return  # already present
