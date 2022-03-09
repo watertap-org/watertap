@@ -150,7 +150,7 @@ class _TestLSRRO:
     @staticmethod
     def _test_no_badly_scaled_vars(m):
         for v,_ in badly_scaled_var_generator(m):
-            # TODO: come back after costing has scaling strategy
+            # TODO: COSTING_UPDATE come back after costing has scaling strategy
             if "costing" in v.name:
                 continue
             raise Exception(f"Badly scaled variable {v.name}")
