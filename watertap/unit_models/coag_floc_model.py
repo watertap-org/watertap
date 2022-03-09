@@ -446,7 +446,7 @@ class CoagulationFlocculationData(UnitModelBlockData):
         self.intercept.fix()
 
     # initialize method
-    def initialize(
+    def initialize_build(
             blk,
             state_args=None,
             outlvl=idaeslog.NOTSET,

@@ -57,8 +57,6 @@ from idaes.generic_models.properties.core.generic.generic_reaction import Concen
 # Import the object/function for heat of reaction
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
 
-# Import costing and financials to test
-
 # Import safe log power law equation
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import log_power_law_equil
 
@@ -1028,15 +1026,6 @@ def run_softening_block_example(include_feed=False, fix_hardness=False):
     else:
         # fix inlets at the mixer for testing
         fix_stoich_softening_mixer_inlet_stream(model)
-
-    # Commented section below was implemented for quick test of softening costing
-    # # need load factor from costing_param_block for annual_water_production
-    # financials.add_costing_param_block(model.fs)
-    # # annual water production
-    # model.fs.annual_water_production = Expression(
-    #     expr=pyunits.convert(0.0007 * pyunits.m**3 / pyunits.s, to_units=pyunits.m ** 3 / pyunits.year)
-    #          * model.fs.costing_param.load_factor)
-    # costing.build_costing(model, module=financials)
 
     # Fix the amount of lime added for simulation
     fix_stoich_softening_mixer_lime_stream(model)

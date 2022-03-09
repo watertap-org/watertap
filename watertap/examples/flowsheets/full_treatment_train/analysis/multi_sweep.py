@@ -7,11 +7,11 @@ from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sw
 
 def append_costing_outputs(m, outputs, units_to_cost):
     for unit_name in units_to_cost:
-        for cost_type in ['capital_cost', 'operating_cost']:
-            unit = getattr(m.fs, unit_name)
-            cost = getattr(unit.costing, cost_type)
-
-            outputs['%s_%s' % (cost_type, unit_name)] = cost
+        unit_costing = getattr(m.fs, unit_name).costing
+        for cost_type in ['capital_cost', 'fixed_operating_cost']:
+            if hasattr(unit_costing, cost_type):
+                cost = getattr(unit_costing, cost_type)
+                outputs['%s_%s' % (cost_type, unit_name)] = cost
 
     return outputs
 
@@ -42,7 +42,7 @@ def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
         outputs['Saturation Index'] = m.fs.desal_saturation.saturation_index
         outputs['Pump Pressure'] = m.fs.pump_RO.control_volume.properties_out[0].pressure
         outputs['RO Recovery'] = m.fs.RO_recovery
-        outputs['Annual Water Production'] = m.fs.annual_water_production
+        outputs['Annual Water Production'] = m.fs.costing.annual_water_production
         outputs = append_costing_outputs(m, outputs, ['RO', 'pump_RO', 'ERD'])
 
         output_filename = 'output/fs_single_stage/results_%d_%sRO.csv' % (case_num, desal_kwargs['RO_type'])
@@ -66,7 +66,7 @@ def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
         outputs['RO-1 Pump Pressure'] = m.fs.pump_RO.control_volume.properties_out[0].pressure
         outputs['RO-2 Pump Pressure'] = m.fs.pump_RO2.control_volume.properties_out[0].pressure
         outputs['RO Recovery'] = m.fs.RO_recovery
-        outputs['Annual Water Production'] = m.fs.annual_water_production
+        outputs['Annual Water Production'] = m.fs.costing.annual_water_production
         outputs = append_costing_outputs(m, outputs, ['RO', 'pump_RO', 'RO2', 'pump_RO2', 'ERD'])
 
         output_filename = 'output/fs_two_stage/results_%d_%sRO_no_sat.csv' % (case_num, desal_kwargs['RO_type'])
@@ -176,9 +176,9 @@ def run_analysis(case_num, nx, RO_type, interp_nan_outputs=True):
         outputs['LCOW'] = m.fs.costing.LCOW
         outputs['Ca Removal'] = m.fs.removal_Ca
         outputs['Mg Removal'] = m.fs.removal_Mg
-        outputs['Annual Water Production'] = m.fs.annual_water_production
-        outputs['capital_cost_total'] = m.fs.costing.capital_cost_total
-        outputs['operating_cost_total'] = m.fs.costing.operating_cost_total
+        outputs['Annual Water Production'] = m.fs.costing.annual_water_production
+        outputs['capital_cost_total'] = m.fs.costing.total_capital_cost
+        outputs['operating_cost_total'] = m.fs.costing.total_operating_cost
 
         output_filename = 'output/fs_softening/results_%d.csv' % case_num
 

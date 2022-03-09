@@ -23,6 +23,11 @@ from idaes.core import declare_process_block_class
 from idaes.generic_models.costing.costing_base import (
     FlowsheetCostingBlockData, register_idaes_currency_units)
 
+from idaes.generic_models.unit_models import (
+        Separator,
+        Mixer,
+        )
+
 from watertap.unit_models import (
         ReverseOsmosis0D,
         ReverseOsmosis1D,
@@ -45,6 +50,12 @@ class PumpType(StrEnum):
     energy_recovery_device = "energy_recovery_device"
 
 
+class MixerType(StrEnum):
+    default = "default"
+    NaOCl = "NaOCl"
+    CaOH2 = "CaOH2"
+
+
 @declare_process_block_class("WaterTAPCosting")
 class WaterTAPCostingData(FlowsheetCostingBlockData):
 
@@ -57,9 +68,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.base_currency = pyo.units.USD_2018 
         # Set a base period for all operating costs
         self.base_period = pyo.units.year
-
-        # Define standard material flows and costs
-        self.defined_flows["electricity"] = 0.07 * self.base_currency / pyo.units.kWh
 
         # Build flowsheet level costing components
         # This is package specific
@@ -119,10 +127,57 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 initialize=0.58,
                 doc='Energy recovery device exponent',
                 units=pyo.units.dimensionless)
+        self.separator_unit_cost = pyo.Var(
+                initialize=361,
+                doc='Separator cost',
+                units=self.base_currency/(pyo.units.liters/pyo.units.second))
+        self.mixer_unit_cost = pyo.Var(
+                initialize=361,
+                doc='Mixer cost',
+                units=self.base_currency/(pyo.units.liters/pyo.units.second))
+        self.naocl_mixer_unit_cost = pyo.Var(
+                initialize=5.08,
+                doc='NaOCl mixer cost',
+                units=self.base_currency/(pyo.units.m**3/pyo.units.day))
+        self.caoh2_mixer_unit_cost = pyo.Var(
+                initialize=792.8*2.20462,
+                doc='Ca(OH)2 mixer cost',
+                units=self.base_currency/(pyo.units.kg/pyo.units.day))
+
+        self.electricity_base_cost = pyo.Param(
+                mutable=True,
+                initialize=0.07,
+                doc='Electricity cost',
+                units=self.base_currency/pyo.units.kWh)
+        self.naocl_cost = pyo.Param(
+                initialize=0.23,
+                doc='NaOCl cost',
+                units=self.base_currency/pyo.units.kg)
+        self.naocl_purity = pyo.Param(
+                mutable=True,
+                initialize=0.15,
+                doc='NaOCl purity',
+                units=pyo.units.dimensionless)
+        self.caoh2_cost = pyo.Param(
+                mutable=True,
+                initialize=0.12,
+                doc='CaOH2 cost',
+                units=self.base_currency/pyo.units.kg)
+        self.caoh2_purity = pyo.Param(
+                mutable=True,
+                initialize=1,
+                doc='CaOH2 purity',
+                units=pyo.units.dimensionless)
 
         # fix the parameters
         for var in self.component_objects(pyo.Var):
             var.fix()
+
+        # Define standard material flows and costs
+        self.defined_flows["electricity"] = self.electricity_base_cost
+        self.defined_flows["NaOCl"] = 74.44e-3 * (pyo.units.kg/pyo.units.mol) * (self.naocl_cost/self.naocl_purity)
+        self.defined_flows["CaOH2"] = 74.093e-3 * (pyo.units.kg/pyo.units.mol) * (self.caoh2_cost/self.caoh2_purity)
+
 
     def build_process_costs(self):
         self.total_capital_cost = pyo.Expression(
@@ -248,7 +303,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         Args:
             pump_type - PumpType Enum indicating pump type,
-                        default = PumpType.high_pressure
+                        default = pumptype.high_pressure
         """
         if pump_type not in PumpType:
             raise ConfigurationError(
@@ -325,10 +380,85 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         cost_by_flow_volume(blk, blk.costing_package.pressure_exchanger_cost,
                 pyo.units.convert(blk.unit_model.low_pressure_side.properties_in[0].flow_vol, (pyo.units.meter**3/pyo.units.hours)))
 
-    ## TODO; Mixer and Separator
+    @staticmethod
+    def cost_separator(blk):
+        """
+        Separator costing method
+
+        TODO: describe equations
+        """
+        _make_captial_cost_var(blk)
+        cost_by_flow_volume(blk, blk.costing_package.separator_unit_cost,
+                pyo.units.convert(blk.unit_model.outlet_state[0].flow_vol, (pyo.units.liter/pyo.units.second)))
+
+    @staticmethod
+    def cost_mixer(blk, mixer_type=MixerType.default):
+        """
+        Mixer costing method
+
+        TODO: describe equations
+
+        args:
+            mixer_type - MixerType Enum indicating mixer type,
+                        default = MixerType.default
+        """
+        if mixer_type not in MixerType:
+            raise ConfigurationError(
+                f"{blk.unit_model.name} received invalid argument for mixer_type:"
+                f" {mixer_type}. Argument must be a member of the MixerType Enum.")
+
+        if mixer_type==MixerType.default:
+            WaterTAPCostingData.cost_default_mixer(blk)
+        elif mixer_type==MixerType.NaOCl:
+            WaterTAPCostingData.cost_naocl_mixer(blk)
+        elif mixer_type==MixerType.CaOH2:
+            WaterTAPCostingData.cost_caoh2_mixer(blk)
+        else:
+            raise BurntToast(f"Unrecognized mixer_type: {mixer_type}")
+
+    @staticmethod
+    def cost_default_mixer(blk):
+        """
+        Default mixer costing method
+
+        TODO: describe equations
+        """
+        _make_captial_cost_var(blk)
+        cost_by_flow_volume(blk, blk.costing_package.mixer_unit_cost,
+                pyo.units.convert(blk.unit_model.mixed_state[0].flow_vol, pyo.units.liter/pyo.units.second))
+
+    @staticmethod
+    def cost_naocl_mixer(blk):
+        """
+        NaOCl mixer costing method
+
+        TODO: describe equations
+        """
+        _make_captial_cost_var(blk)
+        cost_by_flow_volume(blk, blk.costing_package.naocl_mixer_unit_cost,
+                pyo.units.convert(blk.unit_model.inlet_stream_state[0].flow_vol, pyo.units.m**3/pyo.units.day))
+
+    @staticmethod
+    def cost_caoh2_mixer(blk):
+        """
+        CaOH2 mixer costing method
+
+        TODO: describe equations
+        """
+        _make_captial_cost_var(blk)
+
+        stream = blk.unit_model.lime_stream
+        blk.lime_kg_per_day = pyo.Expression(expr=\
+                pyo.units.convert(74.093e-3 * (pyo.units.kg/pyo.units.mol) * stream.flow_mol[0]*stream.mole_frac_comp[0, "Ca(OH)2"],
+                    pyo.units.kg/pyo.units.day))
+        cost_by_flow_volume(blk, blk.costing_package.caoh2_mixer_unit_cost/blk.costing_package.factor_total_investment,
+                blk.lime_kg_per_day)
+
 
 # Define default mapping of costing methods to unit models
 WaterTAPCostingData.unit_mapping = {
+        Separator: WaterTAPCostingData.cost_separator,
+        Mixer: WaterTAPCostingData.cost_mixer,
         Pump: WaterTAPCostingData.cost_pump,
         PressureExchanger: WaterTAPCostingData.cost_pressure_exchanger,
         ReverseOsmosis0D: WaterTAPCostingData.cost_reverse_osmosis,

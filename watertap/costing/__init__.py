@@ -11,4 +11,4 @@
 #
 ###############################################################################
 
-from .watertap_costing_package import WaterTAPCosting, ROType, PumpType
+from .watertap_costing_package import WaterTAPCosting, ROType, PumpType, MixerType

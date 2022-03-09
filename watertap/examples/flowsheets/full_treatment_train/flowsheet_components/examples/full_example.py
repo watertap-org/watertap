@@ -24,7 +24,7 @@ from watertap.examples.flowsheets.full_treatment_train.flowsheet_components impo
                                                                              feed_block,
                                                                              gypsum_saturation_index,
                                                                              costing,
-                                                                             financials)
+                                                                             )
 from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
 from watertap.examples.flowsheets.full_treatment_train.util import (solve_block,
                                                              check_dof,
@@ -97,13 +97,9 @@ def build_flowsheet_mvp_NF(m, **kwargs):
     m.fs.total_work = Expression(expr=m.fs.pump_RO.work_mechanical[0] +
                                     (m.fs.pump_RO2.work_mechanical[0] if kwargs['is_twostage'] else 0.))
 
-    # need load factor from costing_param_block for annual_water_production
-    financials.add_costing_param_block(m.fs)
     # annual water production
-    m.fs.annual_water_production = Expression(
-        expr=pyunits.convert(product_water_sb.flow_vol, to_units=pyunits.m ** 3 / pyunits.year)
-             * m.fs.costing_param.load_factor)
-    costing.build_costing(m, module=financials, **kwargs)
+    m.fs.treated_flow_vol = Expression(expr=product_water_sb.flow_vol)
+    costing.build_costing(m, **kwargs)
 
     return m
 

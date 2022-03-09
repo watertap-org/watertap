@@ -26,7 +26,7 @@ from watertap.examples.flowsheets.full_treatment_train.flowsheet_components impo
                                                                              gypsum_saturation_index,
                                                                              translator_block,
                                                                              costing,
-                                                                             financials)
+                                                                             )
 from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
 from watertap.examples.flowsheets.full_treatment_train.util import solve_block, check_dof
 
@@ -66,13 +66,10 @@ def build(m, has_bypass=True):
     """
     build_components(m, has_bypass=has_bypass)
 
-    # set up costing
-    financials.add_costing_param_block(m.fs)
     # annual water production
-    m.fs.annual_water_production = Expression(
-        expr=pyunits.convert(m.fs.tb_pretrt_to_desal.properties_out[0].flow_vol, to_units=pyunits.m ** 3 / pyunits.year)
-             * m.fs.costing_param.load_factor)
-    costing.build_costing(m, module=financials, NF_type='ZO')
+    m.fs.treated_flow_vol = Expression(
+        expr=m.fs.tb_pretrt_to_desal.properties_out[0].flow_vol)
+    costing.build_costing(m, NF_type='ZO')
 
     return m
 
@@ -144,7 +141,7 @@ def set_up_optimization(m, system_recovery=0.50, **kwargs):
 
 
 def optimize(m, check_termination=True):
-    return solve_block(m, tee=False, fail_flag=check_termination)
+    return solve_block(m, tee=True, fail_flag=check_termination)
 
 def optimize_flowsheet(system_recovery=0.50, **kwargs):
     m = solve_flowsheet(**kwargs)
