@@ -60,6 +60,13 @@ We will use the :ref:`same setup steps as before<how_to_use_parameter_sweep>` wh
     # set up the model for optimization
     RO_flowsheet.optimize_set_up(m)
 
+..
+    TODO: COSTING_UPDATE -- remove testoutput below
+
+.. testoutput::
+   
+   ...
+
 Once the model has been setup, we specify the variables to randomly sample using a dictionary
 
 .. testcode::
