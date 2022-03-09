@@ -74,10 +74,10 @@ def test_edb_get_components(edb):
     for comp_obj in res_obj_comps:
         assert type(comp_obj) is Component
 
-    # Does this function serve any purpose?
-    #assert edb._process_species("H2O") == "H2O"
-    #assert edb._process_species("H_+") == "H"
-    #assert edb._process_species("OH_-") == "OH"
+    # Just test the _process_species function 
+    assert edb._process_species("H2O") == "H2O"
+    assert edb._process_species("H_+") == "H"
+    assert edb._process_species("OH_-") == "OH"
 
     # Drop the bootstrap database for cleaning
     edb.drop_database(edb.DEFAULT_URL, edb.DEFAULT_DB)
