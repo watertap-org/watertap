@@ -398,7 +398,6 @@ def _create_component_output_skeleton(component, num_samples):
     # Add information to this output that WILL NOT be written as part
     # of the file saving step.
     comp_dict['_pyo_obj'] = component
-    comp_dict['_yo yo'] = 'ethan'
 
     return comp_dict
 
