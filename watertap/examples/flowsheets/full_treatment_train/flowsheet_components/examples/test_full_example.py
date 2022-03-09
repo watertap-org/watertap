@@ -15,6 +15,7 @@ from pyomo.environ import value
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components.examples import full_example
 
 @pytest.mark.component
+@pytest.mark.xfail(reason="COSTING_UPDATE: needs costing update")
 def test_flowsheet_mvp_NF_bypass_twostage_1():
     m = full_example.solve_flowsheet_mvp_NF(
         has_bypass=True, has_desal_feed=False, is_twostage=True, has_ERD=False,
@@ -27,6 +28,7 @@ def test_flowsheet_mvp_NF_bypass_twostage_1():
     assert value(m.fs.desal_saturation.saturation_index) == pytest.approx(0.4073, rel=1e-3)
 
 @pytest.mark.component
+@pytest.mark.xfail(reason="COSTING_UPDATE: needs costing update")
 def test_flowsheet_mvp_cost_optimization():
     kwargs_flowsheet = {
         'has_bypass': True, 'has_desal_feed': False, 'is_twostage': True, 'has_ERD': True,

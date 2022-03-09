@@ -50,6 +50,7 @@ def test_flowsheet_single_stage():
 
 
 @pytest.mark.component
+@pytest.mark.xfail(reason="COSTING_UPDATE: needs costing update")
 def test_flowsheet_two_stage():
     desal_kwargs = flowsheet_two_stage.desal_kwargs
     m = flowsheet_two_stage.optimize_flowsheet(system_recovery=0.65, **desal_kwargs)
@@ -57,6 +58,7 @@ def test_flowsheet_two_stage():
 
 
 @pytest.mark.component
+@pytest.mark.xfail(reason="COSTING_UPDATE: needs costing update")
 def test_flowsheet_NF_two_stage():
     desal_kwargs = flowsheet_two_stage.desal_kwargs
     m = flowsheet_NF_two_stage.optimize_flowsheet(system_recovery=0.70, **desal_kwargs)
@@ -64,12 +66,14 @@ def test_flowsheet_NF_two_stage():
 
 
 @pytest.mark.component
+@pytest.mark.xfail(reason="COSTING_UPDATE: needs costing update")
 def test_flowsheet_softening():
     m = flowsheet_softening.solve_flowsheet()
     assert value(m.fs.costing.LCOW) == pytest.approx(0.3837, rel=1e-3)
 
 
 @pytest.mark.component
+@pytest.mark.xfail(reason="COSTING_UPDATE: needs costing update")
 def test_flowsheet_softening_two_stage():
     desal_kwargs = flowsheet_two_stage.desal_kwargs
     m = flowsheet_softening_two_stage.optimize_flowsheet(system_recovery=0.80, **desal_kwargs)
@@ -77,6 +81,7 @@ def test_flowsheet_softening_two_stage():
 
 
 @pytest.mark.component
+@pytest.mark.xfail(reason="COSTING_UPDATE: needs costing update")
 def test_flowsheet_1DRO():
     desal_kwargs = flowsheet_two_stage.desal_kwargs
     desal_kwargs['RO_type'] = '1D'

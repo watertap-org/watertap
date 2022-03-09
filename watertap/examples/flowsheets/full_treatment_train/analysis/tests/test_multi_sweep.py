@@ -22,6 +22,7 @@ for case_num in [1, 2, 3, 4, 6, 8, 9]:
 
 @pytest.mark.parametrize('case_num, RO_type', pytest_parameterize_list)
 @pytest.mark.integration
+@pytest.mark.xfail(reason="COSTING_UPDATE: needs costing update")
 def test_multi_sweep(case_num, RO_type):
     nx = 1
     global_results, sweep_params = run_analysis(case_num, nx, RO_type, interp_nan_outputs=False)
