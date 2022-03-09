@@ -480,33 +480,7 @@ def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_pr
 def _write_to_csv(global_values, global_results, data_header, rank, dirname, fname,
         interpolate_nan_outputs):
 
-    # # Make a directory for saved outputs
-    # if rank == 0:
-    #     if csv_results_file is not None:
-    #         if not csv_results_file.endswith(".csv"):
-    #             csv_results_file += ".csv"
-    #         dirname = os.path.dirname(csv_results_file)
-    #         if dirname != '':
-    #             os.makedirs(dirname, exist_ok=True)
-    #
-    #     if debugging_data_dir is not None:
-    #         os.makedirs(debugging_data_dir, exist_ok=True)
-    #
-    # if num_procs > 1:
-    #     comm.Barrier()
-
-    # # Write a header string for all data files
-    # data_header = ','.join(itertools.chain(sweep_params,global_output_dict['outputs']))
-    #
-    # if debugging_data_dir is not None:
-    #     # Create the local filename and data
-    #     fname = os.path.join(debugging_data_dir, f'local_results_{rank:03}.csv')
-    #     local_save_data = np.hstack((local_values, local_results))
-    #
-    #     # Save the local data
-    #     np.savetxt(fname, local_save_data, header=data_header, delimiter=', ', fmt='%.6e')
     csv_results_file = os.path.join(dirname, fname + '.csv')
-    print("csv_results_file = ", csv_results_file)
 
     # Create the global filename and data
     global_save_data = np.hstack((global_values, global_results))
