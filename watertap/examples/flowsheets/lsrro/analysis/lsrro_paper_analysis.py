@@ -117,7 +117,7 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
         "concentration_polarization_type": cp_type,
         "transformation_scheme": "BACKWARD",
         "transformation_method": "dae.finite_difference",
-        "finite_elements": 3,
+        "finite_elements": 3, #TODO: change to 10 for paper analysis
         "has_full_reporting": True
         })
 
@@ -135,7 +135,7 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
     m.fs.EnergyRecoveryDevice.get_costing(module=financials, pump_type="Pressure exchanger")
     total_pump_work += m.fs.EnergyRecoveryDevice.work_mechanical[0] + m.fs.ERD_first_stage.work_mechanical[0]
 
-    # additional variables or expressions
+    # additional variables or expressions ---------------------------------------------------------------------------
     # system water recovery
     m.fs.water_recovery = Var(
             initialize=0.5,
@@ -162,7 +162,62 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
     # objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
-    # connections
+    # Expressions for parameter sweep ------------------------------------------------------------------------------
+    m.fs.costing.primary_pump_capex_lcow = Expression(expr=m.fs.costing_param.factor_capital_annualization
+                                                * sum(m.fs.PrimaryPumps[n].costing.capital_cost
+                                                      for n in m.fs.StageSet)
+                                                     / m.fs.annual_water_production)
+
+    m.fs.costing.booster_pump_capex_lcow = Expression(expr=m.fs.costing_param.factor_capital_annualization
+                                                * sum(m.fs.BoosterPumps[n].costing.capital_cost
+                                                      for n in m.fs.LSRRO_StageSet)
+                                                     / m.fs.annual_water_production)
+
+    m.fs.costing.erd_capex_lcow = Expression(expr=m.fs.costing_param.factor_capital_annualization
+                                                 * (m.fs.EnergyRecoveryDevice.costing.capital_cost
+                                                 + m.fs.ERD_first_stage.costing.capital_cost)
+                                                 / m.fs.annual_water_production)
+
+    m.fs.costing.membrane_capex_lcow = Expression(expr=m.fs.costing_param.factor_capital_annualization
+                                                      * sum(m.fs.ROUnits[n].costing.capital_cost
+                                                            for n in m.fs.StageSet)
+                                                       / m.fs.annual_water_production)
+
+    m.fs.costing.indirect_capex_lcow = Expression(expr=m.fs.costing_param.factor_capital_annualization
+                                                    * (m.fs.costing.investment_cost_total -
+                                                       m.fs.costing.capital_cost_total)
+                                                    / m.fs.annual_water_production)
+
+    m.fs.costing.electricity_lcow = Expression(expr=(sum(m.fs.PrimaryPumps[n].costing.operating_cost
+                                                         for n in m.fs.StageSet)
+                                                     + sum(m.fs.BoosterPumps[n].costing.operating_cost
+                                                           for n in m.fs.LSRRO_StageSet)
+                                                     + m.fs.EnergyRecoveryDevice.costing.operating_cost
+                                                     + m.fs.ERD_first_stage.costing.operating_cost)
+                                                     / m.fs.annual_water_production)
+
+    m.fs.costing.membrane_replacement_lcow = Expression(expr=sum(m.fs.ROUnits[n].costing.operating_cost
+                                                                 for n in m.fs.StageSet)
+                                                             / m.fs.annual_water_production)
+
+    m.fs.costing.chemical_labor_maintenance_lcow = Expression(expr=m.fs.costing.operating_cost_MLC
+                                                                   / m.fs.annual_water_production)
+
+    m.fs.costing.pumping_energy_aggregate_lcow = Expression(
+        expr=m.fs.costing_param.factor_total_investment
+             * (m.fs.costing.primary_pump_capex_lcow
+                + m.fs.costing.booster_pump_capex_lcow
+                + m.fs.costing.erd_capex_lcow)
+             * (1 + m.fs.costing_param.factor_MLC / m.fs.costing_param.factor_capital_annualization)
+             + m.fs.costing.electricity_lcow)
+
+    m.fs.costing.membrane_aggregate_lcow = Expression(
+        expr=m.fs.costing_param.factor_total_investment
+              * m.fs.costing.membrane_capex_lcow
+              * (1 + m.fs.costing_param.factor_MLC / m.fs.costing_param.factor_capital_annualization)
+              + m.fs.costing.membrane_replacement_lcow)
+
+    # Connections --------------------------------------------------------------------------------------------------
 
     # Connect the feed to the first pump
     m.fs.feed_to_pump = Arc(source=m.fs.feed.outlet, destination=m.fs.PrimaryPumps[1].inlet)
@@ -438,6 +493,8 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
     A_fixed: if A_case="fix", then provide a value to fix A with
     '''
 
+    if A_case is None:
+        A_case = 'fix'
     m.fs.ERD_first_stage.control_volume.properties_out[0].pressure.unfix()
 
     for idx, pump in m.fs.PrimaryPumps.items():
@@ -506,7 +563,7 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
         if idx > m.fs.StageSet.first():
             stage.B_comp.unfix()
             stage.B_comp.setlb(3.5e-8)
-            stage.B_comp.setub(3.5e-8 * 1.6e2)
+            stage.B_comp.setub(1.39e-5) #TODO: changed to ~50 LMH equivalent; make sure still stable
             if B_case == 'single optimum':
                 stage.B_comp_equal = Constraint(expr=stage.B_comp[0, 'NaCl'] == m.fs.B_comp_system)
             if A_case == 'single optimum':
@@ -526,10 +583,9 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
                     # raise TypeError('A value for A_fixed must be provided')
                 stage.A_comp.unfix()
                 stage.A_comp.fix(A_fixed)
-            elif A_case is None:
-                pass
             else:
-                raise TypeError('A_case must be set to "fix", "single optimum", "optimize" or None')
+                raise TypeError(f'A_case must be set to "fix", "single optimum", "optimize" or None.'
+                                f' A_case was set to {A_case}')
 
             if AB_tradeoff == 'equality constraint':
                 stage.ABtradeoff = Constraint(expr=pyunits.convert(stage.B_comp[0,'NaCl'], to_units=pyunits.L*pyunits.m**-2*pyunits.hour**-1)
@@ -657,39 +713,39 @@ def display_RO_reports(m):
         stage.report()
 
 if __name__ == "__main__":
-    import sys
-
-    # if len(sys.argv) == 2:
-    #     print("Usage 1: python lsrro.py number_of_stages")
-    #     m = main(int(sys.argv[1]))
-    # elif len(sys.argv) == 3:
-    #     print("Usage 2: python lsrro.py number_of_stages target_water_recovery_fraction")
-    #     m = main(int(sys.argv[1]), float(sys.argv[2]))
-    # else:
-    #     print("Usage 3 (specify inputs in main before running): python lsrro.py")
-    # num_stages = []
-    # total_area = []
-    # final_lcow = []
-    # final_sec = []
-    # final_perm = []
-    # lcow_breakdown= {}
-    # a_stage = {}
-    # b_stage = {}
     import csv
 
-    cin=70
-    a_case_lst = ["fix", "single optimum", "optimize"]
-    b_case_lst = ["single optimum", "optimize"]
-    ab_tradeoff_lst = ["no constraint", "inequality constraint", "equality constraint"]
-    ab_gamma_factor_lst = [0.1, 1]
-
+    cin = 70
     recovery = .5
+
+    a_case_lst = [
+        "fix",
+        # "single optimum",
+        # "optimize"
+        ]
+
+    b_case_lst = [
+        # "single optimum",
+        "optimize"
+    ]
+
+    ab_tradeoff_lst = [
+        "no constraint",
+        # "inequality constraint",
+        # "equality constraint"
+    ]
+
+    ab_gamma_factor_lst = [
+        # 0.1,
+        1
+    ]
+
 
     headers = ["cin (kg/m3)", "recovery (-)", "num_stages", "final perm (ppm)",
                "Membrane area", "SEC", "LCOW"]
 
     for stage in range(3, 4):
-        with open(f'output_with_ro_cost_{cin}_{recovery}_{stage}stage.csv', 'w', newline='') as csv_file:
+        with open(f'output_fixA_5LMHbar_{cin}_{recovery}_{stage}stage.csv', 'w', newline='') as csv_file:
             csvwriter = csv.writer(csv_file)
             start = 0
             for a_case in a_case_lst:
@@ -700,7 +756,7 @@ if __name__ == "__main__":
                                 pass
                             elif ab_gamma != 1 and ab_tradeoff == "no constraint":
                                 pass
-                            if a_case == 'fix' and ab_tradeoff == 'equality constraint':
+                            elif a_case == 'fix' and ab_tradeoff == 'equality constraint':
                                 pass
                             else:
                                 start = start + 1
@@ -709,15 +765,15 @@ if __name__ == "__main__":
                                                      water_recovery=recovery,
                                                      Cin=cin,
                                                      # Cbrine=250,# g/L
-                                                     A_case=a_case,
-                                                     B_case=b_case,
-                                                     AB_tradeoff=ab_tradeoff,
-                                                     nacl_solubility_limit=True,
+                                                     A_case=a_case, # TODO: double check that default goes to fix A
+                                                     B_case=b_case,# TODO: double check that default goes to optimize B
+                                                     AB_tradeoff=ab_tradeoff, #TODO: default to no constraint
+                                                     nacl_solubility_limit=True, # default= True
                                                      permeate_quality_limit=1000e-6,
-                                                     has_CP=True,
-                                                     has_Pdrop=True,
-                                                     A_fixed=1.5/3.6e11, #2.78e-12
-                                                     ABgamma_factor=ab_gamma
+                                                     has_CP=True, # default to True
+                                                     has_Pdrop=True, # default to True
+                                                     A_fixed=5/3.6e11, # default to 5LMH/bar
+                                                     ABgamma_factor=ab_gamma # default to 1 or None
                                                      )
                                 if check_optimal_termination(res):
                                     num_stages = value(m.fs.NumberOfStages)
@@ -725,7 +781,8 @@ if __name__ == "__main__":
                                     final_lcow = value(m.fs.costing.LCOW)
                                     final_sec = value(m.fs.specific_energy_consumption)
                                     final_perm = value(m.fs.product.flow_mass_phase_comp[0, 'Liq', 'NaCl'] /
-                                                            sum(m.fs.product.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl']))
+                                                            sum(m.fs.product.flow_mass_phase_comp[0, 'Liq', j].value
+                                                                for j in ['H2O', 'NaCl']))
                                     lcow_breakdown = {'primary_pump_capex':
                                                                     value(m.fs.costing_param.factor_capital_annualization
                                                                           * sum(m.fs.PrimaryPumps[n].costing.capital_cost
@@ -780,12 +837,14 @@ if __name__ == "__main__":
                                         value(m.fs.costing_param.factor_total_investment
                                               * (lcow_breakdown['primary_pump_capex']
                                                  + lcow_breakdown['booster_pump_capex']
-                                                 + lcow_breakdown['erd_capex']) * (1 + m.fs.costing_param.factor_MLC)
+                                                 + lcow_breakdown['erd_capex']) *
+                                              (1 + m.fs.costing_param.factor_MLC/m.fs.costing_param.factor_capital_annualization)
                                               + lcow_breakdown['electricity']
                                               )
                                     membrane_agg_costs = \
                                         value(m.fs.costing_param.factor_total_investment
-                                              * lcow_breakdown['membrane_capex'] * (1 + m.fs.costing_param.factor_MLC)
+                                              * lcow_breakdown['membrane_capex']
+                                              * (1 + m.fs.costing_param.factor_MLC/m.fs.costing_param.factor_capital_annualization)
                                               + lcow_breakdown['membrane_replacement']
                                               )
                                 else:
