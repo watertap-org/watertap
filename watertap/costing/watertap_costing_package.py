@@ -114,7 +114,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.energy_recovery_device_linear_coefficient = pyo.Var(
                 initialize=3134.7,
                 doc='Energy recovery device linear coefficient',
-                units=self.base_currency)#/(pyo.units.meter**3/pyo.units.hours))
+                units=self.base_currency)
         self.energy_recovery_device_exponent = pyo.Var(
                 initialize=0.58,
                 doc='Energy recovery device exponent',
@@ -141,7 +141,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         self.total_operating_cost= pyo.Var(
                 initialize=1e3,
                 domain=pyo.NonNegativeReals,
-                doc='Total operating cost [$/year]',
+                doc='Total operating cost',
                 units=self.base_currency/self.base_period)
 
         self.total_investment_cost_constraint = pyo.Constraint(expr = \
