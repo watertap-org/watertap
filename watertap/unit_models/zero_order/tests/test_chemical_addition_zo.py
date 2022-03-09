@@ -147,7 +147,7 @@ Unit : fs.unit                                                             Time:
     Key                : Value      : Fixed : Bounds
        Chemical Dosage :     1.0000 :  True : (0, None)
          Chemical Flow : 2.0120e-06 : False : (0, None)
-    Electricity Demand : 0.00074140 : False : (None, None)
+    Electricity Demand : 0.00074140 : False : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table

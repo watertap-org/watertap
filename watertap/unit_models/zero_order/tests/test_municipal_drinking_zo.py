@@ -115,7 +115,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                : Value  : Fixed : Bounds
-    Electricity Demand : 11056. : False : (None, None)
+    Electricity Demand : 11056. : False : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
