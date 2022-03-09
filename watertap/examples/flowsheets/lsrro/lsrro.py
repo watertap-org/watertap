@@ -110,7 +110,7 @@ def build(number_of_stages=2):
     m.fs.EnergyRecoveryDevice = Pump(default={"property_package": m.fs.properties})
     m.fs.EnergyRecoveryDevice.costing = UnitModelCostingBlock(default={
             "flowsheet_costing_block":m.fs.costing,
-            "costing_method_arguments":{"pump_type":PumpType.pressure_exchanger}})
+            "costing_method_arguments":{"pump_type":PumpType.energy_recovery_device}})
     m.fs.costing.cost_flow(pyunits.convert(m.fs.EnergyRecoveryDevice.work_mechanical[0], to_units=pyunits.kW), "electricity")
 
     # additional variables or expressions

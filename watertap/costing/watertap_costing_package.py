@@ -42,6 +42,7 @@ class PumpType(StrEnum):
     low_pressure = "low_pressure"
     high_pressure = "high_pressure"
     pressure_exchanger = "pressure_exchanger"
+    energy_recovery_device = "energy_recovery_device"
 
 
 @declare_process_block_class("WaterTAPCosting")
@@ -110,6 +111,14 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 initialize=535,
                 doc='Pressure exchanger cost',
                 units=pyo.units.USD_CE500/(pyo.units.meter**3/pyo.units.hours))
+        self.energy_recovery_device_linear_coefficient = pyo.Var(
+                initialize=3134.7,
+                doc='Energy recovery device linear coefficient',
+                units=pyo.units.USD_CE500)#/(pyo.units.meter**3/pyo.units.hours))
+        self.energy_recovery_device_exponent = pyo.Var(
+                initialize=0.58,
+                doc='Energy recovery device exponent',
+                units=pyo.units.dimensionless)
 
         # fix the parameters
         for var in self.component_objects(pyo.Var):
@@ -252,6 +261,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             WaterTAPCostingData.cost_low_pressure_pump(blk)
         elif pump_type == PumpType.pressure_exchanger:
             WaterTAPCostingData.cost_pressure_exchanger_pump(blk)
+        elif pump_type == PumpType.energy_recovery_device:
+            WaterTAPCostingData.cost_energy_recovery_device_pump(blk)
         else:
             raise BurntToast(f"Unrecognized pump_type: {pump_type}")
 
@@ -287,6 +298,21 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         _make_captial_cost_var(blk)
         cost_by_flow_volume(blk, blk.costing_package.pump_pressure_exchanger_cost,
                 pyo.units.convert(blk.unit_model.control_volume.properties_in[0].flow_vol, (pyo.units.meter**3/pyo.units.hours)))
+
+    @staticmethod
+    def cost_energy_recovery_device_pump(blk):
+        """
+        Pump energy recovery device costing method
+
+        TODO: describe equations
+        """
+        _make_captial_cost_var(blk)
+        unit_cv_in = blk.unit_model.control_volume.properties_in[0]
+        blk.capital_cost_constraint = pyo.Constraint(expr = \
+                  blk.capital_cost == blk.costing_package.energy_recovery_device_linear_coefficient
+                 * (pyo.units.convert((sum(unit_cv_in.flow_mass_phase_comp['Liq', j]
+                        for j in blk.unit_model.config.property_package.component_list)
+                 / unit_cv_in.dens_mass_phase['Liq']), pyo.units.m**3/pyo.units.hour) / (pyo.units.m**3/pyo.units.hour)) ** blk.costing_package.energy_recovery_device_exponent)
 
     @staticmethod
     def cost_pressure_exchanger(blk):
