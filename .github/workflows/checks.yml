@@ -207,6 +207,11 @@ jobs:
         echo '::group::Output of "conda install" commands'
         conda install --quiet --yes pip=21.1 wheel setuptools pandoc
         echo '::endgroup::'
+        # TODO: COSTING_UPDATE: 6.3.0 isn't bundled on PyPI with some files
+        #       need for PyNumero. For now, we'll install 6.3.0 from GitHub
+        echo '::group::Install Pyomo from GitHub'
+        pip install pyomo https://github.com/pyomo/pyomo/archive/6.3.0.zip
+        echo '::endgroup::'
         echo '::group::Output of "pip install" commands'
         pip install --progress-bar off -r requirements-dev.txt
         echo '::endgroup::'
