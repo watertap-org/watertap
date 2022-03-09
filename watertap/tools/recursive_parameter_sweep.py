@@ -72,7 +72,7 @@ def _filter_recursive_solves(model, sweep_params, outputs, recursive_local_dict,
 
     # Now that we have all of the local output dictionaries, we need to construct
     # a consolidated dictionary of successful solves.
-    local_filtered_dict, local_filtered_outputs = _create_local_output_skeleton(model, sweep_params, outputs, filter_counter)
+    local_filtered_dict = _create_local_output_skeleton(model, sweep_params, outputs, filter_counter)
     local_filtered_dict["solve_successful"] = []
 
     # Populate local_successful_outputs

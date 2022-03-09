@@ -360,7 +360,7 @@ class TestParallelManager():
         sweep_params, sampling_type = _process_sweep_params(sweep_params)
         values = _build_combinations(sweep_params, sampling_type, None, comm, rank, num_procs)
         num_cases = np.shape(values)[0]
-        output_dict, outputs = _create_local_output_skeleton(model, sweep_params, None, num_cases)
+        output_dict = _create_local_output_skeleton(model, sweep_params, None, num_cases)
 
         truth_dict = {'outputs': {'fs.output[c]': {'lower bound': 0,
                                                    'units': 'None',
@@ -414,7 +414,7 @@ class TestParallelManager():
         local_num_cases = np.shape(local_values)[0]
 
 
-        local_output_dict, outputs = _create_local_output_skeleton(model, sweep_params, None, local_num_cases)
+        local_output_dict = _create_local_output_skeleton(model, sweep_params, None, local_num_cases)
 
         # Manually update the values in the numpy array
         for key, value in local_output_dict.items():

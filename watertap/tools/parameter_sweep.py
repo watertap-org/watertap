@@ -365,21 +365,18 @@ def _create_local_output_skeleton(model, sweep_params, outputs, num_samples):
         output_dict["sweep_params"][var.name] =  _create_component_output_skeleton(var, num_samples)
 
     if outputs is None:
-        outputs = {}
-
         # No outputs are specified, so every Var, Expression, and Objective on the model should be saved
         for pyo_obj in model.component_data_objects((pyo.Var, pyo.Expression, pyo.Objective), active=True):
             # Only need to save this variable if it isn't one of the value in sweep_params
             if pyo_obj not in sweep_param_objs:
                 output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
-                outputs[pyo_obj.name] = pyo_obj
 
     else:
         # Save only the outputs specified in the outputs dictionary
         for short_name, pyo_obj in outputs.items():
             output_dict["outputs"][short_name] = _create_component_output_skeleton(pyo_obj, num_samples)
 
-    return output_dict, outputs
+    return output_dict
 
 # ================================================================
 
@@ -398,11 +395,16 @@ def _create_component_output_skeleton(component, num_samples):
         else:
             comp_dict["units"] = "None"
 
+    # Add information to this output that WILL NOT be written as part
+    # of the file saving step.
+    comp_dict['_pyo_obj'] = component
+    comp_dict['_yo yo'] = 'ethan'
+
     return comp_dict
 
 # ================================================================
 
-def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, run_successful, output_dict, outputs):
+def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, run_successful, output_dict):
 
     # Get the inputs
     op_ps_dict = output_dict["sweep_params"]
@@ -412,11 +414,11 @@ def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, run_
 
     # Get the outputs from model
     if run_successful:
-        for label, pyo_obj in outputs.items():
-            output_dict["outputs"][label]["value"][case_number] = pyo.value(pyo_obj)
+        for label, val in output_dict['outputs'].items():
+            output_dict["outputs"][label]["value"][case_number] = pyo.value(val['_pyo_obj'])
 
     else:
-        for label in outputs.keys():
+        for label in output_dict['outputs'].keys():
             output_dict["outputs"][label]["value"][case_number] = np.nan
 
 # ================================================================
@@ -548,12 +550,13 @@ def _write_output_to_h5(output_dict, output_directory, fname):
             for subkey, subitem in item.items():
                 subgrp = grp.create_group(subkey)
                 for subsubkey, subsubitem in subitem.items():
-                    if subsubkey == 'lower bound' and subsubitem is None:
-                        subgrp.create_dataset(subsubkey, data=np.finfo('d').min)
-                    elif subsubkey == 'upper bound' and subsubitem is None:
-                        subgrp.create_dataset(subsubkey, data=np.finfo('d').max)
-                    else:
-                        subgrp.create_dataset(subsubkey, data=output_dict[key][subkey][subsubkey])
+                    if subsubkey[0] != '_':
+                        if subsubkey == 'lower bound' and subsubitem is None:
+                            subgrp.create_dataset(subsubkey, data=np.finfo('d').min)
+                        elif subsubkey == 'upper bound' and subsubitem is None:
+                            subgrp.create_dataset(subsubkey, data=np.finfo('d').max)
+                        else:
+                            subgrp.create_dataset(subsubkey, data=output_dict[key][subkey][subsubkey])
         elif key == 'solve_successful':
             grp.create_dataset(key, data=output_dict[key])
 
@@ -595,9 +598,9 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
     local_num_cases = np.shape(local_values)[0]
 
     # Create the output skeleton for storing detailed data
-    local_output_dict, outputs = _create_local_output_skeleton(model, sweep_params, outputs, local_num_cases)
+    local_output_dict = _create_local_output_skeleton(model, sweep_params, outputs, local_num_cases)
 
-    local_results = np.zeros((local_num_cases, len(outputs)))
+    local_results = np.zeros((local_num_cases, len(local_output_dict['outputs'])))
 
     local_solve_successful_list = []
 
@@ -632,7 +635,7 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
 
         else:
             # If the simulation suceeds, report stats
-            local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
+            local_results[k, :] = [pyo.value(outcome['_pyo_obj']) for outcome in local_output_dict['outputs'].values()]
             run_successful = True
 
         # If the initial attempt failed and additional conditions are met, try
@@ -647,11 +650,11 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
             except:
                 pass
             else:
-                local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
+                local_results[k, :] = [pyo.value(outcome['_pyo_obj']) for outcome in local_output_dict['outputs'].values()]
                 run_successful = True
 
         # Update the loop based on the reinitialization
-        _update_local_output_dict(model, sweep_params, k, local_values[k, :], run_successful, local_output_dict, outputs)
+        _update_local_output_dict(model, sweep_params, k, local_values[k, :], run_successful, local_output_dict)
 
         local_solve_successful_list.append(run_successful)
 
@@ -674,7 +677,7 @@ def _aggregate_local_results(global_values, local_results, local_output_dict,
 # def _save_results(sweep_params, outputs, local_values, global_values, local_results,
 #         global_results, global_output_dict, csv_results_file, h5_results_file,
 #         debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
-def _save_results(sweep_params, outputs, local_values, global_values, local_results,
+def _save_results(sweep_params, local_values, global_values, local_results,
         global_results, global_output_dict, results_file_name, write_csv, write_h5,
         debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
 
@@ -849,7 +852,7 @@ def parameter_sweep(model, sweep_params, outputs=None, results_file_name=None, w
     # Save to file
     # global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results, global_results, global_output_dict,
     #     csv_results_file, h5_results_file, debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs)
-    global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results,
+    global_save_data = _save_results(sweep_params, local_values, global_values, local_results,
         global_results, global_output_dict, results_file_name, write_csv, write_h5, debugging_data_dir,
         comm, rank, num_procs, interpolate_nan_outputs)
 
