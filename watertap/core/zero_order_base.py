@@ -116,8 +116,8 @@ class ZeroOrderBaseData(UnitModelBlockData):
                 f"Zero-order models only support `H2O` as a solvent and all "
                 f"other species as Solutes.")
 
-    def initialize(self, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg=None):
+    def initialize_build(self, state_args=None, outlvl=idaeslog.NOTSET,
+                         solver=None, optarg=None):
         '''
         Placeholder initialization routine, raises NotImplementedError
         '''

@@ -79,44 +79,34 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             self.defined_flows[f] = v["value"]*getattr(pyo.units, v["units"])
 
         # Costing factors
-        self.plant_lifetime = pyo.Var(initialize=30,
-                                      units=self.base_period,
+        self.plant_lifetime = pyo.Var(units=self.base_period,
                                       doc="Plant lifetime")
         self.utilization_factor = pyo.Var(
-            initialize=1,
             units=pyo.units.dimensionless,
             doc='Plant capacity utilization [%]')
 
-        self.land_cost_percent_FCI = pyo.Var(initialize=0.07,
-                                             units=pyo.units.dimensionless,
+        self.land_cost_percent_FCI = pyo.Var(units=pyo.units.dimensionless,
                                              doc="Land cost as % FCI")
         self.working_capital_percent_FCI = pyo.Var(
-            initialize=0.008,
             units=pyo.units.dimensionless,
             doc="Working capital as % FCI")
         self.salaries_percent_FCI = pyo.Var(
-            initialize=0.07,
             units=1/self.base_period,
             doc="Salaries as % FCI")
         self.benefit_percent_of_salary = pyo.Var(
-            initialize=0.07,
             units=pyo.units.dimensionless,
             doc="Benefits as % salaries")
         self.maintenance_costs_percent_FCI = pyo.Var(
-            initialize=0.07,
             units=1/self.base_period,
             doc="Maintenance and contingency costs as % FCI")
         self.laboratory_fees_percent_FCI = pyo.Var(
-            initialize=0.07,
             units=1/self.base_period,
             doc="Laboratory fees as % FCI")
         self.insurance_and_taxes_percent_FCI = pyo.Var(
-            initialize=0.07,
             units=1/self.base_period,
             doc="Insurance and taxes as % FCI")
 
-        self.wacc = pyo.Var(initialize=0.05,
-                            units=pyo.units.dimensionless,
+        self.wacc = pyo.Var(units=pyo.units.dimensionless,
                             doc='Weighted Average Cost of Capital (WACC)')
         self.capital_recovery_factor = pyo.Expression(
             expr=((self.wacc *
@@ -124,11 +114,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                   (((1 + self.wacc)**(self.plant_lifetime/self.base_period)) -
                    1) / self.base_period))
 
-        self.TPEC = pyo.Var(initialize=3.4,
-                            units=pyo.units.dimensionless,
+        self.TPEC = pyo.Var(units=pyo.units.dimensionless,
                             doc='Total Purchased Equipment Cost (TPEC)')
-        self.TIC = pyo.Var(initialize=1.65,
-                           units=pyo.units.dimensionless,
+        self.TIC = pyo.Var(units=pyo.units.dimensionless,
                            doc='Total Installed Cost (TIC)')
 
         # Fix all Vars from database
@@ -140,7 +128,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             except KeyError:
                 raise KeyError(
                     f"Invalid case study definition file - no entry found "
-                    f"for {v}, or entyr lacks value and units.")
+                    f"for {v}, or entry lacks value and units.")
 
     def build_process_costs(self):
         """
@@ -323,7 +311,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         chem_flow_mass = (blk.unit_model.chemical_dosage[t0] *
                           blk.unit_model.properties[t0].flow_vol /
                           blk.unit_model.ratio_in_solution)
-        sizing_term = chem_flow_mass / (pyo.units.lb/pyo.units.day)
+        sizing_term = (blk.unit_model.chemical_flow_vol[t0] /
+                       (pyo.units.gal/pyo.units.day))
 
         ZeroOrderCostingData._general_power_law_form(
             blk, time=t0, sizing_term=sizing_term)
@@ -405,7 +394,7 @@ def _get_tech_parameters(blk, parameter_dict, subtype):
     First, need to check to see if a Block with parameters for this technology
     exists.
     Second, to handle technology subtypes all parameters need to be indexed by
-    subtype. WE will dynamically add subtypes to the indexing set and Vars as
+    subtype. We will dynamically add subtypes to the indexing set and Vars as
     required.
     """
     # Check to see in parameter Block already exists
@@ -503,7 +492,7 @@ def _load_case_study_definition(self):
             lines = f.read()
             f.close()
     except OSError:
-        raise KeyError(
+        raise OSError(
             "Could not find specified case study definition file. "
             "Please check the path provided.")
 

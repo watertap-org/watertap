@@ -53,25 +53,25 @@ global_parameters:
     value: 1
     units: dimensionless
   land_cost_percent_FCI:
-    value: 0.07
+    value: 0.0015
     units: dimensionless
   working_capital_percent_FCI:
-    value: 0.008
+    value: 0.05
     units: dimensionless
   salaries_percent_FCI:
-    value: 0.07
+    value: 0.001
     units: 1/year
   benefit_percent_of_salary:
-    value: 0.07
+    value: 0.9
     units: dimensionless
   maintenance_costs_percent_FCI:
-    value: 0.07
+    value: 0.008
     units: 1/year
   laboratory_fees_percent_FCI:
-    value: 0.07
+    value: 0.003
     units: 1/year
   insurance_and_taxes_percent_FCI:
-    value: 0.07
+    value: 0.002
     units: 1/year
   wacc:
     # Weighted Average Cost of Capital (WACC)
