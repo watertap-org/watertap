@@ -462,13 +462,22 @@ class TestParallelManager():
         outputs = {'output_c':m.fs.output['c'],
                    'output_d':m.fs.output['d'],
                    'performance':m.fs.performance}
-        results_file = os.path.join(tmp_path, 'global_results.csv')
-        h5_fname = "output_dict"
+
+        results_fname = os.path.join(tmp_path, 'global_results')
+        csv_results_file = str(results_fname) + '.csv'
+        h5_results_file = str(results_fname) + '.h5'
 
         # Call the parameter_sweep function
+        # parameter_sweep(m, sweep_params, outputs=outputs,
+        #         csv_results_file = results_file,
+        #         h5_results_file = h5_fname,
+        #         optimize_function=_optimization,
+        #         debugging_data_dir = tmp_path,
+        #         mpi_comm = comm)
+
         parameter_sweep(m, sweep_params, outputs=outputs,
-                csv_results_file = results_file,
-                h5_results_file = h5_fname,
+                results_file_name = results_fname,
+                write_csv = True, write_h5 = True,
                 optimize_function=_optimization,
                 debugging_data_dir = tmp_path,
                 mpi_comm = comm)
@@ -479,14 +488,14 @@ class TestParallelManager():
         #       returns
         if rank == 0:
             # Check that the global results file is created
-            assert os.path.isfile(results_file)
+            assert os.path.isfile(csv_results_file)
 
             # Check that all local output files have been created
             for k in range(num_procs):
                 assert os.path.isfile(os.path.join(tmp_path,f'local_results_{k:03}.csv'))
 
             # Attempt to read in the data
-            data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
+            data = np.genfromtxt(csv_results_file, skip_header=1, delimiter=',')
 
             # Compare the last row of the imported data to truth
             truth_data = [ 0.9, 0.5, np.nan, np.nan, np.nan]
@@ -521,10 +530,11 @@ class TestParallelManager():
                                                            'upper bound': 0,
                                                            'value': np.array([0., 0.25, 0.5 , 0., 0.25, 0.5 , 0., 0.25, 0.5 ])}}}
 
-            h5_fpath = os.path.join(tmp_path, 'output_dict.h5')
-            read_dict = _read_output_h5(h5_fpath)
+            # h5_fpath = os.path.join(tmp_path, 'output_dict.h5')
+            print("h5_results_file = ", h5_results_file)
+            read_dict = _read_output_h5(h5_results_file)
             _assert_dictionary_correctness(truth_dict, read_dict)
-            _assert_h5_csv_agreement(results_file, read_dict)
+            _assert_h5_csv_agreement(csv_results_file, read_dict)
 
             # Check if there is a text file created
             import ast
@@ -532,7 +542,7 @@ class TestParallelManager():
             truth_txt_dict = {'outputs': ['output_c', 'output_d', 'performance'],
                               'sweep_params': ['fs.input[a]', 'fs.input[b]']}
 
-            txt_fpath = os.path.join(tmp_path, '{0}.txt'.format(h5_fname))
+            txt_fpath = os.path.join(tmp_path, '{0}.txt'.format(results_fname))
             assert os.path.exists(txt_fpath)
             f = open(txt_fpath)
             f_contents = f.read()

@@ -137,9 +137,23 @@ def _init_mpi(mpi_comm=None):
 
 def _strip_extension(file_name, extension):
     if file_name.lower().endswith(extension):
-        return file_name[:-len(extension)]
+        return file_name[:-len(extension)], 1
     else:
-        return file_name
+        return file_name, 0
+
+# ================================================================
+
+def _process_results_filename(results_file_name):
+    # Get the directory path
+    dirname = os.path.dirname(results_file_name)
+    # Get the file name without the extension
+    known_extensions = ['.h5', '.csv']
+    for ext in known_extensions:
+        fname_no_ext, status = _strip_extension(results_file_name, ext)
+        if status == 1:
+            break
+
+    return dirname, fname_no_ext
 
 # ================================================================
 
@@ -463,16 +477,73 @@ def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_pr
 
 # ================================================================
 
-def _write_outputs(output_dict, output_directory, h5_results_file, txt_options="metadata"):
+def _write_to_csv(global_values, global_results, data_header, rank, dirname, fname,
+        interpolate_nan_outputs):
 
-    if not h5_results_file.endswith(".h5"):
-        h5_results_file += ".h5"
+    # # Make a directory for saved outputs
+    # if rank == 0:
+    #     if csv_results_file is not None:
+    #         if not csv_results_file.endswith(".csv"):
+    #             csv_results_file += ".csv"
+    #         dirname = os.path.dirname(csv_results_file)
+    #         if dirname != '':
+    #             os.makedirs(dirname, exist_ok=True)
+    #
+    #     if debugging_data_dir is not None:
+    #         os.makedirs(debugging_data_dir, exist_ok=True)
+    #
+    # if num_procs > 1:
+    #     comm.Barrier()
+
+    # # Write a header string for all data files
+    # data_header = ','.join(itertools.chain(sweep_params,global_output_dict['outputs']))
+    #
+    # if debugging_data_dir is not None:
+    #     # Create the local filename and data
+    #     fname = os.path.join(debugging_data_dir, f'local_results_{rank:03}.csv')
+    #     local_save_data = np.hstack((local_values, local_results))
+    #
+    #     # Save the local data
+    #     np.savetxt(fname, local_save_data, header=data_header, delimiter=', ', fmt='%.6e')
+    csv_results_file = os.path.join(dirname, fname + '.csv')
+    print("csv_results_file = ", csv_results_file)
+
+    # Create the global filename and data
+    global_save_data = np.hstack((global_values, global_results))
+
+    if rank == 0 and csv_results_file is not None:
+        # Save the global data
+        np.savetxt(csv_results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
+
+        if interpolate_nan_outputs:
+            global_results_clean = _interp_nan_values(global_values, global_results)
+            global_save_data_clean = np.hstack((global_values, global_results_clean))
+
+            head, tail = os.path.split(csv_results_file)
+
+            if head == '':
+                interp_file = 'interpolated_%s' % (tail)
+            else:
+                interp_file = '%s/interpolated_%s' % (head, tail)
+
+            np.savetxt(interp_file, global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
+
+    return global_save_data
+
+
+# ================================================================
+
+def _write_outputs(output_dict, output_directory, fname_no_ext, txt_options="metadata"):
+
+    # if not h5_results_file.endswith(".h5"):
+    #     h5_results_file += ".h5"
+    h5_results_file = fname_no_ext + ".h5"
 
     _write_output_to_h5(output_dict, output_directory, h5_results_file)
 
     # We will also create a companion txt file by default which contains
     # the metadata of the h5 file in a user readable format.
-    txt_fname = _strip_extension(h5_results_file,".h5") + ".txt"
+    txt_fname = fname_no_ext + ".txt"
     txt_fpath = os.path.join(output_directory, txt_fname)
     if "solve_successful" in output_dict.keys():
         output_dict.pop("solve_successful")
@@ -626,21 +697,24 @@ def _aggregate_local_results(global_values, local_results, local_output_dict,
 
 # ================================================================
 
+# def _save_results(sweep_params, outputs, local_values, global_values, local_results,
+#         global_results, global_output_dict, csv_results_file, h5_results_file,
+#         debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
 def _save_results(sweep_params, outputs, local_values, global_values, local_results,
-        global_results, global_output_dict, csv_results_file, h5_results_file,
+        global_results, global_output_dict, results_file_name, write_csv, write_h5,
         debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
 
-    # Make a directory for saved outputs
-    if rank == 0:
-        if csv_results_file is not None:
-            if not csv_results_file.endswith(".csv"):
-                csv_results_file += ".csv"
-            dirname = os.path.dirname(csv_results_file)
-            if dirname != '':
+    if results_file_name is not None:
+        dirname, fname_no_ext = _process_results_filename(results_file_name)
+        if rank == 0:
+            # Create the directories for the results and/or for debugging
+            if (write_h5 or write_csv) and dirname != '':
                 os.makedirs(dirname, exist_ok=True)
+            elif not write_h5 and not write_csv:
+                warnings.warn("A results filename was provided but neither options to write H5 or csv was selected.")
 
-        if debugging_data_dir is not None:
-            os.makedirs(debugging_data_dir, exist_ok=True)
+            if debugging_data_dir is not None:
+                os.makedirs(debugging_data_dir, exist_ok=True)
 
     if num_procs > 1:
         comm.Barrier()
@@ -648,6 +722,7 @@ def _save_results(sweep_params, outputs, local_values, global_values, local_resu
     # Write a header string for all data files
     data_header = ','.join(itertools.chain(sweep_params,global_output_dict['outputs']))
 
+    # Handle values in the debugging data_directory
     if debugging_data_dir is not None:
         # Create the local filename and data
         fname = os.path.join(debugging_data_dir, f'local_results_{rank:03}.csv')
@@ -656,36 +731,25 @@ def _save_results(sweep_params, outputs, local_values, global_values, local_resu
         # Save the local data
         np.savetxt(fname, local_save_data, header=data_header, delimiter=', ', fmt='%.6e')
 
-    # Create the global filename and data
-    global_save_data = np.hstack((global_values, global_results))
 
-    if rank == 0 and csv_results_file is not None:
-        # Save the global data
-        np.savetxt(csv_results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
+    if rank == 0:
+        if write_csv:
+            global_save_data = _write_to_csv(global_values, global_results, data_header, rank, dirname, fname_no_ext, interpolate_nan_outputs)
 
-        if interpolate_nan_outputs:
-            global_results_clean = _interp_nan_values(global_values, global_results)
-            global_save_data_clean = np.hstack((global_values, global_results_clean))
-
-            head, tail = os.path.split(csv_results_file)
-
-            if head == '':
-                interp_file = 'interpolated_%s' % (tail)
-            else:
-                interp_file = '%s/interpolated_%s' % (head, tail)
-
-            np.savetxt(interp_file, global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
-
-    if rank == 0 and h5_results_file is not None:
-        # Save the data of output dictionary
-        _write_outputs(global_output_dict, dirname, h5_results_file, txt_options="keys")
+        if write_h5:
+            # Save the data of output dictionary
+            _write_outputs(global_output_dict, dirname, fname_no_ext, txt_options="keys")
 
     return global_save_data
 
 
 # ================================================================
 
-def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, h5_results_file=None,
+# def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, h5_results_file=None,
+#         optimize_function=_default_optimize, optimize_kwargs=None, reinitialize_function=None,
+#         reinitialize_kwargs=None, reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
+#         interpolate_nan_outputs=False, num_samples=None, seed=None):
+def parameter_sweep(model, sweep_params, outputs=None, results_file_name=None, write_csv=False, write_h5=False, # h5_results_file=None,
         optimize_function=_default_optimize, optimize_kwargs=None, reinitialize_function=None,
         reinitialize_kwargs=None, reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
         interpolate_nan_outputs=False, num_samples=None, seed=None):
@@ -809,8 +873,11 @@ def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, h5
             num_samples, local_num_cases, comm, rank, num_procs)
 
     # Save to file
-    global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results, global_results, global_output_dict,
-        csv_results_file, h5_results_file, debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs)
+    # global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results, global_results, global_output_dict,
+    #     csv_results_file, h5_results_file, debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs)
+    global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results,
+        global_results, global_output_dict, results_file_name, write_csv, write_h5, debugging_data_dir,
+        comm, rank, num_procs, interpolate_nan_outputs)
 
     return global_save_data
 
