@@ -335,7 +335,7 @@ def set_operating_conditions(m):
     psttrt.uv_aop.uv_reduced_equivalent_dose.fix(350)  # TODO: check this was the right thing to fix
     psttrt.uv_aop.uv_transmittance_in.fix(0.95)  # TODO: check this was the right thing to fix
 
-    # uv aop
+    # co2 addition
     m.db.get_unit_operation_parameters("co2_addition")
     psttrt.co2_addition.load_parameters_from_database(use_default_removal=True)
 
