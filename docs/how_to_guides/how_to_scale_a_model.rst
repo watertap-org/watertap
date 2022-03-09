@@ -171,10 +171,3 @@ The scaling factors are automatically passed-in when using the default WaterTAP 
     # Solve model m
     opt.solve(m)
 
-..
-    TODO: COSTING_UPDATE -- remove testoutput below
-
-.. testoutput::
-   
-   ...
-
