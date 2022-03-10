@@ -40,7 +40,7 @@ class CrystallizerZOData(ZeroOrderBaseData):
 
         if "tds" not in self.config.property_package.solute_set:
             raise KeyError('TDS must be included in the solute list for determining'
-                           ' electricity intensity and power consumption of the brine concentrator unit.')
+                           ' electricity intensity and power consumption of the crystallizer unit.')
 
         # Fitting parameters based on regressions for capital and electricity developed from
         # data in Table A2.1, Table A2.3 in
