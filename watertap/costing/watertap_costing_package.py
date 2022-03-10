@@ -261,9 +261,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         TODO: describe equations
         """
-        _make_captial_cost_var(blk)
-        _make_fixed_operating_cost_var(blk)
-
         cost_membrane(blk, blk.costing_package.nanofiltration_membrane_cost, blk.costing_package.factor_membrane_replacement)
 
     @staticmethod
@@ -282,9 +279,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             raise ConfigurationError(
                 f"{blk.unit_model.name} received invalid argument for ro_type:"
                 f" {ro_type}. Argument must be a member of the ROType Enum.")
-
-        _make_captial_cost_var(blk)
-        _make_fixed_operating_cost_var(blk)
 
         if ro_type == ROType.standard:
             membrane_cost = blk.costing_package.reverse_osmosis_membrane_cost
@@ -339,7 +333,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         TODO: describe equations
         """
-        _make_captial_cost_var(blk)
         cost_by_flow_volume(blk, blk.costing_package.low_pressure_pump_cost,
                 pyo.units.convert(blk.unit_model.control_volume.properties_in[0].flow_vol, (pyo.units.m**3/pyo.units.s)))
 
@@ -350,7 +343,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         TODO: describe equations
         """
-        _make_captial_cost_var(blk)
         cost_by_flow_volume(blk, blk.costing_package.pump_pressure_exchanger_cost,
                 pyo.units.convert(blk.unit_model.control_volume.properties_in[0].flow_vol, (pyo.units.meter**3/pyo.units.hours)))
 
@@ -376,7 +368,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         TODO: describe equations
         """
-        _make_captial_cost_var(blk)
         cost_by_flow_volume(blk, blk.costing_package.pressure_exchanger_cost,
                 pyo.units.convert(blk.unit_model.low_pressure_side.properties_in[0].flow_vol, (pyo.units.meter**3/pyo.units.hours)))
 
@@ -387,7 +378,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         TODO: describe equations
         """
-        _make_captial_cost_var(blk)
         cost_by_flow_volume(blk, blk.costing_package.separator_unit_cost,
                 pyo.units.convert(blk.unit_model.outlet_state[0].flow_vol, (pyo.units.liter/pyo.units.second)))
 
@@ -423,7 +413,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         TODO: describe equations
         """
-        _make_captial_cost_var(blk)
         cost_by_flow_volume(blk, blk.costing_package.mixer_unit_cost,
                 pyo.units.convert(blk.unit_model.mixed_state[0].flow_vol, pyo.units.liter/pyo.units.second))
 
@@ -434,7 +423,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         TODO: describe equations
         """
-        _make_captial_cost_var(blk)
         cost_by_flow_volume(blk, blk.costing_package.naocl_mixer_unit_cost,
                 pyo.units.convert(blk.unit_model.inlet_stream_state[0].flow_vol, pyo.units.m**3/pyo.units.day))
 
@@ -445,8 +433,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         TODO: describe equations
         """
-        _make_captial_cost_var(blk)
-
         stream = blk.unit_model.lime_stream
         blk.lime_kg_per_day = pyo.Expression(expr=\
                 pyo.units.convert(74.093e-3 * (pyo.units.kg/pyo.units.mol) * stream.flow_mol[0]*stream.mole_frac_comp[0, "Ca(OH)2"],
@@ -490,6 +476,9 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
                                       [fraction of membrane replaced/year]
 
     """
+    _make_captial_cost_var(blk)
+    _make_fixed_operating_cost_var(blk)
+
     blk.membrane_cost = pyo.Expression(expr=membrane_cost)
     blk.factor_membrane_replacement = pyo.Expression(expr=factor_membrane_replacement)
 
@@ -506,6 +495,7 @@ def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
         flow_cost - The cost of the pump in [currency]/([volume]/[time])
         flow_to_cost - The flow costed in [volume]/[time]
     """
+    _make_captial_cost_var(blk)
     blk.flow_cost = pyo.Expression(expr=flow_cost)
     blk.capital_cost_constraint = pyo.Constraint(expr = \
             blk.capital_cost == blk.flow_cost * flow_to_cost)
