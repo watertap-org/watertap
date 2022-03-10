@@ -508,7 +508,7 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
 
     if A_case is None:
         A_case = 'fix'
-    # m.fs.ERD_first_stage.control_volume.properties_out[0].pressure.unfix()
+    m.fs.ERD_first_stage.control_volume.properties_out[0].pressure.unfix()
 
     for idx, pump in m.fs.PrimaryPumps.items():
         pump.control_volume.properties_out[0].pressure.unfix()

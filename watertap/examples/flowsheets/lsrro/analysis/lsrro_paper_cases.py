@@ -17,7 +17,7 @@ import time
 
 from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
 from watertap.examples.flowsheets.lsrro.analysis import lsrro_paper_analysis as lsrro_case
-from pyomo.environ import units as pyunits
+from pyomo.environ import units as pyunits, check_optimal_termination
 
 
 def run_case(number_of_stages, Cin, water_recovery, A_fixed, permeate_quality_limit, has_CP, nx):
@@ -120,3 +120,5 @@ if __name__ == "__main__":
 
     for i, v in outputs.items():
         print(i, value(v))
+    if not check_optimal_termination(res):
+        print("solve failed")
