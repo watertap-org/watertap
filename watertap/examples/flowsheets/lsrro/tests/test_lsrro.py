@@ -260,7 +260,7 @@ class TestLSRRO_1Stage(_TestLSRRO):
 
     number_of_stages = 1
 
-    number_of_variables = 304
+    number_of_variables = 303
     number_of_constraints = 193
 
     display_system = \
@@ -335,7 +335,7 @@ class TestLSRRO_2Stage(_TestLSRRO):
 
     number_of_stages = 2
 
-    number_of_variables = 545
+    number_of_variables = 544
     number_of_constraints = 379
 
     display_system = \
@@ -420,7 +420,7 @@ class TestLSRRO_3Stage(_TestLSRRO):
 
     number_of_stages = 3
 
-    number_of_variables = 786
+    number_of_variables = 785
     number_of_constraints = 565
 
     display_system = \
