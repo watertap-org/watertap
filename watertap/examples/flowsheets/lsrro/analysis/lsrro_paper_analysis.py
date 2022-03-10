@@ -144,9 +144,7 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
             units=pyunits.dimensionless,
             doc='System Water Recovery')
     m.fs.eq_water_recovery = Constraint(expr=\
-              sum(m.fs.feed.flow_mass_phase_comp[0,'Liq',:]) /m.fs.feed.properties[0].dens_mass_phase['Liq']
-              * m.fs.water_recovery == \
-              sum(m.fs.product.flow_mass_phase_comp[0,'Liq',:])/m.fs.product.properties[0].dens_mass_phase['Liq'] )
+              m.fs.feed.properties[0].flow_vol * m.fs.water_recovery == m.fs.product.properties[0].flow_vol)
 
     # additional variables or expressions
     product_flow_vol_total = m.fs.product.properties[0].flow_vol
@@ -163,6 +161,16 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
     # Expressions for parameter sweep ------------------------------------------------------------------------------
+    m.fs.total_membrane_area = sum(m.fs.ROUnits[a].area for a in range(1, m.fs.NumberOfStages + 1))
+    m.fs.product.properties[0].mass_frac_phase_comp   # Final permeate concentration as mass fraction
+    m.fs.feed.properties[0].conc_mass_phase_comp      # Touch feed concentration as mass concentration
+    m.fs.disposal.properties[0].conc_mass_phase_comp  # Touch final brine concentration as mass concentration
+    m.fs.disposal.properties[0].mass_frac_phase_comp  # Touch final brine concentration as mass fraction
+
+    m.fs.specific_energy_consumption_feed = Expression(
+        expr=pyunits.convert(total_pump_work, to_units=pyunits.kW)
+             / pyunits.convert(m.fs.feed.properties[0].flow_vol, to_units=pyunits.m**3 / pyunits.hr))
+
     m.fs.costing.primary_pump_capex_lcow = Expression(expr=m.fs.costing_param.factor_capital_annualization
                                                 * sum(m.fs.PrimaryPumps[n].costing.capital_cost
                                                       for n in m.fs.StageSet)
@@ -289,25 +297,30 @@ def set_operating_conditions(m, Cin=None):
     erd_efi = 0.8  # energy recovery device efficiency [-]
     mem_A = 4.2e-12  # membrane water permeability coefficient [m/s-Pa]
     mem_B = 3.5e-8  # membrane salt permeability coefficient [m/s]
-    height = 2e-3  # channel height in membrane stage [m]
-    spacer_porosity = 0.75  # spacer porosity in membrane stage [-]
+    height = 1e-3  # channel height in membrane stage [m]
+    spacer_porosity = 0.85  # spacer porosity in membrane stage [-]
     width = 5 # membrane width factor [m]
     area = 100 # membrane area [m^2]
     pressure_atm = 101325  # atmospheric pressure [Pa]
 
     # feed
-    feed_flow_mass = 1*pyunits.kg/pyunits.s
+    # feed_flow_mass = 1*pyunits.kg/pyunits.s
     if Cin is None:
-        feed_mass_frac_NaCl = 70.0/1000.0
-    elif Cin is not None and isinstance(Cin,(int,float)):
-        feed_mass_frac_NaCl = Cin/1000.0
+        # feed_mass_frac_NaCl = 70.0/1000.0
+        Cin = 70
+    # elif Cin is not None and isinstance(Cin,(int,float)):
+        # feed_mass_frac_NaCl = Cin/1000.0
     feed_temperature = 273.15 + 20
 
     # initialize feed
     m.fs.feed.pressure[0].fix(pressure_atm)
     m.fs.feed.temperature[0].fix(feed_temperature)
-    m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_flow_mass * feed_mass_frac_NaCl)
-    m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(feed_flow_mass * (1-feed_mass_frac_NaCl))
+    m.fs.feed.properties.calculate_state(var_args={('conc_mass_phase_comp', ('Liq', 'NaCl')): Cin,  # feed mass concentration
+                                                   ('flow_vol_phase', 'Liq'): 1e-3},  # feed NaCl mass fraction [-]
+                                         hold_state = True,  # fixes the calculated component mass flow rates
+                                        )
+    # m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'].fix(feed_flow_mass * feed_mass_frac_NaCl)
+    # m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(feed_flow_mass * (1-feed_mass_frac_NaCl))
 
     # initialize pumps
     for pump in m.fs.PrimaryPumps.values():
@@ -479,7 +492,7 @@ def solve(model, solver=None, tee=False, raise_on_failure=False):
         raise RuntimeError(msg)
     else:
         print(msg)
-        return None
+        return model, results
 
 
 def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=None, AB_tradeoff=None, A_fixed=None,
@@ -495,7 +508,7 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
 
     if A_case is None:
         A_case = 'fix'
-    m.fs.ERD_first_stage.control_volume.properties_out[0].pressure.unfix()
+    # m.fs.ERD_first_stage.control_volume.properties_out[0].pressure.unfix()
 
     for idx, pump in m.fs.PrimaryPumps.items():
         pump.control_volume.properties_out[0].pressure.unfix()
@@ -608,7 +621,7 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
     if water_recovery is not None:
         m.fs.water_recovery.fix(water_recovery) # product mass flow rate fraction of feed [-]
     if Cbrine is not None:
-        m.fs.ROUnits[m.fs.StageSet.last()].feed_side.properties[0, 1].conc_mass_phase_comp['Liq', 'NaCl'].fix(Cbrine) # product mass flow rate fraction of feed [-]
+        m.fs.ROUnits[m.fs.StageSet.last()].feed_side.properties[0, 1].conc_mass_phase_comp['Liq', 'NaCl'].fix(Cbrine) # Final brine concentration
 
     # add upper bound for permeate concentration
     if permeate_quality_limit is not None:
@@ -716,7 +729,8 @@ if __name__ == "__main__":
     import csv
 
     cin = 70
-    recovery = .5
+    recovery = .70
+    starting_stage_num = 5
 
     a_case_lst = [
         "fix",
@@ -744,7 +758,7 @@ if __name__ == "__main__":
     headers = ["cin (kg/m3)", "recovery (-)", "num_stages", "final perm (ppm)",
                "Membrane area", "SEC", "LCOW"]
 
-    for stage in range(3, 4):
+    for stage in range(starting_stage_num, 7):
         with open(f'output_fixA_5LMHbar_{cin}_{recovery}_{stage}stage.csv', 'w', newline='') as csv_file:
             csvwriter = csv.writer(csv_file)
             start = 0
