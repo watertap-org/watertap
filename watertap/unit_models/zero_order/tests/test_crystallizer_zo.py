@@ -311,6 +311,6 @@ def test_no_tds_in_solute_list_error():
 
     with pytest.raises(KeyError,
                        match="TDS must be included in the solute list for determining "
-                             "electricity intensity and power consumption of the brine concentrator unit."):
+                             "electricity intensity and power consumption of the crystallizer unit."):
         m.fs.unit = CrystallizerZO(default={"property_package": m.fs.params,
                                                  "database": db})
