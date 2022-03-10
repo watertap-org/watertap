@@ -11,13 +11,6 @@ watertap.examples.flowsheets.RO\_with\_energy\_recovery.RO\_with\_energy\_recove
    :members:
    :show-inheritance:
 
-watertap.examples.flowsheets.RO\_with\_energy\_recovery.financials module
--------------------------------------------------------------------------
-
-.. automodule:: watertap.examples.flowsheets.RO_with_energy_recovery.financials
-   :members:
-   :show-inheritance:
-
 watertap.examples.flowsheets.RO\_with\_energy\_recovery.monte\_carlo\_sampling\_RO\_ERD module
 ----------------------------------------------------------------------------------------------
 
