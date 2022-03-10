@@ -85,6 +85,7 @@ from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReac
 
 # Import the WaterTAP object inherited for the Mixer unit model
 from watertap.examples.flowsheets.full_treatment_train.model_components import Mixer
+from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import costing
 
 from idaes.generic_models.unit_models.translator import Translator
 
@@ -724,6 +725,10 @@ def run_chlorination_block_example(fix_free_chlorine=False):
     # Build the partial flowsheet of a mixer and chlorination unit
     build_ideal_naocl_chlorination_block(model, expand_arcs=True)
 
+    # test the naocl_chlorination_costing
+    model.fs.treated_flow_vol = Expression(expr=0.85 * pyunits.m**3/pyunits.s)
+    costing.build_costing(model)
+
     # set some values (using defaults for testing)
     set_ideal_naocl_mixer_inlets(model, dosing_rate_of_NaOCl_mg_per_s = 0.4,
                                             inlet_water_density_kg_per_L = 1,
@@ -752,6 +757,8 @@ def run_chlorination_block_example(fix_free_chlorine=False):
 
     if fix_free_chlorine:
         setup_block_to_solve_naocl_dosing_rate(model)
+
+    model.fs.costing.initialize()
 
     results = solver.solve(model, tee=True)
     assert_optimal_termination(results)

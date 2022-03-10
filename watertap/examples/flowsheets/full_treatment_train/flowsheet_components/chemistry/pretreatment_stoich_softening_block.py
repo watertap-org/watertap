@@ -99,6 +99,7 @@ from idaes.generic_models.unit_models.stoichiometric_reactor import \
 
 # Import the WaterTAP objects inherited (includes for the Mixer and Separator unit model
 from watertap.examples.flowsheets.full_treatment_train.model_components import Separator, Mixer
+from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import costing
 
 from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
 
@@ -1027,6 +1028,10 @@ def run_softening_block_example(include_feed=False, fix_hardness=False):
         # fix inlets at the mixer for testing
         fix_stoich_softening_mixer_inlet_stream(model)
 
+    # test the stoich_softening_mixer  costing
+    model.fs.treated_flow_vol = Expression(expr=0.0007 * pyunits.m**3/pyunits.s)
+    costing.build_costing(model)
+
     # Fix the amount of lime added for simulation
     fix_stoich_softening_mixer_lime_stream(model)
 
@@ -1056,6 +1061,9 @@ def run_softening_block_example(include_feed=False, fix_hardness=False):
     # Solve the flowsheet
     if fix_hardness==True:
         setup_block_to_solve_lime_dosing_rate(model, target_hardness_mg_per_L = 50)
+
+    model.fs.costing.initialize()
+
     solve_block(model, tee=True)
 
     # display results

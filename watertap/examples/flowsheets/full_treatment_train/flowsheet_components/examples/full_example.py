@@ -213,6 +213,8 @@ def solve_flowsheet_mvp_NF(**kwargs):
     desalination.initialize_desalination(m, **kwargs)
     m.fs.desal_saturation.properties.initialize()
 
+    m.fs.costing.initialize()
+
     # check_build(m)
     # check_scaling(m)
 
