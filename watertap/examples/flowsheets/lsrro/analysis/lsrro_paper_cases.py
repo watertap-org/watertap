@@ -19,25 +19,38 @@ from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sw
 from watertap.examples.flowsheets.lsrro.analysis import lsrro_paper_analysis as lsrro_case
 from pyomo.environ import units as pyunits, check_optimal_termination
 
+def lsrro_optimize(A_fixed, permeate_quality_limit, has_CP):
+    m = lsrro_case.build(has_CP=has_CP)
+    lsrro_case.set_operating_conditions(m)
+    lsrro_case.initialize(m)
+    lsrro_case.solve(m)
+    lsrro_case.optimize_set_up(m, A_fixed=A_fixed,
+                               permeate_quality_limit=permeate_quality_limit)
+    lsrro_case.solve(m, raise_on_failure=False, tee=False)
 
-def run_case(number_of_stages, Cin, water_recovery, A_fixed, permeate_quality_limit, has_CP, nx):
+    return m
+
+def run_case(nx):
     sweep_params = {}
     outputs = {}
 
-    # output_filename = f'output/{number_of_stages}_stage/results_{Cin}g_L_{water_recovery}recovery_LSRRO.csv'
 
-    m = lsrro_case.build(number_of_stages, has_CP=has_CP)
-    lsrro_case.set_operating_conditions(m, Cin=Cin)
-    lsrro_case.initialize(m)
-    lsrro_case.solve(m)
-    lsrro_case.optimize_set_up(m, water_recovery=water_recovery, A_fixed=A_fixed,
-                               permeate_quality_limit=permeate_quality_limit)
-    m, res = lsrro_case.solve(m, raise_on_failure=False, tee=False)
+    lsrro_kwargs = {
+                    # 'number_of_stages': 2,
+                    # 'Cin': 35,
+                    # 'water_recovery': 0.75,
+                    'A_fixed': 5 / 3.6e11,
+                    'permeate_quality_limit': 1000e-6,
+                    'has_CP': True}
+    opt_function = lsrro_optimize(**lsrro_kwargs)
 
     # Sweep parameters ------------------------------------------------------------------------
+    sweep_params['Number of Stages'] = LinearSample(m.fs.NumberOfStages, 2, 8) # TODO: increment by 1 if nx not specified?
     sweep_params['Volumetric Recovery Rate'] = LinearSample(m.fs.water_recovery, 0.3, 0.9, nx)
     sweep_params['Feed Concentration'] = LinearSample(
         m.fs.feed.properties[0].conc_mass_phase_comp['Liq', 'NaCl'], 5, 160, nx)
+
+    output_filename = f'output/{number_of_stages}_stage/results_{Cin}g_L_{water_recovery}recovery_LSRRO.csv'
 
     # Outputs  -------------------------------------------------------------------------------
     outputs['LCOW'] = m.fs.costing.LCOW
@@ -145,32 +158,26 @@ def run_case(number_of_stages, Cin, water_recovery, A_fixed, permeate_quality_li
                     stage.velocity[0, 1]
                     for idx, stage in m.fs.ROUnits.items()})
 
-    # global_results = parameter_sweep(m, sweep_params, outputs, csv_results_file=output_filename,
-    #                                  optimize_function=opt_function,
-    #                                  optimize_kwargs=optimize_kwargs,
-    #                                  debugging_data_dir=os.path.split(output_filename)[0]+'/local',
-    #                                  interpolate_nan_outputs=True)
+    global_results = parameter_sweep(m, sweep_params, outputs, csv_results_file=output_filename,
+                                     optimize_function=opt_function,
+                                     optimize_kwargs=lsrro_kwargs,
+                                     debugging_data_dir=os.path.split(output_filename)[0]+'/local',
+                                     interpolate_nan_outputs=True)
 
-    return m, res, sweep_params, outputs
+    return m, sweep_params, outputs
 
 
 if __name__ == "__main__":
-    m, res, sweep_params, outputs = run_case(number_of_stages=2,
-                                             Cin=35,
-                                             water_recovery=0.75,
-                                             A_fixed=5 / 3.6e11,
-                                             permeate_quality_limit=1000e-6,
-                                             has_CP=True,
-                                             nx=4
-                                             )
+    m, sweep_params, outputs = run_case(number_of_stages=2,
+                                        Cin=35,
+                                        water_recovery=0.75,
+                                        A_fixed=5 / 3.6e11,
+                                        permeate_quality_limit=1000e-6,
+                                        has_CP=True,
+                                        nx=4
+                                        )
 
     from pyomo.environ import value
 
     for i, v in outputs.items():
         print(i, value(v))
-
-    if check_optimal_termination(res):
-        print("Successful Solve")
-    else:
-        print("solve failed")
-

@@ -510,13 +510,13 @@ def solve(model, solver=None, tee=False, raise_on_failure=False):
 
     results = solver.solve(model, tee=tee)
     if check_optimal_termination(results):
-        return model, results
+        return model
     msg = "The current configuration is infeasible. Please adjust the decision variables."
     if raise_on_failure:
         raise RuntimeError(msg)
     else:
         print(msg)
-        return model, results
+        return None
 
 
 def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=None, AB_tradeoff=None, A_fixed=None,
