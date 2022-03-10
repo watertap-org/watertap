@@ -96,7 +96,7 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
     for pump in m.fs.BoosterPumps.values():
         pump.get_costing(module=financials, pump_type="High pressure")
         total_pump_work += pump.work_mechanical[0]
-    # m.fs.total_work_in = total_pump_work #TODO
+    m.fs.total_work_in = total_pump_work
 
     # Add the stages ROs
     if has_Pdrop:
@@ -137,7 +137,7 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
     m.fs.EnergyRecoveryDevice.get_costing(module=financials, pump_type="Pressure exchanger")
     m.fs.total_work_recovered = m.fs.EnergyRecoveryDevice.work_mechanical[0] + m.fs.ERD_first_stage.work_mechanical[0]
     total_pump_work += m.fs.total_work_recovered
-    # m.fs.net_pump_work = total_pump_work #TODO
+    m.fs.net_pump_work = total_pump_work
 
     # additional variables or expressions ---------------------------------------------------------------------------
     # system water recovery

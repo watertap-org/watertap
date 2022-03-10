@@ -51,10 +51,10 @@ def run_case(number_of_stages, Cin, water_recovery, A_fixed, permeate_quality_li
     outputs['Annual Feed Flow'] = m.fs.annual_feed
     outputs['Annual Water Production'] = m.fs.annual_water_production
 
-    # outputs['Pump Work In (kW)'] = m.fs.total_work_in / 1000
-    # outputs['Pump Work Recovered (kW)'] = m.fs.total_work_recovered / 1000
-    # outputs['Net Pump Work In (kW)'] = m.fs.net_pump_work / 1000
-    # outputs['Energy Recovery (%)'] = -m.fs.total_work_recovered / m.fs.total_work_in * 100
+    outputs['Pump Work In (kW)'] = m.fs.total_work_in / 1000
+    outputs['Pump Work Recovered (kW)'] = m.fs.total_work_recovered / 1000
+    outputs['Net Pump Work In (kW)'] = m.fs.net_pump_work / 1000
+    outputs['Energy Recovery (%)'] = -m.fs.total_work_recovered / m.fs.total_work_in * 100
 
     outputs['Mass Water Recovery Rate (%)'] = m.fs.mass_water_recovery * 100
     outputs['System Salt Rejection (%)'] = m.fs.system_salt_rejection * 100
