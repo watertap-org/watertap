@@ -656,7 +656,7 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
     # ---checking model---
     assert_units_consistent(m)
 
-    check_dof(m, fail_flag=False, expected_dof=4 * m.fs.NumberOfStages - (1 if (water_recovery is None) else 2))
+    check_dof(m, fail_flag=False, expected_dof=4 * m.fs.NumberOfStages - (1 if (water_recovery is not None) else 0))
 
     return m
 

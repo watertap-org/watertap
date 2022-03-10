@@ -24,6 +24,8 @@ def run_case(number_of_stages, Cin, water_recovery, A_fixed, permeate_quality_li
     sweep_params = {}
     outputs = {}
 
+    # output_filename = f'output/{number_of_stages}_stage/results_{Cin}g_L_{water_recovery}recovery_LSRRO.csv'
+
     m = lsrro_case.build(number_of_stages, has_CP=has_CP)
     lsrro_case.set_operating_conditions(m, Cin=Cin)
     lsrro_case.initialize(m)
@@ -86,6 +88,15 @@ def run_case(number_of_stages, Cin, water_recovery, A_fixed, permeate_quality_li
                     stage.rejection_phase_comp[0, 'Liq', 'NaCl'] * 100
                     for idx, stage in m.fs.ROUnits.items()})
 
+    outputs.update({f'Observed Salt Passage (%), Stage {idx}':
+                    (1 - stage.rejection_phase_comp[0, 'Liq', 'NaCl']) * 100
+                    for idx, stage in m.fs.ROUnits.items()})
+
+    outputs.update({f'Mass Salt Passage (%), Stage {idx}':
+                    (stage.mixed_permeate[0].flow_mass_phase_comp['Liq', 'NaCl']
+                    / stage.feed_side.properties[0, 0].flow_mass_phase_comp['Liq', 'NaCl']) * 100
+                    for idx, stage in m.fs.ROUnits.items()})
+
     outputs.update({f'Volumetric Module Recovery Rate (%), Stage {idx}':
                     stage.recovery_vol_phase[0, 'Liq'] * 100
                     for idx, stage in m.fs.ROUnits.items()})
@@ -133,11 +144,6 @@ def run_case(number_of_stages, Cin, water_recovery, A_fixed, permeate_quality_li
     outputs.update({f'Outlet Crossflow Velocity, Stage {idx}':
                     stage.velocity[0, 1]
                     for idx, stage in m.fs.ROUnits.items()})
-
-
-    #TODO:
-    #  - stage-wise MASS FLOW salt passage/salt recovery (mass flow salt perm/mass flow salt feed to stage)
-    #
 
     # global_results = parameter_sweep(m, sweep_params, outputs, csv_results_file=output_filename,
     #                                  optimize_function=opt_function,
