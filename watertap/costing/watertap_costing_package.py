@@ -315,7 +315,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         TODO: describe equations
         """
-        _make_captial_cost_var(blk)
+        _make_capital_cost_var(blk)
         blk.capital_cost_constraint = pyo.Constraint(expr = \
                 blk.capital_cost == blk.costing_package.high_pressure_pump_cost * pyo.units.convert(blk.unit_model.work_mechanical[0], pyo.units.W))
 
@@ -346,7 +346,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         TODO: describe equations
         """
-        _make_captial_cost_var(blk)
+        _make_capital_cost_var(blk)
         unit_cv_in = blk.unit_model.control_volume.properties_in[0]
         blk.capital_cost_constraint = pyo.Constraint(expr = \
                   blk.capital_cost == blk.costing_package.energy_recovery_device_linear_coefficient
@@ -435,7 +435,7 @@ WaterTAPCostingData.unit_mapping = {
         NanofiltrationZO: WaterTAPCostingData.cost_nanofiltration,
         }
 
-def _make_captial_cost_var(blk):
+def _make_capital_cost_var(blk):
     blk.capital_cost = pyo.Var(initialize=1e5,
                            domain=pyo.NonNegativeReals,
                            units=blk.costing_package.base_currency,
@@ -458,7 +458,7 @@ def cost_membrane(blk, membrane_cost, factor_membrane_replacement):
                                       [fraction of membrane replaced/year]
 
     """
-    _make_captial_cost_var(blk)
+    _make_capital_cost_var(blk)
     _make_fixed_operating_cost_var(blk)
 
     blk.membrane_cost = pyo.Expression(expr=membrane_cost)
@@ -477,7 +477,7 @@ def cost_by_flow_volume(blk, flow_cost, flow_to_cost):
         flow_cost - The cost of the pump in [currency]/([volume]/[time])
         flow_to_cost - The flow costed in [volume]/[time]
     """
-    _make_captial_cost_var(blk)
+    _make_capital_cost_var(blk)
     blk.flow_cost = pyo.Expression(expr=flow_cost)
     blk.capital_cost_constraint = pyo.Constraint(expr = \
             blk.capital_cost == blk.flow_cost * flow_to_cost)
