@@ -21,6 +21,7 @@ from .buffer_tank_zo import BufferTankZO
 from .chemical_addition_zo import ChemicalAdditionZO
 from .cartridge_filtration_zo import CartridgeFiltrationZO
 from .cooling_supply_zo import CoolingSupplyZO
+from .crystallizer_zo import CrystallizerZO
 from .decarbonator_zo import DecarbonatorZO
 from .dissolved_air_flotation_zo import DissolvedAirFlotationZO
 from .feed_water_tank_zo import FeedWaterTankZO
