@@ -23,10 +23,7 @@ from idaes.core import declare_process_block_class
 from idaes.generic_models.costing.costing_base import (
     FlowsheetCostingBlockData, register_idaes_currency_units)
 
-from idaes.generic_models.unit_models import (
-        Separator,
-        Mixer,
-        )
+from idaes.generic_models.unit_models import Mixer
 
 from watertap.unit_models import (
         ReverseOsmosis0D,
@@ -127,10 +124,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 initialize=0.58,
                 doc='Energy recovery device exponent',
                 units=pyo.units.dimensionless)
-        self.separator_unit_cost = pyo.Var(
-                initialize=361,
-                doc='Separator cost',
-                units=self.base_currency/(pyo.units.liters/pyo.units.second))
         self.mixer_unit_cost = pyo.Var(
                 initialize=361,
                 doc='Mixer cost',
@@ -372,16 +365,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
                 pyo.units.convert(blk.unit_model.low_pressure_side.properties_in[0].flow_vol, (pyo.units.meter**3/pyo.units.hours)))
 
     @staticmethod
-    def cost_separator(blk):
-        """
-        Separator costing method
-
-        TODO: describe equations
-        """
-        cost_by_flow_volume(blk, blk.costing_package.separator_unit_cost,
-                pyo.units.convert(blk.unit_model.outlet_state[0].flow_vol, (pyo.units.liter/pyo.units.second)))
-
-    @staticmethod
     def cost_mixer(blk, mixer_type=MixerType.default):
         """
         Mixer costing method
@@ -443,7 +426,6 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
 # Define default mapping of costing methods to unit models
 WaterTAPCostingData.unit_mapping = {
-        Separator: WaterTAPCostingData.cost_separator,
         Mixer: WaterTAPCostingData.cost_mixer,
         Pump: WaterTAPCostingData.cost_pump,
         PressureExchanger: WaterTAPCostingData.cost_pressure_exchanger,
