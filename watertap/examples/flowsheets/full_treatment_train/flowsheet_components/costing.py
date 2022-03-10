@@ -43,12 +43,7 @@ from watertap.examples.flowsheets.full_treatment_train.flowsheet_components.desa
     display_desalination,
 )
 
-# from watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_softening_two_stage import build, scale, initialize
 import idaes.core.util.scaling as iscale
-from idaes.core import FlowsheetBlock
-
-
-cost_capacity_flag = False
 
 
 def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
