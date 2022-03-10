@@ -169,5 +169,8 @@ The scaling factors are automatically passed-in when using the default WaterTAP 
     # Create default WaterTAP solver object
     opt = get_solver()
     # Solve model m
-    opt.solve(m)
+    # TODO: COSTING_UPDATE: remove capture output below
+    from pyomo.common.tee import capture_output
+    with capture_output():
+        opt.solve(m)
 
