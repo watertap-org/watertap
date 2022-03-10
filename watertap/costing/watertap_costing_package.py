@@ -322,7 +322,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
     @staticmethod
     def cost_low_pressure_pump(blk):
         """
-        High pressure pump costing method
+        Low pressure pump costing method
 
         TODO: describe equations
         """
