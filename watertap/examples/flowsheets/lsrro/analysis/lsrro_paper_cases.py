@@ -39,12 +39,23 @@ def run_case(number_of_stages, Cin, water_recovery, A_fixed, permeate_quality_li
 
     # Outputs  -------------------------------------------------------------------------------
     outputs['LCOW'] = m.fs.costing.LCOW
+    outputs['LCOW wrt Feed Flow'] = m.fs.LCOW_feed
     outputs['SEC'] = m.fs.specific_energy_consumption
-    outputs['SEC of Feed'] = m.fs.specific_energy_consumption_feed
+    outputs['SEC wrt Feed'] = m.fs.specific_energy_consumption_feed
     outputs['Number of Stages'] = m.fs.NumberOfStages
     outputs['Final Brine Concentration'] = m.fs.disposal.properties[0].conc_mass_phase_comp['Liq','NaCl']
     outputs['Final Permeate Concentration (ppm)'] = \
         m.fs.product.properties[0].mass_frac_phase_comp['Liq', 'NaCl'] * 1e6
+    outputs['Annual Feed Flow'] = m.fs.annual_feed
+    outputs['Annual Water Production'] = m.fs.annual_water_production
+
+    # outputs['Pump Work In (kW)'] = m.fs.total_work_in / 1000
+    # outputs['Pump Work Recovered (kW)'] = m.fs.total_work_recovered / 1000
+    # outputs['Net Pump Work In (kW)'] = m.fs.net_pump_work / 1000
+    # outputs['Energy Recovery (%)'] = -m.fs.total_work_recovered / m.fs.total_work_in * 100
+
+    outputs['Mass Water Recovery Rate (%)'] = m.fs.mass_water_recovery * 100
+    outputs['System Salt Rejection (%)'] = m.fs.system_salt_rejection * 100
 
     outputs['Total Membrane Area'] = m.fs.total_membrane_area
     outputs['Total Capex LCOW'] = (m.fs.costing.investment_cost_total * m.fs.costing_param.factor_capital_annualization
@@ -72,8 +83,24 @@ def run_case(number_of_stages, Cin, water_recovery, A_fixed, permeate_quality_li
                     for idx, stage in m.fs.ROUnits.items()})
 
     outputs.update({f'Observed Rejection (%), Stage {idx}':
-                    stage.rejection_phase_comp[0, 'Liq', 'NaCl']
+                    stage.rejection_phase_comp[0, 'Liq', 'NaCl'] * 100
                     for idx, stage in m.fs.ROUnits.items()})
+
+    outputs.update({f'Volumetric Module Recovery Rate (%), Stage {idx}':
+                    stage.recovery_vol_phase[0, 'Liq'] * 100
+                    for idx, stage in m.fs.ROUnits.items()})
+
+    outputs.update({f'Mass Water Module Recovery Rate (%), Stage {idx}':
+                    stage.recovery_mass_phase_comp[0, 'Liq', 'H2O'] * 100
+                    for idx, stage in m.fs.ROUnits.items()})
+
+    outputs.update({f'Volumetric Stage Recovery Rate (%), Stage {idx}':
+                    getattr(m.fs, f'stage{idx}_recovery_vol') * 100
+                    for idx in m.fs.StageSet})
+
+    outputs.update({f'Mass Water Stage Recovery Rate (%), Stage {idx}':
+                    getattr(m.fs, f'stage{idx}_recovery_mass_H2O') * 100
+                    for idx in m.fs.StageSet})
 
     outputs.update({f'A-Value (LMH/bar), Stage {idx}':
                     stage.A_comp[0, 'H2O'] * 3.6e11
@@ -91,17 +118,32 @@ def run_case(number_of_stages, Cin, water_recovery, A_fixed, permeate_quality_li
                     stage.flux_mass_phase_comp_avg[0, 'Liq', 'NaCl'] * 3.6e6
                     for idx, stage in m.fs.ROUnits.items()})
 
+    outputs.update({f'Pressure Drop (bar), Stage {idx}':
+                    -pyunits.convert(stage.deltaP[0], to_units=pyunits.bar)
+                    for idx, stage in m.fs.ROUnits.items()})
+    outputs.update({f'Inlet Reynolds Number, Stage {idx}':
+                    stage.N_Re[0, 0]
+                    for idx, stage in m.fs.ROUnits.items()})
+    outputs.update({f'Outlet Reynolds Number, Stage {idx}':
+                    stage.N_Re[0, 1]
+                    for idx, stage in m.fs.ROUnits.items()})
+    outputs.update({f'Inlet Crossflow Velocity, Stage {idx}':
+                    stage.velocity[0, 0]
+                    for idx, stage in m.fs.ROUnits.items()})
+    outputs.update({f'Outlet Crossflow Velocity, Stage {idx}':
+                    stage.velocity[0, 1]
+                    for idx, stage in m.fs.ROUnits.items()})
+
+
     #TODO:
-    #  - consider pressure drop
-    #  - stage-wise volumetric and mass water recovery
-    #  - system-level mass water recovery
     #  - stage-wise MASS FLOW salt passage/salt recovery (mass flow salt perm/mass flow salt feed to stage)
-    #  - system-wide rejection ( 1- cp,product/cf,feed)
-    #  - levelized cost of water wrt to feed
-    #  - Fraction of energy recovered (-ERD total energy recovered/Pump total energy)
-    #  - stage-wise Inlet Re number
-    #  - Stage-wise pressure drop
     #
+
+    # global_results = parameter_sweep(m, sweep_params, outputs, csv_results_file=output_filename,
+    #                                  optimize_function=opt_function,
+    #                                  optimize_kwargs=optimize_kwargs,
+    #                                  debugging_data_dir=os.path.split(output_filename)[0]+'/local',
+    #                                  interpolate_nan_outputs=True)
 
     return m, res, sweep_params, outputs
 
@@ -120,5 +162,9 @@ if __name__ == "__main__":
 
     for i, v in outputs.items():
         print(i, value(v))
-    if not check_optimal_termination(res):
+
+    if check_optimal_termination(res):
+        print("Successful Solve")
+    else:
         print("solve failed")
+

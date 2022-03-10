@@ -96,6 +96,8 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
     for pump in m.fs.BoosterPumps.values():
         pump.get_costing(module=financials, pump_type="High pressure")
         total_pump_work += pump.work_mechanical[0]
+    # m.fs.total_work_in = total_pump_work #TODO
+
     # Add the stages ROs
     if has_Pdrop:
         pressure_change_type = PressureChangeType.calculated
@@ -133,7 +135,9 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
 
     m.fs.EnergyRecoveryDevice = Pump(default={"property_package": m.fs.properties})
     m.fs.EnergyRecoveryDevice.get_costing(module=financials, pump_type="Pressure exchanger")
-    total_pump_work += m.fs.EnergyRecoveryDevice.work_mechanical[0] + m.fs.ERD_first_stage.work_mechanical[0]
+    m.fs.total_work_recovered = m.fs.EnergyRecoveryDevice.work_mechanical[0] + m.fs.ERD_first_stage.work_mechanical[0]
+    total_pump_work += m.fs.total_work_recovered
+    # m.fs.net_pump_work = total_pump_work #TODO
 
     # additional variables or expressions ---------------------------------------------------------------------------
     # system water recovery
@@ -167,9 +171,29 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
     m.fs.disposal.properties[0].conc_mass_phase_comp  # Touch final brine concentration as mass concentration
     m.fs.disposal.properties[0].mass_frac_phase_comp  # Touch final brine concentration as mass fraction
 
+    m.fs.mass_water_recovery = Expression(expr=m.fs.product.flow_mass_phase_comp[0, 'Liq', 'H2O']
+                                               / m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'H2O'])
+
+    m.fs.system_salt_rejection = Expression(expr=1 - m.fs.product.properties[0].conc_mass_phase_comp['Liq', 'NaCl']
+                                                 / m.fs.feed.properties[0].conc_mass_phase_comp['Liq', 'NaCl'])
+
+    m.fs.annual_feed = Expression(expr=pyunits.convert(m.fs.feed.properties[0].flow_vol,
+                                                       to_units=pyunits.m ** 3 / pyunits.year)
+                                       * m.fs.costing_param.load_factor)
+
+    m.fs.LCOW_feed = m.fs.costing.LCOW * m.fs.annual_water_production / m.fs.annual_feed
+
     m.fs.specific_energy_consumption_feed = Expression(
         expr=pyunits.convert(total_pump_work, to_units=pyunits.kW)
              / pyunits.convert(m.fs.feed.properties[0].flow_vol, to_units=pyunits.m**3 / pyunits.hr))
+
+
+    for idx, stage in m.fs.ROUnits.items():
+        stage_recovery_vol = stage.mixed_permeate[0].flow_vol / m.fs.PrimaryPumps[idx].control_volume.properties_in[0].flow_vol
+        stage_recovery_mass_H2O = stage.mixed_permeate[0].flow_mass_phase_comp['Liq', 'H2O'] \
+                                  / m.fs.PrimaryPumps[idx].control_volume.properties_in[0].flow_mass_phase_comp['Liq', 'H2O']
+        setattr(m.fs, f'stage{idx}_recovery_vol', stage_recovery_vol)
+        setattr(m.fs, f'stage{idx}_recovery_mass_H2O', stage_recovery_mass_H2O)
 
     m.fs.costing.primary_pump_capex_lcow = Expression(expr=m.fs.costing_param.factor_capital_annualization
                                                 * sum(m.fs.PrimaryPumps[n].costing.capital_cost
