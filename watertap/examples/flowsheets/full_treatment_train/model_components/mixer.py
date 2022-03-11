@@ -11,29 +11,5 @@
 #
 ###############################################################################
 
-from pyomo.environ import Constraint
 # Import IDAES cores
-from idaes.generic_models.unit_models.mixer import MixerData
-from idaes.core import declare_process_block_class
-from pyomo.environ import Block
-
-import idaes.logger as idaeslog
-
-_log = idaeslog.getLogger(__name__)
-
-@declare_process_block_class("Mixer")
-class MixerData(MixerData):
-    """
-    Standard Mixer Unit Model Class with get_costing method added in.
-    """
-
-    def build(self):
-        super().build()
-
-    def calculate_scaling_factors(self):
-        super().calculate_scaling_factors()
-
-    def get_costing(self, module=None, **kwargs):
-        self.costing = Block()
-        module.Mixer_costing(self.costing, **kwargs)
-
+from idaes.generic_models.unit_models import Mixer
