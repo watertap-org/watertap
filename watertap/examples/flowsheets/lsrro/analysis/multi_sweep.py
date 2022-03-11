@@ -44,13 +44,17 @@ def run_case(number_of_stages, nx):
     m = lsrro_presweep(number_of_stages=number_of_stages)
 
     # Sweep parameters ------------------------------------------------------------------------
-    # sweep_params['Number of Stages'] = LinearSample(m.fs.NumberOfStages, 2, 8) #
-    # sweep_params['Feed Concentration'] = LinearSample(
-    #     m.fs.feed.properties[0].conc_mass_phase_comp['Liq', 'NaCl'], 5, 250, nx)
+    # don't think we want to sweep stages unless we modify flowsheet and have a mutable parameter that links to all Stage Sets
+    # sweep_params['Number of Stages'] = LinearSample(m.fs.NumberOfStages, 2, 8)
 
-    sweep_params['Max LSRRO Pressure'] = LinearSample(m.fs.lsrro_max_pressure, 50e5, 85e5, nx)
+    sweep_params['Feed Concentration'] = LinearSample(
+        m.fs.feed.properties[0].conc_mass_phase_comp['Liq', 'NaCl'], 5, 250, nx)
 
-    sweep_params['Volumetric Recovery Rate'] = LinearSample(m.fs.water_recovery, 0.3, 0.6, nx)
+    sweep_params['Volumetric Recovery Rate'] = LinearSample(m.fs.water_recovery, 0.3, 0.9, nx)
+
+    # Checking sweep on max LSRRO stage pressure
+    # sweep_params['Max LSRRO Pressure'] = LinearSample(m.fs.lsrro_max_pressure, 40e5, 125e5, nx)
+
 
 
     output_filename = f'param_sweep_output/{number_of_stages}_stage/results_LSRRO.csv'
