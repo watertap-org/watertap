@@ -141,7 +141,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                   : Value   : Fixed : Bounds
-       Electricity Demand :  11.880 : False : (None, None)
+       Electricity Demand :  11.880 : False : (0, None)
     Electricity Intensity : 0.30000 :  True : (None, None)
      Solute Removal [tss] : 0.90000 :  True : (0, None)
            Water Recovery : 0.99990 :  True : (1e-08, 1.0000001)
@@ -277,7 +277,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                   : Value   : Fixed : Bounds
-       Electricity Demand :  12.960 : False : (None, None)
+       Electricity Demand :  12.960 : False : (0, None)
     Electricity Intensity : 0.30000 :  True : (None, None)
      Solute Removal [foo] :  0.0000 :  True : (0, None)
      Solute Removal [tss] : 0.90000 :  True : (0, None)

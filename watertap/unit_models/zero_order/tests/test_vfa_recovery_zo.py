@@ -140,11 +140,11 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                                   : Value   : Fixed : Bounds
-                       Electricity Demand :  0.0000 : False : (None, None)
-                    Electricity Intensity :  0.0000 :  True : (None, None)
-    Solute Removal [nonbiodegradable_cod] : 0.50000 :  True : (0, None)
-                           Water Recovery :  1.0000 :  True : (1e-08, 1.0000001)
+    Key                                   : Value      : Fixed : Bounds
+                       Electricity Demand : 8.0000e-10 : False : (0, None)
+                    Electricity Intensity :     0.0000 :  True : (None, None)
+    Solute Removal [nonbiodegradable_cod] :    0.50000 :  True : (0, None)
+                           Water Recovery :     1.0000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -276,12 +276,12 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                                   : Value   : Fixed : Bounds
-                       Electricity Demand :  0.0000 : False : (None, None)
-                    Electricity Intensity :  0.0000 :  True : (None, None)
-                     Solute Removal [foo] :  0.0000 :  True : (0, None)
-    Solute Removal [nonbiodegradable_cod] : 0.50000 :  True : (0, None)
-                           Water Recovery :  1.0000 :  True : (1e-08, 1.0000001)
+    Key                                   : Value      : Fixed : Bounds
+                       Electricity Demand : 8.0000e-10 : False : (0, None)
+                    Electricity Intensity :     0.0000 :  True : (None, None)
+                     Solute Removal [foo] :     0.0000 :  True : (0, None)
+    Solute Removal [nonbiodegradable_cod] :    0.50000 :  True : (0, None)
+                           Water Recovery :     1.0000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

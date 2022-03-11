@@ -1,0 +1,89 @@
+base_currency: MUSD_2018
+base_period: year
+defined_flows:
+  electricity:
+    value: 0.0595
+    units: USD_2019/kWh
+  alum:
+    value: 0.69
+    units: USD_2020/kg
+    purity: 0.17
+  ammonia:
+    value: 0.79
+    units: USD_2020/kg
+    purity: 1
+  anti-scalant:
+    # Hydrazine
+    value: 3.49
+    units: USD_2020/kg
+    purity: 0.85
+  caustic_soda:
+    value: 0.11
+    units: USD_2020/kg
+    purity: 1
+  #coagulant:
+  #  value: 0.69
+  #  units: USD_2020/kg
+  #  purity: 0.17
+  ferric_chloride:
+    value: 0.88
+    units: USD_2020/kg
+    purity: 1
+  hydrochloric_acid:
+    value: 0.17
+    units: USD_2020/kg
+    purity: 1
+  lime:
+    value: 0.15
+    units: USD_2020/kg
+    purity: 1
+  sodium_bisulfite:
+    value: 0.36
+    units: USD_2020/kg
+    purity: 1
+  sulfuric_acid:
+    value: 0.12
+    units: USD_2020/kg
+    purity: 1
+global_parameters:
+  plant_lifetime:
+    value: 30
+    units: year
+  utilization_factor:
+    value: 1
+    units: dimensionless
+  land_cost_percent_FCI:
+    value: 0.0015
+    units: dimensionless
+  working_capital_percent_FCI:
+    value: 0.05
+    units: dimensionless
+  salaries_percent_FCI:
+    value: 0.001
+    units: 1/year
+  benefit_percent_of_salary:
+    value: 0.9
+    units: dimensionless
+  maintenance_costs_percent_FCI:
+    value: 0.008
+    units: 1/year
+  laboratory_fees_percent_FCI:
+    value: 0.003
+    units: 1/year
+  insurance_and_taxes_percent_FCI:
+    value: 0.002
+    units: 1/year
+  wacc:
+    # Weighted Average Cost of Capital (WACC)
+    value: 0.05
+    units: dimensionless
+  TPEC:
+    # Total Purchased Equipment Cost
+    value: 3.4
+    units: dimensionless
+  TIC:
+    # Total Installed Cost
+    value: 1.65
+    units: dimensionless
+# currency_definitions:
+#   - list of currency strings (see pint documentation)
