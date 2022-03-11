@@ -17,9 +17,9 @@ from pyomo.environ import units as pyunits, check_optimal_termination, value
 
 
 #TODO:
-# -change number of nodes for 1DRO in LSRRO flowsheet (lssro_paper_analysis.py) from 3 to at least 10
+# -change number of nodes for 1DRO (finite_elements argument in 1dro) in LSRRO flowsheet (lssro_paper_analysis.py) from 3 to at least 10
 #       - higher than 10 nodes if not computationally problematic on cluster
-# - decide number of steps we want for sweep parameters and finalize ranges
+# - decide number of steps we want for sweep parameters
 # - BONUS: add separate case without concentration polarization (just set argument `has_CP=False`) for SI?
 # - add cases for sensitivity analyses
 # - mention biggest change to flowsheet IN CASE issues arise in broader sweep--> added another pressure exchanger to first stage
