@@ -336,8 +336,10 @@ def set_operating_conditions(m, Cin=None):
     # initialize feed
     m.fs.feed.pressure[0].fix(pressure_atm)
     m.fs.feed.temperature[0].fix(feed_temperature)
-    m.fs.feed.properties.calculate_state(var_args={('conc_mass_phase_comp', ('Liq', 'NaCl')): Cin,  # feed mass concentration
-                                                   ('flow_vol_phase', 'Liq'): 1e-3},  # feed NaCl mass fraction [-]
+    m.fs.feed.properties[0].conc_mass_phase_comp['Liq', 'NaCl'] = Cin
+    m.fs.feed.properties.calculate_state(var_args={('conc_mass_phase_comp', ('Liq', 'NaCl')):
+                                                   value(m.fs.feed.properties[0].conc_mass_phase_comp['Liq', 'NaCl']),  # feed mass concentration
+                                                   ('flow_vol_phase', 'Liq'): 1e-3},  # volumetric feed flowrate [-]
                                          hold_state = True,  # fixes the calculated component mass flow rates
                                         )
 
@@ -501,17 +503,17 @@ def initialize(m, verbose=False, solver=None):
 def solve(model, solver=None, tee=False, raise_on_failure=False):
     # ---solving---
     if solver is None:
-        solver = get_solver(options={'honor_original_bounds': 'no'})
+        solver = get_solver()
 
     results = solver.solve(model, tee=tee)
     if check_optimal_termination(results):
-        return model
+        return results
     msg = "The current configuration is infeasible. Please adjust the decision variables."
     if raise_on_failure:
         raise RuntimeError(msg)
     else:
         print(msg)
-        return None
+        return results
 
 
 def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=None, AB_tradeoff=None, A_fixed=None,
