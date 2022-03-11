@@ -2,7 +2,6 @@ default:
   energy_electric_flow_vol_inlet:
     value: 0.0
     units: kWh/m^3
-  Capital_cost:
   capital_cost:
     basis: flow_vol
     cost_factor: None
