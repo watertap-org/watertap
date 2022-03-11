@@ -17,40 +17,51 @@ import time
 
 from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
 from watertap.examples.flowsheets.lsrro.analysis import lsrro_paper_analysis as lsrro_case
-from pyomo.environ import units as pyunits, check_optimal_termination
+from pyomo.environ import units as pyunits, check_optimal_termination, value
 
-def lsrro_optimize(A_fixed, permeate_quality_limit, has_CP):
-    m = lsrro_case.build(has_CP=has_CP)
+
+def lsrro_optimize(number_of_stages=2, water_recovery=0.5, A_fixed=5 / 3.6e11, permeate_quality_limit=1000e-6, has_CP=True):
+    m = lsrro_case.build(number_of_stages=number_of_stages, nacl_solubility_limit=True, has_CP =has_CP, has_Pdrop=True)
     lsrro_case.set_operating_conditions(m)
     lsrro_case.initialize(m)
     lsrro_case.solve(m)
-    lsrro_case.optimize_set_up(m, A_fixed=A_fixed,
-                               permeate_quality_limit=permeate_quality_limit)
-    lsrro_case.solve(m, raise_on_failure=False, tee=False)
+    lsrro_case.optimize_set_up(m, A_fixed=A_fixed, permeate_quality_limit=permeate_quality_limit)
+    m= lsrro_case.solve(m, raise_on_failure=False, tee=False)
 
     return m
 
-def run_case(nx):
+def run_case(number_of_stages, nx):
     sweep_params = {}
     outputs = {}
 
 
-    lsrro_kwargs = {
-                    # 'number_of_stages': 2,
-                    # 'Cin': 35,
-                    # 'water_recovery': 0.75,
-                    'A_fixed': 5 / 3.6e11,
-                    'permeate_quality_limit': 1000e-6,
-                    'has_CP': True}
-    opt_function = lsrro_optimize(**lsrro_kwargs)
+    # lsrro_kwargs = {
+    #                 # 'number_of_stages': 2,
+    #                 # 'Cin': 35,
+    #                 # 'water_recovery': 0.75,
+    #                 'A_fixed': 5 / 3.6e11,
+    #                 'permeate_quality_limit': 1000e-6,
+    #                 'has_CP': True}
+    # m, _ = lsrro_optimize(number_of_stages)
+
+    m = lsrro_case.build(number_of_stages=number_of_stages, nacl_solubility_limit=True, has_CP =True, has_Pdrop=True)
+    lsrro_case.set_operating_conditions(m)
+    lsrro_case.initialize(m)
+    lsrro_case.solve(m)
+    lsrro_case.optimize_set_up(m, A_fixed=5 / 3.6e11, permeate_quality_limit=1000e-6)
+
+
+    opt_function = lsrro_case.solve
 
     # Sweep parameters ------------------------------------------------------------------------
-    sweep_params['Number of Stages'] = LinearSample(m.fs.NumberOfStages, 2, 8) # TODO: increment by 1 if nx not specified?
-    sweep_params['Volumetric Recovery Rate'] = LinearSample(m.fs.water_recovery, 0.3, 0.9, nx)
-    sweep_params['Feed Concentration'] = LinearSample(
-        m.fs.feed.properties[0].conc_mass_phase_comp['Liq', 'NaCl'], 5, 160, nx)
+    # sweep_params['Number of Stages'] = LinearSample(m.fs.NumberOfStages, 2, 8) #
+    #TODO: parameter_sweep is producing all nans in results, even when just sweeping reovery. Find out what the issue is.
+    sweep_params['Volumetric Recovery Rate'] = LinearSample(m.fs.water_recovery, 0.5, 0.55, nx)
+    #TODO: want to sweep feed concentration but don't see how state vars of feed will get updated/unfixed since they're fixed
+    # sweep_params['Feed Concentration'] = LinearSample(
+    #     m.fs.feed.properties[0].conc_mass_phase_comp['Liq', 'NaCl'], 35, 70, nx)
 
-    output_filename = f'output/{number_of_stages}_stage/results_{Cin}g_L_{water_recovery}recovery_LSRRO.csv'
+    output_filename = f'param_sweep_output/{number_of_stages}_stage/results_LSRRO.csv'
 
     # Outputs  -------------------------------------------------------------------------------
     outputs['LCOW'] = m.fs.costing.LCOW
@@ -160,24 +171,19 @@ def run_case(nx):
 
     global_results = parameter_sweep(m, sweep_params, outputs, csv_results_file=output_filename,
                                      optimize_function=opt_function,
-                                     optimize_kwargs=lsrro_kwargs,
+                                     optimize_kwargs={'solver': None, 'tee': True, 'raise_on_failure': True},
+                                     # reinitialize_function=lsrro_case.initialize,
+                                     # reinitialize_kwargs={'verbose': True, 'solver': None},
+                                     # reinitialize_before_sweep=True,
                                      debugging_data_dir=os.path.split(output_filename)[0]+'/local',
                                      interpolate_nan_outputs=True)
 
-    return m, sweep_params, outputs
+    return global_results, sweep_params, m
 
 
 if __name__ == "__main__":
-    m, sweep_params, outputs = run_case(number_of_stages=2,
-                                        Cin=35,
-                                        water_recovery=0.75,
-                                        A_fixed=5 / 3.6e11,
-                                        permeate_quality_limit=1000e-6,
-                                        has_CP=True,
-                                        nx=4
-                                        )
+    for n in range(3, 4):
+        # m = lsrro_optimize(number_of_stages=n)
+        global_results, sweep_params, m = run_case(number_of_stages=n, nx=4)
 
-    from pyomo.environ import value
 
-    for i, v in outputs.items():
-        print(i, value(v))
