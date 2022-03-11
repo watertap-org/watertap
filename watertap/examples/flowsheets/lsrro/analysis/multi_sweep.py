@@ -45,10 +45,12 @@ def run_case(number_of_stages, nx):
 
     # Sweep parameters ------------------------------------------------------------------------
     # sweep_params['Number of Stages'] = LinearSample(m.fs.NumberOfStages, 2, 8) #
-    sweep_params['Feed Concentration'] = LinearSample(
-        m.fs.feed.properties[0].conc_mass_phase_comp['Liq', 'NaCl'], 5, 250, nx)
+    # sweep_params['Feed Concentration'] = LinearSample(
+    #     m.fs.feed.properties[0].conc_mass_phase_comp['Liq', 'NaCl'], 5, 250, nx)
 
-    sweep_params['Volumetric Recovery Rate'] = LinearSample(m.fs.water_recovery, 0.3, 0.9, nx)
+    sweep_params['Max LSRRO Pressure'] = LinearSample(m.fs.lsrro_max_pressure, 50e5, 85e5, nx)
+
+    sweep_params['Volumetric Recovery Rate'] = LinearSample(m.fs.water_recovery, 0.3, 0.6, nx)
 
 
     output_filename = f'param_sweep_output/{number_of_stages}_stage/results_LSRRO.csv'

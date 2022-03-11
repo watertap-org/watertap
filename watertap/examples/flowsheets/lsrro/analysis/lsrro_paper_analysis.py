@@ -140,6 +140,8 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
     m.fs.net_pump_work = total_pump_work
 
     # additional parameters, variables or expressions ---------------------------------------------------------------------------
+    m.fs.ro_min_pressure = Param(initialize=10e5, units=pyunits.Pa, mutable=True)
+    m.fs.lsrro_min_pressure = Param(initialize=10e5, units=pyunits.Pa, mutable=True)
     m.fs.ro_max_pressure = Param(initialize=85e5, units=pyunits.Pa, mutable=True)
     m.fs.lsrro_max_pressure = Param(initialize=65e5, units=pyunits.Pa, mutable=True)
 
@@ -537,18 +539,35 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
 
     for idx, pump in m.fs.PrimaryPumps.items():
         pump.control_volume.properties_out[0].pressure.unfix()
-        pump.control_volume.properties_out[0].pressure.setlb(10e5)
-        pump.deltaP.setlb(0)
+        # pump.control_volume.properties_out[0].pressure.setlb(10e5)
+        # pump.deltaP.setlb(0)
         if idx > m.fs.StageSet.first():
-            pump.control_volume.properties_out[0].pressure.setub(m.fs.lsrro_max_pressure)
+            pump.max_lsrro_pressure_con = Constraint(expr=(m.fs.lsrro_min_pressure,
+                                                        pump.control_volume.properties_out[0].pressure,
+                                                        m.fs.lsrro_max_pressure))
+            iscale.constraint_scaling_transform(pump.max_lsrro_pressure_con,
+                                                iscale.get_scaling_factor(
+                                                    pump.control_volume.properties_out[0].pressure))
+            # pump.control_volume.properties_out[0].pressure.setub(m.fs.lsrro_max_pressure)
         else:
-            pump.control_volume.properties_out[0].pressure.setub(m.fs.ro_max_pressure)
+            pump.max_ro_pressure_con = Constraint(expr=(m.fs.ro_min_pressure,
+                                                        pump.control_volume.properties_out[0].pressure,
+                                                        m.fs.ro_max_pressure))
+            iscale.constraint_scaling_transform(pump.max_ro_pressure_con,
+                                                iscale.get_scaling_factor(
+                                                    pump.control_volume.properties_out[0].pressure))
+            # pump.control_volume.properties_out[0].pressure.setub(m.fs.ro_max_pressure)
 
     # unfix eq pumps
     for idx, pump in m.fs.BoosterPumps.items():
         pump.control_volume.properties_out[0].pressure.unfix()
-        pump.control_volume.properties_out[0].pressure.setlb(10e5)
-        pump.control_volume.properties_out[0].pressure.setub(m.fs.ro_max_pressure)
+        # pump.control_volume.properties_out[0].pressure.setlb(10e5)
+        pump.max_ro_pressure_con = Constraint(expr=(m.fs.ro_min_pressure,
+                                                    pump.control_volume.properties_out[0].pressure,
+                                                    m.fs.ro_max_pressure))
+        iscale.constraint_scaling_transform(pump.max_ro_pressure_con,
+                                            iscale.get_scaling_factor(pump.control_volume.properties_out[0].pressure))
+        # pump.control_volume.properties_out[0].pressure.setub(m.fs.ro_max_pressure)
         pump.deltaP.setlb(0)
 
     if B_case == 'single optimum':
@@ -754,8 +773,8 @@ if __name__ == "__main__":
     import csv
 
     cin = 70
-    recovery = .70
-    starting_stage_num = 5
+    recovery = .50
+    starting_stage_num = 2
 
     a_case_lst = [
         "fix",
@@ -783,8 +802,8 @@ if __name__ == "__main__":
     headers = ["cin (kg/m3)", "recovery (-)", "num_stages", "final perm (ppm)",
                "Membrane area", "SEC", "LCOW"]
 
-    for stage in range(starting_stage_num, 7):
-        with open(f'output_fixA_5LMHbar_{cin}_{recovery}_{stage}stage.csv', 'w', newline='') as csv_file:
+    for stage in range(starting_stage_num, 9):
+        with open(f'case_screen/output_fixA_5LMHbar_{cin}_{recovery}_{stage}stage.csv', 'w', newline='') as csv_file:
             csvwriter = csv.writer(csv_file)
             start = 0
             for a_case in a_case_lst:
