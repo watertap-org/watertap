@@ -25,7 +25,7 @@ from idaes.generic_models.costing.costing_base import (
     FlowsheetCostingBlockData, register_idaes_currency_units)
 
 from watertap.core.zero_order_base import ZeroOrderBase
-from watertap.unit_models.zero_order import ChemicalAdditionZO
+from watertap.unit_models.zero_order import ChemicalAdditionZO, StorageTankZO
 
 
 global_params = ["plant_lifetime",
@@ -323,6 +323,17 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             chem_flow_mass, chem_name)
 
+    def cost_storage_tank(blk):
+        """
+        General method for costing storage tanks. Capital cost is based on the
+        volume of the tank.
+        """
+        t0 = blk.flowsheet().time.first()
+        sizing_term = (blk.unit_model.tank_volume[t0] / pyo.units.m**3)
+
+        ZeroOrderCostingData._general_power_law_form(
+            blk, time=t0, sizing_term=sizing_term)
+
     def _general_power_law_form(blk, time=None, sizing_term=None):
         """
         General method for bulding power law costing expressions.
@@ -386,7 +397,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
     # -------------------------------------------------------------------------
     # Map costing methods to unit model classes
     unit_mapping = {ZeroOrderBase: cost_power_law_flow,
-                    ChemicalAdditionZO: cost_chemical_addition}
+                    ChemicalAdditionZO: cost_chemical_addition,
+                    StorageTankZO: cost_storage_tank}
 
 
 def _get_tech_parameters(blk, parameter_dict, subtype):
