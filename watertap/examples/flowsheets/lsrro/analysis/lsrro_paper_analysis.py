@@ -49,13 +49,13 @@ def run_lsrro_case(number_of_stages, water_recovery=None, Cin=None, Cbrine=None,
     display_state(m)
 
     optimize_set_up(m, water_recovery, Cbrine, A_case, B_case, AB_tradeoff, A_fixed, permeate_quality_limit, ABgamma_factor)
-    m = solve(m, raise_on_failure=False, tee=False)
+    res = solve(m, raise_on_failure=False, tee=False)
     print('\n***---Optimization results---***')
-
-    display_system(m)
-    display_design(m)
-    display_state(m)
-    display_RO_reports(m)
+    if check_optimal_termination(res):
+        display_system(m)
+        display_design(m)
+        display_state(m)
+        display_RO_reports(m)
 
     return m
 
@@ -773,7 +773,7 @@ if __name__ == "__main__":
     import csv
 
     cin = 70
-    recovery = .50
+    recovery = .6
     starting_stage_num = 2
 
     a_case_lst = [
@@ -802,7 +802,7 @@ if __name__ == "__main__":
     headers = ["cin (kg/m3)", "recovery (-)", "num_stages", "final perm (ppm)",
                "Membrane area", "SEC", "LCOW"]
 
-    for stage in range(starting_stage_num, 9):
+    for stage in range(starting_stage_num, 4):
         with open(f'case_screen/output_fixA_5LMHbar_{cin}_{recovery}_{stage}stage.csv', 'w', newline='') as csv_file:
             csvwriter = csv.writer(csv_file)
             start = 0
