@@ -334,7 +334,7 @@ class ReverseOsmosis1DData(_ReverseOsmosisBaseData):
                    b.feed_side.properties[t, x].temperature
 
 
-    def initialize(blk,
+    def initialize_build(blk,
                    initialize_guess=None,
                    state_args=None,
                    outlvl=idaeslog.NOTSET,

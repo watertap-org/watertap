@@ -36,11 +36,6 @@ from watertap.tools.parameter_sweep import (_init_mpi,
                                             NormalSample,
                                             SamplingType)
 
-# Imports for conditional fails
-from idaes.config import bin_directory as idaes_bin_directory
-from idaes.core.util import get_solver
-solver = get_solver()
-is_solver_from_idaes_ext = idaes_bin_directory in solver.executable()
 # -----------------------------------------------------------------------------
 
 class TestParallelManager():
@@ -541,13 +536,8 @@ class TestParallelManager():
 
 
     @pytest.mark.component
+    @pytest.mark.requires_idaes_solver
     def test_parameter_sweep_optimize(self, model, tmp_path):
-
-        if not is_solver_from_idaes_ext:
-            pytest.xfail(
-                    "This test is known to be failing with solver: "
-                    f"{solver}, {solver.executable()}"
-            )
 
         comm, rank, num_procs = _init_mpi()
         tmp_path = _get_rank0_path(comm, tmp_path)

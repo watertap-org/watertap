@@ -63,6 +63,10 @@ Depending on how the functions you've defined work, this could be as straightfor
     # set up the model for optimization
     RO_flowsheet.optimize_set_up(m)
 
+.. testoutput::
+
+   ...
+
 where ``m`` is the flowsheet model that results after the initial "build" step and subsequent operations are performed on that object.
 
 Once this sequence of setup steps is performed, the parameters to be varied should be identified with a dictionary:

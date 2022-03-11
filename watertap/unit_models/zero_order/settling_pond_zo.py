@@ -10,10 +10,31 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
+"""
+This module contains a zero-order representation of a settling pond unit
+operation.
+"""
 
-from .reverse_osmosis_0D import ReverseOsmosis0D
-from .reverse_osmosis_1D import ReverseOsmosis1D
-from .nanofiltration_0D import NanoFiltration0D
-from .nanofiltration_ZO import NanofiltrationZO
-from .pressure_exchanger import PressureExchanger
-from .pump_isothermal import Pump
+from pyomo.environ import Constraint, units as pyunits, Var
+from idaes.core import declare_process_block_class
+from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
+
+# Some more information about this module
+__author__ = "Chenyu Wang"
+
+
+@declare_process_block_class("SettlingPondZO")
+class SettlingPondZOData(ZeroOrderBaseData):
+    """
+    Zero-Order model for a settling pond unit operation.
+    """
+
+    CONFIG = ZeroOrderBaseData.CONFIG()
+
+    def build(self):
+        super().build()
+
+        self._tech_type = "settling_pond"
+
+        build_sido(self)
+        constant_intensity(self)
