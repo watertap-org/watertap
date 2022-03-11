@@ -548,7 +548,7 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
     for idx, pump in m.fs.BoosterPumps.items():
         pump.control_volume.properties_out[0].pressure.unfix()
         pump.control_volume.properties_out[0].pressure.setlb(10e5)
-        pump.control_volume.properties_out[0].pressure.setub(85e5)
+        pump.control_volume.properties_out[0].pressure.setub(m.fs.ro_max_pressure)
         pump.deltaP.setlb(0)
 
     if B_case == 'single optimum':
