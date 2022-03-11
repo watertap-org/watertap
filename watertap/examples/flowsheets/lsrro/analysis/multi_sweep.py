@@ -25,7 +25,7 @@ from pyomo.environ import units as pyunits, check_optimal_termination, value
 # - mention biggest change to flowsheet IN CASE issues arise in broader sweep--> added another pressure exchanger to first stage
 # - anything else?
 
-def lsrro_presweep(number_of_stages=2, water_recovery=0.5, A_fixed=5 / 3.6e11, permeate_quality_limit=1000e-6, has_CP=True):
+def lsrro_presweep(number_of_stages=2, A_fixed=5 / 3.6e11, permeate_quality_limit=1000e-6, has_CP=True):
     m = lsrro_case.build(number_of_stages=number_of_stages, nacl_solubility_limit=True, has_CP =has_CP, has_Pdrop=True)
     lsrro_case.set_operating_conditions(m)
     lsrro_case.initialize(m)

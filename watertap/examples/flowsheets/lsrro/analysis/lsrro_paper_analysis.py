@@ -139,7 +139,10 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
     total_pump_work += m.fs.total_work_recovered
     m.fs.net_pump_work = total_pump_work
 
-    # additional variables or expressions ---------------------------------------------------------------------------
+    # additional parameters, variables or expressions ---------------------------------------------------------------------------
+    m.fs.ro_max_pressure = Param(initialize=85e5, units=pyunits.Pa, mutable=True)
+    m.fs.lsrro_max_pressure = Param(initialize=65e5, units=pyunits.Pa, mutable=True)
+
     # system water recovery
     m.fs.water_recovery = Var(
             initialize=0.5,
@@ -537,9 +540,9 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
         pump.control_volume.properties_out[0].pressure.setlb(10e5)
         pump.deltaP.setlb(0)
         if idx > m.fs.StageSet.first():
-            pump.control_volume.properties_out[0].pressure.setub(65e5)
+            pump.control_volume.properties_out[0].pressure.setub(m.fs.lsrro_max_pressure)
         else:
-            pump.control_volume.properties_out[0].pressure.setub(85e5)
+            pump.control_volume.properties_out[0].pressure.setub(m.fs.ro_max_pressure)
 
     # unfix eq pumps
     for idx, pump in m.fs.BoosterPumps.items():
