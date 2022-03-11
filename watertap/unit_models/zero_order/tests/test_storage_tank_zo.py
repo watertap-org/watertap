@@ -143,7 +143,13 @@ Unit : fs.unit                                                             Time:
         assert output in stream.getvalue()
 
 
-def test_costing():
+db = Database()
+params = db._get_technology("storage_tank")
+
+
+@pytest.mark.parametrize("subtype", [k for k in params.keys()
+                                     if k != "default"])
+def test_costing(subtype):
     m = ConcreteModel()
     m.db = Database()
 
@@ -156,7 +162,8 @@ def test_costing():
 
     m.fs.unit1 = StorageTankZO(default={
         "property_package": m.fs.params,
-        "database": m.db})
+        "database": m.db,
+        "process_subtype": subtype})
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
