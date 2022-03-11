@@ -234,7 +234,7 @@ class CrystallizationData(UnitModelBlockData):
             initialize=0,
             bounds=(0, None),
             units=pyunits.m**3,
-            doc="Volume of liquid-solid suspension"
+            doc="Crystallizer minimum active volume, i.e. volume of liquid-solid suspension"
             )
 
 
@@ -683,7 +683,7 @@ class CrystallizationData(UnitModelBlockData):
         var_dict["Magma circulation flow rate (m**3/s)"] = self.magma_circulation_flow_vol
         var_dict["Vol. frac. of solids in suspension, 1-E"] = self.product_volumetric_solids_fraction
         var_dict["Residence time (h)"] = self.t_res
-        var_dict["Volume of suspension (m**3)"] = self.V_suspension
+        var_dict["Crystallizer minimum active volume (m**3)"] = self.V_suspension
         var_dict["Suspension height in crystallizer (m)"] = self.h_slurry
         var_dict["Crystallizer height (m)"] = self.H_crystallizer
 
