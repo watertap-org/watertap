@@ -128,12 +128,12 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                       : Value   : Fixed : Bounds
-           Electricity Demand :  0.0000 : False : (None, None)
-        Electricity Intensity :  0.0000 :  True : (None, None)
-       Solute Removal [boron] : 0.80000 :  True : (0, None)
-         Solute Removal [foo] :  0.0000 :  True : (0, None)
-    Solute Removal [selenium] : 0.96500 :  True : (0, None)
+    Key                       : Value      : Fixed : Bounds
+           Electricity Demand : 9.9000e-09 : False : (0, None)
+        Electricity Intensity :     0.0000 :  True : (None, None)
+       Solute Removal [boron] :    0.80000 :  True : (0, None)
+         Solute Removal [foo] :     0.0000 :  True : (0, None)
+    Solute Removal [selenium] :    0.96500 :  True : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table

@@ -210,6 +210,11 @@ jobs:
         echo '::group::Output of "pip install" commands'
         pip install --progress-bar off -r requirements-dev.txt
         echo '::endgroup::'
+        # TODO: COSTING_UPDATE: 6.3.0 isn't bundled on PyPI with some files
+        #       need for PyNumero. For now, we'll install 6.3.1.dev0 from GitHub
+        echo '::group::Install Pyomo from GitHub'
+        pip install pyomo https://github.com/pyomo/pyomo/archive/043b2a5.zip
+        echo '::endgroup::'
         echo '::group::Display installed packages'
         conda list
         pip list

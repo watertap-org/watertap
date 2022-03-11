@@ -282,8 +282,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
                     - b.permeate_side[t,1.].pressure_osm) / \
                     b.feed_side.properties_out[t].pressure
 
-
-    def initialize(blk,
+    def initialize_build(blk,
                    initialize_guess=None,
                    state_args=None,
                    outlvl=idaeslog.NOTSET,

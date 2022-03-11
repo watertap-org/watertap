@@ -117,7 +117,7 @@ Unit : fs.unit                                                             Time:
 
     Key                    : Value      : Fixed : Bounds
     Capacity Basis (kg/hr) : 1.0000e+05 :  True : (None, None)
-        Electricity Demand :     0.0000 : False : (None, None)
+        Electricity Demand : 1.6544e-24 : False : (0, None)
      Electricity Intensity :     0.0000 :  True : (None, None)
         Total Mass (kg/hr) : 2.1600e+05 : False : (None, None)
 

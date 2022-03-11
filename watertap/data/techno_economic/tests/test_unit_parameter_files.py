@@ -25,7 +25,8 @@ dbpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
 db = Database()
 
-exclude_files = ["water_sources.yaml", "component_list.yaml"]
+exclude_files = [
+    "water_sources.yaml", "component_list.yaml", "default_case_study.yaml"]
 
 tech_list = []
 for f in os.listdir(dbpath):

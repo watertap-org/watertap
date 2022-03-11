@@ -146,7 +146,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                      : Value   : Fixed : Bounds
-          Electricity Demand :  3686.3 : False : (None, None)
+          Electricity Demand :  3686.3 : False : (0, None)
         Solute Removal [foo] :  0.0000 :  True : (0, None)
     Solute Removal [nitrate] : 0.95000 :  True : (0, None)
         Solute Removal [toc] : 0.95000 :  True : (0, None)

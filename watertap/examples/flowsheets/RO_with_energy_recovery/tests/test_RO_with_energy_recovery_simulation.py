@@ -86,20 +86,25 @@ class TestEnergyRecoverySystem:
         assert isinstance(fs.RO.deltaP, Var)
 
         # additional expressions
-        assert isinstance(fs.annual_water_production, Expression)
-        assert isinstance(fs.specific_energy_consumption, Expression)
+        assert isinstance(fs.costing.annual_water_production, Expression)
+        assert isinstance(fs.costing.specific_energy_consumption, Expression)
 
         # costing blocks
-        blk_str_list = ['P1', 'P2', 'RO', 'PXR']
-        for blk_str in blk_str_list:
+        for blk_str in ('RO',):
             blk = getattr(fs, blk_str)
             c_blk = getattr(blk, 'costing')
             assert isinstance(c_blk, Block)
             assert isinstance(getattr(c_blk, 'capital_cost'), Var)
-            assert isinstance(getattr(c_blk, 'operating_cost'), Var)
+            assert isinstance(getattr(c_blk, 'fixed_operating_cost'), Var)
 
-        var_str_list = ['capital_cost_total', 'investment_cost_total', 'operating_cost_MLC',
-                        'operating_cost_total', 'LCOW']
+        for blk_str in ('P1', 'P2', 'PXR',):
+            blk = getattr(fs, blk_str)
+            c_blk = getattr(blk, 'costing')
+            assert isinstance(c_blk, Block)
+            assert isinstance(getattr(c_blk, 'capital_cost'), Var)
+
+        var_str_list = ['total_investment_cost', 'maintenance_labor_chemical_operating_cost',
+                        'total_operating_cost',]
         for var_str in var_str_list:
             var = getattr(fs.costing, var_str)
             assert isinstance(var, Var)
@@ -200,7 +205,7 @@ class TestEnergyRecoverySystem:
 
         # check system metrics
         assert value(m.fs.RO.recovery_vol_phase[0, 'Liq']) == pytest.approx(0.4954, rel=1e-3)
-        assert value(m.fs.specific_energy_consumption) == pytest.approx(2.727, rel=1e-3)
+        assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(2.727, rel=1e-3)
         assert value(m.fs.costing.LCOW) == pytest.approx(0.4394, rel=1e-3)
 
         # check mass balance
@@ -284,5 +289,5 @@ PXR HP out: 0.528 kg/s, 67389 ppm, 1.0 bar
         assert value(m.fs.RO.area) == pytest.approx(115, rel=1e-3)
         # check system metrics
         assert value(m.fs.RO.recovery_vol_phase[0, 'Liq']) == pytest.approx(0.4954, rel=1e-3)
-        assert value(m.fs.specific_energy_consumption) == pytest.approx(2.110, rel=1e-3)
+        assert value(m.fs.costing.specific_energy_consumption) == pytest.approx(2.110, rel=1e-3)
         assert value(m.fs.costing.LCOW) == pytest.approx(0.4111, rel=1e-3)
