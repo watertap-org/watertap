@@ -300,7 +300,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
     def cost_chemical_addition(blk):
         """
         General method for costing chemical addition processes. Capital cost is
-        based on the mass flow rate of chemcial added.
+        based on the mass flow rate of chemical added.
 
         This method also registers the chemical flow and electricity demand as
         costed flows.
@@ -325,7 +325,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
     def _general_power_law_form(blk, time=None, sizing_term=None):
         """
-        General method for bulding power law costing expressions.
+        General method for building power law costing expressions.
         """
         # Get parameter dict from database
         parameter_dict = \
