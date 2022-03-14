@@ -14,7 +14,7 @@ import idaes.logger as idaeslog
 from idaes.core.util import get_solver
 
 from watertap.property_models import cryst_prop_pack as props
-from crystallizer import Crystallization
+from watertap.unit_models.crystallizer import Crystallization
 
 from io import StringIO
 from pyomo.util.infeasible import (log_active_constraints, log_close_to_bounds,
