@@ -25,7 +25,8 @@ from idaes.generic_models.costing.costing_base import (
     FlowsheetCostingBlockData, register_idaes_currency_units)
 
 from watertap.core.zero_order_base import ZeroOrderBase
-from watertap.unit_models.zero_order import ChemicalAdditionZO, StorageTankZO
+from watertap.unit_models.zero_order import (
+    ChemicalAdditionZO, ChlorinationZO, StorageTankZO)
 
 
 global_params = ["plant_lifetime",
@@ -379,6 +380,66 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             chem_flow_mass, chem_name)
 
+    def cost_chlorination(blk):
+        """
+        General method for costing chlorination units. Capital cost is based on
+        the both inlet flow and dosage of chlorine.
+        """
+        t0 = blk.flowsheet().time.first()
+        chem_flow_mass = (blk.unit_model.chlorine_dose[t0] *
+                          blk.unit_model.properties_in[t0].flow_vol)
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        # Get costing parameter sub-block for this technology
+        A, B, C = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["capital_a_parameter",
+             "capital_b_parameter",
+             "capital_c_parameter"])
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Add csot variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation")
+
+        ln_Q = pyo.units.convert(
+            blk.unit_model.properties_in[t0].flow_vol /
+            (pyo.units.m**3/pyo.units.hour),
+            to_units=pyo.units.dimensionless)
+        ln_D = pyo.units.convert(
+            blk.unit_model.chlorine_dose[t0] / (pyo.units.mg/pyo.units.liter),
+            to_units=pyo.units.dimensionless)
+
+        expr = pyo.units.convert(
+            A*ln_Q + B*ln_D + C*ln_Q*ln_D,
+            to_units=blk.config.flowsheet_costing_block.base_currency)
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
+        blk.config.flowsheet_costing_block.cost_flow(
+            chem_flow_mass, "chlorine")
+
     def cost_storage_tank(blk):
         """
         General method for costing storage tanks. Capital cost is based on the
@@ -434,6 +495,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
     # Map costing methods to unit model classes
     unit_mapping = {ZeroOrderBase: cost_power_law_flow,
                     ChemicalAdditionZO: cost_chemical_addition,
+                    ChlorinationZO: cost_chlorination,
                     StorageTankZO: cost_storage_tank}
 
 
