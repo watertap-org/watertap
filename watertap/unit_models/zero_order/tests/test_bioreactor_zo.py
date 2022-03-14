@@ -17,7 +17,7 @@ import pytest
 from io import StringIO
 
 from pyomo.environ import (
-    Block, check_optimal_termination, ConcreteModel, Constraint, value, Var, Param)
+    Block, check_optimal_termination, ConcreteModel, Constraint, value, Var)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
