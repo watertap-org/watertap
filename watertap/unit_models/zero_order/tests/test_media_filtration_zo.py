@@ -144,13 +144,16 @@ class TestMediaFiltrationZO:
 Unit : fs.unit                                                             Time: 0.0
 ------------------------------------------------------------------------------------
     Unit Performance
+
     Variables: 
+
     Key                              : Value      : Fixed : Bounds
                   Electricity Demand :  0.0064800 : False : (0, None)
                Electricity Intensity : 0.00015000 :  True : (None, None)
     Solute Removal [nonvolatile_toc] :    0.20000 :  True : (0, None)
                 Solute Removal [tss] :    0.50000 :  True : (0, None)
                       Water Recovery :    0.99990 :  True : (1e-08, 1.0000001)
+
 ------------------------------------------------------------------------------------
     Stream Table
                                          Inlet   Treated  Byproduct
@@ -286,7 +289,9 @@ class TestMediaFiltrationZO_w_default_removal:
 Unit : fs.unit                                                             Time: 0.0
 ------------------------------------------------------------------------------------
     Unit Performance
+
     Variables: 
+
     Key                              : Value      : Fixed : Bounds
                   Electricity Demand :  0.0070200 : False : (0, None)
                Electricity Intensity : 0.00015000 :  True : (None, None)
@@ -294,6 +299,7 @@ Unit : fs.unit                                                             Time:
     Solute Removal [nonvolatile_toc] :    0.20000 :  True : (0, None)
                 Solute Removal [tss] :    0.50000 :  True : (0, None)
                       Water Recovery :    0.99990 :  True : (1e-08, 1.0000001)
+
 ------------------------------------------------------------------------------------
     Stream Table
                                          Inlet   Treated  Byproduct
