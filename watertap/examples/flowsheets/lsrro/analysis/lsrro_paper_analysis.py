@@ -778,9 +778,9 @@ if __name__ == "__main__":
     # cin = 125
     # recovery = .35
     cin_rec = {
-        # 'case 1': [35, 0.7],       # 2 stage optimal at 25 LMH max B value for LSRRO stages
-        'case 2': [70, 0.55],    # 3 stage optimal at 25 LMH max B value for LSRRO stages
-        'case 3': [125, 0.30]    # 4 stage optimal at 25 LMH max B value for LSRRO stages
+        'case 1': [35, 0.8],       # 2 stage optimal at 25 LMH max B value for LSRRO stages
+        'case 2': [70, 0.65],    # 3 stage optimal at 25 LMH max B value for LSRRO stages
+        'case 3': [125, 0.4]    # 4 stage optimal at 25 LMH max B value for LSRRO stages
     }
     starting_stage = 2
     ending_stage = 8
