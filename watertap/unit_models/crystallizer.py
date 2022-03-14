@@ -191,7 +191,7 @@ class CrystallizationData(UnitModelBlockData):
             initialize=3,
             bounds=(0, 25),
             units=pyunits.m,
-            doc="Minimum diameter of crystallizer"
+            doc="Diameter of crystallizer"
             )
 
 
