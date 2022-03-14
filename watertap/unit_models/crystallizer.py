@@ -468,16 +468,15 @@ class CrystallizationData(UnitModelBlockData):
 
 
         # 11. Minimum diameter of evaporation zone
+        @self.Expression(doc='maximum allowable vapour linear velocity in m/s')
         def eq_max_allowable_velocity(b):
             return b.k_param * \
             (b.properties_out[0].dens_mass_phase['Liq']/ b.properties_vapor[0].dens_mass_solvent['Vap']) ** 0.5
-        
-        self.v_max = Expression(rule=eq_max_allowable_velocity, doc='maximum allowable vapour linear velocity in m/s') 
 
         @self.Constraint(doc="Crystallizer diameter (based on minimum diameter of evaporation zone)")
         def eq_vapor_head_diameter_constraint(b):
             return self.diameter_crystallizer == \
-            (4 * b.properties_vapor[0].flow_vol_phase['Vap'] / (Constants.pi * b.v_max)) ** 0.5
+            (4 * b.properties_vapor[0].flow_vol_phase['Vap'] / (Constants.pi * b.eq_max_allowable_velocity)) ** 0.5
 
 
         # 12. Minimum crystallizer height
@@ -485,20 +484,20 @@ class CrystallizationData(UnitModelBlockData):
         def eq_slurry_height_constraint(b):
             return self.height_slurry == 4 * b.volume_suspension / (Constants.pi * b.diameter_crystallizer ** 2)
 
+        @self.Expression(doc='Recommended height of vapor space (0.75*D) based on Tavares et. al.')
         def eq_vapor_space_height(b):
             return 0.75 * b.diameter_crystallizer
-        self.h_vapor_space =  Expression(rule=eq_vapor_space_height, doc='Recommended height of vapor space (0.75*D) based on Tavares et. al.')
 
+        @self.Expression(doc='Height to diameter ratio constraint for evaporative crystallizers (Wilson et. al.)')
         def eq_minimum_height_diameter_ratio(b):
             return 1.5 * b.diameter_crystallizer
-        self.h_min = Expression(rule=eq_minimum_height_diameter_ratio, doc='Height to diameter ratio constraint for evaporative crystallizers (Wilson et. al.)')
 
 
         @self.Constraint(doc="Crystallizer height")
         def eq_crystallizer_height_constraint(b):
             # Height is max(). Manual smooth max implementation used here: max(a,b) = 0.5(a + b + |a-b|)
-            a = b.h_vapor_space + b.height_slurry
-            b = b.h_min
+            a = b.eq_vapor_space_height + b.height_slurry
+            b = b.eq_minimum_height_diameter_ratio
             eps = 1e-20 * pyunits.m
             return self.height_crystallizer == 0.5 * (a + b + ((a-b)**2 + eps**2)**0.5)
 
