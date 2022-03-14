@@ -34,7 +34,7 @@ from watertap.core.util.initialization import assert_degrees_of_freedom, assert_
 import watertap.examples.flowsheets.lsrro.financials as financials
 import watertap.property_models.NaCl_prop_pack as props
 
-B_max = 50/3.6e6
+B_max = None #50/3.6e6
 def run_lsrro_case(number_of_stages, water_recovery=None, Cin=None, Cbrine=None,
                    A_case=None, B_case=None, AB_tradeoff=None, A_fixed=None,
                    nacl_solubility_limit=None, has_CP=None, has_Pdrop=None, permeate_quality_limit=None,
