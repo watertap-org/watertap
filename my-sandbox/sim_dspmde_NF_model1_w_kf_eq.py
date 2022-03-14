@@ -148,21 +148,13 @@ if __name__ == '__main__':
     print('---------------- After calculate_scaling_factors---------------------------------------')
     [print(i[0], i[1]) for i in iscale.badly_scaled_var_generator(m)]
 
-
-
-    # checking state block
-    assert_units_consistent(m)
-
-    # check dof = 0
-    check_dof(m, fail_flag=False)
-
-    m.fs.unit.initialize()
+    m.fs.unit.initialize(automate_rescale=True)   # this is the default for NFDSPM initialize but writing out anyway
 
     # for con in m.fs.unit.component_data_objects(Constraint, descend_into=False):
     #     con.deactivate()
     # #
     # m.fs.unit.eq_water_flux.deactivate()
-    m.fs.unit.eq_solute_solvent_flux.deactivate()   # deactivating yields higher, more practical rejection rates
+    # m.fs.unit.eq_solute_solvent_flux.deactivate()   # deactivating yields higher, more practical rejection rates
     # m.fs.unit.eq_solute_flux_concentration_polarization.deactivate()
     # m.fs.unit.eq_permeate_isothermal.activate()
     # m.fs.unit.eq_permeate_isothermal_mixed.activate()

@@ -912,7 +912,7 @@ class DSPMDEStateBlockData(StateBlockData):
                     elif comp.is_solvent():
                         iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], 100)
                     else:
-                        raise TypeError(f'comp={comp}, j = {j}')
+                        raise TypeError(f'Catching components with missing scaling factors: comp={comp}, j = {j}')
 
         if self.is_property_constructed('conc_mass_phase_comp'):
             for j in self.params.component_list:
