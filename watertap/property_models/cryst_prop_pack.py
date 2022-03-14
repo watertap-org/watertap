@@ -20,7 +20,7 @@ import idaes.logger as idaeslog
 from enum import Enum, auto
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, PositiveReals,\
+from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, \
     Var, Param, exp, log, Suffix, value, check_optimal_termination
 from pyomo.environ import units as pyunits
 from pyomo.common.config import ConfigValue, In
