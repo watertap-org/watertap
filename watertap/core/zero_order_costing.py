@@ -26,7 +26,7 @@ from idaes.generic_models.costing.costing_base import (
 
 from watertap.core.zero_order_base import ZeroOrderBase
 from watertap.unit_models.zero_order import (
-    ChemicalAdditionZO, ChlorinationZO, StorageTankZO)
+    ChemicalAdditionZO, ChlorinationZO, StorageTankZO, UVZO)
 
 
 global_params = ["plant_lifetime",
@@ -468,6 +468,46 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         ZeroOrderCostingData._general_power_law_form(
             blk, A, B, sizing_term, factor)
 
+    def cost_uv(blk):
+        """
+        General method for costing UV reactor units. Capital cost is based on
+        the inlet flow, UV reduced equivalent dosage, and UV transmittance at the inlet.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation")
+
+        expr = ZeroOrderCostingData._get_uv_costs(blk)
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == expr)
+
+    # def cost_uv_aop(blk):
+    #     t0 = blk.flowsheet().time.first()
+    #
+    #     # Add cost variable and constraint
+    #     blk.capital_cost = pyo.Var(
+    #         initialize=1,
+    #         units=blk.config.flowsheet_costing_block.base_currency,
+    #         bounds=(0, None),
+    #         doc="Capital cost of unit operation")
+    #
+    #     expr = ZeroOrderCostingData._get_uv_costs(blk)
+    #     aop_expr = ZeroOrderCostingData._get_uv_costs(blk)
+    #     expr += aop_expr
+    #
+    #     blk.capital_cost_constraint = pyo.Constraint(
+    #         expr=blk.capital_cost == expr)
+    #
+    #     # Register flows
+    #     blk.config.flowsheet_costing_block.cost_flow(
+    #         blk.unit_model.electricity[t0], "electricity")
+
     def _general_power_law_form(blk, A, B, sizing_term, factor=None):
         """
         General method for bulding power law costing expressions.
@@ -496,8 +536,55 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
     unit_mapping = {ZeroOrderBase: cost_power_law_flow,
                     ChemicalAdditionZO: cost_chemical_addition,
                     ChlorinationZO: cost_chlorination,
-                    StorageTankZO: cost_storage_tank}
+                    StorageTankZO: cost_storage_tank,
+                    UVZO: cost_uv,
+                    }
 
+    def _get_uv_costs(blk):
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        # Get costing parameter sub-block for this technology
+        A, B, C, D = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["uv_a_parameter",
+             "uv_b_parameter",
+             "uv_c_parameter",
+             "uv_d_parameter"])
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        Q = pyo.units.convert(
+            blk.unit_model.properties_in[t0].flow_vol /
+            (pyo.units.m ** 3 / pyo.units.s),
+            to_units=pyo.units.dimensionless)
+        dose = pyo.units.convert(
+            blk.unit_model.uv_reduced_equivalent_dose[t0] / (pyo.units.mJ / pyo.units.cm ** 2),
+            to_units=pyo.units.dimensionless)
+        uvt_in = blk.unit_model.uv_transmittance_in[t0]
+
+        expr = pyo.units.convert(
+            A * Q + B * dose * Q + C * (Q * uvt_in) ** 7 - D * dose * Q * uvt_in,
+            to_units=blk.config.flowsheet_costing_block.base_currency)
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
+
+        return expr
 
 def _get_tech_parameters(blk, parameter_dict, subtype, param_list):
     """
@@ -535,7 +622,7 @@ def _get_tech_parameters(blk, parameter_dict, subtype, param_list):
                     bounds=(0, None))
                 pblock.add_component(p, vobj)
             except KeyError:
-                raise KeyError("Error when trying to retirve costing parameter"
+                raise KeyError("Error when trying to retrieve costing parameter"
                                " from {p} database. Please check the YAML "
                                "file for this technology for errors.")
 
