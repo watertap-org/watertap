@@ -152,7 +152,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                                          : Value    : Fixed : Bounds
-                              Electricity Demand :   3605.0 : False : (None, None)
+                              Electricity Demand :   3605.0 : False : (0, None)
                            Electricity Intensity :  0.10000 :  True : (None, None)
                            Oxidant Dosage (mg/L) :   5.0000 :  True : (None, None)
                              Oxidant Flow (kg/s) : 0.050070 : False : (0, None)
@@ -304,7 +304,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                                          : Value    : Fixed : Bounds
-                              Electricity Demand :   3604.0 : False : (None, None)
+                              Electricity Demand :   3604.0 : False : (0, None)
                            Electricity Intensity :  0.10000 :  True : (None, None)
                            Oxidant Dosage (mg/L) :   5.0000 :  True : (None, None)
                              Oxidant Flow (kg/s) : 0.050055 : False : (0, None)
