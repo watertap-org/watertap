@@ -144,7 +144,7 @@ if __name__ == '__main__':
     #########################################
     print("\n--- Case 4 ---")
     m.fs.crystallizer.product_volumetric_solids_fraction.unfix()
-    m.fs.crystallizer.magma_density.fix(250)
+    m.fs.crystallizer.dens_mass_magma.fix(250)
 
     # solving
     assert_units_consistent(m)  # check that units are consistent
@@ -166,7 +166,7 @@ if __name__ == '__main__':
     # Case 5: Fix heat addition
     #########################################
     print("\n--- Case 5 ---")
-    m.fs.crystallizer.magma_density.unfix()
+    m.fs.crystallizer.dens_mass_magma.unfix()
     m.fs.crystallizer.work_mechanical[0].fix(55000)
 
     # solving
