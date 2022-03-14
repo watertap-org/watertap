@@ -565,7 +565,7 @@ class NaClStateBlockData(StateBlockData):
     # 1 Mass fraction: From NaCl property package 
     def _mass_frac_phase_comp(self):
         self.mass_frac_phase_comp = Var(self.phase_component_set,
-                                    domain=PositiveReals,
+                                    domain=NonNegativeReals,
                                     initialize={('Liq', 'H2O'): 0.965, ('Liq', 'NaCl'): 0.035, ('Vap', 'H2O'): 1.0, 
                                     ('Sol', 'NaCl'): 1.0},
                                     bounds=(0, 1.0001),  
