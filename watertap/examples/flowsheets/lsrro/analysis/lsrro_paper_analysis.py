@@ -34,7 +34,7 @@ from watertap.core.util.initialization import assert_degrees_of_freedom, assert_
 import watertap.examples.flowsheets.lsrro.financials as financials
 import watertap.property_models.NaCl_prop_pack as props
 
-B_max = 25/3.6e6
+B_max = 50/3.6e6
 def run_lsrro_case(number_of_stages, water_recovery=None, Cin=None, Cbrine=None,
                    A_case=None, B_case=None, AB_tradeoff=None, A_fixed=None,
                    nacl_solubility_limit=None, has_CP=None, has_Pdrop=None, permeate_quality_limit=None,
@@ -622,7 +622,8 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
         if idx > m.fs.StageSet.first():
             stage.B_comp.unfix()
             stage.B_comp.setlb(3.5e-8)
-            stage.B_comp.setub(m.fs.B_max) #TODO: changed to ~50 LMH equivalent; make sure still stable
+            if B_max is not None:
+                stage.B_comp.setub(m.fs.B_max) #TODO: changed to ~50 LMH equivalent; make sure still stable
             if B_case == 'single optimum':
                 stage.B_comp_equal = Constraint(expr=stage.B_comp[0, 'NaCl'] == m.fs.B_comp_system)
             if A_case == 'single optimum':
@@ -777,9 +778,9 @@ if __name__ == "__main__":
     # cin = 125
     # recovery = .35
     cin_rec = {
-        'case 1': [35, 0.7],       # 2 stage optimal at 25 LMH max B value for LSRRO stages
-        # 'case 2': [70, 0.55],    # 3 stage optimal at 25 LMH max B value for LSRRO stages
-        # 'case 3': [125, 0.30]    # 4 stage optimal at 25 LMH max B value for LSRRO stages
+        # 'case 1': [35, 0.7],       # 2 stage optimal at 25 LMH max B value for LSRRO stages
+        'case 2': [70, 0.55],    # 3 stage optimal at 25 LMH max B value for LSRRO stages
+        'case 3': [125, 0.30]    # 4 stage optimal at 25 LMH max B value for LSRRO stages
     }
     starting_stage = 2
     ending_stage = 8
@@ -806,13 +807,17 @@ if __name__ == "__main__":
         1
     ]
 
+    if B_max is None:
+        bmax_fn = "nomax"
+    else:
+        bmax_fn = B_max * 3.6e6
 
     headers = ["cin (kg/m3)", "recovery (-)", "num_stages", "final brine concentration","final perm (ppm)",
                "Membrane area", "SEC", "LCOW"]
     for key, val in cin_rec.items():
         cin = val[0]
         recovery = val[1]
-        with open(f'case_screen/output_fixA_5LMHbar_Bmax_{B_max*3.6e6}LMH_{cin}gL_{recovery*100}pct.csv', 'w', newline='') as csv_file:
+        with open(f'case_screen/output_fixA_5LMHbar_Bmax_{bmax_fn}LMH_{cin}gL_{recovery*100}pct.csv', 'w', newline='') as csv_file:
             csvwriter = csv.writer(csv_file)
             start = 0
             for stage in reversed(range(starting_stage, ending_stage+1)):
