@@ -21,6 +21,7 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.testing import initialization_tester
 
 from watertap.unit_models.zero_order import FeedZO
 from watertap.core.wt_database import Database
@@ -44,9 +45,16 @@ class TestFeedZO:
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert isinstance(model.fs.unit.outlet.flow_vol, Var)
-        assert isinstance(model.fs.unit.outlet.conc_mass_comp, Var)
-        for (t, j) in model.fs.unit.outlet.conc_mass_comp.keys():
+        assert isinstance(model.fs.unit.outlet.flow_mass_comp, Var)
+        for (t, j) in model.fs.unit.outlet.flow_mass_comp.keys():
+            assert t == 0
+            assert j in model.db.get_solute_set() or j == "H2O"
+
+        assert isinstance(model.fs.unit.flow_vol, Var)
+        assert len(model.fs.unit.flow_vol) == 1
+
+        assert isinstance(model.fs.unit.conc_mass_comp, Var)
+        for (t, j) in model.fs.unit.conc_mass_comp.keys():
             assert t == 0
             assert j in model.db.get_solute_set()
 
@@ -58,49 +66,49 @@ class TestFeedZO:
 
         assert pytest.approx(data["default_flow"]["value"],
                              rel=1e-12) == value(
-            model.fs.unit.outlet.flow_vol[0])
-        assert model.fs.unit.outlet.flow_vol[0].fixed
+            model.fs.unit.flow_vol[0])
+        assert model.fs.unit.flow_vol[0].fixed
 
         for j, v in data["solutes"].items():
             assert pytest.approx(v["value"], rel=1e-12) == value(
-                model.fs.unit.outlet.conc_mass_comp[0, j])
-            assert model.fs.unit.outlet.conc_mass_comp[0, j].fixed
+                model.fs.unit.conc_mass_comp[0, j])
+            assert model.fs.unit.conc_mass_comp[0, j].fixed
 
     @pytest.mark.unit
     def test_load_feed_data_from_database_no_overwrite(self, model):
-        model.fs.unit.outlet.flow_vol[0].fix(42)
-        model.fs.unit.outlet.conc_mass_comp[0, "tds"].fix(42)
+        model.fs.unit.flow_vol[0].fix(42)
+        model.fs.unit.conc_mass_comp[0, "tds"].fix(42)
 
         model.fs.unit.load_feed_data_from_database()
 
         # Should not have changed fixed variables
-        assert 42 == value(model.fs.unit.outlet.flow_vol[0])
-        assert model.fs.unit.outlet.flow_vol[0].fixed
-        assert 42 == value(model.fs.unit.outlet.conc_mass_comp[0, "tds"])
-        assert model.fs.unit.outlet.conc_mass_comp[0, "tds"].fixed
+        assert 42 == value(model.fs.unit.flow_vol[0])
+        assert model.fs.unit.flow_vol[0].fixed
+        assert 42 == value(model.fs.unit.conc_mass_comp[0, "tds"])
+        assert model.fs.unit.conc_mass_comp[0, "tds"].fixed
 
     @pytest.mark.unit
     def test_load_feed_data_from_database_overwrite(self, model):
         data = model.db.get_source_data()
 
         # Make sure overloaded variable still have set values
-        assert 42 == value(model.fs.unit.outlet.flow_vol[0])
-        assert model.fs.unit.outlet.flow_vol[0].fixed
-        assert 42 == value(model.fs.unit.outlet.conc_mass_comp[0, "tds"])
-        assert model.fs.unit.outlet.conc_mass_comp[0, "tds"].fixed
+        assert 42 == value(model.fs.unit.flow_vol[0])
+        assert model.fs.unit.flow_vol[0].fixed
+        assert 42 == value(model.fs.unit.conc_mass_comp[0, "tds"])
+        assert model.fs.unit.conc_mass_comp[0, "tds"].fixed
 
         model.fs.unit.load_feed_data_from_database(overwrite=True)
 
         # This should have reset the value of all variables
         assert pytest.approx(data["default_flow"]["value"],
                              rel=1e-12) == value(
-            model.fs.unit.outlet.flow_vol[0])
-        assert model.fs.unit.outlet.flow_vol[0].fixed
+            model.fs.unit.flow_vol[0])
+        assert model.fs.unit.flow_vol[0].fixed
 
         for j, v in data["solutes"].items():
             assert pytest.approx(v["value"], rel=1e-12) == value(
-                model.fs.unit.outlet.conc_mass_comp[0, j])
-            assert model.fs.unit.outlet.conc_mass_comp[0, j].fixed
+                model.fs.unit.conc_mass_comp[0, j])
+            assert model.fs.unit.conc_mass_comp[0, j].fixed
 
     @pytest.mark.unit
     def test_degrees_of_freedom(self, model):
@@ -123,3 +131,34 @@ class TestFeedZO:
                 "source. Value was not fixed.") in caplog.text
         assert ("fs.unit component tds was not defined in database water "
                 "source. Value was not fixed.") in caplog.text
+
+
+@pytest.mark.component
+def test_initialize():
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.params = WaterParameterBlock(default={"database": m.db})
+
+    m.fs.unit = FeedZO(default={"property_package": m.fs.params})
+
+    m.fs.unit.load_feed_data_from_database()
+
+    initialization_tester(m)
+
+    res = {'H2O': 4263.816948529999,
+           'boron': 0.020166519999999997,
+           'bromide': 0.3038727899999999,
+           'calcium': 1.8773196799999994,
+           'chloride': 87.82519459999996,
+           'magnesium': 5.857457399999998,
+           'potassium': 1.8117784899999994,
+           'sodium': 48.945060699999985,
+           'strontium': 0.005958289999999999,
+           'sulfate': 12.283243999999996,
+           'tds': 160.41549999999995,
+           'tss': 0.13749899999999993}
+
+    for (t, j), v in m.fs.unit.outlet.flow_mass_comp.items():
+        assert value(v) == pytest.approx(res[j], rel=1e-5)

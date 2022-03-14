@@ -140,3 +140,6 @@ dmypy.json
 *.elc
 auto-save-list
 .\#*
+
+# MAC File System
+.DS_Store

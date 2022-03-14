@@ -13,7 +13,7 @@
 """
 This module contains the base class for all zero order unit models.
 """
-from idaes.core import UnitModelBlockData, useDefault
+from idaes.core import UnitModelBlockData, useDefault, declare_process_block_class
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 from idaes.core.util.exceptions import ConfigurationError
@@ -30,6 +30,7 @@ __author__ = "Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 
+@declare_process_block_class("ZeroOrderBase")
 class ZeroOrderBaseData(UnitModelBlockData):
     """
     Standard base class for zero order unit models.
@@ -115,8 +116,8 @@ class ZeroOrderBaseData(UnitModelBlockData):
                 f"Zero-order models only support `H2O` as a solvent and all "
                 f"other species as Solutes.")
 
-    def initialize(self, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg=None):
+    def initialize_build(self, state_args=None, outlvl=idaeslog.NOTSET,
+                         solver=None, optarg=None):
         '''
         Placeholder initialization routine, raises NotImplementedError
         '''
@@ -166,7 +167,7 @@ class ZeroOrderBaseData(UnitModelBlockData):
 
     def set_recovery_and_removal(self, data, use_default_removal=False):
         """
-        Common utiltiy method for setting values of recovery and removal
+        Common utility method for setting values of recovery and removal
         fractions.
 
         Args:
@@ -178,7 +179,13 @@ class ZeroOrderBaseData(UnitModelBlockData):
         Returns:
             None
         """
-        self.set_param_from_data(self.recovery_vol, data)
+        try:
+            self.set_param_from_data(self.recovery_frac_mass_H2O, data)
+        except KeyError:
+            if self.recovery_frac_mass_H2O[:].fixed:
+                pass
+            else:
+                raise
 
         for t, j in self.removal_frac_mass_solute:
             self.set_param_from_data(
@@ -266,9 +273,9 @@ class ZeroOrderBaseData(UnitModelBlockData):
         var_dict = {}
 
         for k, v in self._perf_var_dict.items():
-            if k == "Solute Removal":
-                for j, vd in self.removal_frac_mass_solute[time_point, :].wildcard_items():
-                    var_dict[f"Solute Removal [{j}]"] = vd
+            if k in ["Solute Removal", "Reaction Extent"]:
+                for j, vd in v[time_point, :].wildcard_items():
+                    var_dict[f"{k} [{j}]"] = vd
             elif v.is_indexed():
                 var_dict[k] = v[time_point]
             else:

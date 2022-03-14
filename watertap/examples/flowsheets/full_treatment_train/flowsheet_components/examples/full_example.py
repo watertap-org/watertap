@@ -24,7 +24,7 @@ from watertap.examples.flowsheets.full_treatment_train.flowsheet_components impo
                                                                              feed_block,
                                                                              gypsum_saturation_index,
                                                                              costing,
-                                                                             financials)
+                                                                             )
 from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
 from watertap.examples.flowsheets.full_treatment_train.util import (solve_block,
                                                              check_dof,
@@ -75,17 +75,10 @@ def build_flowsheet_mvp_NF(m, **kwargs):
     # touch some properties used in optimization
     if kwargs['is_twostage']:
         product_water_sb = m.fs.mixer_permeate.mixed_state[0]
-        if kwargs['RO_type'] == '0D':
-            RO_waste_sb = m.fs.RO2.feed_side.properties_out[0]
-        elif kwargs['RO_type'] == '1D':
-            RO_waste_sb = m.fs.RO2.feed_side.properties[0, 1]
+        RO_waste_sb = m.fs.RO2.feed_side.properties[0, 1]
     else:
-        if kwargs['RO_type'] == '0D':
-            product_water_sb = m.fs.RO.permeate_side.properties_mixed[0]
-            RO_waste_sb = m.fs.RO.feed_side.properties_out[0]
-        elif kwargs['RO_type'] == '1D':
-            product_water_sb = m.fs.RO.mixed_permeate[0]
-            RO_waste_sb = m.fs.RO.feed_side.properties[0, 1]
+        product_water_sb = m.fs.RO.mixed_permeate[0]
+        RO_waste_sb = m.fs.RO.feed_side.properties[0, 1]
 
     # NOTE: Building the costing here means it gets
     #       initialized during the simulation phase.
@@ -104,13 +97,9 @@ def build_flowsheet_mvp_NF(m, **kwargs):
     m.fs.total_work = Expression(expr=m.fs.pump_RO.work_mechanical[0] +
                                     (m.fs.pump_RO2.work_mechanical[0] if kwargs['is_twostage'] else 0.))
 
-    # need load factor from costing_param_block for annual_water_production
-    financials.add_costing_param_block(m.fs)
     # annual water production
-    m.fs.annual_water_production = Expression(
-        expr=pyunits.convert(product_water_sb.flow_vol, to_units=pyunits.m ** 3 / pyunits.year)
-             * m.fs.costing_param.load_factor)
-    costing.build_costing(m, module=financials, **kwargs)
+    m.fs.treated_flow_vol = Expression(expr=product_water_sb.flow_vol)
+    costing.build_costing(m, **kwargs)
 
     return m
 
@@ -140,12 +129,7 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
     # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
     m.fs.RO.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
 
-    if kwargs_flowsheet['RO_type'] == '0D':
-        m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(value(m.fs.RO.A_comp[0, 'H2O']
-                                                                            * m.fs.RO.dens_solvent
-                                                                            * m.fs.RO.NDPmin))
-    elif kwargs_flowsheet['RO_type'] == '1D':
-        m.fs.RO.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'].setlb(value(m.fs.RO.A_comp[0, 'H2O']
+    m.fs.RO.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'].setlb(value(m.fs.RO.A_comp[0, 'H2O']
                                                                      * m.fs.RO.dens_solvent
                                                                      * m.fs.RO.NDPmin))
 
@@ -161,12 +145,7 @@ def set_up_optimization(m, system_recovery=0.7, **kwargs_flowsheet):
 
         # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
         m.fs.RO2.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
-        if kwargs_flowsheet['RO_type'] == '0D':
-            m.fs.RO2.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(value(m.fs.RO2.A_comp[0, 'H2O']
-                                                                                 * m.fs.RO2.dens_solvent
-                                                                                 * m.fs.RO2.NDPmin))
-        elif kwargs_flowsheet['RO_type'] == '1D':
-            m.fs.RO2.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'].setlb(value(m.fs.RO2.A_comp[0, 'H2O']
+        m.fs.RO2.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'].setlb(value(m.fs.RO2.A_comp[0, 'H2O']
                                                                           * m.fs.RO2.dens_solvent
                                                                           * m.fs.RO2.NDPmin))
 
@@ -233,6 +212,8 @@ def solve_flowsheet_mvp_NF(**kwargs):
     propagate_state(m.fs.s_tb_desal)
     desalination.initialize_desalination(m, **kwargs)
     m.fs.desal_saturation.properties.initialize()
+
+    m.fs.costing.initialize()
 
     # check_build(m)
     # check_scaling(m)

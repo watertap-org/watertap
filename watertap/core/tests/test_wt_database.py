@@ -75,7 +75,7 @@ class TestDatabase():
         assert "default" in data
         assert "removal_frac_mass_solute" in data["default"]
         assert "energy_electric_flow_vol_inlet" in data["default"]
-        assert "recovery_vol" in data["default"]
+        assert "recovery_frac_mass_H2O" in data["default"]
 
     @pytest.mark.unit
     def test_get_technology_invalid(self, db):
@@ -95,7 +95,7 @@ class TestDatabase():
         # Check for a few expected keys to check what we got back looks right
         assert "removal_frac_mass_solute" in data
         assert "energy_electric_flow_vol_inlet" in data
-        assert "recovery_vol" in data
+        assert "recovery_frac_mass_H2O" in data
 
     @pytest.mark.unit
     def test_get_unit_operation_parameters_invalid_subtype(self, db):
@@ -108,7 +108,7 @@ class TestDatabase():
     def test_get_unit_operation_parameters_single_subtype(self, db):
         # First, insert some data for a subtype into nanofiltration entry
         db._cached_files["nanofiltration"]["subtype1"] = {
-            "recovery_vol": "overloaded",
+            "recovery_frac_mass_H2O": "overloaded",
             "new_param": True}
 
         # Load data for subtype
@@ -117,7 +117,7 @@ class TestDatabase():
 
         # Check data
         for k, v in data.items():
-            if k == "recovery_vol":
+            if k == "recovery_frac_mass_H2O":
                 assert v == "overloaded"
             elif k == "new_param":
                 assert v is True
@@ -137,7 +137,7 @@ class TestDatabase():
     def test_get_unit_operation_parameters_multi_subtype(self, db):
         # First, insert some data for a 2nd subtype into nanofiltration entry
         db._cached_files["nanofiltration"]["subtype2"] = {
-            "recovery_vol": "overloaded_again",
+            "recovery_frac_mass_H2O": "overloaded_again",
             "new_param_2": False}
 
         # Load data for subtype
@@ -146,7 +146,7 @@ class TestDatabase():
 
         # Check data
         for k, v in data.items():
-            if k == "recovery_vol":
+            if k == "recovery_frac_mass_H2O":
                 assert v == "overloaded_again"
             elif k == "new_param":
                 assert v is True

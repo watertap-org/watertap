@@ -21,11 +21,11 @@ default:
     cost_function_form:
       function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
       units: $
-  recovery_vol:
-    value: 0.9999
-    units: dimensionless
-    reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for
-      Water Utilities (2008).
   default_removal_frac_mass_solute:
     value: 0
     units: dimensionless
+  removal_frac_mass_solute:
+    carbon_dioxide:
+      value: 0.999    #todo: revisit this value later on
+      units: dimensionless
+      constituent_longform: Carbon Dioxide (CO2)
