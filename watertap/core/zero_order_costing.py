@@ -414,13 +414,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             bounds=(0, None),
             doc="Capital cost of unit operation")
 
-        ln_Q = pyo.units.convert(
+        ln_Q = pyo.log(pyo.units.convert(
             blk.unit_model.properties_in[t0].flow_vol /
             (pyo.units.m**3/pyo.units.hour),
-            to_units=pyo.units.dimensionless)
-        ln_D = pyo.units.convert(
+            to_units=pyo.units.dimensionless))
+        ln_D = pyo.log(pyo.units.convert(
             blk.unit_model.chlorine_dose[t0] / (pyo.units.mg/pyo.units.liter),
-            to_units=pyo.units.dimensionless)
+            to_units=pyo.units.dimensionless))
 
         expr = pyo.units.convert(
             A*ln_Q + B*ln_D + C*ln_Q*ln_D,
@@ -525,22 +525,27 @@ def _get_tech_parameters(blk, parameter_dict, subtype, param_list):
 
         # Add required Vars
         for p in param_list:
-            vobj = pyo.Var(
-                pblock.subtype_set,
-                units=getattr(
-                    pyo.units,
-                    parameter_dict[
-                        "capital_cost"][p]["units"]),
-                bounds=(0, None))
-            pblock.add_component(p, vobj)
+            try:
+                vobj = pyo.Var(
+                    pblock.subtype_set,
+                    units=getattr(
+                        pyo.units,
+                        parameter_dict[
+                            "capital_cost"][p]["units"]),
+                    bounds=(0, None))
+                pblock.add_component(p, vobj)
+            except KeyError:
+                raise KeyError("Error when trying to retirve costing parameter"
+                               " from {p} database. Please check the YAML "
+                               "file for this technology for errors.")
 
     # Check to see if required subtype is in subtype_set
+    vlist = []
     if subtype not in pblock.subtype_set:
         # Need to add subtype and set Vars
         pblock.subtype_set.add(subtype)
 
         # Set vars
-        vlist = []
         for p in param_list:
             vobj = getattr(pblock, p)
             vobj[subtype].fix(
@@ -549,6 +554,10 @@ def _get_tech_parameters(blk, parameter_dict, subtype, param_list):
                 getattr(pyo.units,
                         parameter_dict[
                             "capital_cost"][p]["units"]))
+            vlist.append(vobj[subtype])
+    else:
+        for p in param_list:
+            vobj = getattr(pblock, p)
             vlist.append(vobj[subtype])
 
     return tuple(x for x in vlist)
