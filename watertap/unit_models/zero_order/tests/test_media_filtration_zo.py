@@ -338,22 +338,17 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(default={
-        "flowsheet_costing_block": m.fs.costing})
+    #m.fs.unit1.costing = UnitModelCostingBlock(default={
+    #    "flowsheet_costing_block": m.fs.costing})
 
-    assert isinstance(m.fs.costing.media_filtration, Block)
-    assert isinstance(m.fs.costing.media_filtration.capital_a_parameter,
-                      Var)
-    assert isinstance(m.fs.costing.media_filtration.capital_b_parameter,
-                      Var)
-    assert isinstance(m.fs.costing.media_filtration.reference_state, Var)
-
-    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
-                      Constraint)
+    #assert isinstance(m.fs.costing.media_filtration, Block)
+    #assert isinstance(m.fs.costing.media_filtration.reference_state, Var)
+    #assert isinstance(m.fs.unit1.costing.capital_cost, Var)
+    #assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
+    #                  Constraint)
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    assert m.fs.unit1.electricity[0] in \
-        m.fs.costing._registered_flows["electricity"]
+    #assert m.fs.unit1.electricity[0] in \
+    #    m.fs.costing._registered_flows["electricity"]
