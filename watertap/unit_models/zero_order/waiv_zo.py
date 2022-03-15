@@ -27,7 +27,7 @@ __author__ = "Marcus Holly"
 @declare_process_block_class("WAIVZO")
 class WAIVZOData(ZeroOrderBaseData):
     """
-    Zero-Order model for an Wind-Aided Intensified Evaporation unit operation.
+    Zero-Order model for a Wind-Aided Intensified Evaporation unit operation.
     """
 
     CONFIG = ZeroOrderBaseData.CONFIG()
