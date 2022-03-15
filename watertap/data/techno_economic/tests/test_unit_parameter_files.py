@@ -139,7 +139,6 @@ def test_unit_parameter_files(tech):
                 k[e]["units"], units.dimensionless)
             assert "value" in k[e].keys()
             assert k[e]["value"] >= 0
-            assert k[e]["value"] <= 1
 
         # Check for specific removal fractions
         if "removal_frac_mass_solute" in k.keys():
