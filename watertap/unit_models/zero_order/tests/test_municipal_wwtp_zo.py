@@ -55,7 +55,7 @@ class TestMunicipalWWTPZO:
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.fs.unit.config.database == model.db
+        assert model.fs.unit.config.database is model.db
 
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
