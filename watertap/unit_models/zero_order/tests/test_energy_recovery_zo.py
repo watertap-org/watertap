@@ -122,7 +122,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                   : Value   : Fixed : Bounds
-       Electricity Demand : -11423. : False : (None, None)
+       Electricity Demand : -11423. : False : (None, 0)
     Electricity Intensity : -3.1700 :  True : (None, None)
 
 ------------------------------------------------------------------------------------
