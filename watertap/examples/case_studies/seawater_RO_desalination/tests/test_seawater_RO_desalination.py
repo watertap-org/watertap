@@ -13,12 +13,12 @@
 
 import pytest
 from io import StringIO
-from watertap.examples.case_studies.santa_barbara.santa_barbara import main
+from watertap.examples.case_studies.seawater_RO_desalination.seawater_RO_desalination import main
 from idaes.core.util import get_solver
 
 # -----------------------------------------------------------------------------
 @pytest.mark.component
-def test_santa_barbara():
+def test_seawater_RO_desalination():
     m = main()
 
     report_io = StringIO()

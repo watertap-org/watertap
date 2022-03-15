@@ -138,6 +138,8 @@ def build():
         "mass_transfer_coefficient": MassTransferCoefficient.calculated,
         "concentration_polarization_type": ConcentrationPolarizationType.calculated,
     })
+    desal.RO.width.setub(5000)
+    desal.RO.area.setub(20000)
     desal.PXR = PressureExchanger(default={'property_package': m.fs.prop_desal})
     desal.P2 = Pump(default={'property_package': m.fs.prop_desal})
 
