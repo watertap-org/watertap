@@ -26,7 +26,7 @@ from idaes.generic_models.costing.costing_base import (
 
 from watertap.core.zero_order_base import ZeroOrderBase
 from watertap.unit_models.zero_order import (
-    ChemicalAdditionZO, ChlorinationZO, StorageTankZO)
+    ChemicalAdditionZO, ChlorinationZO, StorageTankZO, WellFieldZO)
 
 
 global_params = ["plant_lifetime",
@@ -440,6 +440,71 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             chem_flow_mass, "chlorine")
 
+    def cost_well_field(blk):
+        """
+        General method for costing well fields. Capital cost is based on well field 
+        cosntruction and pipe costs.
+        """
+
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        # Get costing parameter sub-block for this technology
+        A, B, pipe_cost_basis = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["capital_a_parameter", "capital_b_parameter", "pipe_cost_basis"])
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation")
+        blk.unit_model.pipe_cost = pyo.Var(
+            initialize=100,
+            units=pyo.units.USD_2018,
+            bounds=(0, None),
+            doc="Piping cost for well field")
+        blk.unit_model.pipe_cost_basis = pyo.Var(
+            initialize=100,
+            units=pyo.units.USD_2018/(pyo.units.miles*pyo.units.inch),
+            bounds=(0, None),
+            doc="Piping cost for well field")
+        blk.unit_model.pipe_cost_basis.fix(pipe_cost_basis)
+        blk.unit_model.pipe_cost_constr = pyo.Constraint(
+            expr=blk.unit_model.pipe_cost == blk.unit_model.pipe_cost_basis * 
+            blk.unit_model.pipe_distance[t0] * blk.unit_model.pipe_diameter[t0])
+
+        Q = pyo.units.convert(
+            blk.unit_model.properties[t0].flow_vol /
+            (pyo.units.m**3/pyo.units.hour),
+            to_units=pyo.units.dimensionless)
+        expr = pyo.units.convert(
+            A*Q**B + blk.unit_model.pipe_cost,
+            to_units=blk.config.flowsheet_costing_block.base_currency)
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
+
     def cost_storage_tank(blk):
         """
         General method for costing storage tanks. Capital cost is based on the
@@ -496,7 +561,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
     unit_mapping = {ZeroOrderBase: cost_power_law_flow,
                     ChemicalAdditionZO: cost_chemical_addition,
                     ChlorinationZO: cost_chlorination,
-                    StorageTankZO: cost_storage_tank}
+                    StorageTankZO: cost_storage_tank,
+                    WellFieldZO: cost_well_field}
 
 
 def _get_tech_parameters(blk, parameter_dict, subtype, param_list):

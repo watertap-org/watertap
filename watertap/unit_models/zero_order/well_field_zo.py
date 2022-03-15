@@ -15,7 +15,7 @@ This module contains a zero-order representation of a well field unit
 operation.
 """
 
-from pyomo.environ import Constraint, units as pyunits, Var
+from pyomo.environ import Constraint, Reference, units as pyunits, Var
 from idaes.core import declare_process_block_class
 
 from watertap.core import build_pt, pump_electricity, ZeroOrderBaseData
@@ -36,18 +36,23 @@ class WellFieldZOData(ZeroOrderBaseData):
         super().build()
 
         self._tech_type = "well_field"
-
         build_pt(self)
-        pump_electricity(self)
+        self._Q = Reference(self.properties[:].flow_vol)
+        
+        pump_electricity(self, self._Q)
 
         self.pipe_distance = Var(self.flowsheet().config.time,
                                  units=pyunits.miles,
-                                 doc='Piping distance for well field')
+                                 doc='Piping distance')
 
-        self.pipe_cost_basis = Var(self.flowsheet().config.time,
-                                 units=pyunits.miles,
-                                 doc='Piping distance for well field')
+        self.pipe_diameter = Var(self.flowsheet().config.time,
+                                 units=pyunits.inches,
+                                 doc='Pipe diameter')
 
-        self.pipe_distance = Var(self.flowsheet().config.time,
-                                 units=pyunits.miles,
-                                 doc='Piping distance for well field')
+        self._fixed_perf_vars.append(self.pipe_distance)
+        self._fixed_perf_vars.append(self.pipe_diameter)
+
+        self._perf_var_dict["Pipe Distance (miles)"] = self.pipe_distance
+        self._perf_var_dict["Pipe Diameter (inches)"] = self.pipe_diameter
+
+
