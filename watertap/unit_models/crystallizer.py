@@ -105,7 +105,7 @@ class CrystallizationData(UnitModelBlockData):
 
         # Add unit variables
 
-        self.hex_max_temperature_increase = Param(
+        self.approach_temperature_heat_exchanger = Param(
             initialize=4,
             units=pyunits.K,
             doc="Maximum temperature difference between inlet and outlet of a crystallizer heat exchanger.\
@@ -113,25 +113,29 @@ class CrystallizationData(UnitModelBlockData):
             Default is 4 degC")
 
         # ====== Crystallizer sizing parameters ================= #
-        self.L_d = Param(
+        self.shape_factor_constant = Param(
+            initialize=3.67, # For median crystal size
+            units=pyunits.dimensionless,
+            )
+
+        self.crystal_median_length = Var(
             initialize=0.5e-3, # From Mersmann et al., Tavare et al. example
-            # bounds=(0.2e-3, 0.6e-3), # Limits for FC crystallizers based on Bermingham et al.
+            bounds=(0.2e-3, 0.6e-3), # Limits for FC crystallizers based on Bermingham et al.
             units=pyunits.m,
             doc="Desired median crystal size, m"
             )
 
-        self.G_rate = Param(
+        self.crystal_growth_rate = Var(
             initialize=3.7e-8, # From Mersmann et al. for NaCl. Perry has values between 0.5e-8 to 13e-8 for NaCl
-            # bounds=(1e-9, 1e-6), # Based on Mersmann and Kind diagram. 
+            bounds=(1e-9, 1e-6), # Based on Mersmann and Kind diagram. 
             units=pyunits.m/pyunits.s,
             doc="Crystal growth rate, m/s"
             )
 
-
-        self.k_param = Param(
+        self.souders_brown_constant = Var(
             initialize=0.04,
             units=pyunits.m/pyunits.s,
-            doc="Sounders-Brown constant, set at 0.04 m/s based on Dutta et al. \
+            doc="Constant for Souders-Brown equation, set at 0.04 m/s based on Dutta et al. \
             Lewis et al suggests 0.024 m/s, while Tavare suggests about 0.06 m/s ")
 
 
@@ -419,7 +423,7 @@ class CrystallizationData(UnitModelBlockData):
         # 7. Heat exchanger minimum circulation flow rate calculations - see Lewis et al. or Tavare et al.
         @self.Constraint(doc="Constraint on mimimum circulation rate through crystallizer heat exchanger")
         def eq_minimum_hex_circulation_rate_constraint(b):
-            dens_cp_avg = self.hex_max_temperature_increase * \
+            dens_cp_avg = self.approach_temperature_heat_exchanger * \
             (
                 b.product_volumetric_solids_fraction * b.properties_solids[0].dens_mass_solute['Sol'] * b.properties_solids[0].cp_solute['Sol'] 
                 + (1 - b.product_volumetric_solids_fraction) * b.properties_out[0].dens_mass_phase['Liq'] * b.properties_out[0].cp_phase['Liq']
@@ -441,7 +445,7 @@ class CrystallizationData(UnitModelBlockData):
         @self.Constraint(doc="Residence time")
         def eq_residence_time(b):
             return (
-                b.t_res == b.L_d / (3.67 * pyunits.convert(b.G_rate, to_units=pyunits.m/pyunits.hr))
+                b.t_res == b.crystal_median_length / (b.shape_factor_constant * pyunits.convert(b.crystal_growth_rate, to_units=pyunits.m/pyunits.hr))
                 )
 
         # 10. Suspension volume calculation
@@ -455,7 +459,7 @@ class CrystallizationData(UnitModelBlockData):
         # 11. Minimum diameter of evaporation zone
         @self.Expression(doc='maximum allowable vapour linear velocity in m/s')
         def eq_max_allowable_velocity(b):
-            return b.k_param * \
+            return b.souders_brown_constant * \
             (b.properties_out[0].dens_mass_phase['Liq']/ b.properties_vapor[0].dens_mass_solvent['Vap']) ** 0.5
 
         @self.Constraint(doc="Crystallizer diameter (based on minimum diameter of evaporation zone)")
