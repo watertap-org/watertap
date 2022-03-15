@@ -58,6 +58,7 @@ def test_unit_parameter_files(tech):
                     "sw_onshore_intake",
                     "landfill_zld",
                     "tramp_oil_tank",
+                    "blending_reservoir",
                     ]
 
     siso_full_recovery = ["uv_aop", "uv", "ion_exchange", "fixed_bed", "decarbonator", "chlorination"]
