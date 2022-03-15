@@ -93,7 +93,7 @@ class TestOzoneAOPZO_with_default_removal:
         assert isinstance(model.fs.unit.oxidant_dose, Var)
         assert isinstance(model.fs.unit.chemical_flow_mass, Var)
         assert isinstance(model.fs.unit.ozone_toc_ratio, Var)
-        assert isinstance(model.fs.unit.hydrogen_peroxide_ozone_ratio, Var)
+        assert isinstance(model.fs.unit.oxidant_ozone_ratio, Var)
         assert isinstance(model.fs.unit.ozone_consumption_constraint, Constraint)
         assert isinstance(model.fs.unit.ozone_flow_mass_constraint, Constraint)
         assert isinstance(model.fs.unit.electricity_constraint, Constraint)
@@ -122,8 +122,8 @@ class TestOzoneAOPZO_with_default_removal:
         assert model.fs.unit.mass_transfer_efficiency[0].value == data["mass_transfer_efficiency"]["value"]
         assert model.fs.unit.specific_energy_coeff[0].fixed
         assert model.fs.unit.specific_energy_coeff[0].value == data["specific_energy_coeff"]["value"]
-        assert model.fs.unit.hydrogen_peroxide_ozone_ratio[0].value == \
-               data["hydrogen_peroxide_ozone_ratio"]["value"]
+        assert model.fs.unit.oxidant_ozone_ratio[0].value == \
+               data["oxidant_ozone_ratio"]["value"]
 
 
     @pytest.mark.component
@@ -181,9 +181,9 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                                          : Value   : Fixed : Bounds
-                   Hydrogen Peroxide/Ozone Ratio : 0.50000 :  True : (None, None)
                            Oxidant Dosage (mg/L) :  4673.4 : False : (None, None)
                              Oxidant Flow (kg/s) : 0.50005 : False : (0, None)
+                             Oxidant/Ozone Ratio : 0.50000 :  True : (None, None)
                      Ozone CT Value ((mg*min)/L) :  1.0000 :  True : (None, None)
                         Ozone Contact Time (min) :  1.0000 :  True : (None, None)
                          Ozone Mass Flow (lb/hr) :  9921.9 : False : (0, None)
@@ -269,7 +269,7 @@ class TestOzoneAOPZO_w_o_default_removal:
         assert isinstance(model.fs.unit.oxidant_dose, Var)
         assert isinstance(model.fs.unit.chemical_flow_mass, Var)
         assert isinstance(model.fs.unit.ozone_toc_ratio, Var)
-        assert isinstance(model.fs.unit.hydrogen_peroxide_ozone_ratio, Var)
+        assert isinstance(model.fs.unit.oxidant_ozone_ratio, Var)
         assert isinstance(model.fs.unit.ozone_consumption_constraint, Constraint)
         assert isinstance(model.fs.unit.ozone_flow_mass_constraint, Constraint)
         assert isinstance(model.fs.unit.electricity_constraint, Constraint)
@@ -297,7 +297,7 @@ class TestOzoneAOPZO_w_o_default_removal:
         assert model.fs.unit.mass_transfer_efficiency[0].value == data["mass_transfer_efficiency"]["value"]
         assert model.fs.unit.specific_energy_coeff[0].fixed
         assert model.fs.unit.specific_energy_coeff[0].value == data["specific_energy_coeff"]["value"]
-        assert model.fs.unit.hydrogen_peroxide_ozone_ratio[0].value == data["hydrogen_peroxide_ozone_ratio"]["value"]
+        assert model.fs.unit.oxidant_ozone_ratio[0].value == data["oxidant_ozone_ratio"]["value"]
 
 
     @pytest.mark.component
@@ -355,9 +355,9 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                                          : Value   : Fixed : Bounds
-                   Hydrogen Peroxide/Ozone Ratio : 0.50000 :  True : (None, None)
                            Oxidant Dosage (mg/L) :  4673.4 : False : (None, None)
                              Oxidant Flow (kg/s) : 0.50005 : False : (0, None)
+                             Oxidant/Ozone Ratio : 0.50000 :  True : (None, None)
                      Ozone CT Value ((mg*min)/L) :  1.0000 :  True : (None, None)
                         Ozone Contact Time (min) :  1.0000 :  True : (None, None)
                          Ozone Mass Flow (lb/hr) :  9921.9 : False : (0, None)

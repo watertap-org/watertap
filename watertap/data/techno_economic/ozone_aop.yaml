@@ -1,5 +1,5 @@
 default:  #default aop is for hydrogen peroxide
-  hydrogen_peroxide_ozone_ratio:
+  oxidant_ozone_ratio:
     value: 0.5
     units: dimensionless
   capital_cost:
@@ -70,7 +70,7 @@ default:  #default aop is for hydrogen peroxide
       for ozone generator, ozone destruct, nitrogen feed system, cooling water pumps, and other misc. energy uses.
 
 hydrogen_peroxide:
-  hydrogen_peroxide_ozone_ratio:
+  oxidant_ozone_ratio:
     value: 0.5
     units: dimensionless
   capital_cost:
