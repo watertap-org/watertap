@@ -50,7 +50,7 @@ class OzoneAOPZOData(OzoneZOData):
 
         self.oxidant_ozone_ratio = Var(self.flowsheet().time,
                                                  units=pyunits.dimensionless,
-                                                 doc="Ratio of hydrogen peroxide to ozone")
+                                                 doc="Ratio of oxidant to ozone")
 
         self._fixed_perf_vars.append(self.oxidant_ozone_ratio)
 
@@ -58,7 +58,7 @@ class OzoneAOPZOData(OzoneZOData):
                          doc="Ozone/TOC ratio constraint")
         def ozone_toc_ratio_constraint(b, t):
             return (b.ozone_toc_ratio[t] == 1
-                    + pyunits.convert(b.concentration_time[t] / b.contact_time[t]     #TODO: think this should be dividing by contact time, not multiplying
+                    + pyunits.convert(b.concentration_time[t] / b.contact_time[t]
                     / b.properties_in[t].conc_mass_comp['toc'],
                                       to_units=pyunits.dimensionless))
 
