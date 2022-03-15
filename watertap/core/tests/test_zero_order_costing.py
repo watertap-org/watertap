@@ -82,7 +82,7 @@ class TestGeneralMethods:
         assert model.frame.base_currency == pyunits.MUSD_2018
         assert model.frame.base_period == pyunits.year
 
-        assert len(model.frame.defined_flows) == 11
+        assert len(model.frame.defined_flows) == 13
         for f in model.frame.defined_flows:
             assert f in ["electricity",
                          "alum",
@@ -92,8 +92,10 @@ class TestGeneralMethods:
                          "chlorine",
                          "ferric_chloride",
                          "hydrochloric_acid",
+                         "ion_exchange_resin",
                          "lime",
                          "sodium_bisulfite",
+                         "sodium_chloride",
                          "sulfuric_acid"]
 
         assert number_unfixed_variables(model.frame) == 0
