@@ -26,7 +26,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.generic_models.costing import UnitModelCostingBlock
 
-from watertap.unit_models.zero_order import UVZO
+from watertap.unit_models.zero_order import UVZO, UVAOPZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.core.zero_order_costing import ZeroOrderCosting
@@ -337,12 +337,10 @@ def test_costing():
         "flowsheet_costing_block": m.fs.costing})
 
     assert isinstance(m.fs.costing.uv, Block)
-    assert isinstance(m.fs.costing.uv.uv_a_parameter, Var)
-    assert isinstance(m.fs.costing.uv.uv_b_parameter, Var)
-    assert isinstance(m.fs.costing.uv.uv_c_parameter, Var)
-    assert isinstance(m.fs.costing.uv.uv_d_parameter, Var)
-
-
+    assert isinstance(m.fs.costing.uv.uv_capital_a_parameter, Var)
+    assert isinstance(m.fs.costing.uv.uv_capital_b_parameter, Var)
+    assert isinstance(m.fs.costing.uv.uv_capital_c_parameter, Var)
+    assert isinstance(m.fs.costing.uv.uv_capital_d_parameter, Var)
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
     assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
                       Constraint)
