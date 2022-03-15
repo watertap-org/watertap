@@ -17,21 +17,23 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    ConcreteModel, Constraint, value, Var, assert_optimal_termination)
+    ConcreteModel, Constraint, value, Block, Var, assert_optimal_termination)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
+from idaes.generic_models.costing import UnitModelCostingBlock
 
-from watertap.unit_models.zero_order import BufferTankZO
+from watertap.unit_models.zero_order import IntrusionMitigationZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
-class TestBufferTankZO:
+class TestIntrusionMitigationZO:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -39,20 +41,23 @@ class TestBufferTankZO:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["tss"]})
+            default={"solute_list": ["tss", "sulfate", "foo", "bar"]})
 
-        m.fs.unit = BufferTankZO(default={
+        m.fs.unit = IntrusionMitigationZO(default={
             "property_package": m.fs.params,
             "database": m.db})
 
-        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
-        m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
+        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(123)
+        m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(4)
+        m.fs.unit.inlet.flow_mass_comp[0, "sulfate"].fix(0.005)
+        m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(0.67)
+        m.fs.unit.inlet.flow_mass_comp[0, "bar"].fix(8.9)
 
         return m
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.fs.unit.config.database == model.db
+        assert model.fs.unit.config.database is model.db
 
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
@@ -60,7 +65,7 @@ class TestBufferTankZO:
 
     @pytest.mark.component
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("buffer_tank")
+        data = model.db.get_unit_operation_parameters("intrusion_mitigation")
 
         model.fs.unit.load_parameters_from_database()
 
@@ -93,9 +98,9 @@ class TestBufferTankZO:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(1.1e-2, rel=1e-5) ==
+        assert (pytest.approx(0.136575, rel=1e-5) ==
                 value(model.fs.unit.properties[0].flow_vol))
-        assert (pytest.approx(0.0, abs=1e-5) ==
+        assert (pytest.approx(25.173175, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
 
     @pytest.mark.component
@@ -112,17 +117,56 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                   : Value      : Fixed : Bounds
-       Electricity Demand : 7.0000e-10 : False : (0, None)
-    Electricity Intensity :     0.0000 :  True : (None, None)
+    Key                   : Value    : Fixed : Bounds
+       Electricity Demand :   25.173 : False : (0, None)
+    Electricity Intensity : 0.051199 :  True : (None, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
-                             Inlet   Outlet 
-    Volumetric Flowrate    0.011000 0.011000
-    Mass Concentration H2O   909.09   909.09
-    Mass Concentration tss   90.909   90.909
+                                 Inlet   Outlet 
+    Volumetric Flowrate         0.13658  0.13658
+    Mass Concentration H2O       900.60   900.60
+    Mass Concentration tss       29.288   29.288
+    Mass Concentration sulfate 0.036610 0.036610
+    Mass Concentration foo       4.9057   4.9057
+    Mass Concentration bar       65.166   65.166
 ====================================================================================
 """
 
         assert output == stream.getvalue()
+
+def test_costing():
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.params = WaterParameterBlock(
+        default={"solute_list": ["tss", "sulfate", "foo", "bar"]})
+    m.fs.costing = ZeroOrderCosting()
+    m.fs.unit = IntrusionMitigationZO(default={
+        "property_package": m.fs.params,
+        "database": m.db})
+    m.fs.unit.costing = UnitModelCostingBlock(default={
+                                            "flowsheet_costing_block": m.fs.costing})
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(123)
+    m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(4)
+    m.fs.unit.inlet.flow_mass_comp[0, "sulfate"].fix(0.005)
+    m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(0.67)
+    m.fs.unit.inlet.flow_mass_comp[0, "bar"].fix(8.9)
+    m.fs.unit.load_parameters_from_database()
+
+    assert degrees_of_freedom(m.fs.unit) == 0
+    initialization_tester(m)
+    results = solver.solve(m)
+    assert_optimal_termination(results)
+
+    assert isinstance(m.fs.costing.intrusion_mitigation, Block)
+    assert isinstance(m.fs.costing.intrusion_mitigation.capital_a_parameter, Var)
+    assert isinstance(m.fs.costing.intrusion_mitigation.capital_b_parameter, Var)
+
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint,
+                      Constraint)
+
+    assert (pytest.approx(7.148202, rel=1e-5) ==
+            value(m.fs.unit.costing.capital_cost))
