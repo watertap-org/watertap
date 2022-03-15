@@ -79,7 +79,7 @@ class OzoneAOPZOData(OzoneZOData):
                         b.oxidant_dose[t]*b.properties_in[t].flow_vol,
                         to_units=pyunits.kg/pyunits.s))
 
-        self._perf_var_dict["Oxidant Dosage (mg/L)"] = self.oxidant_dose
+        self._perf_var_dict["Oxidant Dosage (kg/m3)"] = self.oxidant_dose
         self._perf_var_dict["Oxidant Flow (kg/s)"] = self.chemical_flow_mass
         self._perf_var_dict["Hydrogen Peroxide/Ozone Ratio"] = self.hydrogen_peroxide_ozone_ratio
         self._perf_var_dict["Ozone/TOC Ratio"] = self.ozone_toc_ratio

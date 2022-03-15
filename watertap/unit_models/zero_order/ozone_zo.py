@@ -77,10 +77,10 @@ class OzoneZOData(ZeroOrderBaseData):
                                      units=pyunits.mg/pyunits.liter,
                                      doc="Ozone consumption")
 
-        self.ozone_generation_power = Var(self.flowsheet().time,
-                                          units=pyunits.kW,
-                                          bounds=(0, None),
-                                          doc="Ozone generation power")
+        self.electricity = Var(self.flowsheet().time,
+                               units=pyunits.kW,
+                               bounds=(0, None),
+                               doc="Ozone generation power demand")
 
         @self.Constraint(self.flowsheet().time,
                          doc="Ozone consumption constraint")
