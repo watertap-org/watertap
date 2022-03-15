@@ -26,7 +26,11 @@ from idaes.generic_models.costing.costing_base import (
 
 from watertap.core.zero_order_base import ZeroOrderBase
 from watertap.unit_models.zero_order import (
-    BrineConcentratorZO, ChemicalAdditionZO, ChlorinationZO, StorageTankZO)
+    BrineConcentratorZO,
+    ChemicalAdditionZO,
+    ChlorinationZO,
+    SedimentationZO,
+    StorageTankZO)
 
 
 global_params = ["plant_lifetime",
@@ -503,6 +507,39 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             chem_flow_mass, "chlorine")
 
+    def cost_sedimentation(blk):
+        """
+        General method for costing sedimentaion processes. Capital cost is
+        based on the surface area of the basin.
+        """
+        t0 = blk.flowsheet().time.first()
+        sizing_term = (blk.unit_model.basin_surface_area[t0] /
+                       pyo.units.foot**2)
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        # Get costing parameter sub-block for this technology
+        A, B = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["capital_a_parameter", "capital_b_parameter"])
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Call general power law costing method
+        ZeroOrderCostingData._general_power_law_form(
+            blk, A, B, sizing_term, factor)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
+
     def cost_storage_tank(blk):
         """
         General method for costing storage tanks. Capital cost is based on the
@@ -560,6 +597,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                     BrineConcentratorZO: cost_brine_concentrator,
                     ChemicalAdditionZO: cost_chemical_addition,
                     ChlorinationZO: cost_chlorination,
+                    SedimentationZO: cost_sedimentation,
                     StorageTankZO: cost_storage_tank}
 
 
