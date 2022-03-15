@@ -26,7 +26,7 @@ from idaes.generic_models.costing.costing_base import (
 
 from watertap.core.zero_order_base import ZeroOrderBase
 from watertap.unit_models.zero_order import (
-    ChemicalAdditionZO, ChlorinationZO, StorageTankZO)
+    BrineConcentratorZO, ChemicalAdditionZO, ChlorinationZO, StorageTankZO)
 
 
 global_params = ["plant_lifetime",
@@ -337,6 +337,69 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity")
 
+    def cost_brine_concentrator(blk):
+        """
+        General method for costing brine concentration processes. Capital cost
+        is based on the volumetirc flowrate and TDS of the incoming stream and
+        the water recovery.
+
+        This method also registers the electricity demand as a costed flow.
+        """
+        t0 = blk.flowsheet().time.first()
+        inlet_state = blk.unit_model.properties_in[t0]
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        # Get costing parameter sub-block for this technology
+        A, B, C, D = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["capital_a_parameter",
+             "capital_b_parameter",
+             "capital_c_parameter",
+             "capital_d_parameter"])
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation")
+
+        expr = (
+            pyo.units.convert(
+                A,
+                to_units=blk.config.flowsheet_costing_block.base_currency) +
+            pyo.units.convert(
+                B*inlet_state.conc_mass_comp["tds"],
+                to_units=blk.config.flowsheet_costing_block.base_currency) +
+            pyo.units.convert(
+                C*blk.unit_model.recovery_frac_mass_H2O[t0],
+                to_units=blk.config.flowsheet_costing_block.base_currency) +
+            pyo.units.convert(
+                D*inlet_state.flow_vol,
+                to_units=blk.config.flowsheet_costing_block.base_currency))
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
+
     def cost_chemical_addition(blk):
         """
         General method for costing chemical addition processes. Capital cost is
@@ -494,6 +557,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
     # -------------------------------------------------------------------------
     # Map costing methods to unit model classes
     unit_mapping = {ZeroOrderBase: cost_power_law_flow,
+                    BrineConcentratorZO: cost_brine_concentrator,
                     ChemicalAdditionZO: cost_chemical_addition,
                     ChlorinationZO: cost_chlorination,
                     StorageTankZO: cost_storage_tank}
@@ -531,8 +595,7 @@ def _get_tech_parameters(blk, parameter_dict, subtype, param_list):
                     units=getattr(
                         pyo.units,
                         parameter_dict[
-                            "capital_cost"][p]["units"]),
-                    bounds=(0, None))
+                            "capital_cost"][p]["units"]))
                 pblock.add_component(p, vobj)
             except KeyError:
                 raise KeyError("Error when trying to retirve costing parameter"
