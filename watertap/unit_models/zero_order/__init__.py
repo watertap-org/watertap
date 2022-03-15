@@ -27,6 +27,7 @@ from .decarbonator_zo import DecarbonatorZO
 from .dissolved_air_flotation_zo import DissolvedAirFlotationZO
 from .feed_water_tank_zo import FeedWaterTankZO
 from .feed_zo import FeedZO
+from .energy_recovery_zo import EnergyRecoveryZO
 from .landfill_zo import LandfillZO
 from .landfill_zld_zo import LandfillZLDZO
 from .media_filtration_zo import MediaFiltrationZO

@@ -58,6 +58,7 @@ def test_unit_parameter_files(tech):
                     "sw_onshore_intake",
                     "landfill_zld",
                     "tramp_oil_tank",
+                    "energy_recovery",
                     "blending_reservoir",
                     ]
 
