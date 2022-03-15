@@ -24,7 +24,7 @@ __author__ = "Adam Atia"
 
 
 @declare_process_block_class("BrineConcentratorZO")
-class ClarifierZOData(ZeroOrderBaseData):
+class BrineConcentratorZOData(ZeroOrderBaseData):
     """
     Zero-Order model for a brine concentrator unit operation.
     """
@@ -49,18 +49,19 @@ class ClarifierZOData(ZeroOrderBaseData):
         # https://www.waterboards.ca.gov/water_issues/programs/grants_loans/water_recycling/research/02_006a_01.pdf
         # Capital = f(TDS, recovery, flow)
         # Electricity = f(TDS, recovery, flow)
-        self.elec_coeff_1 = Param(initialize=9.73,
-                                  units=pyunits.kWh/pyunits.m**3,
-                                  doc="Constant 1 in electricity intensity equation")
-        self.elec_coeff_2 = Param(initialize=1.1E-4,
-                                  units=pyunits.L/pyunits.mg*pyunits.kWh/pyunits.m**3,
-                                  doc="Constant 2 in electricity intensity equation")
-        self.elec_coeff_3 = Param(initialize=10.4,
-                                  units=pyunits.kWh/pyunits.m**3,
-                                  doc="Constant 3 in electricity intensity equation")
-        self.elec_coeff_4 = Param(initialize=3.83E-5,
-                                  units=pyunits.kWh/pyunits.m**6*pyunits.hour,
-                                  doc="Constant 4 in electricity intensity equation")
+        self.elec_coeff_1 = Var(units=pyunits.kWh/pyunits.m**3,
+                                doc="Constant 1 in electricity intensity equation")
+        self.elec_coeff_2 = Var(units=pyunits.L/pyunits.mg*pyunits.kWh/pyunits.m**3,
+                                doc="Constant 2 in electricity intensity equation")
+        self.elec_coeff_3 = Var(units=pyunits.kWh/pyunits.m**3,
+                                doc="Constant 3 in electricity intensity equation")
+        self.elec_coeff_4 = Var(units=pyunits.kWh/pyunits.m**6*pyunits.hour,
+                                doc="Constant 4 in electricity intensity equation")
+
+        self._fixed_perf_vars.append(self.elec_coeff_1)
+        self._fixed_perf_vars.append(self.elec_coeff_2)
+        self._fixed_perf_vars.append(self.elec_coeff_3)
+        self._fixed_perf_vars.append(self.elec_coeff_4)
 
         self.power_consumption = Var(self.flowsheet().config.time,
                                      units=pyunits.kW,
@@ -86,7 +87,9 @@ class ClarifierZOData(ZeroOrderBaseData):
             q_in = pyunits.convert(b.properties_in[t].flow_vol, to_units=pyunits.m**3/pyunits.hour)
             return (b.power_consumption[t] == b.electricity_intensity[t] * q_in)
 
+        self._perf_var_dict["electricity coefficient 1 (kWh/m3)"] = self.elec_coeff_1
+        self._perf_var_dict["electricity coefficient 2 (L/mg*kWh/m3)"] = self.elec_coeff_2
+        self._perf_var_dict["electricity coefficient 3 (kWh/m3)"] = self.elec_coeff_3
+        self._perf_var_dict["electricity coefficient 4 (kWh/m6*hr)"] = self.elec_coeff_4
         self._perf_var_dict["Power Consumption (kW)"] = self.power_consumption
         self._perf_var_dict["Electricity intensity per Inlet Flowrate  (kWh/m3)"] = self.electricity_intensity
-
-
