@@ -59,3 +59,4 @@ from .static_mixer_zo import StaticMixerZO
 from .co2_addition_zo import CO2AdditionZO
 from .sludge_tank_zo import SludgeTankZO
 from .intrusion_mitigation_zo import IntrusionMitigationZO
+from .injection_well_disposal_zo import InjectionWellDisposalZO
