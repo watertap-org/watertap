@@ -3,7 +3,7 @@ default:
     value: 0.0
     units: kWh/m^3
   capital_cost:
-    basis: flow_vol
+    basis: flow_mass
     cost_factor: None
     reference_state:
       value: 100000.0
