@@ -315,36 +315,20 @@ def test_costing(subtype):
         m.fs.unit.load_parameters_from_database()
 
         assert degrees_of_freedom(m.fs.unit) == 0
-
         m.fs.unit.costing = UnitModelCostingBlock(default={
                         "flowsheet_costing_block": m.fs.costing})
         assert_units_consistent(m.fs)
         assert degrees_of_freedom(m.fs.unit) == 0
         initialization_tester(m)
+        _ = solver.solve(m)
 
-        results = solver.solve(m)
-        assert isinstance(m.fs.unit.costing.pipe_cost, Var)
-        assert isinstance(m.fs.unit.costing.pipe_cost_basis, Var)
-        assert isinstance(m.fs.unit.costing.pipe_cost_constr, 
-                                Constraint)
         assert isinstance(m.fs.unit.costing.capital_cost_constraint, 
                                 Constraint)
 
-
-        data = m.db.get_unit_operation_parameters(
-                        "well_field", subtype=subtype)
-
-        assert m.fs.unit.costing.pipe_cost_basis.fixed
-        assert value(m.fs.unit.costing.pipe_cost_basis) == data["capital_cost"][
-                        "pipe_cost_basis"]["value"]
-        
         if subtype == "default":
-                assert m.fs.unit.costing.pipe_cost.value == 0
                 assert (pytest.approx(1.665893, rel=1e-5) ==
                       value(m.fs.unit.costing.capital_cost))
         if subtype == "emwd":
-                assert (pytest.approx(46256000.0, rel=1e-5) ==
-                      value(m.fs.unit.costing.pipe_cost))
                 assert (pytest.approx(47.921893, rel=1e-5) ==
                       value(m.fs.unit.costing.capital_cost))
 
