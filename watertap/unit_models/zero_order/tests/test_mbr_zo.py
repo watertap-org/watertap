@@ -441,7 +441,7 @@ class TestMBRZOsubtype:
 
         return m
 
-    @pytest.mark.parametrize("subtype", [params.keys()])
+    @pytest.mark.parametrize("subtype", [k for k in params.keys()])
     @pytest.mark.component
     def test_load_parameters(self, model, subtype):
         model.fs.unit.config.process_subtype = subtype
@@ -461,25 +461,27 @@ class TestMBRZOsubtype:
         assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
             "energy_electric_flow_vol_inlet"]["value"]
 
-def test_costing():
+@pytest.mark.parametrize("subtype", [k for k in params.keys()])
+def test_costing(subtype):
     m = ConcreteModel()
     m.db = Database()
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["sulfur", "toc", "tss"]})
+        default={"solute_list": ["sulfur", "toc", "tds"]})
 
     m.fs.costing = ZeroOrderCosting()
 
     m.fs.unit1 = MBRZO(default={
         "property_package": m.fs.params,
-        "database": m.db})
+        "database": m.db,
+        "process_subtype": subtype})
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
     m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
-    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
+    m.fs.unit1.inlet.flow_mass_comp[0, "tds"].fix(3)
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
@@ -487,12 +489,8 @@ def test_costing():
         "flowsheet_costing_block": m.fs.costing})
 
     assert isinstance(m.fs.costing.mbr, Block)
-    assert isinstance(m.fs.costing.mbr.capital_a_parameter,
-                      Var)
-    assert isinstance(m.fs.costing.mbr.capital_b_parameter,
-                      Var)
-    assert isinstance(m.fs.costing.mbr.reference_state, Var)
-
+    assert isinstance(m.fs.costing.mbr.capital_a_parameter,Var)
+    assert isinstance(m.fs.costing.mbr.capital_b_parameter,Var)
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
     assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
                       Constraint)
