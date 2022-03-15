@@ -360,36 +360,21 @@ class CrystallizationData(UnitModelBlockData):
 
 
 
-
-
-
         # 4. Fix flows of empty solid, liquid and vapour streams
         # (i) Fix solids: liquid and vapour flows must be zero
-        @self.Constraint(self.properties_solids[0].phase_component_set,
-            doc="Empty components in solids stream")
-        def eq_solids_composition(b, p, j):
+        for p, j in self.properties_solids[0].phase_component_set:
             if p != 'Sol':
-                return (b.properties_solids[0].flow_mass_phase_comp[p, j] == 1e-8 * pyunits.kg/pyunits.s)
-            else:
-                return Constraint.Skip
+                self.properties_solids[0].flow_mass_phase_comp[p, j].fix(1e-8)
 
         # (ii) Fix liquids: solid and vapour flows must be zero
-        @self.Constraint(self.properties_out[0].phase_component_set,
-            doc="Empty components in liquid stream")
-        def eq_liquid_composition(b, p, j):
+        for p, j in self.properties_out[0].phase_component_set:
             if p != 'Liq':
-                return (b.properties_out[0].flow_mass_phase_comp[p, j] == 1e-8 * pyunits.kg/pyunits.s)
-            else:
-                return Constraint.Skip
+                self.properties_out[0].flow_mass_phase_comp[p, j].fix(1e-8)
 
-        # (iii) Fix vapor: solid and vapour flows must be zero. Vapour is also pure solvent.
-        @self.Constraint(self.properties_vapor[0].phase_component_set,
-            doc="Empty components in vapour stream")
-        def eq_vapor_composition(b, p, j):
+        # (iii) Fix vapor: solid and vapour flows must be zero.
+        for p, j in self.properties_vapor[0].phase_component_set:         
             if p != 'Vap':
-                return (b.properties_vapor[0].flow_mass_phase_comp[p, j] == 1e-8 * pyunits.kg/pyunits.s)
-            else:
-                return Constraint.Skip
+                self.properties_vapor[0].flow_mass_phase_comp[p, j].fix(1e-8)
 
 
         # 5. Add an energy balance for the system
