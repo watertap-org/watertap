@@ -26,15 +26,15 @@ from idaes.generic_models.costing.costing_base import (
 
 from watertap.core.zero_order_base import ZeroOrderBase
 from watertap.unit_models.zero_order import (
-  BrineConcentratorZO,
-  ChemicalAdditionZO,
-  ChlorinationZO,
-  OzoneZO,
-  OzoneAOPZO, 
-  SedimentationZO,
-  StorageTankZO
-  UVZO, 
-  UVAOPZO)
+    BrineConcentratorZO,
+    ChemicalAdditionZO,
+    ChlorinationZO,
+    OzoneZO,
+    OzoneAOPZO,
+    SedimentationZO,
+    StorageTankZO,
+    UVZO,
+    UVAOPZO)
 
 
 
