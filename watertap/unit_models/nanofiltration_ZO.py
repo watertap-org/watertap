@@ -355,7 +355,7 @@ class NanofiltrationData(UnitModelBlockData):
             return b.feed_side.properties_in[t].temperature == \
                    b.properties_permeate[t].temperature
 
-    def initialize(
+    def initialize_build(
             blk,
             state_args=None,
             outlvl=idaeslog.NOTSET,

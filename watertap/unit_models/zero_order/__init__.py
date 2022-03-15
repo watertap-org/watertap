@@ -13,6 +13,7 @@
 
 from .anaerobic_mbr_mec_zo import AnaerobicMBRMECZO
 from .backwash_solids_handling_zo import BackwashSolidsHandlingZO
+from .bio_active_filtration_zo import BioActiveFiltrationZO
 from .vfa_recovery_zo import VFARecoveryZO
 from .aeration_basin_zo import AerationBasinZO
 from .air_flotation_zo import AirFlotationZO
@@ -26,12 +27,17 @@ from .dissolved_air_flotation_zo import DissolvedAirFlotationZO
 from .feed_water_tank_zo import FeedWaterTankZO
 from .feed_zo import FeedZO
 from .landfill_zo import LandfillZO
+from .landfill_zld_zo import LandfillZLDZO
 from .media_filtration_zo import MediaFiltrationZO
 from .microfiltration_zo import MicroFiltrationZO
+from .microscreen_filtration_zo import MicroscreenFiltrationZO
 from .nanofiltration_zo import NanofiltrationZO
 from .clarifier_zo import ClarifierZO
+from .primary_separator_zo import PrimarySeparatorZO
 from .pump_zo import PumpZO
 from .sedimentation_zo import SedimentationZO
+from .settling_pond_zo import SettlingPondZO
+from .tramp_oil_tank_zo import TrampOilTankZO
 from .tri_media_filtration_zo import TriMediaFiltrationZO
 from .coag_and_floc_zo import CoagulationFlocculationZO
 from .ultra_filtration_zo import UltraFiltrationZO

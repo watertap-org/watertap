@@ -27,7 +27,7 @@ from watertap.examples.flowsheets.full_treatment_train.flowsheet_components impo
                                                                              gypsum_saturation_index,
                                                                              translator_block,
                                                                              costing,
-                                                                             financials, )
+                                                                             )
 from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
 from watertap.examples.flowsheets.full_treatment_train.util import (solve_block,
                                                              check_dof)
@@ -65,9 +65,6 @@ def build_components(m, pretrt_type='NF', **kwargs):
     m.fs.system_recovery = Expression(
         expr=product_water_sb.flow_vol / feed_flow_vol)
 
-    # need load factor from costing_param_block for annual_water_production
-    financials.add_costing_param_block(m.fs)
-
     # RO recovery
     m.fs.RO_recovery = Var(initialize=0.5,
                            bounds=(0.01, 0.99),
@@ -77,10 +74,9 @@ def build_components(m, pretrt_type='NF', **kwargs):
              == product_water_sb.flow_vol / m.fs.tb_pretrt_to_desal.properties_out[0].flow_vol)
 
     # annual water production
-    m.fs.annual_water_production = Expression(
-        expr=pyunits.convert(product_water_sb.flow_vol, to_units=pyunits.m ** 3 / pyunits.year)
-             * m.fs.costing_param.load_factor)
-    costing.build_costing(m, module=financials, **kwargs)
+    m.fs.treated_flow_vol = Expression(
+        expr=product_water_sb.flow_vol)
+    costing.build_costing(m, **kwargs)
 
     return desal_port
 

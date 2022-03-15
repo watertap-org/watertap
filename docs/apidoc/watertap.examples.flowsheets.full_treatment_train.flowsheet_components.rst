@@ -34,13 +34,6 @@ watertap.examples.flowsheets.full\_treatment\_train.flowsheet\_components.feed\_
    :members:
    :show-inheritance:
 
-watertap.examples.flowsheets.full\_treatment\_train.flowsheet\_components.financials module
--------------------------------------------------------------------------------------------
-
-.. automodule:: watertap.examples.flowsheets.full_treatment_train.flowsheet_components.financials
-   :members:
-   :show-inheritance:
-
 watertap.examples.flowsheets.full\_treatment\_train.flowsheet\_components.gypsum\_saturation\_index module
 ----------------------------------------------------------------------------------------------------------
 

@@ -230,7 +230,7 @@ class PressureExchangerData(UnitModelBlockData):
         def eq_isothermal_temperature(b, t):
             return b.properties_in[t].temperature == b.properties_out[t].temperature
 
-    def initialize(
+    def initialize_build(
             self,
             state_args=None,
             routine=None,

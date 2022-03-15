@@ -163,7 +163,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                              : Value   : Fixed : Bounds
-                  Electricity Demand :  9.0720 : False : (None, None)
+                  Electricity Demand :  9.0720 : False : (0, None)
                Electricity Intensity : 0.18000 :  True : (None, None)
     Solute Removal [cryptosporidium] : 0.99900 :  True : (0, None)
                 Solute Removal [eeq] : 0.30000 :  True : (0, None)
@@ -316,7 +316,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                              : Value   : Fixed : Bounds
-                  Electricity Demand :  9.7200 : False : (None, None)
+                  Electricity Demand :  9.7200 : False : (0, None)
                Electricity Intensity : 0.18000 :  True : (None, None)
     Solute Removal [cryptosporidium] : 0.99900 :  True : (0, None)
                 Solute Removal [eeq] : 0.30000 :  True : (0, None)
