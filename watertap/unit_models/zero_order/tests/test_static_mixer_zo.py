@@ -17,17 +17,19 @@ import pytest
 from io import StringIO
 
 from pyomo.environ import (
-    check_optimal_termination, ConcreteModel, Constraint, value, Var)
+    Block, check_optimal_termination, ConcreteModel, Constraint, value, Var)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
+from idaes.generic_models.costing import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import StaticMixerZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
@@ -39,11 +41,11 @@ class TestStaticMixerZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["calcium", "magnesium", "foo", "sulfate"]})
-                                                                
+        m.fs.params = WaterParameterBlock(default={
+            "solute_list": ["calcium", "magnesium", "foo", "sulfate"]})
 
-        m.fs.unit = StaticMixerZO(default={ "property_package": m.fs.params,
-                                            "database": m.db})
+        m.fs.unit = StaticMixerZO(default={"property_package": m.fs.params,
+                                           "database": m.db})
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(42)
         m.fs.unit.inlet.flow_mass_comp[0, "calcium"].fix(3)
@@ -69,7 +71,6 @@ class TestStaticMixerZO:
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
         assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
             "energy_electric_flow_vol_inlet"]["value"]
-
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -132,3 +133,46 @@ Unit : fs.unit                                                             Time:
 """
 
         assert output in stream.getvalue()
+
+
+def test_costing():
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = WaterParameterBlock(
+        default={"solute_list": ["sulfur", "toc", "tss"]})
+
+    m.fs.costing = ZeroOrderCosting()
+
+    m.fs.unit1 = StaticMixerZO(default={
+        "property_package": m.fs.params,
+        "database": m.db})
+
+    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
+    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
+    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    m.fs.unit1.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": m.fs.costing})
+
+    assert isinstance(m.fs.costing.static_mixer, Block)
+    assert isinstance(m.fs.costing.static_mixer.capital_a_parameter,
+                      Var)
+    assert isinstance(m.fs.costing.static_mixer.capital_b_parameter,
+                      Var)
+    assert isinstance(m.fs.costing.static_mixer.reference_state, Var)
+
+    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
+                      Constraint)
+
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    assert m.fs.unit1.electricity[0] in \
+        m.fs.costing._registered_flows["electricity"]
