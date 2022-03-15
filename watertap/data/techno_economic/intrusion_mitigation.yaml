@@ -15,10 +15,4 @@ default:
     capital_b_parameter:
       value: 1.0
       units: dimensionless
-  recovery_frac_mass_H2O:
-    value: 0.99999
-    units: dimensionless
-    reference: Monterey One Case Study Data
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless
+      

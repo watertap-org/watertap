@@ -168,6 +168,3 @@ def test_costing():
     assert isinstance(m.fs.unit.costing.capital_cost, Var)
     assert isinstance(m.fs.unit.costing.capital_cost_constraint,
                       Constraint)
-
-    assert (pytest.approx(7.148202, rel=1e-5) ==
-            value(m.fs.unit.costing.capital_cost))
