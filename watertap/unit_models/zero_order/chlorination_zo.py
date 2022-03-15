@@ -40,19 +40,21 @@ class ChlorinationZOData(ZeroOrderBaseData):
         constant_intensity(self)
 
         self.initial_chlorine_demand = Var(self.flowsheet().time,
-                                              units=pyunits.mg/pyunits.liter,
-                                              doc="Initial chlorine demand")
+                                           units=pyunits.mg/pyunits.liter,
+                                           doc="Initial chlorine demand")
 
         self.contact_time = Var(self.flowsheet().time,
-                                              units=pyunits.hour,
-                                              doc="Chlorine contact time")
-        self.concentration_time = Var(self.flowsheet().time,
-                                       units=(pyunits.mg*pyunits.minute)/pyunits.liter,
-                                       doc="CT value for chlorination")
-        self.chlorine_decay_rate = Var(self.flowsheet().time,
-                                       units=pyunits.mg/(pyunits.L*pyunits.hour),
-                                       doc="Chlorine decay rate")
-        
+                                units=pyunits.hour,
+                                doc="Chlorine contact time")
+        self.concentration_time = Var(
+            self.flowsheet().time,
+            units=(pyunits.mg*pyunits.minute)/pyunits.liter,
+            doc="CT value for chlorination")
+        self.chlorine_decay_rate = Var(
+            self.flowsheet().time,
+            units=pyunits.mg/(pyunits.L*pyunits.hour),
+            doc="Chlorine decay rate")
+
         self.recovery_frac_mass_H2O.fix(1)
         self._fixed_perf_vars.append(self.initial_chlorine_demand)
         self._fixed_perf_vars.append(self.contact_time)
@@ -60,19 +62,23 @@ class ChlorinationZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.chlorine_decay_rate)
 
         self.chlorine_dose = Var(self.flowsheet().time,
-                                units=pyunits.mg/pyunits.L,
-                                doc="Chlorine dose")
+                                 units=pyunits.mg/pyunits.L,
+                                 doc="Chlorine dose")
 
         @self.Constraint(self.flowsheet().time,
                          doc="Chlorine dose constraint")
         def chlorine_dose_constraint(b, t):
             return (b.chlorine_dose[t] ==
-                    self.initial_chlorine_demand[t] + self.chlorine_decay_rate[t] * self.contact_time[t] + 
-                    (self.concentration_time[t] / pyunits.convert(self.contact_time[t], to_units=pyunits.minute)))
+                    self.initial_chlorine_demand[t] +
+                    self.chlorine_decay_rate[t]*self.contact_time[t] +
+                    (self.concentration_time[t] /
+                     pyunits.convert(self.contact_time[t],
+                                     to_units=pyunits.minute)))
 
         self._perf_var_dict["Chlorine Dose (mg/L)"] = self.chlorine_dose
-        self._perf_var_dict["Initial Chlorine Demand (mg/L)"] = self.initial_chlorine_demand
+        self._perf_var_dict["Initial Chlorine Demand (mg/L)"] = \
+            self.initial_chlorine_demand
         self._perf_var_dict["Contact Time (hr)"] = self.contact_time
         self._perf_var_dict["CT Value ((mg*min)/L)"] = self.concentration_time
-        self._perf_var_dict["Chlorine Decay Rate (mg/(L*hr))"] = self.chlorine_decay_rate
-        
+        self._perf_var_dict["Chlorine Decay Rate (mg/(L*hr))"] = \
+            self.chlorine_decay_rate
