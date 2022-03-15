@@ -1,9 +1,5 @@
-from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition
+from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
-from idaes.core.util.model_statistics import degrees_of_freedom
-from pyomo.util.check_units import assert_units_consistent
-import idaes.core.util.scaling as iscale
-from idaes.core.util import get_solver
 
 import ion_prop_pack as props
 
