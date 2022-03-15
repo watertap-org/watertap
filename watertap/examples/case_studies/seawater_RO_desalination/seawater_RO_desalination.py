@@ -28,6 +28,7 @@ from idaes.core.util.initialization import (solve_indexed_blocks,
                                             propagate_state,
                                             fix_state_vars,
                                             revert_state_vars)
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.generic_models.unit_models.translator import Translator
 from idaes.generic_models.unit_models import Mixer, Separator, Product
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
@@ -60,8 +61,8 @@ from watertap.unit_models.zero_order import (FeedZO,
                                              LandfillZO)
 
 
-def main():
-    m = build()
+def main(erd_type='pressure_exchanger'):
+    m = build(erd_type=erd_type)
 
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
@@ -70,14 +71,16 @@ def main():
     assert_degrees_of_freedom(m, 0)
 
     solve(m)
-    # display_results(m)
+    display_results(m)
 
     return m
 
-def build():
+
+def build(erd_type=None):
     # flowsheet set up
     m = ConcreteModel()
     m.db = Database()
+    m.erd_type = erd_type
 
     m.fs = FlowsheetBlock(default={'dynamic': False})
     m.fs.prop_prtrt = prop_ZO.WaterParameterBlock(default={"solute_list": ["tds", "tss"]})
@@ -123,14 +126,7 @@ def build():
         "database": m.db})
 
     # desalination
-    desal.S1 = Separator(default={
-        "property_package": m.fs.prop_desal,
-        "outlet_list": ['P1', 'PXR']})
     desal.P1 = Pump(default={'property_package': m.fs.prop_desal})
-    desal.M1 = Mixer(default={
-        "property_package": m.fs.prop_desal,
-        "momentum_mixing_type": MomentumMixingType.equality,  # booster pump will match pressure
-        "inlet_list": ['P1', 'P2']})
     desal.RO = ReverseOsmosis0D(default={
         "property_package": m.fs.prop_desal,
         "has_pressure_change": True,
@@ -140,8 +136,22 @@ def build():
     })
     desal.RO.width.setub(5000)
     desal.RO.area.setub(20000)
-    desal.PXR = PressureExchanger(default={'property_package': m.fs.prop_desal})
-    desal.P2 = Pump(default={'property_package': m.fs.prop_desal})
+    if erd_type == 'pressure_exchanger':
+        desal.S1 = Separator(default={
+            "property_package": m.fs.prop_desal,
+            "outlet_list": ['P1', 'PXR']})
+        desal.M1 = Mixer(default={
+            "property_package": m.fs.prop_desal,
+            "momentum_mixing_type": MomentumMixingType.equality,  # booster pump will match pressure
+            "inlet_list": ['P1', 'P2']})
+        desal.PXR = PressureExchanger(default={'property_package': m.fs.prop_desal})
+        desal.P2 = Pump(default={'property_package': m.fs.prop_desal})
+    elif erd_type == 'pump_as_turbine':
+        desal.ERD = Pump(default={'property_package': m.fs.prop_desal})
+    else:
+        raise ConfigurationError("erd_type was {}, but can only "
+                                 "be pressure_exchanger or pump_as_turbine"
+                                 "".format(erd_type))
 
     # posttreatment
     psttrt.storage_tank_2 = StorageTankZO(default={
@@ -209,16 +219,22 @@ def build():
     m.fs.s_prtrt_tb = Arc(source=prtrt.cartridge_filtration.treated, destination=m.fs.tb_prtrt_desal.inlet)
     m.fs.s_landfill = Arc(source=prtrt.backwash_handling.byproduct, destination=m.fs.landfill.inlet)
 
-    m.fs.s_tb_desal = Arc(source=m.fs.tb_prtrt_desal.outlet, destination=desal.S1.inlet)
-    desal.s01 = Arc(source=desal.S1.P1, destination=desal.P1.inlet)
-    desal.s02 = Arc(source=desal.P1.outlet, destination=desal.M1.P1)
-    desal.s03 = Arc(source=desal.M1.outlet, destination=desal.RO.inlet)
-    desal.s04 = Arc(source=desal.RO.retentate, destination=desal.PXR.high_pressure_inlet)
-    desal.s05 = Arc(source=desal.S1.PXR, destination=desal.PXR.low_pressure_inlet)
-    desal.s06 = Arc(source=desal.PXR.low_pressure_outlet, destination=desal.P2.inlet)
-    desal.s07 = Arc(source=desal.P2.outlet, destination=desal.M1.P2)
+    if erd_type == 'pressure_exchanger':
+        m.fs.s_tb_desal = Arc(source=m.fs.tb_prtrt_desal.outlet, destination=desal.S1.inlet)
+        desal.s01 = Arc(source=desal.S1.P1, destination=desal.P1.inlet)
+        desal.s02 = Arc(source=desal.P1.outlet, destination=desal.M1.P1)
+        desal.s03 = Arc(source=desal.M1.outlet, destination=desal.RO.inlet)
+        desal.s04 = Arc(source=desal.RO.retentate, destination=desal.PXR.high_pressure_inlet)
+        desal.s05 = Arc(source=desal.S1.PXR, destination=desal.PXR.low_pressure_inlet)
+        desal.s06 = Arc(source=desal.PXR.low_pressure_outlet, destination=desal.P2.inlet)
+        desal.s07 = Arc(source=desal.P2.outlet, destination=desal.M1.P2)
+        m.fs.s_disposal = Arc(source=desal.PXR.high_pressure_outlet, destination=m.fs.disposal.inlet)
+    elif erd_type == 'pump_as_turbine':
+        m.fs.s_tb_desal = Arc(source=m.fs.tb_prtrt_desal.outlet, destination=desal.P1.inlet)
+        desal.s01 = Arc(source=desal.P1.outlet, destination=desal.RO.inlet)
+        desal.s02 = Arc(source=desal.RO.retentate, destination=desal.ERD.inlet)
+        m.fs.s_disposal = Arc(source=desal.ERD.outlet, destination=m.fs.disposal.inlet)
     m.fs.s_desal_tb = Arc(source=desal.RO.permeate, destination=m.fs.tb_desal_psttrt.inlet)
-    m.fs.s_disposal = Arc(source=desal.PXR.high_pressure_outlet, destination=m.fs.disposal.inlet)
 
     m.fs.s_tb_psttrt = Arc(source=m.fs.tb_desal_psttrt.outlet, destination=psttrt.storage_tank_2.inlet)
     psttrt.s01 = Arc(source=psttrt.storage_tank_2.outlet, destination=psttrt.uv_aop.inlet)
@@ -233,11 +249,14 @@ def build():
     m.fs.prop_desal.set_default_scaling('flow_mass_phase_comp', 1e-3, index=('Liq', 'H2O'))
     m.fs.prop_desal.set_default_scaling('flow_mass_phase_comp', 1e-1, index=('Liq', 'TDS'))
     # set unit model values
-    iscale.set_scaling_factor(desal.RO.area, 1e-4)
     iscale.set_scaling_factor(desal.P1.control_volume.work, 1e-5)
-    iscale.set_scaling_factor(desal.P2.control_volume.work, 1e-5)
-    iscale.set_scaling_factor(desal.PXR.low_pressure_side.work, 1e-5)
-    iscale.set_scaling_factor(desal.PXR.high_pressure_side.work, 1e-5)
+    iscale.set_scaling_factor(desal.RO.area, 1e-4)
+    if erd_type == 'pressure_exchanger':
+        iscale.set_scaling_factor(desal.P2.control_volume.work, 1e-5)
+        iscale.set_scaling_factor(desal.PXR.low_pressure_side.work, 1e-5)
+        iscale.set_scaling_factor(desal.PXR.high_pressure_side.work, 1e-5)
+    elif erd_type == 'pump_as_turbine':
+        iscale.set_scaling_factor(desal.ERD.control_volume.work, 1e-5)
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
 
@@ -302,20 +321,10 @@ def set_operating_conditions(m):
     prtrt.cartridge_filtration.load_parameters_from_database(use_default_removal=True)
 
     # ---desalination---
-    # splitter (no degrees of freedom)
-
     # pump 1, high pressure pump, 2 degrees of freedom (efficiency and outlet pressure)
     desal.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
     operating_pressure = 70e5 * pyunits.Pa
     desal.P1.control_volume.properties_out[0].pressure.fix(operating_pressure)
-
-    # pressure exchanger
-    desal.PXR.efficiency_pressure_exchanger.fix(0.95)  # pressure exchanger efficiency [-]
-
-    # pump 2, booster pump, 1 degree of freedom (efficiency, pressure must match high pressure pump)
-    desal.P2.efficiency_pump.fix(0.80)
-
-    # mixer, no degrees of freedom
 
     # RO unit
     desal.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
@@ -324,7 +333,22 @@ def set_operating_conditions(m):
     desal.RO.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     desal.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     desal.RO.width.fix(1000)  # stage width [m]
-    desal.RO.area.fix(flow_vol * 4.5e4 * pyunits.s/pyunits.m)  # stage area [m2] TODO: replace with actual area
+    desal.RO.area.fix(flow_vol * 4.5e4 * pyunits.s / pyunits.m)  # stage area [m2] TODO: replace with actual area
+
+    if m.erd_type == 'pressure_exchanger':
+        # splitter (no degrees of freedom)
+
+        # pressure exchanger, 1 degree of freedom (efficiency)
+        desal.PXR.efficiency_pressure_exchanger.fix(0.95)
+
+        # pump 2, booster pump, 1 degree of freedom (efficiency, pressure must match high pressure pump)
+        desal.P2.efficiency_pump.fix(0.80)
+
+        # mixer, no degrees of freedom
+    elif m.erd_type == 'pump_as_turbine':
+        # ERD, 2 degrees of freedom (efficiency, outlet pressure)
+        desal.ERD.efficiency_pump.fix(0.95)
+        desal.ERD.control_volume.properties_out[0].pressure.fix(101325) # atmospheric pressure [Pa]
 
     # ---posttreatment---
     # storage tank 2
@@ -378,9 +402,6 @@ def initialize_system(m):
     m.fs.tb_prtrt_desal.properties_out[0].flow_mass_phase_comp['Liq', 'TDS'] = value(
         m.fs.tb_prtrt_desal.properties_in[0].flow_mass_comp['tds'])
 
-    propagate_state(m.fs.s_tb_desal)
-    flags = fix_state_vars(desal.S1.mixed_state)
-
     desal.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'] = \
         value(m.fs.feed.properties[0].flow_mass_comp['H2O'])
     desal.RO.feed_side.properties_in[0].flow_mass_phase_comp['Liq', 'TDS'] = \
@@ -389,8 +410,15 @@ def initialize_system(m):
     desal.RO.feed_side.properties_in[0].pressure = value(desal.P1.control_volume.properties_out[0].pressure)
     desal.RO.initialize()
 
-    solve(desal)
-    revert_state_vars(desal.S1.mixed_state, flags)
+    propagate_state(m.fs.s_tb_desal)
+    if m.erd_type == 'pressure_exchanger':
+        flags = fix_state_vars(desal.S1.mixed_state)
+        solve(desal)
+        revert_state_vars(desal.S1.mixed_state, flags)
+    elif m.erd_type == 'pump_as_turbine':
+        flags = fix_state_vars(desal.P1.control_volume.properties_in)
+        solve(desal)
+        revert_state_vars(desal.P1.control_volume.properties_in, flags)
 
     # initialize posttreatment
     propagate_state(m.fs.s_desal_tb)
@@ -425,12 +453,17 @@ def display_results(m):
     m.fs.pretreatment.backwash_handling.report()
     m.fs.pretreatment.anti_scalant_addition.report()
     m.fs.pretreatment.cartridge_filtration.report()
-    m.fs.desalination.S1.report()
-    m.fs.desalination.P1.report()
-    m.fs.desalination.P2.report()
-    m.fs.desalination.M1.report()
-    m.fs.desalination.RO.report()
-    m.fs.desalination.PXR.report()
+    if m.erd_type == 'pressure_exchanger':
+        m.fs.desalination.S1.report()
+        m.fs.desalination.P1.report()
+        m.fs.desalination.P2.report()
+        m.fs.desalination.M1.report()
+        m.fs.desalination.RO.report()
+        m.fs.desalination.PXR.report()
+    elif m.erd_type == 'pump_as_turbine':
+        m.fs.desalination.P1.report()
+        m.fs.desalination.RO.report()
+        m.fs.desalination.ERD.report()
     m.fs.posttreatment.storage_tank_2.report()
     m.fs.posttreatment.uv_aop.report()
     m.fs.posttreatment.co2_addition.report()
@@ -442,4 +475,5 @@ def display_results(m):
 
 
 if __name__ == "__main__":
-    main()
+    main(erd_type='pressure_exchanger')
+    # main(erd_type='pump_as_turbine')
