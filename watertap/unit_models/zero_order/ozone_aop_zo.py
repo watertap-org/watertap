@@ -58,9 +58,9 @@ class OzoneAOPZOData(OzoneZOData):
                          doc="Ozone/TOC ratio constraint")
         def ozone_toc_ratio_constraint(b, t):
             return (b.ozone_toc_ratio[t] == 1
-                    + b.concentration_time[t] / b.contact_time[t]     #TODO: think this should be dividing by contact time, not multiplying
-                    / pyunits.convert(b.properties_in[t].conc_mass_comp['toc'],
-                                      to_units=pyunits.mg/pyunits.liter))
+                    + pyunits.convert(b.concentration_time[t] / b.contact_time[t]     #TODO: think this should be dividing by contact time, not multiplying
+                    / b.properties_in[t].conc_mass_comp['toc'],
+                                      to_units=pyunits.dimensionless))
 
         @self.Constraint(self.flowsheet().time,
                          doc="Oxidant dose constraint")
