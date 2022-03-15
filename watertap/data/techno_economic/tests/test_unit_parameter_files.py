@@ -58,6 +58,8 @@ def test_unit_parameter_files(tech):
                     "sw_onshore_intake",
                     "landfill_zld",
                     "tramp_oil_tank",
+                    "energy_recovery",
+                    "blending_reservoir",
                     ]
 
     siso_full_recovery = ["uv_aop", "uv", "ion_exchange", "fixed_bed", "decarbonator", "chlorination"]
@@ -137,7 +139,6 @@ def test_unit_parameter_files(tech):
                 k[e]["units"], units.dimensionless)
             assert "value" in k[e].keys()
             assert k[e]["value"] >= 0
-            assert k[e]["value"] <= 1
 
         # Check for specific removal fractions
         if "removal_frac_mass_solute" in k.keys():
