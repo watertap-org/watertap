@@ -56,6 +56,10 @@ class TestBrineConcentratorZO_w_o_default_removal:
         assert model.fs.unit.config.database is model.db
         assert isinstance(model.fs.unit.power_consumption_constraint, Constraint)
         assert isinstance(model.fs.unit.power_consumption, Var)
+        assert isinstance(model.fs.unit.elec_coeff_1, Var)
+        assert isinstance(model.fs.unit.elec_coeff_2, Var)
+        assert isinstance(model.fs.unit.elec_coeff_3, Var)
+        assert isinstance(model.fs.unit.elec_coeff_4, Var)
 
 
     @pytest.mark.component
@@ -70,6 +74,22 @@ class TestBrineConcentratorZO_w_o_default_removal:
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
+
+        assert model.fs.unit.elec_coeff_1.fixed
+        assert model.fs.unit.elec_coeff_1.value == data[
+            "elec_coeff_1"]["value"]
+
+        assert model.fs.unit.elec_coeff_2.fixed
+        assert model.fs.unit.elec_coeff_2.value == data[
+            "elec_coeff_2"]["value"]
+
+        assert model.fs.unit.elec_coeff_3.fixed
+        assert model.fs.unit.elec_coeff_3.value == data[
+            "elec_coeff_3"]["value"]
+
+        assert model.fs.unit.elec_coeff_4.fixed
+        assert model.fs.unit.elec_coeff_4.value == data[
+            "elec_coeff_4"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -136,6 +156,10 @@ Unit : fs.unit                                                             Time:
                                 Power Consumption (kW) : 8.5557e+05 : False : (None, None)
                                   Solute Removal [tds] :    0.98000 :  True : (0, None)
                                         Water Recovery :    0.90000 :  True : (1e-08, 1.0000001)
+                    electricity coefficient 1 (kWh/m3) :     9.7300 :  True : (None, None)
+               electricity coefficient 2 (L/mg*kWh/m3) : 0.00011000 :  True : (None, None)
+                    electricity coefficient 3 (kWh/m3) :     10.400 :  True : (None, None)
+                 electricity coefficient 4 (kWh/m6*hr) : 3.8300e-05 :  True : (None, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -173,6 +197,10 @@ class Testbrine_concentratorZO_w_default_removal:
         assert model.fs.unit.config.database is model.db
         assert isinstance(model.fs.unit.power_consumption_constraint, Constraint)
         assert isinstance(model.fs.unit.power_consumption, Var)
+        assert isinstance(model.fs.unit.elec_coeff_1, Var)
+        assert isinstance(model.fs.unit.elec_coeff_2, Var)
+        assert isinstance(model.fs.unit.elec_coeff_3, Var)
+        assert isinstance(model.fs.unit.elec_coeff_4, Var)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -187,6 +215,22 @@ class Testbrine_concentratorZO_w_default_removal:
                 assert v.value == data["default_removal_frac_mass_solute"]["value"]
             else:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
+
+        assert model.fs.unit.elec_coeff_1.fixed
+        assert model.fs.unit.elec_coeff_1.value == data[
+            "elec_coeff_1"]["value"]
+
+        assert model.fs.unit.elec_coeff_2.fixed
+        assert model.fs.unit.elec_coeff_2.value == data[
+            "elec_coeff_2"]["value"]
+
+        assert model.fs.unit.elec_coeff_3.fixed
+        assert model.fs.unit.elec_coeff_3.value == data[
+            "elec_coeff_3"]["value"]
+
+        assert model.fs.unit.elec_coeff_4.fixed
+        assert model.fs.unit.elec_coeff_4.value == data[
+            "elec_coeff_4"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -258,6 +302,10 @@ Unit : fs.unit                                                             Time:
                                   Solute Removal [foo] :     0.0000 :  True : (0, None)
                                   Solute Removal [tds] :    0.98000 :  True : (0, None)
                                         Water Recovery :    0.90000 :  True : (1e-08, 1.0000001)
+                    electricity coefficient 1 (kWh/m3) :     9.7300 :  True : (None, None)
+               electricity coefficient 2 (L/mg*kWh/m3) : 0.00011000 :  True : (None, None)
+                    electricity coefficient 3 (kWh/m3) :     10.400 :  True : (None, None)
+                 electricity coefficient 4 (kWh/m6*hr) : 3.8300e-05 :  True : (None, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
