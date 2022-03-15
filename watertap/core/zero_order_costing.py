@@ -470,19 +470,19 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             units=blk.config.flowsheet_costing_block.base_currency,
             bounds=(0, None),
             doc="Capital cost of unit operation")
-        blk.unit_model.pipe_cost = pyo.Var(
+        blk.pipe_cost = pyo.Var(
             initialize=100,
             units=pyo.units.USD_2018,
             bounds=(0, None),
             doc="Piping cost for well field")
-        blk.unit_model.pipe_cost_basis = pyo.Var(
+        blk.pipe_cost_basis = pyo.Var(
             initialize=100,
             units=pyo.units.USD_2018/(pyo.units.miles*pyo.units.inch),
             bounds=(0, None),
             doc="Piping cost for well field")
-        blk.unit_model.pipe_cost_basis.fix(pipe_cost_basis)
-        blk.unit_model.pipe_cost_constr = pyo.Constraint(
-            expr=blk.unit_model.pipe_cost == blk.unit_model.pipe_cost_basis * 
+        blk.pipe_cost_basis.fix(pipe_cost_basis)
+        blk.pipe_cost_constr = pyo.Constraint(
+            expr=blk.pipe_cost == blk.pipe_cost_basis * 
             blk.unit_model.pipe_distance[t0] * blk.unit_model.pipe_diameter[t0])
 
         Q = pyo.units.convert(
@@ -490,7 +490,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             (pyo.units.m**3/pyo.units.hour),
             to_units=pyo.units.dimensionless)
         expr = pyo.units.convert(
-            A*Q**B + blk.unit_model.pipe_cost,
+            A*Q**B + blk.pipe_cost,
             to_units=blk.config.flowsheet_costing_block.base_currency)
 
         if factor == "TPEC":

@@ -17,7 +17,7 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    ConcreteModel, Constraint, Param, value, Var, assert_optimal_termination)
+    ConcreteModel, Constraint, Param, Block, value, Var, assert_optimal_termination)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -288,3 +288,65 @@ Unit : fs.unit                                                             Time:
 """
 
         assert output in stream.getvalue()
+
+db = Database()
+params = db._get_technology("well_field")
+@pytest.mark.parametrize("subtype", [k for k in params.keys()])
+def test_costing(subtype):
+        m = ConcreteModel()
+        m.db = Database()
+
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.params = WaterParameterBlock(
+                default={"solute_list": ["toc", "nitrate", "sulfate", "bar", "crux"]})
+        m.fs.costing = ZeroOrderCosting()
+        m.fs.unit = WellFieldZO(default={
+                        "property_package": m.fs.params,
+                        "database": m.db,
+                        "process_subtype": subtype})
+
+        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
+        m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(1)
+        m.fs.unit.inlet.flow_mass_comp[0, "nitrate"].fix(2)
+        m.fs.unit.inlet.flow_mass_comp[0, "sulfate"].fix(0.3)
+        m.fs.unit.inlet.flow_mass_comp[0, "bar"].fix(40)
+        m.fs.unit.inlet.flow_mass_comp[0, "crux"].fix(0.0005)
+
+        m.fs.unit.load_parameters_from_database()
+
+        assert degrees_of_freedom(m.fs.unit) == 0
+
+        m.fs.unit.costing = UnitModelCostingBlock(default={
+                        "flowsheet_costing_block": m.fs.costing})
+        assert_units_consistent(m.fs)
+        assert degrees_of_freedom(m.fs.unit) == 0
+        initialization_tester(m)
+
+        results = solver.solve(m)
+        assert isinstance(m.fs.unit.costing.pipe_cost, Var)
+        assert isinstance(m.fs.unit.costing.pipe_cost_basis, Var)
+        assert isinstance(m.fs.unit.costing.pipe_cost_constr, 
+                                Constraint)
+        assert isinstance(m.fs.unit.costing.capital_cost_constraint, 
+                                Constraint)
+
+
+        data = m.db.get_unit_operation_parameters(
+                        "well_field", subtype=subtype)
+
+        assert m.fs.unit.costing.pipe_cost_basis.fixed
+        assert value(m.fs.unit.costing.pipe_cost_basis) == data["capital_cost"][
+                        "pipe_cost_basis"]["value"]
+        
+        if subtype == "default":
+                assert m.fs.unit.costing.pipe_cost.value == 0
+                assert (pytest.approx(1.665893, rel=1e-5) ==
+                      value(m.fs.unit.costing.capital_cost))
+        if subtype == "emwd":
+                assert (pytest.approx(46256000.0, rel=1e-5) ==
+                      value(m.fs.unit.costing.pipe_cost))
+                assert (pytest.approx(47.921893, rel=1e-5) ==
+                      value(m.fs.unit.costing.capital_cost))
+
+        assert m.fs.unit.electricity[0] in \
+                m.fs.costing._registered_flows["electricity"]
