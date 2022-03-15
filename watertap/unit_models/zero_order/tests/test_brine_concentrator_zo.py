@@ -192,9 +192,14 @@ class Testbrine_concentratorZO_w_default_removal:
     @pytest.mark.unit
     def test_build(self, model):
         assert model.fs.unit.config.database is model.db
+
         assert isinstance(model.fs.unit.electricity_constraint,
                           Constraint)
         assert isinstance(model.fs.unit.electricity, Var)
+        assert isinstance(model.fs.unit.elec_coeff_1, Var)
+        assert isinstance(model.fs.unit.elec_coeff_2, Var)
+        assert isinstance(model.fs.unit.elec_coeff_3, Var)
+        assert isinstance(model.fs.unit.elec_coeff_4, Var)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -210,6 +215,22 @@ class Testbrine_concentratorZO_w_default_removal:
                     "default_removal_frac_mass_solute"]["value"]
             else:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
+
+        assert model.fs.unit.elec_coeff_1.fixed
+        assert model.fs.unit.elec_coeff_1.value == data[
+            "elec_coeff_1"]["value"]
+
+        assert model.fs.unit.elec_coeff_2.fixed
+        assert model.fs.unit.elec_coeff_2.value == data[
+            "elec_coeff_2"]["value"]
+
+        assert model.fs.unit.elec_coeff_3.fixed
+        assert model.fs.unit.elec_coeff_3.value == data[
+            "elec_coeff_3"]["value"]
+
+        assert model.fs.unit.elec_coeff_4.fixed
+        assert model.fs.unit.elec_coeff_4.value == data[
+            "elec_coeff_4"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -343,7 +364,12 @@ def test_no_tds_in_solute_list_error():
             "database": db})
 
 
-def test_costing():
+db = Database()
+params = db._get_technology("brine_concentrator")
+
+
+@pytest.mark.parametrize("subtype", [k for k in params.keys()])
+def test_costing(subtype):
     m = ConcreteModel()
     m.db = Database()
 
@@ -356,7 +382,8 @@ def test_costing():
 
     m.fs.unit1 = BrineConcentratorZO(default={
         "property_package": m.fs.params,
-        "database": m.db})
+        "database": m.db,
+        "process_subtype": subtype})
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)

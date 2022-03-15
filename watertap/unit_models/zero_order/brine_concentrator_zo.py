@@ -24,7 +24,7 @@ __author__ = "Adam Atia"
 
 
 @declare_process_block_class("BrineConcentratorZO")
-class ClarifierZOData(ZeroOrderBaseData):
+class BrineConcentratorZOData(ZeroOrderBaseData):
     """
     Zero-Order model for a brine concentrator unit operation.
     """
@@ -63,6 +63,7 @@ class ClarifierZOData(ZeroOrderBaseData):
         self.elec_coeff_4 = Var(
             units=pyunits.kWh/pyunits.m**6*pyunits.hour,
             doc="Constant 4 in electricity intensity equation")
+
         self._fixed_perf_vars.append(self.elec_coeff_1)
         self._fixed_perf_vars.append(self.elec_coeff_2)
         self._fixed_perf_vars.append(self.elec_coeff_3)
