@@ -13,6 +13,12 @@
 """
     This file demonstrates how to connect to the public MongoDB Cloud server.
 
+    NOTE: To use the public EDB database server, user's MUST have pymongo installed
+    with the optional srv service. If not installed, please run the following from
+    your [conda] environment. 
+
+    python -m pip install pymongo[srv]
+
 """
 
 # Import ElectrolyteDB object
