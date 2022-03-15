@@ -35,7 +35,7 @@ class OzoneAOPZOData(OzoneZOData):
         self._tech_type = "ozone_aop"
 
         self.oxidant_dose = Var(self.flowsheet().time,
-                                units=pyunits.kg/pyunits.m**3,
+                                units=pyunits.mg/pyunits.L,
                                 doc="Oxidant dosage")
 
         self.chemical_flow_mass = Var(
@@ -69,7 +69,7 @@ class OzoneAOPZOData(OzoneZOData):
                 b.hydrogen_peroxide_ozone_ratio[t]
                 * b.ozone_toc_ratio[t]
                 * b.properties_in[t].conc_mass_comp["toc"],
-                to_units=pyunits.kg/pyunits.m**3))
+                to_units=pyunits.mg/pyunits.L))
 
         @self.Constraint(self.flowsheet().time,
                          doc="Oxidant mass flow constraint")
@@ -79,7 +79,7 @@ class OzoneAOPZOData(OzoneZOData):
                         b.oxidant_dose[t]*b.properties_in[t].flow_vol,
                         to_units=pyunits.kg/pyunits.s))
 
-        self._perf_var_dict["Oxidant Dosage (kg/m3)"] = self.oxidant_dose
+        self._perf_var_dict["Oxidant Dosage (mg/L)"] = self.oxidant_dose
         self._perf_var_dict["Oxidant Flow (kg/s)"] = self.chemical_flow_mass
         self._perf_var_dict["Hydrogen Peroxide/Ozone Ratio"] = self.hydrogen_peroxide_ozone_ratio
         self._perf_var_dict["Ozone/TOC Ratio"] = self.ozone_toc_ratio

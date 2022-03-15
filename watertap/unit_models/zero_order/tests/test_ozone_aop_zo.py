@@ -182,7 +182,7 @@ Unit : fs.unit                                                             Time:
 
     Key                                          : Value   : Fixed : Bounds
                    Hydrogen Peroxide/Ozone Ratio : 0.50000 :  True : (None, None)
-                          Oxidant Dosage (kg/m3) :  4.6734 : False : (None, None)
+                           Oxidant Dosage (mg/L) :  4673.4 : False : (None, None)
                              Oxidant Flow (kg/s) : 0.50005 : False : (0, None)
                      Ozone CT Value ((mg*min)/L) :  1.0000 :  True : (None, None)
                         Ozone Contact Time (min) :  1.0000 :  True : (None, None)
@@ -356,7 +356,7 @@ Unit : fs.unit                                                             Time:
 
     Key                                          : Value   : Fixed : Bounds
                    Hydrogen Peroxide/Ozone Ratio : 0.50000 :  True : (None, None)
-                          Oxidant Dosage (kg/m3) :  4.6734 : False : (None, None)
+                           Oxidant Dosage (mg/L) :  4673.4 : False : (None, None)
                              Oxidant Flow (kg/s) : 0.50005 : False : (0, None)
                      Ozone CT Value ((mg*min)/L) :  1.0000 :  True : (None, None)
                         Ozone Contact Time (min) :  1.0000 :  True : (None, None)
