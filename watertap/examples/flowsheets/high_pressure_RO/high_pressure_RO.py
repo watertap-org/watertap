@@ -41,6 +41,7 @@ from watertap.unit_models.pump_isothermal import Pump
 from watertap.core.util.initialization import assert_degrees_of_freedom
 import watertap.examples.flowsheets.high_pressure_RO.financials as financials
 import watertap.examples.flowsheets.high_pressure_RO.components.feed_cases as feed_cases
+from watertap.core.util.infeasible import print_close_to_bounds, print_infeasible_bounds, print_infeasible_constraints
 
 
 def main():
@@ -51,6 +52,7 @@ def main():
     m = build()
     specify_model(m, solver=solver)
     initialize_model(m, solver=solver)
+    display_report(m)
 
     # simulate and display
     solve(m, solver=solver)
@@ -212,7 +214,7 @@ def specify_model(m, solver=None):
 
     # pump 2, 2 degrees of freedom (efficiency and outlet pressure)
     m.fs.P2.efficiency_pump.fix(0.80)  # pump efficiency [-]
-    m.fs.P2.control_volume.properties_out[0].pressure.fix(120e5)
+    m.fs.P2.control_volume.properties_out[0].pressure.fix(100e5)
 
     # RO 1, 7 degrees of freedom
     m.fs.RO1.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
@@ -221,7 +223,7 @@ def specify_model(m, solver=None):
     m.fs.RO1.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
     m.fs.RO1.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     m.fs.RO1.area.fix(100)
-    m.fs.RO1.width.fix(20)  # stage width [m]
+    m.fs.RO1.width.fix(10)  # stage width [m]
 
     # RO 2, 7 degrees of freedom
     m.fs.RO2.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
@@ -244,6 +246,9 @@ def solve(blk, solver=None, tee=False):
     if solver is None:
         solver = get_solver()
     results = solver.solve(blk, tee=tee)
+    print_infeasible_constraints(blk)
+    print_infeasible_bounds(blk)
+    print_close_to_bounds(blk)
     assert_optimal_termination(results)
 
 
@@ -269,8 +274,12 @@ def initialize_model(m, solver=None):
     m.fs.RO2.initialize(optarg=optarg)
     m.fs.RO2.permeate.pressure[0].unfix()
     propagate_state(m.fs.s07)
-    propagate_state(m.fs.s08)
     m.fs.M1.initialize(optarg=optarg)
+    propagate_state(m.fs.s08)
+    flags = fix_state_vars(m.fs.tb_desal_disposal.properties_in)
+    solve(m.fs.tb_desal_disposal)
+    revert_state_vars(m.fs.tb_desal_disposal.properties_in, flags)
+    propagate_state(m.fs.s09)
     propagate_state(m.fs.s10)
     m.fs.product.initialize(optarg=optarg)
 
@@ -325,17 +334,17 @@ def optimize(m, solver=None):
 
 def display_results(m):
     print('---system metrics---')
-    feed_flow_mass = sum(m.fs.feed.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
-    feed_mass_frac_NaCl = m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / feed_flow_mass
-    print('Feed: %.2f kg/s, %.0f ppm' % (feed_flow_mass, feed_mass_frac_NaCl * 1e6))
+    # feed_flow_mass = sum(m.fs.feed.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
+    # feed_mass_frac_NaCl = m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / feed_flow_mass
+    # print('Feed: %.2f kg/s, %.0f ppm' % (feed_flow_mass, feed_mass_frac_NaCl * 1e6))
 
     prod_flow_mass = sum(m.fs.product.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
     prod_mass_frac_NaCl = m.fs.product.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / prod_flow_mass
     print('Product: %.3f kg/s, %.0f ppm' % (prod_flow_mass, prod_mass_frac_NaCl * 1e6))
 
-    disp_flow_mass = sum(m.fs.disposal.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
-    disp_mass_frac_NaCl = m.fs.disposal.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / disp_flow_mass
-    print('Disposal: %.3f kg/s, %.0f ppm' % (disp_flow_mass, disp_mass_frac_NaCl * 1e6))
+    # disp_flow_mass = sum(m.fs.disposal.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
+    # disp_mass_frac_NaCl = m.fs.disposal.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / disp_flow_mass
+    # print('Disposal: %.3f kg/s, %.0f ppm' % (disp_flow_mass, disp_mass_frac_NaCl * 1e6))
 
     print('Volumetric recovery: %.1f%%' % (value(m.fs.product.properties[0].flow_vol
                                                  / m.fs.feed.properties[0].flow_vol) * 100))
@@ -347,6 +356,19 @@ def display_results(m):
           (m.fs.RO1.inlet.pressure[0].value / 1e5, m.fs.RO2.inlet.pressure[0].value / 1e5))
     print('Membrane area %.1f and %.1f m2' %
           (m.fs.RO1.area.value, m.fs.RO2.area.value))
+
+
+def display_report(m):
+    m.fs.feed.report()
+    m.fs.tb_feed_desal.report()
+    m.fs.P1.report()
+    m.fs.RO1.report()
+    m.fs.P2.report()
+    m.fs.RO2.report()
+    m.fs.M1.report()
+    m.fs.product.report()
+    m.fs.tb_desal_disposal.report()
+    m.fs.disposal.report()
 
 
 if __name__ == "__main__":
