@@ -144,3 +144,30 @@ default:
       value: 0.98
       units: dimensionless
       constituent_longform: zinc
+  capital_cost:
+    cost_factor: None
+    capital_a_parameter:
+      value: 15.1e6
+      units: USD_2007
+    capital_b_parameter:
+      value: 3.02e2
+      units: USD_2007/(mg/liter)
+    capital_c_parameter:
+      value: -18.8e6
+      units: USD_2007
+    capital_d_parameter:
+      value: 8.08e4
+      units: USD_2007/(m^3/hr)
+  # PArameters for calculating electricity intensity
+  elec_coeff_1:
+    value: 9.73
+    units: kWh/m^3
+  elec_coeff_2:
+    value: 1.1E-4
+    units: L/mg*kWh/m^3
+  elec_coeff_3:
+    value: 10.4
+    units: kWh/m**3
+  elec_coeff_4:
+    value: 3.83E-5
+    units: kWh/m^6*hour
