@@ -145,7 +145,8 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
     m.fs.ro_max_pressure = Param(initialize=85e5, units=pyunits.Pa, mutable=True)
     m.fs.lsrro_max_pressure = Param(initialize=65e5, units=pyunits.Pa, mutable=True)
 
-    m.fs.B_max = Param(initialize=B_max, mutable=True, units=pyunits.m/pyunits.s)
+    if B_max is not None:
+        m.fs.B_max = Param(initialize=B_max, mutable=True, units=pyunits.m/pyunits.s)
 
     # system water recovery
     m.fs.water_recovery = Var(
@@ -624,6 +625,8 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
             stage.B_comp.setlb(3.5e-8)
             if B_max is not None:
                 stage.B_comp.setub(m.fs.B_max) #TODO: changed to ~50 LMH equivalent; make sure still stable
+            else:
+                stage.B_comp.setub(None)
             if B_case == 'single optimum':
                 stage.B_comp_equal = Constraint(expr=stage.B_comp[0, 'NaCl'] == m.fs.B_comp_system)
             if A_case == 'single optimum':
@@ -778,12 +781,17 @@ if __name__ == "__main__":
     # cin = 125
     # recovery = .35
     cin_rec = {
-        'case 1': [35, 0.8],       # 2 stage optimal at 25 LMH max B value for LSRRO stages
-        'case 2': [70, 0.65],    # 3 stage optimal at 25 LMH max B value for LSRRO stages
-        'case 3': [125, 0.4]    # 4 stage optimal at 25 LMH max B value for LSRRO stages
+        'case 1': [35, 0.75],
+        'case 2': [70, 0.65],
+        'case 2a': [70, 0.60],
+        'case 2b': [70, 0.55],
+        'case 3': [125, 0.5],
+        'case 4': [125, 0.4],
+        'case 5': [125, 0.35],
+
     }
     starting_stage = 2
-    ending_stage = 8
+    ending_stage = 5
 
     a_case_lst = [
         "fix",
