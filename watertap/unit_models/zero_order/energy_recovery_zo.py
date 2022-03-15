@@ -37,3 +37,4 @@ class EnergyRecoveryZOData(ZeroOrderBaseData):
 
         build_pt(self)
         constant_intensity(self)
+        self.electricity.setlb(None)
