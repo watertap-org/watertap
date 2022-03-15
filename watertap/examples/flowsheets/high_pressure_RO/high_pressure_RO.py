@@ -24,8 +24,10 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import (solve_indexed_blocks,
-                                            propagate_state)
-from idaes.generic_models.unit_models import Product, Feed, Mixer
+                                            propagate_state,
+                                            fix_state_vars,
+                                            revert_state_vars)
+from idaes.generic_models.unit_models import Product, Feed, Mixer, Translator
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -38,6 +40,7 @@ from watertap.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
 from watertap.unit_models.pump_isothermal import Pump
 from watertap.core.util.initialization import assert_degrees_of_freedom
 import watertap.examples.flowsheets.high_pressure_RO.financials as financials
+import watertap.examples.flowsheets.high_pressure_RO.components.feed_cases as feed_cases
 
 
 def main():
@@ -60,36 +63,83 @@ def main():
     print('\n***---Optimization results---***')
     display_results(m)
 
-def build():
+def build(case='seawater'):
     # flowsheet set up
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={'dynamic': False})
-    m.fs.properties = props.NaClParameterBlock()
+    m.fs.prop_desal = props.NaClParameterBlock()
+
+    # feed and disposal based on the case
+    feed_cases.build_specified_feed(m, case=case)
+    m.fs.disposal = Product(default={'property_package': m.fs.prop_feed})
 
     # unit models
-    m.fs.feed = Feed(default={'property_package': m.fs.properties})
-    m.fs.P1 = Pump(default={'property_package': m.fs.properties})
-    m.fs.P2 = Pump(default={'property_package': m.fs.properties})
+    m.fs.P1 = Pump(default={'property_package': m.fs.prop_desal})
+    m.fs.P2 = Pump(default={'property_package': m.fs.prop_desal})
     m.fs.RO1 = ReverseOsmosis0D(default={
-        "property_package": m.fs.properties,
+        "property_package": m.fs.prop_desal,
         "has_pressure_change": True,
         "pressure_change_type": PressureChangeType.calculated,
         "mass_transfer_coefficient": MassTransferCoefficient.calculated,
         "concentration_polarization_type": ConcentrationPolarizationType.calculated,
     })
     m.fs.RO2 = ReverseOsmosis0D(default={
-        "property_package": m.fs.properties,
+        "property_package": m.fs.prop_desal,
         "has_pressure_change": True,
         "pressure_change_type": PressureChangeType.calculated,
         "mass_transfer_coefficient": MassTransferCoefficient.calculated,
         "concentration_polarization_type": ConcentrationPolarizationType.calculated,
     })
     m.fs.M1 = Mixer(default={
-        "property_package": m.fs.properties,
+        "property_package": m.fs.prop_desal,
         "momentum_mixing_type": MomentumMixingType.equality,
         "inlet_list": ['RO1', 'RO2']})
-    m.fs.product = Product(default={'property_package': m.fs.properties})
-    m.fs.disposal = Product(default={'property_package': m.fs.properties})
+    m.fs.product = Product(default={'property_package': m.fs.prop_desal})
+
+
+    # translator blocks
+    m.fs.tb_feed_desal = Translator(
+        default={"inlet_property_package": m.fs.prop_feed,
+                 "outlet_property_package": m.fs.prop_desal})
+
+    @m.fs.tb_feed_desal.Constraint()
+    def eq_flow_vol(blk):
+        return blk.properties_in[0].flow_vol == blk.properties_out[0].flow_vol_phase['Liq']
+
+    @m.fs.tb_feed_desal.Constraint()
+    def eq_flow_mass_TDS(blk):
+        return (sum(blk.properties_in[0].conc_mass_comp[j]
+                    for j in blk.properties_in[0].params.solute_set)
+                == blk.properties_out[0].conc_mass_phase_comp['Liq', 'NaCl'])
+
+    @m.fs.tb_feed_desal.Constraint()
+    def eq_pressure(blk):
+        return blk.properties_in[0].pressure == blk.properties_out[0].pressure
+
+    @m.fs.tb_feed_desal.Constraint()
+    def eq_temperature(blk):
+        return blk.properties_in[0].temperature == blk.properties_out[0].temperature
+
+    m.fs.tb_desal_disposal = Translator(
+        default={"inlet_property_package": m.fs.prop_desal,
+                 "outlet_property_package": m.fs.prop_feed})
+
+    @m.fs.tb_desal_disposal.Constraint()
+    def eq_flow_vol(blk):
+        return blk.properties_in[0].flow_vol_phase['Liq'] == blk.properties_out[0].flow_vol
+
+    @m.fs.tb_desal_disposal.Constraint(m.fs.prop_feed.solute_set)
+    def eq_flow_mass_comp(blk, j):
+        return (blk.properties_out[0].conc_mass_comp[j] * blk.properties_out[0].flow_vol ==
+                m.fs.feed.properties[0].flow_vol * m.fs.feed.properties[0].conc_mass_comp[j])
+
+    @m.fs.tb_desal_disposal.Constraint()
+    def eq_pressure(blk):
+        return blk.properties_in[0].pressure == blk.properties_out[0].pressure
+
+    @m.fs.tb_desal_disposal.Constraint()
+    def eq_temperature(blk):
+        return blk.properties_in[0].temperature == blk.properties_out[0].temperature
 
     # build old costing
     financials.add_costing_param_block(m.fs)
@@ -114,28 +164,27 @@ def build():
     iscale.set_scaling_factor(m.fs.P2.costing.purchase_cost, 1)
 
     # connections
-    m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.P1.inlet)
-    m.fs.s02 = Arc(source=m.fs.P1.outlet, destination=m.fs.RO1.inlet)
-    m.fs.s03 = Arc(source=m.fs.RO1.permeate, destination=m.fs.M1.RO1)
-    m.fs.s04 = Arc(source=m.fs.RO1.retentate, destination=m.fs.P2.inlet)
-    m.fs.s05 = Arc(source=m.fs.P2.outlet, destination=m.fs.RO2.inlet)
-    m.fs.s06 = Arc(source=m.fs.RO2.permeate, destination=m.fs.M1.RO2)
-    m.fs.s07 = Arc(source=m.fs.RO2.retentate, destination=m.fs.disposal.inlet)
-    m.fs.s08 = Arc(source=m.fs.M1.outlet, destination=m.fs.product.inlet)
+    m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.tb_feed_desal.inlet)
+    m.fs.s02 = Arc(source=m.fs.tb_feed_desal.outlet, destination=m.fs.P1.inlet)
+    m.fs.s03 = Arc(source=m.fs.P1.outlet, destination=m.fs.RO1.inlet)
+    m.fs.s04 = Arc(source=m.fs.RO1.permeate, destination=m.fs.M1.RO1)
+    m.fs.s05 = Arc(source=m.fs.RO1.retentate, destination=m.fs.P2.inlet)
+    m.fs.s06 = Arc(source=m.fs.P2.outlet, destination=m.fs.RO2.inlet)
+    m.fs.s07 = Arc(source=m.fs.RO2.permeate, destination=m.fs.M1.RO2)
+    m.fs.s08 = Arc(source=m.fs.RO2.retentate, destination=m.fs.tb_desal_disposal.inlet)
+    m.fs.s09 = Arc(source=m.fs.tb_desal_disposal.outlet, destination=m.fs.disposal.inlet)
+    m.fs.s10 = Arc(source=m.fs.M1.outlet, destination=m.fs.product.inlet)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scaling
     # set default property values
-    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
+    m.fs.prop_desal.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
+    m.fs.prop_desal.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
     # set unit model values
     iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.P2.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.RO1.area, 1)
     iscale.set_scaling_factor(m.fs.RO2.area, 1)
-    # touch properties used in specifying and initializing the model
-    m.fs.feed.properties[0].flow_vol_phase['Liq']
-    m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'NaCl']
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
 
@@ -148,14 +197,14 @@ def specify_model(m, solver=None):
     # ---specifications---
     # feed
     # state variables
-    m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
-    m.fs.feed.properties[0].temperature.fix(273.15 + 25)  # feed temperature [K]
-    # properties (cannot be fixed for initialization routines, must calculate the state variables)
-    m.fs.feed.properties.calculate_state(
-        var_args={('flow_vol_phase', 'Liq'): 1e-3,  # feed volumetric flow rate [m3/s]
-                  ('mass_frac_phase_comp', ('Liq', 'NaCl')): 0.035},  # feed NaCl mass fraction [-]
-        hold_state=True,  # fixes the calculated component mass flow rates
-    )
+    # m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
+    # m.fs.feed.properties[0].temperature.fix(273.15 + 25)  # feed temperature [K]
+    # # properties (cannot be fixed for initialization routines, must calculate the state variables)
+    # m.fs.feed.properties.calculate_state(
+    #     var_args={('flow_vol_phase', 'Liq'): 1e-3,  # feed volumetric flow rate [m3/s]
+    #               ('mass_frac_phase_comp', ('Liq', 'NaCl')): 0.035},  # feed NaCl mass fraction [-]
+    #     hold_state=True,  # fixes the calculated component mass flow rates
+    # )
 
     # pump 1, 2 degrees of freedom (efficiency and outlet pressure)
     m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
@@ -203,25 +252,27 @@ def initialize_model(m, solver=None):
         solver = get_solver()
     optarg = solver.options
 
-    m.fs.feed.initialize(optarg=optarg)
+    # m.fs.feed.initialize(optarg=optarg)
     propagate_state(m.fs.s01)
-    m.fs.P1.initialize(optarg=optarg)
+    flags = fix_state_vars(m.fs.tb_feed_desal.properties_in)
+    solve(m.fs.tb_feed_desal)
+    revert_state_vars(m.fs.tb_feed_desal.properties_in, flags)
     propagate_state(m.fs.s02)
-    m.fs.RO1.initialize(optarg=optarg)
+    m.fs.P1.initialize(optarg=optarg)
     propagate_state(m.fs.s03)
+    m.fs.RO1.initialize(optarg=optarg)
     propagate_state(m.fs.s04)
-    m.fs.P2.initialize(optarg=optarg)
     propagate_state(m.fs.s05)
+    m.fs.P2.initialize(optarg=optarg)
+    propagate_state(m.fs.s06)
     m.fs.RO2.permeate.pressure[0].fix(101325)
     m.fs.RO2.initialize(optarg=optarg)
     m.fs.RO2.permeate.pressure[0].unfix()
-    propagate_state(m.fs.s06)
     propagate_state(m.fs.s07)
-    m.fs.M1.initialize(optarg=optarg)
     propagate_state(m.fs.s08)
+    m.fs.M1.initialize(optarg=optarg)
+    propagate_state(m.fs.s10)
     m.fs.product.initialize(optarg=optarg)
-    m.fs.disposal.initialize(optarg=optarg)
-
 
 def set_up_optimization(m):
     # objective
@@ -266,9 +317,11 @@ def set_up_optimization(m):
     # ---checking model---
     assert_degrees_of_freedom(m, 3)
 
+
 def optimize(m, solver=None):
     # --solve---
     solve(m, solver=solver)
+
 
 def display_results(m):
     print('---system metrics---')

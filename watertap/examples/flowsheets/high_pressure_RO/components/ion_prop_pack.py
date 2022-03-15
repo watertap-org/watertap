@@ -73,7 +73,8 @@ class PropParameterData(PhysicalParameterBlock):
         self.H2O = Solvent()
 
         for j in self.config.ion_list:
-            self.add_component(str(j), Solute())
+            setattr(self, j, Solute())
+            # self.add_component(str(j), Solute())
 
         # # molecular weight
         # self.mw_comp = Param(
@@ -233,7 +234,7 @@ class PropStateBlockData(StateBlockData):
             doc='Volumetric flow rate')
 
         self.conc_mass_comp = Var(
-            self.params.component_list,
+            self.params.solute_set,
             initialize=1,
             bounds=(1e-6, 1e6),
             units=pyunits.kg/pyunits.m ** 3,
