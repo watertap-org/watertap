@@ -82,13 +82,14 @@ class TestGeneralMethods:
         assert model.frame.base_currency == pyunits.MUSD_2018
         assert model.frame.base_period == pyunits.year
 
-        assert len(model.frame.defined_flows) == 10
+        assert len(model.frame.defined_flows) == 11
         for f in model.frame.defined_flows:
             assert f in ["electricity",
                          "alum",
                          "ammonia",
                          "anti-scalant",
                          "caustic_soda",
+                         "chlorine",
                          "ferric_chloride",
                          "hydrochloric_acid",
                          "lime",
@@ -144,7 +145,10 @@ class TestGeneralMethods:
                     "value": 22,
                     "units": "mol"}}}
 
-        A, B, pblock = _get_tech_parameters(model.dummy_unit, parameters, None)
+        A, B, R = _get_tech_parameters(
+            model.dummy_unit, parameters, None, ["capital_a_parameter",
+                                                 "capital_b_parameter",
+                                                 "reference_state"])
 
         assert isinstance(model.frame.test_tech, Block)
         assert isinstance(model.frame.test_tech.subtype_set, Set)
@@ -169,9 +173,9 @@ class TestGeneralMethods:
         assert value(model.frame.test_tech.reference_state[None]) == 22
         assert model.frame.test_tech.reference_state[None].fixed
 
-        assert pblock is model.frame.test_tech
         assert A is model.frame.test_tech.capital_a_parameter[None]
         assert B is model.frame.test_tech.capital_b_parameter[None]
+        assert R is model.frame.test_tech.reference_state[None]
 
     @pytest.mark.unit
     def test_get_tech_parameters_second_call(self, model):
@@ -188,7 +192,10 @@ class TestGeneralMethods:
                     "value": 2200,
                     "units": "mol"}}}
 
-        A, B, pblock = _get_tech_parameters(model.dummy_unit, parameters, None)
+        A, B, R = _get_tech_parameters(
+            model.dummy_unit, parameters, None, ["capital_a_parameter",
+                                                 "capital_b_parameter",
+                                                 "reference_state"])
 
         assert isinstance(model.frame.test_tech, Block)
         assert isinstance(model.frame.test_tech.subtype_set, Set)
@@ -213,9 +220,9 @@ class TestGeneralMethods:
         assert value(model.frame.test_tech.reference_state[None]) == 22
         assert model.frame.test_tech.reference_state[None].fixed
 
-        assert pblock is model.frame.test_tech
         assert A is model.frame.test_tech.capital_a_parameter[None]
         assert B is model.frame.test_tech.capital_b_parameter[None]
+        assert R is model.frame.test_tech.reference_state[None]
 
     @pytest.mark.unit
     def test_get_tech_parameters_second_subtype(self, model):
@@ -233,8 +240,10 @@ class TestGeneralMethods:
                     "units": "mol"}}}
 
         # Provide subtype foo
-        A, B, pblock = _get_tech_parameters(
-            model.dummy_unit, parameters, "foo")
+        A, B, R = _get_tech_parameters(
+            model.dummy_unit, parameters, "foo", ["capital_a_parameter",
+                                                  "capital_b_parameter",
+                                                  "reference_state"])
 
         assert isinstance(model.frame.test_tech, Block)
         assert isinstance(model.frame.test_tech.subtype_set, Set)
@@ -259,13 +268,9 @@ class TestGeneralMethods:
         assert value(model.frame.test_tech.reference_state["foo"]) == 2200
         assert model.frame.test_tech.reference_state["foo"].fixed
 
-        assert pblock is model.frame.test_tech
         assert A is model.frame.test_tech.capital_a_parameter["foo"]
         assert B is model.frame.test_tech.capital_b_parameter["foo"]
-
-    # @pytest.mark.unit
-    # def test_general_power_law_form_no_basis(self, model):
-        
+        assert R is model.frame.test_tech.reference_state["foo"]
 
 
 class TestWorkflow:
