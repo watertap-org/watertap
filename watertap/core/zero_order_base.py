@@ -13,7 +13,7 @@
 """
 This module contains the base class for all zero order unit models.
 """
-from idaes.core import UnitModelBlockData, useDefault
+from idaes.core import UnitModelBlockData, useDefault, declare_process_block_class
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 from idaes.core.util.exceptions import ConfigurationError
@@ -30,6 +30,7 @@ __author__ = "Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 
+@declare_process_block_class("ZeroOrderBase")
 class ZeroOrderBaseData(UnitModelBlockData):
     """
     Standard base class for zero order unit models.
@@ -115,8 +116,8 @@ class ZeroOrderBaseData(UnitModelBlockData):
                 f"Zero-order models only support `H2O` as a solvent and all "
                 f"other species as Solutes.")
 
-    def initialize(self, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg=None):
+    def initialize_build(self, state_args=None, outlvl=idaeslog.NOTSET,
+                         solver=None, optarg=None):
         '''
         Placeholder initialization routine, raises NotImplementedError
         '''

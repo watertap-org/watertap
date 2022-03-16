@@ -27,7 +27,7 @@ from watertap.examples.flowsheets.full_treatment_train.flowsheet_components impo
                                                                              gypsum_saturation_index,
                                                                              translator_block,
                                                                              costing,
-                                                                             financials, )
+                                                                             )
 from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
 from watertap.examples.flowsheets.full_treatment_train.util import (solve_block,
                                                              check_dof)
@@ -59,17 +59,11 @@ def build_components(m, pretrt_type='NF', **kwargs):
     if kwargs['is_twostage']:
             product_water_sb = m.fs.mixer_permeate.mixed_state[0]
     else:
-        if kwargs['RO_type'] == '0D':
-            product_water_sb = m.fs.RO.permeate_side.properties_mixed[0]
-        elif kwargs['RO_type'] == '1D':
-            product_water_sb = m.fs.RO.mixed_permeate[0]
+        product_water_sb = m.fs.RO.mixed_permeate[0]
 
     feed_flow_vol = 0.0009769808  # value of feed flowrate using the seawater property package with 1 kg/s mass flowrate
     m.fs.system_recovery = Expression(
         expr=product_water_sb.flow_vol / feed_flow_vol)
-
-    # need load factor from costing_param_block for annual_water_production
-    financials.add_costing_param_block(m.fs)
 
     # RO recovery
     m.fs.RO_recovery = Var(initialize=0.5,
@@ -80,10 +74,9 @@ def build_components(m, pretrt_type='NF', **kwargs):
              == product_water_sb.flow_vol / m.fs.tb_pretrt_to_desal.properties_out[0].flow_vol)
 
     # annual water production
-    m.fs.annual_water_production = Expression(
-        expr=pyunits.convert(product_water_sb.flow_vol, to_units=pyunits.m ** 3 / pyunits.year)
-             * m.fs.costing_param.load_factor)
-    costing.build_costing(m, module=financials, **kwargs)
+    m.fs.treated_flow_vol = Expression(
+        expr=product_water_sb.flow_vol)
+    costing.build_costing(m, **kwargs)
 
     return desal_port
 
@@ -137,21 +130,13 @@ def set_optimization_components(m, system_recovery, **kwargs):
     m.fs.RO.area.setlb(10)
     m.fs.RO.area.setub(300)
 
-    if kwargs['RO_type'] == '0D':
-        m.fs.RO.N_Re_io[0, 'in'].unfix()
-    elif kwargs['RO_type'] == '1D':
-        m.fs.RO.N_Re[0, 0].unfix()
+    m.fs.RO.N_Re[0, 0].unfix()
 
     # Set lower bound for water flux at the RO outlet, based on a minimum net driving pressure, NDPmin
     m.fs.RO.NDPmin = Param(initialize=1e5, mutable=True, units=pyunits.Pa)
-    if kwargs['RO_type'] == '0D':
-        m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'].setlb(value(m.fs.RO.A_comp[0, 'H2O']
-                                                                            * m.fs.RO.dens_solvent
-                                                                            * m.fs.RO.NDPmin))
-    elif kwargs['RO_type'] == '1D':
-        m.fs.RO.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'].setlb(value(m.fs.RO.A_comp[0, 'H2O']
-                                                                     * m.fs.RO.dens_solvent
-                                                                     * m.fs.RO.NDPmin))
+    m.fs.RO.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'].setlb(value(m.fs.RO.A_comp[0, 'H2O']
+                                                                 * m.fs.RO.dens_solvent
+                                                                 * m.fs.RO.NDPmin))
 
     # saturation index
     m.fs.max_saturation_index = Param(initialize=1.0, mutable=True)

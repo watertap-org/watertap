@@ -28,3 +28,8 @@ default:
   default_removal_frac_mass_solute:
     value: 0
     units: dimensionless
+  removal_frac_mass_solute:
+    tss:
+      value: 0.5 #revisit this value later
+      units: dimensionless
+      constituent_longform: Total Suspended Solids (TSS)

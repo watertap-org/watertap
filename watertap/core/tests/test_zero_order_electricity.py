@@ -125,7 +125,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                   : Value  : Fixed : Bounds
-       Electricity Demand : 420.00 : False : (None, None)
+       Electricity Demand : 420.00 : False : (0, None)
     Electricity Intensity : 10.000 :  True : (None, None)
 
 ------------------------------------------------------------------------------------
@@ -220,7 +220,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                : Value    : Fixed : Bounds
-    Electricity Demand : 0.023248 : False : (None, None)
+    Electricity Demand : 0.023248 : False : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table

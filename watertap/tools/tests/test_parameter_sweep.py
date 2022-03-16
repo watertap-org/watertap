@@ -36,11 +36,6 @@ from watertap.tools.parameter_sweep import (_init_mpi,
                                             NormalSample,
                                             SamplingType)
 
-# Imports for conditional fails
-from idaes.config import bin_directory as idaes_bin_directory
-from idaes.core.util import get_solver
-solver = get_solver()
-is_solver_from_idaes_ext = idaes_bin_directory in solver.executable()
 # -----------------------------------------------------------------------------
 
 class TestParallelManager():
@@ -360,7 +355,7 @@ class TestParallelManager():
         sweep_params, sampling_type = _process_sweep_params(sweep_params)
         values = _build_combinations(sweep_params, sampling_type, None, comm, rank, num_procs)
         num_cases = np.shape(values)[0]
-        output_dict = _create_local_output_skeleton(model, sweep_params, None, num_cases)
+        output_dict, outputs = _create_local_output_skeleton(model, sweep_params, None, num_cases)
 
         truth_dict = {'outputs': {'fs.output[c]': {'lower bound': 0,
                                                    'units': 'None',
@@ -414,7 +409,7 @@ class TestParallelManager():
         local_num_cases = np.shape(local_values)[0]
 
 
-        local_output_dict = _create_local_output_skeleton(model, sweep_params, None, local_num_cases)
+        local_output_dict, outputs = _create_local_output_skeleton(model, sweep_params, None, local_num_cases)
 
         # Manually update the values in the numpy array
         for key, value in local_output_dict.items():
@@ -494,15 +489,15 @@ class TestParallelManager():
 
         # Check for the h5 output
         if rank == 0:
-            truth_dict = {'outputs': {'fs.output[c]': {'lower bound': 0,
+            truth_dict = {'outputs': {'output_c': {'lower bound': 0,
                                                        'units': 'None',
                                                        'upper bound': 0,
                                                        'value': np.array([0.2, 0.2, np.nan, 1., 1., np.nan, np.nan, np.nan, np.nan])},
-                                      'fs.output[d]': {'lower bound': 0,
+                                      'output_d': {'lower bound': 0,
                                                        'units': 'None',
                                                        'upper bound': 0,
                                                        'value': np.array([0.  , 0.75,  np.nan, 0., 0.75,  np.nan, np.nan, np.nan, np.nan])},
-                                      'fs.performance': {'value': np.array([0.2 , 0.95,  np.nan, 1., 1.75,  np.nan, np.nan,  np.nan, np.nan])}},
+                                      'performance': {'value': np.array([0.2 , 0.95,  np.nan, 1., 1.75,  np.nan, np.nan,  np.nan, np.nan])}},
                           'solve_successful': [True,
                                                True,
                                                False,
@@ -529,7 +524,7 @@ class TestParallelManager():
             # Check if there is a text file created
             import ast
 
-            truth_txt_dict = {'outputs': ['fs.output[c]', 'fs.output[d]', 'fs.performance'],
+            truth_txt_dict = {'outputs': ['output_c', 'output_d', 'performance'],
                               'sweep_params': ['fs.input[a]', 'fs.input[b]']}
 
             txt_fpath = os.path.join(tmp_path, '{0}.txt'.format(h5_fname))
@@ -541,13 +536,8 @@ class TestParallelManager():
 
 
     @pytest.mark.component
+    @pytest.mark.requires_idaes_solver
     def test_parameter_sweep_optimize(self, model, tmp_path):
-
-        if not is_solver_from_idaes_ext:
-            pytest.xfail(
-                    "This test is known to be failing with solver: "
-                    f"{solver}, {solver.executable()}"
-            )
 
         comm, rank, num_procs = _init_mpi()
         tmp_path = _get_rank0_path(comm, tmp_path)
@@ -592,15 +582,15 @@ class TestParallelManager():
         # Check the h5
         if rank == 0:
 
-            truth_dict = {'outputs': {'fs.output[c]': {'lower bound': 0,
+            truth_dict = {'outputs': {'output_c': {'lower bound': 0,
                                                        'units': 'None',
                                                        'upper bound': 0,
                                                        'value': np.array([0.2, 0.2, 0.2, 1., 1., 1., 1., 1., 1.])},
-                                      'fs.output[d]': {'lower bound': 0,
+                                      'output_d': {'lower bound': 0,
                                                        'units': 'None',
                                                        'upper bound': 0,
                                                        'value': np.array([9.98580690e-09, 0.75, 1., 9.99872731e-09, 0.75, 1., 9.99860382e-09, 0.75, 1.])},
-                                      'fs.performance': {'value': np.array([0.2, 0.95, 1.2, 1., 1.75, 2., 1., 1.75, 2.])},
+                                      'performance': {'value': np.array([0.2, 0.95, 1.2, 1., 1.75, 2., 1., 1.75, 2.])},
                                       'objective': {'value': np.array([ 0.2,  9.50000020e-01, -4.98799990e+02,  1.,  1.75, -4.97999990e+02, -7.98999990e+02, -7.98249990e+02, 2.0 - 1000.*((2.*0.9 - 1.) + (3.*0.5 - 1.))])}},
                           'solve_successful': [True]*9,
                           'sweep_params': {'fs.input[a]': {'lower bound': 0,

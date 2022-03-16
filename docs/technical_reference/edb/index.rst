@@ -9,21 +9,17 @@ Electrolyte Database (EDB)
 
 Overview
 --------
-The Electrolyte Database (EDB) stores metadata and data about chemical species, called here
-`components`, and `reactions`. It is accessed through a Python API to return well-defined Python objects.
+The Electrolyte Database (EDB) stores data about chemical species.
+It is accessed through a Python API to return well-defined Python objects.
 
-The data are stored in `MongoDB <https://mongodb.org>`_, so they can be queried in a number of ways, and the
-system is extensible to new use-cases. The native storage format for MongoDB is a `JSON <https://json.org>`_ document,
-and the expected structure and fields of the *component* and *reaction* data is defined by a
-`JSON Schema <https://json-schema.org>`_. Validation using those schemas is built into the API (though it can be disabled).
+The data are stored in a database called `MongoDB <https://mongodb.org>`_.
+MongoDB is open-source and free software, so you can install and use the database locally.
+You may also use our open cloud-hosted version of the database.
+See the :ref:`MongoDB installation instructions <install-mongodb>` for more details.
 
-To interface with the `IDAES Core Modeling Framework <https://idaes-pse.readthedocs.io/en/stable/user_guide/concepts.html>`_
-(IDAES-CMF, which underlies WaterTAP), add components and reactions to a "base" object and fetch the result as a Python
-`dict`. This result can be used to configure and build IDAES objects (`ParameterBlocks`, `ReactionBlocks`, etc.).
-The API also has methods to construct component and reaction objects from IDAES configurations.
-
-Examples for the usage of the EDB for creating these IDAES configurations can be found in the
-:ref:`EDB How-to Documentation<how_to_use_edb>`
+The native storage format for MongoDB is a `JSON <https://json.org>`_ object, which MongoDB calls a "document".
+The expected structure of the EDB data is defined by a `JSON Schema <https://json-schema.org>`_.
+Most users will not need to deal with the MongoDB documents, as there is a :ref:`Python data API <edb-data-api>` for searching the database and building IDAES "config blocks" from the *components* and *reactions*.
 
 Workflows
 ---------
@@ -41,6 +37,8 @@ Connect to the database and create, read, update and delete its contents.
 .. automodule:: watertap.edb.db_api
     :members: ElectrolyteDB
     :noindex:
+
+.. _edb-data-api:
 
 Data object API
 ^^^^^^^^^^^^^^^
