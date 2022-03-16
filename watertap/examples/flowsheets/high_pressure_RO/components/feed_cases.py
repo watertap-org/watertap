@@ -24,7 +24,7 @@ def build_prop(m, case='seawater'):
     cases include: 'seawater'
     """
     if case == 'seawater':
-        ion_list = ['Na_+', 'K_+', 'Mg_2+', 'Ca_2+', 'Cl_-', 'SO4_2-', 'HCO3_-']
+        ion_list = ['NAION', 'KION', 'MGION', 'CAION', 'CLION', 'SO4ION', 'HCO3ION']
         m.fs.prop_feed = ion_prop_pack.PropParameterBlock(
             default={'ion_list': ion_list})
     else:
@@ -58,13 +58,13 @@ def specify_feed(sb, case='seawater'):
     sb.flow_vol.fix(1e-3)
 
     if case == 'seawater':
-        conc_dict = {'Na_+': 10.556,
-                     'K_+': 0.380,
-                     'Ca_2+': 0.400,
-                     'Mg_2+': 1.262,
-                     'Cl_-': 18.980,
-                     'SO4_2-': 2.649,
-                     'HCO3_-': 0.129}
+        conc_dict = {'NAION': 10.556,
+                     'KION': 0.380,
+                     'CAION': 0.400,
+                     'MGION': 1.262,
+                     'CLION': 18.980,
+                     'SO4ION': 2.649,
+                     'HCO3ION': 0.129}
         for (j, val) in conc_dict.items():
             sb.conc_mass_comp[j].fix(val)
     else:

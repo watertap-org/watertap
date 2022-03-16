@@ -52,17 +52,18 @@ def main():
     m = build()
     specify_model(m, solver=solver)
     initialize_model(m, solver=solver)
-    display_report(m)
 
     # simulate and display
     solve(m, solver=solver)
     print('\n***---Simulation results---***')
+    display_report(m)
     display_results(m)
 
     # optimize and display
     set_up_optimization(m)
     optimize(m, solver=solver)
     print('\n***---Optimization results---***')
+    display_report(m)
     display_results(m)
 
 def build(case='seawater'):
@@ -131,8 +132,13 @@ def build(case='seawater'):
 
     @m.fs.tb_desal_disposal.Constraint(m.fs.prop_feed.solute_set)
     def eq_flow_mass_comp(blk, j):
-        return (blk.properties_out[0].conc_mass_comp[j] * blk.properties_out[0].flow_vol ==
-                m.fs.feed.properties[0].flow_vol * m.fs.feed.properties[0].conc_mass_comp[j])
+        flow_mass_out = blk.properties_out[0].conc_mass_comp[j] * blk.properties_out[0].flow_vol
+        flow_mass_in = m.fs.feed.properties[0].flow_vol * m.fs.feed.properties[0].conc_mass_comp[j]
+        if j == 'NAION':
+            flow_mass_in -= m.fs.product.properties[0].flow_mass_phase_comp['Liq', 'TDS'] * 22.99/(22.99 + 35.45)
+        elif j == 'CLION':
+            flow_mass_in -= m.fs.product.properties[0].flow_mass_phase_comp['Liq', 'TDS'] * 35.45/(22.99 + 35.45)
+        return flow_mass_in == flow_mass_out
 
     @m.fs.tb_desal_disposal.Constraint()
     def eq_pressure(blk):
@@ -265,9 +271,9 @@ def initialize_model(m, solver=None):
     propagate_state(m.fs.s07)
     m.fs.M1.initialize(optarg=optarg)
     propagate_state(m.fs.s08)
-    flags = fix_state_vars(m.fs.tb_desal_disposal.properties_in)
-    solve(m.fs.tb_desal_disposal)
-    revert_state_vars(m.fs.tb_desal_disposal.properties_in, flags)
+    # flags = fix_state_vars(m.fs.tb_desal_disposal.properties_in)
+    # solve(m.fs.tb_desal_disposal)
+    # revert_state_vars(m.fs.tb_desal_disposal.properties_in, flags)
     propagate_state(m.fs.s09)
     propagate_state(m.fs.s10)
     m.fs.product.initialize(optarg=optarg)
@@ -353,14 +359,14 @@ def display_results(m):
 
 def display_report(m):
     m.fs.feed.report()
-    m.fs.tb_feed_desal.report()
-    m.fs.P1.report()
-    m.fs.RO1.report()
-    m.fs.P2.report()
-    m.fs.RO2.report()
-    m.fs.M1.report()
-    m.fs.product.report()
-    m.fs.tb_desal_disposal.report()
+    # m.fs.tb_feed_desal.report()
+    # m.fs.P1.report()
+    # m.fs.RO1.report()
+    # m.fs.P2.report()
+    # m.fs.RO2.report()
+    # m.fs.M1.report()
+    # m.fs.product.report()
+    # m.fs.tb_desal_disposal.report()
     m.fs.disposal.report()
 
 
