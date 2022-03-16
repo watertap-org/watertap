@@ -51,6 +51,7 @@ import idaes.core.util.scaling as iscale
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+__author__ = "Oluwamayowa Amusat"
 
 class HeatOfCrystallizationModel(Enum):
     constant = auto()                    # Use constant heat of crystallization

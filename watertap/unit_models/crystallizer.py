@@ -46,6 +46,8 @@ from idaes.core.util.math import smooth_max
 
 _log = idaeslog.getLogger(__name__)
 
+__author__ = "Oluwamayowa Amusat"
+
 # when using this file the name "Filtration" is what is imported
 @declare_process_block_class("Crystallization")
 class CrystallizationData(UnitModelBlockData):
