@@ -33,12 +33,24 @@ defined_flows:
     value: 0.17
     units: USD_2020/kg
     purity: 1
+  hydrogen_peroxide:
+    value: 1.53
+    units: USD_2020/kg
+    purity: 1
+  ion_exchange_resin:
+    value: 7.072
+    units: USD_2019/kg
+    purity: 1
   lime:
     value: 0.15
     units: USD_2020/kg
     purity: 1
   sodium_bisulfite:
     value: 0.36
+    units: USD_2020/kg
+    purity: 1
+  sodium_chloride:
+    value: 0.08
     units: USD_2020/kg
     purity: 1
   sulfuric_acid:

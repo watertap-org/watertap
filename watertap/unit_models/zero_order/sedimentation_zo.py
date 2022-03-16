@@ -40,6 +40,7 @@ class SedimentationZOData(ZeroOrderBaseData):
         build_sido(self)
         constant_intensity(self)
 
+        # TODO: Does it really make sense for this to be indexed by time?
         self.basin_surface_area = Var(self.flowsheet().config.time,
                                       units=pyunits.ft**2,
                                       doc="Surface area of sedimentation tank")
@@ -58,4 +59,5 @@ class SedimentationZOData(ZeroOrderBaseData):
                         b.properties_in[t].flow_vol
                         / b.settling_velocity[t],
                         to_units=pyunits.ft**2))
-        self.basin_surface_area_constraint = Constraint(self.flowsheet().time, rule=rule_basin_surface_area)
+        self.basin_surface_area_constraint = Constraint(
+            self.flowsheet().time, rule=rule_basin_surface_area)
