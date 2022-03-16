@@ -32,7 +32,7 @@ from idaes.generic_models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-import watertap.property_models.NaCl_prop_pack as props
+import watertap.property_models.seawater_prop_pack as props
 from watertap.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
                                                        ConcentrationPolarizationType,
                                                        MassTransferCoefficient,
@@ -69,7 +69,7 @@ def build(case='seawater'):
     # flowsheet set up
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={'dynamic': False})
-    m.fs.prop_desal = props.NaClParameterBlock()
+    m.fs.prop_desal = props.SeawaterParameterBlock()
 
     # feed and disposal based on the case
     feed_cases.build_specified_feed(m, case=case)
@@ -98,7 +98,6 @@ def build(case='seawater'):
         "inlet_list": ['RO1', 'RO2']})
     m.fs.product = Product(default={'property_package': m.fs.prop_desal})
 
-
     # translator blocks
     m.fs.tb_feed_desal = Translator(
         default={"inlet_property_package": m.fs.prop_feed,
@@ -112,7 +111,7 @@ def build(case='seawater'):
     def eq_flow_mass_TDS(blk):
         return (sum(blk.properties_in[0].conc_mass_comp[j]
                     for j in blk.properties_in[0].params.solute_set)
-                == blk.properties_out[0].conc_mass_phase_comp['Liq', 'NaCl'])
+                == blk.properties_out[0].conc_mass_phase_comp['Liq', 'TDS'])
 
     @m.fs.tb_feed_desal.Constraint()
     def eq_pressure(blk):
@@ -181,7 +180,7 @@ def build(case='seawater'):
     # scaling
     # set default property values
     m.fs.prop_desal.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-    m.fs.prop_desal.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'NaCl'))
+    m.fs.prop_desal.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TDS'))
     # set unit model values
     iscale.set_scaling_factor(m.fs.P1.control_volume.work, 1e-3)
     iscale.set_scaling_factor(m.fs.P2.control_volume.work, 1e-3)
@@ -197,16 +196,6 @@ def specify_model(m, solver=None):
         solver = get_solver()
 
     # ---specifications---
-    # feed
-    # state variables
-    # m.fs.feed.properties[0].pressure.fix(101325)  # feed pressure [Pa]
-    # m.fs.feed.properties[0].temperature.fix(273.15 + 25)  # feed temperature [K]
-    # # properties (cannot be fixed for initialization routines, must calculate the state variables)
-    # m.fs.feed.properties.calculate_state(
-    #     var_args={('flow_vol_phase', 'Liq'): 1e-3,  # feed volumetric flow rate [m3/s]
-    #               ('mass_frac_phase_comp', ('Liq', 'NaCl')): 0.035},  # feed NaCl mass fraction [-]
-    #     hold_state=True,  # fixes the calculated component mass flow rates
-    # )
 
     # pump 1, 2 degrees of freedom (efficiency and outlet pressure)
     m.fs.P1.efficiency_pump.fix(0.80)  # pump efficiency [-]
@@ -307,13 +296,13 @@ def set_up_optimization(m):
     m.fs.RO2.area.setub(150)
 
     # additional specifications
-    m.fs.product_salinity = Param(initialize=1000e-6, mutable=True)  # product NaCl mass fraction [-]
+    m.fs.product_salinity = Param(initialize=1000e-6, mutable=True)  # product TDS mass fraction [-]
     m.fs.minimum_water_flux = Param(initialize=1./3600., mutable=True)  # minimum water flux [kg/m2-s]
     m.fs.product_recovery = Param(initialize=0.73, mutable=True)
 
     # additional constraints
     m.fs.eq_product_quality = Constraint(
-        expr=m.fs.product.properties[0].mass_frac_phase_comp['Liq', 'NaCl'] <= m.fs.product_salinity)
+        expr=m.fs.product.properties[0].mass_frac_phase_comp['Liq', 'TDS'] <= m.fs.product_salinity)
     iscale.constraint_scaling_transform(m.fs.eq_product_quality, 1e3)  # scaling constraint
     m.fs.eq_minimum_water_flux_1 = Constraint(
         expr=m.fs.RO1.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'] >= m.fs.minimum_water_flux)
@@ -334,17 +323,21 @@ def optimize(m, solver=None):
 
 def display_results(m):
     print('---system metrics---')
-    # feed_flow_mass = sum(m.fs.feed.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
-    # feed_mass_frac_NaCl = m.fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / feed_flow_mass
-    # print('Feed: %.2f kg/s, %.0f ppm' % (feed_flow_mass, feed_mass_frac_NaCl * 1e6))
+    feed_flow_mass = sum(m.fs.tb_feed_desal.properties_out[0].flow_mass_phase_comp['Liq', j].value
+                         for j in ['H2O', 'TDS'])
+    feed_mass_frac_TDS = (m.fs.tb_feed_desal.properties_out[0].flow_mass_phase_comp['Liq', 'TDS'].value
+                          / feed_flow_mass)
+    print('Feed: %.2f kg/s, %.0f ppm' % (feed_flow_mass, feed_mass_frac_TDS * 1e6))
 
-    prod_flow_mass = sum(m.fs.product.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
-    prod_mass_frac_NaCl = m.fs.product.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / prod_flow_mass
-    print('Product: %.3f kg/s, %.0f ppm' % (prod_flow_mass, prod_mass_frac_NaCl * 1e6))
+    prod_flow_mass = sum(m.fs.product.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'TDS'])
+    prod_mass_frac_TDS = m.fs.product.flow_mass_phase_comp[0, 'Liq', 'TDS'].value / prod_flow_mass
+    print('Product: %.3f kg/s, %.0f ppm' % (prod_flow_mass, prod_mass_frac_TDS * 1e6))
 
-    # disp_flow_mass = sum(m.fs.disposal.flow_mass_phase_comp[0, 'Liq', j].value for j in ['H2O', 'NaCl'])
-    # disp_mass_frac_NaCl = m.fs.disposal.flow_mass_phase_comp[0, 'Liq', 'NaCl'].value / disp_flow_mass
-    # print('Disposal: %.3f kg/s, %.0f ppm' % (disp_flow_mass, disp_mass_frac_NaCl * 1e6))
+    disp_flow_mass = sum(m.fs.tb_desal_disposal.properties_in[0].flow_mass_phase_comp['Liq', j].value
+                         for j in ['H2O', 'TDS'])
+    disp_mass_frac_TDS = (m.fs.tb_desal_disposal.properties_in[0].flow_mass_phase_comp['Liq', 'TDS'].value
+                          / disp_flow_mass)
+    print('Disposal: %.3f kg/s, %.0f ppm' % (disp_flow_mass, disp_mass_frac_TDS * 1e6))
 
     print('Volumetric recovery: %.1f%%' % (value(m.fs.product.properties[0].flow_vol
                                                  / m.fs.feed.properties[0].flow_vol) * 100))
