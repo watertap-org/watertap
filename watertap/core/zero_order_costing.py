@@ -823,8 +823,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity")
 
-        #TODO: Check whether chemical flow cost was accounted for originally and
-        # if should be in case study verification
+        #TODO: Check whether chemical flow cost was accounted for originally
+        # and if should be in case study verification
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.chemical_flow_mass[t0], "hydrogen_peroxide")
 
@@ -965,9 +965,10 @@ def _get_tech_parameters(blk, parameter_dict, subtype, param_list):
                             "capital_cost"][p]["units"]))
                 pblock.add_component(p, vobj)
             except KeyError:
-                raise KeyError("Error when trying to retrieve costing parameter"
-                               " from {p} database. Please check the YAML "
-                               "file for this technology for errors.")
+                raise KeyError(
+                    "Error when trying to retrieve costing parameter"
+                    " from {p} database. Please check the YAML "
+                    "file for this technology for errors.")
 
     # Check to see if required subtype is in subtype_set
     vlist = []
