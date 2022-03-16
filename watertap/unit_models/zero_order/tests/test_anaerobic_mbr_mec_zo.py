@@ -167,9 +167,9 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                                           : Value      : Fixed : Bounds
-                               Electricity Demand :     0.0000 : False : (None, None)
+                               Electricity Demand : 8.0000e-10 : False : (0, None)
                             Electricity Intensity :     0.0000 :  True : (None, None)
-    Reaction Extent [cod_to_nonbiodegradable_cod] : 5.0312e-05 : False : (None, None)
+    Reaction Extent [cod_to_nonbiodegradable_cod] : 5.0313e-05 : False : (None, None)
             Solute Removal [ammonium_as_nitrogen] :     0.0000 :  True : (0, None)
                              Solute Removal [cod] :     0.0000 :  True : (0, None)
             Solute Removal [nonbiodegradable_cod] :     1.0000 :  True : (0, None)

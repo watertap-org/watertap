@@ -17,19 +17,22 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    ConcreteModel, Constraint, value, Var, assert_optimal_termination)
+    Block, ConcreteModel, Constraint, value, Var, assert_optimal_termination)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
+from idaes.generic_models.costing import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import SludgeTankZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
+
 
 class TestSludgeTankZO_default_removal:
     @pytest.fixture(scope="class")
@@ -179,15 +182,15 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                      : Value   : Fixed : Bounds
-          Electricity Demand :  0.0000 : False : (None, None)
-       Electricity Intensity :  0.0000 :  True : (None, None)
-        Solute Removal [eeq] :  0.0000 :  True : (0, None)
-    Solute Removal [nitrate] :  0.0000 :  True : (0, None)
-        Solute Removal [tds] :  0.0000 :  True : (0, None)
-        Solute Removal [toc] :  0.0000 :  True : (0, None)
-        Solute Removal [tss] : 0.99000 :  True : (0, None)
-              Water Recovery : 0.99999 :  True : (1e-08, 1.0000001)
+    Key                      : Value      : Fixed : Bounds
+          Electricity Demand : 8.0000e-10 : False : (0, None)
+       Electricity Intensity :     0.0000 :  True : (None, None)
+        Solute Removal [eeq] :     0.0000 :  True : (0, None)
+    Solute Removal [nitrate] :     0.0000 :  True : (0, None)
+        Solute Removal [tds] :     0.0000 :  True : (0, None)
+        Solute Removal [toc] :     0.0000 :  True : (0, None)
+        Solute Removal [tss] :    0.99000 :  True : (0, None)
+              Water Recovery :    0.99999 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -199,7 +202,8 @@ Unit : fs.unit                                                             Time:
     Mass Concentration eeq      0.87899   1.7341 4.7534e-08
     Mass Concentration nitrate   117.20   231.22 4.7534e-08
     Mass Concentration tss       498.10   9.8266     999.99
-===================================================================================="""
+====================================================================================
+"""
 
         assert output in stream.getvalue()
 
@@ -290,7 +294,7 @@ class TestSludgeTankZO_w_o_default_removal:
 
         assert (pytest.approx(0.016830, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(0.0059417, rel=1e-5) ==
+        assert (pytest.approx(0.00594178, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["H2O"]))
         assert (pytest.approx(999.99405, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
@@ -322,19 +326,62 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                   : Value   : Fixed : Bounds
-       Electricity Demand :  0.0000 : False : (None, None)
-    Electricity Intensity :  0.0000 :  True : (None, None)
-     Solute Removal [tss] : 0.99000 :  True : (0, None)
-           Water Recovery : 0.99999 :  True : (1e-08, 1.0000001)
+    Key                   : Value      : Fixed : Bounds
+       Electricity Demand : 7.0000e-10 : False : (0, None)
+    Electricity Intensity :     0.0000 :  True : (None, None)
+     Solute Removal [tss] :    0.99000 :  True : (0, None)
+           Water Recovery :    0.99999 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
                              Inlet   Treated  Byproduct
     Volumetric Flowrate    0.027000 0.010170  0.016830 
-    Mass Concentration H2O   370.37   983.28 0.0059417 
+    Mass Concentration H2O   370.37   983.28 0.0059418 
     Mass Concentration tss   629.63   16.716    999.99 
 ====================================================================================
 """
 
         assert output in stream.getvalue()
+
+
+def test_costing():
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = WaterParameterBlock(
+        default={"solute_list": ["sulfur", "toc", "tss"]})
+
+    m.fs.costing = ZeroOrderCosting()
+
+    m.fs.unit1 = SludgeTankZO(default={
+        "property_package": m.fs.params,
+        "database": m.db})
+
+    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
+    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
+    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    m.fs.unit1.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": m.fs.costing})
+
+    assert isinstance(m.fs.costing.sludge_tank, Block)
+    assert isinstance(m.fs.costing.sludge_tank.capital_a_parameter,
+                      Var)
+    assert isinstance(m.fs.costing.sludge_tank.capital_b_parameter,
+                      Var)
+    assert isinstance(m.fs.costing.sludge_tank.reference_state, Var)
+
+    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
+                      Constraint)
+
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    assert m.fs.unit1.electricity[0] in \
+        m.fs.costing._registered_flows["electricity"]

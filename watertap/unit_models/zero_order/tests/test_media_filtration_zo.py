@@ -148,7 +148,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                              : Value      : Fixed : Bounds
-                  Electricity Demand :  0.0064800 : False : (None, None)
+                  Electricity Demand :  0.0064800 : False : (0, None)
                Electricity Intensity : 0.00015000 :  True : (None, None)
     Solute Removal [nonvolatile_toc] :    0.20000 :  True : (0, None)
                 Solute Removal [tss] :    0.50000 :  True : (0, None)
@@ -293,7 +293,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                              : Value      : Fixed : Bounds
-                  Electricity Demand :  0.0070200 : False : (None, None)
+                  Electricity Demand :  0.0070200 : False : (0, None)
                Electricity Intensity : 0.00015000 :  True : (None, None)
                 Solute Removal [foo] :     0.0000 :  True : (0, None)
     Solute Removal [nonvolatile_toc] :    0.20000 :  True : (0, None)

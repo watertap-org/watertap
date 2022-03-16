@@ -66,7 +66,7 @@ def run_parameter_sweep(results_file_name=None, write_csv=False, write_h5=False,
 
     # Define the outputs to be saved
     outputs = {}
-    outputs['EC'] = m.fs.specific_energy_consumption
+    outputs['EC'] = m.fs.costing.specific_energy_consumption
     outputs['LCOW'] = m.fs.costing.LCOW
 
     # Run the parameter sweep study using num_samples randomly drawn from the above range

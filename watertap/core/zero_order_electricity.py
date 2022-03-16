@@ -30,6 +30,7 @@ def _common(self):
     # Add electricity consumption to model
     self.electricity = Var(self.flowsheet().time,
                            units=pyunits.kW,
+                           bounds=(0, None),
                            doc="Electricity consumption of unit")
 
     self._perf_var_dict["Electricity Demand"] = self.electricity

@@ -25,7 +25,8 @@ dbpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
 db = Database()
 
-exclude_files = ["water_sources.yaml", "component_list.yaml"]
+exclude_files = [
+    "water_sources.yaml", "component_list.yaml", "default_case_study.yaml"]
 
 tech_list = []
 for f in os.listdir(dbpath):
@@ -56,6 +57,11 @@ def test_unit_parameter_files(tech):
                     "co2_addition",
                     "sw_onshore_intake",
                     "landfill_zld",
+                    "tramp_oil_tank",
+                    "municipal_wwtp",
+                    "smp",
+                    "energy_recovery",
+                    "blending_reservoir",
                     ]
 
     siso_full_recovery = ["uv_aop", "uv", "ion_exchange", "fixed_bed", "decarbonator", "chlorination"]
@@ -135,7 +141,6 @@ def test_unit_parameter_files(tech):
                 k[e]["units"], units.dimensionless)
             assert "value" in k[e].keys()
             assert k[e]["value"] >= 0
-            assert k[e]["value"] <= 1
 
         # Check for specific removal fractions
         if "removal_frac_mass_solute" in k.keys():

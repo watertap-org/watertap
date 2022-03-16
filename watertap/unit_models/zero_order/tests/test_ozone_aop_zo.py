@@ -17,7 +17,7 @@ import pytest
 from io import StringIO
 
 from pyomo.environ import (
-    check_optimal_termination, ConcreteModel, Constraint, value, Var)
+    check_optimal_termination, ConcreteModel, Constraint, value, Var, Block)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -25,10 +25,12 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
+from idaes.generic_models.costing import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import OzoneAOPZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
@@ -86,13 +88,15 @@ class TestOzoneAOPZO_with_default_removal:
         assert isinstance(model.fs.unit.mass_transfer_efficiency, Var)
         assert isinstance(model.fs.unit.ozone_flow_mass, Var)
         assert isinstance(model.fs.unit.ozone_consumption, Var)
-        assert isinstance(model.fs.unit.ozone_generation_power, Var)
+        assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.specific_energy_coeff, Var)
         assert isinstance(model.fs.unit.oxidant_dose, Var)
         assert isinstance(model.fs.unit.chemical_flow_mass, Var)
+        assert isinstance(model.fs.unit.ozone_toc_ratio, Var)
+        assert isinstance(model.fs.unit.oxidant_ozone_ratio, Var)
         assert isinstance(model.fs.unit.ozone_consumption_constraint, Constraint)
         assert isinstance(model.fs.unit.ozone_flow_mass_constraint, Constraint)
-        assert isinstance(model.fs.unit.ozone_generation_power_constraint, Constraint)
+        assert isinstance(model.fs.unit.electricity_constraint, Constraint)
         assert isinstance(model.fs.unit.chemical_flow_mass_constraint, Constraint)
 
 
@@ -118,8 +122,8 @@ class TestOzoneAOPZO_with_default_removal:
         assert model.fs.unit.mass_transfer_efficiency[0].value == data["mass_transfer_efficiency"]["value"]
         assert model.fs.unit.specific_energy_coeff[0].fixed
         assert model.fs.unit.specific_energy_coeff[0].value == data["specific_energy_coeff"]["value"]
-        assert model.fs.unit.oxidant_dose[0].fixed
-        assert model.fs.unit.oxidant_dose[0].value == data["oxidant_dose"]["value"]
+        assert model.fs.unit.oxidant_ozone_ratio[0].value == \
+               data["oxidant_ozone_ratio"]["value"]
 
 
     @pytest.mark.component
@@ -158,8 +162,8 @@ class TestOzoneAOPZO_with_default_removal:
         assert (pytest.approx(9921.863324, rel=1e-5) ==
                 value(model.fs.unit.ozone_flow_mass[0]))
         assert (pytest.approx(49609.316620, rel=1e-5) ==
-                value(model.fs.unit.ozone_generation_power[0]))
-        assert (pytest.approx(0.000535, rel=1e-5) ==
+                value(model.fs.unit.electricity[0]))
+        assert (pytest.approx(0.50005, rel=1e-5) ==
                 value(model.fs.unit.chemical_flow_mass[0]))
 
     @pytest.mark.component
@@ -176,21 +180,23 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                                          : Value      : Fixed : Bounds
-                           Oxidant Dosage (mg/L) :     5.0000 :  True : (None, None)
-                             Oxidant Flow (kg/s) : 0.00053500 : False : (0, None)
-                     Ozone CT Value ((mg*min)/L) :     1.0000 :  True : (None, None)
-                        Ozone Contact Time (min) :     1.0000 :  True : (None, None)
-                         Ozone Mass Flow (lb/hr) :     9921.9 : False : (0, None)
-                  Ozone Mass Transfer Efficiency :    0.80000 :  True : (None, None)
-                    Ozone Unit Power Demand (kW) :     49609. : False : (0, None)
-                Solute Removal [cryptosporidium] :    0.29479 :  True : (0, None)
-                            Solute Removal [eeq] :    0.98943 :  True : (0, None)
-                Solute Removal [giardia_lamblia] :    0.90324 :  True : (0, None)
-                            Solute Removal [toc] :    0.72830 :  True : (0, None)
-    Solute Removal [total_coliforms_fecal_ecoli] :    0.99723 :  True : (0, None)
-                            Solute Removal [tss] :     0.0000 :  True : (0, None)
-                Solute Removal [viruses_enteric] :    0.99723 :  True : (0, None)
+    Key                                          : Value   : Fixed : Bounds
+                           Oxidant Dosage (mg/L) :  4673.4 : False : (None, None)
+                             Oxidant Flow (kg/s) : 0.50005 : False : (0, None)
+                             Oxidant/Ozone Ratio : 0.50000 :  True : (None, None)
+                     Ozone CT Value ((mg*min)/L) :  1.0000 :  True : (None, None)
+                        Ozone Contact Time (min) :  1.0000 :  True : (None, None)
+                         Ozone Mass Flow (lb/hr) :  9921.9 : False : (0, None)
+                  Ozone Mass Transfer Efficiency : 0.80000 :  True : (None, None)
+                    Ozone Unit Power Demand (kW) :  49609. : False : (0, None)
+                                 Ozone/TOC Ratio :  1.0001 : False : (None, None)
+                Solute Removal [cryptosporidium] : 0.29479 :  True : (0, None)
+                            Solute Removal [eeq] : 0.98943 :  True : (0, None)
+                Solute Removal [giardia_lamblia] : 0.90324 :  True : (0, None)
+                            Solute Removal [toc] : 0.72830 :  True : (0, None)
+    Solute Removal [total_coliforms_fecal_ecoli] : 0.99723 :  True : (0, None)
+                            Solute Removal [tss] :  0.0000 :  True : (0, None)
+                Solute Removal [viruses_enteric] : 0.99723 :  True : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -258,13 +264,15 @@ class TestOzoneAOPZO_w_o_default_removal:
         assert isinstance(model.fs.unit.mass_transfer_efficiency, Var)
         assert isinstance(model.fs.unit.ozone_flow_mass, Var)
         assert isinstance(model.fs.unit.ozone_consumption, Var)
-        assert isinstance(model.fs.unit.ozone_generation_power, Var)
+        assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.specific_energy_coeff, Var)
         assert isinstance(model.fs.unit.oxidant_dose, Var)
         assert isinstance(model.fs.unit.chemical_flow_mass, Var)
+        assert isinstance(model.fs.unit.ozone_toc_ratio, Var)
+        assert isinstance(model.fs.unit.oxidant_ozone_ratio, Var)
         assert isinstance(model.fs.unit.ozone_consumption_constraint, Constraint)
         assert isinstance(model.fs.unit.ozone_flow_mass_constraint, Constraint)
-        assert isinstance(model.fs.unit.ozone_generation_power_constraint, Constraint)
+        assert isinstance(model.fs.unit.electricity_constraint, Constraint)
         assert isinstance(model.fs.unit.chemical_flow_mass_constraint, Constraint)
 
     @pytest.mark.component
@@ -289,8 +297,8 @@ class TestOzoneAOPZO_w_o_default_removal:
         assert model.fs.unit.mass_transfer_efficiency[0].value == data["mass_transfer_efficiency"]["value"]
         assert model.fs.unit.specific_energy_coeff[0].fixed
         assert model.fs.unit.specific_energy_coeff[0].value == data["specific_energy_coeff"]["value"]
-        assert model.fs.unit.oxidant_dose[0].fixed
-        assert model.fs.unit.oxidant_dose[0].value == data["oxidant_dose"]["value"]
+        assert model.fs.unit.oxidant_ozone_ratio[0].value == data["oxidant_ozone_ratio"]["value"]
+
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -328,8 +336,8 @@ class TestOzoneAOPZO_w_o_default_removal:
         assert (pytest.approx(9921.863324, rel=1e-5) ==
                 value(model.fs.unit.ozone_flow_mass[0]))
         assert (pytest.approx(49609.316620, rel=1e-5) ==
-                value(model.fs.unit.ozone_generation_power[0]))
-        assert (pytest.approx(0.000535, rel=1e-5) ==
+                value(model.fs.unit.electricity[0]))
+        assert (pytest.approx(0.50005, rel=1e-5) ==
                 value(model.fs.unit.chemical_flow_mass[0]))
 
     @pytest.mark.component
@@ -346,20 +354,22 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                                          : Value      : Fixed : Bounds
-                           Oxidant Dosage (mg/L) :     5.0000 :  True : (None, None)
-                             Oxidant Flow (kg/s) : 0.00053500 : False : (0, None)
-                     Ozone CT Value ((mg*min)/L) :     1.0000 :  True : (None, None)
-                        Ozone Contact Time (min) :     1.0000 :  True : (None, None)
-                         Ozone Mass Flow (lb/hr) :     9921.9 : False : (0, None)
-                  Ozone Mass Transfer Efficiency :    0.80000 :  True : (None, None)
-                    Ozone Unit Power Demand (kW) :     49609. : False : (0, None)
-                Solute Removal [cryptosporidium] :    0.29479 :  True : (0, None)
-                            Solute Removal [eeq] :    0.98943 :  True : (0, None)
-                Solute Removal [giardia_lamblia] :    0.90324 :  True : (0, None)
-                            Solute Removal [toc] :    0.72830 :  True : (0, None)
-    Solute Removal [total_coliforms_fecal_ecoli] :    0.99723 :  True : (0, None)
-                Solute Removal [viruses_enteric] :    0.99723 :  True : (0, None)
+    Key                                          : Value   : Fixed : Bounds
+                           Oxidant Dosage (mg/L) :  4673.4 : False : (None, None)
+                             Oxidant Flow (kg/s) : 0.50005 : False : (0, None)
+                             Oxidant/Ozone Ratio : 0.50000 :  True : (None, None)
+                     Ozone CT Value ((mg*min)/L) :  1.0000 :  True : (None, None)
+                        Ozone Contact Time (min) :  1.0000 :  True : (None, None)
+                         Ozone Mass Flow (lb/hr) :  9921.9 : False : (0, None)
+                  Ozone Mass Transfer Efficiency : 0.80000 :  True : (None, None)
+                    Ozone Unit Power Demand (kW) :  49609. : False : (0, None)
+                                 Ozone/TOC Ratio :  1.0001 : False : (None, None)
+                Solute Removal [cryptosporidium] : 0.29479 :  True : (0, None)
+                            Solute Removal [eeq] : 0.98943 :  True : (0, None)
+                Solute Removal [giardia_lamblia] : 0.90324 :  True : (0, None)
+                            Solute Removal [toc] : 0.72830 :  True : (0, None)
+    Solute Removal [total_coliforms_fecal_ecoli] : 0.99723 :  True : (0, None)
+                Solute Removal [viruses_enteric] : 0.99723 :  True : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -376,3 +386,53 @@ Unit : fs.unit                                                             Time:
 """
 
         assert output in stream.getvalue()
+
+
+def test_costing():
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = WaterParameterBlock(
+        default={"solute_list": ["viruses_enteric",
+                                 "toc",
+                                 "cryptosporidium"]})
+
+    m.fs.costing = ZeroOrderCosting()
+
+    m.fs.unit1 = OzoneAOPZO(default={
+        "property_package": m.fs.params,
+        "database": m.db})
+
+    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit1.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
+    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit1.inlet.flow_mass_comp[0, "cryptosporidium"].fix(3)
+    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    m.fs.unit1.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": m.fs.costing})
+
+    assert isinstance(m.fs.unit1.chemical_flow_mass, Var)
+    assert isinstance(m.fs.costing.ozone_aop, Block)
+    assert isinstance(m.fs.costing.ozone_aop.ozone_capital_a_parameter, Var)
+    assert isinstance(m.fs.costing.ozone_aop.ozone_capital_b_parameter, Var)
+    assert isinstance(m.fs.costing.ozone_aop.ozone_capital_c_parameter, Var)
+    assert isinstance(m.fs.costing.ozone_aop.ozone_capital_d_parameter, Var)
+    assert isinstance(m.fs.costing.ozone_aop.aop_capital_a_parameter, Var)
+    assert isinstance(m.fs.costing.ozone_aop.aop_capital_b_parameter, Var)
+
+    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
+                      Constraint)
+
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    assert m.fs.unit1.electricity[0] in \
+        m.fs.costing._registered_flows["electricity"]
+    assert str(m.fs.costing._registered_flows["hydrogen_peroxide"][0]) == str(
+        m.fs.unit1.chemical_flow_mass[0])
