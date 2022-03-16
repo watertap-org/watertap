@@ -499,8 +499,9 @@ def add_costing(m):
         "flowsheet_costing_block": m.fs.zo_costing})
     prtrt.chlorination.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": m.fs.zo_costing})
-    prtrt.static_mixer.costing = UnitModelCostingBlock(default={
-        "flowsheet_costing_block": m.fs.zo_costing})
+    # TODO: Static mixer costs are unrealistic right now
+    # prtrt.static_mixer.costing = UnitModelCostingBlock(default={
+    #     "flowsheet_costing_block": m.fs.zo_costing})
     prtrt.storage_tank_1.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": m.fs.zo_costing})
     # prtrt.media_filtration.costing = UnitModelCostingBlock(default={
@@ -589,6 +590,15 @@ def add_costing(m):
                                 to_units=pyunits.USD_2018/pyunits.year) +
                 m.fs.ro_costing.total_operating_cost)
 
+    @m.Expression()
+    def LCOW(b):
+        return ((b.total_capital_cost*b.fs.zo_costing.capital_recovery_factor +
+                 b.total_operating_cost) /
+                (pyunits.convert(
+                    b.fs.municipal.properties[0].flow_vol,
+                    to_units=pyunits.m**3/pyunits.year) *
+                 b.fs.zo_costing.utilization_factor))
+
     assert_units_consistent(m)
 
 
@@ -602,6 +612,25 @@ def display_costing(m):
 
     m.total_capital_cost.display()
     m.total_operating_cost.display()
+    m.LCOW.display()
+
+    print("\nUnit Capital Costs\n")
+    for u in m.fs.zo_costing._registered_unit_costing:
+        print(u.name,
+              " :   ",
+              value(pyunits.convert(u.capital_cost,
+                                    to_units=pyunits.USD_2018)))
+    for u in m.fs.ro_costing._registered_unit_costing:
+        print(u.name,
+              " :   ",
+              value(pyunits.convert(u.capital_cost,
+                                    to_units=pyunits.USD_2018)))
+
+    print("\nUtility Costs\n")
+    for f in m.fs.zo_costing.flow_types:
+        print(f, " :   ", value(pyunits.convert(
+            m.fs.zo_costing.aggregate_flow_costs[f],
+            to_units=pyunits.USD_2018/pyunits.year)))
 
 
 if __name__ == "__main__":
