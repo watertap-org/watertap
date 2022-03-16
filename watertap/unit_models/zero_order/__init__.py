@@ -40,6 +40,7 @@ from .primary_separator_zo import PrimarySeparatorZO
 from .pump_zo import PumpZO
 from .sedimentation_zo import SedimentationZO
 from .settling_pond_zo import SettlingPondZO
+from .smp_zo import SMPZO
 from .tramp_oil_tank_zo import TrampOilTankZO
 from .tri_media_filtration_zo import TriMediaFiltrationZO
 from .coag_and_floc_zo import CoagulationFlocculationZO
