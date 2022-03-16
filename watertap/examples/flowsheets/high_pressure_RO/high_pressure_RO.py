@@ -39,30 +39,36 @@ from watertap.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
                                                        PressureChangeType)
 from watertap.unit_models.pump_isothermal import Pump
 from watertap.core.util.initialization import assert_degrees_of_freedom
+from watertap.examples.flowsheets.full_treatment_train.util import solve_block
 import watertap.examples.flowsheets.high_pressure_RO.financials as financials
 import watertap.examples.flowsheets.high_pressure_RO.components.feed_cases as feed_cases
 from watertap.core.util.infeasible import print_close_to_bounds, print_infeasible_bounds, print_infeasible_constraints
 
 
 def main():
-    # set up solver
-    solver = get_solver()
 
     # build, set, and initialize
     m = build()
-    specify_model(m, solver=solver)
-    initialize_model(m, solver=solver)
+    specify_model(m)
+    initialize_model(m)
 
     # simulate and display
-    solve(m, solver=solver)
+    solve(m)
     print('\n***---Simulation results---***')
     display_report(m)
     display_results(m)
 
     # optimize and display
     set_up_optimization(m)
-    optimize(m, solver=solver)
+    optimize(m)
     print('\n***---Optimization results---***')
+    display_report(m)
+    display_results(m)
+
+    # optimize and display
+    m.fs.product_recovery = 0.75
+    solve(m)
+    print('\n***---Optimization results 2---***')
     display_report(m)
     display_results(m)
 
@@ -197,9 +203,7 @@ def build(case='seawater'):
 
     return m
 
-def specify_model(m, solver=None):
-    if solver is None:
-        solver = get_solver()
+def specify_model(m):
 
     # ---specifications---
 
@@ -237,9 +241,8 @@ def specify_model(m, solver=None):
                            "simulation.".format(degrees_of_freedom(m)))
 
 
-def solve(blk, solver=None, tee=False):
-    if solver is None:
-        solver = get_solver()
+def solve(blk, tee=False):
+    solver = get_solver()
     results = solver.solve(blk, tee=tee)
     print_infeasible_constraints(blk)
     print_infeasible_bounds(blk)
@@ -247,36 +250,32 @@ def solve(blk, solver=None, tee=False):
     assert_optimal_termination(results)
 
 
-def initialize_model(m, solver=None):
-    if solver is None:
-        solver = get_solver()
-    optarg = solver.options
+def initialize_model(m):
 
-    # m.fs.feed.initialize(optarg=optarg)
     propagate_state(m.fs.s01)
     flags = fix_state_vars(m.fs.tb_feed_desal.properties_in)
     solve(m.fs.tb_feed_desal)
     revert_state_vars(m.fs.tb_feed_desal.properties_in, flags)
     propagate_state(m.fs.s02)
-    m.fs.P1.initialize(optarg=optarg)
+    m.fs.P1.initialize()
     propagate_state(m.fs.s03)
-    m.fs.RO1.initialize(optarg=optarg)
+    m.fs.RO1.initialize()
     propagate_state(m.fs.s04)
     propagate_state(m.fs.s05)
-    m.fs.P2.initialize(optarg=optarg)
+    m.fs.P2.initialize()
     propagate_state(m.fs.s06)
     m.fs.RO2.permeate.pressure[0].fix(101325)
-    m.fs.RO2.initialize(optarg=optarg)
+    m.fs.RO2.initialize()
     m.fs.RO2.permeate.pressure[0].unfix()
     propagate_state(m.fs.s07)
-    m.fs.M1.initialize(optarg=optarg)
+    m.fs.M1.initialize()
     propagate_state(m.fs.s08)
     # flags = fix_state_vars(m.fs.tb_desal_disposal.properties_in)
     # solve(m.fs.tb_desal_disposal)
     # revert_state_vars(m.fs.tb_desal_disposal.properties_in, flags)
     propagate_state(m.fs.s09)
     propagate_state(m.fs.s10)
-    m.fs.product.initialize(optarg=optarg)
+    m.fs.product.initialize()
 
 def set_up_optimization(m):
     # objective
@@ -286,29 +285,35 @@ def set_up_optimization(m):
     # pump 1 and pump 2
     m.fs.P1.control_volume.properties_out[0].pressure.unfix()
     m.fs.P1.control_volume.properties_out[0].pressure.setlb(10e5)
-    m.fs.P1.control_volume.properties_out[0].pressure.setub(80e5)
+    m.fs.P1.control_volume.properties_out[0].pressure.setub(85e5)
     m.fs.P1.deltaP.setlb(0)
     m.fs.P2.control_volume.properties_out[0].pressure.unfix()
     m.fs.P2.control_volume.properties_out[0].pressure.setlb(50e5)
-    m.fs.P2.control_volume.properties_out[0].pressure.setub(150e5)
+    m.fs.P2.control_volume.properties_out[0].pressure.setub(200e5)
     m.fs.P2.deltaP.setlb(0)
 
     # RO
     m.fs.RO1.area.unfix()
     m.fs.RO1.area.setlb(1)
     m.fs.RO1.area.setub(150)
+    m.fs.RO1.width.unfix()
+    m.fs.RO1.width.setlb(1)
+    m.fs.RO1.width.setub(75)
     m.fs.RO2.area.unfix()
     m.fs.RO2.area.setlb(1)
     m.fs.RO2.area.setub(150)
+    m.fs.RO2.width.unfix()
+    m.fs.RO2.width.setlb(1)
+    m.fs.RO2.width.setub(75)
 
     # additional specifications
-    m.fs.product_salinity = Param(initialize=1000e-6, mutable=True)  # product TDS mass fraction [-]
+    m.fs.maximum_product_salinity = Param(initialize=1000e-6, mutable=True)  # product TDS mass fraction [-]
     m.fs.minimum_water_flux = Param(initialize=1./3600., mutable=True)  # minimum water flux [kg/m2-s]
     m.fs.product_recovery = Param(initialize=0.73, mutable=True)
 
     # additional constraints
     m.fs.eq_product_quality = Constraint(
-        expr=m.fs.product.properties[0].mass_frac_phase_comp['Liq', 'TDS'] <= m.fs.product_salinity)
+        expr=m.fs.product.properties[0].mass_frac_phase_comp['Liq', 'TDS'] <= m.fs.maximum_product_salinity)
     iscale.constraint_scaling_transform(m.fs.eq_product_quality, 1e3)  # scaling constraint
     m.fs.eq_minimum_water_flux_1 = Constraint(
         expr=m.fs.RO1.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'] >= m.fs.minimum_water_flux)
@@ -319,12 +324,11 @@ def set_up_optimization(m):
              m.fs.product_recovery * m.fs.feed.properties[0].flow_vol)
 
     # ---checking model---
-    assert_degrees_of_freedom(m, 3)
+    assert_degrees_of_freedom(m, 5)
 
 
-def optimize(m, solver=None):
-    # --solve---
-    solve(m, solver=solver)
+def optimize(m, check_termination=True):
+    return solve_block(m, tee=False, fail_flag=check_termination)
 
 
 def display_results(m):
