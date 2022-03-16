@@ -113,8 +113,8 @@ class CrystallizationData(UnitModelBlockData):
             Default is 4 degC")
 
         # ====== Crystallizer sizing parameters ================= #
-        self.shape_factor_constant = Param(
-            initialize=3.67, # For median crystal size
+        self.dimensionless_crystal_length = Param(
+            initialize=3.67, # Parameter from population balance modeling for median crystal size
             units=pyunits.dimensionless,
             )
 
@@ -433,7 +433,7 @@ class CrystallizationData(UnitModelBlockData):
         @self.Constraint(doc="Residence time")
         def eq_residence_time(b):
             return (
-                b.t_res == b.crystal_median_length / (b.shape_factor_constant * pyunits.convert(b.crystal_growth_rate, to_units=pyunits.m/pyunits.hr))
+                b.t_res == b.crystal_median_length / (b.dimensionless_crystal_length * pyunits.convert(b.crystal_growth_rate, to_units=pyunits.m/pyunits.hr))
                 )
 
         # 10. Suspension volume calculation
