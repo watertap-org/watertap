@@ -477,15 +477,16 @@ def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_pr
 
 # ================================================================
 
-def _write_to_csv(global_values, global_results, data_header, rank, dirname, fname,
+def _write_to_csv(global_values, global_results, data_header, rank, write_csv, dirname, fname,
         interpolate_nan_outputs):
 
-    csv_results_file = os.path.join(dirname, fname + '.csv')
+    if write_csv and fname is not None:
+        csv_results_file = os.path.join(str(dirname), fname + '.csv')
 
     # Create the global filename and data
     global_save_data = np.hstack((global_values, global_results))
 
-    if rank == 0 and csv_results_file is not None:
+    if rank == 0 and write_csv:
         # Save the global data
         np.savetxt(csv_results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
 
@@ -503,7 +504,6 @@ def _write_to_csv(global_values, global_results, data_header, rank, dirname, fna
             np.savetxt(interp_file, global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
 
     return global_save_data
-
 
 # ================================================================
 
@@ -689,6 +689,9 @@ def _save_results(sweep_params, outputs, local_values, global_values, local_resu
 
             if debugging_data_dir is not None:
                 os.makedirs(debugging_data_dir, exist_ok=True)
+    else:
+        dirname = None
+        fname_no_ext = None
 
     if num_procs > 1:
         comm.Barrier()
@@ -705,14 +708,15 @@ def _save_results(sweep_params, outputs, local_values, global_values, local_resu
         # Save the local data
         np.savetxt(fname, local_save_data, header=data_header, delimiter=', ', fmt='%.6e')
 
-
     if rank == 0:
-        if write_csv:
-            global_save_data = _write_to_csv(global_values, global_results, data_header, rank, dirname, fname_no_ext, interpolate_nan_outputs)
+        global_save_data = _write_to_csv(global_values, global_results, data_header, rank, write_csv, dirname,
+            fname_no_ext, interpolate_nan_outputs)
 
         if write_h5:
             # Save the data of output dictionary
             _write_outputs(global_output_dict, dirname, fname_no_ext, txt_options="keys")
+    else:
+        global_save_data = None
 
     return global_save_data
 

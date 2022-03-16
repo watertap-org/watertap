@@ -39,9 +39,9 @@ def get_sweep_params(m, use_LHS=False):
 
     return sweep_params
 
-def run_parameter_sweep(csv_results_file=None, h5_results_file=None, seed=None, use_LHS=False, read_sweep_params_from_file=False,
-        sweep_params_fname='mc_sweep_params.yaml', read_model_defauls_from_file=False,
-        defaults_fname='default_configuration.yaml'):
+def run_parameter_sweep(results_file_name=None, write_csv=False, write_h5=False, seed=None, use_LHS=False,
+        read_sweep_params_from_file=False, sweep_params_fname='mc_sweep_params.yaml',
+        read_model_defauls_from_file=False, defaults_fname='default_configuration.yaml'):
 
     # Set up the solver
     solver = get_solver()
@@ -73,8 +73,8 @@ def run_parameter_sweep(csv_results_file=None, h5_results_file=None, seed=None, 
     num_samples = 10
 
     # Run the parameter sweep
-    global_results = parameter_sweep(m, sweep_params, outputs, csv_results_file=csv_results_file,
-            h5_results_file=h5_results_file, optimize_function=optimize, optimize_kwargs={'solver':solver, 'check_termination':False},
+    global_results = parameter_sweep(m, sweep_params, outputs, results_file_name = results_file_name, write_csv=write_csv,
+            write_h5=write_h5, optimize_function=optimize, optimize_kwargs={'solver':solver, 'check_termination':False},
             num_samples=num_samples, seed=seed)
 
     return global_results

@@ -212,8 +212,8 @@ def run_analysis(case_num, nx, RO_type, output_directory=None, interp_nan_output
         raise ValueError('case_num = %d not recognized.' % (case_num))
 
 
-    global_results = parameter_sweep(m, sweep_params, outputs, csv_results_file=output_filename,
-                                     optimize_function=opt_function,
+    global_results = parameter_sweep(m, sweep_params, outputs, results_file_name=output_filename,
+                                     write_csv=True, optimize_function=opt_function,
                                      optimize_kwargs=optimize_kwargs,
                                      debugging_data_dir=os.path.split(output_filename)[0]+'/local',
                                      interpolate_nan_outputs=interp_nan_outputs)
