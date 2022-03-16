@@ -356,3 +356,8 @@ def test_costing(subtype):
 
     assert m.fs.unit1.electricity[0] in \
         m.fs.costing._registered_flows["electricity"]
+
+    assert m.fs.unit1.NaCl_flowrate[0] in \
+        m.fs.costing._registered_flows["sodium_chloride"]
+    assert m.fs.unit1.resin_demand[0] in \
+        m.fs.costing._registered_flows["ion_exchange_resin"]
