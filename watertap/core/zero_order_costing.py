@@ -761,6 +761,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.chemical_flow_mass[t0], "hydrogen_peroxide")
 
+
     def cost_well_field(blk):
         """
         General method for costing well fields. Capital cost is based on well field 
