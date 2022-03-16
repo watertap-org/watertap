@@ -1,0 +1,12 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 0.85       #Todo: revisit value later
+    units: dimensionless
+  default_removal_frac_mass_solute:
+    value: 0        #Todo: revisit value later as some constituents should be retained by wetlands
+    units: dimensionless
+  removal_frac_mass_solute:
+    nonvolatile_toc:      #TODO: just a placeholder until we have info on removal fractions of consituents
+      value: 0
+      units: dimensionless
+      constituent_longform: Nonvolatile TOC
