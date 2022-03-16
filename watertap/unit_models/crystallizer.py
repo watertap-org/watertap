@@ -282,28 +282,16 @@ class CrystallizationData(UnitModelBlockData):
 
         # Add constraints
         # 1. Material balances
+        @self.Constraint(self.config.property_package.component_list, doc="Mass balance for components")
+        def eq_mass_balance_constraints(b, j):
+            return (
+                sum(b.properties_in[0].flow_mass_phase_comp[p, j] for p in self.config.property_package.phase_list if (p,j) in b.properties_in[0].phase_component_set) == \
+                sum(b.properties_out[0].flow_mass_phase_comp[p, j] for p in self.config.property_package.phase_list if (p,j) in b.properties_out[0].phase_component_set)
+                + sum(b.properties_vapor[0].flow_mass_phase_comp[p, j] for p in self.config.property_package.phase_list if (p,j) in b.properties_vapor[0].phase_component_set)
+                + sum(b.properties_solids[0].flow_mass_phase_comp[p, j] for p in self.config.property_package.phase_list if (p,j) in b.properties_solids[0].phase_component_set) 
+           )
+           
 
-        ## (i) Solute mass balances
-        @self.Constraint(self.config.property_package.component_list,
-                         doc="Mass balance for components")
-        def eq_mass_balance_solutes(b, j):
-            if j in solute_set: 
-                return (b.properties_in[0].flow_mass_phase_comp['Liq', j] + b.properties_in[0].flow_mass_phase_comp['Sol', j] \
-                    == b.properties_out[0].flow_mass_phase_comp['Liq', j] + b.properties_solids[0].flow_mass_phase_comp['Sol', j])
-            else:
-                return Constraint.Skip
-
-        ## (ii) Solvent mass balances
-        @self.Constraint(doc="Mass balance for solvent")
-        def eq_mass_balance_solvent(b):
-                return (b.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'] 
-                    == b.properties_out[0].flow_mass_phase_comp['Liq', 'H2O']
-                    + b.properties_vapor[0].flow_mass_phase_comp['Vap', 'H2O'])               
-
-        # ## (iii) Total solids composition balance
-        # @self.Constraint(doc="Total crystal mass")
-        # def eq_total_crystal_mass(b):
-        #     return (sum(b.properties_solids[0].mass_frac_phase_comp['Sol', j] for j in solute_set) == 1)
 
 
         # 2. Constraint on outlet liquid composition based on solubility requirements
@@ -629,12 +617,8 @@ class CrystallizationData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.properties_in[0].pressure)
             iscale.constraint_scaling_transform(c, sf)
 
-        for j, c in self.eq_mass_balance_solutes.items():
+        for j, c in self.eq_mass_balance_constraints.items():
             sf = iscale.get_scaling_factor(self.properties_in[0].flow_mass_phase_comp['Liq', j])
-            iscale.constraint_scaling_transform(c, sf)
-
-        for j, c in self.eq_mass_balance_solvent.items():
-            sf = iscale.get_scaling_factor(self.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'])
             iscale.constraint_scaling_transform(c, sf)
 
         for j, c in self.eq_solubility_massfrac_equality_constraint.items():
