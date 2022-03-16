@@ -499,9 +499,8 @@ def add_costing(m):
         "flowsheet_costing_block": m.fs.zo_costing})
     prtrt.chlorination.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": m.fs.zo_costing})
-    # TODO: Static mixer costs are unrealistic right now
-    # prtrt.static_mixer.costing = UnitModelCostingBlock(default={
-    #     "flowsheet_costing_block": m.fs.zo_costing})
+    prtrt.static_mixer.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": m.fs.zo_costing})
     prtrt.storage_tank_1.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": m.fs.zo_costing})
     # prtrt.media_filtration.costing = UnitModelCostingBlock(default={
