@@ -34,7 +34,7 @@ from watertap.core.util.initialization import assert_degrees_of_freedom, assert_
 import watertap.examples.flowsheets.lsrro.financials as financials
 import watertap.property_models.NaCl_prop_pack as props
 
-B_max = None #50/3.6e6
+B_max = None
 def run_lsrro_case(number_of_stages, water_recovery=None, Cin=None, Cbrine=None,
                    A_case=None, B_case=None, AB_tradeoff=None, A_fixed=None,
                    nacl_solubility_limit=None, has_CP=None, has_Pdrop=None, permeate_quality_limit=None,
@@ -781,17 +781,17 @@ if __name__ == "__main__":
     # cin = 125
     # recovery = .35
     cin_rec = {
-        'case 1': [35, 0.75],
-        'case 2': [70, 0.65],
-        'case 2a': [70, 0.60],
-        'case 2b': [70, 0.55],
-        'case 3': [125, 0.5],
-        'case 4': [125, 0.4],
-        'case 5': [125, 0.35],
-
+        # 'case 1': [35, 0.75],
+        # 'case 2': [70, 0.65],
+        # 'case 2a': [70, 0.60],
+        # 'case 2b': [70, 0.55],
+        # 'case 3': [125, 0.5],
+        # 'case 4': [125, 0.4],
+        # 'case 5': [125, 0.35],
+        'extreme': [70, 0.85]
     }
-    starting_stage = 2
-    ending_stage = 5
+    starting_stage = 7
+    ending_stage = 8
 
     a_case_lst = [
         "fix",
