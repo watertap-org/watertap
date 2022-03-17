@@ -222,3 +222,6 @@ def test_costing(subtype):
     if subtype == "landfill_zld":
         assert (pytest.approx(20.09155, rel=1e-5) ==
                 value(m.fs.unit.costing.capital_cost))
+
+    assert m.fs.unit.electricity[0] in \
+        m.fs.costing._registered_flows["electricity"]

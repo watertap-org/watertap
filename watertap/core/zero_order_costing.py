@@ -861,6 +861,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         ZeroOrderCostingData._general_power_law_form(
             blk, A, B, sizing_term, factor)
 
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
 
     def cost_well_field(blk):
         """
