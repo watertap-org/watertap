@@ -376,17 +376,15 @@ class EvaporatorData(UnitModelBlockData):
 
         init_log.info_high("Initialization Step 2 Complete.")
 
-        print('DOF 1:', degrees_of_freedom(blk))
-
         # intialize condenser
         state_args_condenser=state_args_vapor
         state_args_condenser['flow_mass_phase_comp'][('Vap', 'H2O')] \
             = 0.5*state_args_condenser['flow_mass_phase_comp'][('Vap', 'H2O')]
-        state_args_condenser['pressure'] = 1.1*state_args_vapor['pressure']
-        state_args_condenser['temperature'] = 50+state_args_vapor['temperature']
-        blk.condenser.initialize(state_args=state_args_condenser)
-        # flags_condenser_cv = blk.condenser.initialize(state_args=state_args_condenser)
-
+        state_args_condenser['pressure'] = blk.feed_side.properties_brine[0].pressure_sat.value
+        state_args_condenser['temperature'] = state_args['temperature'] + 5
+        # blk.condenser.initialize(state_args=state_args_condenser)
+        # assert False
+        flags_condenser_cv = blk.condenser.initialize(state_args=state_args_condenser)
         init_log.info_high("Initialization Step 3 Complete.")
 
         # ---------------------------------------------------------------------
@@ -399,7 +397,7 @@ class EvaporatorData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Release feed and condenser inlet states
         blk.feed_side.properties_feed.release_state(flags_feed, outlvl=outlvl)
-        # blk.condenser.control_volume.release_state(flags_condenser_cv, outlvl=outlvl)
+        blk.condenser.control_volume.release_state(flags_condenser_cv, outlvl=outlvl)
 
         init_log.info(
             "Initialization Complete: {}".format(idaeslog.condition(res))

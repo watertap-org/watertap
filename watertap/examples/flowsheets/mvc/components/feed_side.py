@@ -279,7 +279,6 @@ class EvaporatorData(UnitModelBlockData):
             state_args=state_args,
             hold_state=True,
         )
-        print('flags:', flags)
         init_log.info_high("Initialization Step 1 Complete.")
         # # ---------------------------------------------------------------------
         # # Initialize permeate
@@ -326,7 +325,6 @@ class EvaporatorData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        print('flags:', flags)
         blk.properties_feed.release_state(flags, outlvl=outlvl)
         init_log.info(
             "Initialization Complete: {}".format(idaeslog.condition(res))

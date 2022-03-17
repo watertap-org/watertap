@@ -63,7 +63,7 @@ def main():
     # print(degrees_of_freedom(m))
     # assert(degrees_of_freedom(m) == 0)
     m.fs.evaporator.initialize(outlvl=idaeslog.INFO_HIGH)
-    assert False
+    #assert False
     solver = get_solver()
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)

@@ -172,7 +172,8 @@ class CompressorData(UnitModelBlockData):
             state_args=None,
             outlvl=idaeslog.NOTSET,
             solver=None,
-            optarg=None):
+            optarg=None,
+            hold_state=False):
         """
         General wrapper for pressure changer initialization routines
 
@@ -185,6 +186,7 @@ class CompressorData(UnitModelBlockData):
             optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
                      initialization (default = None)
+            hold_state: boolean indicating if the inlet conditions should stay fixed
 
         Returns: None
         """
@@ -210,11 +212,14 @@ class CompressorData(UnitModelBlockData):
             "Initialization Step 2 {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
-        # Release Inlet state
-        blk.control_volume.release_state(flags, outlvl=outlvl)
-        init_log.info(
-            "Initialization Complete: {}".format(idaeslog.condition(res))
-        )
+        if hold_state:
+            return flags
+        else:
+            # Release Inlet state
+            blk.control_volume.release_state(flags, outlvl=outlvl)
+            init_log.info(
+                "Initialization Complete: {}".format(idaeslog.condition(res))
+            )
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {"Heat duty": self.control_volume.heat[time_point]}
