@@ -839,6 +839,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         """
 
         t0 = blk.flowsheet().time.first()
+        sizing_term = (blk.unit_model.total_mass[t0] / blk.unit_model.capacity_basis[t0])
 
         # Get parameter dict from database
         parameter_dict = \
@@ -856,28 +857,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         # Determine if a costing factor is required
         factor = parameter_dict["capital_cost"]["cost_factor"]
 
-        # Add cost variable and constraint
-        blk.capital_cost = pyo.Var(
-            initialize=1,
-            units=blk.config.flowsheet_costing_block.base_currency,
-            bounds=(0, None),
-            doc="Capital cost of unit operation")
-
-        expr = pyo.units.convert(
-            (A*(blk.unit_model.total_mass[t0] / blk.unit_model.capacity_basis[t0])**B),
-            to_units=blk.config.flowsheet_costing_block.base_currency)
-
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(
-            expr=blk.capital_cost == expr)
-
-        # Register flows
-        blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.electricity[t0], "electricity")
+        # Call general power law costing method
+        ZeroOrderCostingData._general_power_law_form(
+            blk, A, B, sizing_term, factor)
 
 
     def cost_well_field(blk):
