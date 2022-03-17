@@ -13,7 +13,7 @@
 import os
 from watertap.tools.parameter_sweep import _init_mpi, LinearSample, parameter_sweep
 from watertap.examples.flowsheets.lsrro.analysis import lsrro_paper_analysis as lsrro_case
-from pyomo.environ import units as pyunits, check_optimal_termination, value
+from pyomo.environ import units as pyunits, check_optimal_termination, value, Expression, Param
 
 
 #TODO:
@@ -85,7 +85,14 @@ def run_case(number_of_stages, nx):
     outputs['Total Opex LCOW'] = m.fs.costing.operating_cost_total / m.fs.annual_water_production
 
     outputs['Primary Pump Capex LCOW'] = m.fs.costing.primary_pump_capex_lcow
-    outputs['Booster Pump Capex LCOW'] = m.fs.costing.booster_pump_capex_lcow
+
+    m.fs.zero_expression = Expression(expr=0)
+
+    if number_of_stages > 1:
+        outputs['Booster Pump Capex LCOW'] = m.fs.costing.booster_pump_capex_lcow
+    else:
+        outputs['Booster Pump Capex LCOW'] = m.fs.zero_expression
+
     outputs['ERD Capex LCOW'] = m.fs.costing.erd_capex_lcow
     outputs['Membrane Capex LCOW'] = m.fs.costing.membrane_capex_lcow
     outputs['Indirect Capex LCOW'] = m.fs.costing.indirect_capex_lcow
@@ -165,6 +172,36 @@ def run_case(number_of_stages, nx):
                     stage.velocity[0, 1]
                     for idx, stage in m.fs.ROUnits.items()})
 
+    outputs.update({f'Primary Pump SEC-Stage {idx}':
+                    pyunits.convert(pump.work_mechanical[0], to_units=pyunits.kW)
+                    / pyunits.convert(m.fs.product.properties[0].flow_vol, to_units=pyunits.m**3 / pyunits.hr)
+                    for idx, pump in m.fs.PrimaryPumps.items()})
+
+    outputs['Booster Pump SEC-Stage 1'] = m.fs.zero_expression
+    if number_of_stages > 1:
+        outputs.update({f'Booster Pump SEC-Stage {idx}':
+                            pyunits.convert(pump.work_mechanical[0], to_units=pyunits.kW)
+                            / pyunits.convert(m.fs.product.properties[0].flow_vol, to_units=pyunits.m ** 3 / pyunits.hr)
+                        for idx, pump in m.fs.BoosterPumps.items()})
+        outputs.update({f'ERD SEC-Stage 1':
+                            pyunits.convert(m.fs.ERD_first_stage.work_mechanical[0], to_units=pyunits.kW)
+                            / pyunits.convert(m.fs.product.properties[0].flow_vol, to_units=pyunits.m ** 3 / pyunits.hr)})
+        outputs.update({f'ERD SEC-Stage {idx}':
+                            m.fs.zero_expression for idx in m.fs.LSRRO_NonFinal_StageSet})
+        outputs.update({f'ERD SEC-Stage {m.fs.StageSet.last()}':
+                            pyunits.convert(m.fs.EnergyRecoveryDevice.work_mechanical[0], to_units=pyunits.kW)
+                            / pyunits.convert(m.fs.product.properties[0].flow_vol,
+                                              to_units=pyunits.m ** 3 / pyunits.hr)})
+    else:
+        outputs.update({f'ERD SEC-Stage 1':
+                            pyunits.convert(m.fs.EnergyRecoveryDevice.work_mechanical[0], to_units=pyunits.kW)
+                            / pyunits.convert(m.fs.product.properties[0].flow_vol,
+                                              to_units=pyunits.m ** 3 / pyunits.hr)})
+
+    outputs.update({f'Net SEC-Stage {idx}': outputs[f'Primary Pump SEC-Stage {idx}'] +
+                                            outputs[f'Booster Pump SEC-Stage {idx}'] +
+                                            outputs[f'ERD SEC-Stage {idx}'] for idx in m.fs.StageSet})
+
     global_results = parameter_sweep(m, sweep_params, outputs, csv_results_file=output_filename,
                                      optimize_function=lsrro_case.solve,
                                      # optimize_kwargs={'solver': None, 'tee': True, 'raise_on_failure': True},
@@ -178,8 +215,7 @@ def run_case(number_of_stages, nx):
 
 
 if __name__ == "__main__":
-    for n in range(2, 3):
-        # m = lsrro_optimize(number_of_stages=n)
+    for n in range(1, 9):
         global_results, sweep_params, m = run_case(number_of_stages=n, nx=4)
         print(global_results)
 
