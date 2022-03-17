@@ -49,6 +49,8 @@ class TestVFARecoveryZO_no_default:
             "database": m.db})
 
         m.fs.feed.properties_in1.calculate_state(var_args=)
+
+
         m.fs.unit.inlet1.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet2.flow_mass_comp[0, "cod"].fix(1)
 
