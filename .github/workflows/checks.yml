@@ -48,10 +48,6 @@ jobs:
           - python-version: '3.8'
             # limit uploading coverage report for a single Python version in the matrix
             cov_report: true
-          - python-version: '3.9'
-            os: linux
-            # same for link-checking in the HTML docs so we don't slam external sites
-            check_docs_links: true
           - os: linux
             # supercharge/mongodb-github-action is a container action, that's only available for Linux
             mongodb_server: true
@@ -128,10 +124,10 @@ jobs:
     - name: Test documentation code
       run: |
         make -C docs doctest -d
-    # just run the linkcheck on one of the jobs
-    # so we don't slam external sites
+    # TODO: this should be moved to a dedicated job/workflow
+    # until then, we can leave this here as a reminder
     - name: Test documentation links
-      if: matrix.check_docs_links
+      if: 'false'
       run: |
         make -C docs linkcheck -d
 
