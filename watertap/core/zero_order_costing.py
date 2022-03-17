@@ -29,13 +29,16 @@ from watertap.unit_models.zero_order import (
     BrineConcentratorZO,
     ChemicalAdditionZO,
     ChlorinationZO,
+    LandfillZO,
     IonExchangeZO,
     OzoneZO,
     OzoneAOPZO,
     SedimentationZO,
     StorageTankZO,
     UVZO,
-    UVAOPZO,)
+    UVAOPZO,
+    WellFieldZO,
+    )
 
 
 global_params = ["plant_lifetime",
@@ -828,6 +831,93 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.chemical_flow_mass[t0], "hydrogen_peroxide")
 
+
+    def cost_landfill(blk):
+        """
+        General method for costing landfill. Capital cost is based on the total mass and
+        capacity basis.
+        """
+
+        t0 = blk.flowsheet().time.first()
+        sizing_term = (blk.unit_model.total_mass[t0] / blk.unit_model.capacity_basis[t0])
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        # Get costing parameter sub-block for this technology
+        A, B = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["capital_a_parameter", "capital_b_parameter"])
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Call general power law costing method
+        ZeroOrderCostingData._general_power_law_form(
+            blk, A, B, sizing_term, factor)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
+
+    def cost_well_field(blk):
+        """
+        General method for costing well fields. Capital cost is based on well field
+        cosntruction and pipe costs.
+        """
+
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        # Get costing parameter sub-block for this technology
+        A, B, pipe_cost_basis = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["capital_a_parameter", "capital_b_parameter", "pipe_cost_basis"])
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation")
+
+        Q = pyo.units.convert(
+            blk.unit_model.properties[t0].flow_vol /
+            (pyo.units.m**3/pyo.units.hour),
+            to_units=pyo.units.dimensionless)
+        expr = pyo.units.convert(
+            A*Q**B + (pipe_cost_basis *
+            blk.unit_model.pipe_distance[t0] * blk.unit_model.pipe_diameter[t0]),
+            to_units=blk.config.flowsheet_costing_block.base_currency)
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
+
+
     def _get_ozone_capital_cost(blk, A, B, C, D):
         """
         Generate expressions for capital cost of ozonation system.
@@ -920,6 +1010,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                     BrineConcentratorZO: cost_brine_concentrator,
                     ChemicalAdditionZO: cost_chemical_addition,
                     ChlorinationZO: cost_chlorination,
+                    LandfillZO: cost_landfill,
                     IonExchangeZO: cost_ion_exchange,
                     OzoneZO: cost_ozonation,
                     OzoneAOPZO: cost_ozonation_aop,
@@ -927,7 +1018,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                     StorageTankZO: cost_storage_tank,
                     UVZO: cost_uv,
                     UVAOPZO: cost_uv_aop,
-                    }
+                    WellFieldZO: cost_well_field,
+                   }
 
 
 def _get_tech_parameters(blk, parameter_dict, subtype, param_list):

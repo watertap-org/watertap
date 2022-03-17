@@ -16,17 +16,19 @@ Tests for zero-order landfill model
 import pytest
 from io import StringIO
 
-from pyomo.environ import ConcreteModel, Constraint, value, Var
+from pyomo.environ import Block, ConcreteModel, Constraint, value, Var
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
+from idaes.generic_models.costing import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import LandfillZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
@@ -133,3 +135,93 @@ Unit : fs.unit                                                             Time:
 """
 
         assert output == stream.getvalue()
+
+db = Database()
+params = db._get_technology("landfill")
+
+class TestLandfillZOsubtype:
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.params = WaterParameterBlock(
+            default={"solute_list": ["sulfur", "toc", "tss"]})
+
+        m.fs.unit = LandfillZO(default={
+            "property_package": m.fs.params,
+            "database": db})
+
+        return m
+
+    @pytest.mark.parametrize("subtype", [params.keys()])
+    @pytest.mark.component
+    def test_load_parameters(self, model, subtype):
+        model.fs.unit.config.process_subtype = subtype
+        data = db.get_unit_operation_parameters(
+            "landfill", subtype=subtype)
+
+        model.fs.unit.load_parameters_from_database()
+
+        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
+        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
+            "energy_electric_flow_vol_inlet"]["value"]
+
+        assert model.fs.unit.capacity_basis[0].fixed
+        assert model.fs.unit.capacity_basis[0].value == data[
+            "capacity_basis"]["value"]
+
+
+db = Database()
+params = db._get_technology("landfill")
+
+@pytest.mark.parametrize("subtype", [k for k in params.keys()])
+def test_costing(subtype):
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.params = WaterParameterBlock(
+            default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.costing = ZeroOrderCosting()
+    m.fs.unit = LandfillZO(default={
+                    "property_package": m.fs.params,
+                    "database": m.db,
+                    "process_subtype": subtype})
+
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1e-5)
+    m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(1000)
+    m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(2000)
+    m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(3000)
+
+    m.fs.unit.load_parameters_from_database()
+
+    m.fs.unit.costing = UnitModelCostingBlock(default={
+                    "flowsheet_costing_block": m.fs.costing})
+
+    assert isinstance(m.fs.costing.landfill, Block)
+    assert isinstance(m.fs.costing.landfill.capital_a_parameter, Var)
+    assert isinstance(m.fs.costing.landfill.capital_b_parameter, Var)
+
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint,
+                      Constraint)
+    assert_units_consistent(m.fs)
+
+    assert degrees_of_freedom(m.fs.unit) == 0
+
+    initialization_tester(m)
+    _ = solver.solve(m)
+
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint,
+                            Constraint)
+
+    if subtype == "default":
+        assert (pytest.approx(43.5627, rel=1e-5) ==
+                value(m.fs.unit.costing.capital_cost))
+    if subtype == "landfill_zld":
+        assert (pytest.approx(20.09155, rel=1e-5) ==
+                value(m.fs.unit.costing.capital_cost))
+
+    assert m.fs.unit.electricity[0] in \
+        m.fs.costing._registered_flows["electricity"]
