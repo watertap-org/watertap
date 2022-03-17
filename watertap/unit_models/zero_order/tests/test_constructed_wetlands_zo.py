@@ -40,14 +40,14 @@ class TestConstructedWetlandsZO_w_default_removal:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["foo"]})
+            default={"solute_list": ["nitrate"]})
 
         m.fs.unit = ConstructedWetlandsZO(default={
             "property_package": m.fs.params,
             "database": m.db})
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
-        m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(1)
+        m.fs.unit.inlet.flow_mass_comp[0, "nitrate"].fix(1)
 
         return m
 
@@ -98,10 +98,10 @@ class TestConstructedWetlandsZO_w_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(0.0095, rel=1e-5) ==
+        assert (pytest.approx(0.0091, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(105.2631, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
+        assert (pytest.approx(65.93406, rel=1e-5) ==
+                value(model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]))
         assert (value(model.fs.unit.properties_in[0].flow_mass_comp["H2O"]
                       * model.fs.unit.recovery_frac_mass_H2O[0]) ==
                 model.fs.unit.properties_treated[0].flow_mass_comp["H2O"].value)
@@ -120,15 +120,15 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                  : Value  : Fixed : Bounds
-    Solute Removal [foo] : 0.0000 :  True : (0, None)
+    Key                      : Value   : Fixed : Bounds
+    Solute Removal [nitrate] : 0.40000 :  True : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
-                             Inlet    Treated
-    Volumetric Flowrate    0.011000 0.0095000
-    Mass Concentration H2O   909.09    894.74
-    Mass Concentration foo   90.909    105.26
+                                 Inlet    Treated
+    Volumetric Flowrate        0.011000 0.0091000
+    Mass Concentration H2O       909.09    934.07
+    Mass Concentration nitrate   90.909    65.934
 ====================================================================================
 """
         assert output in stream.getvalue()
