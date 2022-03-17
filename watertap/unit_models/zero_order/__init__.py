@@ -38,6 +38,7 @@ from .nanofiltration_zo import NanofiltrationZO
 from .clarifier_zo import ClarifierZO
 from .primary_separator_zo import PrimarySeparatorZO
 from .pump_zo import PumpZO
+from .screen_zo import ScreenZO
 from .sedimentation_zo import SedimentationZO
 from .settling_pond_zo import SettlingPondZO
 from .smp_zo import SMPZO
