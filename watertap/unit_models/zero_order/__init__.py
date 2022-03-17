@@ -11,12 +11,9 @@
 #
 ###############################################################################
 
-from .anaerobic_mbr_mec_zo import AnaerobicMBRMECZO
 from .backwash_solids_handling_zo import BackwashSolidsHandlingZO
 from .bio_active_filtration_zo import BioActiveFiltrationZO
 from .blending_reservoir_zo import BlendingReservoirZO
-from .constructed_wetlands_zo import ConstructedWetlandsZO
-from .vfa_recovery_zo import VFARecoveryZO
 from .aeration_basin_zo import AerationBasinZO
 from .air_flotation_zo import AirFlotationZO
 from .bioreactor_zo import BioreactorZO
@@ -64,3 +61,10 @@ from .chlorination_zo import ChlorinationZO
 from .static_mixer_zo import StaticMixerZO
 from .co2_addition_zo import CO2AdditionZO
 from .sludge_tank_zo import SludgeTankZO
+
+# Units explicitly for Wastewater Resource Recovery effort
+
+from .anaerobic_mbr_mec_zo import AnaerobicMBRMECZO
+from .cofermentation_zo import  CofermentationZO
+from .constructed_wetlands_zo import ConstructedWetlandsZO
+from .vfa_recovery_zo import VFARecoveryZO
