@@ -29,13 +29,13 @@ from watertap.unit_models.zero_order import (
     BrineConcentratorZO,
     ChemicalAdditionZO,
     ChlorinationZO,
+    LandfillZO,
     OzoneZO,
     OzoneAOPZO,
     SedimentationZO,
     StorageTankZO,
     UVZO,
-    UVAOPZO,
-    LandfillZO)
+    UVAOPZO)
 
 
 
@@ -899,13 +899,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                     BrineConcentratorZO: cost_brine_concentrator,
                     ChemicalAdditionZO: cost_chemical_addition,
                     ChlorinationZO: cost_chlorination,
+                    LandfillZO: cost_landfill,
                     OzoneZO: cost_ozonation,
                     OzoneAOPZO: cost_ozonation_aop,
                     UVZO: cost_uv,
                     UVAOPZO: cost_uv_aop,
                     SedimentationZO: cost_sedimentation,
-                    StorageTankZO: cost_storage_tank,
-                    LandfillZO: cost_landfill}
+                    StorageTankZO: cost_storage_tank}
 
 
 
