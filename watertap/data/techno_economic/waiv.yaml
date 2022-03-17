@@ -17,7 +17,6 @@ default:
   recovery_frac_mass_H2O:
     value: 0.0001
     units: dimensionless
-    reference: .nan
   default_removal_frac_mass_solute:
     value: 0
     units: dimensionless
