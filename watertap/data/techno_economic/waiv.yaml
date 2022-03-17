@@ -17,12 +17,11 @@ default:
   recovery_frac_mass_H2O:
     value: 0.0001
     units: dimensionless
-    reference: .nan
   default_removal_frac_mass_solute:
     value: 0
     units: dimensionless
   removal_frac_mass_solute:
-    foo:
+    tds:
       value: 0
       units: dimensionless
-      constituent_longform: foo
+      constituent_longform: Total Dissolved Solids (TDS)

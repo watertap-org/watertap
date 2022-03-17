@@ -33,7 +33,7 @@ from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
-class TestWAIVZO:
+class TestWAIVZO_w_default_removal:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -41,13 +41,14 @@ class TestWAIVZO:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["foo"]})
+            default={"solute_list": ["tds", "foo"]})
 
         m.fs.unit = WAIVZO(default={
             "property_package": m.fs.params,
             "database": m.db})
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
+        m.fs.unit.inlet.flow_mass_comp[0, "tds"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(1)
 
         return m
@@ -64,7 +65,7 @@ class TestWAIVZO:
     def test_load_parameters(self, model):
         data = model.db.get_unit_operation_parameters("waiv")
 
-        model.fs.unit.load_parameters_from_database()
+        model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
         assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
@@ -72,7 +73,10 @@ class TestWAIVZO:
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
-            assert v.value == data["removal_frac_mass_solute"][j]["value"]
+            if j == "foo":
+                assert v.value == data["default_removal_frac_mass_solute"]["value"]
+            else:
+                assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
         assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
@@ -103,19 +107,25 @@ class TestWAIVZO:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(1.001, rel=1e-5) ==
+        assert (pytest.approx(1.002, rel=1e-5) ==
                 value(model.fs.unit.properties_in[0].flow_vol))
-        assert (pytest.approx(0.999, rel=1e-5) ==
+        assert (pytest.approx(0.998, rel=1e-5) ==
+                value(model.fs.unit.properties_in[0].conc_mass_comp["tds"]))
+        assert (pytest.approx(0.998, rel=1e-5) ==
                 value(model.fs.unit.properties_in[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0.0011, rel=1e-5) ==
+        assert (pytest.approx(0.0021, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(909.09, rel=1e-5) ==
+        assert (pytest.approx(476.19, rel=1e-5) ==
+                value(model.fs.unit.properties_treated[0].conc_mass_comp["tds"]))
+        assert (pytest.approx(476.19, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
         assert (pytest.approx(0.99990000001, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].flow_vol))
         assert (pytest.approx(1.0001e-08, rel=1e-5) ==
+                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tds"]))
+        assert (pytest.approx(1.0001e-08, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(1.001*0.65*3600, abs=1e-5) ==
+        assert (pytest.approx(2344.68, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
 
     @pytest.mark.solver
@@ -143,17 +153,19 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                   : Value      : Fixed : Bounds
-       Electricity Demand :     2342.3 : False : (0, None)
+       Electricity Demand :     2344.7 : False : (0, None)
     Electricity Intensity :    0.65000 :  True : (None, None)
      Solute Removal [foo] :     0.0000 :  True : (0, None)
+     Solute Removal [tds] :     0.0000 :  True : (0, None)
            Water Recovery : 0.00010000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
                              Inlet   Treated  Byproduct
-    Volumetric Flowrate     1.0010 0.0011000    0.99990
-    Mass Concentration H2O  999.00    90.909     1000.0
-    Mass Concentration foo 0.99900    909.09 1.0001e-08
+    Volumetric Flowrate     1.0020 0.0021000    0.99990
+    Mass Concentration H2O  998.00    47.619     1000.0
+    Mass Concentration tds 0.99800    476.19 1.0001e-08
+    Mass Concentration foo 0.99800    476.19 1.0001e-08
 ====================================================================================
 """
 
