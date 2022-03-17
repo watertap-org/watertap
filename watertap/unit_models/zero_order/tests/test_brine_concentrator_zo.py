@@ -367,7 +367,6 @@ def test_no_tds_in_solute_list_error():
 db = Database()
 params = db._get_technology("brine_concentrator")
 
-
 @pytest.mark.parametrize("subtype", [k for k in params.keys()])
 def test_costing(subtype):
     m = ConcreteModel()
