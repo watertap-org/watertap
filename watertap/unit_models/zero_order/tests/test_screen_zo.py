@@ -132,7 +132,7 @@ class TestScreenZO_w_default_removal:
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
         assert (pytest.approx(1e-5, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(1.002*0*3600, abs=1e-5) ==
+        assert (pytest.approx(0, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
 
     @pytest.mark.solver
