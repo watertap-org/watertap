@@ -508,6 +508,12 @@ def _write_to_csv(global_values, global_results, data_header, rank, write_csv, d
 
 # ================================================================
 
+def _write_debug_data(local_result_dict, debugging_data_dir, rank):
+    fname = f'local_results_{rank:03}.h5'
+    _write_output_to_h5(local_result_dict, debugging_data_dir, fname)
+
+# ================================================================
+
 def _write_outputs(output_dict, output_directory, fname_no_ext, txt_options="metadata"):
 
     # if not h5_results_file.endswith(".h5"):
@@ -703,12 +709,13 @@ def _save_results(sweep_params, local_values, global_values, local_results,
 
     # Handle values in the debugging data_directory
     if debugging_data_dir is not None:
-        # Create the local filename and data
-        fname = os.path.join(debugging_data_dir, f'local_results_{rank:03}.csv')
-        local_save_data = np.hstack((local_values, local_results))
-
-        # Save the local data
-        np.savetxt(fname, local_save_data, header=data_header, delimiter=', ', fmt='%.6e')
+        _write_debug_data(local_output_dict, debugging_data_dir, rank)
+        # # Create the local filename and data
+        # fname = os.path.join(debugging_data_dir, f'local_results_{rank:03}.csv')
+        # local_save_data = np.hstack((local_values, local_results))
+        #
+        # # Save the local data
+        # np.savetxt(fname, local_save_data, header=data_header, delimiter=', ', fmt='%.6e')
 
     if rank == 0:
         global_save_data = _write_to_csv(global_values, global_results, data_header, rank, write_csv, dirname,
