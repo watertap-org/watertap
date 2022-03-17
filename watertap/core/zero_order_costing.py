@@ -513,60 +513,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             chem_flow_mass, "chlorine")
 
-
-
-
-    def cost_landfill(blk):
-        """
-        General method for costing landfill. Capital cost is based on the total mass and
-        capacity basis.
-        """
-
-        t0 = blk.flowsheet().time.first()
-
-        # Get parameter dict from database
-        parameter_dict = \
-            blk.unit_model.config.database.get_unit_operation_parameters(
-                blk.unit_model._tech_type,
-                subtype=blk.unit_model.config.process_subtype)
-
-        # Get costing parameter sub-block for this technology
-        A, B = _get_tech_parameters(
-            blk,
-            parameter_dict,
-            blk.unit_model.config.process_subtype,
-            ["capital_a_parameter", "capital_b_parameter"])
-
-        # Determine if a costing factor is required
-        factor = parameter_dict["capital_cost"]["cost_factor"]
-
-        # Add cost variable and constraint
-        blk.capital_cost = pyo.Var(
-            initialize=1,
-            units=blk.config.flowsheet_costing_block.base_currency,
-            bounds=(0, None),
-            doc="Capital cost of unit operation")
-
-        expr = pyo.units.convert(
-            (A*(blk.unit_model.total_mass[t0] / blk.unit_model.capacity_basis[t0])**B),
-            to_units=blk.config.flowsheet_costing_block.base_currency)
-
-        if factor == "TPEC":
-            expr *= blk.config.flowsheet_costing_block.TPEC
-        elif factor == "TIC":
-            expr *= blk.config.flowsheet_costing_block.TIC
-
-        blk.capital_cost_constraint = pyo.Constraint(
-            expr=blk.capital_cost == expr)
-
-        # Register flows
-        blk.config.flowsheet_costing_block.cost_flow(
-            blk.unit_model.electricity[t0], "electricity")
-
-
-
-
-
     def cost_sedimentation(blk):
         """
         General method for costing sedimentaion processes. Capital cost is
@@ -815,6 +761,53 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.chemical_flow_mass[t0], "hydrogen_peroxide")
 
+
+    def cost_landfill(blk):
+        """
+        General method for costing landfill. Capital cost is based on the total mass and
+        capacity basis.
+        """
+
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        # Get costing parameter sub-block for this technology
+        A, B = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["capital_a_parameter", "capital_b_parameter"])
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation")
+
+        expr = pyo.units.convert(
+            (A*(blk.unit_model.total_mass[t0] / blk.unit_model.capacity_basis[t0])**B),
+            to_units=blk.config.flowsheet_costing_block.base_currency)
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
 
 
     def _get_ozone_capital_cost(blk, A, B, C, D):
