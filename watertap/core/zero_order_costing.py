@@ -513,6 +513,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             chem_flow_mass, "chlorine")
 
+
+
+
     def cost_landfill(blk):
         """
         General method for costing landfill. Capital cost is based on the total mass and
@@ -559,6 +562,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity")
+
+
+
 
 
     def cost_sedimentation(blk):
