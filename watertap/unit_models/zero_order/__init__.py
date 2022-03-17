@@ -48,6 +48,7 @@ from .coag_and_floc_zo import CoagulationFlocculationZO
 from .ultra_filtration_zo import UltraFiltrationZO
 from .uv_zo import UVZO
 from .uv_aop_zo import UVAOPZO
+from .waiv_zo import WAIVZO
 from .anaerobic_digestion_oxidation_zo import AnaerobicDigestionOxidationZO
 from .fixed_bed_zo import FixedBedZO
 from .municipal_drinking_zo import MunicipalDrinkingZO
