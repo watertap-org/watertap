@@ -13,6 +13,7 @@
 
 import pytest
 from io import StringIO
+from pyomo.environ import value
 from watertap.examples.case_studies.seawater_RO_desalination.seawater_RO_desalination import main
 from idaes.core.util import get_solver
 
@@ -117,6 +118,9 @@ Unit : fs.municipal                                                        Time:
 """
     assert output == report_io.getvalue()
 
+    assert value(m.LCOW) == pytest.approx(0.845256, rel=1e-5)
+
+
 @pytest.mark.component
 def test_seawater_RO_desalination_pump_as_turbine():
     m = main(erd_type='pump_as_turbine')
@@ -216,3 +220,5 @@ Unit : fs.municipal                                                        Time:
 ====================================================================================
 """
     assert output == report_io.getvalue()
+
+    assert value(m.LCOW) == pytest.approx(1.11579, rel=1e-5)
