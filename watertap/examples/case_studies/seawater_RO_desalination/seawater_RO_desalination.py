@@ -503,14 +503,14 @@ def add_costing(m):
         "flowsheet_costing_block": m.fs.zo_costing})
     prtrt.storage_tank_1.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": m.fs.zo_costing})
-    # prtrt.media_filtration.costing = UnitModelCostingBlock(default={
-    #     "flowsheet_costing_block": m.fs.zo_costing})
+    prtrt.media_filtration.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": m.fs.zo_costing})
     prtrt.backwash_handling.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": m.fs.zo_costing})
     prtrt.anti_scalant_addition.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": m.fs.zo_costing})
-    # prtrt.cartridge_filtration.costing = UnitModelCostingBlock(default={
-    #     "flowsheet_costing_block": m.fs.zo_costing})
+    prtrt.cartridge_filtration.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": m.fs.zo_costing})
 
     # RO Train
     # RO equipment is costed using more detailed costing package
@@ -545,6 +545,7 @@ def add_costing(m):
         m.fs.zo_costing.cost_flow(
             desal.P2.work_mechanical[0], "electricity")
     elif m.erd_type == 'pump_as_turbine':
+        pass
         m.fs.zo_costing.cost_flow(
             desal.ERD.work_mechanical[0], "electricity")
     else:
@@ -565,10 +566,10 @@ def add_costing(m):
         "flowsheet_costing_block": m.fs.zo_costing})
 
     # Product and disposal
-    # m.fs.municipal.costing = UnitModelCostingBlock(default={
-    #     "flowsheet_costing_block": m.fs.zo_costing})
-    # m.fs.landfill.costing = UnitModelCostingBlock(default={
-    #     "flowsheet_costing_block": m.fs.zo_costing})
+    m.fs.municipal.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": m.fs.zo_costing})
+    m.fs.landfill.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": m.fs.zo_costing})
 
     # Aggregate unit level costs and calculate overall process costs
     m.fs.zo_costing.cost_process()
