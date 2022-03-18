@@ -582,13 +582,22 @@ class CrystallizationData(UnitModelBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        iscale.set_scaling_factor(self.crystallization_yield, 1)
-        iscale.set_scaling_factor(self.product_volumetric_solids_fraction, 1)
+        iscale.set_scaling_factor(self.crystal_growth_rate, 1e7) # growth rates typically of order 1e-7 to 1e-9 m/s
+        iscale.set_scaling_factor(self.crystal_median_length, 1e3) # Crystal lengths typically in mm 
+        iscale.set_scaling_factor(self.souders_brown_constant, 1e2) # Typical values are 0.0244, 0.04 and 0.06
+        iscale.set_scaling_factor(self.diameter_crystallizer, 1) # Crystallizer diameters typically up to about 20 m 
+        iscale.set_scaling_factor(self.height_crystallizer, 1) # H/D ratio maximum is about 1.5, so same scaling as diameter
+        iscale.set_scaling_factor(self.height_slurry, 1) # Same scaling as diameter
+        iscale.set_scaling_factor(self.magma_circulation_flow_vol, 1)
+        iscale.set_scaling_factor(self.relative_supersaturation, 10)
+        iscale.set_scaling_factor(self.t_res, 1) # Residence time is in hours
+        iscale.set_scaling_factor(self.volume_suspension, 0.1) # Suspension volume usually in tens to hundreds range
+        iscale.set_scaling_factor(self.crystallization_yield, 1) # Yield is between 0 and 1, usually in the 10-60% range
+        iscale.set_scaling_factor(self.product_volumetric_solids_fraction, 10)
         iscale.set_scaling_factor(self.temperature_operating, iscale.get_scaling_factor(self.properties_in[0].temperature))
-        iscale.set_scaling_factor(self.pressure_operating, 1e-3)#iscale.get_scaling_factor(self.properties_in[0].pressure_sat))
+        iscale.set_scaling_factor(self.pressure_operating, 1e-3)
         iscale.set_scaling_factor(self.dens_mass_magma, iscale.get_scaling_factor(self.properties_in[0].dens_mass_phase['Liq']))
         iscale.set_scaling_factor(self.dens_mass_slurry, iscale.get_scaling_factor(self.properties_in[0].dens_mass_phase['Liq']))
-        # Temporary scale for work - scale by vapor mass*enthalpy because vapor typically has the largest enthalpy
         iscale.set_scaling_factor(self.work_mechanical[0], 
                 iscale.get_scaling_factor(self.properties_in[0].flow_mass_phase_comp['Vap', 'H2O']) 
                 * iscale.get_scaling_factor(self.properties_in[0].enth_mass_solvent['Vap'])) 
