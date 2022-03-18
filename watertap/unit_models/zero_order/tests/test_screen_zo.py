@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-Tests for zero-order feed water tank model
+Tests for zero-order screen model
 """
 import pytest
 
@@ -26,14 +26,14 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.generic_models.costing import UnitModelCostingBlock
 
-from watertap.unit_models.zero_order import FeedWaterTankZO
+from watertap.unit_models.zero_order import ScreenZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
-class TestFeedWaterTankZO:
+class TestScreenZO_w_default_removal:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -41,14 +41,16 @@ class TestFeedWaterTankZO:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["tss"]})
+            default={"solute_list": ["bod", "tss", "foo"]})
 
-        m.fs.unit = FeedWaterTankZO(default={
+        m.fs.unit = ScreenZO(default={
             "property_package": m.fs.params,
             "database": m.db})
 
-        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
+        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
+        m.fs.unit.inlet.flow_mass_comp[0, "bod"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
+        m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(1)
 
         return m
 
@@ -62,9 +64,20 @@ class TestFeedWaterTankZO:
 
     @pytest.mark.component
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("feed_water_tank")
+        data = model.db.get_unit_operation_parameters("screen")
 
-        model.fs.unit.load_parameters_from_database()
+        model.fs.unit.load_parameters_from_database(use_default_removal=True)
+
+        assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
+        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
+            data["recovery_frac_mass_H2O"]["value"]
+
+        for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
+            assert v.fixed
+            if j == "foo":
+                assert v.value == data["default_removal_frac_mass_solute"]["value"]
+            else:
+                assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
         assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
@@ -95,10 +108,42 @@ class TestFeedWaterTankZO:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(1.1e-2, rel=1e-5) ==
-                value(model.fs.unit.properties[0].flow_vol))
-        assert (pytest.approx(0.0, abs=1e-5) ==
+        assert (pytest.approx(1.003, rel=1e-5) ==
+                value(model.fs.unit.properties_in[0].flow_vol))
+        assert (pytest.approx(0.997009, rel=1e-5) ==
+                value(model.fs.unit.properties_in[0].conc_mass_comp["bod"]))
+        assert (pytest.approx(0.997009, rel=1e-5) ==
+                value(model.fs.unit.properties_in[0].conc_mass_comp["tss"]))
+        assert (pytest.approx(0.997009, rel=1e-5) ==
+                value(model.fs.unit.properties_in[0].conc_mass_comp["foo"]))
+        assert (pytest.approx(1.002, rel=1e-5) ==
+                value(model.fs.unit.properties_treated[0].flow_vol))
+        assert (pytest.approx(0.6986, rel=1e-5) ==
+                value(model.fs.unit.properties_treated[0].conc_mass_comp["bod"]))
+        assert (pytest.approx(0.3992, rel=1e-5) ==
+                value(model.fs.unit.properties_treated[0].conc_mass_comp["tss"]))
+        assert (pytest.approx(0.9980, rel=1e-5) ==
+                value(model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
+        assert (pytest.approx(0.001, rel=1e-5) ==
+                value(model.fs.unit.properties_byproduct[0].flow_vol))
+        assert (pytest.approx(300.0, rel=1e-5) ==
+                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["bod"]))
+        assert (pytest.approx(600.0, rel=1e-5) ==
+                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
+        assert (pytest.approx(1e-5, rel=1e-5) ==
+                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
+        assert (pytest.approx(0, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, model):
+        for j in model.fs.params.component_list:
+            assert 1e-6 >= abs(value(
+                model.fs.unit.inlet.flow_mass_comp[0, j] -
+                model.fs.unit.treated.flow_mass_comp[0, j] -
+                model.fs.unit.byproduct.flow_mass_comp[0, j]))
 
     @pytest.mark.component
     def test_report(self, model):
@@ -115,20 +160,25 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                   : Value      : Fixed : Bounds
-       Electricity Demand : 7.0000e-10 : False : (0, None)
+       Electricity Demand : 1.0000e-08 : False : (0, None)
     Electricity Intensity :     0.0000 :  True : (None, None)
+     Solute Removal [bod] :    0.30000 :  True : (0, None)
+     Solute Removal [foo] :     0.0000 :  True : (0, None)
+     Solute Removal [tss] :    0.60000 :  True : (0, None)
+           Water Recovery :    0.99990 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
-                             Inlet   Outlet 
-    Volumetric Flowrate    0.011000 0.011000
-    Mass Concentration H2O   909.09   909.09
-    Mass Concentration tss   90.909   90.909
+                             Inlet  Treated  Byproduct
+    Volumetric Flowrate     1.0030  1.0020   0.0010000
+    Mass Concentration H2O  997.01  997.90      100.00
+    Mass Concentration bod 0.99701 0.69860      300.00
+    Mass Concentration tss 0.99701 0.39920      600.00
+    Mass Concentration foo 0.99701 0.99800  1.0000e-05
 ====================================================================================
 """
 
-        assert output == stream.getvalue()
-
+        assert output in stream.getvalue()
 
 def test_costing():
     m = ConcreteModel()
@@ -141,7 +191,7 @@ def test_costing():
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = FeedWaterTankZO(default={
+    m.fs.unit1 = ScreenZO(default={
         "property_package": m.fs.params,
         "database": m.db})
 
@@ -155,12 +205,12 @@ def test_costing():
     m.fs.unit1.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": m.fs.costing})
 
-    assert isinstance(m.fs.costing.feed_water_tank, Block)
-    assert isinstance(m.fs.costing.feed_water_tank.capital_a_parameter,
+    assert isinstance(m.fs.costing.screen, Block)
+    assert isinstance(m.fs.costing.screen.capital_a_parameter,
                       Var)
-    assert isinstance(m.fs.costing.feed_water_tank.capital_b_parameter,
+    assert isinstance(m.fs.costing.screen.capital_b_parameter,
                       Var)
-    assert isinstance(m.fs.costing.feed_water_tank.reference_state, Var)
+    assert isinstance(m.fs.costing.screen.reference_state, Var)
 
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
     assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
