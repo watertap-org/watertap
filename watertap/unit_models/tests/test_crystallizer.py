@@ -188,17 +188,22 @@ class TestCrystallization():
         m = Crystallizer_frame
         assert degrees_of_freedom(m) == 0
 
-    # @pytest.mark.unit
-    # def test_calculate_scaling(self, Crystallizer_frame):
-    #     m = Crystallizer_frame
-    #     calculate_scaling_factors(m)
+    @pytest.mark.unit
+    def test_calculate_scaling(self, Crystallizer_frame):
+        m = Crystallizer_frame
 
-    #     # check that all variables have scaling factors
-    #     unscaled_var_list = list(unscaled_variables_generator(m))
-    #     assert len(unscaled_var_list) == 0
-    #     # check that all constraints have been scaled
-    #     unscaled_constraint_list = list(unscaled_constraints_generator(m))
-    #     assert len(unscaled_constraint_list) == 0
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e-1, index=('Liq', 'H2O'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e-1, index=('Liq', 'NaCl'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e-1, index=('Vap', 'H2O'))
+        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e-1, index=('Sol', 'NaCl'))
+        calculate_scaling_factors(m)
+
+        # check that all variables have scaling factors
+        unscaled_var_list = list(unscaled_variables_generator(m))
+        assert len(unscaled_var_list) == 0
+
+        for _ in badly_scaled_var_generator(m):
+            assert False    
 
     @pytest.mark.component
     def test_initialize(self, Crystallizer_frame):
