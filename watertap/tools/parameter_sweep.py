@@ -767,12 +767,12 @@ def _save_results(sweep_params, local_values, global_values, local_results,
         # # Save the local data
         # np.savetxt(fname, local_save_data, header=data_header, delimiter=', ', fmt='%.6e')
 
-    if rank == 0:
-        # global_save_data = _write_to_csv(global_values, global_results, data_header, rank, write_csv, dirname,
-        #     fname_no_ext, interpolate_nan_outputs)
-        global_save_data = _write_to_csv(sweep_params, global_values, global_output_dict, comm, rank, num_procs,
-             write_csv, dirname, fname_no_ext, interpolate_nan_outputs)
+    # global_save_data = _write_to_csv(global_values, global_results, data_header, rank, write_csv, dirname,
+    #     fname_no_ext, interpolate_nan_outputs)
+    global_save_data = _write_to_csv(sweep_params, global_values, global_output_dict, comm, rank, num_procs,
+         write_csv, dirname, fname_no_ext, interpolate_nan_outputs)
 
+    if rank == 0:
         if write_h5:
             # Save the data of output dictionary
             _write_outputs(global_output_dict, dirname, fname_no_ext, txt_options="keys")

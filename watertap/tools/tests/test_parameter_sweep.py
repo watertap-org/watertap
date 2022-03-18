@@ -519,7 +519,6 @@ class TestParallelManager():
                                                            'value': np.array([0., 0.25, 0.5 , 0., 0.25, 0.5 , 0., 0.25, 0.5 ])}}}
 
             # h5_fpath = os.path.join(tmp_path, 'output_dict.h5')
-            print("h5_results_file = ", h5_results_file)
             read_dict = _read_output_h5(h5_results_file)
             _assert_dictionary_correctness(truth_dict, read_dict)
             _assert_h5_csv_agreement(csv_results_file, read_dict)
