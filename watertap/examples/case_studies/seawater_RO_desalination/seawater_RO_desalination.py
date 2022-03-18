@@ -528,8 +528,9 @@ def add_costing(m):
         desal.P2.costing = UnitModelCostingBlock(default={
             "flowsheet_costing_block": m.fs.ro_costing})
     elif m.erd_type == 'pump_as_turbine':
-        desal.ERD.costing = UnitModelCostingBlock(default={
-            "flowsheet_costing_block": m.fs.ro_costing})
+        pass
+        # desal.ERD.costing = UnitModelCostingBlock(default={
+        #     "flowsheet_costing_block": m.fs.ro_costing})
     else:
         raise ConfigurationError(
             f"erd_type was {m.erd_type}, costing only implemented "
@@ -546,8 +547,8 @@ def add_costing(m):
             desal.P2.work_mechanical[0], "electricity")
     elif m.erd_type == 'pump_as_turbine':
         pass
-        m.fs.zo_costing.cost_flow(
-            desal.ERD.work_mechanical[0], "electricity")
+        # m.fs.zo_costing.cost_flow(
+        #     desal.ERD.work_mechanical[0], "electricity")
     else:
         raise ConfigurationError(
             f"erd_type was {m.erd_type}, costing only implemented "
@@ -604,6 +605,7 @@ def add_costing(m):
 
 def initialize_costing(m):
     m.fs.zo_costing.initialize()
+    m.fs.ro_costing.initialize()
 
 
 def display_costing(m):
