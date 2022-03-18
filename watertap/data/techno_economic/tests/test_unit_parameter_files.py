@@ -62,7 +62,6 @@ def test_unit_parameter_files(tech):
                     "static_mixer",
                     "smp",
                     "sw_onshore_intake",
-                    "landfill_zld",
                     "tramp_oil_tank",
                    ]
 
@@ -112,7 +111,6 @@ def test_unit_parameter_files(tech):
                                          "lime_addition",
                                          "brine_concentrator",
                                          "agglom_stacking",
-                                         "landfill_zld",
                                          "storage_tank"]
 
     expected = ["recovery_frac_mass_H2O",
