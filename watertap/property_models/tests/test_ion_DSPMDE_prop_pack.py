@@ -148,16 +148,6 @@ def test_property_ions(model):
     results = solver.solve(m)
     assert_optimal_termination(results)
 
-    # assert value(m.fs.stream[0].mole_frac_phase_comp['Liq', 'A']) == pytest.approx(4.068e-4,  rel=1e-3)
-    # assert value(m.fs.stream[0].mole_frac_phase_comp['Liq', 'B']) == pytest.approx(1.047e-2,  rel=1e-3)
-    # assert value(m.fs.stream[0].mole_frac_phase_comp['Liq', 'C']) == pytest.approx(1.047e-2,  rel=1e-3)
-    # assert value(m.fs.stream[0].mole_frac_phase_comp['Liq', 'H2O']) == pytest.approx(9.786e-1,  rel=1e-3)
-    #
-    # assert value(m.fs.stream[0].flow_mass_phase_comp['Liq', 'A']) == pytest.approx(4.07e-6,  rel=1e-3)
-    # assert value(m.fs.stream[0].flow_mass_phase_comp['Liq', 'B']) == pytest.approx(2.6198e-4,  rel=1e-3)
-    # assert value(m.fs.stream[0].flow_mass_phase_comp['Liq', 'C']) == pytest.approx(1.048e-3,  rel=1e-3)
-    # assert value(m.fs.stream[0].flow_mass_phase_comp['Liq', 'H2O']) == pytest.approx(1.762e-2,  rel=1e-3)
-
     assert value(m.fs.stream[0].conc_mass_phase_comp['Liq','A']) == pytest.approx(2.1288e-1,  rel=1e-3)
 
     assert value(m.fs.stream[0].conc_mol_phase_comp['Liq','A']) == pytest.approx(21.288,  rel=1e-3)
@@ -247,7 +237,7 @@ def model3():
         "solute_list": ["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"]
         })
 
-    stream = m.fs.stream = m.fs.properties.build_state_block([0], default={'defined_state': True})
+    m.fs.stream = m.fs.properties.build_state_block([0], default={'defined_state': True})
 
     return m
 
@@ -326,8 +316,7 @@ def test_default_scaling(model3):
     default_scaling_var_dict = {('temperature', None): 1e-2,
                                 ('pressure', None): 1e-6,
                                 ('dens_mass_phase', 'Liq'): 1e-3,
-                                ('visc_d_phase', 'Liq'): 1e3,
-                                ('diffus_phase_comp', 'Liq'): 1e9}
+                                ('visc_d_phase', 'Liq'): 1e3}
     assert len(default_scaling_var_dict) == len(m.fs.properties.default_scaling_factor)
     for t, sf in default_scaling_var_dict.items():
         assert t in m.fs.properties.default_scaling_factor.keys()

@@ -17,17 +17,19 @@ import pytest
 from io import StringIO
 
 from pyomo.environ import (
-    check_optimal_termination, ConcreteModel, Constraint, value, Var, Param)
+    Block, check_optimal_termination, ConcreteModel, Constraint, value, Var, Param)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
+from idaes.generic_models.costing import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import IonExchangeZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
@@ -62,6 +64,14 @@ class TestIonExchangeZO_w_o_default_removal:
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
         assert isinstance(model.fs.unit.water_recovery_equation, Constraint)
         assert isinstance(model.fs.unit.solute_treated_equation, Constraint)
+
+        assert isinstance(model.fs.unit.NaCl_dose, Var)
+        assert isinstance(model.fs.unit.NaCl_flowrate, Var)
+        assert isinstance(model.fs.unit.NaCl_constraint, Constraint)
+
+        assert isinstance(model.fs.unit.resin_replacement, Var)
+        assert isinstance(model.fs.unit.resin_demand, Var)
+        assert isinstance(model.fs.unit.resin_constraint, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -125,9 +135,11 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                  : Value   : Fixed : Bounds
-      Electricity Demand :  2898.4 : False : (None, None)
-    Solute Removal [tds] : 0.90000 :  True : (0, None)
+    Key                  : Value    : Fixed : Bounds
+      Electricity Demand :   2898.4 : False : (0, None)
+           NaCl Addition : 0.061006 : False : (0, None)
+            Resin Demand : 0.013624 : False : (0, None)
+    Solute Removal [tds] :  0.90000 :  True : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -139,6 +151,7 @@ Unit : fs.unit                                                             Time:
 """
 
         assert output in stream.getvalue()
+
 
 class TestIonExchangeZO_w_default_removal:
     @pytest.fixture(scope="class")
@@ -171,6 +184,14 @@ class TestIonExchangeZO_w_default_removal:
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
         assert isinstance(model.fs.unit.water_recovery_equation, Constraint)
         assert isinstance(model.fs.unit.solute_treated_equation, Constraint)
+
+        assert isinstance(model.fs.unit.NaCl_dose, Var)
+        assert isinstance(model.fs.unit.NaCl_flowrate, Var)
+        assert isinstance(model.fs.unit.NaCl_constraint, Constraint)
+
+        assert isinstance(model.fs.unit.resin_replacement, Var)
+        assert isinstance(model.fs.unit.resin_demand, Var)
+        assert isinstance(model.fs.unit.resin_constraint, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -237,10 +258,12 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                  : Value   : Fixed : Bounds
-      Electricity Demand :  2899.6 : False : (None, None)
-    Solute Removal [foo] :  0.0000 :  True : (0, None)
-    Solute Removal [tds] : 0.90000 :  True : (0, None)
+    Key                  : Value    : Fixed : Bounds
+      Electricity Demand :   2899.6 : False : (0, None)
+           NaCl Addition : 0.061030 : False : (0, None)
+            Resin Demand : 0.013630 : False : (0, None)
+    Solute Removal [foo] :   0.0000 :  True : (0, None)
+    Solute Removal [tds] :  0.90000 :  True : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -273,7 +296,7 @@ class TestIXZOsubtype:
 
         return m
 
-    @pytest.mark.parametrize("subtype", [params.keys()])
+    @pytest.mark.parametrize("subtype", [k for k in params.keys()])
     @pytest.mark.component
     def test_load_parameters(self, model, subtype):
         model.fs.unit.config.process_subtype = subtype
@@ -284,3 +307,57 @@ class TestIXZOsubtype:
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
+
+
+@pytest.mark.parametrize("subtype", [k for k in params.keys()])
+@pytest.mark.component
+def test_costing(subtype):
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = WaterParameterBlock(
+        default={"solute_list": ["sulfur", "toc", "tds"]})
+
+    m.fs.costing = ZeroOrderCosting()
+
+    m.fs.unit1 = IonExchangeZO(default={
+        "property_package": m.fs.params,
+        "database": m.db,
+        "process_subtype": subtype})
+
+    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
+    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit1.inlet.flow_mass_comp[0, "tds"].fix(3)
+    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    m.fs.unit1.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": m.fs.costing})
+
+    assert isinstance(m.fs.costing.ion_exchange, Block)
+    assert isinstance(m.fs.costing.ion_exchange.capital_a_parameter,
+                      Var)
+    assert isinstance(m.fs.costing.ion_exchange.capital_b_parameter,
+                      Var)
+    assert isinstance(m.fs.costing.ion_exchange.capital_c_parameter,
+                      Var)
+    assert isinstance(m.fs.costing.ion_exchange.capital_d_parameter,
+                      Var)
+
+    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
+                      Constraint)
+
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    assert m.fs.unit1.electricity[0] in \
+        m.fs.costing._registered_flows["electricity"]
+
+    assert m.fs.unit1.NaCl_flowrate[0] in \
+        m.fs.costing._registered_flows["sodium_chloride"]
+    assert m.fs.unit1.resin_demand[0] in \
+        m.fs.costing._registered_flows["ion_exchange_resin"]

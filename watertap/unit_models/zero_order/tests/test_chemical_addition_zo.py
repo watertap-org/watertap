@@ -16,7 +16,7 @@ Tests for zero-order chemical addition model
 import pytest
 from io import StringIO
 
-from pyomo.environ import ConcreteModel, Constraint, Param, value, Var
+from pyomo.environ import Block, ConcreteModel, Constraint, Param, value, Var
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -24,10 +24,12 @@ from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.generic_models.costing import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import ChemicalAdditionZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
@@ -147,7 +149,7 @@ Unit : fs.unit                                                             Time:
     Key                : Value      : Fixed : Bounds
        Chemical Dosage :     1.0000 :  True : (0, None)
          Chemical Flow : 2.0120e-06 : False : (0, None)
-    Electricity Demand : 0.00074140 : False : (None, None)
+    Electricity Demand : 0.00074140 : False : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -178,7 +180,7 @@ class TestPumpZOsubtype:
 
         return m
 
-    @pytest.mark.parametrize("subtype", [params.keys()])
+    @pytest.mark.parametrize("subtype", [k for k in params.keys()])
     @pytest.mark.component
     def test_load_parameters(self, model, subtype):
         model.fs.unit = ChemicalAdditionZO(default={
@@ -203,3 +205,54 @@ class TestPumpZOsubtype:
         assert model.fs.unit.ratio_in_solution.fixed
         assert model.fs.unit.ratio_in_solution.value == data[
             "ratio_in_solution"]["value"]
+
+
+@pytest.mark.parametrize("subtype", [k for k in params.keys()
+                                     if k != "default"])
+def test_costing(subtype):
+    print(subtype)
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = WaterParameterBlock(
+        default={"solute_list": ["sulfur", "toc", "tss"]})
+
+    m.fs.costing = ZeroOrderCosting()
+
+    m.fs.unit1 = ChemicalAdditionZO(default={
+        "property_package": m.fs.params,
+        "database": m.db,
+        "process_subtype": subtype})
+
+    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
+    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
+    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    m.fs.unit1.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": m.fs.costing})
+
+    assert isinstance(m.fs.costing.chemical_addition, Block)
+    assert isinstance(m.fs.costing.chemical_addition.capital_a_parameter,
+                      Var)
+    assert isinstance(m.fs.costing.chemical_addition.capital_b_parameter,
+                      Var)
+
+    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
+                      Constraint)
+
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    assert m.fs.unit1.electricity[0] in \
+        m.fs.costing._registered_flows["electricity"]
+
+    assert str(m.fs.unit1.chemical_dosage[0] *
+               m.fs.unit1.properties[0].flow_vol /
+               m.fs.unit1.ratio_in_solution) == str(
+                   m.fs.costing._registered_flows[subtype][0])

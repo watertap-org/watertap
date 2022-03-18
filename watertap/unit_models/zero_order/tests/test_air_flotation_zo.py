@@ -17,19 +17,22 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    ConcreteModel, Constraint, value, Var, assert_optimal_termination)
+    Block, ConcreteModel, Constraint, value, Var, assert_optimal_termination)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
+from idaes.generic_models.costing import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import AirFlotationZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
+
 
 class TestAirFloatationZO:
     @pytest.fixture(scope="class")
@@ -141,7 +144,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                   : Value   : Fixed : Bounds
-       Electricity Demand :  11.880 : False : (None, None)
+       Electricity Demand :  11.880 : False : (0, None)
     Electricity Intensity : 0.30000 :  True : (None, None)
      Solute Removal [tss] : 0.90000 :  True : (0, None)
            Water Recovery : 0.99990 :  True : (1e-08, 1.0000001)
@@ -277,7 +280,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                   : Value   : Fixed : Bounds
-       Electricity Demand :  12.960 : False : (None, None)
+       Electricity Demand :  12.960 : False : (0, None)
     Electricity Intensity : 0.30000 :  True : (None, None)
      Solute Removal [foo] :  0.0000 :  True : (0, None)
      Solute Removal [tss] : 0.90000 :  True : (0, None)
@@ -294,3 +297,46 @@ Unit : fs.unit                                                             Time:
 """
 
         assert output in stream.getvalue()
+
+
+def test_costing():
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = WaterParameterBlock(
+        default={"solute_list": ["sulfur", "toc", "tss"]})
+
+    m.fs.costing = ZeroOrderCosting()
+
+    m.fs.unit1 = AirFlotationZO(default={
+        "property_package": m.fs.params,
+        "database": m.db})
+
+    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
+    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
+    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    m.fs.unit1.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": m.fs.costing})
+
+    assert isinstance(m.fs.costing.air_flotation, Block)
+    assert isinstance(m.fs.costing.air_flotation.capital_a_parameter,
+                      Var)
+    assert isinstance(m.fs.costing.air_flotation.capital_b_parameter,
+                      Var)
+    assert isinstance(m.fs.costing.air_flotation.reference_state, Var)
+
+    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
+                      Constraint)
+
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    assert m.fs.unit1.electricity[0] in \
+        m.fs.costing._registered_flows["electricity"]
