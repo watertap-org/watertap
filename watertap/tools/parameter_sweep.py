@@ -478,31 +478,61 @@ def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_pr
 
 # ================================================================
 
-def _write_to_csv(global_values, global_results, data_header, rank, write_csv, dirname, fname,
-        interpolate_nan_outputs):
+# def _write_to_csv(global_values, global_results, data_header, rank, write_csv, dirname, fname,
+#         interpolate_nan_outputs):
+#
+#     if write_csv and fname is not None:
+#         csv_results_file = os.path.join(str(dirname), fname + '.csv')
+#
+#     # Create the global filename and data
+#     global_save_data = np.hstack((global_values, global_results))
+#
+#     if rank == 0 and write_csv:
+#         # Save the global data
+#         np.savetxt(csv_results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
+#
+#         if interpolate_nan_outputs:
+#             global_results_clean = _interp_nan_values(global_values, global_results)
+#             global_save_data_clean = np.hstack((global_values, global_results_clean))
+#
+#             head, tail = os.path.split(csv_results_file)
+#
+#             if head == '':
+#                 interp_file = 'interpolated_%s' % (tail)
+#             else:
+#                 interp_file = '%s/interpolated_%s' % (head, tail)
+#
+#             np.savetxt(interp_file, global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
+#
+#     return global_save_data
 
-    if write_csv and fname is not None:
-        csv_results_file = os.path.join(str(dirname), fname + '.csv')
+def _write_to_csv(sweep_params, global_values, global_results_dict, rank, write_csv,
+        dirname, fname, interpolate_nan_outputs):
 
-    # Create the global filename and data
+    old_data_header = ','.join(itertools.chain(global_results_dict['outputs']))
+    print("old_data_header = ", type(old_data_header))
+    print(old_data_header)
+
+    num_cases = np.shape(global_values)[0]
+    global_results = np.zeros((num_cases, len(global_results_dict['outputs'])))
+
+    data_header = ','.join(itertools.chain(sweep_params))
+    # print("sweep_params = \n", sweep_params)
+
+    for i, (key, item) in enumerate( global_results_dict['outputs'].items()) :
+        # print(f'i = {i}, key = {key}, item = {item}')
+        data_header = ','.join( [data_header, key] )
+        global_results[:,i] = item['value'][:]
+
+    print('new_data_header = ', data_header)
     global_save_data = np.hstack((global_values, global_results))
 
     if rank == 0 and write_csv:
+        if fname is not None:
+            csv_results_file = os.path.join(str(dirname), fname + '.csv')
         # Save the global data
         np.savetxt(csv_results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
 
-        if interpolate_nan_outputs:
-            global_results_clean = _interp_nan_values(global_values, global_results)
-            global_save_data_clean = np.hstack((global_values, global_results_clean))
-
-            head, tail = os.path.split(csv_results_file)
-
-            if head == '':
-                interp_file = 'interpolated_%s' % (tail)
-            else:
-                interp_file = '%s/interpolated_%s' % (head, tail)
-
-            np.savetxt(interp_file, global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
 
     return global_save_data
 
@@ -709,6 +739,7 @@ def _save_results(sweep_params, local_values, global_values, local_results,
 
     # Handle values in the debugging data_directory
     if debugging_data_dir is not None:
+        local_output_dict = global_output_dict
         _write_debug_data(local_output_dict, debugging_data_dir, rank)
         # # Create the local filename and data
         # fname = os.path.join(debugging_data_dir, f'local_results_{rank:03}.csv')
@@ -718,8 +749,10 @@ def _save_results(sweep_params, local_values, global_values, local_results,
         # np.savetxt(fname, local_save_data, header=data_header, delimiter=', ', fmt='%.6e')
 
     if rank == 0:
-        global_save_data = _write_to_csv(global_values, global_results, data_header, rank, write_csv, dirname,
-            fname_no_ext, interpolate_nan_outputs)
+        # global_save_data = _write_to_csv(global_values, global_results, data_header, rank, write_csv, dirname,
+        #     fname_no_ext, interpolate_nan_outputs)
+        global_save_data = _write_to_csv(sweep_params, global_values, global_output_dict, rank, write_csv,
+            dirname, fname_no_ext, interpolate_nan_outputs)
 
         if write_h5:
             # Save the data of output dictionary
