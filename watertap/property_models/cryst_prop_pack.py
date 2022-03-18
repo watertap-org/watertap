@@ -1152,14 +1152,12 @@ class NaClStateBlockData(StateBlockData):
         if self.is_property_constructed('cp_solute'):
             for p in ['Sol', 'Liq']:
                 if iscale.get_scaling_factor(self.cp_solute[p]) is None:
-                    iscale.set_scaling_factor(self.cp_solute[p], iscale.get_scaling_factor(self.cp_phase['Liq'], 
-                        default=1, warning=True))
+                    iscale.set_scaling_factor(self.cp_solute[p], 1e-3) # same as scaling factor of .cp_phase['Liq']
 
         if self.is_property_constructed('cp_solvent'):
             for p in ['Liq', 'Vap']:
                 if iscale.get_scaling_factor(self.cp_solvent[p]) is None:
-                    iscale.set_scaling_factor(self.cp_solvent[p], iscale.get_scaling_factor(self.cp_phase['Liq'], 
-                        default=1, warning=True))
+                    iscale.set_scaling_factor(self.cp_solvent[p], 1e-3)  # same as scaling factor of .cp_phase['Liq']
 
         # Scaling saturation temperature
         if self.is_property_constructed('temperature_sat_solvent'):
