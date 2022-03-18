@@ -1115,6 +1115,15 @@ class NaClStateBlockData(StateBlockData):
             if iscale.get_scaling_factor(self.solubility_mass_frac_phase_comp) is None:
                 iscale.set_scaling_factor(self.solubility_mass_frac_phase_comp, 1e0)
 
+        # if self.is_property_constructed('dens_mass_solvent')
+        # for p in ['Liq', 'Vap']:
+        #     if p == 'Liq':
+        #         if iscale.get_scaling_factor(self.dens_mass_solvent[p]) is None:
+        #             iscale.set_scaling_factor(self.dens_mass_solvent[p], 1e-3)
+        #     elif p == 'Vap':
+        #         if iscale.get_scaling_factor(self.dens_mass_solvent[p]) is None:
+        #             iscale.set_scaling_factor(self.dens_mass_solvent[p], 1)                
+
         # Scaling for flow_vol_phase: scaled as scale of dominant component in phase / density of phase
         if self.is_property_constructed('flow_vol_phase'):
             for p in self.params.phase_list:

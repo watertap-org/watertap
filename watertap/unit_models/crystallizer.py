@@ -596,8 +596,8 @@ class CrystallizationData(UnitModelBlockData):
         iscale.set_scaling_factor(self.product_volumetric_solids_fraction, 10)
         iscale.set_scaling_factor(self.temperature_operating, iscale.get_scaling_factor(self.properties_in[0].temperature))
         iscale.set_scaling_factor(self.pressure_operating, 1e-3)
-        iscale.set_scaling_factor(self.dens_mass_magma, iscale.get_scaling_factor(self.properties_in[0].dens_mass_phase['Liq']))
-        iscale.set_scaling_factor(self.dens_mass_slurry, iscale.get_scaling_factor(self.properties_in[0].dens_mass_phase['Liq']))
+        iscale.set_scaling_factor(self.dens_mass_magma, 1e-3) # scaling factor of dens_mass_phase['Liq']
+        iscale.set_scaling_factor(self.dens_mass_slurry, 1e-3) # scaling factor of dens_mass_phase['Liq']
         iscale.set_scaling_factor(self.work_mechanical[0], 
                 iscale.get_scaling_factor(self.properties_in[0].flow_mass_phase_comp['Vap', 'H2O']) 
                 * iscale.get_scaling_factor(self.properties_in[0].enth_mass_solvent['Vap'])) 
@@ -636,8 +636,7 @@ class CrystallizationData(UnitModelBlockData):
             iscale.constraint_scaling_transform(c, 1e0)
 
         for j, c in self.eq_dens_magma.items():
-            sf = iscale.get_scaling_factor(self.properties_in[0].dens_mass_solvent['Liq'])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(self.dens_mass_magma))
 
 
         for j, c in self.eq_removal_balance.items():

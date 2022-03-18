@@ -49,14 +49,6 @@ if __name__ == '__main__':
     m.fs.crystallizer.inlet.temperature[0].fix(273.15 + 20)
     print('DOF after specifying feed:', degrees_of_freedom(m.fs)) # Should be 2
 
-    # Touch flow variables
-    m.fs.crystallizer.properties_in[0].solubility_mass_frac_phase_comp
-    m.fs.crystallizer.properties_in[0].flow_vol
-    m.fs.crystallizer.properties_out[0].flow_vol
-    m.fs.crystallizer.properties_solids[0].flow_vol
-    m.fs.crystallizer.properties_vapor[0].flow_vol
-    m.fs.crystallizer.properties_in[0].cp_phase
-    m.fs.crystallizer.properties_out[0].cp_phase
     ##########################################
     # # Case 1: Fix crystallizer temperature
     ##########################################
@@ -74,7 +66,7 @@ if __name__ == '__main__':
     # # Scaling
     m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e-1, index=('Liq', 'H2O'))
     m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e-1, index=('Liq', 'NaCl'))
-    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e-1, index=('Liq', 'H2O'))
+    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e0, index=('Vap', 'H2O'))
     m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e-1, index=('Sol', 'NaCl'))
     iscale.calculate_scaling_factors(m.fs) 
 
