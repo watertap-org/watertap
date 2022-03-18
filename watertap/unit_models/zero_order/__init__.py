@@ -29,7 +29,6 @@ from .feed_water_tank_zo import FeedWaterTankZO
 from .feed_zo import FeedZO
 from .energy_recovery_zo import EnergyRecoveryZO
 from .landfill_zo import LandfillZO
-from .landfill_zld_zo import LandfillZLDZO
 from .mbr_zo import MBRZO
 from .media_filtration_zo import MediaFiltrationZO
 from .microfiltration_zo import MicroFiltrationZO
@@ -49,6 +48,8 @@ from .coag_and_floc_zo import CoagulationFlocculationZO
 from .ultra_filtration_zo import UltraFiltrationZO
 from .uv_zo import UVZO
 from .uv_aop_zo import UVAOPZO
+from .walnut_shell_filter_zo import WalnutShellFilterZO
+from .waiv_zo import WAIVZO
 from .anaerobic_digestion_oxidation_zo import AnaerobicDigestionOxidationZO
 from .fixed_bed_zo import FixedBedZO
 from .municipal_drinking_zo import MunicipalDrinkingZO
