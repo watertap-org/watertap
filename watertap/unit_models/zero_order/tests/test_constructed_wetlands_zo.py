@@ -104,7 +104,7 @@ class TestConstructedWetlandsZO_w_default_removal:
                 value(model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]))
         assert (value(model.fs.unit.properties_in[0].flow_mass_comp["H2O"]
                       * model.fs.unit.recovery_frac_mass_H2O[0]) ==
-                model.fs.unit.properties_treated[0].flow_mass_comp["H2O"].value)
+                value(model.fs.unit.properties_treated[0].flow_mass_comp["H2O"]))
 
     @pytest.mark.component
     def test_report(self, model):
