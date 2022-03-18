@@ -120,8 +120,8 @@ def build_diso(self):
                          'stream.')
     def solute_treated_equation(b, t, j):
         return ((1 - b.removal_frac_mass_solute[t, j]) *
-                (b.properties_in1[t].flow_mass_comp["H2O"]
-                 + b.properties_in2[t].flow_mass_comp["H2O"]) ==
+                (b.properties_in1[t].flow_mass_comp[j]
+                 + b.properties_in2[t].flow_mass_comp[j]) ==
                 b.properties_treated[t].flow_mass_comp[j])
 
     self._stream_table_dict = {"Inlet 1": self.inlet1,

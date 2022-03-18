@@ -22,7 +22,7 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.network import Arc
 
-
+import idaes.core.util.scaling as iscale
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -49,42 +49,24 @@ class TestCofermentationZO:
             "database": m.db})
         m.fs.feed1 = FeedZO(default={
             "property_package": m.fs.params,
-            })
+        })
         m.fs.feed2 = FeedZO(default={
             "property_package": m.fs.params,
-            })
+        })
 
-        m.fs.feed1.flow_vol[0].fix(value(pyunits.convert(32.1*pyunits.L/pyunits.day,
-                                                                       to_units=pyunits.m**3/pyunits.s)))
-        m.fs.feed1.conc_mass_comp[0,'cod'].fix(value(pyunits.convert(69781.93146*pyunits.mg/pyunits.L,
-                                            to_units=pyunits.kg/pyunits.m**3)))
+        m.fs.feed1.flow_vol[0].fix(value(pyunits.convert(32.1 * pyunits.L / pyunits.day,
+                                                         to_units=pyunits.m ** 3 / pyunits.s)))
+        m.fs.feed1.conc_mass_comp[0, 'cod'].fix(value(pyunits.convert(69781.93146 * pyunits.mg / pyunits.L,
+                                                                      to_units=pyunits.kg / pyunits.m ** 3)))
 
-        m.fs.feed2.flow_vol[0].fix(value(pyunits.convert(32.1*pyunits.L/pyunits.day,
-                                                         to_units=pyunits.m**3/pyunits.s)))
-        m.fs.feed2.conc_mass_comp[0,'cod'].fix(value(pyunits.convert(1e4 * pyunits.mg / pyunits.L,
-                                                                           to_units=pyunits.kg/pyunits.m**3)))
-        # m.fs.feed1.calculate_state(
-        #     var_args={('conc_mass_phase_comp', ('Liq', 'cod')):
-        #               value(pyunits.convert(69781.93146*pyunits.mg/pyunits.L,
-        #                                     to_units=pyunits.kg/pyunits.m**3)),
-        #               ('flow_vol_phase', 'Liq'): value(pyunits.convert(32.1*pyunits.L/pyunits.day,
-        #                                                                to_units=pyunits.m**3/pyunits.s)),
-        #               },
-        #     hold_state=True)
-        #
-        # m.fs.feed2.calculate_state(
-        #     var_args={('conc_mass_phase_comp', ('Liq', 'cod')):
-        #               value(pyunits.convert(1e4*pyunits.mg/pyunits.L,
-        #                                     to_units=pyunits.kg/pyunits.m**3)),
-        #               ('flow_vol_phase', 'Liq'): value(pyunits.convert(3.21*pyunits.L/pyunits.day,
-        #                                                                to_units=pyunits.m**3/pyunits.s)),
-        #               },
-        #     hold_state=True)
+        m.fs.feed2.flow_vol[0].fix(value(pyunits.convert(3.21 * pyunits.L / pyunits.day,
+                                                         to_units=pyunits.m ** 3 / pyunits.s)))
+        m.fs.feed2.conc_mass_comp[0, 'cod'].fix(value(pyunits.convert(1e4 * pyunits.mg / pyunits.L,
+                                                                      to_units=pyunits.kg / pyunits.m ** 3)))
 
         m.fs.feed1_to_coferm = Arc(source=m.fs.feed1.outlet, destination=m.fs.unit.inlet1)
         m.fs.feed2_to_coferm = Arc(source=m.fs.feed2.outlet, destination=m.fs.unit.inlet2)
-        m.fs.unit.inlet1.flow_mass_comp.fix()
-        m.fs.unit.inlet2.flow_mass_comp.fix()
+
         TransformationFactory("network.expand_arcs").apply_to(m)
 
         return m
@@ -117,7 +99,7 @@ class TestCofermentationZO:
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
-        assert degrees_of_freedom(model.fs.unit) == 0
+        assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
     def test_unit_consistency(self, model):
@@ -140,9 +122,9 @@ class TestCofermentationZO:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(0.0105, rel=1e-5) ==
+        assert (pytest.approx(7.8892e-9, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(47.619047, rel=1e-5) ==
+        assert (pytest.approx( 0.68163, rel=1e-5) ==
                 value(pyunits.convert(model.fs.unit.properties_treated[0].flow_mass_comp["cod"],
                                       to_units=pyunits.kg/pyunits.day)))
         assert (pytest.approx(0, abs=1e-5) ==

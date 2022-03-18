@@ -46,6 +46,3 @@ class CofermentationZOData(ZeroOrderBaseData):
                              ' this unit model converts cod to nonbiodegradable_cod.')
         build_diso(self)
         constant_intensity(self)
-
-        self._perf_var_dict['ffCOD (kg/day)'] = pyunits.convert(self.treated.flow_mass_comp[0, "cod"],
-                                                                to_units=pyunits.kg/pyunits.day)

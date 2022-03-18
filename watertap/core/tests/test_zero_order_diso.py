@@ -148,11 +148,11 @@ class TestDISO:
         assert (pytest.approx(10e-14, rel=1e-5) ==
                 value(model.fs.unit.treated.flow_mass_comp[0, "H2O"]))
 
-        assert (pytest.approx(1800, rel=1e-5) ==
+        assert (pytest.approx(18.00, rel=1e-5) ==
                 value(model.fs.unit.treated.flow_mass_comp[0, "A"]))
-        assert (pytest.approx(1600, rel=1e-5) ==
+        assert (pytest.approx(32.00, rel=1e-5) ==
                 value(model.fs.unit.treated.flow_mass_comp[0, "B"]))
-        assert (pytest.approx(1400, rel=1e-5) ==
+        assert (pytest.approx(42.00, rel=1e-5) ==
                 value(model.fs.unit.treated.flow_mass_comp[0, "C"]))
 
     @pytest.mark.component
@@ -176,11 +176,11 @@ Unit : fs.unit                                                             Time:
 ------------------------------------------------------------------------------------
     Stream Table
                             Inlet 1  Inlet 2   Treated 
-    Volumetric Flowrate     1.0600   1.0600      4.8000
-    Mass Concentration H2O  943.40   943.40  2.0833e-14
-    Mass Concentration A    9.4340   9.4340      375.00
-    Mass Concentration B    18.868   18.868      333.33
-    Mass Concentration C    28.302   28.302      291.67
+    Volumetric Flowrate     1.0600   1.0600    0.092000
+    Mass Concentration H2O  943.40   943.40  1.0870e-12
+    Mass Concentration A    9.4340   9.4340      195.65
+    Mass Concentration B    18.868   18.868      347.83
+    Mass Concentration C    28.302   28.302      456.52
 ====================================================================================
 """
 

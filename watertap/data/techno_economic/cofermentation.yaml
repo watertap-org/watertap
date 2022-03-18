@@ -8,7 +8,7 @@ default:
   removal_frac_mass_solute:
     #TODO: consider making this a reactive unit that converts cod to ffcod; this will suffice for now
     cod:
-      value: 0.5    # Todo: revisit this value later
+      value: 0.7    # Todo: revisit this value later
       units: dimensionless
       constituent_longform: Chemical Oxygen Demand (COD)
   capital cost:  # TODO: placeholder until costs available
