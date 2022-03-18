@@ -15,6 +15,7 @@ from .anaerobic_mbr_mec_zo import AnaerobicMBRMECZO
 from .backwash_solids_handling_zo import BackwashSolidsHandlingZO
 from .bio_active_filtration_zo import BioActiveFiltrationZO
 from .blending_reservoir_zo import BlendingReservoirZO
+from .electrodialysis_reversal_zo import ElectrodialysisReversalZO
 from .vfa_recovery_zo import VFARecoveryZO
 from .aeration_basin_zo import AerationBasinZO
 from .air_flotation_zo import AirFlotationZO
@@ -48,6 +49,7 @@ from .coag_and_floc_zo import CoagulationFlocculationZO
 from .ultra_filtration_zo import UltraFiltrationZO
 from .uv_zo import UVZO
 from .uv_aop_zo import UVAOPZO
+from .walnut_shell_filter_zo import WalnutShellFilterZO
 from .waiv_zo import WAIVZO
 from .anaerobic_digestion_oxidation_zo import AnaerobicDigestionOxidationZO
 from .fixed_bed_zo import FixedBedZO
