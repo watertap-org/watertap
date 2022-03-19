@@ -1,5 +1,9 @@
 aluminum:
   constituent_longform: Aluminum
+ammonia_as_nitrogen:
+  consituent_longform: Ammonia as Nitrogen (NH3-N)
+ammonium_as_nitrogen:
+  consituent_longform: Ammonium as Nitrogen (NH4-N)
 arsenic:
   constituent_longform: Arsenic
 barium:
@@ -78,6 +82,8 @@ perfluorootanoate_pfoa:
   constituent_longform: Perfluorootanoate (PFOA)
 phosphates:
   constituent_longform: Phosphates
+phosphate_as_phosphorus:
+  constituent_longform: Phosphate as phosphorus (PO4-P)
 potassium:
   constituent_longform: Potassium
 radium_226:
