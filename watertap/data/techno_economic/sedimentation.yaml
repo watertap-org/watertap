@@ -27,7 +27,7 @@ default:
   settling_velocity:
     value: 0.005
     units: m/s
-phosphorous_capture:    # AMO subtype
+phosphorus_capture:    # AMO subtype
   energy_electric_flow_vol_inlet:  # kept from default
     value: 0.0
     units: kWh/m^3
@@ -56,3 +56,6 @@ phosphorous_capture:    # AMO subtype
   settling_velocity:
     value: 0.005    # kept from default
     units: m/s
+  phosphorus_solids_ratio:
+    value: 0.15
+    units: dimensionless
