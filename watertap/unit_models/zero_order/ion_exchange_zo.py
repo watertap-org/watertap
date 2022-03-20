@@ -104,4 +104,4 @@ class IonExchangeZOData(ZeroOrderBaseData):
                 self._perf_var_dict["Nitrogen-Clay Mixture Ratio (kg/kg)"] = self.nitrogen_clay_ratio
                 self._perf_var_dict["Final mass flow of clay and nitrogen (kg/s)"] = self.final_solids_mass
             else:
-                raise ValueError("ammonium_as_nitrogen should be defined in solute_list.")
+                raise KeyError("ammonium_as_nitrogen should be defined in solute_list for this subtype.")

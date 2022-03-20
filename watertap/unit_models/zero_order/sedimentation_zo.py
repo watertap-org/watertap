@@ -74,7 +74,7 @@ class SedimentationZOData(ZeroOrderBaseData):
             if ("phosphates" in self.config.property_package.solute_set
                 or "phosphate_as_phosphorus" in self.config.property_package.solute_set) \
                     and "tss" in self.config.property_package.solute_set:
-                raise ValueError("tss and phosphates cannot both be defined in the solute_list. "
+                raise KeyError("tss and phosphates cannot both be defined in the solute_list. "
                                  "Please choose one.")
             elif (("phosphates" in self.config.property_package.solute_set)
                     ^ ("phosphate_as_phosphorus" in self.config.property_package.solute_set)):
@@ -110,6 +110,5 @@ class SedimentationZOData(ZeroOrderBaseData):
                 self._perf_var_dict["Final mass flow of settled phosphate (kg/s)"] = self.final_phosphate_mass
 
             else:
-                raise ValueError(f"Either 'tss', 'phosphates', or 'phosphate_as_phosphorus' must be "
-                                 f"defined in the solute_list for this subtype. The following was provided:"
-                                 f"\n{[i for i in self.config.property_package.solute_set]} ")
+                raise KeyError("Either tss, phosphates, or phosphate_as_phosphorus must be "
+                               "defined in the solute_list for this subtype.")

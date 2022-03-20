@@ -395,3 +395,18 @@ def test_costing(subtype):
         m.fs.costing._registered_flows["sodium_chloride"]
     assert m.fs.unit1.resin_demand[0] in \
         m.fs.costing._registered_flows["ion_exchange_resin"]
+
+@pytest.mark.unit
+def test_clinoptilolite_no_ammonium_in_solute_list_error():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.params = WaterParameterBlock(
+        default={"solute_list": ["foo"]})
+
+    with pytest.raises(KeyError,
+                       match="ammonium_as_nitrogen should be defined in "
+                             "solute_list for this subtype."):
+        m.fs.unit = IonExchangeZO(default={
+            "property_package": m.fs.params,
+            "database": db,
+            "process_subtype": "clinoptilolite"})
