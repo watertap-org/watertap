@@ -53,7 +53,7 @@ phosphorus_capture:    # AMO subtype
     phosphates:
       value: 0.999
       units: dimensionless
-    phosphorous_as_phosphate:
+    phosphate_as_phosphorus:
       value: 0.999
       units: dimensionless
   settling_velocity:
