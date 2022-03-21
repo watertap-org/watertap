@@ -15,6 +15,7 @@ from .anaerobic_mbr_mec_zo import AnaerobicMBRMECZO
 from .backwash_solids_handling_zo import BackwashSolidsHandlingZO
 from .bio_active_filtration_zo import BioActiveFiltrationZO
 from .blending_reservoir_zo import BlendingReservoirZO
+from .electrodialysis_reversal_zo import ElectrodialysisReversalZO
 from .vfa_recovery_zo import VFARecoveryZO
 from .aeration_basin_zo import AerationBasinZO
 from .air_flotation_zo import AirFlotationZO
