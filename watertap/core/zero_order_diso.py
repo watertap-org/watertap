@@ -124,6 +124,7 @@ def build_diso(self):
                                "Inlet 2": self.inlet2,
                                "Treated": self.treated}
 
+    self._perf_var_dict["Water Recovery"] = self.recovery_frac_mass_H2O
     self._perf_var_dict["Solute Removal"] = self.removal_frac_mass_solute
 
     self._get_Q = _get_Q_diso
