@@ -112,11 +112,13 @@ def test_recursive_parameter_sweep(model, tmp_path):
     num_samples = 10
     seed = 0
 
+    results_fname = os.path.join(tmp_path, 'global_results')
+
     # Run the parameter sweep
     # recursive_parameter_sweep(m, sweep_params, outputs, results_file='recursive_sweep.csv',
     #     optimize_function=optimize, optimize_kwargs={'solver':solver}, req_num_samples=num_samples,
     #     seed=seed, reinitialize_before_sweep=False, reinitialize_function=initialize_system,
     #     reinitialize_kwargs={'solver':solver}
     recursive_parameter_sweep(m, sweep_params, outputs=outputs,
-        results_dir=tmp_path, results_fname='recursive_output',
+        results_file_name=results_fname, write_csv=False, write_h5=True,
         req_num_samples=num_samples, seed=seed)

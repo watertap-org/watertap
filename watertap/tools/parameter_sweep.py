@@ -746,7 +746,7 @@ def _save_results(sweep_params, local_values, global_values, local_results_dict,
 
 # ================================================================
 
-def parameter_sweep(model, sweep_params, outputs=None, results_file_name=None, write_csv=False, write_h5=False, # h5_results_file=None,
+def parameter_sweep(model, sweep_params, outputs=None, results_file_name=None, write_csv=False, write_h5=False,
         optimize_function=_default_optimize, optimize_kwargs=None, reinitialize_function=None,
         reinitialize_kwargs=None, reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
         interpolate_nan_outputs=False, num_samples=None, seed=None):

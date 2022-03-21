@@ -36,6 +36,7 @@ from watertap.tools.parameter_sweep import (_default_optimize,
                                             _do_param_sweep,
                                             _create_local_output_skeleton,
                                             _create_global_output,
+                                            _process_results_filename,
                                             _write_outputs)
 
 np.set_printoptions(linewidth=200)
@@ -97,7 +98,7 @@ def _filter_recursive_solves(model, sweep_params, outputs, recursive_local_dict,
 
 # ================================================================
 
-def recursive_parameter_sweep(model, sweep_params, outputs, results_dir=None, results_fname=None,
+def recursive_parameter_sweep(model, sweep_params, outputs=None, results_file_name=None, write_csv=False, write_h5=False,
         optimize_function=_default_optimize, optimize_kwargs=None, reinitialize_function=None,
         reinitialize_kwargs=None, reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
         interpolate_nan_outputs=False, req_num_samples=None, seed=None):
@@ -133,7 +134,7 @@ def recursive_parameter_sweep(model, sweep_params, outputs, results_dir=None, re
         if loop_ctr == 0:
             true_local_num_cases = local_num_cases
 
-        _, local_output_collection[loop_ctr] = _do_param_sweep(model, sweep_params, outputs, local_values,
+        local_output_collection[loop_ctr] = _do_param_sweep(model, sweep_params, outputs, local_values,
             optimize_function, optimize_kwargs, reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep, comm)
         fail_counter = sum(local_output_collection[loop_ctr]["solve_successful"])
 
@@ -156,12 +157,13 @@ def recursive_parameter_sweep(model, sweep_params, outputs, results_dir=None, re
 
 
     # Now we can save this
-    comm.Barrier()
+    if num_procs > 0:
+        comm.Barrier()
+
     if rank == 0:
-        if results_fname is not None:
-            if results_dir is None:
-                results_dir = "."
-            _write_outputs(global_filtered_dict, results_dir, results_fname, txt_options="keys")
+        if results_file_name is not None:
+            dirname, fname_no_ext = _process_results_filename(results_file_name)
+            _write_outputs(global_filtered_dict, dirname, fname_no_ext, txt_options="keys")
 
     return
 
