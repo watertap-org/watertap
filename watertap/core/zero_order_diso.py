@@ -39,7 +39,6 @@ def build_diso(self):
         * properties_in2 --> inlet2
         * properties_treated ---> treated
 
-
     Two additional variables are added:
         * recovery_frac_mass_H2O (indexed by time)
         * removal_frac_mass_solute (indexed by time and solute)
@@ -90,7 +89,6 @@ def build_diso(self):
     # Add performance variables
     self.recovery_frac_mass_H2O = Var(
         self.flowsheet().time,
-        initialize=0.8,
         domain=NonNegativeReals,
         units=pyunits.dimensionless,
         bounds=(1E-8, 1.0000001),
@@ -99,10 +97,8 @@ def build_diso(self):
         self.flowsheet().time,
         self.config.property_package.solute_set,
         domain=NonNegativeReals,
-        initialize=0.01,
         units=pyunits.dimensionless,
         doc='Solute removal fraction on a mass basis')
-
 
     # Add performance constraints
     # Water recovery
@@ -139,10 +135,6 @@ def initialize_diso(blk, state_args=None, outlvl=idaeslog.NOTSET,
     Initialization routine for double inlet-single outlet unit models.
 
     Keyword Arguments:
-        state_args : a dict of arguments to be passed to the property
-                       package(s) to provide an initial state for
-                       initialization (see documentation of the specific
-                       property package) (default = {}).
         outlvl : sets output level of initialization routine
         optarg : solver options dictionary object (default=None, use
                  default solver options)
@@ -161,21 +153,24 @@ def initialize_diso(blk, state_args=None, outlvl=idaeslog.NOTSET,
 
     solver_obj = get_solver(solver, optarg)
 
-    # Get initial guesses for inlet if none provided
-    if state_args is None:
-        state_args = {}
-        state_dict = (
-            blk.properties_in1[
-                blk.flowsheet().time.first()]
-                .define_port_members())
-
-        for k in state_dict.keys():
-            if state_dict[k].is_indexed():
-                state_args[k] = {}
-                for m in state_dict[k].keys():
-                    state_args[k][m] = state_dict[k][m].value
-            else:
-                state_args[k] = state_dict[k].value
+    state_args_treated = {}
+    state_dict1 = (
+        blk.properties_in1[
+            blk.flowsheet().time.first()]
+            .define_port_members())
+    state_dict2 = (
+        blk.properties_in2[
+            blk.flowsheet().time.first()]
+            .define_port_members())
+    for k in state_dict1.keys():
+        if state_dict1[k].is_indexed():
+            state_args_treated[k] = {}
+            for m in state_dict1[k].keys():
+                if str(state_dict1[k][m]) == str(state_dict2[k][m]):
+                    state_args_treated[k][m] = state_dict1[k][m].value + state_dict2[k][m].value
+        else:
+            if str(state_dict1[k][m]) == str(state_dict2[k][m]):
+                state_args_treated[k] = state_dict1[k].value + state_dict2[k][m].value
 
     # ---------------------------------------------------------------------
     # Initialize state blocks
@@ -183,21 +178,19 @@ def initialize_diso(blk, state_args=None, outlvl=idaeslog.NOTSET,
         outlvl=outlvl,
         optarg=optarg,
         solver=solver,
-        state_args=state_args,
         hold_state=True
     )
     blk.properties_in2.initialize(
         outlvl=outlvl,
         optarg=optarg,
         solver=solver,
-        state_args=state_args,
         hold_state=True
     )
     blk.properties_treated.initialize(
         outlvl=outlvl,
         optarg=optarg,
         solver=solver,
-        state_args=state_args,
+        state_args=state_args_treated,
         hold_state=False
     )
 
