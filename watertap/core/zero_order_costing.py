@@ -29,13 +29,16 @@ from watertap.unit_models.zero_order import (
     BrineConcentratorZO,
     ChemicalAdditionZO,
     ChlorinationZO,
+    LandfillZO,
+    IonExchangeZO,
     OzoneZO,
     OzoneAOPZO,
     SedimentationZO,
     StorageTankZO,
     UVZO,
-    UVAOPZO)
-
+    UVAOPZO,
+    WellFieldZO,
+    )
 
 
 global_params = ["plant_lifetime",
@@ -456,6 +459,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         """
         General method for costing chlorination units. Capital cost is based on
         the both inlet flow and dosage of chlorine.
+
+        This method also registers the chemical flow and electricity demand as
+        costed flows.
         """
         t0 = blk.flowsheet().time.first()
         chem_flow_mass = (blk.unit_model.chlorine_dose[t0] *
@@ -512,6 +518,71 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             chem_flow_mass, "chlorine")
 
+    def cost_ion_exchange(blk):
+        """
+        General method for costing ion exchange units. Capital cost is based on
+        the both inlet flow and TDS.
+
+        This method also registers the NaCl demand, resin replacement and
+        electricity demand as costed flows.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        # Get costing parameter sub-block for this technology
+        A, B, C, D = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["capital_a_parameter",
+             "capital_b_parameter",
+             "capital_c_parameter",
+             "capital_d_parameter"])
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation")
+
+        ln_Q = pyo.log(pyo.units.convert(
+            blk.unit_model.properties_in[t0].flow_vol /
+            (pyo.units.m**3/pyo.units.hour),
+            to_units=pyo.units.dimensionless))
+        T = pyo.units.convert(
+            blk.unit_model.properties_in[t0].conc_mass_comp["tds"] /
+            (pyo.units.mg/pyo.units.liter),
+            to_units=pyo.units.dimensionless)
+
+        expr = pyo.units.convert(
+            pyo.exp(A + B*ln_Q + C*T + D*ln_Q*T)*pyo.units.USD_2017,
+            to_units=blk.config.flowsheet_costing_block.base_currency)
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.NaCl_flowrate[t0], "sodium_chloride")
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.resin_demand[t0], "ion_exchange_resin")
+
     def cost_sedimentation(blk):
         """
         General method for costing sedimentaion processes. Capital cost is
@@ -527,7 +598,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                 blk.unit_model._tech_type,
                 subtype=blk.unit_model.config.process_subtype)
 
-        # Get costing parameter sub-block for this technology
         A, B = _get_tech_parameters(
             blk,
             parameter_dict,
@@ -668,7 +738,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
     def cost_uv(blk):
         """
         General method for costing UV reactor units. Capital cost is based on
-        the inlet flow, UV reduced equivalent dosage, and UV transmittance at the inlet.
+        the inlet flow, UV reduced equivalent dosage, and UV transmittance at
+        the inlet.
         """
         t0 = blk.flowsheet().time.first()
         # Add cost variable and constraint
@@ -755,10 +826,97 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity")
 
-        #TODO: Check whether chemical flow cost was accounted for originally and
-        # if should be in case study verification
+        #TODO: Check whether chemical flow cost was accounted for originally
+        # and if should be in case study verification
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.chemical_flow_mass[t0], "hydrogen_peroxide")
+
+
+    def cost_landfill(blk):
+        """
+        General method for costing landfill. Capital cost is based on the total mass and
+        capacity basis.
+        """
+
+        t0 = blk.flowsheet().time.first()
+        sizing_term = (blk.unit_model.total_mass[t0] / blk.unit_model.capacity_basis[t0])
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        # Get costing parameter sub-block for this technology
+        A, B = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["capital_a_parameter", "capital_b_parameter"])
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Call general power law costing method
+        ZeroOrderCostingData._general_power_law_form(
+            blk, A, B, sizing_term, factor)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
+
+    def cost_well_field(blk):
+        """
+        General method for costing well fields. Capital cost is based on well field
+        cosntruction and pipe costs.
+        """
+
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        # Get costing parameter sub-block for this technology
+        A, B, pipe_cost_basis = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["capital_a_parameter", "capital_b_parameter", "pipe_cost_basis"])
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation")
+
+        Q = pyo.units.convert(
+            blk.unit_model.properties[t0].flow_vol /
+            (pyo.units.m**3/pyo.units.hour),
+            to_units=pyo.units.dimensionless)
+        expr = pyo.units.convert(
+            A*Q**B + (pipe_cost_basis *
+            blk.unit_model.pipe_distance[t0] * blk.unit_model.pipe_diameter[t0]),
+            to_units=blk.config.flowsheet_costing_block.base_currency)
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
+
 
     def _get_ozone_capital_cost(blk, A, B, C, D):
         """
@@ -794,13 +952,15 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                 to_units=pyo.units.dimensionless)
 
         uv_dose = pyo.units.convert(
-            blk.unit_model.uv_reduced_equivalent_dose[t0] / (pyo.units.mJ / pyo.units.cm ** 2),
+            blk.unit_model.uv_reduced_equivalent_dose[t0] /
+            (pyo.units.mJ / pyo.units.cm ** 2),
             to_units=pyo.units.dimensionless)
 
         uvt_in = blk.unit_model.uv_transmittance_in[t0]
 
         expr = pyo.units.convert(
-            A * Q + B * uv_dose * Q + C * (Q * uvt_in) ** 7 + D * uv_dose * Q * uvt_in,
+            A * Q + B * uv_dose * Q + C * (Q * uvt_in) ** 7 +
+            D * uv_dose * Q * uvt_in,
             to_units=blk.config.flowsheet_costing_block.base_currency)
 
         return expr
@@ -811,13 +971,14 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         """
         t0 = blk.flowsheet().time.first()
 
-        chemical_flow_mass = pyo.units.convert(blk.unit_model.chemical_flow_mass[t0],
-                                               to_units=pyo.units.lb/pyo.units.day)
-        expr = pyo.units.convert(A
-                                 * pyo.units.convert(chemical_flow_mass
-                                                     / (pyo.units.lb/pyo.units.day),
-                                                     to_units=pyo.units.dimensionless) ** B,
-                                 to_units=blk.config.flowsheet_costing_block.base_currency)
+        chemical_flow_mass = pyo.units.convert(
+            blk.unit_model.chemical_flow_mass[t0],
+            to_units=pyo.units.lb/pyo.units.day)
+        expr = pyo.units.convert(
+            A*pyo.units.convert(chemical_flow_mass /
+                                (pyo.units.lb/pyo.units.day),
+                                to_units=pyo.units.dimensionless) ** B,
+            to_units=blk.config.flowsheet_costing_block.base_currency)
 
         return expr
 
@@ -849,13 +1010,16 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                     BrineConcentratorZO: cost_brine_concentrator,
                     ChemicalAdditionZO: cost_chemical_addition,
                     ChlorinationZO: cost_chlorination,
+                    LandfillZO: cost_landfill,
+                    IonExchangeZO: cost_ion_exchange,
                     OzoneZO: cost_ozonation,
                     OzoneAOPZO: cost_ozonation_aop,
+                    SedimentationZO: cost_sedimentation,
+                    StorageTankZO: cost_storage_tank,
                     UVZO: cost_uv,
                     UVAOPZO: cost_uv_aop,
-                    SedimentationZO: cost_sedimentation,
-                    StorageTankZO: cost_storage_tank}
-
+                    WellFieldZO: cost_well_field,
+                   }
 
 
 def _get_tech_parameters(blk, parameter_dict, subtype, param_list):
@@ -893,10 +1057,10 @@ def _get_tech_parameters(blk, parameter_dict, subtype, param_list):
                             "capital_cost"][p]["units"]))
                 pblock.add_component(p, vobj)
             except KeyError:
-                raise KeyError("Error when trying to retrieve costing parameter"
-                               " from {p} database. Please check the YAML "
-                               "file for this technology for errors.")
-
+                raise KeyError(
+                    "Error when trying to retrieve costing parameter"
+                    " from {p} database. Please check the YAML "
+                    "file for this technology for errors.")
 
     # Check to see if required subtype is in subtype_set
     vlist = []

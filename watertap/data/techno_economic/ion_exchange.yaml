@@ -8,6 +8,29 @@ default:  # TODO: should have removal rates for (e.g.) sulfate, nitrate, arsenic
       value: 0.9
       units: dimensionless
       constituent_longform: Total Dissolved Solids (TDS)
+  NaCl_dose:
+    # Using anion exchange dose as default
+    value: 0.0061
+    units: kg/m^3
+  resin_replacement:
+    # Using anion exchange replacement rate as default
+    value: 1.36231e-3
+    units: kg/m^3
+  capital_cost:
+    # Using cost parameters for anion exchange as default
+    cost_factor: None
+    capital_a_parameter:
+      value: 8.61434
+      units: dimensionless
+    capital_b_parameter:
+      value: 0.821700
+      units: dimensionless
+    capital_c_parameter:
+      value: 5.44709E-06
+      units: dimensionless
+    capital_d_parameter:
+      value: 6.17757E-05
+      units: dimensionless
 anion_exchange:  # TODO: add some differentiation between default, anion, and cation exchange.
   default_removal_frac_mass_solute:
     value: 0
@@ -18,6 +41,26 @@ anion_exchange:  # TODO: add some differentiation between default, anion, and ca
       value: 0.9
       units: dimensionless
       constituent_longform: Total Dissolved Solids (TDS)
+  NaCl_dose:
+    value: 0.0061
+    units: kg/m^3
+  resin_replacement:
+    value: 1.36231e-3
+    units: kg/m^3
+  capital_cost:
+    cost_factor: None
+    capital_a_parameter:
+      value: 8.61434
+      units: dimensionless
+    capital_b_parameter:
+      value: 0.821700
+      units: dimensionless
+    capital_c_parameter:
+      value: 5.44709E-06
+      units: dimensionless
+    capital_d_parameter:
+      value: 6.17757E-05
+      units: dimensionless
 cation_exchange:
   default_removal_frac_mass_solute:
     value: 0
@@ -28,3 +71,23 @@ cation_exchange:
       value: 0.9
       units: dimensionless
       constituent_longform: Total Dissolved Solids (TDS)
+  NaCl_dose:
+    value: 0.0039
+    units: kg/m^3
+  resin_replacement:
+    value: 1.82378e-3
+    units: kg/m^3
+  capital_cost:
+    cost_factor: None
+    capital_a_parameter:
+      value: 9.97141
+      units: dimensionless
+    capital_b_parameter:
+      value: 0.681951
+      units: dimensionless
+    capital_c_parameter:
+      value: -6.42222E-05
+      units: dimensionless
+    capital_d_parameter:
+      value: 4.09643E-05
+      units: dimensionless
