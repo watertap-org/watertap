@@ -23,7 +23,7 @@ from watertap.tools.parameter_sweep import (_init_mpi,
                                             _build_combinations,
                                             _divide_combinations,
                                             _update_model_values,
-                                            _aggregate_results,
+                                            # _aggregate_results,
                                             _interp_nan_values,
                                             _process_sweep_params,
                                             _write_output_to_h5,
@@ -248,27 +248,27 @@ class TestParallelManager():
         assert value(m.fs.input['a']) == pytest.approx(new_values[0])
         assert value(m.fs.input['b']) == pytest.approx(new_values[1])
 
-    @pytest.mark.unit
-    def test_aggregate_results(self):
-        comm, rank, num_procs = _init_mpi()
-
-        # print('Rank %d, num_procs %d' % (rank, num_procs))
-
-        nn = 5
-        np.random.seed(1)
-        local_results = (rank+1)*np.random.rand(nn, 2)
-        global_values = np.random.rand(nn*num_procs, 4)
-
-        global_results = _aggregate_results(local_results, global_values, comm, num_procs)
-
-        assert np.shape(global_results)[1] == np.shape(local_results)[1]
-        assert np.shape(global_results)[0] == np.shape(global_values)[0]
-
-        if rank == 0:
-            assert global_results[0, 0] == pytest.approx(local_results[0, 0])
-            assert global_results[0, 1] == pytest.approx(local_results[0, 1])
-            assert global_results[-1, 0] == pytest.approx(num_procs*local_results[-1, 0])
-            assert global_results[-1, 1] == pytest.approx(num_procs*local_results[-1, 1])
+    # @pytest.mark.unit
+    # def test_aggregate_results(self):
+    #     comm, rank, num_procs = _init_mpi()
+    #
+    #     # print('Rank %d, num_procs %d' % (rank, num_procs))
+    #
+    #     nn = 5
+    #     np.random.seed(1)
+    #     local_results = (rank+1)*np.random.rand(nn, 2)
+    #     global_values = np.random.rand(nn*num_procs, 4)
+    #
+    #     global_results = _aggregate_results(local_results, global_values, comm, num_procs)
+    #
+    #     assert np.shape(global_results)[1] == np.shape(local_results)[1]
+    #     assert np.shape(global_results)[0] == np.shape(global_values)[0]
+    #
+    #     if rank == 0:
+    #         assert global_results[0, 0] == pytest.approx(local_results[0, 0])
+    #         assert global_results[0, 1] == pytest.approx(local_results[0, 1])
+    #         assert global_results[-1, 0] == pytest.approx(num_procs*local_results[-1, 0])
+    #         assert global_results[-1, 1] == pytest.approx(num_procs*local_results[-1, 1])
 
     @pytest.mark.unit
     def test_interp_nan_values(self):

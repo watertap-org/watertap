@@ -252,31 +252,30 @@ def _update_model_values(m, param_dict, values):
 
 # ================================================================
 
-def _aggregate_results(local_results, global_values, comm, num_procs):
+# def _aggregate_results(local_results, global_values, comm, num_procs):
+#
+#     if num_procs > 1: # pragma: no cover
+#         local_results = local_results.astype(np.float64)
+#
+#         global_results = np.zeros((np.shape(global_values)[0], np.shape(local_results)[1]), dtype=np.float64)
+#
+#         # Collect the number of result values to be sent from each process
+#         send_counts = np.zeros(num_procs, dtype=np.int64)
+#         comm.Gather(np.int64(np.size(local_results)), send_counts, root=0)
+#
+#         # Collect the global results results onto rank 0
+#         comm.Gatherv(local_results, (global_results, send_counts), root=0)
+#
+#         # Broadcast the results to all ranks
+#         comm.Bcast(global_results, root=0)
+#
+#     else:
+#         global_results = np.copy(local_results)
+#
+#     return global_results
 
-    if num_procs > 1: # pragma: no cover
-        local_results = local_results.astype(np.float64)
+def _aggregate_results_csv(global_results_dict, num_cases, comm, rank, num_procs):
 
-        global_results = np.zeros((np.shape(global_values)[0], np.shape(local_results)[1]), dtype=np.float64)
-
-        # Collect the number of result values to be sent from each process
-        send_counts = np.zeros(num_procs, dtype=np.int64)
-        comm.Gather(np.int64(np.size(local_results)), send_counts, root=0)
-
-        # Collect the global results results onto rank 0
-        comm.Gatherv(local_results, (global_results, send_counts), root=0)
-
-        # Broadcast the results to all ranks
-        comm.Bcast(global_results, root=0)
-
-    else:
-        global_results = np.copy(local_results)
-
-    return global_results
-
-def _aggregate_results_csv(sweep_params, global_values, global_results_dict, comm, rank, num_procs):
-
-    num_cases = np.shape(global_values)[0]
     global_results = np.zeros((num_cases, len(global_results_dict['outputs'])), dtype=np.float64)
 
     if rank == 0:
@@ -520,14 +519,14 @@ def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_pr
 #
 #     return global_save_data
 
-def _write_to_csv(sweep_params, global_values, global_results_dict, comm, rank, num_procs, write_csv,
+def _write_to_csv(sweep_params, global_values, global_results_dict, global_results_csv, rank, write_csv,
         dirname, fname, interpolate_nan_outputs):
 
-    global_results = _aggregate_results_csv(sweep_params, global_values, global_results_dict, comm,
-        rank, num_procs)
+    # global_results = _aggregate_results_csv(sweep_params, global_values, global_results_dict, comm,
+    #     rank, num_procs)
 
     # Create the dataframe that is going to be written to a CSV
-    global_save_data = np.hstack((global_values, global_results))
+    global_save_data = np.hstack((global_values, global_results_csv))
 
     if rank == 0:
         data_header = ','.join(itertools.chain(sweep_params))
@@ -685,11 +684,12 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
 
         except:
             # If the run is infeasible, report nan
-            local_results[k, :] = np.nan
+            # local_results[k, :] = np.nan
+            pass
 
         else:
             # If the simulation suceeds, report stats
-            local_results[k, :] = [pyo.value(outcome['_pyo_obj']) for outcome in local_output_dict['outputs'].values()]
+            # local_results[k, :] = [pyo.value(outcome['_pyo_obj']) for outcome in local_output_dict['outputs'].values()]
             run_successful = True
 
         # If the initial attempt failed and additional conditions are met, try
@@ -704,7 +704,7 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
             except:
                 pass
             else:
-                local_results[k, :] = [pyo.value(outcome['_pyo_obj']) for outcome in local_output_dict['outputs'].values()]
+                # local_results[k, :] = [pyo.value(outcome['_pyo_obj']) for outcome in local_output_dict['outputs'].values()]
                 run_successful = True
 
         # Update the loop based on the reinitialization
@@ -714,25 +714,27 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
 
     local_output_dict["solve_successful"] = local_solve_successful_list
 
-    return local_results, local_output_dict
+    return local_output_dict # local_results, local_output_dict
 
 # ================================================================
 
-def _aggregate_local_results(global_values, local_results, local_output_dict,
-        num_samples, local_num_cases, comm, rank, num_procs):
+def _aggregate_local_results(global_values, local_output_dict, num_samples, local_num_cases,
+        comm, rank, num_procs):
 
-    global_results = _aggregate_results(local_results, global_values, comm, num_procs)
-    global_output_dict = _create_global_output(local_output_dict, num_samples, comm, rank, num_procs)
+    # global_results = _aggregate_results(local_results, global_values, comm, num_procs)
+    global_results_dict = _create_global_output(local_output_dict, num_samples, comm, rank, num_procs)
+    num_global_samples = np.shape(global_values)[0]
+    global_results_csv = _aggregate_results_csv(global_results_dict, num_global_samples, comm, rank, num_procs)
 
-    return global_results, global_output_dict
+    return global_results_dict, global_results_csv
 
 # ================================================================
 
 # def _save_results(sweep_params, outputs, local_values, global_values, local_results,
 #         global_results, global_output_dict, csv_results_file, h5_results_file,
 #         debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
-def _save_results(sweep_params, local_values, global_values, local_results,
-        global_results, global_output_dict, results_file_name, write_csv, write_h5,
+def _save_results(sweep_params, global_values, local_results_dict, global_results_dict,
+        global_results_csv, results_file_name, write_csv, write_h5,
         debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
 
     if results_file_name is not None:
@@ -753,13 +755,13 @@ def _save_results(sweep_params, local_values, global_values, local_results,
     if num_procs > 1:
         comm.Barrier()
 
-    # Write a header string for all data files
-    data_header = ','.join(itertools.chain(sweep_params,global_output_dict['outputs']))
+    # # Write a header string for all data files
+    # data_header = ','.join(itertools.chain(sweep_params,global_output_dict['outputs']))
 
     # Handle values in the debugging data_directory
     if debugging_data_dir is not None:
-        local_output_dict = global_output_dict
-        _write_debug_data(local_output_dict, debugging_data_dir, rank)
+        # local_output_dict = global_output_dict
+        _write_debug_data(local_results_dict, debugging_data_dir, rank)
         # # Create the local filename and data
         # fname = os.path.join(debugging_data_dir, f'local_results_{rank:03}.csv')
         # local_save_data = np.hstack((local_values, local_results))
@@ -769,13 +771,13 @@ def _save_results(sweep_params, local_values, global_values, local_results,
 
     # global_save_data = _write_to_csv(global_values, global_results, data_header, rank, write_csv, dirname,
     #     fname_no_ext, interpolate_nan_outputs)
-    global_save_data = _write_to_csv(sweep_params, global_values, global_output_dict, comm, rank, num_procs,
+    global_save_data = _write_to_csv(sweep_params, global_values, global_results_dict, global_results_csv, rank,
          write_csv, dirname, fname_no_ext, interpolate_nan_outputs)
 
     if rank == 0:
         if write_h5:
             # Save the data of output dictionary
-            _write_outputs(global_output_dict, dirname, fname_no_ext, txt_options="keys")
+            _write_outputs(global_results_dict, dirname, fname_no_ext, txt_options="keys")
     else:
         global_save_data = None
 
@@ -784,10 +786,6 @@ def _save_results(sweep_params, local_values, global_values, local_results,
 
 # ================================================================
 
-# def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, h5_results_file=None,
-#         optimize_function=_default_optimize, optimize_kwargs=None, reinitialize_function=None,
-#         reinitialize_kwargs=None, reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
-#         interpolate_nan_outputs=False, num_samples=None, seed=None):
 def parameter_sweep(model, sweep_params, outputs=None, results_file_name=None, write_csv=False, write_h5=False, # h5_results_file=None,
         optimize_function=_default_optimize, optimize_kwargs=None, reinitialize_function=None,
         reinitialize_kwargs=None, reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
@@ -903,19 +901,19 @@ def parameter_sweep(model, sweep_params, outputs=None, results_file_name=None, w
         reinitialize_kwargs = dict()
 
     # Do the Loop
-    local_results, local_output_dict = _do_param_sweep(model, sweep_params, outputs, local_values,
+    local_results_dict = _do_param_sweep(model, sweep_params, outputs, local_values,
         optimize_function, optimize_kwargs, reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep,
         comm)
 
     # Aggregate results on Master
-    global_results, global_output_dict = _aggregate_local_results(global_values, local_results, local_output_dict,
-            num_samples, local_num_cases, comm, rank, num_procs)
+    global_results_dict, global_results_csv = _aggregate_local_results(global_values, local_results_dict, num_samples,
+            local_num_cases, comm, rank, num_procs)
 
     # Save to file
     # global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results, global_results, global_output_dict,
     #     csv_results_file, h5_results_file, debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs)
-    global_save_data = _save_results(sweep_params, local_values, global_values, local_results,
-        global_results, global_output_dict, results_file_name, write_csv, write_h5, debugging_data_dir,
+    global_save_data = _save_results(sweep_params, global_values, local_results_dict, global_results_dict,
+        global_results_csv, results_file_name, write_csv, write_h5, debugging_data_dir,
         comm, rank, num_procs, interpolate_nan_outputs)
 
     return global_save_data
