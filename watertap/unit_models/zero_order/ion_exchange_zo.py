@@ -72,7 +72,7 @@ class IonExchangeZOData(ZeroOrderBaseData):
         self.resin_replacement = Var(
             units=pyunits.kg/pyunits.m**3,
             bounds=(0, None),
-            doc="Resin replacement as a fuction of flow")
+            doc="Resin replacement as a function of flow")
 
         self._fixed_perf_vars.append(self.resin_replacement)
         self._perf_var_dict["Resin Demand"] = self.resin_demand
@@ -85,8 +85,8 @@ class IonExchangeZOData(ZeroOrderBaseData):
         if self.config.process_subtype == "clinoptilolite":
             if "ammonium_as_nitrogen" in self.config.property_package.solute_set:
                 self.nitrogen_clay_ratio = Var(self.flowsheet().config.time,
-                                                   units=pyunits.dimensionless,
-                                                   doc="Mass fraction of nitrogen in clay mixture")
+                                               units=pyunits.dimensionless,
+                                               doc="Mass fraction of nitrogen in clay mixture")
 
                 self._fixed_perf_vars.append(self.nitrogen_clay_ratio)
 
