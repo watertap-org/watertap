@@ -70,3 +70,5 @@ Module Documentation
 --------------------
 
 .. automodule:: watertap.core.zero_order_diso.build_diso
+    :members:
+    :noindex:
