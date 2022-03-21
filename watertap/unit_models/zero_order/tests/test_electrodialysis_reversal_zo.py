@@ -60,6 +60,8 @@ class TestElectrodialysisReversalZO_w_default_removal:
         assert isinstance(model.fs.unit.electricity_constraint,
                           Constraint)
         assert isinstance(model.fs.unit.electricity, Var)
+        assert isinstance(model.fs.unit.elec_coeff_1, Var)
+        assert isinstance(model.fs.unit.elec_coeff_2, Var)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -78,6 +80,12 @@ class TestElectrodialysisReversalZO_w_default_removal:
             else:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
+        assert model.fs.unit.elec_coeff_1.fixed
+        assert model.fs.unit.elec_coeff_1.value == \
+            data["elec_coeff_1"]["value"]
+        assert model.fs.unit.elec_coeff_2.fixed
+        assert model.fs.unit.elec_coeff_2.value == \
+            data["elec_coeff_2"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
