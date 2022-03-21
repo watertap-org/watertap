@@ -665,27 +665,22 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
             pyo.assert_optimal_termination(results)
 
         except:
-            # Run successful was already set to False, so nothing to do here for now
-            pass
+            # run_successful remains false. We try to reinitialize and solve again
+            if reinitialize_function is not None:
+                try:
+                    reinitialize_function(model, **reinitialize_kwargs)
+                    with capture_output():
+                        results = optimize_function(model, **optimize_kwargs)
+                    pyo.assert_optimal_termination(results)
+
+                except:
+                    pass # Run Successful is still False
+                else:
+                    run_successful = True
 
         else:
             # If the simulation suceeds, report stats
             run_successful = True
-
-        # If the initial attempt failed and additional conditions are met, try
-        # to reinitialize and resolve.
-        if not run_successful and (reinitialize_function is not None):
-            try:
-                reinitialize_function(model, **reinitialize_kwargs)
-                with capture_output():
-                    results = optimize_function(model, **optimize_kwargs)
-                pyo.assert_optimal_termination(results)
-
-            except:
-                # Run Successful is still False
-                pass
-            else:
-                run_successful = True
 
         # Update the loop based on the reinitialization
         _update_local_output_dict(model, sweep_params, k, local_values[k, :], run_successful, local_output_dict)
@@ -701,8 +696,10 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
 def _aggregate_local_results(global_values, local_output_dict, num_samples, local_num_cases,
         comm, rank, num_procs):
 
-    # global_results = _aggregate_results(local_results, global_values, comm, num_procs)
+    # Create the dictionary
     global_results_dict = _create_global_output(local_output_dict, num_samples, comm, rank, num_procs)
+
+    # Create the array
     num_global_samples = np.shape(global_values)[0]
     global_results_arr = _aggregate_results_arr(global_results_dict, num_global_samples, comm, rank, num_procs)
 
@@ -743,8 +740,6 @@ def _save_results(sweep_params, local_values, global_values, local_results_dict,
     if rank == 0 and write_h5:
         # Save the data of output dictionary
         _write_outputs(global_results_dict, dirname, fname_no_ext, txt_options="keys")
-    else:
-        global_save_data = None
 
     return global_save_data
 
