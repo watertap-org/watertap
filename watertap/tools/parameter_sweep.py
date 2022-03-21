@@ -274,7 +274,7 @@ def _update_model_values(m, param_dict, values):
 #
 #     return global_results
 
-def _aggregate_results_csv(global_results_dict, num_cases, comm, rank, num_procs):
+def _aggregate_results_arr(global_results_dict, num_cases, comm, rank, num_procs):
 
     global_results = np.zeros((num_cases, len(global_results_dict['outputs'])), dtype=np.float64)
 
@@ -519,14 +519,11 @@ def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_pr
 #
 #     return global_save_data
 
-def _write_to_csv(sweep_params, global_values, global_results_dict, global_results_csv, rank, write_csv,
+def _write_to_csv(sweep_params, global_values, global_results_dict, global_results_arr, rank, write_csv,
         dirname, fname, interpolate_nan_outputs):
 
-    # global_results = _aggregate_results_csv(sweep_params, global_values, global_results_dict, comm,
-    #     rank, num_procs)
-
     # Create the dataframe that is going to be written to a CSV
-    global_save_data = np.hstack((global_values, global_results_csv))
+    global_save_data = np.hstack((global_values, global_results_arr))
 
     if rank == 0:
         data_header = ','.join(itertools.chain(sweep_params))
@@ -738,9 +735,9 @@ def _aggregate_local_results(global_values, local_output_dict, num_samples, loca
     # global_results = _aggregate_results(local_results, global_values, comm, num_procs)
     global_results_dict = _create_global_output(local_output_dict, num_samples, comm, rank, num_procs)
     num_global_samples = np.shape(global_values)[0]
-    global_results_csv = _aggregate_results_csv(global_results_dict, num_global_samples, comm, rank, num_procs)
+    global_results_arr = _aggregate_results_arr(global_results_dict, num_global_samples, comm, rank, num_procs)
 
-    return global_results_dict, global_results_csv
+    return global_results_dict, global_results_arr
 
 # ================================================================
 
@@ -748,7 +745,7 @@ def _aggregate_local_results(global_values, local_output_dict, num_samples, loca
 #         global_results, global_output_dict, csv_results_file, h5_results_file,
 #         debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
 def _save_results(sweep_params, local_values, global_values, local_results_dict, global_results_dict,
-        global_results_csv, results_file_name, write_csv, write_h5,
+        global_results_arr, results_file_name, write_csv, write_h5,
         debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
 
     if results_file_name is not None:
@@ -786,7 +783,7 @@ def _save_results(sweep_params, local_values, global_values, local_results_dict,
 
     # global_save_data = _write_to_csv(global_values, global_results, data_header, rank, write_csv, dirname,
     #     fname_no_ext, interpolate_nan_outputs)
-    global_save_data = _write_to_csv(sweep_params, global_values, global_results_dict, global_results_csv, rank,
+    global_save_data = _write_to_csv(sweep_params, global_values, global_results_dict, global_results_arr, rank,
          write_csv, dirname, fname_no_ext, interpolate_nan_outputs)
 
     if rank == 0:
@@ -921,14 +918,14 @@ def parameter_sweep(model, sweep_params, outputs=None, results_file_name=None, w
         comm)
 
     # Aggregate results on Master
-    global_results_dict, global_results_csv = _aggregate_local_results(global_values, local_results_dict, num_samples,
+    global_results_dict, global_results_arr = _aggregate_local_results(global_values, local_results_dict, num_samples,
             local_num_cases, comm, rank, num_procs)
 
     # Save to file
     # global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results, global_results, global_output_dict,
     #     csv_results_file, h5_results_file, debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs)
     global_save_data = _save_results(sweep_params, local_values, global_values, local_results_dict, global_results_dict,
-        global_results_csv, results_file_name, write_csv, write_h5, debugging_data_dir,
+        global_results_arr, results_file_name, write_csv, write_h5, debugging_data_dir,
         comm, rank, num_procs, interpolate_nan_outputs)
 
     return global_save_data

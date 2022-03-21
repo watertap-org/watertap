@@ -23,7 +23,7 @@ from watertap.tools.parameter_sweep import (_init_mpi,
                                             _build_combinations,
                                             _divide_combinations,
                                             _update_model_values,
-                                            # _aggregate_results,
+                                            _aggregate_results_arr,
                                             _interp_nan_values,
                                             _process_sweep_params,
                                             _write_output_to_h5,
@@ -269,6 +269,58 @@ class TestParallelManager():
     #         assert global_results[0, 1] == pytest.approx(local_results[0, 1])
     #         assert global_results[-1, 0] == pytest.approx(num_procs*local_results[-1, 0])
     #         assert global_results[-1, 1] == pytest.approx(num_procs*local_results[-1, 1])
+
+    @pytest.mark.unit
+    def test_aggregate_results_arr(self):
+        comm, rank, num_procs = _init_mpi()
+        input_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
+                                                      'units': 'None',
+                                                      'upper bound': 0,
+                                                      'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                      'fs.input[b]': {'lower bound': 0,
+                                                      'units': 'None',
+                                                      'upper bound': 0,
+                                                      'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                      'fs.output[c]': {'lower bound': 0,
+                                                       'units': 'None',
+                                                       'upper bound': 0,
+                                                       'value': np.array([0.2, 0.2, 0. , 1. , 1. , 0. , 0. , 0. , 0. ])},
+                                      'fs.output[d]': {'lower bound': 0,
+                                                       'units': 'None',
+                                                       'upper bound': 0,
+                                                       'value': np.array([0.  , 0.75, 0.  , 0.  , 0.75, 0.  , 0.  , 0.  , 0.  ])},
+                                      'fs.slack[ab_slack]': {'lower bound': 0,
+                                                             'units': 'None',
+                                                             'upper bound': 0,
+                                                             'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                      'fs.slack[cd_slack]': {'lower bound': 0,
+                                                            'units': 'None',
+                                                            'upper bound': 0,
+                                                            'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])}},
+                         'solve_successful': [ True ]*9,
+                         'sweep_params': {'fs.input[a]': {'lower bound': 0,
+                                                          'units': 'None',
+                                                          'upper bound': 0,
+                                                          'value': np.array([0.1, 0.1, 0. , 0.5, 0.5, 0. , 0. , 0. , 0. ])},
+                                          'fs.input[b]': {'lower bound': 0,
+                                                          'units': 'None',
+                                                          'upper bound': 0,
+                                                          'value': np.array([0.  , 0.25, 0.  , 0.  , 0.25, 0.  , 0.  , 0.  , 0.  ])}}}
+
+        global_num_cases = len(input_dict['sweep_params']['fs.input[a]']['value'])
+        global_results_arr = _aggregate_results_arr(input_dict, global_num_cases, comm, rank, num_procs)
+        reference_results_arr = np.array([[0.  , 0.  , 0.2 , 0.  , 0.  , 0.  ],
+                                          [0.  , 0.  , 0.2 , 0.75, 0.  , 0.  ],
+                                          [0.  , 0.  , 0.  , 0.  , 0.  , 0.  ],
+                                          [0.  , 0.  , 1.  , 0.  , 0.  , 0.  ],
+                                          [0.  , 0.  , 1.  , 0.75, 0.  , 0.  ],
+                                          [0.  , 0.  , 0.  , 0.  , 0.  , 0.  ],
+                                          [0.  , 0.  , 0.  , 0.  , 0.  , 0.  ],
+                                          [0.  , 0.  , 0.  , 0.  , 0.  , 0.  ],
+                                          [0.  , 0.  , 0.  , 0.  , 0.  , 0.  ]])
+
+        assert np.array_equal(global_results_arr, reference_results_arr)
+
 
     @pytest.mark.unit
     def test_interp_nan_values(self):
