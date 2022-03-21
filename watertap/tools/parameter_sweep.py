@@ -491,34 +491,6 @@ def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_pr
 
 # ================================================================
 
-# def _write_to_csv(global_values, global_results, data_header, rank, write_csv, dirname, fname,
-#         interpolate_nan_outputs):
-#
-#     if write_csv and fname is not None:
-#         csv_results_file = os.path.join(str(dirname), fname + '.csv')
-#
-#     # Create the global filename and data
-#     global_save_data = np.hstack((global_values, global_results))
-#
-#     if rank == 0 and write_csv:
-#         # Save the global data
-#         np.savetxt(csv_results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
-#
-#         if interpolate_nan_outputs:
-#             global_results_clean = _interp_nan_values(global_values, global_results)
-#             global_save_data_clean = np.hstack((global_values, global_results_clean))
-#
-#             head, tail = os.path.split(csv_results_file)
-#
-#             if head == '':
-#                 interp_file = 'interpolated_%s' % (tail)
-#             else:
-#                 interp_file = '%s/interpolated_%s' % (head, tail)
-#
-#             np.savetxt(interp_file, global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
-#
-#     return global_save_data
-
 def _write_to_csv(sweep_params, global_values, global_results_dict, global_results_arr, rank, write_csv,
         dirname, fname, interpolate_nan_outputs):
 
@@ -535,7 +507,7 @@ def _write_to_csv(sweep_params, global_values, global_results_dict, global_resul
             csv_results_file = os.path.join(str(dirname), fname + '.csv')
             np.savetxt(csv_results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
 
-            # If we want the interpolated output_list
+            # If we want the interpolated output_list in CSV
             if interpolate_nan_outputs:
                 global_results_clean = _interp_nan_values(global_values, global_results)
                 global_save_data_clean = np.hstack((global_values, global_results_clean))
@@ -554,6 +526,7 @@ def _write_to_csv(sweep_params, global_values, global_results_dict, global_resul
 # ================================================================
 
 def _write_debug_data(sweep_params, local_values, local_results_dict, debugging_data_dir, rank, write_h5, write_csv):
+
     if write_h5:
         fname_h5 = f'local_results_{rank:03}.h5'
         _write_output_to_h5(local_results_dict, debugging_data_dir, fname_h5)
@@ -575,8 +548,6 @@ def _write_debug_data(sweep_params, local_values, local_results_dict, debugging_
 
 def _write_outputs(output_dict, output_directory, fname_no_ext, txt_options="metadata"):
 
-    # if not h5_results_file.endswith(".h5"):
-    #     h5_results_file += ".h5"
     h5_results_file = fname_no_ext + ".h5"
 
     _write_output_to_h5(output_dict, output_directory, h5_results_file)
@@ -676,7 +647,7 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
         # Update the model values with a single combination from the parameter space
         _update_model_values(model, sweep_params, local_values[k, :])
 
-        run_successful = False #until proven otherwise
+        run_successful = False # until proven otherwise
 
         # Forced reinitialization of the flowsheet if enabled
         if reinitialize_before_sweep:
@@ -694,13 +665,11 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
             pyo.assert_optimal_termination(results)
 
         except:
-            # If the run is infeasible, report nan
-            # local_results[k, :] = np.nan
+            # Run successful was already set to False, so nothing to do here for now
             pass
 
         else:
             # If the simulation suceeds, report stats
-            # local_results[k, :] = [pyo.value(outcome['_pyo_obj']) for outcome in local_output_dict['outputs'].values()]
             run_successful = True
 
         # If the initial attempt failed and additional conditions are met, try
@@ -713,9 +682,9 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
                 pyo.assert_optimal_termination(results)
 
             except:
+                # Run Successful is still False
                 pass
             else:
-                # local_results[k, :] = [pyo.value(outcome['_pyo_obj']) for outcome in local_output_dict['outputs'].values()]
                 run_successful = True
 
         # Update the loop based on the reinitialization
@@ -725,7 +694,7 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
 
     local_output_dict["solve_successful"] = local_solve_successful_list
 
-    return local_output_dict # local_results, local_output_dict
+    return local_output_dict
 
 # ================================================================
 
@@ -741,12 +710,9 @@ def _aggregate_local_results(global_values, local_output_dict, num_samples, loca
 
 # ================================================================
 
-# def _save_results(sweep_params, outputs, local_values, global_values, local_results,
-#         global_results, global_output_dict, csv_results_file, h5_results_file,
-#         debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
 def _save_results(sweep_params, local_values, global_values, local_results_dict, global_results_dict,
-        global_results_arr, results_file_name, write_csv, write_h5,
-        debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
+        global_results_arr, results_file_name, write_csv, write_h5, debugging_data_dir, comm, rank,
+        num_procs, interpolate_nan_outputs):
 
     if results_file_name is not None:
         dirname, fname_no_ext = _process_results_filename(results_file_name)
@@ -763,33 +729,20 @@ def _save_results(sweep_params, local_values, global_values, local_results_dict,
         dirname = None
         fname_no_ext = None
 
-    if num_procs > 1:
+    if num_procs > 1: # pragma: no cover
         comm.Barrier()
-
-    # # Write a header string for all data files
-    # data_header = ','.join(itertools.chain(sweep_params,global_output_dict['outputs']))
 
     # Handle values in the debugging data_directory
     if debugging_data_dir is not None:
-        # local_output_dict = global_output_dict
         _write_debug_data(sweep_params, local_values, local_results_dict, debugging_data_dir,
             rank, write_h5, write_csv)
-        # # Create the local filename and data
-        # fname = os.path.join(debugging_data_dir, f'local_results_{rank:03}.csv')
-        # local_save_data = np.hstack((local_values, local_results))
-        #
-        # # Save the local data
-        # np.savetxt(fname, local_save_data, header=data_header, delimiter=', ', fmt='%.6e')
 
-    # global_save_data = _write_to_csv(global_values, global_results, data_header, rank, write_csv, dirname,
-    #     fname_no_ext, interpolate_nan_outputs)
     global_save_data = _write_to_csv(sweep_params, global_values, global_results_dict, global_results_arr, rank,
          write_csv, dirname, fname_no_ext, interpolate_nan_outputs)
 
-    if rank == 0:
-        if write_h5:
-            # Save the data of output dictionary
-            _write_outputs(global_results_dict, dirname, fname_no_ext, txt_options="keys")
+    if rank == 0 and write_h5:
+        # Save the data of output dictionary
+        _write_outputs(global_results_dict, dirname, fname_no_ext, txt_options="keys")
     else:
         global_save_data = None
 
@@ -922,8 +875,6 @@ def parameter_sweep(model, sweep_params, outputs=None, results_file_name=None, w
             local_num_cases, comm, rank, num_procs)
 
     # Save to file
-    # global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results, global_results, global_output_dict,
-    #     csv_results_file, h5_results_file, debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs)
     global_save_data = _save_results(sweep_params, local_values, global_values, local_results_dict, global_results_dict,
         global_results_arr, results_file_name, write_csv, write_h5, debugging_data_dir,
         comm, rank, num_procs, interpolate_nan_outputs)
