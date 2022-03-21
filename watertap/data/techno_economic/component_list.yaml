@@ -82,8 +82,6 @@ perfluorootanoate_pfoa:
   constituent_longform: Perfluorootanoate (PFOA)
 phosphates:
   constituent_longform: Phosphates
-phosphate_as_phosphorus:
-  constituent_longform: Phosphate as phosphorus (PO4-P)
 potassium:
   constituent_longform: Potassium
 radium_226:

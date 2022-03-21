@@ -76,26 +76,20 @@ class SedimentationZOData(ZeroOrderBaseData):
             # an assumed fraction of phosphate in TSS. Alternatively, the user could provide phosphates
             # as the species, and the amount of solids + phosphate settled would be reported.
             # However, the user cannot provide both TSS and phosphates.
-            if ("phosphates" in self.config.property_package.solute_set
-                or "phosphate_as_phosphorus" in self.config.property_package.solute_set) \
+            if "phosphates" in self.config.property_package.solute_set \
                     and "tss" in self.config.property_package.solute_set:
                 raise KeyError("tss and phosphates cannot both be defined in the solute_list. "
-                                 "Please choose one.")
-            elif (("phosphates" in self.config.property_package.solute_set)
-                    ^ ("phosphate_as_phosphorus" in self.config.property_package.solute_set)):
+                               "Please choose one.")
+            elif "phosphates" in self.config.property_package.solute_set:
                 self.final_solids_mass = Var(self.flowsheet().config.time,
                                              units=pyunits.kg/pyunits.s,
                                              doc="Solids mass flow in byproduct stream")
-                if "phosphates" in self.config.property_package.solute_set:
-                    p = "phosphates"
-                else:
-                    p = "phosphate_as_phosphorus"
 
                 @self.Constraint(self.flowsheet().time,
                                  doc="Solids mass flow in byproduct stream constraint")
                 def solids_mass_flow_constraint(b, t):
                     return (b.final_solids_mass[t] ==
-                            b.properties_byproduct[t].flow_mass_comp[p]
+                            b.properties_byproduct[t].flow_mass_comp["phosphates"]
                             / b.phosphorus_solids_ratio[t])
 
                 self._perf_var_dict["Final mass flow of settled solids (kg/s)"] = self.final_solids_mass
@@ -115,5 +109,7 @@ class SedimentationZOData(ZeroOrderBaseData):
                 self._perf_var_dict["Final mass flow of settled phosphate (kg/s)"] = self.final_phosphate_mass
 
             else:
-                raise KeyError("Only one of the following should be specified in the solute_list: "
-                               "tss, phosphates, or phosphate_as_phosphorus.")
+                # Raise this error in case the user is intended to make use of the subtype but entered
+                # the wrong component names.
+                raise KeyError("One of the following should be specified in the solute_list: "
+                               "tss or phosphates")

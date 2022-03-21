@@ -569,28 +569,12 @@ def test_phosphorus_capture_no_tss_or_phosphate_in_solute_list_error():
         default={"solute_list": ["foo"]})
 
     with pytest.raises(KeyError,
-                       match="Only one of the following should be specified in the solute_list: "
-                             "tss, phosphates, or phosphate_as_phosphorus."):
+                       match="One of the following should be specified in the solute_list: "
+                             "tss or phosphates."):
         m.fs.unit = SedimentationZO(default={
             "property_package": m.fs.params,
             "database": db,
             "process_subtype": "phosphorus_capture"})
-
-@pytest.mark.unit
-def test_phosphorus_capture_two_phosphates_in_solute_list_error():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["phosphate_as_phosphorus", "phosphates"]})
-
-    with pytest.raises(KeyError,
-                       match="Only one of the following should be specified in the solute_list: "
-                             "tss, phosphates, or phosphate_as_phosphorus."):
-        m.fs.unit = SedimentationZO(default={
-            "property_package": m.fs.params,
-            "database": db,
-            "process_subtype": "phosphorus_capture"})
-
 
 @pytest.mark.unit
 def test_phosphorus_capture_phosphate_tss_in_solute_list_error():
