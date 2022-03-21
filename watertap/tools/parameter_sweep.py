@@ -556,9 +556,23 @@ def _write_to_csv(sweep_params, global_values, global_results_dict, global_resul
 
 # ================================================================
 
-def _write_debug_data(local_result_dict, debugging_data_dir, rank):
-    fname = f'local_results_{rank:03}.h5'
-    _write_output_to_h5(local_result_dict, debugging_data_dir, fname)
+def _write_debug_data(sweep_params, local_values, local_results_dict, debugging_data_dir, rank, write_h5, write_csv):
+    if write_h5:
+        fname_h5 = f'local_results_{rank:03}.h5'
+        _write_output_to_h5(local_results_dict, debugging_data_dir, fname_h5)
+    if write_csv:
+        fname_csv = f'local_results_{rank:03}.csv'
+
+        data_header = ','.join(itertools.chain(sweep_params))
+        local_results = np.zeros((np.shape(local_values)[0], len(local_results_dict['outputs'])), dtype=np.float64)
+        for i, (key, item) in enumerate( local_results_dict['outputs'].items()) :
+            data_header = ','.join( [data_header, key] )
+            local_results[:,i] = item['value'][:]
+
+        local_save_data = np.hstack((local_values, local_results))
+
+        # Save the local data
+        np.savetxt(os.path.join(debugging_data_dir, fname_csv), local_save_data, header=data_header, delimiter=', ', fmt='%.6e')
 
 # ================================================================
 
@@ -733,7 +747,7 @@ def _aggregate_local_results(global_values, local_output_dict, num_samples, loca
 # def _save_results(sweep_params, outputs, local_values, global_values, local_results,
 #         global_results, global_output_dict, csv_results_file, h5_results_file,
 #         debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
-def _save_results(sweep_params, global_values, local_results_dict, global_results_dict,
+def _save_results(sweep_params, local_values, global_values, local_results_dict, global_results_dict,
         global_results_csv, results_file_name, write_csv, write_h5,
         debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
 
@@ -761,7 +775,8 @@ def _save_results(sweep_params, global_values, local_results_dict, global_result
     # Handle values in the debugging data_directory
     if debugging_data_dir is not None:
         # local_output_dict = global_output_dict
-        _write_debug_data(local_results_dict, debugging_data_dir, rank)
+        _write_debug_data(sweep_params, local_values, local_results_dict, debugging_data_dir,
+            rank, write_h5, write_csv)
         # # Create the local filename and data
         # fname = os.path.join(debugging_data_dir, f'local_results_{rank:03}.csv')
         # local_save_data = np.hstack((local_values, local_results))
@@ -912,7 +927,7 @@ def parameter_sweep(model, sweep_params, outputs=None, results_file_name=None, w
     # Save to file
     # global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results, global_results, global_output_dict,
     #     csv_results_file, h5_results_file, debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs)
-    global_save_data = _save_results(sweep_params, global_values, local_results_dict, global_results_dict,
+    global_save_data = _save_results(sweep_params, local_values, global_values, local_results_dict, global_results_dict,
         global_results_csv, results_file_name, write_csv, write_h5, debugging_data_dir,
         comm, rank, num_procs, interpolate_nan_outputs)
 
