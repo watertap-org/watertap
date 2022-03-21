@@ -71,6 +71,11 @@ class SedimentationZOData(ZeroOrderBaseData):
             self._fixed_perf_vars.append(self.phosphorus_solids_ratio)
             self._perf_var_dict["Phosphorus-Solids Ratio (kg/kg)"] = self.phosphorus_solids_ratio
 
+            # This subtype is intended to be used explicitly for phosphorous capture.
+            # If the user provides TSS, the amount of settled phosphate would be determined based on
+            # an assumed fraction of phosphate in TSS. Alternatively, the user could provide phosphates
+            # as the species, and the amount of solids + phosphate settled would be reported.
+            # However, the user cannot provide both TSS and phosphates.
             if ("phosphates" in self.config.property_package.solute_set
                 or "phosphate_as_phosphorus" in self.config.property_package.solute_set) \
                     and "tss" in self.config.property_package.solute_set:
@@ -110,5 +115,5 @@ class SedimentationZOData(ZeroOrderBaseData):
                 self._perf_var_dict["Final mass flow of settled phosphate (kg/s)"] = self.final_phosphate_mass
 
             else:
-                raise KeyError("Either tss, phosphates, or phosphate_as_phosphorus must be "
-                               "defined in the solute_list for this subtype.")
+                raise KeyError("Only one of the following should be specified in the solute_list: "
+                               "tss, phosphates, or phosphate_as_phosphorus.")

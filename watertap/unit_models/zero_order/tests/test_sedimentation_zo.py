@@ -569,8 +569,8 @@ def test_phosphorus_capture_no_tss_or_phosphate_in_solute_list_error():
         default={"solute_list": ["foo"]})
 
     with pytest.raises(KeyError,
-                       match="Either tss, phosphates, or phosphate_as_phosphorus "
-                             "must be defined in the solute_list for this subtype."):
+                       match="Only one of the following should be specified in the solute_list: "
+                             "tss, phosphates, or phosphate_as_phosphorus."):
         m.fs.unit = SedimentationZO(default={
             "property_package": m.fs.params,
             "database": db,
@@ -584,8 +584,8 @@ def test_phosphorus_capture_two_phosphates_in_solute_list_error():
         default={"solute_list": ["phosphate_as_phosphorus", "phosphates"]})
 
     with pytest.raises(KeyError,
-                       match="Either tss, phosphates, or phosphate_as_phosphorus "
-                             "must be defined in the solute_list for this subtype."):
+                       match="Only one of the following should be specified in the solute_list: "
+                             "tss, phosphates, or phosphate_as_phosphorus."):
         m.fs.unit = SedimentationZO(default={
             "property_package": m.fs.params,
             "database": db,
