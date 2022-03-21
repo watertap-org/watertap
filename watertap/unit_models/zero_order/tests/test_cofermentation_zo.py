@@ -164,6 +164,7 @@ Unit : fs.unit                                                             Time:
        Electricity Demand : 1.0000e-14 : False : (0, None)
     Electricity Intensity :     0.0000 :  True : (None, None)
      Solute Removal [cod] :    0.70000 :  True : (0, None)
+           Water Recovery :     0.0000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
