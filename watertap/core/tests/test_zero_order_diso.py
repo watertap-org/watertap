@@ -88,6 +88,7 @@ class TestDISO:
             "Inlet 2": model.fs.unit.inlet2,
             "Treated": model.fs.unit.treated}
         assert model.fs.unit._perf_var_dict == {
+            "Water Recovery": model.fs.unit.recovery_frac_mass_H2O,
             "Solute Removal": model.fs.unit.removal_frac_mass_solute}
 
     @pytest.mark.unit
@@ -172,6 +173,7 @@ Unit : fs.unit                                                             Time:
     Solute Removal [A] : 0.10000 :  True : (0, None)
     Solute Removal [B] : 0.20000 :  True : (0, None)
     Solute Removal [C] : 0.30000 :  True : (0, None)
+        Water Recovery :  0.0000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
