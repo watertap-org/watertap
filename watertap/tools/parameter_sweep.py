@@ -280,7 +280,7 @@ def _aggregate_results_arr(global_results_dict, num_cases, comm, rank, num_procs
 
     if rank == 0:
         for i, (key, item) in enumerate( global_results_dict['outputs'].items()) :
-            global_results[:,i] = item['value'][:]
+            global_results[:,i] = item['value'][:num_cases]
 
     if num_procs > 1: # pragma: no cover
         comm.Bcast(global_results, root=0)

@@ -28,15 +28,17 @@ from idaes.surrogate.pysmo import sampling
 from idaes.core.util.model_statistics import (variables_in_activated_equalities_set,
     expressions_set, total_objectives_set)
 from pyomo.core.base.block import TraversalStrategy
-from watertap.tools.parameter_sweep import (_default_optimize,
-                                            _init_mpi,
-                                            _process_sweep_params,
+from watertap.tools.parameter_sweep import (_aggregate_results_arr,
                                             _build_combinations,
-                                            _divide_combinations,
-                                            _do_param_sweep,
                                             _create_local_output_skeleton,
                                             _create_global_output,
+                                            _default_optimize,
+                                            _divide_combinations,
+                                            _do_param_sweep,
+                                            _init_mpi,
+                                            _process_sweep_params,
                                             _process_results_filename,
+                                            _save_results,
                                             _write_outputs)
 
 np.set_printoptions(linewidth=200)
@@ -98,6 +100,30 @@ def _filter_recursive_solves(model, sweep_params, outputs, recursive_local_dict,
 
 # ================================================================
 
+def _aggregate_filtered_input_arr(global_filtered_dict, req_num_samples, comm, rank, num_procs):
+
+    global_filtered_values = np.zeros((req_num_samples, len(global_filtered_dict['sweep_params'])), dtype=np.float64)
+
+    if rank == 0:
+        for i, (key, item) in enumerate( global_filtered_dict['sweep_params'].items()) :
+            global_filtered_values[:,i] = item['value'][:req_num_samples]
+
+    if num_procs > 1: # pragma: no cover
+        comm.Bcast(global_filtered_values, root=0)
+
+    return global_filtered_values
+
+# ================================================================
+
+def _aggregate_filtered_results(local_filtered_dict, req_num_samples, comm, rank, num_procs):
+
+    global_filtered_dict = _create_global_output(local_filtered_dict, req_num_samples, comm, rank, num_procs)
+    global_filtered_results = _aggregate_results_arr(global_filtered_dict, req_num_samples, comm, rank, num_procs)
+    global_filtered_values = _aggregate_filtered_input_arr(global_filtered_dict, req_num_samples, comm, rank, num_procs)
+
+    return global_filtered_dict, global_filtered_results, global_filtered_values
+# ================================================================
+
 def recursive_parameter_sweep(model, sweep_params, outputs=None, results_file_name=None, write_csv=False, write_h5=False,
         optimize_function=_default_optimize, optimize_kwargs=None, reinitialize_function=None,
         reinitialize_kwargs=None, reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
@@ -153,19 +179,24 @@ def recursive_parameter_sweep(model, sweep_params, outputs=None, results_file_na
 
     # Not that we have all of the successful outputs in a consolidated dictionary locally,
     # we can now construct a global dictionary of successful solves.
-    global_filtered_dict = _create_global_output(local_filtered_dict, req_num_samples, comm, rank, num_procs)
-
+    # global_filtered_dict = _create_global_output(local_filtered_dict, req_num_samples, comm, rank, num_procs)
+    global_filtered_dict, global_filtered_results, global_filtered_values = _aggregate_filtered_results(local_filtered_dict, req_num_samples, comm, rank, num_procs)
 
     # Now we can save this
     if num_procs > 0:
         comm.Barrier()
 
-    if rank == 0:
-        if results_file_name is not None:
-            dirname, fname_no_ext = _process_results_filename(results_file_name)
-            _write_outputs(global_filtered_dict, dirname, fname_no_ext, txt_options="keys")
+    local_values = None
+    global_save_data = _save_results(sweep_params, local_values, global_filtered_values, local_filtered_dict, global_filtered_dict,
+        global_filtered_results, results_file_name, write_csv, write_h5, debugging_data_dir,
+        comm, rank, num_procs, interpolate_nan_outputs)
 
-    return
+    # if rank == 0:
+    #     if results_file_name is not None:
+    #         dirname, fname_no_ext = _process_results_filename(results_file_name)
+    #         _write_outputs(global_filtered_dict, dirname, fname_no_ext, txt_options="keys")
+
+    return global_save_data
 
 # ================================================================
 
