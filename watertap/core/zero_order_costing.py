@@ -614,6 +614,14 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         ZeroOrderCostingData.cost_power_law_flow(blk)
 
+        # Register flows - electricity already done by cost_power_law_flow
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.acetic_acid_demand[t0], "acetic_acid")
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.phosphoric_acid_demand[t0], "phosphoric_acid")
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.ferric_chloride_demand[t0], "ferric_chloride")
+
     def cost_gac(blk):
         """
         General method for costing granular activated carbon processes. Capital
@@ -989,7 +997,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.chemical_flow_mass[t0], "hydrogen_peroxide")
 
-
     def cost_landfill(blk):
         """
         General method for costing landfill. Capital cost is based on the total mass and
@@ -1074,7 +1081,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         # Register flows
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity")
-
 
     def _get_ozone_capital_cost(blk, A, B, C, D):
         """

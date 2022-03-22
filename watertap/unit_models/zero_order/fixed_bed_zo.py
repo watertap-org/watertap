@@ -15,7 +15,7 @@ This module contains a zero-order representation of a fixed bed unit.
 operation.
 """
 
-from pyomo.environ import Reference, units as pyunits
+from pyomo.environ import units as pyunits, Var
 from idaes.core import declare_process_block_class
 from watertap.core import build_siso, constant_intensity, ZeroOrderBaseData
 
@@ -39,3 +39,66 @@ class FixedBedZOData(ZeroOrderBaseData):
         build_siso(self)
         constant_intensity(self)
         self.recovery_frac_mass_H2O.fix(1)
+
+        # Chemical demands
+        self.acetic_acid_dose = Var(
+            units=pyunits.kg/pyunits.m**3,
+            bounds=(0, None),
+            doc="Dosing rate of acetic acid")
+        self.phosphoric_acid_dose = Var(
+            units=pyunits.kg/pyunits.m**3,
+            bounds=(0, None),
+            doc="Dosing rate of phosphoric acid")
+        self.ferric_chloride_dose = Var(
+            units=pyunits.kg/pyunits.m**3,
+            bounds=(0, None),
+            doc="Dosing rate of ferric chloride")
+        self._fixed_perf_vars.append(self.acetic_acid_dose)
+        self._fixed_perf_vars.append(self.phosphoric_acid_dose)
+        self._fixed_perf_vars.append(self.ferric_chloride_dose)
+
+        self.acetic_acid_demand = Var(
+            self.flowsheet().time,
+            units=pyunits.kg/pyunits.hr,
+            bounds=(0, None),
+            doc="Consumption rate of acetic acid")
+        self.phosphoric_acid_demand = Var(
+            self.flowsheet().time,
+            units=pyunits.kg/pyunits.hr,
+            bounds=(0, None),
+            doc="Consumption rate of phosphoric acid")
+        self.ferric_chloride_demand = Var(
+            self.flowsheet().time,
+            units=pyunits.kg/pyunits.hr,
+            bounds=(0, None),
+            doc="Consumption rate of ferric chloride")
+
+        self._perf_var_dict["Acetic Acid Demand"] = self.acetic_acid_demand
+        self._perf_var_dict["Phosphoric Acid Demand"] = \
+            self.phosphoric_acid_demand
+        self._perf_var_dict["Ferric Chlorided Demand"] = \
+            self.ferric_chloride_demand
+
+        @self.Constraint(self.flowsheet().time,
+                         doc="Acetic acid demand constraint")
+        def acetic_acid_demand_equation(b, t):
+            return (b.acetic_acid_demand[t] ==
+                    pyunits.convert(
+                        b.acetic_acid_dose*b.properties_in[t].flow_vol,
+                        to_units=pyunits.kg/pyunits.hr))
+
+        @self.Constraint(self.flowsheet().time,
+                         doc="Phosphoric acid demand constraint")
+        def phosphoric_acid_demand_equation(b, t):
+            return (b.phosphoric_acid_demand[t] ==
+                    pyunits.convert(
+                        b.phosphoric_acid_dose*b.properties_in[t].flow_vol,
+                        to_units=pyunits.kg/pyunits.hr))
+
+        @self.Constraint(self.flowsheet().time,
+                         doc="Acetic acid demand constraint")
+        def ferric_chloride_demand_equation(b, t):
+            return (b.ferric_chloride_demand[t] ==
+                    pyunits.convert(
+                        b.ferric_chloride_dose*b.properties_in[t].flow_vol,
+                        to_units=pyunits.kg/pyunits.hr))

@@ -64,6 +64,21 @@ class TestFixedBedZO_w_o_default_removal:
         assert isinstance(model.fs.unit.water_recovery_equation, Constraint)
         assert isinstance(model.fs.unit.solute_treated_equation, Constraint)
 
+        assert isinstance(model.fs.unit.acetic_acid_dose, Var)
+        assert isinstance(model.fs.unit.acetic_acid_demand, Var)
+        assert isinstance(model.fs.unit.acetic_acid_demand_equation,
+                          Constraint)
+
+        assert isinstance(model.fs.unit.phosphoric_acid_dose, Var)
+        assert isinstance(model.fs.unit.phosphoric_acid_demand, Var)
+        assert isinstance(model.fs.unit.acetic_acid_demand_equation,
+                          Constraint)
+
+        assert isinstance(model.fs.unit.ferric_chloride_dose, Var)
+        assert isinstance(model.fs.unit.ferric_chloride_demand, Var)
+        assert isinstance(model.fs.unit.ferric_chloride_demand_equation,
+                          Constraint)
+
     @pytest.mark.component
     def test_load_parameters(self, model):
         data = model.db.get_unit_operation_parameters("fixed_bed")
@@ -298,6 +313,7 @@ db = Database()
 params = db._get_technology("fixed_bed")
 
 
+@pytest.mark.component
 @pytest.mark.parametrize("subtype", [k for k in params.keys()])
 def test_costing(subtype):
     m = ConcreteModel()

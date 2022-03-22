@@ -23,6 +23,15 @@ default: # TODO: confirm any differentiation in removal across subtypes
     capital_b_parameter:
       value: 0.734002
       units: dimensionless
+  acetic_acid_dose:
+    value: 0.0499676
+    units: kg/m^3
+  phosphoric_acid_dose:
+    value: 0.00422660
+    units: kg/m^3
+  ferric_chloride_dose:
+    value: 0.00999352
+    units: kg/m^3
 gravity_basin:
   energy_electric_flow_vol_inlet:
     value: 0.078498
@@ -47,6 +56,15 @@ gravity_basin:
     capital_b_parameter:
       value: 0.638873
       units: dimensionless
+  acetic_acid_dose:
+    value: 0.0499676
+    units: kg/m^3
+  phosphoric_acid_dose:
+    value: 0.00422660
+    units: kg/m^3
+  ferric_chloride_dose:
+    value: 0.00999352
+    units: kg/m^3
 fixed bed:
   energy_electric_flow_vol_inlet:
     value: 0.085618
@@ -71,3 +89,12 @@ fixed bed:
     capital_b_parameter:
       value: 0.734002
       units: dimensionless
+  acetic_acid_dose:
+    value: 0.0499676
+    units: kg/m^3
+  phosphoric_acid_dose:
+    value: 0.00422660
+    units: kg/m^3
+  ferric_chloride_dose:
+    value: 0.00999352
+    units: kg/m^3
