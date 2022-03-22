@@ -35,7 +35,8 @@ from watertap.unit_models.zero_order import (
     SedimentationZO,
     StorageTankZO,
     UVZO,
-    UVAOPZO,)
+    UVAOPZO,
+    EvaporationPondZO)
 
 
 global_params = ["plant_lifetime",
@@ -828,6 +829,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.chemical_flow_mass[t0], "hydrogen_peroxide")
 
+    def cost_evaporation_pond(blk):
+        pass 
+
     def _get_ozone_capital_cost(blk, A, B, C, D):
         """
         Generate expressions for capital cost of ozonation system.
@@ -927,6 +931,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                     StorageTankZO: cost_storage_tank,
                     UVZO: cost_uv,
                     UVAOPZO: cost_uv_aop,
+                    EvaporationPondZO: cost_evaporation_pond
                     }
 
 
