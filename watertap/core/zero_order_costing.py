@@ -30,6 +30,7 @@ from watertap.unit_models.zero_order import (
     ChemicalAdditionZO,
     ChlorinationZO,
     CoagulationFlocculationZO,
+    GACZO,
     LandfillZO,
     IonExchangeZO,
     OzoneZO,
@@ -600,6 +601,68 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity")
 
+    def cost_gac(blk):
+        """
+        General method for costing granular activated carbon processes. Capital
+        cost is based on the inlet flow rate of liquid and the empty bed
+        contacting time.
+
+        This method also registers electricity and activated carbon consumption
+        as costed flows.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        Q = blk.unit_model.properties_in[t0].flow_vol
+        T = blk.unit_model.empty_bed_contact_time
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        A, B, C = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["capital_a_parameter",
+             "capital_b_parameter",
+             "capital_c_parameter"])
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Call general power law costing method
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation")
+
+        expr = (pyo.units.convert(
+                    A * Q,
+                    to_units=blk.config.flowsheet_costing_block.base_currency) +
+                pyo.units.convert(
+                    B * T,
+                    to_units=blk.config.flowsheet_costing_block.base_currency) +
+                pyo.units.convert(
+                    C * Q * T,
+                    to_units=blk.config.flowsheet_costing_block.base_currency))
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.activated_carbon_demand[t0], "activated_carbon")
+
     def cost_ion_exchange(blk):
         """
         General method for costing ion exchange units. Capital cost is based on
@@ -1093,6 +1156,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                     ChemicalAdditionZO: cost_chemical_addition,
                     ChlorinationZO: cost_chlorination,
                     CoagulationFlocculationZO: cost_coag_and_floc,
+                    GACZO: cost_gac,
                     LandfillZO: cost_landfill,
                     IonExchangeZO: cost_ion_exchange,
                     OzoneZO: cost_ozonation,
@@ -1102,7 +1166,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                     UVZO: cost_uv,
                     UVAOPZO: cost_uv_aop,
                     WellFieldZO: cost_well_field,
-                   }
+                    }
 
 
 def _get_tech_parameters(blk, parameter_dict, subtype, param_list):

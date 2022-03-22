@@ -4,6 +4,10 @@ defined_flows:
   electricity:
     value: 0.0595
     units: USD_2019/kWh
+  activated_carbon:
+    value: 3.63759
+    units: USD_2020/kg
+    purity: 1
   alum:
     value: 0.69
     units: USD_2020/kg

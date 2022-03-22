@@ -17,17 +17,19 @@ import pytest
 from io import StringIO
 
 from pyomo.environ import (
-    check_optimal_termination, ConcreteModel, Constraint, value, Var, Param)
+    Block, check_optimal_termination, ConcreteModel, Constraint, value, Var)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
+from idaes.generic_models.costing import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import GACZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
@@ -56,13 +58,18 @@ class TestGACZO_w_o_default_removal:
     def test_build(self, model):
         assert model.fs.unit.config.database is model.db
 
-        assert isinstance(model.fs.unit.lift_height, Param)
-        assert isinstance(model.fs.unit.eta_pump, Param)
-        assert isinstance(model.fs.unit.eta_motor, Param)
+        assert isinstance(model.fs.unit.empty_bed_contact_time, Var)
+        assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
         assert isinstance(model.fs.unit.electricity, Var)
+        assert isinstance(model.fs.unit.activated_carbon_replacement, Var)
+        assert isinstance(model.fs.unit.activated_carbon_demand, Var)
+
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
+        assert isinstance(model.fs.unit.electricity_intensity_constraint,
+                          Constraint)
         assert isinstance(model.fs.unit.water_recovery_equation, Constraint)
         assert isinstance(model.fs.unit.solute_treated_equation, Constraint)
+        assert isinstance(model.fs.unit.activated_carbon_equation, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -76,6 +83,16 @@ class TestGACZO_w_o_default_removal:
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
+
+        assert model.fs.unit.empty_bed_contact_time.fixed
+        assert model.fs.unit.empty_bed_contact_time.value == \
+            data["empty_bed_contact_time"]["value"]/60  # min to hour
+        assert model.fs.unit.volumetric_electricity_intensity.fixed
+        assert model.fs.unit.volumetric_electricity_intensity.value == \
+            data["volumetric_electricity_intensity"]["value"]
+        assert model.fs.unit.activated_carbon_replacement.fixed
+        assert model.fs.unit.activated_carbon_replacement.value == \
+            data["activated_carbon_replacement"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -112,7 +129,7 @@ class TestGACZO_w_o_default_removal:
             model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
         assert (pytest.approx(0.49854, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nonvolatile_toc"]))
-        assert (pytest.approx(3685.6, rel=1e-5) ==
+        assert (pytest.approx(637.988, rel=1e-5) ==
                 value(model.fs.unit.electricity[0]))
 
     @pytest.mark.solver
@@ -139,11 +156,14 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                              : Value   : Fixed : Bounds
-                  Electricity Demand :  3685.6 : False : (0, None)
-    Solute Removal [nonvolatile_toc] : 0.20000 :  True : (0, None)
-                Solute Removal [tss] : 0.97000 :  True : (0, None)
-                      Water Recovery : 0.96000 :  True : (1e-08, 1.0000001)
+    Key                              : Value    : Fixed : Bounds
+             Activated Carbon Demand :   1983.6 : False : (0, None)
+                  Electricity Demand :   637.99 : False : (0, None)
+               Electricity Intensity : 0.017718 : False : (None, None)
+              Empty Bed Contact Time :  0.16667 :  True : (0, None)
+    Solute Removal [nonvolatile_toc] :  0.20000 :  True : (0, None)
+                Solute Removal [tss] :  0.97000 :  True : (0, None)
+                      Water Recovery :  0.96000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -156,6 +176,7 @@ Unit : fs.unit                                                             Time:
 """
 
         assert output in stream.getvalue()
+
 
 class TestGACZO_w_default_removal:
     @pytest.fixture(scope="class")
@@ -182,27 +203,38 @@ class TestGACZO_w_default_removal:
     def test_build(self, model):
         assert model.fs.unit.config.database is model.db
 
-        assert isinstance(model.fs.unit.lift_height, Param)
-        assert isinstance(model.fs.unit.eta_pump, Param)
-        assert isinstance(model.fs.unit.eta_motor, Param)
+        assert isinstance(model.fs.unit.empty_bed_contact_time, Var)
+        assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
         assert isinstance(model.fs.unit.electricity, Var)
+
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
+        assert isinstance(model.fs.unit.electricity_intensity_constraint,
+                          Constraint)
         assert isinstance(model.fs.unit.water_recovery_equation, Constraint)
         assert isinstance(model.fs.unit.solute_treated_equation, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
         data = model.db.get_unit_operation_parameters("gac")
+
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
         assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
             data["recovery_frac_mass_H2O"]["value"]
+
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             if j == "foo":
-                assert v.value == data["default_removal_frac_mass_solute"]["value"]
+                assert v.value == 0
             else:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
+
+        assert model.fs.unit.empty_bed_contact_time.fixed
+        assert model.fs.unit.empty_bed_contact_time.value == \
+            data["empty_bed_contact_time"]["value"]/60  # min to hour
+        assert model.fs.unit.volumetric_electricity_intensity.fixed
+        assert model.fs.unit.volumetric_electricity_intensity.value == \
+            data["volumetric_electricity_intensity"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -243,7 +275,7 @@ class TestGACZO_w_default_removal:
             model.fs.unit.properties_byproduct[0].conc_mass_comp["nonvolatile_toc"]))
         assert (pytest.approx(2.4927e-08, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(3686.0, rel=1e-5) ==
+        assert (pytest.approx(638.051, rel=1e-5) ==
                 value(model.fs.unit.electricity[0]))
 
     @pytest.mark.solver
@@ -270,12 +302,15 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                              : Value   : Fixed : Bounds
-                  Electricity Demand :  3686.0 : False : (0, None)
-                Solute Removal [foo] :  0.0000 :  True : (0, None)
-    Solute Removal [nonvolatile_toc] : 0.20000 :  True : (0, None)
-                Solute Removal [tss] : 0.97000 :  True : (0, None)
-                      Water Recovery : 0.96000 :  True : (1e-08, 1.0000001)
+    Key                              : Value    : Fixed : Bounds
+             Activated Carbon Demand :   1983.8 : False : (0, None)
+                  Electricity Demand :   638.05 : False : (0, None)
+               Electricity Intensity : 0.017718 : False : (None, None)
+              Empty Bed Contact Time :  0.16667 :  True : (0, None)
+                Solute Removal [foo] :   0.0000 :  True : (0, None)
+    Solute Removal [nonvolatile_toc] :  0.20000 :  True : (0, None)
+                Solute Removal [tss] :  0.97000 :  True : (0, None)
+                      Water Recovery :  0.96000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -320,3 +355,49 @@ class TestGACZOsubtype:
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
+
+
+def test_costing():
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = WaterParameterBlock(
+        default={"solute_list": ["sulfur", "toc", "tss"]})
+
+    m.fs.costing = ZeroOrderCosting()
+
+    m.fs.unit1 = GACZO(default={
+        "property_package": m.fs.params,
+        "database": m.db})
+
+    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
+    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
+    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    m.fs.unit1.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": m.fs.costing})
+
+    assert isinstance(m.fs.costing.gac, Block)
+    assert isinstance(m.fs.costing.gac.capital_a_parameter,
+                      Var)
+    assert isinstance(m.fs.costing.gac.capital_b_parameter,
+                      Var)
+    assert isinstance(m.fs.costing.gac.capital_c_parameter,
+                      Var)
+
+    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
+                      Constraint)
+
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    assert m.fs.unit1.electricity[0] in \
+        m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit1.activated_carbon_demand[0] in \
+        m.fs.costing._registered_flows["activated_carbon"]
