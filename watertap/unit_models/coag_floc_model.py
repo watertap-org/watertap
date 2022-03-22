@@ -583,7 +583,7 @@ class CoagulationFlocculationData(UnitModelBlockData):
         self.flocculation_power = Var(
             self.flowsheet().config.time,
             initialize=0.5,
-            bounds=(0, None),
+            bounds=(0, 100),
             domain=NonNegativeReals,
             units=pyunits.kW,
             doc='Power usage of the flocculation basin in kW')
@@ -605,7 +605,7 @@ class CoagulationFlocculationData(UnitModelBlockData):
         self.total_power = Var(
             self.flowsheet().config.time,
             initialize=0.5,
-            bounds=(0, None),
+            bounds=(0, 100),
             domain=NonNegativeReals,
             units=pyunits.kW,
             doc='Power usage of the full unit model in kW')
@@ -959,3 +959,15 @@ class CoagulationFlocculationData(UnitModelBlockData):
                     sf_og = iscale.get_scaling_factor(self.control_volume.properties_out[t].mass_frac_phase_comp[ind])
                     sf_new = iscale.get_scaling_factor(self.tss_loss_rate)
                     iscale.set_scaling_factor(self.control_volume.properties_out[t].mass_frac_phase_comp[ind], 100*sf_new*(sf_new/sf_og))
+
+    def _get_performance_contents(self, time_point=0):
+        t = time_point
+        return { "vars" : { "Total Power Usage  (kW)" : self.total_power[t],
+                            "Rapid Mixing Power (kW)" : self.rapid_mixing_power[t],
+                            "Flocc Mixing Power (kW)" : self.flocculation_power[t],
+                          },
+                "exprs" : {
+                          },
+                "params" : {
+                           },
+               }
