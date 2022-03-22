@@ -51,15 +51,15 @@ class EvaporationPondZOData(ZeroOrderBaseData):
                     doc="Daily solar radiation incident")
 
         self.liner_thickness = Var(self.flowsheet().time,
-                    units=pyunits.dimensionless,
+                    units=pyunits.mil,
                     doc="Thickness of evaporation pond liner")
 
         self.land_cost = Var(self.flowsheet().time,
-                    units=pyunits.dimensionless,
+                    units=pyunits.acre**-1,
                     doc="Cost of land for pond")
 
         self.land_clearing_cost = Var(self.flowsheet().time,
-                    units=pyunits.dimensionless,
+                    units=pyunits.acre**-1,
                     doc="Cost to clear land for pond")
 
         self.dike_height = Var(self.flowsheet().time,
@@ -146,8 +146,8 @@ class EvaporationPondZOData(ZeroOrderBaseData):
         @self.Constraint(self.flowsheet().time,
                     doc='Adjusted area constraint')
         def area_adj_constraint(b, t):
-            dike_ht = b.dike_height[t]/pyunits.ft
             area = b.area[t]/pyunits.acres
+            dike_ht = b.dike_height[t]/pyunits.ft
             return (b.adj_area[t] == 
                 b.adj_area_calc_a_parameter[t] * area * 
                 (1 + (b.adj_area_calc_b_parameter[t] * dike_ht)/ area ** 0.5))
