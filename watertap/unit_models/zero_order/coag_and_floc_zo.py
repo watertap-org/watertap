@@ -120,7 +120,7 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
                               units=pyunits.kW,
                               doc="Floc Power Consumption")
 
-        self.total_power = Var(self.flowsheet().config.time,
+        self.electricity = Var(self.flowsheet().config.time,
                                units=pyunits.kW,
                                doc="Total Power Consumption")
 
@@ -150,7 +150,7 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
         self._perf_var_dict["Floc Velocity Gradient (1/s)"] = self.velocity_gradient_floc
         self._perf_var_dict["Rapid Mix Power (kW)"] = self.power_rapid_mix
         self._perf_var_dict["Floc Power (kW)"] = self.power_floc
-        self._perf_var_dict["Total Power Consumption (kW)"] = self.total_power
+        self._perf_var_dict["Total Power Consumption (kW)"] = self.electricity
 
         def rule_rapid_mix_basin_vol(blk):
             return (blk.rapid_mix_basin_vol ==
@@ -212,5 +212,5 @@ class CoagulationFlocculationZOData(ZeroOrderBaseData):
 
         @self.Constraint(self.flowsheet().time,
                          doc='Total power consumption')
-        def total_power_constraint(b, t):
-            return b.total_power[t] == b.power_floc[t] + b.power_rapid_mix[t]
+        def electricity_constraint(b, t):
+            return b.electricity[t] == b.power_floc[t] + b.power_rapid_mix[t]
