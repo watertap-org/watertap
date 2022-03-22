@@ -307,6 +307,9 @@ class TestCrystallization():
         b.souders_brown_constant.fix(0.0244)
         b.crystal_median_length.fix(0.4e-3)
         results = solver.solve(m)
+        
+        # Test that report function works
+        b.report()
 
         # Check for optimal solution
         assert results.solver.termination_condition == \
