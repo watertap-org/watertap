@@ -22,7 +22,6 @@ from watertap.tools.parameter_sweep import (_init_mpi,
                                             _build_combinations,
                                             _divide_combinations,
                                             _update_model_values,
-                                            # _aggregate_results,
                                             _interp_nan_values,
                                             _process_sweep_params,
                                             _write_output_to_h5,
@@ -34,7 +33,8 @@ from watertap.tools.parameter_sweep import (_init_mpi,
                                             UniformSample,
                                             NormalSample,
                                             SamplingType)
-from watertap.tools.recursive_parameter_sweep import *
+from watertap.tools.recursive_parameter_sweep import (_aggregate_filtered_input_arr,
+                                                      recursive_parameter_sweep)
 from watertap.tools.tests.test_parameter_sweep import _get_rank0_path
 from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (build,
     set_operating_conditions,
@@ -92,6 +92,24 @@ def model():
             results[k, :] = [a, np.nan]
     '''
 
+@pytest.mark.component
+def test_aggregate_filtered_input_arr():
+    comm, rank, num_procs = _init_mpi()
+
+    input_dict = {'outputs': {'x_val': {'lower bound': None,
+                                        'units': 'None',
+                                        'upper bound': None,
+                                        'value': np.array([0.31655848, 0.2763452 , 0.26241279, 0.15511682, 0.1511865 , 0.09723662, 0.05410589, 0.6797816 , 0.62896394, 0.6128707 , 0.23852064, 0.17110508, 0.13195544])}},
+                  'solve_successful': [True]*13,
+                  'sweep_params': {'fs.a': {'units': 'None',
+                                            'value': np.array([0.38344152, 0.4236548 , 0.43758721, 0.54488318, 0.5488135 , 0.60276338, 0.64589411, 0.0202184 , 0.07103606, 0.0871293 , 0.46147936, 0.52889492, 0.56804456])}}}
+
+
+    truth_arr = np.array([0.38344152, 0.4236548 , 0.43758721, 0.54488318, 0.5488135 , 0.60276338, 0.64589411, 0.0202184 , 0.07103606, 0.0871293 , 0.46147936, 0.52889492, 0.56804456])
+
+    req_num_samples = 10
+    values_arr = _aggregate_filtered_input_arr(input_dict, req_num_samples, comm, rank, num_procs)
+    assert np.allclose(values_arr[:,0], truth_arr[0:req_num_samples], equal_nan=True)
 
 @pytest.mark.component
 def test_recursive_parameter_sweep(model, tmp_path):
