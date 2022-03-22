@@ -1,7 +1,0 @@
-default:
-  energy_electric_flow_vol_inlet:
-    value: 0
-    units: kWh/m^3
-  capacity_basis:
-    value: 302096
-    units: kg/hr
