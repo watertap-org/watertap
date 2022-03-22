@@ -75,7 +75,9 @@ class TestCoagulationPropPack():
         assert isinstance(model.fs.properties.dens_param_C, Param)
         assert isinstance(model.fs.properties.ref_pressure_correction, Param)
         assert isinstance(model.fs.properties.ref_pressure_slope, Param)
-        assert isinstance(model.fs.properties.ref_dens_sol, Param)
+        assert isinstance(model.fs.properties.mu_A, Param)
+        assert isinstance(model.fs.properties.mu_B, Param)
+        assert isinstance(model.fs.properties.mu_C, Param)
 
     @pytest.mark.unit
     def test_metadata(self, coag_obj):
@@ -214,6 +216,7 @@ class TestCoagulationPropPack():
         assert value(model.fs.stream[0].mass_frac_phase_comp['Liq', 'Sludge']) == pytest.approx(0.0009794,  rel=1e-4)
 
         assert value(model.fs.stream[0].dens_mass_phase['Liq']) == pytest.approx(1013.95727,  rel=1e-4)
+        assert value(model.fs.stream[0].visc_d['Liq']) == pytest.approx(0.0008944,  rel=1e-4)
 
         assert value(model.fs.stream[0].conc_mass_phase_comp['Liq', 'H2O']) == pytest.approx(993.1021,  rel=1e-4)
         assert value(model.fs.stream[0].conc_mass_phase_comp['Liq', 'TSS']) == pytest.approx(9.931021,  rel=1e-4)
