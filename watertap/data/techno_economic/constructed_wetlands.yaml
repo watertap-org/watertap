@@ -1,0 +1,14 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 0.85       #Todo: revisit value later
+    units: dimensionless
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_solute:
+    nitrate:      #TODO: just a placeholder until we have info on removal fractions of constituents
+      value: 0.40
+      units: dimensionless
+      reference: https://doi.org/10.1016/j.wre.2013.09.001   #TODO: temporary ref for nitrate removal until alternatives provided
+  capital cost:  # TODO: placeholder until costs available
+    cost_factor: None
