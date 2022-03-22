@@ -601,6 +601,20 @@ class CoagulationFlocculationData(UnitModelBlockData):
 
             return (self.flocculation_power[t] == power_usage)
 
+
+        self.total_power = Var(
+            self.flowsheet().config.time,
+            initialize=0.5,
+            bounds=(0, None),
+            domain=NonNegativeReals,
+            units=pyunits.kW,
+            doc='Power usage of the full unit model in kW')
+
+        @self.Constraint(self.flowsheet().config.time,
+                         doc="Constraint for the power usage of the full unit model")
+        def eq_total_power(self, t):
+            return (self.total_power[t] == self.flocculation_power[t] + self.rapid_mixing_power[t])
+
     # Return a scalar expression for the inlet concentration of TSS
     def compute_inlet_tss_mass_concentration(self, t):
         """
@@ -884,6 +898,16 @@ class CoagulationFlocculationData(UnitModelBlockData):
             iscale.set_scaling_factor(self.flocculation_power, sf)
 
             for ind, c in self.eq_flocculation_power.items():
+                iscale.constraint_scaling_transform(c, sf)
+
+        # set scaling for total_power
+        if iscale.get_scaling_factor(self.total_power[t]) is None:
+            sf1 = iscale.get_scaling_factor(self.flocculation_power)
+            sf2 = iscale.get_scaling_factor(self.rapid_mixing_power)
+            sf = (sf1 + sf2)/2
+            iscale.set_scaling_factor(self.total_power, sf)
+
+            for ind, c in self.eq_total_power.items():
                 iscale.constraint_scaling_transform(c, sf)
 
         # set scaling factors for control_volume.properties_in based on control_volume.properties_out
