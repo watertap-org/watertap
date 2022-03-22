@@ -17,7 +17,7 @@ operation.
 
 from pyomo.environ import Reference, units as pyunits
 from idaes.core import declare_process_block_class
-from watertap.core import build_siso, pump_electricity, ZeroOrderBaseData
+from watertap.core import build_siso, constant_intensity, ZeroOrderBaseData
 
 # Some more information about this module
 __author__ = "Adam Atia"
@@ -37,8 +37,5 @@ class FixedBedZOData(ZeroOrderBaseData):
         self._tech_type = "fixed_bed"
 
         build_siso(self)
-        self._Q = Reference(self.properties_in[:].flow_vol)
-        # TODO: incorporate a*Q**b relationship for electricity consumption based on EPA data fitting;
-        # apply pump electricity consumption in the meantime
-        pump_electricity(self, self._Q)
+        constant_intensity(self)
         self.recovery_frac_mass_H2O.fix(1)

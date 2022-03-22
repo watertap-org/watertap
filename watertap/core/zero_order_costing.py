@@ -30,6 +30,7 @@ from watertap.unit_models.zero_order import (
     ChemicalAdditionZO,
     ChlorinationZO,
     CoagulationFlocculationZO,
+    FixedBedZO,
     GACZO,
     LandfillZO,
     IonExchangeZO,
@@ -601,6 +602,18 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity")
 
+    def cost_fixed_bed(blk):
+        """
+        General method for costing fixed bed units. This primarily calls the
+        cost_power_law_flow method.
+
+        This method also registers demand for a number of additional material
+        flows..
+        """
+        t0 = blk.flowsheet().time.first()
+
+        ZeroOrderCostingData.cost_power_law_flow(blk)
+
     def cost_gac(blk):
         """
         General method for costing granular activated carbon processes. Capital
@@ -1156,6 +1169,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                     ChemicalAdditionZO: cost_chemical_addition,
                     ChlorinationZO: cost_chlorination,
                     CoagulationFlocculationZO: cost_coag_and_floc,
+                    FixedBedZO: cost_fixed_bed,
                     GACZO: cost_gac,
                     LandfillZO: cost_landfill,
                     IonExchangeZO: cost_ion_exchange,
