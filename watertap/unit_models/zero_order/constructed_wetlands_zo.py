@@ -10,13 +10,29 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
+"""
+This module contains a zero-order representation of constructed wetlands
+for wastewater resource recovery flowsheets.
+"""
 
-from .wt_database import Database
-from .zero_order_base import ZeroOrderBaseData
-from .zero_order_properties import WaterParameterBlock, WaterStateBlock
-from .zero_order_electricity import constant_intensity, pump_electricity
-from .zero_order_pt import build_pt
-from .zero_order_sido import build_sido
-from .zero_order_sido_reactive import build_sido_reactive
-from .zero_order_siso import build_siso
-from .zero_order_diso import build_diso
+from idaes.core import declare_process_block_class
+from watertap.core import build_siso, ZeroOrderBaseData
+
+# Some more information about this module
+__author__ = "Adam Atia"
+
+
+@declare_process_block_class("ConstructedWetlandsZO")
+class ConstructedWetlandsZOData(ZeroOrderBaseData):
+    """
+    Zero-Order model for constructed wetlands.
+    """
+
+    CONFIG = ZeroOrderBaseData.CONFIG()
+
+    def build(self):
+        super().build()
+
+        self._tech_type = "constructed_wetlands"
+
+        build_siso(self)

@@ -65,9 +65,10 @@ def test_unit_parameter_files(tech):
                     "tramp_oil_tank",
                    ]
 
-    siso_full_recovery = ["uv_aop", "uv", "ion_exchange", "fixed_bed", "decarbonator", "chlorination"]
+    siso_full_recovery = ["uv_aop", "uv", "fixed_bed", "decarbonator", "chlorination"]
 
-    no_energy_electric_flow_vol_inlet = ["energy_recovery",
+    no_energy_electric_flow_vol_inlet = ["constructed_wetlands",
+                                         "energy_recovery",
                                          "mbr_denitrification",
                                          "mbr_nitrification",
                                          "multi_stage_bubble_aeration",
