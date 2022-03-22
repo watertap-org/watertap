@@ -11,13 +11,13 @@
 #
 ###############################################################################
 """
-Tests for zero-order electrodialysis reversal model
+Tests for zero-order cooling tower model
 """
 import pytest
-from io import StringIO
 
+from io import StringIO
 from pyomo.environ import (
-    Block, check_optimal_termination, ConcreteModel, Constraint, value, Var)
+    Block, ConcreteModel, Constraint, value, Var, assert_optimal_termination)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -26,14 +26,15 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.generic_models.costing import UnitModelCostingBlock
 
-from watertap.unit_models.zero_order import ElectrodialysisReversalZO
+from watertap.unit_models.zero_order import CoolingTowerZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
-class TestElectrodialysisReversalZO_w_default_removal:
+
+class TestCoolingTowerZO_w_default_removal:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -41,31 +42,33 @@ class TestElectrodialysisReversalZO_w_default_removal:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["tds", "foo"]})
+            default={"solute_list": ["tss", "foo"]})
 
-        m.fs.unit = ElectrodialysisReversalZO(default={
+        m.fs.unit = CoolingTowerZO(default={
             "property_package": m.fs.params,
             "database": m.db})
 
-        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-        m.fs.unit.inlet.flow_mass_comp[0, "tds"].fix(250)
+        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
+        m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "foo"].fix(1)
 
         return m
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.fs.unit.config.database is model.db
+        assert model.fs.unit.config.database == model.db
 
-        assert isinstance(model.fs.unit.electricity_constraint,
-                          Constraint)
         assert isinstance(model.fs.unit.electricity, Var)
-        assert isinstance(model.fs.unit.elec_coeff_1, Var)
-        assert isinstance(model.fs.unit.elec_coeff_2, Var)
+        assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
+        assert isinstance(model.fs.unit.electricity_consumption, Constraint)
+        assert isinstance(model.fs.unit.cycles, Var)
+        assert isinstance(model.fs.unit.blowdown, Var)
+        assert isinstance(model.fs.unit.blowdown_constraint, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("electrodialysis_reversal")
+        data = model.db.get_unit_operation_parameters("cooling_tower")
+
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
@@ -75,17 +78,17 @@ class TestElectrodialysisReversalZO_w_default_removal:
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             if j == "foo":
-                assert v.value == data[
-                    "default_removal_frac_mass_solute"]["value"]
+                assert v.value == data["default_removal_frac_mass_solute"]["value"]
             else:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
-        assert model.fs.unit.elec_coeff_1.fixed
-        assert model.fs.unit.elec_coeff_1.value == \
-            data["elec_coeff_1"]["value"]
-        assert model.fs.unit.elec_coeff_2.fixed
-        assert model.fs.unit.elec_coeff_2.value == \
-            data["elec_coeff_2"]["value"]
+        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
+        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
+            "energy_electric_flow_vol_inlet"]["value"]
+
+        assert model.fs.unit.cycles.fixed
+        assert model.fs.unit.cycles.value == \
+            data["cycles"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -106,26 +109,35 @@ class TestElectrodialysisReversalZO_w_default_removal:
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(9.2628, rel=1e-5) ==
+        assert (pytest.approx(1.2e-2, rel=1e-5) ==
+                value(model.fs.unit.properties_in[0].flow_vol))
+        assert (pytest.approx(83.3333, rel=1e-5) ==
+                value(model.fs.unit.properties_in[0].conc_mass_comp["tss"]))
+        assert (pytest.approx(83.3333, rel=1e-5) ==
+                value(model.fs.unit.properties_in[0].conc_mass_comp["foo"]))
+        assert (pytest.approx(0.0036, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(5.1632, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["tds"]))
-        assert (pytest.approx(0.1079584, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(204.5935, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["tds"]))
-        assert (pytest.approx(1.01197e-08, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(472761.372, rel=1e-5) ==
+        assert (pytest.approx(27.7778, rel=1e-5) ==
+                value(model.fs.unit.properties_treated[0].conc_mass_comp["tss"]))
+        assert (pytest.approx(277.778, rel=1e-5) ==
+                value(model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
+        assert (pytest.approx(8.4e-3, rel=1e-5) ==
+                value(model.fs.unit.properties_byproduct[0].flow_vol))
+        assert (pytest.approx(107.143, rel=1e-5) ==
+                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
+        assert (pytest.approx(9.5238e-8, rel=1e-5) ==
+                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
+        assert (pytest.approx(0, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
-        assert (pytest.approx(12.8107, rel=1e-5) ==
-                value(model.fs.unit.electricity_intensity[0]))
+        assert (pytest.approx(216.0, abs=1e-5) ==
+                value(model.fs.unit.blowdown[0]))
+
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -151,23 +163,27 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                                                : Value      : Fixed : Bounds
-    Electricity intensity per Inlet Flowrate  (kWh/m3) :     12.811 : False : (None, None)
-                                Power Consumption (kW) : 4.7276e+05 : False : (0, None)
-                                  Solute Removal [foo] :     0.0000 :  True : (0, None)
-                                  Solute Removal [tds] :    0.80870 :  True : (0, None)
-                                        Water Recovery :    0.92140 :  True : (1e-08, 1.0000001)
+    Key                        : Value      : Fixed : Bounds
+    Blowdown flowrate (m^3/hr) :     216.00 : False : (None, None)
+                        Cycles :     5.0000 :  True : (None, None)
+            Electricity Demand : 8.0000e-10 : False : (0, None)
+         Electricity Intensity :     0.0000 :  True : (None, None)
+          Solute Removal [foo] :     0.0000 :  True : (0, None)
+          Solute Removal [tss] :    0.90000 :  True : (0, None)
+                Water Recovery :    0.25000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
-                             Inlet   Treated  Byproduct
-    Volumetric Flowrate      10.251  9.2628     0.98817
-    Mass Concentration H2O   975.51  994.73      795.41
-    Mass Concentration tds   24.388  5.1632      204.59
-    Mass Concentration foo 0.097551 0.10796  1.0120e-08
+                             Inlet    Treated  Byproduct
+    Volumetric Flowrate    0.012000 0.0036000  0.0084000
+    Mass Concentration H2O   833.33    694.44     892.86
+    Mass Concentration tss   83.333    27.778     107.14
+    Mass Concentration foo   83.333    277.78 9.5238e-08
 ====================================================================================
 """
+
         assert output in stream.getvalue()
+
 
 def test_costing():
     m = ConcreteModel()
@@ -176,16 +192,16 @@ def test_costing():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["tds", "toc", "tss"]})
+        default={"solute_list": ["sulfur", "toc", "tss"]})
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = ElectrodialysisReversalZO(default={
+    m.fs.unit1 = CoolingTowerZO(default={
         "property_package": m.fs.params,
         "database": m.db})
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-    m.fs.unit1.inlet.flow_mass_comp[0, "tds"].fix(1)
+    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
     m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
     m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
@@ -194,12 +210,12 @@ def test_costing():
     m.fs.unit1.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": m.fs.costing})
 
-    assert isinstance(m.fs.costing.electrodialysis_reversal, Block)
-    assert isinstance(m.fs.costing.electrodialysis_reversal.capital_a_parameter,
+    assert isinstance(m.fs.costing.cooling_tower, Block)
+    assert isinstance(m.fs.costing.cooling_tower.capital_a_parameter,
                       Var)
-    assert isinstance(m.fs.costing.electrodialysis_reversal.capital_b_parameter,
+    assert isinstance(m.fs.costing.cooling_tower.capital_b_parameter,
                       Var)
-    assert isinstance(m.fs.costing.electrodialysis_reversal.reference_state, Var)
+    assert isinstance(m.fs.costing.cooling_tower.reference_state, Var)
 
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
     assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
@@ -210,22 +226,3 @@ def test_costing():
 
     assert m.fs.unit1.electricity[0] in \
         m.fs.costing._registered_flows["electricity"]
-
-
-db = Database()
-params = db._get_technology("electrodialysis_reversal")
-
-@pytest.mark.unit
-def test_no_tds_in_solute_list_error():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["foo"]})
-
-    with pytest.raises(KeyError,
-                       match='TDS must be included in the solute list for determining'
-                ' electricity intensity and power consumption of the electrodialysis '
-                'reversal unit.'):
-        m.fs.unit = ElectrodialysisReversalZO(default={
-            "property_package": m.fs.params,
-            "database": db})
