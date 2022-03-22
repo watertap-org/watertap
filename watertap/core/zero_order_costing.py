@@ -708,7 +708,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         cost_filter = D + E * pyo.units.convert(blk.unit_model.filter_surf_area,
                                                  to_units=pyo.units.ft ** 2)
 
-        cost_total = pyo.units.convert(cost_blower + cost_backwash + cost_filter,
+        cost_total = pyo.units.convert(cost_blower + cost_backwash + cost_filter*blk.unit_model.num_filter_units,
                                        to_units=blk.config.flowsheet_costing_block.base_currency)
 
         Q = pyo.units.convert(blk.unit_model.properties_in[t0].flow_vol,
