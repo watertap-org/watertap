@@ -1,0 +1,18 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 0       #Todo: revisit value later
+    units: dimensionless
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_solute:
+    #TODO: consider making this a reactive unit that converts cod to ffcod; this will suffice for now
+    cod:
+      value: 0.7    # Todo: revisit this value later
+      units: dimensionless
+      constituent_longform: Chemical Oxygen Demand (COD)
+  capital cost:  # TODO: placeholder until costs available
+    cost_factor: None
+  energy_electric_flow_vol_inlet:
+    value: 0   #todo: get this value
+    units: kWh/m^3
