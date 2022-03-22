@@ -755,13 +755,13 @@ class CoagulationFlocculationData(UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.floc_retention_time, default=1e-3, warning=True)
             iscale.set_scaling_factor(self.floc_retention_time, sf)
         if iscale.get_scaling_factor(self.single_paddle_length) is None:
-            sf = iscale.get_scaling_factor(self.single_paddle_length, default=1e-1, warning=True)
+            sf = iscale.get_scaling_factor(self.single_paddle_length, default=1, warning=True)
             iscale.set_scaling_factor(self.single_paddle_length, sf)
         if iscale.get_scaling_factor(self.single_paddle_width) is None:
             sf = iscale.get_scaling_factor(self.single_paddle_width, default=1, warning=True)
             iscale.set_scaling_factor(self.single_paddle_width, sf)
         if iscale.get_scaling_factor(self.paddle_rotational_speed) is None:
-            sf = iscale.get_scaling_factor(self.paddle_rotational_speed, default=1e-2, warning=True)
+            sf = iscale.get_scaling_factor(self.paddle_rotational_speed, default=10, warning=True)
             iscale.set_scaling_factor(self.paddle_rotational_speed, sf)
         if iscale.get_scaling_factor(self.paddle_drag_coef) is None:
             sf = iscale.get_scaling_factor(self.paddle_drag_coef, default=1, warning=True)
@@ -875,7 +875,7 @@ class CoagulationFlocculationData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.floc_wheel_speed[t]) is None:
             sf1 = iscale.get_scaling_factor(self.paddle_rotational_speed)
             sf2 = iscale.get_scaling_factor(self.single_paddle_length)
-            sf = sf1*sf2*pi
+            sf = sf1*sf2*pi/10
             iscale.set_scaling_factor(self.floc_wheel_speed, sf)
 
             for ind, c in self.eq_floc_wheel_speed.items():
