@@ -121,4 +121,4 @@ def test_recursive_parameter_sweep(model, tmp_path):
     #     reinitialize_kwargs={'solver':solver}
     recursive_parameter_sweep(m, sweep_params, outputs=outputs,
         results_file_name=results_fname, write_csv=False, write_h5=True,
-        req_num_samples=num_samples, seed=seed)
+        req_num_samples=num_samples, debugging_data_dir=tmp_path, seed=seed)

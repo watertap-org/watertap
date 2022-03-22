@@ -59,7 +59,7 @@ def _force_exception(ctr):
 
 # ================================================================
 
-def _filter_recursive_solves(model, sweep_params, outputs, recursive_local_dict, true_local_num_cases, comm):
+def _filter_recursive_solves(model, sweep_params, outputs, recursive_local_dict, comm):
 
     # pyomo_termination_condition = TerminationConditionMapping()
     # try:
@@ -96,7 +96,7 @@ def _filter_recursive_solves(model, sweep_params, outputs, recursive_local_dict,
 
         offset += n_successful_solves
 
-    return local_filtered_dict
+    return local_filtered_dict, filter_counter
 
 # ================================================================
 
@@ -172,29 +172,29 @@ def recursive_parameter_sweep(model, sweep_params, outputs=None, results_file_na
 
     # Now that we have all of the local output dictionaries, we need to construct
     # a consolidated dictionary based on a filter, e.g., optimal solves.
-    print("local_output_collection[0] = \n")
-    pprint.pprint(local_output_collection[0])
-    local_filtered_dict = _filter_recursive_solves(model, sweep_params, outputs, local_output_collection,
-        true_local_num_cases, comm)
+    local_filtered_dict, local_n_successful = _filter_recursive_solves(model, sweep_params, outputs,
+        local_output_collection, comm)
+
+    # if we are debugging
+    if debugging_data_dir is not None:
+        local_filtered_values = np.zeros((local_n_successful, len(local_filtered_dict['sweep_params'])), dtype=np.float64)
+        for i, (key, item) in enumerate( local_filtered_dict['sweep_params'].items()) :
+            local_filtered_values[:,i] = item['value'][:]
+    else:
+        local_filtered_values = None
 
     # Not that we have all of the successful outputs in a consolidated dictionary locally,
     # we can now construct a global dictionary of successful solves.
-    # global_filtered_dict = _create_global_output(local_filtered_dict, req_num_samples, comm, rank, num_procs)
-    global_filtered_dict, global_filtered_results, global_filtered_values = _aggregate_filtered_results(local_filtered_dict, req_num_samples, comm, rank, num_procs)
+    global_filtered_dict, global_filtered_results, global_filtered_values = _aggregate_filtered_results(local_filtered_dict,
+        req_num_samples, comm, rank, num_procs)
 
     # Now we can save this
     if num_procs > 0:
         comm.Barrier()
 
-    local_values = None
-    global_save_data = _save_results(sweep_params, local_values, global_filtered_values, local_filtered_dict, global_filtered_dict,
-        global_filtered_results, results_file_name, write_csv, write_h5, debugging_data_dir,
+    global_save_data = _save_results(sweep_params, local_filtered_values, global_filtered_values, local_filtered_dict,
+        global_filtered_dict, global_filtered_results, results_file_name, write_csv, write_h5, debugging_data_dir,
         comm, rank, num_procs, interpolate_nan_outputs)
-
-    # if rank == 0:
-    #     if results_file_name is not None:
-    #         dirname, fname_no_ext = _process_results_filename(results_file_name)
-    #         _write_outputs(global_filtered_dict, dirname, fname_no_ext, txt_options="keys")
 
     return global_save_data
 
