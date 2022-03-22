@@ -133,7 +133,7 @@ class TestCoolingTowerZO_w_default_removal:
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
         assert (pytest.approx(9.5238e-8, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(4.4e-8, abs=1e-5) ==
+        assert (pytest.approx(0, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
         assert (pytest.approx(216.0, abs=1e-5) ==
                 value(model.fs.unit.blowdown[0]))
@@ -166,8 +166,8 @@ Unit : fs.unit                                                             Time:
     Key                        : Value      : Fixed : Bounds
     Blowdown flowrate (m^3/hr) :     216.00 : False : (None, None)
                         Cycles :     5.0000 :  True : (None, None)
-            Electricity Demand : 4.4000e-08 : False : (0, None)
-         Electricity Intensity : 1.0000e-09 :  True : (None, None)
+            Electricity Demand : 8.0000e-10 : False : (0, None)
+         Electricity Intensity :     0.0000 :  True : (None, None)
           Solute Removal [foo] :     0.0000 :  True : (0, None)
           Solute Removal [tss] :    0.90000 :  True : (0, None)
                 Water Recovery :    0.25000 :  True : (1e-08, 1.0000001)
