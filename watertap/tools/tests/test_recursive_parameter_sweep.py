@@ -131,15 +131,42 @@ def test_recursive_parameter_sweep(model, tmp_path):
     seed = 0
 
     results_fname = os.path.join(tmp_path, 'global_results')
+    csv_results_file = str(results_fname) + '.csv'
+    h5_results_file = str(results_fname) + '.h5'
 
     # Run the parameter sweep
     # recursive_parameter_sweep(m, sweep_params, outputs, results_file='recursive_sweep.csv',
     #     optimize_function=optimize, optimize_kwargs={'solver':solver}, req_num_samples=num_samples,
     #     seed=seed, reinitialize_before_sweep=False, reinitialize_function=initialize_system,
     #     reinitialize_kwargs={'solver':solver}
-    global_save_data = recursive_parameter_sweep(m, sweep_params, outputs=outputs,
-        results_file_name=results_fname, write_csv=False, write_h5=True,
+    return_save_data = recursive_parameter_sweep(m, sweep_params, outputs=outputs,
+        results_file_name=results_fname, write_csv=True, write_h5=True,
         req_num_samples=num_samples, debugging_data_dir=tmp_path, seed=seed)
 
-    print("global_save_data = ")
-    print(repr(global_save_data))
+    # reference_save_data = np.array([[0.38344152, 0.31655848],
+    #                                 [0.4236548 , 0.2763452 ],
+    #                                 [0.43758721, 0.26241279],
+    #                                 [0.54488318, 0.15511682],
+    #                                 [0.5488135 , 0.1511865 ],
+    #                                 [0.60276338, 0.09723662],
+    #                                 [0.64589411, 0.05410589],
+    #                                 [0.0202184 , 0.6797816 ],
+    #                                 [0.07103606, 0.62896394],
+    #                                 [0.0871293 , 0.6128707 ]])
+
+    assert np.shape(return_save_data) == (10,2)
+    # assert np.allclose(reference_save_data, return_save_data, equal_nan=True)
+
+    if rank == 0:
+        # Check that the global results file is created
+        assert os.path.isfile(csv_results_file)
+
+        # Check that all local output files have been created
+        for k in range(num_procs):
+            assert os.path.isfile(os.path.join(tmp_path,f'local_results_{k:03}.h5'))
+            assert os.path.isfile(os.path.join(tmp_path,f'local_results_{k:03}.csv'))
+
+        # Check for the h5 output
+        truth_dict = {}
+
+        # Check for the companion text file
