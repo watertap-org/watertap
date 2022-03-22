@@ -14,7 +14,7 @@
 This module contains a zero-order representation of an electrodialysis reversal unit.
 """
 
-from pyomo.environ import Constraint, units as pyunits, Var, Param
+from pyomo.environ import Constraint, units as pyunits, Var
 from idaes.core import declare_process_block_class
 
 from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
@@ -44,12 +44,13 @@ class ElectrodialysisReversalZOData(ZeroOrderBaseData):
                 ' electricity intensity and power consumption of the electrodialysis '
                 'reversal unit.')
 
-        self.elec_coeff_1 = Param(initialize=0.2534,
-                                  units=pyunits.kWh/pyunits.m**3,
+        self.elec_coeff_1 = Var(units=pyunits.kWh/pyunits.m**3,
                                   doc="Constant 1 in electricity intensity equation")
-        self.elec_coeff_2 = Param(initialize=5.149E-4,
-                                  units=pyunits.L/pyunits.mg*pyunits.kWh/pyunits.m**3,
+        self.elec_coeff_2 = Var(units=pyunits.L/pyunits.mg*pyunits.kWh/pyunits.m**3,
                                   doc="Constant 2 in electricity intensity equation")
+
+        self._fixed_perf_vars.append(self.elec_coeff_1)
+        self._fixed_perf_vars.append(self.elec_coeff_2)
 
         self.electricity = Var(
             self.flowsheet().config.time,
