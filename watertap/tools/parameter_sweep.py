@@ -776,13 +776,16 @@ def parameter_sweep(model, sweep_params, outputs=None, results_file_name=None, w
                   variables, parameters, and expressions which provides very thorough results
                   at the cost of large file sizes.
 
-        csv_results_file (optional) : The path and file name where the results are to be saved;
+        results_file_name (optional) : The path and file name without extensions where the results are to be saved;
                                    subdirectories will be created as needed.
 
-        h5_results_file (optional) : The file name without the extension where the results are to be saved;
-                                   The path is identified from the arguments of `csv_results_file`. This
-                                   filename is used when creating the H5 file and the companion text file
-                                   which contains the variable names contained within the H5 file.
+        write_csv (optional) : Boolean option to write a csv file using `results_file_name`, i.e.,
+                               `{results_file_name}.csv`. The default is False to prevent silent file generation.
+
+        write_h5 (optional) : Boolean option to write a csv file using `results_file_name`, i.e.,
+                              `{results_file_name}.h5`. The default is False to prevent silent file generation.
+                              writing an h5 file will also create a companion text file `{results_file_name}.txt`
+                              which contains the variable names contained within the H5 file.
 
         optimize_function (optional) : A user-defined function to perform the optimization of flowsheet
                                        ``model`` and loads the results back into ``model``. The first

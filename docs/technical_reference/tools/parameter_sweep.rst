@@ -12,13 +12,13 @@ Overview
 The parameter sweep tool systematically fixes variables or modifies
 mutable parameters on a flowsheet (or Pyomo ConcreteModel), optimizes
 the flowsheet, and reports user-specified results.
-The parameter sweep tool can be operated in one of two ways: sweeping a 
+The parameter sweep tool can be operated in one of two ways: sweeping a
 fixed set of parameters, or allowing for random samples from a distribution.
 While different fixed or random sampling types can be combined, in a single
 parameter sweep the user must use either all fixed or all random sampling types.
 (This implementation detail may be relaxed in future releases.)
 
-For the "fixed" sampling type, `LinearSample`, the parameter sweep tool will evaluate the 
+For the "fixed" sampling type, `LinearSample`, the parameter sweep tool will evaluate the
 cross product of all the specified parameters, whereas with the "random" sampling
 types `UniformSample` and `NormalSample` the parameter sweep tool will evaluate
 a fixed number of samples specified in `num_samples`. With either sampling type,
@@ -52,10 +52,15 @@ calls to `optimize_function` to take advantage of initializations provided by
 earlier solutions. If this behavior is undesirable, the user should re-initialize
 their flowsheet as part of their `optimize_function`.
 
-Finally, the user must specify a path, `results_file`, which is a CSV summary of
-the parameter sweep. Each column specifies a fixed parameter or the associated
-output, and each row is a single run with the specified parameters and resulting
-outputs.
+Finally, the user must specify a file path without extensions, `results_file_name`,
+which is used to store the outputs of the parameter sweep in either a CSV or H5 format.
+This choice is enabled using the options `write_csv` and `write_h5`. In the CSV results
+file, each column specifies a fixed parameter or the associated output, and each row
+is a single run with the specified parameters and resulting outputs. The H5 file
+contains the parameter sweep inputs and the outputs stored in a dictionary-like format.
+Additionally, when `write_h5 = True`, a companion text file is created with the same
+basename as the `results_fname`. This text file contains the metadata of the H5 results
+file.
 
 Parallel Usage
 --------------
