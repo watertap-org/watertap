@@ -39,24 +39,24 @@ class IronManganeseRemovalZOData(ZeroOrderBaseData):
 
         self.air_water_ratio = Var(self.flowsheet().time,
                                 units=pyunits.dimensionless,
-                                doc="ratio of air to water")
+                                doc="Ratio of air to water")
 
         self.flow_basis = Var(self.flowsheet().time,
                                    units=pyunits.m**3/pyunits.hour,
-                                   doc="flow basis")
+                                   doc="Flow basis")
 
         self.air_flow_rate = Var(self.flowsheet().time,
                                    units=pyunits.m ** 3 / pyunits.hour,
-                                   doc="air flow rate")
+                                   doc="Air flow rate")
 
-        self.elec_coeff = Var(units=pyunits.hp/(pyunits.m ** 3 / pyunits.hour),
-                              doc="constant in electricity intensity equation")
+        self.electricity_intensity_parameter = Var(units=pyunits.hp/(pyunits.m ** 3 / pyunits.hour),
+                              doc="Constant in electricity intensity equation")
 
         self.filter_surf_area = Var(units=pyunits.m ** 2,
-                                    doc="dual media filter surface area")
+                                    doc="Dual media filter surface area")
 
         self.num_filter_units = Var(units=pyunits.dimensionless,
-                                    doc="number of dual media filter units")
+                                    doc="Number of dual media filter units")
 
         self.electricity = Var(self.flowsheet().config.time,
                                 units=pyunits.kW,
@@ -69,7 +69,7 @@ class IronManganeseRemovalZOData(ZeroOrderBaseData):
 
         self._fixed_perf_vars.append(self.air_water_ratio)
         self._fixed_perf_vars.append(self.flow_basis)
-        self._fixed_perf_vars.append(self.elec_coeff)
+        self._fixed_perf_vars.append(self.electricity_intensity_parameter)
         self._fixed_perf_vars.append(self.filter_surf_area)
         self._fixed_perf_vars.append(self.num_filter_units)
 
@@ -84,11 +84,9 @@ class IronManganeseRemovalZOData(ZeroOrderBaseData):
         @self.Constraint(self.flowsheet().config.time,
                          doc="Electricity intensity constraint")
         def electricity_intensity_constraint(b, t):
-            q_in = pyunits.convert(b.properties_in[t].flow_vol,
-                                   to_units=pyunits.m**3/pyunits.hour)
-            blower_power = pyunits.convert(b.elec_coeff * b.air_flow_rate[t],
-                                           to_units=pyunits.kW)
-            return b.electricity_intensity[t] == blower_power/q_in
+            return b.electricity_intensity[t] == pyunits.convert(b.electricity_intensity_parameter
+                                                                 * b.air_water_ratio[t],
+                                                                 to_units=pyunits.kWh/pyunits.m**3)
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="Power consumption constraint")

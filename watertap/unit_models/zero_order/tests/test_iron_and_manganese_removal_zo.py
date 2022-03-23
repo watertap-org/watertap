@@ -33,8 +33,6 @@ from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
-solver = get_solver()
-
 class TestIronManganeseRemovalZO_w_default_removal:
     @pytest.fixture(scope="class")
     def model(self):
@@ -62,7 +60,7 @@ class TestIronManganeseRemovalZO_w_default_removal:
         assert isinstance(model.fs.unit.electricity_constraint,
                           Constraint)
         assert isinstance(model.fs.unit.electricity, Var)
-        assert isinstance(model.fs.unit.elec_coeff, Var)
+        assert isinstance(model.fs.unit.electricity_intensity_parameter, Var)
         assert isinstance(model.fs.unit.air_water_ratio, Var)
         assert isinstance(model.fs.unit.flow_basis, Var)
         assert isinstance(model.fs.unit.air_flow_rate, Var)
@@ -96,9 +94,9 @@ class TestIronManganeseRemovalZO_w_default_removal:
         assert model.fs.unit.flow_basis[0].value == data[
             "flow_basis"]["value"]
 
-        assert model.fs.unit.elec_coeff.fixed
-        assert model.fs.unit.elec_coeff.value == data[
-            "elec_coeff"]["value"]
+        assert model.fs.unit.electricity_intensity_parameter.fixed
+        assert model.fs.unit.electricity_intensity_parameter.value == data[
+            "electricity_intensity_parameter"]["value"]
 
         assert model.fs.unit.filter_surf_area.fixed
         assert model.fs.unit.filter_surf_area.value == data[
@@ -237,7 +235,7 @@ def test_costing():
                       Var)
     assert isinstance(m.fs.costing.iron_and_manganese_removal.capital_filter_b_parameter,
                       Var)
-    assert isinstance(m.fs.costing.iron_and_manganese_removal.capital_b_parameter,
+    assert isinstance(m.fs.costing.iron_and_manganese_removal.flow_exponent,
                       Var)
 
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)

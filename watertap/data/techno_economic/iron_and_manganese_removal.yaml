@@ -20,7 +20,7 @@ default:
   flow_basis:
     value: 4732
     units: m^3/hr
-  elec_coeff:
+  electricity_intensity_parameter:
     value: 147.8
     units: hp/(m^3/hr)
   filter_surf_area:
@@ -50,6 +50,6 @@ default:
     capital_filter_b_parameter:
       value: 38.319
       units: USD_2014/ft^2
-    capital_b_parameter:
+    flow_exponent:
       value: 0.7
       units: dimensionless

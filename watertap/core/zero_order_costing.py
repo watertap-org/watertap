@@ -691,7 +691,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
              "capital_backwash_b_parameter",
              "capital_filter_a_parameter",
              "capital_filter_b_parameter",
-             "capital_b_parameter"])
+             "flow_exponent"])
 
         # Add cost variable and constraint
         blk.capital_cost = pyo.Var(
