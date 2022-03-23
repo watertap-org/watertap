@@ -252,28 +252,6 @@ def _update_model_values(m, param_dict, values):
 
 # ================================================================
 
-# def _aggregate_results(local_results, global_values, comm, num_procs):
-#
-#     if num_procs > 1: # pragma: no cover
-#         local_results = local_results.astype(np.float64)
-#
-#         global_results = np.zeros((np.shape(global_values)[0], np.shape(local_results)[1]), dtype=np.float64)
-#
-#         # Collect the number of result values to be sent from each process
-#         send_counts = np.zeros(num_procs, dtype=np.int64)
-#         comm.Gather(np.int64(np.size(local_results)), send_counts, root=0)
-#
-#         # Collect the global results results onto rank 0
-#         comm.Gatherv(local_results, (global_results, send_counts), root=0)
-#
-#         # Broadcast the results to all ranks
-#         comm.Bcast(global_results, root=0)
-#
-#     else:
-#         global_results = np.copy(local_results)
-#
-#     return global_results
-
 def _aggregate_results_arr(global_results_dict, num_cases, comm, rank, num_procs):
 
     global_results = np.zeros((num_cases, len(global_results_dict['outputs'])), dtype=np.float64)
