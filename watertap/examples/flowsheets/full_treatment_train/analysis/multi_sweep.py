@@ -117,7 +117,7 @@ def run_analysis(case_num, nx, RO_type, output_directory=None, interp_nan_output
 
         opt_function = fs_NF.optimize
 
-    elif case_num == 5:
+    elif case_num == 5: # pragma: no cover
         # ================================================================
         # NF Two Stage
         # ================================================================
@@ -153,7 +153,7 @@ def run_analysis(case_num, nx, RO_type, output_directory=None, interp_nan_output
 
         opt_function = fs_NF_two_stage.optimize
 
-    elif case_num == 7:
+    elif case_num == 7: # pragma: no cover
         # ================================================================
         # NF Two Stage
         # ================================================================
