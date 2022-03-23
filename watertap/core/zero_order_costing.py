@@ -32,6 +32,7 @@ from watertap.unit_models.zero_order import (
     CoagulationFlocculationZO,
     LandfillZO,
     IonExchangeZO,
+    IronManganeseRemovalZO,
     OzoneZO,
     OzoneAOPZO,
     SedimentationZO,
@@ -665,6 +666,67 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.resin_demand[t0], "ion_exchange_resin")
 
+    def cost_iron_and_manganese_removal(blk):
+        """
+        General method for costing iron and manganese removal processes. Capital cost
+        is based on the cost of air blower, backwash and dual media filter.
+
+        This method also registers the electricity demand as a costed flow.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        # Get costing parameter sub-block for this technology
+        A, B, C, D, E, F = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["capital_blower_a_parameter",
+             "capital_backwash_a_parameter",
+             "capital_backwash_b_parameter",
+             "capital_filter_a_parameter",
+             "capital_filter_b_parameter",
+             "flow_exponent"])
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation")
+
+        cost_blower = A
+
+        cost_backwash = B + C*pyo.units.convert(blk.unit_model.filter_surf_area,
+                                                to_units= pyo.units.ft**2)
+
+        cost_filter = D + E * pyo.units.convert(blk.unit_model.filter_surf_area,
+                                                 to_units=pyo.units.ft ** 2)
+
+        cost_total = pyo.units.convert(cost_blower + cost_backwash + cost_filter*blk.unit_model.num_filter_units,
+                                       to_units=blk.config.flowsheet_costing_block.base_currency)
+
+        Q = pyo.units.convert(blk.unit_model.properties_in[t0].flow_vol,
+                              to_units=pyo.units.m**3/pyo.units.hour)
+
+        sizing_term = (Q / blk.unit_model.flow_basis[t0])
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        # Call general power law costing method
+        ZeroOrderCostingData._general_power_law_form(
+            blk, cost_total, F, sizing_term, factor)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
+
     def cost_sedimentation(blk):
         """
         General method for costing sedimentaion processes. Capital cost is
@@ -1095,6 +1157,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                     CoagulationFlocculationZO: cost_coag_and_floc,
                     LandfillZO: cost_landfill,
                     IonExchangeZO: cost_ion_exchange,
+                    IronManganeseRemovalZO: cost_iron_and_manganese_removal,
                     OzoneZO: cost_ozonation,
                     OzoneAOPZO: cost_ozonation_aop,
                     SedimentationZO: cost_sedimentation,
