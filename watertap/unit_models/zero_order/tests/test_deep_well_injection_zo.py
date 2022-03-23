@@ -187,7 +187,7 @@ def test_costing():
                       Var)
     assert isinstance(m.fs.costing.deep_well_injection.pipe_cost_basis,
                       Var)
-    assert isinstance(m.fs.costing.deep_well_injection.capital_b_parameter,
+    assert isinstance(m.fs.costing.deep_well_injection.flow_exponent,
                       Var)
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
     assert isinstance(m.fs.unit1.costing.capital_cost_constraint,

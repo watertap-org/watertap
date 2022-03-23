@@ -622,7 +622,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.config.process_subtype,
             ["well_pump_cost",
              "pipe_cost_basis",
-             "capital_b_parameter"])
+             "flow_exponent"])
 
         # Add cost variable and constraint
         blk.capital_cost = pyo.Var(

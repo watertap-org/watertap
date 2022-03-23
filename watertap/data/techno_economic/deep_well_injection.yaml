@@ -6,6 +6,7 @@ default:
     value: 0
     units: dimensionless
   capital_cost:
+    basis: flow_vol
     cost_factor: None
     reference_state:
       value: 1
@@ -16,7 +17,7 @@ default:
     pipe_cost_basis:
       value: 35000
       units: USD_2011/(miles*inches)
-    capital_b_parameter:
+    flow_exponent:
       value: 0.7
       units: dimensionless
   flow_basis:
