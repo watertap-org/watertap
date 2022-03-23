@@ -35,7 +35,8 @@ from watertap.unit_models.zero_order import (
     SedimentationZO,
     StorageTankZO,
     UVZO,
-    UVAOPZO,)
+    UVAOPZO,
+    FilterPressZO,)
 
 
 global_params = ["plant_lifetime",
@@ -828,6 +829,55 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.chemical_flow_mass[t0], "hydrogen_peroxide")
 
+    def cost_filter_press(blk):
+        """
+        General method for costing belt filter press. Capital cost is a function
+        of flow in gal/hr.
+        """
+        t0 = blk.flowsheet().time.first()
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation")
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        # Get costing parameter sub-block for this technology
+        A, B = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["capital_a_parameter",
+             "capital_b_parameter"])
+
+        Q = pyo.units.convert(
+            blk.unit_model.properties_in[t0].flow_vol,
+            to_units=pyo.units.gal/pyo.units.hr)
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+        
+        expr = pyo.units.convert(
+            A*Q + B,
+            to_units=blk.config.flowsheet_costing_block.base_currency)
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
+
     def _get_ozone_capital_cost(blk, A, B, C, D):
         """
         Generate expressions for capital cost of ozonation system.
@@ -927,6 +977,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                     StorageTankZO: cost_storage_tank,
                     UVZO: cost_uv,
                     UVAOPZO: cost_uv_aop,
+                    FilterPressZO: cost_filter_press
                     }
 
 

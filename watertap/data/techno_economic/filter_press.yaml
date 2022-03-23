@@ -1,8 +1,164 @@
 default:
   recovery_frac_mass_H2O:
-    value: 0.9999
+    value: 0.0001
     units: dimensionless
-    reference: .nan
   default_removal_frac_mass_solute:
-    value: 0
+    value: 0.98
     units: dimensionless
+  hours_per_day_operation:
+    value: 24
+    units: hours/day
+  cycle_time:
+    value: 3
+    units: hours
+  electricity_a_parameter:
+    value: 16.285
+    units: kWh/(year*ft^3)
+  electricity_b_parameter:
+    value: 1.2434
+    units: dimensionless
+  capital_cost:
+    cost_factor: None
+    capital_a_parameter:
+      value: 146.29
+      units: USD_2007/(gal/hr)
+    capital_b_parameter:
+      value: 433972
+      units: USD_2007
+  removal_frac_mass_solute:
+    aluminum:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: aluminum
+    arsenic:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: arsenic
+    barium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: barium
+    bicarbonate_alkalinity_as_caco3:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: bicarbonate_alkalinity_as_caco3
+    boron:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: boron
+    bromide:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: bromide
+    calcium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: calcium
+    chloride:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: chloride
+    chromium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: chromium
+    cyanide_as_free:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: cyanide_as_free
+    fluoride:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: fluoride
+    hardness:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: hardness
+    iron:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: iron
+    lead:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: lead
+    magnesium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: magnesium
+    manganese:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: manganese
+    mercury:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: mercury
+    nickel:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: nickel
+    nitrate:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: nitrate
+    nitrite:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: nitrite
+    phosphates:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: phosphates
+    potassium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: potassium
+    selenium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: selenium
+    silicon:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: silicon
+    silver:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: silver
+    sodium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: sodium
+    strontium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: strontium
+    sulfate:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: sulfate
+    tds:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: tds
+    total_coliforms_fecal_ecoli:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: total_coliforms_fecal_ecoli
+    trihalomethanes:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: trihalomethanes
+    tss:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: tss
+    turbidity:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: turbidity
+    zinc:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: zinc
