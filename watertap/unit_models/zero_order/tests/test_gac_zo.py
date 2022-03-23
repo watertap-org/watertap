@@ -87,9 +87,9 @@ class TestGACZO_w_o_default_removal:
         assert model.fs.unit.empty_bed_contact_time.fixed
         assert model.fs.unit.empty_bed_contact_time.value == \
             data["empty_bed_contact_time"]["value"]/60  # min to hour
-        assert model.fs.unit.volumetric_electricity_intensity.fixed
-        assert model.fs.unit.volumetric_electricity_intensity.value == \
-            data["volumetric_electricity_intensity"]["value"]
+        assert model.fs.unit.electricity_intensity_parameter.fixed
+        assert model.fs.unit.electricity_intensity_parameter.value == \
+            data["electricity_intensity_parameter"]["value"]
         assert model.fs.unit.activated_carbon_replacement.fixed
         assert model.fs.unit.activated_carbon_replacement.value == \
             data["activated_carbon_replacement"]["value"]
@@ -232,9 +232,9 @@ class TestGACZO_w_default_removal:
         assert model.fs.unit.empty_bed_contact_time.fixed
         assert model.fs.unit.empty_bed_contact_time.value == \
             data["empty_bed_contact_time"]["value"]/60  # min to hour
-        assert model.fs.unit.volumetric_electricity_intensity.fixed
-        assert model.fs.unit.volumetric_electricity_intensity.value == \
-            data["volumetric_electricity_intensity"]["value"]
+        assert model.fs.unit.electricity_intensity_parameter.fixed
+        assert model.fs.unit.electricity_intensity_parameter.value == \
+            data["electricity_intensity_parameter"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):

@@ -32,6 +32,30 @@ default: # TODO: confirm any differentiation in removal across subtypes
   ferric_chloride_dose:
     value: 0.00999352
     units: kg/m^3
+  activated_carbon_parameter_a:
+    value: 0.00405395
+    units: kg/m^3
+  activated_carbon_parameter_b:
+    value: -0.087230845
+    units: dimensionless
+  sand_parameter_a:
+    value: 0.00450127
+    units: kg/m^3
+  sand_parameter_b:
+    value: -0.087230845
+    units: dimensionless
+  anthracite_parameter_a:
+    value: 0.00450127
+    units: kg/m^3
+  anthracite_parameter_b:
+    value: -0.0884862
+    units: dimensionless
+  cationic_polymer_parameter_a:
+    value: 0.0106589
+    units: kg/m^3
+  cationic_polymer_parameter_b:
+    value: -0.196068
+    units: dimensionless
 gravity_basin:
   energy_electric_flow_vol_inlet:
     value: 0.078498
@@ -65,6 +89,30 @@ gravity_basin:
   ferric_chloride_dose:
     value: 0.00999352
     units: kg/m^3
+  activated_carbon_parameter_a:
+    value: 0.00405395
+    units: kg/m^3
+  activated_carbon_parameter_b:
+    value: -0.087230845
+    units: dimensionless
+  sand_parameter_a:
+    value: 0.00450127
+    units: kg/m^3
+  sand_parameter_b:
+    value: -0.087230845
+    units: dimensionless
+  anthracite_parameter_a:
+    value: 0.00450127
+    units: kg/m^3
+  anthracite_parameter_b:
+    value: -0.0884862
+    units: dimensionless
+  cationic_polymer_parameter_a:
+    value: 0.0273543
+    units: kg/m^3
+  cationic_polymer_parameter_b:
+    value: -0.241725
+    units: dimensionless
 fixed bed:
   energy_electric_flow_vol_inlet:
     value: 0.085618
@@ -98,3 +146,27 @@ fixed bed:
   ferric_chloride_dose:
     value: 0.00999352
     units: kg/m^3
+  activated_carbon_parameter_a:
+    value: 0.00405395
+    units: kg/m^3
+  activated_carbon_parameter_b:
+    value: -0.087230845
+    units: dimensionless
+  sand_parameter_a:
+    value: 0.00450127
+    units: kg/m^3
+  sand_parameter_b:
+    value: -0.087230845
+    units: dimensionless
+  anthracite_parameter_a:
+    value: 0.00450127
+    units: kg/m^3
+  anthracite_parameter_b:
+    value: -0.0884862
+    units: dimensionless
+  cationic_polymer_parameter_a:
+    value: 0.0106589
+    units: kg/m^3
+  cationic_polymer_parameter_b:
+    value: -0.196068
+    units: dimensionless

@@ -621,6 +621,14 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.phosphoric_acid_demand[t0], "phosphoric_acid")
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.ferric_chloride_demand[t0], "ferric_chloride")
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.activated_carbon_demand[t0], "activated_carbon")
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.sand_demand[t0], "sand")
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.anthracite_demand[t0], "anthracite")
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.cationic_polymer_demand[t0], "cationic_polymer")
 
     def cost_gac(blk):
         """

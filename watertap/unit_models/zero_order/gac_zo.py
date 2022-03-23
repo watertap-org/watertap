@@ -54,9 +54,10 @@ class GACZOData(ZeroOrderBaseData):
                                bounds=(0, None),
                                doc="Electricity consumption of unit")
 
-        self.volumetric_electricity_intensity = Var(
+        self.electricity_intensity_parameter = Var(
             units=pyunits.kW/pyunits.m**3,
-            doc="Electricity intensity with respect to inlet flowrate of unit")
+            doc="Parameter for calculating electricity base on empty bed "
+            "contacting time")
 
         self.energy_electric_flow_vol_inlet = Var(
             units=pyunits.kWh/pyunits.m**3,
@@ -66,7 +67,7 @@ class GACZOData(ZeroOrderBaseData):
             doc='Electricity intensity based on empty bed contact time.')
         def electricity_intensity_constraint(b):
             return (b.energy_electric_flow_vol_inlet ==
-                    b.volumetric_electricity_intensity *
+                    b.electricity_intensity_parameter *
                     b.empty_bed_contact_time)
 
         @self.Constraint(self.flowsheet().time,
@@ -78,7 +79,7 @@ class GACZOData(ZeroOrderBaseData):
                 pyunits.convert(b.get_inlet_flow(t),
                                 to_units=pyunits.m**3/pyunits.hour))
 
-        self._fixed_perf_vars.append(self.volumetric_electricity_intensity)
+        self._fixed_perf_vars.append(self.electricity_intensity_parameter)
 
         self._perf_var_dict["Electricity Demand"] = self.electricity
         self._perf_var_dict["Electricity Intensity"] = \

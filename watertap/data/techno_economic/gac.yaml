@@ -1,5 +1,5 @@
 default: # TODO: confirm any differentiation in removal across subtypes
-  volumetric_electricity_intensity:
+  electricity_intensity_parameter:
     value: 0.106310
     units: kW/m^3
   recovery_frac_mass_H2O:
@@ -36,7 +36,7 @@ default: # TODO: confirm any differentiation in removal across subtypes
       value: 5971.57
       units: USD_2017/m^3
 pressure_vessel:
-  volumetric_electricity_intensity:
+  electricity_intensity_parameter:
     value: 0.0521749
     units: kW/m^3
   recovery_frac_mass_H2O:
@@ -73,7 +73,7 @@ pressure_vessel:
       value: 8427.78
       units: USD_2017/m^3
 gravity:
-  volumetric_electricity_intensity:
+  electricity_intensity_parameter:
     value: 0.106310
     units: kW/m^3
   recovery_frac_mass_H2O:

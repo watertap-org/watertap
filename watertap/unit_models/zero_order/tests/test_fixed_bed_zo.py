@@ -79,6 +79,30 @@ class TestFixedBedZO_w_o_default_removal:
         assert isinstance(model.fs.unit.ferric_chloride_demand_equation,
                           Constraint)
 
+        assert isinstance(model.fs.unit.activated_carbon_parameter_a, Var)
+        assert isinstance(model.fs.unit.activated_carbon_parameter_b, Var)
+        assert isinstance(model.fs.unit.activated_carbon_demand, Var)
+        assert isinstance(model.fs.unit.activated_carbon_demand_equation,
+                          Constraint)
+
+        assert isinstance(model.fs.unit.sand_parameter_a, Var)
+        assert isinstance(model.fs.unit.sand_parameter_b, Var)
+        assert isinstance(model.fs.unit.sand_demand, Var)
+        assert isinstance(model.fs.unit.sand_demand_equation,
+                          Constraint)
+
+        assert isinstance(model.fs.unit.anthracite_parameter_a, Var)
+        assert isinstance(model.fs.unit.anthracite_parameter_b, Var)
+        assert isinstance(model.fs.unit.anthracite_demand, Var)
+        assert isinstance(model.fs.unit.anthracite_demand_equation,
+                          Constraint)
+
+        assert isinstance(model.fs.unit.cationic_polymer_parameter_a, Var)
+        assert isinstance(model.fs.unit.cationic_polymer_parameter_b, Var)
+        assert isinstance(model.fs.unit.cationic_polymer_demand, Var)
+        assert isinstance(model.fs.unit.cationic_polymer_demand_equation,
+                          Constraint)
+
     @pytest.mark.component
     def test_load_parameters(self, model):
         data = model.db.get_unit_operation_parameters("fixed_bed")
@@ -96,6 +120,44 @@ class TestFixedBedZO_w_o_default_removal:
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
         assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
             "energy_electric_flow_vol_inlet"]["value"]
+
+        assert model.fs.unit.acetic_acid_dose.fixed
+        assert model.fs.unit.acetic_acid_dose.value == data[
+            "acetic_acid_dose"]["value"]
+        assert model.fs.unit.phosphoric_acid_dose.fixed
+        assert model.fs.unit.phosphoric_acid_dose.value == data[
+            "phosphoric_acid_dose"]["value"]
+        assert model.fs.unit.ferric_chloride_dose.fixed
+        assert model.fs.unit.ferric_chloride_dose.value == data[
+            "ferric_chloride_dose"]["value"]
+
+        assert model.fs.unit.activated_carbon_parameter_a.fixed
+        assert model.fs.unit.activated_carbon_parameter_a.value == data[
+            "activated_carbon_parameter_a"]["value"]
+        assert model.fs.unit.activated_carbon_parameter_b.fixed
+        assert model.fs.unit.activated_carbon_parameter_b.value == data[
+            "activated_carbon_parameter_b"]["value"]
+
+        assert model.fs.unit.sand_parameter_a.fixed
+        assert model.fs.unit.sand_parameter_a.value == data[
+            "sand_parameter_a"]["value"]
+        assert model.fs.unit.sand_parameter_b.fixed
+        assert model.fs.unit.sand_parameter_b.value == data[
+            "sand_parameter_b"]["value"]
+
+        assert model.fs.unit.anthracite_parameter_a.fixed
+        assert model.fs.unit.anthracite_parameter_a.value == data[
+            "anthracite_parameter_a"]["value"]
+        assert model.fs.unit.anthracite_parameter_b.fixed
+        assert model.fs.unit.anthracite_parameter_b.value == data[
+            "anthracite_parameter_b"]["value"]
+
+        assert model.fs.unit.cationic_polymer_parameter_a.fixed
+        assert model.fs.unit.cationic_polymer_parameter_a.value == data[
+            "cationic_polymer_parameter_a"]["value"]
+        assert model.fs.unit.cationic_polymer_parameter_b.fixed
+        assert model.fs.unit.cationic_polymer_parameter_b.value == data[
+            "cationic_polymer_parameter_b"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -145,9 +207,17 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                  : Value   : Fixed : Bounds
-      Electricity Demand :  3685.2 : False : (0, None)
-    Solute Removal [bod] : 0.90000 :  True : (0, None)
+    Key                     : Value    : Fixed : Bounds
+         Acetic Acid Demand :   1799.0 : False : (0, None)
+    Activated Carbon Demand :   58.448 : False : (0, None)
+          Anthracite Demand :   64.048 : False : (0, None)
+    Cationic Polymer Demand :   49.057 : False : (0, None)
+         Electricity Demand :   3082.6 : False : (0, None)
+      Electricity Intensity : 0.085618 :  True : (None, None)
+    Ferric Chlorided Demand :   359.80 : False : (0, None)
+     Phosphoric Acid Demand :   152.17 : False : (0, None)
+                Sand Demand :   64.897 : False : (0, None)
+       Solute Removal [bod] :  0.90000 :  True : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -159,6 +229,7 @@ Unit : fs.unit                                                             Time:
 """
 
         assert output in stream.getvalue()
+
 
 class TestFixedBedZO_w_default_removal:
     @pytest.fixture(scope="class")
@@ -210,6 +281,44 @@ class TestFixedBedZO_w_default_removal:
         assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
             "energy_electric_flow_vol_inlet"]["value"]
 
+        assert model.fs.unit.acetic_acid_dose.fixed
+        assert model.fs.unit.acetic_acid_dose.value == data[
+            "acetic_acid_dose"]["value"]
+        assert model.fs.unit.phosphoric_acid_dose.fixed
+        assert model.fs.unit.phosphoric_acid_dose.value == data[
+            "phosphoric_acid_dose"]["value"]
+        assert model.fs.unit.ferric_chloride_dose.fixed
+        assert model.fs.unit.ferric_chloride_dose.value == data[
+            "ferric_chloride_dose"]["value"]
+
+        assert model.fs.unit.activated_carbon_parameter_a.fixed
+        assert model.fs.unit.activated_carbon_parameter_a.value == data[
+            "activated_carbon_parameter_a"]["value"]
+        assert model.fs.unit.activated_carbon_parameter_b.fixed
+        assert model.fs.unit.activated_carbon_parameter_b.value == data[
+            "activated_carbon_parameter_b"]["value"]
+
+        assert model.fs.unit.sand_parameter_a.fixed
+        assert model.fs.unit.sand_parameter_a.value == data[
+            "sand_parameter_a"]["value"]
+        assert model.fs.unit.sand_parameter_b.fixed
+        assert model.fs.unit.sand_parameter_b.value == data[
+            "sand_parameter_b"]["value"]
+
+        assert model.fs.unit.anthracite_parameter_a.fixed
+        assert model.fs.unit.anthracite_parameter_a.value == data[
+            "anthracite_parameter_a"]["value"]
+        assert model.fs.unit.anthracite_parameter_b.fixed
+        assert model.fs.unit.anthracite_parameter_b.value == data[
+            "anthracite_parameter_b"]["value"]
+
+        assert model.fs.unit.cationic_polymer_parameter_a.fixed
+        assert model.fs.unit.cationic_polymer_parameter_a.value == data[
+            "cationic_polymer_parameter_a"]["value"]
+        assert model.fs.unit.cationic_polymer_parameter_b.fixed
+        assert model.fs.unit.cationic_polymer_parameter_b.value == data[
+            "cationic_polymer_parameter_b"]["value"]
+
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
         assert degrees_of_freedom(model.fs.unit) == 0
@@ -260,10 +369,18 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                  : Value   : Fixed : Bounds
-      Electricity Demand :  3686.7 : False : (0, None)
-    Solute Removal [bod] : 0.90000 :  True : (0, None)
-    Solute Removal [foo] :  0.0000 :  True : (0, None)
+    Key                     : Value    : Fixed : Bounds
+         Acetic Acid Demand :   1799.7 : False : (0, None)
+    Activated Carbon Demand :   58.469 : False : (0, None)
+          Anthracite Demand :   64.072 : False : (0, None)
+    Cationic Polymer Demand :   49.073 : False : (0, None)
+         Electricity Demand :   3083.8 : False : (0, None)
+      Electricity Intensity : 0.085618 :  True : (None, None)
+    Ferric Chlorided Demand :   359.95 : False : (0, None)
+     Phosphoric Acid Demand :   152.23 : False : (0, None)
+                Sand Demand :   64.921 : False : (0, None)
+       Solute Removal [bod] :  0.90000 :  True : (0, None)
+       Solute Removal [foo] :   0.0000 :  True : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -357,3 +474,17 @@ def test_costing(subtype):
 
     assert m.fs.unit1.electricity[0] in \
         m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit1.acetic_acid_demand[0] in \
+        m.fs.costing._registered_flows["acetic_acid"]
+    assert m.fs.unit1.phosphoric_acid_demand[0] in \
+        m.fs.costing._registered_flows["phosphoric_acid"]
+    assert m.fs.unit1.ferric_chloride_demand[0] in \
+        m.fs.costing._registered_flows["ferric_chloride"]
+    assert m.fs.unit1.activated_carbon_demand[0] in \
+        m.fs.costing._registered_flows["activated_carbon"]
+    assert m.fs.unit1.sand_demand[0] in \
+        m.fs.costing._registered_flows["sand"]
+    assert m.fs.unit1.anthracite_demand[0] in \
+        m.fs.costing._registered_flows["anthracite"]
+    assert m.fs.unit1.cationic_polymer_demand[0] in \
+        m.fs.costing._registered_flows["cationic_polymer"]
