@@ -608,7 +608,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         cost_power_law_flow method.
 
         This method also registers demand for a number of additional material
-        flows..
+        flows.
         """
         t0 = blk.flowsheet().time.first()
 
