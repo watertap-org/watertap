@@ -6,11 +6,7 @@ default:
     value: 0
     units: dimensionless
   capital_cost:
-    basis: flow_vol
     cost_factor: None
-    reference_state:
-      value: 1
-      units: m^3/hr
     well_pump_cost:
       value: 16.9e6 # this is wells/pumps fixed capital AFTER applying TIC factor
       units: USD_2011
