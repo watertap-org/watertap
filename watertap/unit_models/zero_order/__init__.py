@@ -15,6 +15,7 @@ from .backwash_solids_handling_zo import BackwashSolidsHandlingZO
 from .bio_active_filtration_zo import BioActiveFiltrationZO
 from .blending_reservoir_zo import BlendingReservoirZO
 from .cooling_tower_zo import CoolingTowerZO
+from .deep_well_injection_zo import DeepWellInjectionZO
 from .electrodialysis_reversal_zo import ElectrodialysisReversalZO
 from .aeration_basin_zo import AerationBasinZO
 from .air_flotation_zo import AirFlotationZO
