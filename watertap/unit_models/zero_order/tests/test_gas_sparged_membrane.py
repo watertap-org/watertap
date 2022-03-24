@@ -88,6 +88,8 @@ class TestGasSpargedMembraneZO:
         assert isinstance(model.fs.unit.treated, Port)
         assert isinstance(model.fs.unit.byproduct, Port)
 
+        assert isinstance(model.fs.unit.gas_mass_influent_ratio, Var)
+        assert len(model.fs.unit.gas_mass_influent_ratio) == 1
         assert isinstance(model.fs.unit.recovery_frac_mass_H2O, Var)
         assert len(model.fs.unit.recovery_frac_mass_H2O) == 1
         assert isinstance(model.fs.unit.removal_frac_mass_solute, Var)
@@ -101,6 +103,8 @@ class TestGasSpargedMembraneZO:
         assert len(model.fs.unit.solute_removal_equation) == 1
         assert isinstance(model.fs.unit.solute_treated_equation, Constraint)
         assert len(model.fs.unit.solute_treated_equation) == 1
+        assert isinstance(model.fs.unit.mass_gas_extraction_equation, Constraint)
+        assert len(model.fs.unit.mass_gas_extraction_equation) == 1
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -163,43 +167,66 @@ class TestGasSpargedMembraneZO:
         assert (pytest.approx(1, rel=1e-5) ==
                 value(model.fs.unit.byproduct.flow_mass_comp[0, "cod"]))
 
+        assert (pytest.approx(1.001, rel=1e-5) ==
+                value(model.fs.unit.properties_in[0].flow_vol))
+        assert (pytest.approx(0.9990001, rel=1e-5) ==
+                value(model.fs.unit.properties_in[0].conc_mass_comp["cod"]))
+        assert (pytest.approx(0.979, rel=1e-5) ==
+                value(model.fs.unit.properties_treated[0].flow_vol))
+        assert (pytest.approx(0, abs=1e-5) ==
+                value(model.fs.unit.properties_treated[0].conc_mass_comp["cod"]))
+        assert (pytest.approx(0.021588, rel=1e-5) ==
+                value(model.fs.unit.properties_byproduct[0].flow_vol))
+        assert (pytest.approx(46.32238, rel=1e-5) ==
+                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["cod"]))
+        assert (pytest.approx(368.855328, abs=1e-5) ==
+                value(model.fs.unit.electricity[0]))
+        assert (pytest.approx(5*value(model.fs.unit.properties_in[0].flow_vol)*0.08235, rel=1e-5) ==
+                value(model.fs.unit.flow_mass_gas_extraction[0]))
 
-    # @pytest.mark.component
-    # def test_conservation(self, model):
-    #     for (t, j) in model.fs.unit.inlet.flow_mass_comp.keys():
-    #         assert (abs(value(model.fs.unit.inlet.flow_mass_comp[t, j] -
-    #                           model.fs.unit.treated.flow_mass_comp[t, j] -
-    #                           model.fs.unit.byproduct.flow_mass_comp[t, j]))
-    #                 <= 1e-6)
 
-#     @pytest.mark.component
-#     def test_report(self, model):
-#         stream = StringIO()
-#         model.fs.unit.report(ostream=stream)
-#
-#         output = """
-# ====================================================================================
-# Unit : fs.unit                                                             Time: 0.0
-# ------------------------------------------------------------------------------------
-#     Unit Performance
-#
-#     Variables:
-#
-#     Key                : Value   : Fixed : Bounds
-#     Solute Removal [A] : 0.10000 :  True : (0, None)
-#     Solute Removal [B] : 0.20000 :  True : (0, None)
-#     Solute Removal [C] : 0.30000 :  True : (0, None)
-#         Water Recovery : 0.80000 :  True : (1e-08, 1.0000001)
-#
-# ------------------------------------------------------------------------------------
-#     Stream Table
-#                             Inlet  Treated  Byproduct
-#     Volumetric Flowrate    1.0600 0.84600   0.21400
-#     Mass Concentration H2O 943.40  945.63    934.58
-#     Mass Concentration A   9.4340  10.638    4.6729
-#     Mass Concentration B   18.868  18.913    18.692
-#     Mass Concentration C   28.302  24.823    42.056
-# ====================================================================================
-# """
+    @pytest.mark.component
+    def test_conservation(self, model):
+        for (t, j) in model.fs.unit.inlet.flow_mass_comp.keys():
+            if j != "H2O":
+                assert (abs(value(model.fs.unit.inlet.flow_mass_comp[t, j] -
+                                  model.fs.unit.treated.flow_mass_comp[t, j] -
+                                  model.fs.unit.byproduct.flow_mass_comp[t, j]))
+                        <= 1e-6)
+            else:
+                assert (abs(value(model.fs.unit.inlet.flow_mass_comp[t, j] -
+                                  model.fs.unit.treated.flow_mass_comp[t, j] -
+                                  model.fs.unit.byproduct.flow_mass_comp[t, j] -
+                                  model.fs.unit.flow_mass_gas_extraction[t]))
+                        <= 1e-6)
 
-        # assert output == stream.getvalue()
+    @pytest.mark.component
+    def test_report(self, model):
+        stream = StringIO()
+        model.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                                                         : Value      : Fixed : Bounds
+                                             Electricity Demand :     368.86 : False : (0, None)
+                             Mass flow of gas extracted (kg/s)) :    0.41216 : False : (0, None)
+    Mass of gas extracted per mass flow of influent(kg/d/(kg/d) : 0.00041175 :  True : (0, None)
+                                           Solute Removal [cod] :     1.0000 :  True : (0, None)
+                                                 Water Recovery :    0.97900 :  True : (1e-08, 1.0000001)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                             Inlet   Treated   Byproduct
+    Volumetric Flowrate     1.0010    0.97900  0.021588 
+    Mass Concentration H2O  999.00     1000.0    953.68 
+    Mass Concentration cod 0.99900 1.0215e-15    46.322 
+====================================================================================
+"""
+
+        assert output == stream.getvalue()
