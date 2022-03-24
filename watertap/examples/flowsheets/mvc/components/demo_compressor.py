@@ -50,7 +50,6 @@ def main():
 
     m.fs.compressor.report()
 
-    m.fs.compressor.control_volume.work.display()
     return m
 
 if __name__ == "__main__":

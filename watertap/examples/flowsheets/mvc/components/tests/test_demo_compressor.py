@@ -31,7 +31,7 @@ Unit : fs.compressor                                                       Time:
 ------------------------------------------------------------------------------------
     Unit Performance
 
-    Variables:
+    Variables: 
 
     Key            : Value      : Fixed : Bounds
         Efficiency :    0.80000 :  True : (1e-08, 1)
@@ -40,15 +40,11 @@ Unit : fs.compressor                                                       Time:
 
 ------------------------------------------------------------------------------------
     Stream Table
-                                           Inlet     Outlet
+                                           Inlet     Outlet  
     flow_mass_phase_comp ('Liq', 'H2O') 1.0000e-08 1.0000e-08
     flow_mass_phase_comp ('Vap', 'H2O')     1.0000     1.0000
     temperature                             350.00     429.57
     pressure                                50000. 1.0000e+05
 ====================================================================================
-work : Work transferred into control volume
-    Size=1, Index=fs._time, Units=kg*m**2/s**3
-    Key : Lower : Value             : Upper : Fixed : Stale : Domain
-    0.0 :  None : 115340.0434427156 :  None : False : False :  Reals
 """
     assert output == report_io.getvalue()

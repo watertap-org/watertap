@@ -139,12 +139,6 @@ class CompressorData(UnitModelBlockData):
             units=pyunits.dimensionless
         )
 
-        # self.work = Var(
-        #     initialize=500,
-        #     bounds=(1,5e6),
-        #     units=pyunits.kg*pyunits.m**2*pyunits.s**-3 # Watts
-        # )
-
         self.efficiency = Var(
             initialize=0.8,
             bounds=(1e-8,1),
@@ -172,8 +166,6 @@ class CompressorData(UnitModelBlockData):
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=True)
 
-        # Add state blocks for inlet and outlet
-        # These include the state variables and any other properties on demand
         # Add isentropic outlet block
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
@@ -223,11 +215,6 @@ class CompressorData(UnitModelBlockData):
             return b.efficiency*(b.control_volume.properties_out[0].enth_mass_phase['Vap'] - b.control_volume.properties_in[0].enth_mass_phase['Vap'])\
                    == b.properties_isentropic_out[0].enth_mass_phase['Vap'] - b.control_volume.properties_in[0].enth_mass_phase['Vap']
 
-        # @self.Constraint(doc="Compressor work")
-        # def eq_compressor_work(b):
-        #     return b.work == b.control_volume.properties_out[0].flow_mass_phase_comp['Vap', 'H2O']*\
-        #            (b.control_volume.properties_out[0].enth_mass_phase['Vap'] -b.control_volume.properties_in[0].enth_mass_phase['Vap'])
-
     def initialize(
             blk,
             state_args=None,
@@ -258,15 +245,8 @@ class CompressorData(UnitModelBlockData):
         # Initialize state blocks
         flags = blk.control_volume.initialize(solver=solver, optarg=optarg, hold_state=True)
 
-        # flags = blk.feed_side.initialize(
-        #     outlvl=outlvl,
-        #     optarg=optarg,
-        #     solver=solver,
-        #     state_args=state_args,
-        # )
         init_log.info_high("Initialization Step 1 Complete.")
-        # # ---------------------------------------------------------------------
-        # # Initialize permeate
+        # ---------------------------------------------------------------------
         # Set state_args from inlet state
         if state_args is None:
             state_args = {}
@@ -280,10 +260,6 @@ class CompressorData(UnitModelBlockData):
                         state_args[k][m] = state_dict[k][m].value
                 else:
                     state_args[k] = state_dict[k].value
-
-        # adjust pressure and temperature, if needed
-        # state_args['pressure'] *= 1.5
-        # state_args['temperature'] += 10
 
         blk.properties_isentropic_out.initialize(
             outlvl=outlvl,
@@ -321,10 +297,6 @@ class CompressorData(UnitModelBlockData):
         iscale.set_scaling_factor(self.pressure_ratio, 1)
         iscale.set_scaling_factor(self.efficiency, 1)
 
-        # for j, c in self.eq_mass_balance.items():
-        #     sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].flow_mass_phase_comp[j, 'H2O'])
-        #     iscale.constraint_scaling_transform(c, sf)
-
         for j, c in self.eq_mass_balance_isentropic.items():
             sf = iscale.get_scaling_factor(self.control_volume.properties_in[0].flow_mass_phase_comp[j, 'H2O'])
             iscale.constraint_scaling_transform(c, sf)
@@ -341,4 +313,3 @@ class CompressorData(UnitModelBlockData):
         # Efficiency, work constraints
         sf = iscale.get_scaling_factor(self.control_volume.work)
         iscale.constraint_scaling_transform(self.eq_efficiency, sf)
-        #iscale.constraint_scaling_transform(self.eq_compressor_work, sf)
