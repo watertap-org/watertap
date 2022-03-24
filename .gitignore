@@ -143,3 +143,10 @@ auto-save-list
 
 # MAC File System
 .DS_Store
+kurby/kurby_test.py
+kurby/kurby_unit_development.ipynb
+watertap/sim_files/sim_simple_filter.py
+watertap/sim_files/sim_simple_prop_pack.py
+watertap/sim_files/simple_filter.py
+watertap/sim_files/simple_prop_pack.py
+watertap/sim_files/Untitled.ipynb
