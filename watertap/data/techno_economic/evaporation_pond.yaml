@@ -1,5 +1,5 @@
 default:
-  air_temp:
+  air_temperature:
     value: 298
     units: kelvin
   solar_radiation:
@@ -60,9 +60,6 @@ default:
     units: dimensionless
     reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for
       Water Utilities (2008).
-  energy_electric_flow_vol_inlet:
-    value: 0
-    units: kWh/m^3
   default_removal_frac_mass_solute:
     value: 0.98
     units: dimensionless
@@ -203,5 +200,3 @@ default:
       value: 0.98
       units: dimensionless
       constituent_longform: zinc
-
-

@@ -36,12 +36,10 @@ class EvaporationPondZOData(ZeroOrderBaseData):
         super().build()
 
         build_sido(self)
-        constant_intensity(self)
-        self._Q_out = Reference(self.properties_byproduct[:].flow_vol)
-
+        
         self._tech_type = "evaporation_pond"
 
-        self.air_temp = Var(self.flowsheet().time,
+        self.air_temperature = Var(self.flowsheet().time,
                     initialize=298,
                     units=pyunits.kelvin,
                     doc="Air temperature")
@@ -90,7 +88,7 @@ class EvaporationPondZOData(ZeroOrderBaseData):
                     units=pyunits.dimensionless,
                     doc="Adjusted area calculation parameter B") 
 
-        self._fixed_perf_vars.append(self.air_temp)
+        self._fixed_perf_vars.append(self.air_temperature)
         self._fixed_perf_vars.append(self.solar_radiation)
         self._fixed_perf_vars.append(self.liner_thickness)
         self._fixed_perf_vars.append(self.land_cost)
@@ -124,10 +122,11 @@ class EvaporationPondZOData(ZeroOrderBaseData):
         @self.Constraint(self.flowsheet().time,
                     doc='Evaporation rate of pure water constraint')
         def evap_rate_pure_constraint(b, t):
-            air_temp_C = pyunits.convert_temp_K_to_C(value(b.air_temp[t]))
+            air_temperature_C = pyunits.convert_temp_K_to_C(value(b.air_temperature[t]))
             return (b.evaporation_rate_pure[t] ==
-                    b.evap_rate_calc_a_parameter[t] * (b.evap_rate_calc_b_parameter[t] * air_temp_C + 
-                    b.evap_rate_calc_c_parameter[t]) * b.solar_radiation[t])
+                    b.evap_rate_calc_a_parameter[t] * (b.evap_rate_calc_b_parameter[t] * 
+                    air_temperature_C + b.evap_rate_calc_c_parameter[t]) 
+                    * b.solar_radiation[t])
 
         @self.Constraint(self.flowsheet().time,
                     doc='Adjusted evaporation rate for salinity constraint')

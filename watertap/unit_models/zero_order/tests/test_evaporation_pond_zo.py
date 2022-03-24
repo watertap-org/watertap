@@ -90,9 +90,6 @@ class TestEvaporationPondZO:
         assert isinstance(model.fs.unit.area_constraint, Constraint)
         assert isinstance(model.fs.unit.area_adj_constraint, Constraint)
 
-
-
-
     @pytest.mark.component
     def test_load_parameters(self, model):
         data = model.db.get_unit_operation_parameters("evaporation_pond")
