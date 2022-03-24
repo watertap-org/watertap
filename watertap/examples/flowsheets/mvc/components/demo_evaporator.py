@@ -37,24 +37,24 @@ def main():
 
     # state variables
     # Feed inlet
-    m.fs.evaporator.inlet_feed.flow_mass_phase_comp[0,'Liq','H2O'].fix(1)
+    m.fs.evaporator.inlet_feed.flow_mass_phase_comp[0,'Liq','H2O'].fix(10)
     m.fs.evaporator.inlet_feed.flow_mass_phase_comp[0,'Liq','TDS'].fix(0.05)
-    m.fs.evaporator.inlet_feed.temperature[0].fix(310) # K
-    m.fs.evaporator.inlet_feed.pressure[0].fix(1) # Pa
+    m.fs.evaporator.inlet_feed.temperature[0].fix(273.15+50.52) # K
+    m.fs.evaporator.inlet_feed.pressure[0].fix(1e5) # Pa
 
     # Condenser inlet
-    # m.fs.evaporator.inlet_condenser.flow_mass_phase_comp[0, 'Vap', 'H2O'].fix(0.5)
-    # m.fs.evaporator.inlet_condenser.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(1e-8)
-    # m.fs.evaporator.inlet_condenser.temperature[0].fix(400)  # K
-    # m.fs.evaporator.inlet_condenser.pressure[0].fix(0.5e5)  # Pa
+    m.fs.evaporator.inlet_condenser.flow_mass_phase_comp[0, 'Vap', 'H2O'].fix(0.5)
+    m.fs.evaporator.inlet_condenser.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(1e-8)
+    m.fs.evaporator.inlet_condenser.temperature[0].fix(400)  # K
+    m.fs.evaporator.inlet_condenser.pressure[0].fix(0.5e5)  # Pa
 
     # Evaporator/condenser specifications
     # m.fs.evaporator.outlet_brine.flow_mass_phase_comp[0,'Liq','TDS'].fix(0.1)
     #m.fs.evaporator.outlet_vapor.flow_mass_phase_comp[0,'Vap','H2O'].fix(0.5)
-    #m.fs.evaporator.outlet_brine.temperature[0].fix(333)
-    m.fs.evaporator.outlet_vapor.pressure[0].fix(0.3e5)
+    m.fs.evaporator.outlet_brine.temperature[0].fix(273.15+60)
+    #m.fs.evaporator.outlet_vapor.pressure[0].fix(0.3e5)
     m.fs.evaporator.U.fix(1e3) # W/K-m^2
-    m.fs.evaporator.area.fix(500) # m^2
+    m.fs.evaporator.area.fix(100) # m^2
     #m.fs.evaporator.outlet_condenser.temperature[0].fix(340)
     #m.fs.evaporator.heat_transfer.fix(24e6)
 

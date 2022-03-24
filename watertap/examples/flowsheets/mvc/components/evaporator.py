@@ -165,25 +165,25 @@ class EvaporatorData(UnitModelBlockData):
         )
 
         self.area = Var(
-            initialize=1e3,
+            initialize=1e2,
             bounds=(1e-1, 1e4),
             units=pyunits.m ** 2
         )
 
         self.delta_temperature_in = Var(
-            initialize=1e2,
+            initialize=1e1,
             bounds=(1e-8, 1e3),
             units=pyunits.K
         )
 
         self.delta_temperature_out = Var(
-            initialize=1e2,
+            initialize=1e1,
             bounds=(1e-8, 1e3),
             units=pyunits.K
         )
 
         self.lmtd = Var(
-            initialize=1e2,
+            initialize=1e1,
             bounds=(1e-8, 1e3),
             units=pyunits.K
         )
@@ -382,12 +382,14 @@ class EvaporatorData(UnitModelBlockData):
             = 0.5*state_args_condenser['flow_mass_phase_comp'][('Vap', 'H2O')]
         state_args_condenser['pressure'] = blk.feed_side.properties_brine[0].pressure_sat.value
         state_args_condenser['temperature'] = state_args['temperature'] + 5
-        # blk.condenser.initialize(state_args=state_args_condenser)
+        blk.condenser.initialize(state_args=state_args_condenser)
         # assert False
-        flags_condenser_cv = blk.condenser.initialize(state_args=state_args_condenser)
+        # flags_condenser_cv = blk.condenser.initialize(state_args=state_args_condenser,hold_state=True)
         init_log.info_high("Initialization Step 3 Complete.")
-
         # ---------------------------------------------------------------------
+        # Deactivate heat transfer balance
+        # blk.eq_heat_balance.deactivate()
+
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
@@ -397,14 +399,16 @@ class EvaporatorData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Release feed and condenser inlet states
         blk.feed_side.properties_feed.release_state(flags_feed, outlvl=outlvl)
-        blk.condenser.control_volume.release_state(flags_condenser_cv, outlvl=outlvl)
+        #blk.condenser.control_volume.release_state(flags_condenser_cv, outlvl=outlvl)
 
         init_log.info(
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )
 
     def _get_performance_contents(self, time_point=0):
-        var_dict = {}
+        var_dict = {"Heat transfer": self.feed_side.heat_transfer,
+                    "Evaporator temperature": self.feed_side.properties_brine[0].temperature,
+                    "Evaporator pressure": self.feed_side.properties_brine[0].pressure}
 
         return {"vars": var_dict}
 
