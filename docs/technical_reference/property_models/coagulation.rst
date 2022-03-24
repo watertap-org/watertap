@@ -73,3 +73,57 @@ Relationships
    "Mass concentration", ":math:`C_j = x_j \cdotp \rho`"
    "Dynamic viscosity", ":math:`\mu = \mu_ref \cdotp exp( \frac{\mu_B}{T - \mu_C} )`"
    "Enthalpy flow", ":math:`H = c_p \cdotp \sum_{j} M_j \cdotp (T - 273)`"
+
+Scaling
+-------
+This coagulation property package includes support for scaling, such as providing
+default or calculating scaling factors for almost all variables. The only variables
+that do not have scaling factors are the component mass flowrate and the user will
+receive a warning if these are not set.
+
+The user can specify the scaling factors for component mass flowrates with the following:
+
+.. testsetup::
+
+  from pyomo.environ import ConcreteModel
+  from idaes.core import FlowsheetBlock
+
+.. testcode::
+
+  # relevant imports
+  import watertap.property_models.coagulation_prop_pack as props
+  from idaes.core.util.scaling import calculate_scaling_factors
+
+  # relevant assignments
+  m = ConcreteModel()
+  m.fs = FlowsheetBlock(default={"dynamic": False})
+  m.fs.properties = props.CoagulationParameterBlock()
+
+  # set scaling for component mass flowrate
+  m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq','H2O'))
+  m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq','TDS'))
+  m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq','TSS'))
+  m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e3, index=('Liq','Sludge'))
+
+  # calculate scaling factors
+  calculate_scaling_factors(m.fs)
+
+The default scaling factors are as follows:
+
+  * 1e-2 for temperature
+  * 1e-6 for pressure
+  * 1e-3 for mass density
+  * 1e3 for dynamic viscosity
+
+Scaling factors for other variables can be calculated based on their relationships
+with the user-supplied or default scaling factors.
+
+Reference
+---------
+
+Engineering Toolbox. Water - Density, Specific Weight, and
+Thermal Expansion Coefficients. (2003) https://www.engineeringtoolbox.com/
+water-density-specific-weight-d_595.html [Accessed 02-01-2022]
+
+D.S. Viswananth, G. Natarajan. Data Book on the Viscosity of
+Liquids. Hemisphere Publishing Corp. (1989)
