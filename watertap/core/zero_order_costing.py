@@ -1142,13 +1142,15 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                 subtype=blk.unit_model.config.process_subtype)
 
         # Get costing parameter sub-block for this technology
-        A, B, C, D, E = _get_tech_parameters(
+        A, B, C, D, E, liner_thickness, land_cost, land_clearing_cost = \
+            _get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
             ["cost_per_acre_a_parameter", "cost_per_acre_b_parameter", 
             "cost_per_acre_c_parameter", "cost_per_acre_d_parameter", 
-            "cost_per_acre_e_parameter"])
+            "cost_per_acre_e_parameter", "liner_thickness", "land_cost", 
+            "land_clearing_cost"])
 
         # Add cost variable and constraint
         blk.capital_cost = pyo.Var(
@@ -1159,9 +1161,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         expr = pyo.units.convert(
             blk.unit_model.adj_area[t0]*
-            (A + B*blk.unit_model.liner_thickness[t0] +
-            C*blk.unit_model.land_cost[t0]+
-            D*blk.unit_model.land_clearing_cost[t0]+
+            (A + B*liner_thickness +
+            C*land_cost+
+            D*land_clearing_cost+
             E*blk.unit_model.dike_height[t0]), 
             to_units=blk.config.flowsheet_costing_block.base_currency)
 
