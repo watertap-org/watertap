@@ -43,7 +43,7 @@ def main():
     assert_units_consistent(m)
     assert(degrees_of_freedom(m) == 0)
 
-    # m.fs.compressor.initialize(outlvl=idaeslog.INFO_HIGH)
+    m.fs.compressor.initialize(outlvl=idaeslog.INFO_HIGH)
     solver = get_solver()
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)

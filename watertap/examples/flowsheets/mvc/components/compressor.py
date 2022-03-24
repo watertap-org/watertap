@@ -256,7 +256,7 @@ class CompressorData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Initialize state blocks
-        flags = blk.properties_in.initialize(solver=solver, optarg=optarg, hold_state=True)
+        flags = blk.control_volume.initialize(solver=solver, optarg=optarg, hold_state=True)
 
         # flags = blk.feed_side.initialize(
         #     outlvl=outlvl,
@@ -270,7 +270,7 @@ class CompressorData(UnitModelBlockData):
         # Set state_args from inlet state
         if state_args is None:
             state_args = {}
-            state_dict = blk.properties_in[
+            state_dict = blk.control_volume.properties_in[
                 blk.flowsheet().config.time.first()].define_port_members()
 
             for k in state_dict.keys():
@@ -284,12 +284,7 @@ class CompressorData(UnitModelBlockData):
         # adjust pressure and temperature, if needed
         # state_args['pressure'] *= 1.5
         # state_args['temperature'] += 10
-        blk.properties_out.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args,
-        )
+
         blk.properties_isentropic_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
@@ -307,7 +302,7 @@ class CompressorData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.properties_in.release_state(flags, outlvl=outlvl)
+        blk.control_volume.release_state(flags, outlvl=outlvl)
         init_log.info(
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )
