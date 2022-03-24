@@ -68,8 +68,8 @@ Relationships
    :header: "Description", "Equation"
 
    "Component mass fraction", ":math:`x_j = \frac{M_j}{\sum_{j} M_j}`"
-   "Mass density", "blah"
+   "Mass density", ":math:`\rho = (\rho_ref + \rho_s \cdotp \sum_{j} x_j) \cdotp (A \cdotp T^2 + B \cdotp T + C) \cdotp (\alpha + \beta \cdotp P)`"
    "Volumetric flowrate", ":math:`Q = \frac{\sum_{j} M_j}{\rho}`"
    "Mass concentration", ":math:`C_j = x_j \cdotp \rho`"
-   "Dynamic viscosity", "blah"
-   "Enthalpy flow", ":math:`H = \sum_{j} M_j \cdotp \widehat{H}`"
+   "Dynamic viscosity", ":math:`\mu = \mu_ref \cdotp exp( \frac{\mu_B}{T - \mu_C} )`"
+   "Enthalpy flow", ":math:`H = c_p \cdotp \sum_{j} M_j \cdotp (T - 273)`"
