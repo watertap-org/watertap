@@ -37,14 +37,14 @@ Parameters
  :header: "Description", "Symbol", "Parameter", "Index", "Units"
 
  "Fluid specific heat capacity", ":math:`c_p`", "cp", "None", ":math:`\text{J/kg/K}`"
- "Reference density (at 273 K)", ":math:`\rho_ref`", "ref_dens_liq", "None", ":math:`\text{kg/}\text{m}^3`"
+ "Reference density (at 273 K)", ":math:`\rho_{ref}`", "ref_dens_liq", "None", ":math:`\text{kg/}\text{m}^3`"
  "Relative density contribution from salt mass fraction", ":math:`\rho_s`", "dens_slope", "None", ":math:`\text{kg/}\text{m}^3`"
  "First density temperature coefficient", ":math:`A`", "dens_param_A", "None", ":math:`\text{K}^{-2}`"
  "Second density temperature coefficient", ":math:`B`", "dens_param_B", "None", ":math:`\text{K}^{-1}`"
  "Third density temperature coefficient", ":math:`C`", "dens_param_C", "None", ":math:`\text{dimensionless}`"
  "First pressure coefficient", ":math:`\alpha`", "ref_pressure_correction", "None", ":math:`\text{dimensionless}`"
  "Second pressure coefficient", ":math:`\beta`", "ref_pressure_slope", "None", ":math:`\text{Pa}^{-1}`"
- "Reference viscosity (at 273 K)", ":math:`\mu_ref`", "mu_A", "None", ":math:`\text{kg/}\text{m/}\text{s}`"
+ "Reference viscosity (at 273 K)", ":math:`\mu_{ref}`", "mu_A", "None", ":math:`\text{kg/}\text{m/}\text{s}`"
  "First viscosity temperature coefficient", ":math:`\mu_B`", "mu_B", "None", ":math:`\text{K}`"
  "Second viscosity temperature coefficient", ":math:`\mu_C`", "mu_C", "None", ":math:`\text{K}`"
 
@@ -68,10 +68,10 @@ Relationships
    :header: "Description", "Equation"
 
    "Component mass fraction", ":math:`x_j = \frac{M_j}{\sum_{j} M_j}`"
-   "Mass density", ":math:`\rho = (\rho_ref + \rho_s \cdotp \sum_{j} x_j) \cdotp (A \cdotp T^2 + B \cdotp T + C) \cdotp (\alpha + \beta \cdotp P)`"
+   "Mass density", ":math:`\rho = (\rho_{ref} + \rho_s \cdotp \sum_{j} x_j) \cdotp (A \cdotp T^2 + B \cdotp T + C) \cdotp (\alpha + \beta \cdotp P)`"
    "Volumetric flowrate", ":math:`Q = \frac{\sum_{j} M_j}{\rho}`"
    "Mass concentration", ":math:`C_j = x_j \cdotp \rho`"
-   "Dynamic viscosity", ":math:`\mu = \mu_ref \cdotp exp( \frac{\mu_B}{T - \mu_C} )`"
+   "Dynamic viscosity", ":math:`\mu = \mu_{ref} \cdotp exp( \frac{\mu_B}{T - \mu_C} )`"
    "Enthalpy flow", ":math:`H = c_p \cdotp \sum_{j} M_j \cdotp (T - 273)`"
 
 Scaling
