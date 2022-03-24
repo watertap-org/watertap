@@ -1,5 +1,9 @@
 aluminum:
   constituent_longform: Aluminum
+ammonia_as_nitrogen:
+  consituent_longform: Ammonia as Nitrogen (NH3-N)
+ammonium_as_nitrogen:
+  consituent_longform: Ammonium as Nitrogen (NH4-N)
 arsenic:
   constituent_longform: Arsenic
 barium:
