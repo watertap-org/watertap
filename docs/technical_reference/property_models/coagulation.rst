@@ -31,6 +31,14 @@ State variables
    "Temperature", ":math:`T`", "temperature", "None", ":math:`\text{K}`"
    "Pressure", ":math:`P`", "pressure", "None", ":math:`\text{Pa}`"
 
+Parameters
+----------
+.. csv-table::
+ :header: "Description", "Symbol", "Parameter", "Index", "Units"
+
+ "Fluid specific heat capacity", ":math:`c_p`", "cp", "None", ":math:`\text{J/kg/K}`"
+ "Reference density (at 0 C)", ":math:`\rho_ref`", "ref_dens_liq", "None", ":math:`\text{kg/}\text{m}^3`"
+
 Properties
 ----------
 .. csv-table::
