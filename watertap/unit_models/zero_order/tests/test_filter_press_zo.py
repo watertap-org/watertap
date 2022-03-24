@@ -42,14 +42,14 @@ class TestFilterPressZO:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(default={
-                "solute_list": ["tds"]})
+                "solute_list": ["tss"]})
 
 
         m.fs.unit = FilterPressZO(default={"property_package": m.fs.params,
                                     "database": m.db})
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
-        m.fs.unit.inlet.flow_mass_comp[0, "tds"].fix(23)
+        m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(23)
 
         return m
 
@@ -129,7 +129,7 @@ class TestFilterPressZO:
                 "H2O"]))
         assert (pytest.approx(958.33333, rel=1e-5) == value(
             model.fs.unit.properties_in[0].conc_mass_comp[
-                "tds"]))
+                "tss"]))
 
         assert (pytest.approx(0.000460, rel=1e-3) ==
                 value(model.fs.unit.properties_treated[0].flow_vol))
@@ -138,7 +138,7 @@ class TestFilterPressZO:
                 "H2O"]))
         assert (pytest.approx(999.782655, rel=1e-5) == value(
             model.fs.unit.properties_treated[0].conc_mass_comp[
-                "tds"]))
+                "tss"]))
 
         assert (pytest.approx(0.0235399, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].flow_vol))
@@ -147,7 +147,7 @@ class TestFilterPressZO:
                 "H2O"]))
         assert (pytest.approx(957.523184, rel=1e-5) == value(
             model.fs.unit.properties_byproduct[0].conc_mass_comp[
-                "tds"]))
+                "tss"]))
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -173,7 +173,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                  : Value      : Fixed : Bounds
-    Solute Removal [tds] :    0.98000 :  True : (0, None)
+    Solute Removal [tss] :    0.98000 :  True : (0, None)
           Water Recovery : 0.00010000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
@@ -181,7 +181,7 @@ Unit : fs.unit                                                             Time:
                              Inlet    Treated   Byproduct
     Volumetric Flowrate    0.024000 0.00046010  0.023540 
     Mass Concentration H2O   41.667    0.21734    42.477 
-    Mass Concentration tds   958.33     999.78    957.52 
+    Mass Concentration tss   958.33     999.78    957.52 
 ====================================================================================
 """
 
@@ -194,13 +194,13 @@ def test_costing():
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.params = WaterParameterBlock(default={
-            "solute_list": ["tds"]})
+            "solute_list": ["tss"]})
 
     m.fs.unit = FilterPressZO(default={"property_package": m.fs.params,
                                 "database": m.db})
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
-    m.fs.unit.inlet.flow_mass_comp[0, "tds"].fix(23)
+    m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(23)
 
     m.fs.costing = ZeroOrderCosting()
     m.fs.unit.load_parameters_from_database()
