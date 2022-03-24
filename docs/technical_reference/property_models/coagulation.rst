@@ -39,11 +39,16 @@ Parameters
  "Fluid specific heat capacity", ":math:`c_p`", "cp", "None", ":math:`\text{J/kg/K}`"
  "Reference density (at 273 K)", ":math:`\rho_ref`", "ref_dens_liq", "None", ":math:`\text{kg/}\text{m}^3`"
  "Relative density contribution from salt mass fraction", ":math:`\rho_s`", "dens_slope", "None", ":math:`\text{kg/}\text{m}^3`"
- "First temperature coefficient", ":math:`A`", "dens_param_A", "None", ":math:`\text{K}^{-2}`"
- "Second temperature coefficient", ":math:`B`", "dens_param_B", "None", ":math:`\text{K}^{-1}`"
- "Third temperature coefficient", ":math:`C`", "dens_param_C", "None", ":math:`\text{dimensionless}`"
+ "First density temperature coefficient", ":math:`A`", "dens_param_A", "None", ":math:`\text{K}^{-2}`"
+ "Second density temperature coefficient", ":math:`B`", "dens_param_B", "None", ":math:`\text{K}^{-1}`"
+ "Third density temperature coefficient", ":math:`C`", "dens_param_C", "None", ":math:`\text{dimensionless}`"
  "First pressure coefficient", ":math:`\alpha`", "ref_pressure_correction", "None", ":math:`\text{dimensionless}`"
  "Second pressure coefficient", ":math:`\beta`", "ref_pressure_slope", "None", ":math:`\text{Pa}^{-1}`"
+ "Reference viscosity (at 273 K)", ":math:`\mu_ref`", "mu_A", "None", ":math:`\text{kg/}\text{m/}\text{s}`"
+ "First viscosity temperature coefficient", ":math:`\mu_B`", "mu_B", "None", ":math:`\text{K}`"
+ "Second viscosity temperature coefficient", ":math:`\mu_C`", "mu_C", "None", ":math:`\text{K}`"
+
+**The parameters provided are valid between 0 and 350 oC and up to 600 bar.**
 
 Properties
 ----------
