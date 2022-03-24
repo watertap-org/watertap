@@ -68,12 +68,8 @@ class TestEvaporationPondZO:
         assert model.fs.unit.config.database is model.db
         assert model.fs.unit._tech_type == "evaporation_pond"
 
-        assert isinstance(model.fs.unit.electricity, Var)
-        assert isinstance(model.fs.unit.air_temp, Var)
+        assert isinstance(model.fs.unit.air_temperature, Var)
         assert isinstance(model.fs.unit.solar_radiation, Var)
-        assert isinstance(model.fs.unit.liner_thickness, Var)
-        assert isinstance(model.fs.unit.land_cost, Var)
-        assert isinstance(model.fs.unit.land_clearing_cost, Var)
         assert isinstance(model.fs.unit.evaporation_rate_adj_factor, Var)
         assert isinstance(model.fs.unit.evap_rate_calc_a_parameter, Var)
         assert isinstance(model.fs.unit.evap_rate_calc_b_parameter, Var)
@@ -84,7 +80,6 @@ class TestEvaporationPondZO:
         assert isinstance(model.fs.unit.adj_area, Var)
         assert isinstance(model.fs.unit.evaporation_rate_pure, Var)
         assert isinstance(model.fs.unit.evaporation_rate_salt, Var)
-        assert isinstance(model.fs.unit.electricity_consumption, Constraint)
         assert isinstance(model.fs.unit.evap_rate_pure_constraint, Constraint)
         assert isinstance(model.fs.unit.evap_rate_salt_constraint, Constraint)
         assert isinstance(model.fs.unit.area_constraint, Constraint)
@@ -105,21 +100,12 @@ class TestEvaporationPondZO:
             else:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
-        assert model.fs.unit.air_temp[0].fixed
-        assert model.fs.unit.air_temp[0].value == data[
-            "air_temp"]["value"]
+        assert model.fs.unit.air_temperature[0].fixed
+        assert model.fs.unit.air_temperature[0].value == data[
+            "air_temperature"]["value"]
         assert model.fs.unit.solar_radiation[0].fixed
         assert model.fs.unit.solar_radiation[0].value == data[
             "solar_radiation"]["value"]
-        assert model.fs.unit.liner_thickness[0].fixed
-        assert model.fs.unit.liner_thickness[0].value == data[
-            "liner_thickness"]["value"]
-        assert model.fs.unit.land_cost[0].fixed
-        assert model.fs.unit.land_cost[0].value == data[
-            "land_cost"]["value"]
-        assert model.fs.unit.land_clearing_cost[0].fixed
-        assert model.fs.unit.land_clearing_cost[0].value == data[
-            "land_clearing_cost"]["value"]
         assert model.fs.unit.dike_height[0].fixed
         assert model.fs.unit.dike_height[0].value == data[
             "dike_height"]["value"]
@@ -242,22 +228,17 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                         : Value      : Fixed : Bounds
-             Electricity Demand : 9.9000e-09 : False : (0, None)
-          Electricity Intensity :     0.0000 :  True : (None, None)
-        Evaporation rate (mm/d) :     7.1673 : False : (None, None)
-    Land clearing cost ($/acre) :     1000.0 :  True : (None, None)
-             Land cost ($/acre) :     5000.0 :  True : (None, None)
-          Liner thickness (mil) :     50.000 :  True : (None, None)
-              Pond area (acres) :     7176.3 : False : (None, None)
-          Pond dike height (ft) :     8.0000 :  True : (None, None)
-       Solute Removal [calcium] :    0.98000 :  True : (0, None)
-     Solute Removal [magnesium] :    0.98000 :  True : (0, None)
-       Solute Removal [nitrate] :    0.98000 :  True : (0, None)
-       Solute Removal [sulfate] :    0.98000 :  True : (0, None)
-           Solute Removal [tds] :    0.98000 :  True : (0, None)
-           Solute Removal [tss] :    0.98000 :  True : (0, None)
-                 Water Recovery : 0.00010000 :  True : (1e-08, 1.0000001)
+    Key                        : Value      : Fixed : Bounds
+       Evaporation rate (mm/d) :     7.1673 : False : (None, None)
+             Pond area (acres) :     7176.3 : False : (None, None)
+         Pond dike height (ft) :     8.0000 :  True : (None, None)
+      Solute Removal [calcium] :    0.98000 :  True : (0, None)
+    Solute Removal [magnesium] :    0.98000 :  True : (0, None)
+      Solute Removal [nitrate] :    0.98000 :  True : (0, None)
+      Solute Removal [sulfate] :    0.98000 :  True : (0, None)
+          Solute Removal [tds] :    0.98000 :  True : (0, None)
+          Solute Removal [tss] :    0.98000 :  True : (0, None)
+                Water Recovery : 0.00010000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -314,6 +295,12 @@ def test_costing():
                       Var)
     assert isinstance(m.fs.costing.evaporation_pond.cost_per_acre_e_parameter,
                       Var)
+    assert isinstance(m.fs.costing.evaporation_pond.liner_thickness,
+                      Var)
+    assert isinstance(m.fs.costing.evaporation_pond.land_cost,
+                      Var)
+    assert isinstance(m.fs.costing.evaporation_pond.land_clearing_cost,
+                      Var)
 
     assert isinstance(m.fs.unit.costing.capital_cost, Var)
     assert isinstance(m.fs.unit.costing.capital_cost_constraint,
@@ -321,6 +308,3 @@ def test_costing():
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit) == 0
-
-    assert m.fs.unit.electricity[0] in \
-        m.fs.costing._registered_flows["electricity"]

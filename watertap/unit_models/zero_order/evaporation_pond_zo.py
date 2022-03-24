@@ -36,7 +36,7 @@ class EvaporationPondZOData(ZeroOrderBaseData):
         super().build()
 
         build_sido(self)
-        
+
         self._tech_type = "evaporation_pond"
 
         self.air_temperature = Var(self.flowsheet().time,
@@ -47,18 +47,6 @@ class EvaporationPondZOData(ZeroOrderBaseData):
         self.solar_radiation = Var(self.flowsheet().time,
                     units=pyunits.mJ/pyunits.m**2,
                     doc="Daily solar radiation incident")
-
-        self.liner_thickness = Var(self.flowsheet().time,
-                    units=pyunits.mil,
-                    doc="Thickness of evaporation pond liner")
-
-        self.land_cost = Var(self.flowsheet().time,
-                    units=pyunits.acre**-1,
-                    doc="Cost of land for pond")
-
-        self.land_clearing_cost = Var(self.flowsheet().time,
-                    units=pyunits.acre**-1,
-                    doc="Cost to clear land for pond")
 
         self.dike_height = Var(self.flowsheet().time,
                     units=pyunits.ft,
@@ -90,9 +78,6 @@ class EvaporationPondZOData(ZeroOrderBaseData):
 
         self._fixed_perf_vars.append(self.air_temperature)
         self._fixed_perf_vars.append(self.solar_radiation)
-        self._fixed_perf_vars.append(self.liner_thickness)
-        self._fixed_perf_vars.append(self.land_cost)
-        self._fixed_perf_vars.append(self.land_clearing_cost)
         self._fixed_perf_vars.append(self.dike_height)
         self._fixed_perf_vars.append(self.evaporation_rate_adj_factor)
         self._fixed_perf_vars.append(self.evap_rate_calc_a_parameter)
@@ -139,7 +124,8 @@ class EvaporationPondZOData(ZeroOrderBaseData):
         @self.Constraint(self.flowsheet().time,
                     doc='Base area constraint')
         def area_constraint(b, t):
-            q_out = pyunits.convert(b._Q_out[t], to_units=pyunits.gallon/pyunits.minute)
+            q_out = pyunits.convert(self.properties_byproduct[t].flow_vol, 
+            to_units=pyunits.gallon/pyunits.minute)
             return (q_out == b.evaporation_rate_salt[t] * b.area[t])
 
         @self.Constraint(self.flowsheet().time,
@@ -153,8 +139,5 @@ class EvaporationPondZOData(ZeroOrderBaseData):
 
         self._perf_var_dict["Evaporation rate (mm/d)"] = self.evaporation_rate_pure
         self._perf_var_dict["Pond area (acres)"] = self.adj_area
-        self._perf_var_dict["Liner thickness (mil)"] = self.liner_thickness
-        self._perf_var_dict["Land cost ($/acre)"] = self.land_cost
-        self._perf_var_dict["Land clearing cost ($/acre)"] = self.land_clearing_cost
         self._perf_var_dict["Pond dike height (ft)"] = self.dike_height
     
