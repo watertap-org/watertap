@@ -33,7 +33,7 @@ from pyomo.util.check_units import assert_units_consistent
 from watertap.core import WaterParameterBlock, WaterStateBlock
 from watertap.core.wt_database import Database
 from watertap.unit_models.zero_order import GasSpargedMembraneZO
-from watertap.unit_models.zero_order.gas_sparged_membrane_zo import initialize_gas_extraction, \
+from watertap.unit_models.zero_order.gas_sparged_membrane_zo import initialize_sido, \
     calculate_scaling_factors_gas_extraction, _get_Q_gas_extraction
 
 solver = get_solver()
@@ -63,8 +63,7 @@ class TestGasSpargedMembraneZO:
         assert model.fs.unit.config.database is model.db
 
         assert model.fs.unit._has_recovery_removal is True
-        # assert model.fs.unit._fixed_perf_vars == []
-        assert model.fs.unit._initialize is initialize_gas_extraction
+        assert model.fs.unit._initialize is initialize_sido
         assert model.fs.unit._scaling is calculate_scaling_factors_gas_extraction
         assert model.fs.unit._get_Q is _get_Q_gas_extraction
         assert model.fs.unit._stream_table_dict == {

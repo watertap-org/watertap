@@ -21,7 +21,7 @@ import idaes.logger as idaeslog
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
 from pyomo.environ import NonNegativeReals, Var, units as pyunits, Reference
-
+from watertap.core.zero_order_sido import initialize_sido
 # Some more information about this module
 __author__ = "Adam Atia"
 
@@ -61,7 +61,7 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
         self._tech_type = "gas_sparged_membrane"
 
         self._has_recovery_removal = True
-        self._initialize = initialize_gas_extraction
+        self._initialize = initialize_sido
         self._scaling = calculate_scaling_factors_gas_extraction
 
         # Create state blocks for inlet and outlets
@@ -183,91 +183,6 @@ class GasSpargedMembraneZOData(ZeroOrderBaseData):
         self._Q = Reference(self.properties_in[:].flow_vol)
         pump_electricity(self, self._Q)
 
-def initialize_gas_extraction(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                    solver=None, optarg=None):
-    '''
-    Initialization routine for gas extraction membrane.
-
-    Keyword Arguments:
-        state_args : a dict of arguments to be passed to the property
-                       package(s) to provide an initial state for
-                       initialization (see documentation of the specific
-                       property package) (default = {}).
-        outlvl : sets output level of initialization routine
-        optarg : solver options dictionary object (default=None, use
-                 default solver options)
-        solver : str indicating which solver to use during
-                 initialization (default = None, use default IDAES solver)
-
-    Returns:
-        None
-    '''
-    if optarg is None:
-        optarg = {}
-
-    # Set solver options
-    init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-    solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-
-    solver_obj = get_solver(solver, optarg)
-
-    # Get initial guesses for inlet if none provided
-    if state_args is None:
-        state_args = {}
-        state_dict = (
-            blk.properties_in[
-                blk.flowsheet().time.first()]
-            .define_port_members())
-
-        for k in state_dict.keys():
-            if state_dict[k].is_indexed():
-                state_args[k] = {}
-                for m in state_dict[k].keys():
-                    state_args[k][m] = state_dict[k][m].value
-            else:
-                state_args[k] = state_dict[k].value
-
-    # ---------------------------------------------------------------------
-    # Initialize control volume block
-    flags = blk.properties_in.initialize(
-        outlvl=outlvl,
-        optarg=optarg,
-        solver=solver,
-        state_args=state_args,
-        hold_state=True
-    )
-    blk.properties_treated.initialize(
-        outlvl=outlvl,
-        optarg=optarg,
-        solver=solver,
-        state_args=state_args,
-        hold_state=False
-    )
-    blk.properties_byproduct.initialize(
-        outlvl=outlvl,
-        optarg=optarg,
-        solver=solver,
-        state_args=state_args,
-        hold_state=False
-    )
-
-    init_log.info_high('Initialization Step 1 Complete.')
-
-    # ---------------------------------------------------------------------
-    # Solve unit
-    with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        results = solver_obj.solve(blk, tee=slc.tee)
-
-    init_log.info_high(
-        "Initialization Step 2 {}.".format(idaeslog.condition(results))
-    )
-
-    # ---------------------------------------------------------------------
-    # Release Inlet state
-    blk.properties_in.release_state(flags, outlvl)
-
-    init_log.info('Initialization Complete: {}'
-                  .format(idaeslog.condition(results)))
 
 def calculate_scaling_factors_gas_extraction(self):
     # Get default scale factors and do calculations from base classes
