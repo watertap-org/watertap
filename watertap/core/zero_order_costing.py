@@ -1249,10 +1249,6 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             expr *= blk.config.flowsheet_costing_block.TPEC
         elif factor == "TIC":
             expr *= blk.config.flowsheet_costing_block.TIC
-        
-        expr = pyo.units.convert(
-            A*Q + B,
-            to_units=blk.config.flowsheet_costing_block.base_currency)
 
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost == expr)

@@ -172,9 +172,11 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                  : Value      : Fixed : Bounds
-    Solute Removal [tss] :    0.98000 :  True : (0, None)
-          Water Recovery : 0.00010000 :  True : (1e-08, 1.0000001)
+    Key                         : Value      : Fixed : Bounds
+    Filter Press Capacity (ft3) :     9153.6 : False : (None, None)
+        Filter Press Power (kW) :     156.61 : False : (0, None)
+           Solute Removal [tss] :    0.98000 :  True : (0, None)
+                 Water Recovery : 0.00010000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table

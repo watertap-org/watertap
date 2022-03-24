@@ -73,7 +73,8 @@ class FilterPressZOData(ZeroOrderBaseData):
         self.electricity = Var(
             self.flowsheet().time,
             units=pyunits.kW,
-            doc="Filter press electricity")
+            bounds=(0, None),
+            doc="Filter press power")
 
         @self.Constraint(self.flowsheet().time,
                          doc="Filter press capacity constraint")
@@ -99,4 +100,9 @@ class FilterPressZOData(ZeroOrderBaseData):
                     (pyunits.kWh/pyunits.year) / 
                     pyunits.convert(Q, to_units=pyunits.m**3/pyunits.yr) * 
                     pyunits.convert(Q, to_units=pyunits.m**3/pyunits.hr))
+
+
+        self._perf_var_dict["Filter Press Capacity (ft3)"] = self.filter_press_capacity
+        self._perf_var_dict["Filter Press Power (kW)"] = self.electricity
+
 
