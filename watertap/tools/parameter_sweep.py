@@ -378,7 +378,7 @@ def _create_component_output_skeleton(component, num_samples):
     if hasattr(component, 'lb'):
         comp_dict["lower bound"] = component.lb
     if hasattr(component, 'ub'):
-        comp_dict["upper bound"] = component.lb
+        comp_dict["upper bound"] = component.ub
     if hasattr(component, 'get_units'):
         unit_obj = component.get_units()
         if unit_obj is not None:
@@ -569,7 +569,7 @@ def _write_output_to_h5(output_dict, output_directory, fname):
                         elif subsubkey == 'upper bound' and subsubitem is None:
                             subgrp.create_dataset(subsubkey, data=np.finfo('d').max)
                         else:
-                            subgrp.create_dataset(subsubkey, data=output_dict[key][subkey][subsubkey])
+                            subgrp.create_dataset(subsubkey, data=subsubitem)
         elif key == 'solve_successful':
             grp.create_dataset(key, data=output_dict[key])
 
