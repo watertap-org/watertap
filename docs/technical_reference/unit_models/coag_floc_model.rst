@@ -96,9 +96,9 @@ the user must specify. The table below gives an outline of these.
 Chemical Dosing Parameters
 --------------------------
 In addition to providing and fixing values for chemical additives, the user's will
-need to provide parameter information for each additive including molecular weight,
-moles of salt that would be added per mole of additive, and a representative molecular
-weight of the salt species that would be formed from addition of the additive. If a user
+need to provide parameter information for each additive including molecular weight (:math:`MW_{a,i}`),
+moles of salt that would be added per mole of additive (:math:`N_i`), and a representative molecular
+weight of the salt species that would be formed from addition of the additive (:math:`MW_{s,i}`). If a user
 does not have this information off hand, then the user can simply give a value of '0' for
 the moles of salt added per mole of additive (and dummy values for the molecular weights).
 This information is only used to estimate the rise in TDS when salts are added, so it
@@ -139,7 +139,7 @@ Equations and Relationships
    "TSS loss rate", ":math:`S_{TSS} = M_{TSS,in} - Q \cdotp TSS_f`"
    "TSS mass balance", ":math:`0 = M_{TSS,in} - M_{TSS,out} - S_{TSS}`"
    "Sludge mass balance", ":math:`0 = M_{Sludge,in} - M_{Sludge,out} + S_{TSS}`"
-   "TDS gain rate", ":math:`S_{TDS} = {\sum_{i} \frac{D_i}{MW_i} \cdotp N_i \cdotp Q}`"
+   "TDS gain rate", ":math:`S_{TDS} = {\sum_{i} \frac{D_i}{MW_{a,i}} \cdotp N_i \cdotp MW_{s,i} \cdotp Q}`"
 
 References
 ----------
