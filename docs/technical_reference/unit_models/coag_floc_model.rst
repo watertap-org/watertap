@@ -90,7 +90,7 @@ the user must specify. The table below gives an outline of these.
 
 **User's must provide values for and 'fix' these variables to solve the model**
 
-**NOTE: Default values are provided for the slope and intercept relationships between Turbidity and TSS. These come from `Rugner et al. (2013) <https://doi.org/10.1007/s12665-013-2307-1>`_**
+**NOTE: Default values are provided for the slope and intercept relationships between Turbidity and TSS. These come from Rugner et al. (2013)**
 
 
 Chemical Dosing Parameters
@@ -134,5 +134,13 @@ Equations and Relationships
 .. csv-table::
    :header: "Description", "Equation"
 
-   "Solvent flux across membrane", ":math:`J_{solvent} = \rho_{solvent} A(P_{f} - P_p - (\pi_{f}-\pi_{p}))`"
-   "Solute flux across membrane", ":math:`J_{solute} = B(C_{f} - C_{p})`"
+   "TSS relationship with initial Turbidity", ":math:`TSS_o = b + a(Turb_o)`"
+   "TSS relationship with final Turbidity", ":math:`TSS_f = b + a(Turb_f)`"
+   "TSS loss rate", ":math:`S_{TSS} = M_{TSS,in} - Q \cdotp TSS_f`"
+   "TSS mass balance", ":math:`0 = M_{TSS,in} - M_{TSS,out} - S_{TSS}`"
+   "Sludge mass balance", ":math:`0 = M_{Sludge,in} - M_{Sludge,out} + S_{TSS}`"
+   "TDS gain rate", ":math:`S_{TDS} = {\sum_{i} D_i}`"
+
+References
+----------
+`Rugner et al. (2013) <https://doi.org/10.1007/s12665-013-2307-1>`_
