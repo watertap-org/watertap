@@ -20,7 +20,7 @@ as they provide a way to seamlessly switch between different projects without co
 
 Using Conda environments is not mandatory to be able to install and use WaterTAP; however, it is strongly recommended.
 
-To use Conda environments, the ``conda`` package manager is required. Refer to the `Conda installation guide <https://docs.conda.io/projects/conda/en/latest/user-guide/install/>`_ for detailed steps on how to install Conda for your operating system.
+To use Conda environments, the ``conda`` package manager is required. Refer to the `Conda installation guide <https://idaes-pse.readthedocs.io/en/stable/tutorials/getting_started/index.html#installation>`_ for detailed steps on how to install Conda for your operating system.
 
 General installation
 --------------------
@@ -72,7 +72,7 @@ Windows and Linux Users: solvers distributed through IDAES Extensions
 
 After installing WaterTAP, the ``idaes get-extensions`` command can be used to automatically install the solvers distributed as part of the IDAES Extensions.
 
-.. important:: Depending on your operating system, additional steps might be needed. For more information, refer to the `IDAES installation guide <https://idaes-pse.readthedocs.io/en/stable/getting_started/index.html>`_.
+.. important:: Depending on your operating system, additional steps might be needed. For more information, refer to the `IDAES installation guide <https://idaes-pse.readthedocs.io/en/stable/tutorials/getting_started/index.html#installation>`_.
 
 From the same environment where WaterTAP was installed, run:
 
