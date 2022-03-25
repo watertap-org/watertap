@@ -70,6 +70,7 @@ from .sludge_tank_zo import SludgeTankZO
 from .well_field_zo import WellFieldZO
 from .intrusion_mitigation_zo import IntrusionMitigationZO
 from .injection_well_disposal_zo import InjectionWellDisposalZO
+from .surface_discharge_zo import SurfaceDischargeZO
 
 
 #=========================================================================================
