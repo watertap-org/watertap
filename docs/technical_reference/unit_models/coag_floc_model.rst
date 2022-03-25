@@ -34,7 +34,7 @@ The main assumptions of the implemented model are as follows:
 5) Isothermal operation
 
 .. figure:: ../../_static/unit_models/coagulation_flocculation.png
-    :width: 400
+    :width: 600
     :align: center
 
     Figure 1. Schematic representation of a coagulation-flocculation unit modeled in WaterTAP
@@ -78,5 +78,61 @@ the user must specify. The table below gives an outline of these.
    "Chemical Doses added during Jar Test", ":math:`D_i`", "chemical_doses", "[t, i]", ":math:`\text{mg/L}`"
    "Retention time for each rapid mixer", ":math:`\tau_r`", "rapid_mixing_retention_time", "[t]", ":math:`\text{s}`"
    "Number of rapid mixers in series", ":math:`n_r`", "num_rapid_mixing_basins", "None", "None"
-   "Rapid mixer velocity gradient", ":math:`G_r`", "rapid_mixing_vel_grad", "[t]", ":math:`\text{s^-1}`"
+   "Rapid mixer velocity gradient", ":math:`G_r`", "rapid_mixing_vel_grad", "[t]", ":math:`\text{s}^-1`"
    "Retention time of flocculation basin", ":math:`\tau_f`", "floc_retention_time", "[t]", ":math:`\text{s}`"
+   "Flocculation single paddle length (from center of rotation to blade edge)", ":math:`L`", "single_paddle_length", "None", ":math:`\text{m}`"
+   "Flocculation single paddle width", ":math:`w`", "single_paddle_width", "None", ":math:`\text{m}`"
+   "Flocculation paddle rotational speed", ":math:`\omega`", "paddle_rotational_speed", "[t]", ":math:`\text{revolutions/s}`"
+   "Flocculation paddle drag coefficient", ":math:`C_D`", "paddle_drag_coef", "[t]", "None"
+   "Flocculation paddle velocity fraction", ":math:`f`", "vel_fraction", "None", "None"
+   "Number of rotating paddle wheels", ":math:`n_w`", "num_paddle_wheels", "None", "None"
+   "Number of paddles per wheel", ":math:`n_p`", "num_paddles_per_wheel", "None", "None"
+
+**User's must provide values for and 'fix' these variables to solve the model**
+
+**NOTE: Default values are provided for the slope and intercept relationships between Turbidity and TSS. These come from `Rugner et al. (2013) <https://doi.org/10.1007/s12665-013-2307-1>`_**
+
+
+Chemical Dosing Parameters
+--------------------------
+In addition to providing and fixing values for chemical additives, the user's will
+need to provide parameter information for each additive including molecular weight,
+moles of salt that would be added per mole of additive, and a representative molecular
+weight of the salt species that would be formed from addition of the additive. If a user
+does not have this information off hand, then the user can simply give a value of '0' for
+the moles of salt added per mole of additive (and dummy values for the molecular weights).
+This information is only used to estimate the rise in TDS when salts are added, so it
+is not critical for the determination of the main objective of Coagulation-Flocculation,
+which is the removal of TSS.
+
+To provide this information to the unit model, user's must add a 'chemical_additives'
+dictionary to the initialization of the unit model. That dictionary must have the
+following format.
+
+.. code-block::
+
+   chem_dict = {'chem_A':
+                  {'parameter_data':
+                    {'mw_additive': (value, units),
+                     'moles_per_mole_additive': value,
+                     'mw_salt': (value, units)
+                    }
+                  },
+                'chem_B':
+                  {'parameter_data':
+                    {'mw_additive': (value, units),
+                     'moles_per_mole_additive': value,
+                     'mw_salt': (value, units)
+                    }
+                  }
+              }
+
+
+Equations and Relationships
+---------------------------
+
+.. csv-table::
+   :header: "Description", "Equation"
+
+   "Solvent flux across membrane", ":math:`J_{solvent} = \rho_{solvent} A(P_{f} - P_p - (\pi_{f}-\pi_{p}))`"
+   "Solute flux across membrane", ":math:`J_{solute} = B(C_{f} - C_{p})`"
