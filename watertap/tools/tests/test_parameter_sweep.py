@@ -938,10 +938,9 @@ class TestParallelManager():
                     optimize_kwargs={'relax_feasibility':True},
                     mpi_comm = comm)
 
-            filtered_user_warnings = [i for i in w if i.category == UserWarning]
+            filtered_user_warnings = [str(i.message) for i in w if i.category == UserWarning]
             if rank == 0:
-                assert len(filtered_user_warnings) == 1
-                assert str(filtered_user_warnings[0].message) == warning_string
+                assert warning_string in filtered_user_warnings
 
 
 def _optimization(m, relax_feasibility=False):
