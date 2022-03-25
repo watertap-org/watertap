@@ -115,6 +115,7 @@ def test_unit_parameter_files(tech):
                                          "brine_concentrator",
                                          "agglom_stacking",
                                          "storage_tank",
+                                         "evaporation_pond",
                                          "deep_well_injection"]
 
     expected = ["recovery_frac_mass_H2O",
