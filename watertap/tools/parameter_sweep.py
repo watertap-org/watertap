@@ -487,7 +487,7 @@ def _write_to_csv(sweep_params, global_values, global_results_dict, global_resul
 
             # If we want the interpolated output_list in CSV
             if interpolate_nan_outputs:
-                global_results_clean = _interp_nan_values(global_values, global_results)
+                global_results_clean = _interp_nan_values(global_values, global_results_arr)
                 global_save_data_clean = np.hstack((global_values, global_results_clean))
 
                 head, tail = os.path.split(csv_results_file)
@@ -696,7 +696,7 @@ def _save_results(sweep_params, local_values, global_values, local_results_dict,
             if (write_h5 or write_csv) and dirname != '':
                 os.makedirs(dirname, exist_ok=True)
             elif not write_h5 and not write_csv:
-                warnings.warn("A results filename was provided but neither options to write H5 or csv was selected.")
+                warnings.warn("A results filename was provided but neither options to write H5 or csv was selected. No file will be written.", UserWarning)
 
             if debugging_data_dir is not None:
                 os.makedirs(debugging_data_dir, exist_ok=True)

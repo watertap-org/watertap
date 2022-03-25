@@ -15,6 +15,7 @@ import pytest
 import os
 import numpy as np
 import pyomo.environ as pyo
+import warnings
 
 from pyomo.environ import value
 
@@ -498,6 +499,7 @@ class TestParallelManager():
                 write_csv = True, write_h5 = True,
                 optimize_function=_optimization,
                 debugging_data_dir = tmp_path,
+                interpolate_nan_outputs = True,
                 mpi_comm = comm)
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -507,6 +509,7 @@ class TestParallelManager():
         if rank == 0:
             # Check that the global results file is created
             assert os.path.isfile(csv_results_file)
+            assert os.path.isfile( os.path.join(tmp_path, 'interpolated_global_results.csv') )
 
             # Check that all local output files have been created
             for k in range(num_procs):
@@ -901,6 +904,41 @@ class TestParallelManager():
                     reinitialize_function=None,
                     reinitialize_kwargs=None,
                     mpi_comm = comm)
+
+    @pytest.mark.component
+    def test_parameter_sweep_no_file_warn(self, model, tmp_path):
+        comm, rank, num_procs = _init_mpi()
+        tmp_path = _get_rank0_path(comm, tmp_path)
+
+        m = model
+        m.fs.slack_penalty = 1000.
+        m.fs.slack.setub(0)
+
+        A = m.fs.input['a']
+        B = m.fs.input['b']
+        sweep_params = {A.name : (A, 0.1, 0.9, 3),
+                        B.name : (B, 0.0, 0.5, 3)}
+        outputs = {'output_c':m.fs.output['c'],
+                   'output_d':m.fs.output['d'],
+                   'performance':m.fs.performance,
+                   'objective':m.objective}
+        results_fname = os.path.join(tmp_path, 'global_results')
+
+        # Call the parameter_sweep function
+        warning_string = "A results filename was provided but neither options to write H5 or csv was selected. No file will be written."
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            parameter_sweep(m, sweep_params, outputs=outputs,
+                    results_file_name = results_fname,
+                    write_csv = False, write_h5 = False,
+                    optimize_function=_optimization,
+                    optimize_kwargs={'relax_feasibility':True},
+                    mpi_comm = comm)
+
+            filtered_user_warnings = [i for i in w if i.category == UserWarning]
+            assert len(filtered_user_warnings) == 1
+            assert str(filtered_user_warnings[0].message) == warning_string
+
 
 def _optimization(m, relax_feasibility=False):
     if relax_feasibility:
