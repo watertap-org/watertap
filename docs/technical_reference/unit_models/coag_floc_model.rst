@@ -139,7 +139,7 @@ Equations and Relationships
    "TSS loss rate", ":math:`S_{TSS} = M_{TSS,in} - Q \cdotp TSS_f`"
    "TSS mass balance", ":math:`0 = M_{TSS,in} - M_{TSS,out} - S_{TSS}`"
    "Sludge mass balance", ":math:`0 = M_{Sludge,in} - M_{Sludge,out} + S_{TSS}`"
-   "TDS gain rate", ":math:`S_{TDS} = {\sum_{i} D_i}`"
+   "TDS gain rate", ":math:`S_{TDS} = {\sum_{i} \frac{D_i}{MW_i} \cdotp N_i \cdotp Q}`"
 
 References
 ----------
