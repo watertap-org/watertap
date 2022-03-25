@@ -1,0 +1,48 @@
+Coagulation-Flocculation
+========================
+
+Introduction
+------------
+
+Coagulation-Flocculation is a water treatment process  designed to remove suspended
+solids (primarily as natural organic matter) from solution by converting those small,
+suspended particles into larger 'floccs' that can then be separated by sedimentation
+and/or filtration (or other separation processes) later in the treatment train. This
+is accomplished in a 2-stage process:
+
+a) Stage 1: Coagulation (where chemical coagulants and other aids are mixing into solution)
+b) Stage 2: Flocculation (where the 'floccs' are formed through slow, gentle mixing/agitation)
+
+In this implementation of the model, the user MUST provide a measured final Turbidity (in NTU) made
+during a Jar Test for the given water source. This measurement is then used to estimate how much
+suspended solids would be removed during the Coagulation-Flocculation process. User's may also
+provide the specific chemical composition of additives used to achieve this final Turbidity, and
+can provide information on the level of salts in those additives. This information can be used
+to estimate an increase in total dissolved salts (TDS) that may occur due to the addition of
+those chemicals.
+
+This model also includes relationships for power usage in the rapid mixing and flocculation
+basins. User's will need to provide information for power usage such as retention times of
+each basin, mixing paddle sizes, number of mixers, etc. 
+
+The main assumptions of the implemented model are as follows:
+
+1) Coagulation-Flocculation can be modeled together in a single combined unit (Figure 1)
+2) Model dimensionality is limited to 0D
+3) Predicted levels of suspended solid removal can be determined solely by Jar Test measurements
+4) Single liquid phase only
+5) Isothermal operation
+
+.. figure:: ../../_static/unit_models/coagulation_flocculation.png
+    :width: 400
+    :align: center
+
+    Figure 1. Schematic representation of a coagulation-flocculation unit modeled in WaterTAP
+
+Ports
+-----
+
+The model provides two ports (Pyomo notation in parenthesis):
+
+* Inlet port (inlet)
+* Outlet port (outlet)
