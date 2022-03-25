@@ -17,17 +17,19 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    ConcreteModel, Constraint, value, Var, Expression, assert_optimal_termination, units as pyunits)
+    Block, ConcreteModel, Constraint, value, Var, assert_optimal_termination, units as pyunits)
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
+from idaes.generic_models.costing import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import CoagulationFlocculationZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
@@ -75,7 +77,7 @@ class TestCoagFlocZO:
                 'power_floc',
                 'anionic_polymer_dose',
                 'cationic_polymer_dose',
-                'total_power'}
+                'electricity'}
         cons = {'rapid_mix_basin_vol_constraint',
                 'floc_basin_vol_constraint',
                 'chemical_flow_constraint',
@@ -84,7 +86,7 @@ class TestCoagFlocZO:
                 'rule_power_floc',
                 'anionic_polymer_dose_constraint',
                 'cationic_polymer_dose_constraint',
-                'total_power_constraint'}
+                'electricity_constraint'}
         for var in vars:
             assert isinstance(getattr(model.fs.unit, var), Var)
         for con in cons:
@@ -189,7 +191,7 @@ class TestCoagFlocZO:
                 value(model.fs.unit.power_floc[0]))
 
         assert (pytest.approx(0.237627, rel=1e-5) ==
-                value(model.fs.unit.total_power[0]))
+                value(model.fs.unit.electricity[0]))
 
         assert (pytest.approx(0.071500, rel=1e-5) ==
                 value(model.fs.unit.rapid_mix_basin_vol))
@@ -242,3 +244,45 @@ Unit : fs.unit                                                             Time:
 """
 
         assert output in stream.getvalue()
+
+
+def test_costing():
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = WaterParameterBlock(
+        default={"solute_list": ["sulfur", "toc", "tss"]})
+
+    m.fs.costing = ZeroOrderCosting()
+
+    m.fs.unit1 = CoagulationFlocculationZO(default={
+        "property_package": m.fs.params,
+        "database": m.db})
+
+    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
+    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
+    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    m.fs.unit1.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": m.fs.costing})
+
+    assert isinstance(m.fs.costing.coag_and_floc, Block)
+    assert isinstance(m.fs.costing.coag_and_floc.capital_mix_a_parameter,
+                      Var)
+    assert isinstance(m.fs.costing.coag_and_floc.capital_mix_b_parameter,
+                      Var)
+
+    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
+                      Constraint)
+
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    assert m.fs.unit1.electricity[0] in \
+        m.fs.costing._registered_flows["electricity"]

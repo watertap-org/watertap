@@ -11,12 +11,13 @@
 #
 ###############################################################################
 """
-Tests for zero-order landfill zld model
+Tests for zero-order constructed wetlands
 """
 import pytest
-from io import StringIO
 
-from pyomo.environ import ConcreteModel, Constraint, value, Var
+from io import StringIO
+from pyomo.environ import (
+    ConcreteModel, Constraint, value, Var, assert_optimal_termination)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -24,14 +25,14 @@ from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 
-from watertap.unit_models.zero_order import LandfillZLDZO
+from watertap.unit_models.zero_order import ConstructedWetlandsZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 
 solver = get_solver()
 
 
-class TestLandfillZLDZOdefault:
+class TestConstructedWetlandsZO_w_default_removal:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -39,42 +40,38 @@ class TestLandfillZLDZOdefault:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["sulfur", "toc", "tss"]})
+            default={"solute_list": ["nitrate"]})
 
-        m.fs.unit = LandfillZLDZO(default={
+        m.fs.unit = ConstructedWetlandsZO(default={
             "property_package": m.fs.params,
             "database": m.db})
 
-        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1e-5)
-        m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(10)
-        m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(20)
-        m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(30)
+        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
+        m.fs.unit.inlet.flow_mass_comp[0, "nitrate"].fix(1)
 
         return m
 
     @pytest.mark.unit
     def test_build(self, model):
-        assert model.fs.unit.config.database == model.db
-        assert model.fs.unit._tech_type == 'landfill_zld'
-        assert isinstance(model.fs.unit.electricity, Var)
-        assert isinstance(model.fs.unit.capacity_basis, Var)
-        assert isinstance(model.fs.unit.total_mass, Var)
-        assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
-        assert isinstance(model.fs.unit.electricity_consumption, Constraint)
+        assert model.fs.unit.config.database is model.db
+
 
     @pytest.mark.component
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("landfill_zld")
+        data = model.db.get_unit_operation_parameters("constructed_wetlands")
 
-        model.fs.unit.load_parameters_from_database()
+        model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
-        assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
+        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
+            data["recovery_frac_mass_H2O"]["value"]
 
-        assert model.fs.unit.capacity_basis[0].fixed
-        assert model.fs.unit.capacity_basis[0].value == data[
-            "capacity_basis"]["value"]
+        for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
+            assert v.fixed
+            if j == "foo":
+                assert v.value == data["default_removal_frac_mass_solute"]["value"]
+            else:
+                assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -91,15 +88,23 @@ class TestLandfillZLDZOdefault:
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
+    def test_solve(self, model):
+        results = solver.solve(model)
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_solution(self, model):
-        for t, j in model.fs.unit.inlet.flow_mass_comp:
-            assert (pytest.approx(value(
-                model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5) ==
-                value(model.fs.unit.outlet.flow_mass_comp[t, j]))
-        assert (pytest.approx(216000.036, abs=1e-5) ==
-                value(model.fs.unit.total_mass[0]))
-        assert (pytest.approx(0.0, abs=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert (pytest.approx(0.0091, rel=1e-5) ==
+                value(model.fs.unit.properties_treated[0].flow_vol))
+        assert (pytest.approx(65.93406, rel=1e-5) ==
+                value(model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]))
+        assert (value(model.fs.unit.properties_in[0].flow_mass_comp["H2O"]
+                      * model.fs.unit.recovery_frac_mass_H2O[0]) ==
+                value(model.fs.unit.properties_treated[0].flow_mass_comp["H2O"]))
 
     @pytest.mark.component
     def test_report(self, model):
@@ -115,21 +120,15 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                    : Value      : Fixed : Bounds
-    Capacity Basis (kg/hr) : 3.0210e+05 :  True : (None, None)
-        Electricity Demand : 1.6544e-24 : False : (0, None)
-     Electricity Intensity :     0.0000 :  True : (None, None)
-        Total Mass (kg/hr) : 2.1600e+05 : False : (None, None)
+    Key                      : Value   : Fixed : Bounds
+    Solute Removal [nitrate] : 0.40000 :  True : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
-                                 Inlet     Outlet  
-    Volumetric Flowrate         0.060000   0.060000
-    Mass Concentration H2O    0.00016667 0.00016667
-    Mass Concentration sulfur     166.67     166.67
-    Mass Concentration toc        333.33     333.33
-    Mass Concentration tss        500.00     500.00
+                                 Inlet    Treated
+    Volumetric Flowrate        0.011000 0.0091000
+    Mass Concentration H2O       909.09    934.07
+    Mass Concentration nitrate   90.909    65.934
 ====================================================================================
 """
-
-        assert output == stream.getvalue()
+        assert output in stream.getvalue()
