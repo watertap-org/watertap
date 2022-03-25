@@ -23,7 +23,7 @@ those chemicals.
 
 This model also includes relationships for power usage in the rapid mixing and flocculation
 basins. User's will need to provide information for power usage such as retention times of
-each basin, mixing paddle sizes, number of mixers, etc. 
+each basin, mixing paddle sizes, number of mixers, etc.
 
 The main assumptions of the implemented model are as follows:
 
@@ -46,3 +46,28 @@ The model provides two ports (Pyomo notation in parenthesis):
 
 * Inlet port (inlet)
 * Outlet port (outlet)
+
+Sets
+----
+.. csv-table::
+   :header: "Description", "Symbol", "Indices"
+
+   "Time", ":math:`t`", "[0]"
+   "Phases", ":math:`p`", "['Liq']"
+   "Components", ":math:`j`", "['H2O', 'TDS', 'TSS', 'Sludge', ...]"
+   "Chemical Additives", ":math:`i`", "['chem_A', 'chem_B', ...]"
+
+**User's are responsible for naming any chemical additives and defining all parameters associated with them**
+
+Degrees of Freedom
+------------------
+Aside from the inlet feed state variables (i.e. temperature, pressure, component mass flowrates),
+the Coagulation-Flocculation model has an at least an additional 13 degrees of freedom that
+the user must specify. The table below gives an outline of these.
+
+.. csv-table::
+   :header: "Description", "Symbol", "Variable Name", "Index", "Units"
+
+   "Fluid temperature", ":math:`T`", "inlet.temperature", "[t]", ":math:`\text{K}`"
+   "Fluid pressure", ":math:`P`", "inlet.pressure", "[t]", ":math:`\text{Pa}`"
+   "Mass flowrate of components", ":math:`M_j`", "inlet.flow_mass_phase_comp", "[t, 'Liq', j]", ":math:`\text{kg/s}`"
