@@ -564,12 +564,12 @@ def _write_output_to_h5(output_dict, output_directory, fname):
                 subgrp = grp.create_group(subkey)
                 for subsubkey, subsubitem in subitem.items():
                     if subsubkey[0] != '_':
-                        if subsubkey == 'lower bound' and subsubitem is None:
-                            subgrp.create_dataset(subsubkey, data=np.finfo('d').min)
-                        elif subsubkey == 'upper bound' and subsubitem is None:
-                            subgrp.create_dataset(subsubkey, data=np.finfo('d').max)
-                        else:
-                            subgrp.create_dataset(subsubkey, data=subsubitem)
+                        subgrp.create_dataset(subsubkey, data=subsubitem)
+                # If the variables are unbounded, we set them to max and min float values
+                if 'lower bound' not in subitem.keys():
+                    subgrp.create_dataset('lower bound', data=np.finfo('d').min)
+                if 'upper bound' not in subitem.keys():
+                    subgrp.create_dataset('upper bound', data=np.finfo('d').max)
         elif key == 'solve_successful':
             grp.create_dataset(key, data=output_dict[key])
 

@@ -330,7 +330,7 @@ class TestParallelManager():
         comm, rank, num_procs = _init_mpi()
         tmp_path = _get_rank0_path(comm, tmp_path)
 
-        reference_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
+        input_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
                                                       'units': 'None',
                                                       'upper bound': 1,
                                                       'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
@@ -355,17 +355,22 @@ class TestParallelManager():
                                                             'upper bound': 1,
                                                             'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])}},
                          'solve_successful': [ True ]*9,
-                         'sweep_params': {'fs.input[a]': {'lower bound': 0,
+                         'sweep_params': {'fs.input[a]': {# 'lower bound': 0,
                                                           'units': 'None',
-                                                          'upper bound': 1,
+                                                          # 'upper bound': 1,
                                                           'value': np.array([0.1, 0.1, 0. , 0.5, 0.5, 0. , 0. , 0. , 0. ])},
                                           'fs.input[b]': {'lower bound': 0,
                                                           'units': 'None',
                                                           'upper bound': 1,
                                                           'value': np.array([0.  , 0.25, 0.  , 0.  , 0.25, 0.  , 0.  , 0.  , 0.  ])}}}
 
+        import copy
+        reference_dict = copy.deepcopy(input_dict)
+        reference_dict['sweep_params']['fs.input[a]']['lower bound'] = np.finfo('d').min
+        reference_dict['sweep_params']['fs.input[a]']['upper bound'] = np.finfo('d').max
+
         h5_fname = "h5_test_{0}.h5".format(rank)
-        _write_output_to_h5(reference_dict, output_directory=tmp_path, fname=h5_fname)
+        _write_output_to_h5(input_dict, output_directory=tmp_path, fname=h5_fname)
         read_dictionary = _read_output_h5(os.path.join(tmp_path, h5_fname))
         _assert_dictionary_correctness(reference_dict, read_dictionary)
 
