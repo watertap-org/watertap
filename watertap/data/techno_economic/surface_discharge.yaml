@@ -1,12 +1,4 @@
 default:
-  recovery_frac_mass_H2O:
-    value: 0.9999
-    units: dimensionless
-    reference: Lenntech https://www.lenntech.com/processes/surface-water-discharge-of-brine.htm.  Electricity
-      consumption is based on Carlsbad data.
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless
   capital_cost:
     cost_factor: None
     reference_state:
@@ -31,14 +23,6 @@ default:
     value: 0 # default case includes no pipe costs
     units: miles
 emwd:
-  recovery_frac_mass_H2O:
-    value: 0.9999
-    units: dimensionless
-    reference: Lenntech https://www.lenntech.com/processes/surface-water-discharge-of-brine.htm.  Electricity
-      consumption is based on Carlsbad data.
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless
   capital_cost:
     basis: flow_vol
     cost_factor: None
