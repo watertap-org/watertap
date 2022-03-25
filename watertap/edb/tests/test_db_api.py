@@ -73,6 +73,8 @@ def test_edb_get_components(edb):
     res_obj_comps = edb.get_components(element_names=["H","O"])
     for comp_obj in res_obj_comps:
         assert type(comp_obj) is Component
+
+    # Just test the _process_species function 
     assert edb._process_species("H2O") == "H2O"
     assert edb._process_species("H_+") == "H"
     assert edb._process_species("OH_-") == "OH"
