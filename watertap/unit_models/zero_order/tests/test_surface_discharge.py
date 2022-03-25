@@ -323,8 +323,7 @@ def test_costing(subtype):
         assert (pytest.approx(2.8785, rel=1e-5) ==
                 value(m.fs.unit.costing.capital_cost))
     if subtype == "emwd":
-        print("emwd: ", value(m.fs.unit.costing.capital_cost))
-        assert (pytest.approx(47.921893, rel=1e-5) ==
+        assert (pytest.approx(22.705337, rel=1e-5) ==
                 value(m.fs.unit.costing.capital_cost))
 
     assert m.fs.unit.electricity[0] in \
