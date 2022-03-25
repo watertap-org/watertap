@@ -139,8 +139,21 @@ Equations and Relationships
    "TSS loss rate", ":math:`S_{TSS} = M_{TSS,in} - Q \cdotp TSS_f`"
    "TSS mass balance", ":math:`0 = M_{TSS,in} - M_{TSS,out} - S_{TSS}`"
    "Sludge mass balance", ":math:`0 = M_{Sludge,in} - M_{Sludge,out} + S_{TSS}`"
-   "TDS gain rate", ":math:`S_{TDS} = {\sum_{i} \frac{D_i}{MW_{a,i}} \cdotp N_i \cdotp MW_{s,i} \cdotp Q}`"
+   "TDS gain rate", ":math:`S_{TDS} = Q \cdotp {\sum_{i} \frac{D_i}{MW_{a,i}} \cdotp N_i \cdotp MW_{s,i} }`"
+   "TDS mass balance", ":math:`0 = M_{TDS,in} - M_{TDS,out} + S_{TDS}`"
+   "Rapid Mixer Total Volume", ":math:`V_r = Q \cdotp \tau_r \cdotp n_r`"
+   "Rapid Mixer Total Power Usage", ":math:`P_r = {G_r}^2 \cdotp \mu \cdotp V_r`"
+   "Flocculation Basin Total Volume", ":math:`V_f = Q \cdotp \tau_f`"
+   "Paddle Wheel Speed", ":math:`v_p = \pi \cdotp L \cdotp \omega`"
+   "Flocculation Power Usage", ":math:`P_p = 0.5 \cdotp C_D \cdotp L \cdotp w \cdotp n_w \cdotp n_p \cdotp \rho {(f \cdotp v_p)}^3`"
+   "Total Power Usage", ":math:`P_T = P_p + P_r`"
+
+**Relationships for power usage all come from Mines (2014)**
 
 References
 ----------
-`Rugner et al. (2013) <https://doi.org/10.1007/s12665-013-2307-1>`_
+H. Rugner, M. Schwientek, B. Beckingham, B. Kuch, P. Grathwohl,
+Environ. Earth Sci. 69 (2013) 373-380. DOI:`10.1007/s12665-013-2307-1 <https://doi.org/10.1007/s12665-013-2307-1>`_
+
+R.O. Mines `Environmental Engineering: Principles and Practice <https://www.biblio.com/9781118801451>`_,
+1st Ed, John Wiley & Sons, 2014. Ch. 6.
