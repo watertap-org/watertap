@@ -834,7 +834,7 @@ class Component(DataWrapper):
             match = re.match(r".*(\d+)\+$", name)
             charge = 1 if match is None else int(match.group(1))
             self._data["charge"] = charge
-        elif set(elements) == {"H", "O"}:  # water
+        elif name == "H2O":  # water is always "H2O"
             component_type = "solvent"
         else:  # anything else neutral
             component_type = "solute"
