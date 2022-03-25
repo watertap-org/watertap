@@ -217,7 +217,7 @@ class TestCoagulation_withChemicals():
         model = coag_obj_w_chems
         initialization_tester(model)
 
-        # check to make sure DOF does not change
+        # check to make sure DOF does not change 
         assert degrees_of_freedom(model) == 0
 
     @pytest.mark.component
