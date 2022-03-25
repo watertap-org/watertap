@@ -320,9 +320,10 @@ def test_costing(subtype):
                       Constraint)
 
     if subtype == "default":
-        assert (pytest.approx(1.665893, rel=1e-5) ==
+        assert (pytest.approx(2.8785, rel=1e-5) ==
                 value(m.fs.unit.costing.capital_cost))
     if subtype == "emwd":
+        print("emwd: ", value(m.fs.unit.costing.capital_cost))
         assert (pytest.approx(47.921893, rel=1e-5) ==
                 value(m.fs.unit.costing.capital_cost))
 
