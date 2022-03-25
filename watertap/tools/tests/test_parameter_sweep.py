@@ -355,9 +355,7 @@ class TestParallelManager():
                                                             'upper bound': 1,
                                                             'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])}},
                          'solve_successful': [ True ]*9,
-                         'sweep_params': {'fs.input[a]': {# 'lower bound': 0,
-                                                          'units': 'None',
-                                                          # 'upper bound': 1,
+                         'sweep_params': {'fs.input[a]': {'units': 'None',
                                                           'value': np.array([0.1, 0.1, 0. , 0.5, 0.5, 0. , 0. , 0. , 0. ])},
                                           'fs.input[b]': {'lower bound': 0,
                                                           'units': 'None',
@@ -941,8 +939,9 @@ class TestParallelManager():
                     mpi_comm = comm)
 
             filtered_user_warnings = [i for i in w if i.category == UserWarning]
-            assert len(filtered_user_warnings) == 1
-            assert str(filtered_user_warnings[0].message) == warning_string
+            if rank == 0:
+                assert len(filtered_user_warnings) == 1
+                assert str(filtered_user_warnings[0].message) == warning_string
 
 
 def _optimization(m, relax_feasibility=False):
