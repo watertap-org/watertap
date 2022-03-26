@@ -39,7 +39,6 @@ from watertap.unit_models.zero_order.gas_sparged_membrane_zo import initialize_s
     calculate_scaling_factors_gas_extraction, _get_Q_gas_extraction
 
 solver = get_solver()
-is_solver_from_idaes_ext = idaes_bin_directory in solver.executable()
 
 
 class TestGasSpargedMembraneZO:
@@ -205,10 +204,6 @@ class TestGasSpargedMembraneZO:
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_report(self, model):
-        # the rest of the test, without the if clause
-            pytest.xfail(
-                "This test is known to be failing with solver: "
-                f"{solver}, {solver.executable()}")
         stream = StringIO()
         model.fs.unit.report(ostream=stream)
 
