@@ -11,7 +11,7 @@
 #
 ###############################################################################
 
-from pyomo.environ import Constraint
+from pyomo.common.config import In
 # Import IDAES cores
 from idaes.generic_models.unit_models.pressure_changer import PumpData
 from idaes.core import declare_process_block_class
@@ -26,6 +26,9 @@ class PumpIsothermalData(PumpData):
     """
     Standard Isothermal Pump Unit Model Class
     """
+    CONFIG = PumpData.CONFIG()
+    CONFIG.get("compressor")._domain = In([True, False])
+    # "compressor": False, operate as an ERD (multiply hydraulic power by efficiency)
 
     def build(self):
         super().build()
