@@ -202,9 +202,10 @@ class TestGasSpargedMembraneZO:
                                   model.fs.unit.flow_mass_gas_extraction[t]))
                         <= 1e-6)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_report(self, model):
-        if not is_solver_from_idaes_ext:
+        # the rest of the test, without the if clause
             pytest.xfail(
                 "This test is known to be failing with solver: "
                 f"{solver}, {solver.executable()}")
