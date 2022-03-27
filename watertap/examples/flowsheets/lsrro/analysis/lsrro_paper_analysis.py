@@ -35,6 +35,7 @@ import watertap.examples.flowsheets.lsrro.financials as financials
 import watertap.property_models.NaCl_prop_pack as props
 
 B_max = None
+number_nodes = 10
 def run_lsrro_case(number_of_stages, water_recovery=None, Cin=None, Cbrine=None,
                    A_case=None, B_case=None, AB_tradeoff=None, A_fixed=None,
                    nacl_solubility_limit=None, has_CP=None, has_Pdrop=None, permeate_quality_limit=None,
@@ -123,7 +124,7 @@ def build(number_of_stages=2, nacl_solubility_limit=True, has_CP =True, has_Pdro
         "concentration_polarization_type": cp_type,
         "transformation_scheme": "BACKWARD",
         "transformation_method": "dae.finite_difference",
-        "finite_elements": 3, #TODO: change to 10 for paper analysis
+        "finite_elements": number_nodes, #TODO: change to 10 for paper analysis
         "has_full_reporting": True
         })
 
@@ -606,7 +607,7 @@ def optimize_set_up(m, water_recovery=None, Cbrine=None, A_case=None, B_case=Non
             domain=NonNegativeReals,
             units=pyunits.m*pyunits.s**-1,
             doc='Solute permeability coeff. constant in all LSR stages')
-        m.fs.B_comp_system.set_value(m.fs.ROUnits[2].B_comp[0, 'NaCl'])
+        m.fs.B_comp_system.set_value(m.fs.ROUnits[m.fs.LSRRO_StageSet.first()].B_comp[0, 'NaCl'])
         m.fs.B_comp_system.setlb(3.5e-8)
         m.fs.B_comp_system.setub(3.5e-8 * 1e2)
     if A_case == 'single optimum':
@@ -811,6 +812,7 @@ if __name__ == "__main__":
         'case 1': [35, 0.7],
         'case 2': [70, 0.55],
         'case 3': [125, 0.35],
+        # 'case x': [70, 0.75]
     }
     starting_stage = 1
     ending_stage = 5
@@ -849,7 +851,7 @@ if __name__ == "__main__":
         start = 0
         headers = ["cin (kg/m3)", "recovery (-)", "num_stages", "final brine concentration", "final perm (ppm)",
                    "Membrane area", "SEC", "LCOW", "LCOW_feed"]
-        with open(f'recheck_paper_cases_after_erd_fix/output_fixA_5LMHbar_Bmax_{bmax_fn}_{cin}gL_{recovery*100}pct.csv', 'w', newline='') as csv_file:
+        with open(f'recheck_paper_cases_after_erd_fix/{number_nodes}_nodes_A_5LMHbar_{b_case_lst[0]}_Bmax_{bmax_fn}_{cin}gL_{recovery*100}pct.csv', 'w', newline='') as csv_file:
             csvwriter = csv.writer(csv_file)
             for stage in reversed(range(starting_stage, ending_stage+1)):
                 for a_case in a_case_lst:
