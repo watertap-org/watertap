@@ -125,7 +125,7 @@ if __name__ == '__main__':
     m.fs.unit.mixed_permeate[0].pressure.fix(101325)
 
     # Fix additional variables for calculating mass transfer coefficient with spiral wound correlation
-    m.fs.unit.spacer_porosity.fix(1)
+    m.fs.unit.spacer_porosity.fix(0.85)
     m.fs.unit.spacer_mixing_efficiency.fix()
     m.fs.unit.spacer_mixing_length.fix()
     # m.fs.unit.length.fix(50)
