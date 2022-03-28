@@ -972,7 +972,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.properties[t0].flow_vol,
             to_units=pyo.units.m ** 3 / pyo.units.hour)
         expr = pyo.units.convert(
-            A * (Q / ref_state) ** B
+            A * pyo.units.convert(Q / ref_state, to_units=pyo.units.dimensionless) ** B
             + (pipe_cost_basis * blk.unit_model.pipe_distance[t0] * blk.unit_model.pipe_diameter[t0]),
             to_units=blk.config.flowsheet_costing_block.base_currency)
 

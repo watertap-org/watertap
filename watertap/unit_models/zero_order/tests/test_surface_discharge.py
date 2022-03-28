@@ -41,7 +41,7 @@ class TestSurfaceDischargeZO:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-                default={"solute_list": ["toc", "nitrate", "sulfate", "bar", "crux"]})
+                default={"solute_list": ["toc", "nitrate", "sulfate", "bar"]})
 
         m.fs.unit = SurfaceDischargeZO(default={
                         "property_package": m.fs.params,
@@ -52,7 +52,6 @@ class TestSurfaceDischargeZO:
         m.fs.unit.inlet.flow_mass_comp[0, "nitrate"].fix(2)
         m.fs.unit.inlet.flow_mass_comp[0, "sulfate"].fix(0.3)
         m.fs.unit.inlet.flow_mass_comp[0, "bar"].fix(40)
-        m.fs.unit.inlet.flow_mass_comp[0, "crux"].fix(0.0005)
 
         return m
 
@@ -137,21 +136,20 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                    : Value  : Fixed : Bounds
-        Electricity Demand : 60.174 : False : (0, None)
-    Pipe Diameter (inches) : 8.0000 :  True : (None, None)
-     Pipe Distance (miles) : 0.0000 :  True : (None, None)
+    Key                : Value  : Fixed : Bounds
+    Electricity Demand : 60.174 : False : (0, None)
+         Pipe Diameter : 8.0000 :  True : (None, None)
+         Pipe Distance : 0.0000 :  True : (None, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
-                                  Inlet    Outlet 
-    Volumetric Flowrate          0.16330   0.16330
-    Mass Concentration H2O        734.84    734.84
-    Mass Concentration toc        6.1237    6.1237
-    Mass Concentration nitrate    12.247    12.247
-    Mass Concentration sulfate    1.8371    1.8371
-    Mass Concentration bar        244.95    244.95
-    Mass Concentration crux    0.0030618 0.0030618
+                                 Inlet  Outlet
+    Volumetric Flowrate        0.16330 0.16330
+    Mass Concentration H2O      734.84  734.84
+    Mass Concentration toc      6.1237  6.1237
+    Mass Concentration nitrate  12.247  12.247
+    Mass Concentration sulfate  1.8371  1.8371
+    Mass Concentration bar      244.95  244.95
 ====================================================================================
 """
 
@@ -166,7 +164,7 @@ class TestSurfaceDischargeZOsubtype:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-                default={"solute_list": ["toc", "nitrate", "sulfate", "bar", "crux"]})
+                default={"solute_list": ["toc", "nitrate", "sulfate", "bar"]})
 
         m.fs.unit = SurfaceDischargeZO(default={
                         "property_package": m.fs.params,
@@ -178,7 +176,6 @@ class TestSurfaceDischargeZOsubtype:
         m.fs.unit.inlet.flow_mass_comp[0, "nitrate"].fix(2)
         m.fs.unit.inlet.flow_mass_comp[0, "sulfate"].fix(0.3)
         m.fs.unit.inlet.flow_mass_comp[0, "bar"].fix(40)
-        m.fs.unit.inlet.flow_mass_comp[0, "crux"].fix(0.0005)
 
         return m
 
@@ -263,21 +260,20 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                    : Value  : Fixed : Bounds
-        Electricity Demand : 60.174 : False : (0, None)
-    Pipe Diameter (inches) : 8.0000 :  True : (None, None)
-     Pipe Distance (miles) : 70.000 :  True : (None, None)
+    Key                : Value  : Fixed : Bounds
+    Electricity Demand : 60.174 : False : (0, None)
+         Pipe Diameter : 8.0000 :  True : (None, None)
+         Pipe Distance : 70.000 :  True : (None, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
-                                  Inlet    Outlet 
-    Volumetric Flowrate          0.16330   0.16330
-    Mass Concentration H2O        734.84    734.84
-    Mass Concentration toc        6.1237    6.1237
-    Mass Concentration nitrate    12.247    12.247
-    Mass Concentration sulfate    1.8371    1.8371
-    Mass Concentration bar        244.95    244.95
-    Mass Concentration crux    0.0030618 0.0030618
+                                 Inlet  Outlet
+    Volumetric Flowrate        0.16330 0.16330
+    Mass Concentration H2O      734.84  734.84
+    Mass Concentration toc      6.1237  6.1237
+    Mass Concentration nitrate  12.247  12.247
+    Mass Concentration sulfate  1.8371  1.8371
+    Mass Concentration bar      244.95  244.95
 ====================================================================================
 """
 
@@ -292,7 +288,7 @@ def test_costing(subtype):
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["toc", "nitrate", "sulfate", "bar", "crux"]})
+        default={"solute_list": ["toc", "nitrate", "sulfate", "bar"]})
     m.fs.costing = ZeroOrderCosting()
     m.fs.unit = SurfaceDischargeZO(default={
         "property_package": m.fs.params,
@@ -304,7 +300,6 @@ def test_costing(subtype):
     m.fs.unit.inlet.flow_mass_comp[0, "nitrate"].fix(2)
     m.fs.unit.inlet.flow_mass_comp[0, "sulfate"].fix(0.3)
     m.fs.unit.inlet.flow_mass_comp[0, "bar"].fix(40)
-    m.fs.unit.inlet.flow_mass_comp[0, "crux"].fix(0.0005)
 
     m.fs.unit.load_parameters_from_database()
 

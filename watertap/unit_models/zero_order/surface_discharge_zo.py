@@ -52,5 +52,5 @@ class SurfaceDischargeData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.pipe_distance)
         self._fixed_perf_vars.append(self.pipe_diameter)
 
-        self._perf_var_dict["Pipe Distance (miles)"] = self.pipe_distance
-        self._perf_var_dict["Pipe Diameter (inches)"] = self.pipe_diameter
+        self._perf_var_dict["Pipe Distance"] = self.pipe_distance
+        self._perf_var_dict["Pipe Diameter"] = self.pipe_diameter
