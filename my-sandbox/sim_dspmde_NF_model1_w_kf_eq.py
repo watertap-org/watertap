@@ -140,8 +140,8 @@ if __name__ == '__main__':
     # Set electroneutrality tolerance to 0 (value used in equality constraints for electroneutrality in unit model)
     m.fs.unit.tol_electroneutrality = 0
 
-    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e2, index=('Liq', 'Ca_2+'))
-    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e2, index=('Liq', 'SO4_2-'))
+    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e4, index=('Liq', 'Ca_2+'))
+    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e4, index=('Liq', 'SO4_2-'))
 
 
     iscale.calculate_scaling_factors(m.fs.unit)
