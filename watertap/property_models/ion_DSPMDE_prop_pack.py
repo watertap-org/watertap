@@ -793,7 +793,6 @@ class DSPMDEStateBlockData(StateBlockData):
 
     def assert_electroneutrality(self, tol=None, tee=True, defined_state=True, adjust_by_ion=None,
                                  get_property=None, solve=True):
-        #TODO: technically, this should be charge*concentration instead of charge*mole flow
         if tol is None:
             tol = 0
         if adjust_by_ion is not None:
