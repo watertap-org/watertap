@@ -167,7 +167,7 @@ def set_operating_conditions(m):
     # intake pump
     m.db.get_unit_operation_parameters("water_pumping_station")
     m.fs.intake_pump.load_parameters_from_database()
-    m.fs.intake_pump.electricity.fix(125)
+    m.fs.intake_pump.electricity.fix(93.2)
 
     # coagulation and flocculation
     m.db.get_unit_operation_parameters("coag_and_floc")
@@ -191,7 +191,7 @@ def set_operating_conditions(m):
 
     # backwash pump
     m.fs.backwash_pump.load_parameters_from_database()
-    m.fs.backwash_pump.electricity.fix(50)
+    m.fs.backwash_pump.electricity.fix(37.3)
 
     # uv aop
     m.db.get_unit_operation_parameters("uv")
@@ -214,7 +214,7 @@ def set_operating_conditions(m):
 
     # recharge pump
     m.fs.recharge_pump.load_parameters_from_database()
-    m.fs.recharge_pump.electricity.fix(250)
+    m.fs.recharge_pump.electricity.fix(186.4)
 
 
 def initialize_system(m):
