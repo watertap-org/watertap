@@ -1,5 +1,7 @@
+.. _install:
+
 Installing WaterTAP
-=====================
+===================
 
 Introduction
 ------------
