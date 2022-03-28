@@ -66,15 +66,13 @@ def main():
     solve(m)
     display_results(m)
 
-    m.fs.intake_pump.display()
+    # TODO: add costing, currently costing functions only pass
+    add_costing(m)
+    initialize_costing(m)
+    assert_degrees_of_freedom(m, 0)
 
-    # TODO: add costing
-    # add_costing(m)
-    # initialize_costing(m)
-    # assert_degrees_of_freedom(m, 0)
-    #
-    # solve(m, tee=True)
-    # display_costing(m)
+    solve(m)
+    display_costing(m)
     return m
 
 
