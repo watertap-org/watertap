@@ -71,6 +71,7 @@ from .co2_addition_zo import CO2AdditionZO
 from .sludge_tank_zo import SludgeTankZO
 from .evaporation_pond_zo import EvaporationPondZO
 from .filter_press_zo import FilterPressZO
+from .water_pumping_station_zo import WaterPumpingStationZO
 from .well_field_zo import WellFieldZO
 from .intrusion_mitigation_zo import IntrusionMitigationZO
 from .injection_well_disposal_zo import InjectionWellDisposalZO
