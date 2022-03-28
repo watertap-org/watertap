@@ -116,7 +116,8 @@ def test_unit_parameter_files(tech):
                                          "storage_tank",
                                          "evaporation_pond",
                                          "deep_well_injection",
-                                         "water_pumping_station"]
+                                         "water_pumping_station",
+                                         ]
 
     expected = ["recovery_frac_mass_H2O",
                 "default_removal_frac_mass_solute"]
