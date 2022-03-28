@@ -39,6 +39,7 @@ from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
 from watertap.unit_models.zero_order import (FeedZO,
                                              MunicipalDrinkingZO,
+                                             WaterPumpingStationZO,
                                              PumpZO,
                                              CoagulationFlocculationZO,
                                              SedimentationZO,
@@ -87,10 +88,10 @@ def build():
 
     # unit models
     m.fs.feed = FeedZO(default={'property_package': m.fs.prop})
-    m.fs.intake_pump = PumpZO(default={  # TODO: update for water_pumping_station
+    m.fs.intake_pump = WaterPumpingStationZO(default={
         "property_package": m.fs.prop,
         "database": m.db,
-        "process_subtype": "raw_water"})
+        "process_subtype": "raw"})
     m.fs.coag_and_floc = CoagulationFlocculationZO(default={
         "property_package": m.fs.prop,
         "database": m.db})
@@ -108,10 +109,10 @@ def build():
         "property_package": m.fs.prop,
         "database": m.db,
         "process_subtype": "pressure_vessel"})
-    m.fs.backwash_pump = PumpZO(default={  # TODO: update for water_pumping_station
+    m.fs.backwash_pump = WaterPumpingStationZO(default={
         "property_package": m.fs.prop,
         "database": m.db,
-        "process_subtype": "raw_water"})
+        "process_subtype": "treated"})
     m.fs.uv = UVZO(default={
         "property_package": m.fs.prop,
         "database": m.db})
@@ -125,10 +126,10 @@ def build():
     m.fs.storage = StorageTankZO(default={
         "property_package": m.fs.prop,
         "database": m.db})
-    m.fs.recharge_pump = PumpZO(default={  # TODO: update for water_pumping_station
+    m.fs.recharge_pump = WaterPumpingStationZO(default={
         "property_package": m.fs.prop,
         "database": m.db,
-        "process_subtype": "raw_water"})
+        "process_subtype": "treated"})
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.intake_pump.inlet)
@@ -166,9 +167,8 @@ def set_operating_conditions(m):
     solve(m.fs.feed)
 
     # intake pump
-    m.db.get_unit_operation_parameters("pump")
+    m.db.get_unit_operation_parameters("water_pumping_station")
     m.fs.intake_pump.load_parameters_from_database()
-    m.fs.intake_pump.energy_electric_flow_vol_inlet.unfix()
     m.fs.intake_pump.electricity.fix(125)
 
     # coagulation and flocculation
@@ -193,7 +193,6 @@ def set_operating_conditions(m):
 
     # backwash pump
     m.fs.backwash_pump.load_parameters_from_database()
-    m.fs.backwash_pump.energy_electric_flow_vol_inlet.unfix()
     m.fs.backwash_pump.electricity.fix(50)
 
     # uv aop
@@ -217,7 +216,6 @@ def set_operating_conditions(m):
 
     # recharge pump
     m.fs.recharge_pump.load_parameters_from_database()
-    m.fs.recharge_pump.energy_electric_flow_vol_inlet.unfix()
     m.fs.recharge_pump.electricity.fix(250)
 
 
