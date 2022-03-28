@@ -1,11 +1,67 @@
 default:
+  air_temperature:
+    value: 298
+    units: kelvin
+  solar_radiation:
+    value: 25
+    units: mJ/m^2
+  evap_rate_calc_a_parameter:
+    value: 0.41
+    units: mm/day
+  evap_rate_calc_b_parameter:
+    value: 0.025
+    units: m^2/mJ
+  evap_rate_calc_c_parameter:
+    value: 0.078
+    units: m^2/mJ
+  evaporation_rate_adj_factor:
+    value: 0.7
+    units: dimensionless
+  adj_area_calc_a_parameter:
+    value: 1.2
+    units: acres
+  adj_area_calc_b_parameter:
+    value: 0.155
+    units: dimensionless
+  evaporation_rate_adj_factor:
+    value: 0.7
+    units: dimensionless
+  dike_height:
+    value: 8
+    units: ft
+  capital_cost:
+    cost_factor: None
+    liner_thickness:
+      value: 50
+      units: mil
+    land_cost:
+      value: 5000
+      units: acre^-1 
+    land_clearing_cost:
+      value: 1000
+      units: acre^-1     
+    cost_per_acre_a_parameter:
+      value: 5406
+      units: USD_2007/acre
+    cost_per_acre_b_parameter:
+      value: 465
+      units: USD_2007/(mil*acre)
+    cost_per_acre_c_parameter:
+      value: 1.07
+      units: USD_2007
+    cost_per_acre_d_parameter:
+      value: 0.931
+      units: USD_2007
+    cost_per_acre_e_parameter:
+      value: 217.5
+      units: USD_2007/(ft*acre)
   recovery_frac_mass_H2O:
-    value: 0.9
+    value: 0.0001
     units: dimensionless
     reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for
       Water Utilities (2008).
   default_removal_frac_mass_solute:
-    value: 0
+    value: 0.98
     units: dimensionless
   removal_frac_mass_solute:
     aluminum:
