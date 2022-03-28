@@ -52,7 +52,7 @@ Unit : fs.intake_pump                                                      Time:
     Variables: 
 
     Key                : Value  : Fixed : Bounds
-    Electricity Demand : 125.00 :  True : (0, None)
+    Electricity Demand : 93.200 :  True : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -111,7 +111,7 @@ Unit : fs.recharge_pump                                                    Time:
     Variables: 
 
     Key                : Value  : Fixed : Bounds
-    Electricity Demand : 250.00 :  True : (0, None)
+    Electricity Demand : 186.40 :  True : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -137,7 +137,7 @@ Unit : fs.backwash_pump                                                    Time:
     Variables: 
 
     Key                : Value  : Fixed : Bounds
-    Electricity Demand : 50.000 :  True : (0, None)
+    Electricity Demand : 37.300 :  True : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
