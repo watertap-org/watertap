@@ -124,31 +124,5 @@ Unit : fs.recharge_pump                                                    Time:
 ====================================================================================
 """
     assert output == report_io.getvalue()
-
-    report_io = StringIO()
-    m.fs.backwash_pump.report(ostream=report_io)
-    output = \
-        """
-====================================================================================
-Unit : fs.backwash_pump                                                    Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                : Value  : Fixed : Bounds
-    Electricity Demand : 37.300 :  True : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                              Inlet    Outlet 
-    Volumetric Flowrate     0.036869  0.036869
-    Mass Concentration H2O    1000.0    1000.0
-    Mass Concentration tds    0.0000    0.0000
-    Mass Concentration tss 0.0014527 0.0014527
-    Mass Concentration toc    0.0000    0.0000
-====================================================================================
-"""
-    assert output == report_io.getvalue()
 #
 #     assert value(m.LCOW) == pytest.approx(VALUE, rel=1e-3) # TODO: add test for LCOW
