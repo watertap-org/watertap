@@ -31,9 +31,11 @@ from watertap.unit_models.zero_order import (
     ChlorinationZO,
     CoagulationFlocculationZO,
     DeepWellInjectionZO,
+    DMBRZO,
     FixedBedZO,
     GACZO,
     LandfillZO,
+    MABRZO,
     IonExchangeZO,
     IronManganeseRemovalZO,
     OzoneZO,
@@ -661,6 +663,58 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity")
 
+    def cost_dmbr(blk):
+        """
+        General method for costing dynamic membrane bioreactor. Capital cost
+        is based on the cost of membrane area.
+
+        This method also registers the electricity demand as a costed flow.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        # Get costing parameter sub-block for this technology
+        A, B = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["water_flux",
+             "reactor_cost"])
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation")
+
+        Q_treated = pyo.units.convert(blk.unit_model.properties_treated[t0].flow_vol,
+                              to_units=pyo.units.L / pyo.units.hour)
+
+        ES_reactor = (1/pyo.units.convert(A, to_units=pyo.units.L / pyo.units.m**2 / pyo.units.hour))*Q_treated
+
+        expr = pyo.units.convert(ES_reactor*B, to_units=blk.config.flowsheet_costing_block.base_currency)
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
+
     def cost_fixed_bed(blk):
         """
         General method for costing fixed bed units. This primarily calls the
@@ -751,6 +805,72 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
 
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.activated_carbon_demand[t0], "activated_carbon")
+
+    def cost_mabr(blk):
+        """
+        General method for costing membrane aerated biofilm reactor. Capital cost
+        is based on the cost of reactor and blower.
+
+        This method also registers the electricity demand as a costed flow.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        # Get costing parameter sub-block for this technology
+        A, B, C, D = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["specific_removal",
+             "reactor_cost",
+             "specific_air_flow",
+             "blower_cost"])
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation")
+
+        Q_treated = pyo.units.convert(blk.unit_model.properties_treated[t0].flow_vol,
+                              to_units=pyo.units.m ** 3 / pyo.units.hour)
+
+        ammonium_reacted = pyo.units.convert(
+            blk.unit_model.properties_treated[t0].conc_mass_comp["ammonium_as_nitrogen"],
+            to_units=pyo.units.kg / pyo.units.m ** 3)
+
+        SV_reactor = Q_treated*ammonium_reacted
+
+        ES_reactor = (1/pyo.units.convert(A, to_units=pyo.units.kg / pyo.units.m**2 / pyo.units.hour))*SV_reactor
+
+        DCC_reactor = pyo.units.convert(ES_reactor*B, to_units=blk.config.flowsheet_costing_block.base_currency)
+
+        ES_blower = C*pyo.units.convert(blk.unit_model.blower_size, to_units=pyo.units.m ** 2)
+
+        DCC_blower = pyo.units.convert(ES_blower*D, to_units=blk.config.flowsheet_costing_block.base_currency)
+
+        expr = DCC_reactor + DCC_blower
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == expr)
+
+        # Register flows
+        blk.config.flowsheet_costing_block.cost_flow(
+            blk.unit_model.electricity[t0], "electricity")
 
     def cost_ion_exchange(blk):
         """
@@ -1396,9 +1516,11 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                     ChlorinationZO: cost_chlorination,
                     CoagulationFlocculationZO: cost_coag_and_floc,
                     DeepWellInjectionZO: cost_deep_well_injection,
+                    DMBRZO: cost_dmbr,
                     FixedBedZO: cost_fixed_bed,
                     GACZO: cost_gac,
                     LandfillZO: cost_landfill,
+                    MABRZO: cost_mabr,
                     IonExchangeZO: cost_ion_exchange,
                     IronManganeseRemovalZO: cost_iron_and_manganese_removal,
                     OzoneZO: cost_ozonation,
