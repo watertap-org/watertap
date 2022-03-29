@@ -1079,7 +1079,7 @@ class NanofiltrationData(UnitModelBlockData):
             var_dict["Pressure Change"] = self.deltaP[time_point]
         # Volume flowrates
         if self.feed_side.properties_in[time_point].is_property_constructed('flow_vol_phase'):
-            var_dict[f'Volumetric flow rate @ inlet'] = self.feed_side.properties_in[time_point].flow_vol_phase['Liq']
+            var_dict[f'Volumetric flow rate @ feed inlet'] = self.feed_side.properties_in[time_point].flow_vol_phase['Liq']
         if self.feed_side.properties_interface[time_point, 0].is_property_constructed('flow_vol_phase'):
             var_dict[f'Volumetric flow rate @ inlet interface'] = self.feed_side.properties_interface[time_point, 0].flow_vol_phase['Liq']
         if self.pore_entrance[time_point, 0].is_property_constructed('flow_vol_phase'):
@@ -1090,7 +1090,7 @@ class NanofiltrationData(UnitModelBlockData):
             var_dict[f'Volumetric flow rate @ inlet permeate'] = self.permeate_side[time_point, 0].flow_vol_phase['Liq']
 
         if self.feed_side.properties_out[time_point].is_property_constructed('flow_vol_phase'):
-            var_dict[f'Volumetric flow rate @ outlet'] = self.feed_side.properties_out[time_point].flow_vol_phase['Liq']
+            var_dict[f'Volumetric flow rate @ feed outlet'] = self.feed_side.properties_out[time_point].flow_vol_phase['Liq']
             if self.feed_side.properties_interface[time_point, 1].is_property_constructed('flow_vol_phase'):
                 var_dict[f'Volumetric flow rate @ outlet interface'] = self.feed_side.properties_interface[time_point, 1].flow_vol_phase['Liq']
         if self.pore_entrance[time_point, 1].is_property_constructed('flow_vol_phase'):
@@ -1103,7 +1103,31 @@ class NanofiltrationData(UnitModelBlockData):
 
         expr_dict['Average Volumetric Flux (LMH)'] = self.flux_vol_water_avg[time_point] *3.6e6
         for j in self.config.property_package.component_list:
-              expr_dict[f'Average Mole FLux of {j} '] = self.flux_mol_phase_comp_avg[time_point, 'Liq', j]
+            expr_dict[f'Average Mole FLux of {j} '] = self.flux_mol_phase_comp_avg[time_point, 'Liq', j]
+            # Molar flowrates
+            var_dict[f'Molar flow rate of {j} @ feed inlet'] = \
+                self.feed_side.properties_in[time_point].flow_mol_phase_comp['Liq', j]
+            var_dict[f'Molar flow rate of {j} @ feed outlet'] = \
+                self.feed_side.properties_out[time_point].flow_mol_phase_comp['Liq', j]
+            var_dict[f'Molar flow rate of {j} @ membrane-interface inlet'] = \
+                self.feed_side.properties_interface[time_point, 0].flow_mol_phase_comp['Liq', j]
+            var_dict[f'Molar flow rate of {j} @ membrane-interface outlet'] = \
+                self.feed_side.properties_interface[time_point, 1].flow_mol_phase_comp['Liq', j]
+            var_dict[f'Molar flow rate of {j} @ pore entrance, inlet'] = \
+                self.pore_entrance[time_point, 0].flow_mol_phase_comp['Liq', j]
+            var_dict[f'Molar flow rate of {j} @ pore entrance, outlet'] = \
+                self.pore_entrance[time_point, 1].flow_mol_phase_comp['Liq', j]
+            var_dict[f'Molar flow rate of {j} @ pore exit, inlet'] = \
+                self.pore_exit[time_point, 0].flow_mol_phase_comp['Liq', j]
+            var_dict[f'Molar flow rate of {j} @ pore exit, outlet'] = \
+                self.pore_exit[time_point, 1].flow_mol_phase_comp['Liq', j]
+            var_dict[f'Molar flow rate of {j} @ permeate, inlet'] = \
+                self.permeate_side[time_point, 0].flow_mol_phase_comp['Liq', j]
+            var_dict[f'Molar flow rate of {j} @ permeate, outlet'] = \
+                self.permeate_side[time_point, 1].flow_mol_phase_comp['Liq', j]
+            var_dict[f'Molar flow rate of {j} @ mixed permeate'] = \
+                self.mixed_permeate[time_point].flow_mol_phase_comp['Liq', j]
+
         for j in self.config.property_package.solute_set:
             expr_dict[f'Stokes radius of {j}'] = self.feed_side.properties_in[time_point].radius_stokes_comp[j]
             expr_dict[f'Stokes:Pore Radius Ratio of {j}'] = self.lambda_comp[time_point, j]
