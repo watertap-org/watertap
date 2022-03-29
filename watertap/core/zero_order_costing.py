@@ -968,10 +968,13 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             bounds=(0, None),
             doc="Capital cost of unit operation")
 
-        expr = pyo.units.convert(
-            A * pyo.units.convert(blk.unit_model.properties[t0].flow_vol / ref_state, to_units=pyo.units.dimensionless) ** B
-            + (pipe_cost_basis * blk.unit_model.pipe_distance[t0] * blk.unit_model.pipe_diameter[t0]),
-            to_units=blk.config.flowsheet_costing_block.base_currency)
+        expr = (
+            pyo.units.convert(
+                A * pyo.units.convert(blk.unit_model.properties[t0].flow_vol / ref_state, to_units=pyo.units.dimensionless) ** B,
+                to_units=blk.config.flowsheet_costing_block.base_currency) +
+            pyo.units.convert(
+                pipe_cost_basis * blk.unit_model.pipe_distance[t0] * blk.unit_model.pipe_diameter[t0],
+                to_units=blk.config.flowsheet_costing_block.base_currency))
 
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost == expr)
