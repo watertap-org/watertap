@@ -22,107 +22,19 @@ from idaes.core.util import get_solver
 def test_municipal_treatment():
     m = main()
 
-    report_io = StringIO()
-    m.fs.feed.report(ostream=report_io)
-    output = \
-        """
-====================================================================================
-Unit : fs.feed                                                             Time: 0.0
-------------------------------------------------------------------------------------
-    Stream Table
-                             Outlet 
-    Mass Concentration H2O    999.36
-    Mass Concentration tds   0.63000
-    Mass Concentration toc 0.0040000
-    Mass Concentration tss 0.0065250
-    Volumetric Flowrate      0.92240
-====================================================================================
-"""
-    assert output == report_io.getvalue()
+    assert value(m.fs.feed.properties[0].flow_mass_comp['H2O']) == pytest.approx(921.8, rel=1e-3)
+    assert value(m.fs.feed.properties[0].flow_mass_comp['tds']) == pytest.approx(0.5811, rel=1e-3)
+    assert value(m.fs.feed.properties[0].flow_mass_comp['toc']) == pytest.approx(3.690e-3, rel=1e-3)
+    assert value(m.fs.feed.properties[0].flow_mass_comp['tss']) == pytest.approx(6.019e-3, rel=1e-3)
 
-    report_io = StringIO()
-    m.fs.intake_pump.report(ostream=report_io)
-    output = \
-        """
-====================================================================================
-Unit : fs.intake_pump                                                      Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
+    assert value(m.fs.backwash_pump.properties[0].flow_mass_comp['H2O']) == pytest.approx(36.87, rel=1e-3)
+    assert value(m.fs.backwash_pump.properties[0].flow_mass_comp['tds']) == pytest.approx(0, abs=1e-6)
+    assert value(m.fs.backwash_pump.properties[0].flow_mass_comp['toc']) == pytest.approx(0, abs=1e-6)
+    assert value(m.fs.backwash_pump.properties[0].flow_mass_comp['tss']) == pytest.approx(5.356e-5, rel=1e-3)
 
-    Variables: 
+    assert value(m.fs.recharge_pump.properties[0].flow_mass_comp['H2O']) == pytest.approx(884.8, rel=1e-3)
+    assert value(m.fs.recharge_pump.properties[0].flow_mass_comp['tds']) == pytest.approx(5.811e-2, rel=1e-3)
+    assert value(m.fs.recharge_pump.properties[0].flow_mass_comp['toc']) == pytest.approx(9.477e-4, rel=1e-3)
+    assert value(m.fs.recharge_pump.properties[0].flow_mass_comp['tss']) == pytest.approx(1.656e-6, rel=1e-3)
 
-    Key                : Value  : Fixed : Bounds
-    Electricity Demand : 93.200 :  True : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                              Inlet    Outlet 
-    Volumetric Flowrate      0.92240   0.92240
-    Mass Concentration H2O    999.36    999.36
-    Mass Concentration tds   0.63000   0.63000
-    Mass Concentration tss 0.0065250 0.0065250
-    Mass Concentration toc 0.0040000 0.0040000
-====================================================================================
-"""
-    assert output == report_io.getvalue()
-
-    report_io = StringIO()
-    m.fs.gac.report(ostream=report_io)
-    output = \
-        """
-====================================================================================
-Unit : fs.gac                                                              Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                     : Value     : Fixed : Bounds
-    Activated Carbon Demand :    182.91 : False : (0, None)
-         Electricity Demand :    28.873 : False : (0, None)
-      Electricity Intensity : 0.0086958 : False : (None, None)
-     Empty Bed Contact Time :   0.16667 :  True : (0, None)
-       Solute Removal [tds] :    0.0000 :  True : (0, None)
-       Solute Removal [toc] :    0.0000 :  True : (0, None)
-       Solute Removal [tss] :   0.97000 :  True : (0, None)
-             Water Recovery :   0.96000 :  True : (1e-08, 1.0000001)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                              Inlet     Treated   Byproduct
-    Volumetric Flowrate       0.92230    0.88543  0.036869 
-    Mass Concentration H2O     999.37     999.34    1000.0 
-    Mass Concentration tds    0.63007    0.65630    0.0000 
-    Mass Concentration tss 5.9867e-05 1.8708e-06 0.0014527 
-    Mass Concentration toc  0.0010869  0.0011322    0.0000 
-====================================================================================
-"""
-    assert output == report_io.getvalue()
-
-    report_io = StringIO()
-    m.fs.recharge_pump.report(ostream=report_io)
-    output = \
-        """
-====================================================================================
-Unit : fs.recharge_pump                                                    Time: 0.0
-------------------------------------------------------------------------------------
-    Unit Performance
-
-    Variables: 
-
-    Key                : Value  : Fixed : Bounds
-    Electricity Demand : 186.40 :  True : (0, None)
-
-------------------------------------------------------------------------------------
-    Stream Table
-                              Inlet     Outlet  
-    Volumetric Flowrate       0.88491    0.88491
-    Mass Concentration H2O     999.93     999.93
-    Mass Concentration tds   0.065669   0.065669
-    Mass Concentration tss 1.8719e-06 1.8719e-06
-    Mass Concentration toc  0.0010710  0.0010710
-====================================================================================
-"""
-    assert output == report_io.getvalue()
-#
-#     assert value(m.LCOW) == pytest.approx(VALUE, rel=1e-3) # TODO: add test for LCOW
+    # assert value(m.LCOW) == pytest.approx(VALUE, rel=1e-3)  # TODO: add test for LCOW

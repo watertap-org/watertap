@@ -165,28 +165,22 @@ def set_operating_conditions(m):
     solve(m.fs.feed)
 
     # intake pump
-    m.db.get_unit_operation_parameters("water_pumping_station")
     m.fs.intake_pump.load_parameters_from_database()
     m.fs.intake_pump.electricity.fix(93.2)
 
     # coagulation and flocculation
-    m.db.get_unit_operation_parameters("coag_and_floc")
     m.fs.coag_and_floc.load_parameters_from_database(use_default_removal=True)
 
     # sedimentation
-    m.db.get_unit_operation_parameters("sedimentation")
     m.fs.sedimentation.load_parameters_from_database(use_default_removal=True)
 
     # # ozonation
-    m.db.get_unit_operation_parameters("ozonation")
     m.fs.ozonation.load_parameters_from_database(use_default_removal=True)
 
     # fixed bed gravity basin
-    m.db.get_unit_operation_parameters("fixed_bed")
     m.fs.gravity_basin.load_parameters_from_database(use_default_removal=True)
 
     # granular activated carbon
-    m.db.get_unit_operation_parameters("gac")
     m.fs.gac.load_parameters_from_database(use_default_removal=True)
 
     # backwash pump
@@ -194,21 +188,17 @@ def set_operating_conditions(m):
     m.fs.backwash_pump.electricity.fix(37.3)
 
     # uv aop
-    m.db.get_unit_operation_parameters("uv")
     m.fs.uv.load_parameters_from_database(use_default_removal=True)
     m.fs.uv.uv_reduced_equivalent_dose.fix(200)
     m.fs.uv.uv_transmittance_in.fix(0.90)
 
     # anion exchange
-    m.db.get_unit_operation_parameters("ion_exchange")
     m.fs.anion_exchange.load_parameters_from_database(use_default_removal=True)
 
     # chlorination
-    m.db.get_unit_operation_parameters("chlorination")
     m.fs.chlorination.load_parameters_from_database(use_default_removal=True)
 
     # storage
-    m.db.get_unit_operation_parameters("storage_tank")
     m.fs.storage.load_parameters_from_database(use_default_removal=True)
     m.fs.storage.storage_time.fix(6)
 
