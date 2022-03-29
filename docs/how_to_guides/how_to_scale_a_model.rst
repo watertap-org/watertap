@@ -161,15 +161,16 @@ the function will use a non-case specific default value and provide a warning th
 Passing scaling factors to the solver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In order to pass scaling factors to IPOPT, the user-scaling option must be specified as shown below.
+The scaling factors are automatically passed-in when using the default WaterTAP solver, `ipopt-watertap`:
 
 .. testcode:: [scaling_factor]
 
-    from pyomo.environ import SolverFactory
-    # Create IPOPT solver object
-    opt = SolverFactory('ipopt')
-    # Set user-scaling option
-    opt.options = {'nlp_scaling_method': 'user-scaling'}
+    from idaes.core.util import get_solver
+    # Create default WaterTAP solver object
+    opt = get_solver()
     # Solve model m
-    opt.solve(m)
+    # TODO: COSTING_UPDATE: remove capture output below
+    from pyomo.common.tee import capture_output
+    with capture_output():
+        opt.solve(m)
 

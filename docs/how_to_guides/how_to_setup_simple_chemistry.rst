@@ -3,6 +3,9 @@
 How to setup simple chemistry
 =============================
 
+.. note:: This page provides a manual approach to building an IDAES configuration dictionary.
+    The same result can be achieved by using the :doc:`Electrolyte Database (EDB)</technical_reference/edb/index>`. 
+    Examples of this are provided under :ref:`How to use EDB <how_to_use_edb>`.
 .. _GenericProperties: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/index.html#generic-property-package-framework
 .. _GenericReactions: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/index.html
 .. _Perrys: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/pure/Perrys.html

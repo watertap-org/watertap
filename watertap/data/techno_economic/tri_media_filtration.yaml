@@ -1,5 +1,5 @@
 default:
-  recovery_vol:
+  recovery_frac_mass_H2O:
     value: 0.9
     units: dimensionless
     reference: Texas Water Development Board IT3PR User Manual
@@ -27,3 +27,6 @@ default:
       value: 0.95
       units: dimensionless
       constituent_longform: Total Suspended Solids (TSS)
+  energy_electric_flow_vol_inlet:
+    value: 0.00045 # revisit this value later on
+    units: kWh/m^3

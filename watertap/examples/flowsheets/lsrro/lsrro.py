@@ -20,6 +20,7 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.initialization import (propagate_state)
+from idaes.generic_models.costing import UnitModelCostingBlock
 from idaes.generic_models.unit_models import Feed, Product, Mixer
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
@@ -31,7 +32,7 @@ from watertap.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
                                                        PressureChangeType)
 from watertap.unit_models.pump_isothermal import Pump
 from watertap.core.util.initialization import assert_degrees_of_freedom, assert_no_degrees_of_freedom
-import watertap.examples.flowsheets.lsrro.financials as financials
+from watertap.costing import WaterTAPCosting, PumpType
 import watertap.property_models.NaCl_prop_pack as props
 
 
@@ -62,7 +63,7 @@ def build(number_of_stages=2):
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = props.NaClParameterBlock()
-    financials.add_costing_param_block(m.fs)
+    m.fs.costing = WaterTAPCosting()
 
     m.fs.NumberOfStages = Param(initialize=number_of_stages)
     m.fs.StageSet = RangeSet(m.fs.NumberOfStages)
@@ -83,14 +84,16 @@ def build(number_of_stages=2):
     # Add the pumps
     m.fs.PrimaryPumps = Pump(m.fs.StageSet, default={"property_package": m.fs.properties})
     for pump in m.fs.PrimaryPumps.values():
-        pump.get_costing(module=financials, pump_type="High pressure")
-        total_pump_work += pump.work_mechanical[0]
+        pump.costing = UnitModelCostingBlock(default={
+                "flowsheet_costing_block":m.fs.costing})
+        m.fs.costing.cost_flow(pyunits.convert(pump.work_mechanical[0], to_units=pyunits.kW), "electricity")
 
     # Add the equalizer pumps
     m.fs.BoosterPumps = Pump(m.fs.LSRRO_StageSet, default={"property_package": m.fs.properties})
     for pump in m.fs.BoosterPumps.values():
-        pump.get_costing(module=financials, pump_type="High pressure")
-        total_pump_work += pump.work_mechanical[0]
+        pump.costing = UnitModelCostingBlock(default={
+                "flowsheet_costing_block":m.fs.costing})
+        m.fs.costing.cost_flow(pyunits.convert(pump.work_mechanical[0], to_units=pyunits.kW), "electricity")
 
     # Add the stages ROs
     m.fs.ROUnits = ReverseOsmosis0D(m.fs.StageSet, default={
@@ -100,12 +103,15 @@ def build(number_of_stages=2):
             "mass_transfer_coefficient": MassTransferCoefficient.calculated,
             "concentration_polarization_type": ConcentrationPolarizationType.calculated})
     for ro_unit in m.fs.ROUnits.values():
-        ro_unit.get_costing(module=financials)
+        ro_unit.costing = UnitModelCostingBlock(default={
+                "flowsheet_costing_block":m.fs.costing})
 
     # Add EnergyRecoveryDevice
     m.fs.EnergyRecoveryDevice = Pump(default={"property_package": m.fs.properties})
-    m.fs.EnergyRecoveryDevice.get_costing(module=financials, pump_type="Pressure exchanger")
-    total_pump_work += m.fs.EnergyRecoveryDevice.work_mechanical[0]
+    m.fs.EnergyRecoveryDevice.costing = UnitModelCostingBlock(default={
+            "flowsheet_costing_block":m.fs.costing,
+            "costing_method_arguments":{"pump_type":PumpType.energy_recovery_device}})
+    m.fs.costing.cost_flow(pyunits.convert(m.fs.EnergyRecoveryDevice.work_mechanical[0], to_units=pyunits.kW), "electricity")
 
     # additional variables or expressions
     # system water recovery
@@ -119,17 +125,12 @@ def build(number_of_stages=2):
               sum(m.fs.feed.flow_mass_phase_comp[0,'Liq',:]) * m.fs.water_recovery == \
               sum(m.fs.product.flow_mass_phase_comp[0,'Liq',:]) )
 
-    # additional variables or expressions
-    product_flow_vol_total = m.fs.product.properties[0].flow_vol
-    m.fs.annual_water_production = Expression(
-        expr=pyunits.convert(product_flow_vol_total, to_units=pyunits.m ** 3 / pyunits.year)
-             * m.fs.costing_param.load_factor)
-    m.fs.specific_energy_consumption = Expression(
-        expr=pyunits.convert(total_pump_work, to_units=pyunits.kW)
-             / pyunits.convert(product_flow_vol_total, to_units=pyunits.m**3 / pyunits.hr))
-
     # costing
-    financials.get_system_costing(m.fs)
+    m.fs.costing.cost_process()
+    product_flow_vol_total = m.fs.product.properties[0].flow_vol
+    m.fs.costing.add_LCOW(product_flow_vol_total)
+    m.fs.costing.add_specific_energy_consumption(product_flow_vol_total)
+
     # objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
 
@@ -361,6 +362,8 @@ def initialize(m, verbose=False, solver=None):
         unit.initialize(optarg=solver.options, outlvl=outlvl)
     seq.run(m, func_initialize)
 
+    m.fs.costing.initialize()
+
 
 def solve(m, solver=None, tee=False, raise_on_failure=False):
     # ---solving---
@@ -401,7 +404,7 @@ def optimize_set_up(m, water_recovery=None):
         stage.area.setub(1000)
         stage.width.setlb(0.1)
         stage.width.setub(100)
-        stage.N_Re_io[0, 'in'].unfix()
+        stage.N_Re[0, 0].unfix()
 
         if idx > m.fs.StageSet.first():
             stage.B_comp.unfix()
@@ -477,7 +480,7 @@ def display_system(m):
     print('Product: %.3f kg/s, %.0f ppm' % (prod_flow_mass, prod_mass_frac_NaCl * 1e6))
 
     print('Volumetric water recovery: %.1f%%' % (value(m.fs.water_recovery) * 100))
-    print('Energy Consumption: %.1f kWh/m3' % value(m.fs.specific_energy_consumption))
+    print('Energy Consumption: %.1f kWh/m3' % value(m.fs.costing.specific_energy_consumption))
     print('Levelized cost of water: %.2f $/m3' % value(m.fs.costing.LCOW))
 
 

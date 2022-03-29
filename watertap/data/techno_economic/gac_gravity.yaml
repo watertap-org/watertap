@@ -1,8 +1,0 @@
-default:
-  recovery_vol:
-    value: 0.96
-    units: dimensionless
-    reference: 'EPA model: https://www.epa.gov/sdwa/drinking-water-treatment-technology-unit-cost-models'
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless

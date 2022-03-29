@@ -21,10 +21,15 @@ default:
     cost_function_form:
       function f(flow_vol_in): cap_basis_par*(flow_vol_in/flow_basis_par)^cap_exp
       units: $
-  recovery_vol:
+  recovery_frac_mass_H2O:
     value: 0.99999
     units: dimensionless
     reference: .nan
   default_removal_frac_mass_solute:
     value: 0
     units: dimensionless
+  removal_frac_mass_solute:
+    tss:
+      value: 0.5 #revisit this value later
+      units: dimensionless
+      constituent_longform: Total Suspended Solids (TSS)

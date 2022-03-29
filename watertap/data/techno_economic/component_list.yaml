@@ -64,6 +64,8 @@ nitrite:
   constituent_longform: Nitrite
 nitrogen:
   constituent_longform: Nitrogen
+nonbiodegradable_cod:
+  constituent_longform: Nonbiodegradable Chemical Oxygen Demand (ffCOD)
 nonvolatile_toc:
   constituent_longform: Nonvolatile Total Organic Carbon (TOC)
 oil_and_grease:
@@ -115,3 +117,5 @@ viruses_enteric:
   constituent_longform: Viruses (enteric)
 zinc:
   constituent_longform: Zinc
+carbon_dioxide:
+  constituent_longform: Carbon Dioxide

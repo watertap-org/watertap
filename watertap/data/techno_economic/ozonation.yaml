@@ -1,6 +1,6 @@
 default:
-  recovery_vol:
-    value: 0.9999
+  recovery_frac_mass_H2O:
+    value: 1
     units: dimensionless
     reference: Texas Water Development Board IT3PR User Manual
   default_removal_frac_mass_solute:
@@ -26,9 +26,22 @@ default:
     total_coliforms_fecal_ecoli:
       value: 0.997225
       units: dimensionless
-      constituent_longform: "Total Coliforms (including fecal coliform and\uFFFD E.\
-        \ Coli)"
+      constituent_longform: "Total Coliforms (including fecal coliform and E.Coli)"
     viruses_enteric:
       value: 0.997225
       units: dimensionless
       constituent_longform: Viruses (enteric)
+  contact_time:
+    value: 1  
+    units: min
+  concentration_time:  
+    value: 1
+    units: (mg*min)/L
+  mass_transfer_efficiency:
+    value: 0.8      
+    units: dimensionless
+  specific_energy_coeff:
+    value: 5      
+    units: kWh/lb
+    reference: B. Mundy et al. (2018) doi.org/10.1080/01919512.2018.1467187 - Energy consumption 
+      for ozone generator, ozone destruct, nitrogen feed system, cooling water pumps, and other misc. energy uses. 
