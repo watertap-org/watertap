@@ -69,17 +69,21 @@ class OzoneZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.specific_energy_coeff)
 
         self.ozone_flow_mass = Var(self.flowsheet().time,
-                                   units=pyunits.lb/pyunits.hr,
+                                   initialize=1,
                                    bounds=(0, None),
+                                   units=pyunits.lb/pyunits.hr,
                                    doc="Mass flow rate of ozone")
 
         self.ozone_consumption = Var(self.flowsheet().time,
+                                     initialize=1,
+                                     bounds=(0, None),
                                      units=pyunits.mg/pyunits.liter,
                                      doc="Ozone consumption")
 
         self.electricity = Var(self.flowsheet().time,
-                               units=pyunits.kW,
+                               initialize=1,
                                bounds=(0, None),
+                               units=pyunits.kW,
                                doc="Ozone generation power demand")
 
         @self.Constraint(self.flowsheet().time,
