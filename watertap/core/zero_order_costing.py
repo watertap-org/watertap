@@ -693,12 +693,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             bounds=(0, None),
             doc="Capital cost of unit operation")
 
-        Q_treated = pyo.units.convert(blk.unit_model.properties_treated[t0].flow_vol,
-                              to_units=pyo.units.L / pyo.units.hour)
-
-        ES_reactor = (1/pyo.units.convert(A, to_units=pyo.units.L / pyo.units.m**2 / pyo.units.hour))*Q_treated
-
-        expr = pyo.units.convert(ES_reactor*B, to_units=blk.config.flowsheet_costing_block.base_currency)
+        expr = pyo.units.convert(
+            blk.unit_model.properties_treated[t0].flow_vol / A * B,
+            to_units=blk.config.flowsheet_costing_block.base_currency)
 
         # Determine if a costing factor is required
         factor = parameter_dict["capital_cost"]["cost_factor"]
@@ -838,22 +835,12 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             bounds=(0, None),
             doc="Capital cost of unit operation")
 
-        Q_treated = pyo.units.convert(blk.unit_model.properties_treated[t0].flow_vol,
-                              to_units=pyo.units.m ** 3 / pyo.units.hour)
+        DCC_reactor = pyo.units.convert(
+            blk.unit_model.properties_treated[t0].flow_vol *
+            blk.unit_model.properties_treated[t0].conc_mass_comp["ammonium_as_nitrogen"] / A * B,
+            to_units=blk.config.flowsheet_costing_block.base_currency)
 
-        ammonium_reacted = pyo.units.convert(
-            blk.unit_model.properties_treated[t0].conc_mass_comp["ammonium_as_nitrogen"],
-            to_units=pyo.units.kg / pyo.units.m ** 3)
-
-        SV_reactor = Q_treated*ammonium_reacted
-
-        ES_reactor = (1/pyo.units.convert(A, to_units=pyo.units.kg / pyo.units.m**2 / pyo.units.hour))*SV_reactor
-
-        DCC_reactor = pyo.units.convert(ES_reactor*B, to_units=blk.config.flowsheet_costing_block.base_currency)
-
-        ES_blower = C*pyo.units.convert(blk.unit_model.blower_size, to_units=pyo.units.m ** 2)
-
-        DCC_blower = pyo.units.convert(ES_blower*D, to_units=blk.config.flowsheet_costing_block.base_currency)
+        DCC_blower = pyo.units.convert(blk.unit_model.blower_size * C * D, to_units=blk.config.flowsheet_costing_block.base_currency)
 
         expr = DCC_reactor + DCC_blower
 

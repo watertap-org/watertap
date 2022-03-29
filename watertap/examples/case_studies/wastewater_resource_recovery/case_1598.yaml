@@ -44,5 +44,3 @@ global_parameters:
     # Total Installed Cost
     value: 1.65
     units: dimensionless
-# currency_definitions:
-#   - list of currency strings (see pint documentation)
