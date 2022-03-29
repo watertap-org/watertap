@@ -115,7 +115,7 @@ class FixedBedZOData(ZeroOrderBaseData):
             doc="Pre-exponential factor for activated carbon demand")
         self.activated_carbon_parameter_b = Var(
             units=pyunits.dimensionless,
-            bounds=(0, None),
+            bounds=(None, None),
             doc="Exponential factor for activated carbon demand")
         self._fixed_perf_vars.append(self.activated_carbon_parameter_a)
         self._fixed_perf_vars.append(self.activated_carbon_parameter_b)
@@ -147,7 +147,7 @@ class FixedBedZOData(ZeroOrderBaseData):
             doc="Pre-exponential factor for sand demand")
         self.sand_parameter_b = Var(
             units=pyunits.dimensionless,
-            bounds=(0, None),
+            bounds=(None, None),
             doc="Exponential factor for sand demand")
         self._fixed_perf_vars.append(self.sand_parameter_a)
         self._fixed_perf_vars.append(self.sand_parameter_b)
@@ -179,7 +179,7 @@ class FixedBedZOData(ZeroOrderBaseData):
             doc="Pre-exponential factor for anthracite demand")
         self.anthracite_parameter_b = Var(
             units=pyunits.dimensionless,
-            bounds=(0, None),
+            bounds=(None, None),
             doc="Exponential factor for anthracite demand")
         self._fixed_perf_vars.append(self.anthracite_parameter_a)
         self._fixed_perf_vars.append(self.anthracite_parameter_b)
@@ -211,7 +211,7 @@ class FixedBedZOData(ZeroOrderBaseData):
             doc="Pre-exponential factor for cationic polymer demand")
         self.cationic_polymer_parameter_b = Var(
             units=pyunits.dimensionless,
-            bounds=(0, None),
+            bounds=(None, None),
             doc="Exponential factor for cationic polymer demand")
         self._fixed_perf_vars.append(self.cationic_polymer_parameter_a)
         self._fixed_perf_vars.append(self.cationic_polymer_parameter_b)
