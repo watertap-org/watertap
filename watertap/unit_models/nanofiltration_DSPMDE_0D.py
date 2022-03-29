@@ -935,7 +935,7 @@ class NanofiltrationData(UnitModelBlockData):
                     / (Constants.boltzmann_constant * b.feed_side.properties_in[t].temperature))
 
     def initialize_build(
-            blk,
+            self,
             initialize_guess=None,
             state_args=None,
             outlvl=idaeslog.NOTSET,
@@ -975,19 +975,19 @@ class NanofiltrationData(UnitModelBlockData):
             None
         """
 
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Set solver options
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Extract initial state of inlet feed
-        source = blk.feed_side.properties_in[blk.flowsheet().config.time.first()]
-        state_args = blk._get_state_args(source, blk.mixed_permeate[0], initialize_guess, state_args)
+        source = self.feed_side.properties_in[self.flowsheet().config.time.first()]
+        state_args = self._get_state_args(source, self.mixed_permeate[0], initialize_guess, state_args)
 
         # ---------------------------------------------------------------------
         # Initialize holdup block
-        flags_feed_side = blk.feed_side.properties_in.initialize(
+        flags_feed_side = self.feed_side.properties_in.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -996,76 +996,77 @@ class NanofiltrationData(UnitModelBlockData):
         )
         init_log.info_high("Initialization Step 1 Complete.")
         if not ignore_dof:
-            check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
+            check_dof(self, fail_flag=fail_on_warning, logger=init_log)
         # ---------------------------------------------------------------------
         # Initialize other state blocks based on properties at
         # inlet state block
-        blk.feed_side.properties_out.initialize(
+        self.feed_side.properties_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args['retentate'],)
-        blk.feed_side.properties_interface.initialize(
+        self.feed_side.properties_interface.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args['interface_in'], )
-        blk.permeate_side.initialize(
+        self.permeate_side.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args['permeate'], )
-        blk.mixed_permeate.initialize(
+        self.mixed_permeate.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args['permeate'], )
-        blk.pore_entrance.initialize(
+        self.pore_entrance.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args['interface_in'],)
-        blk.pore_exit.initialize(
+        self.pore_exit.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args['permeate'],)
         init_log.info_high("Initialization Step 2 Complete.")
 
-        # # Double-check for poorly scaled variables after state block initialization
-        # # and rescale them so that scaled variable values = 1:
-        badly_scaled_vars = list(iscale.badly_scaled_var_generator(blk))
-        if len(badly_scaled_vars) > 0:
-            init_log.warn(f"{len(badly_scaled_vars)} poorly scaled "
-                          f"variable(s) will be rescaled so that each scaled variable value = 1")
-            blk._automate_rescale_variables()
+        # Double-check for poorly scaled variables after state block initialization
+        # and rescale them so that scaled variable values = 1:
+        if automate_rescale:
+            badly_scaled_vars = list(iscale.badly_scaled_var_generator(self))
+            if len(badly_scaled_vars) > 0:
+                init_log.warn(f"{len(badly_scaled_vars)} poorly scaled "
+                              f"variable(s) will be rescaled so that each scaled variable value = 1")
+                self._automate_rescale_variables()
         # # ---------------------------------------------------------------------
         # # Solve unit with deactivated constraint
-        blk.eq_solute_solvent_flux.deactivate()
+        # self.eq_solute_solvent_flux.deactivate()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
             if not check_optimal_termination(res):
                 init_log.warn("Trouble solving NanofiltrationDSPMDE0D unit model with deactivated constraint.")
         # # ---------------------------------------------------------------------
         # # Solve unit
-        blk.eq_solute_solvent_flux.activate()
+        self.eq_solute_solvent_flux.activate()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
             if not check_optimal_termination(res):
                 init_log.warn("Trouble solving NanofiltrationDSPMDE0D unit model. Trying one more time.")
-                res = opt.solve(blk, tee=slc.tee)
+                res = opt.solve(self, tee=slc.tee)
                 if not check_optimal_termination(res):
                     raise InitializationError('The property package failed to solve during initialization.')
         check_solve(res, checkpoint='Solve in Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
         # Release Inlet state
-        blk.feed_side.release_state(flags_feed_side, outlvl)
+        self.feed_side.release_state(flags_feed_side, outlvl)
         # Rescale any badly scaled vars
         if automate_rescale:
-            badly_scaled_vars = list(iscale.badly_scaled_var_generator(blk))
+            badly_scaled_vars = list(iscale.badly_scaled_var_generator(self))
             if len(badly_scaled_vars) > 0:
                 init_log.warn(f"After solve: {len(badly_scaled_vars)} poorly scaled "
                               f"variable(s) will be rescaled so that each scaled variable value = 1")
-            blk._automate_rescale_variables()
+            self._automate_rescale_variables()
         init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
     def _get_performance_contents(self, time_point=0):

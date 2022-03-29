@@ -169,9 +169,6 @@ class TestNanoFiltration():
         # Set electroneutrality tolerance to 0 (value used in equality constraints for electroneutrality in unit model)
         m.fs.unit.tol_electroneutrality = 0
 
-        m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e4, index=('Liq', 'Ca_2+'))
-        m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e4, index=('Liq', 'SO4_2-'))
-
         return m
 
     @pytest.mark.unit
@@ -233,9 +230,8 @@ class TestNanoFiltration():
     def test_calculate_scaling(self, NF_frame):
         m = NF_frame
 
-        # m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', 'H2O'))
-        # for ion in m.fs.properties.config.solute_list:
-        #     m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e2, index=('Liq', ion))
+        m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e5, index=('Liq', 'Ca_2+'))
+        m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e5, index=('Liq', 'SO4_2-'))
 
         calculate_scaling_factors(m)
 
@@ -258,7 +254,6 @@ class TestNanoFiltration():
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        m.fs.unit.initialize_build(automate_rescale=True)
         results = solver.solve(m)
 
         # Check for optimal solution
