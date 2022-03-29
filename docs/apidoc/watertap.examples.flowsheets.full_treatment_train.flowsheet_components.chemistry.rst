@@ -18,20 +18,6 @@ watertap.examples.flowsheets.full\_treatment\_train.flowsheet\_components.chemis
    :members:
    :show-inheritance:
 
-watertap.examples.flowsheets.full\_treatment\_train.flowsheet\_components.chemistry.test\_posttreatment module
---------------------------------------------------------------------------------------------------------------
-
-.. automodule:: watertap.examples.flowsheets.full_treatment_train.flowsheet_components.chemistry.test_posttreatment
-   :members:
-   :show-inheritance:
-
-watertap.examples.flowsheets.full\_treatment\_train.flowsheet\_components.chemistry.test\_pretreatment module
--------------------------------------------------------------------------------------------------------------
-
-.. automodule:: watertap.examples.flowsheets.full_treatment_train.flowsheet_components.chemistry.test_pretreatment
-   :members:
-   :show-inheritance:
-
 Module contents
 ---------------
 

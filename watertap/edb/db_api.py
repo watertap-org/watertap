@@ -140,6 +140,16 @@ class ElectrolyteDB:
             result = False
         return result
 
+    def _client_can_connect(self, client: MongoClient) -> bool:
+        # NOTE the "ping" command is chosen because it's the only one available when using mocked MongoClient instances
+        # therefore, having a single commands that works for both mock- and non-mock objects makes the mocking easier
+        server_resp = client.admin.command("ping")
+        try:
+            return bool(server_resp["ok"])
+        except (KeyError, TypeError) as e:
+            _log.exception(f"Unexpected format for server response: {server_resp}")
+        return None
+
     def _mongoclient(self, url: str, check, **client_kw) -> Union[MongoClient, None]:
         _log.debug(f"Begin: Create MongoDB client. url={url}")
         mc = MongoClient(url, **client_kw)
@@ -150,8 +160,8 @@ class ElectrolyteDB:
         # check that client actually works
         _log.info(f"Connection check MongoDB client url={url}")
         try:
-            mc.admin.command("ismaster")
-            self._mongoclient_connect_status["initial"] = "ok"
+            if self._client_can_connect(mc):
+                self._mongoclient_connect_status["initial"] = "ok"
             _log.info("MongoDB connection succeeded")
         except ConnectionFailure as conn_err:
             mc = None
@@ -164,8 +174,8 @@ class ElectrolyteDB:
                               f"for client certificates ({certifi.where()})")
                     try:
                         mc = MongoClient(url, tlsCAFile=certifi.where(), **client_kw)
-                        mc.admin.command("ismaster")
-                        _log.info("Retried MongoDB connection succeeded")
+                        if self._client_can_connect(mc):
+                            _log.info("Retried MongoDB connection succeeded")
                     except ConnectionFailure as err:
                         mc = None
                         self._mongoclient_connect_status["retry"] = str(err)
@@ -422,24 +432,30 @@ class ElectrolyteDB:
             num += 1
         return num
 
-    # XXX: This preprocessing overlaps with data_model.DataWrapper subclasses.
-    # XXX: It should all be moved to one place
+    # TODO: This preprocessing overlaps with data_model.DataWrapper subclasses.
+    #       It should all be moved to one place. Unclear how to accomplish this
+    #       without also disrupting how structure is validated. The _preprocess
+    #       functions in each data_model.DataWrapper do not explicitly perform
+    #       these actions and do not return anything. Some of the data_model.
+    #       DataWrapper objects do not have a _preprocess function.
 
+    # record is a dict and rec_type is a string
     @classmethod
     def preprocess_record(cls, record, rec_type):
         process_func = getattr(cls, f"_process_{rec_type}")
         return process_func(record)
 
+    # You each of these are needed because they get checked in 'validate.py'
     @staticmethod
     def _process_component(rec):
+        # This line is needed because it is checked for in structure
         rec["elements"] = get_elements_from_components([rec["name"]])
         return rec
 
     @staticmethod
     def _process_reaction(rec):
-        rec["reactant_elements"] = get_elements_from_components(
-            rec.get("components", []))
-
+        # These lines seem integral to loading the database
+        # ------------------------------------------------
         # If reaction_order is not present in parameters, create it by
         # copying the stoichiometry (or empty for each phase, if stoich. not found)
         if Reaction.NAMES.param in rec:
@@ -455,10 +471,13 @@ class ElectrolyteDB:
 
         return rec
 
+    # This function does nothing... but gets called
     @staticmethod
     def _process_base(rec):
         return rec
 
+    # This function appears to be done implicitly by data_model.Component
+    # and is never actually called from the above 'load' function
     @staticmethod
     def _process_species(s):
         """Make species match https://jess.murdoch.edu.au/jess_spcdoc.shtml"""
@@ -475,14 +494,12 @@ class ElectrolyteDB:
             charge = f"{sign}{num}"
         else:
             charge = input_charge
-        # print(f"{s} -> {symbols}{charge}")
         return f"{symbols}{charge}"
 
-
+# Helper function used by _process_component above
 def get_elements_from_components(components):
     elements = set()
     for comp in components:
-        # print(f"Get elements from: {comp}")
         for m in re.finditer(r"[A-Z][a-z]?", comp):
             element = comp[m.start() : m.end()]
             if element[0] == "K" and len(element) > 1:

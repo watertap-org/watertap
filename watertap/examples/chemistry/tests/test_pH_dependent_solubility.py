@@ -775,7 +775,11 @@ def run_case2(xOH=1e-7/55.2, xH=1e-7/55.2, xCaCO3=1e-20, xCa=1e-20, xH2CO3=1e-20
 
     ## ==================== END Scaling for this problem ===========================
 
-    model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
+    # for macOS
+    init_options = {**solver.options}
+    init_options["tol"] = 1.0e-06
+    init_options["constr_viol_tol"] = 1.0e-06
+    model.fs.unit.initialize(optarg=init_options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
@@ -1920,12 +1924,13 @@ def run_case4(xOH=1e-7/55.2, xH=1e-7/55.2,
     assert isinstance(model.fs.unit.control_volume.properties_in[0.0].scaling_factor, Suffix)
 
     ## ==================== END Scaling for this problem ===========================
-
     model.fs.unit.initialize(optarg=solver.options, outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(model) == 0
 
+    solver.options["tol"] = 1.0e-12
     results = solver.solve(model, tee=True)
+    del solver.options["tol"]
 
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert results.solver.status == SolverStatus.ok

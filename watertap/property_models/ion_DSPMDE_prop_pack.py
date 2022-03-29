@@ -239,8 +239,6 @@ class DSPMDEParameterData(PhysicalParameterBlock):
         self.set_default_scaling('visc_d_phase', 1e3, index='Liq')
         self.set_default_scaling('diffus_phase_comp', 1e10, index='Liq')
 
-
-
     @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
@@ -859,12 +857,12 @@ class DSPMDEStateBlockData(StateBlockData):
 
         # these variables should have user input
         if iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O'], default=1e0)
+            sf = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O'], default=1, warning=True)
             iscale.set_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O'], sf)
 
         for j in self.params.solute_set:
             if iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j]) is None:
-                sf = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j], default=1)
+                sf = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j], default=1, warning=True)
                 iscale.set_scaling_factor(self.flow_mol_phase_comp['Liq', j], sf)
 
         # scaling factors for parameters
@@ -878,6 +876,7 @@ class DSPMDEStateBlockData(StateBlockData):
         if self.is_property_constructed('dens_mass_solvent'):
             if iscale.get_scaling_factor(self.dens_mass_solvent) is None:
                 iscale.set_scaling_factor(self.dens_mass_solvent, 1e-2)
+
 
         for p, v in self.dens_mass_phase.items():
             if iscale.get_scaling_factor(v) is None:

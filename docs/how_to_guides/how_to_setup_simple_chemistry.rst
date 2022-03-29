@@ -3,21 +3,24 @@
 How to setup simple chemistry
 =============================
 
-.. _GenericProperties: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/index.html#generic-property-package-framework
-.. _GenericReactions: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/index.html
-.. _Perrys: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/pure/Perrys.html
-.. _Constant: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/pure/ConstantProperties.html
-.. _StateDefinition: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/state_definition.html
-.. _EquationOfState: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/eos/ideal.html
-.. _Components: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/component_def.html
-.. _Phases: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general/phase_def.html
-.. _RateReactions: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/rate_rxns.html
-.. _EquilibriumReactions: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/equil_rxns.html
-.. _ReactionMethods: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/method_libraries.html#reaction-module-libraries
-.. _ConcentrationForm: https://idaes-pse.readthedocs.io/en/stable/user_guide/components/property_package/general_reactions/rate_rxns.html#concentration-form
-.. _UnitModels: https://idaes-pse.readthedocs.io/en/stable/technical_specs/model_libraries/generic/unit_models/index.html
-.. _EquilibriumReactor: https://idaes-pse.readthedocs.io/en/stable/technical_specs/model_libraries/generic/unit_models/equilibrium.html
-.. _IDAESWorkflow: https://idaes-pse.readthedocs.io/en/stable/user_guide/workflow/general.html
+.. note:: This page provides a manual approach to building an IDAES configuration dictionary.
+    The same result can be achieved by using the :doc:`Electrolyte Database (EDB)</technical_reference/edb/index>`. 
+    Examples of this are provided under :ref:`How to use EDB <how_to_use_edb>`.
+.. _GenericProperties: https://idaes-pse.readthedocs.io/en/stable/explanations/components/property_package/general/index.html#generic-property-package-framework
+.. _GenericReactions: https://idaes-pse.readthedocs.io/en/stable/explanations/components/property_package/general_reactions/index.html
+.. _Perrys: https://idaes-pse.readthedocs.io/en/stable/explanations/components/property_package/general/pure/Perrys.html
+.. _Constant: https://idaes-pse.readthedocs.io/en/stable/explanations/components/property_package/general/pure/ConstantProperties.html
+.. _StateDefinition: https://idaes-pse.readthedocs.io/en/stable/explanations/components/property_package/general/state_definition.html
+.. _EquationOfState: https://idaes-pse.readthedocs.io/en/stable/explanations/components/property_package/general/eos/ideal.html
+.. _Components: https://idaes-pse.readthedocs.io/en/stable/explanations/components/property_package/general/component_def.html
+.. _Phases: https://idaes-pse.readthedocs.io/en/stable/explanations/components/property_package/general/phase_def.html
+.. _RateReactions: https://idaes-pse.readthedocs.io/en/stable/explanations/components/property_package/general_reactions/rate_rxns.html
+.. _EquilibriumReactions: https://idaes-pse.readthedocs.io/en/stable/explanations/components/property_package/general_reactions/equil_rxns.html
+.. _ReactionMethods: https://idaes-pse.readthedocs.io/en/stable/explanations/components/property_package/general_reactions/method_libraries.html#reaction-module-libraries
+.. _ConcentrationForm: https://idaes-pse.readthedocs.io/en/stable/explanations/components/property_package/general_reactions/rate_rxns.html#concentration-form
+.. _UnitModels: https://idaes-pse.readthedocs.io/en/stable/reference_guides/model_libraries/generic/unit_models/index.html
+.. _EquilibriumReactor: https://idaes-pse.readthedocs.io/en/stable/reference_guides/model_libraries/generic/unit_models/equilibrium.html
+.. _IDAESWorkflow: https://idaes-pse.readthedocs.io/en/stable/how_to_guides/workflow/general.html
 
 In WaterTAP, chemistry modules leverage the Generic Properties
 (`GenericProperties`_)
