@@ -9,12 +9,12 @@ default:    # mabr for nitrification
     value: 0
     units: dimensionless
   removal_frac_mass_solute:
-    bod:      # TODO: can add COD as data become available
+    bod:
       value: 0
       units: dimensionless
       constituent_longform: Biological Oxygen Demand (BOD)
     tss:
-      value: 0   # negligible| may be slight conversion to tssin 100 --> tssout 184.3
+      value: 0
       units: dimensionless
       constituent_longform: Total Suspended Solids (TSS)
     ammonium_as_nitrogen:
