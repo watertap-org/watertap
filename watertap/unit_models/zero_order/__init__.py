@@ -81,6 +81,7 @@ from .injection_well_disposal_zo import InjectionWellDisposalZO
 # Units explicitly for Wastewater Resource Recovery effort
 
 from .anaerobic_mbr_mec_zo import AnaerobicMBRMECZO
-from .cofermentation_zo import  CofermentationZO
+from .cofermentation_zo import CofermentationZO
 from .constructed_wetlands_zo import ConstructedWetlandsZO
+from .gas_sparged_membrane_zo import GasSpargedMembraneZO
 from .vfa_recovery_zo import VFARecoveryZO
