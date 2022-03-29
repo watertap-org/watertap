@@ -19,6 +19,11 @@
 
     python -m pip install pymongo[srv]
 
+    After you connect to the Cloud EDB, you can follow the other examples to build
+    your IDAES config from that database. In the unit test, we use the cloud database
+    to build a correct IDAES config for the same basic water example shown in file
+    'the_basics'. 
+
 """
 
 # Import ElectrolyteDB object
@@ -36,17 +41,3 @@ def connect_to_cloud_edb(test_invalid_host=False):
     db = ElectrolyteDB(url=public_cloud_url, db="electrolytedb", check_connection=True)
     connected = db.can_connect(url=public_cloud_url, db="electrolytedb")
     return (db, connected)
-
-def grab_base_thermo_config(db):
-    # Get the base and place into a result object
-    base = db.get_base("default_thermo")
-    return base
-
-
-if __name__ == "__main__":
-    (db, is_connected) = connect_to_cloud_edb(test_invalid_host=True)
-    if is_connected == False:
-        print("Error, cannot connect to cloud...")
-        exit()
-    base_obj = grab_base_thermo_config(db)
-    print((db, is_connected))

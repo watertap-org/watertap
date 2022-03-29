@@ -39,6 +39,11 @@ def test_public_cloud_db_connection():
     (database, is_connected) = connect_to_cloud_edb(test_invalid_host=True)
     assert is_connected == True
 
+    # Call the run_the_basics_with_mockdb function, but using the cloud db
+    #       NOTE: Cloud DB and bootstrap/local are expected to be same 
+    assert run_the_basics_with_mockdb(database) == True
+
+
 @pytest.mark.component
 def test_the_basics(edb):
     assert run_the_basics_with_mockdb(edb) == True
