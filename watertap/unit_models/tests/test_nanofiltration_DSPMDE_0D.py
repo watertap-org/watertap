@@ -253,7 +253,6 @@ class TestNanoFiltration():
     def test_initialize(self, NF_frame):
         m= NF_frame
         initialization_tester(m)
-        # m.fs.unit.initialize(automate_rescale=True)  # this is the default for NFDSPM initialize but writing out anyway
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
