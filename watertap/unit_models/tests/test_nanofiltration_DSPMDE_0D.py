@@ -241,7 +241,6 @@ class TestNanoFiltration():
 
         # check that all variables have scaling factors
         unscaled_var_list = list(unscaled_variables_generator(m.fs.unit))
-        [print(i) for i in unscaled_var_list]
         assert len(unscaled_var_list) == 0
 
         badly_scaled_var_lst = list(badly_scaled_var_generator(m, include_fixed=True))
@@ -296,7 +295,7 @@ class TestNanoFiltration():
                           'H2O': 0.41437
                           }
         for j, val in mole_flux_dict.items():
-            assert (pytest.approx(val, rel=1e-2) ==
+            assert (pytest.approx(val, rel=5e-2) ==
                     value(m.fs.unit.flux_mol_phase_comp_avg[0, 'Liq', j]))
 
         #TODO: subsequently focus on the segment below during the validation and refinement phase
