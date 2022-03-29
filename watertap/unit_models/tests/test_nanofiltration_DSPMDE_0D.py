@@ -265,6 +265,7 @@ class TestNanoFiltration():
         # Check for optimal solution
         assert_optimal_termination(results)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_conservation(self, NF_frame):
         m = NF_frame
