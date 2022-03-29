@@ -260,6 +260,7 @@ class TestNanoFiltration():
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
+        m.fs.unit.initialize(automate_rescale=True)
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -308,19 +309,3 @@ class TestNanoFiltration():
         for j, val in intrinsic_rejection_dict.items():
             assert (pytest.approx(val, rel=1e-2) ==
                     value(m.fs.unit.rejection_intrinsic_phase_comp[0, 'Liq', j]))
-
-        m.fs.unit.eq_solute_solvent_flux.deactivate()
-        res = solver.solve(m)
-        assert_optimal_termination(res)
-
-        intrinsic_rejection_dict = {'Na_+': 0.44010768,
-                                    'Cl_-': 0.503245,
-                                    'Ca_2+': 0.731057,
-                                    'SO4_2-': 0.4040496,
-                                    'Mg_2+': 0.5639240,
-                                    }
-        for j, val in intrinsic_rejection_dict.items():
-            assert (pytest.approx(val, rel=1e-2) ==
-                    value(m.fs.unit.rejection_intrinsic_phase_comp[0, 'Liq', j]))
-
-
