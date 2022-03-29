@@ -43,7 +43,8 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    "idaes-pse[prerelease] @ https://github.com/watertap-org/idaes-pse/archive/1.12.1.watertap.2022.02.04.zip",
+    #"idaes-pse[prerelease] @ https://github.com/watertap-org/idaes-pse/archive/1.12.1.watertap.2022.02.04.zip",
+    "idaes-pse[prerelease] @ https://github.com/watertap-org/idaes-pse/archive/1.14.0dev0.watertap.2022.03.11.zip"
 ]
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -113,6 +114,7 @@ setup(
         "dev": [
             "myst-parser",  # markdown support for Sphinx
             "nbsphinx",  # jupyter notebook support for sphinx
+            "jinja2<3.1.0",  # see watertap-org/watertap#449
             "Sphinx",  # docs
             "sphinx_rtd_theme",  # docs
             # other requirements

@@ -1,5 +1,9 @@
 aluminum:
   constituent_longform: Aluminum
+ammonia_as_nitrogen:
+  consituent_longform: Ammonia as Nitrogen (NH3-N)
+ammonium_as_nitrogen:
+  consituent_longform: Ammonium as Nitrogen (NH4-N)
 arsenic:
   constituent_longform: Arsenic
 barium:
@@ -64,6 +68,8 @@ nitrite:
   constituent_longform: Nitrite
 nitrogen:
   constituent_longform: Nitrogen
+nonbiodegradable_cod:
+  constituent_longform: Nonbiodegradable Chemical Oxygen Demand (ffCOD)
 nonvolatile_toc:
   constituent_longform: Nonvolatile Total Organic Carbon (TOC)
 oil_and_grease:
@@ -115,3 +121,5 @@ viruses_enteric:
   constituent_longform: Viruses (enteric)
 zinc:
   constituent_longform: Zinc
+carbon_dioxide:
+  constituent_longform: Carbon Dioxide

@@ -25,7 +25,8 @@ dbpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
 db = Database()
 
-exclude_files = ["water_sources.yaml", "component_list.yaml"]
+exclude_files = [
+    "water_sources.yaml", "component_list.yaml", "default_case_study.yaml"]
 
 tech_list = []
 for f in os.listdir(dbpath):
@@ -44,11 +45,32 @@ def test_unit_parameter_files(tech):
 
     # Iterate overall entries in tech data and check for expected contents
     # TODO : Need to check up on this once everything is done
-    pass_through = ["chemical_addition",
-                    "pump"]
-    siso_full_recovery = ["uv_aop", "uv", "ion_exchange"]
+    pass_through = ["blending_reservoir",
+                    "buffer_tank",
+                    "chemical_addition",
+                    "cooling_supply",
+                    "co2_addition",
+                    "energy_recovery",
+                    "feed_water_tank",
+                    "injection_well_disposal",
+                    "intrusion_mitigation",
+                    "landfill",
+                    "municipal_drinking",
+                    "municipal_wwtp",
+                    "pump",
+                    "storage_tank",
+                    "static_mixer",
+                    "smp",
+                    "sw_onshore_intake",
+                    "tramp_oil_tank",
+                    "water_pumping_station",
+                   ]
 
-    no_energy_electric_flow_vol_inlet = ["energy_recovery",
+    siso_full_recovery = ["uv_aop", "uv", "fixed_bed", "decarbonator", "chlorination"]
+
+    no_energy_electric_flow_vol_inlet = ["constructed_wetlands",
+                                         "energy_recovery",
+                                         "gas_sparged_membrane",
                                          "mbr_denitrification",
                                          "mbr_nitrification",
                                          "multi_stage_bubble_aeration",
@@ -58,14 +80,14 @@ def test_unit_parameter_files(tech):
                                          "well_field",
                                          "ion_exchange",
                                          "ozone_aop",
-                                         "fixed_bed_pressure_vessel",
+                                         "fixed_bed",
                                          "holding_tank",
                                          "heap_leaching",
                                          "nuclear_cooling_tower",
                                          "lime_softening",
                                          "ozonation",
                                          "cooling_tower",
-                                         "gac_pressure_vessel",
+                                         "gac",
                                          "tri_media_filtration_with_backflush",
                                          "sedimentation",
                                          "backwash_solids_handling",
@@ -74,7 +96,6 @@ def test_unit_parameter_files(tech):
                                          "co2_addition",
                                          "coag_and_floc",
                                          "crystallizer",
-                                         "gac_gravity",
                                          "iron_and_manganese_removal",
                                          "fluidized_bed",
                                          "surface_discharge",
@@ -92,9 +113,12 @@ def test_unit_parameter_files(tech):
                                          "evaporation_pond",
                                          "lime_addition",
                                          "brine_concentrator",
-                                         "fixed_bed_gravity_basin",
                                          "agglom_stacking",
-                                         "landfill_zld"]
+                                         "storage_tank",
+                                         "evaporation_pond",
+                                         "deep_well_injection",
+                                         "water_pumping_station",
+                                         ]
 
     expected = ["recovery_frac_mass_H2O",
                 "default_removal_frac_mass_solute"]
@@ -124,7 +148,6 @@ def test_unit_parameter_files(tech):
                 k[e]["units"], units.dimensionless)
             assert "value" in k[e].keys()
             assert k[e]["value"] >= 0
-            assert k[e]["value"] <= 1
 
         # Check for specific removal fractions
         if "removal_frac_mass_solute" in k.keys():

@@ -25,7 +25,7 @@ import idaes.logger as idaeslog
 from enum import Enum, auto
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, Reals, NonNegativeReals, log, \
-    Var, Param, Suffix, value, check_optimal_termination, units as pyunits, assert_optimal_termination
+    Var, Param, Suffix, value, check_optimal_termination, units as pyunits
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -35,7 +35,7 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock,
                         MaterialBalanceType,
-                        EnergyBalanceType)
+                        )
 from idaes.core.components import Component, Solute, Solvent
 from idaes.core.phases import LiquidPhase
 from idaes.core.util.constants import Constants
@@ -102,7 +102,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
            "``ActivityCoefficientModel.davies``", "Activity coefficients estimated via Davies model"
        """))
     CONFIG.declare("density_calculation", ConfigValue(
-        default=DensityCalculation.seawater,
+        default=DensityCalculation.constant,
         domain=In(DensityCalculation),
         description="Solution density calculation construction flag",
         doc="""
@@ -809,6 +809,12 @@ class DSPMDEStateBlockData(StateBlockData):
                         f" to check that electroneutrality is satisfied.")
                 if adjust_by_ion == j and self.flow_mol_phase_comp['Liq', j].is_fixed():
                     self.flow_mol_phase_comp['Liq', j].unfix()
+        else:
+            for j in self.params.solute_set:
+                if self.flow_mol_phase_comp['Liq', j].is_fixed():
+                    raise AssertionError(
+                        f"{self.flow_mol_phase_comp['Liq', j]} was fixed. Either set defined_state=True or unfix "
+                        f"flow_mol_phase_comp for each solute to check that electroneutrality is satisfied.")
 
         if get_property is not None:
             for i in [get_property]:
@@ -900,6 +906,13 @@ class DSPMDEStateBlockData(StateBlockData):
                               / iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', 'H2O']))
                         iscale.set_scaling_factor(self.mole_frac_phase_comp['Liq', j], sf)
 
+        if self.is_property_constructed('flow_mass_phase_comp'):
+            for j in self.params.component_list:
+                if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', j]) is None:
+                    sf = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j], default=1)
+                    sf *= iscale.get_scaling_factor(self.mw_comp[j])
+                    iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', j], sf)
+
         if self.is_property_constructed('mass_frac_phase_comp'):
             for j in self.params.component_list:
                 comp = self.params.get_component(j)
@@ -932,12 +945,7 @@ class DSPMDEStateBlockData(StateBlockData):
                           / iscale.get_scaling_factor(self.mw_comp[j]))
                     iscale.set_scaling_factor(self.conc_mol_phase_comp['Liq', j], sf)
 
-        if self.is_property_constructed('flow_mass_phase_comp'):
-            for j in self.params.component_list:
-                if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', j]) is None:
-                    sf = iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j], default=1)
-                    sf *= iscale.get_scaling_factor(self.mw_comp[j])
-                    iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', j], sf)
+
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
@@ -968,6 +976,14 @@ class DSPMDEStateBlockData(StateBlockData):
             for j in self.params.solute_set:
                 if iscale.get_scaling_factor(self.act_coeff_phase_comp['Liq', j]) is None:
                     iscale.set_scaling_factor(self.act_coeff_phase_comp['Liq', j], 1)
+
+        if self.is_property_constructed('debye_huckel_constant'):
+            if iscale.get_scaling_factor(self.debye_huckel_constant) is None:
+                iscale.set_scaling_factor(self.debye_huckel_constant, 10)
+
+        if self.is_property_constructed('ionic_strength'):
+            if iscale.get_scaling_factor(self.ionic_strength) is None:
+                iscale.set_scaling_factor(self.ionic_strength, 1)
 
         # transforming constraints
         # property relationships with no index, simple constraint
@@ -1006,3 +1022,9 @@ class DSPMDEStateBlockData(StateBlockData):
                 for j, c in c_comp.items():
                     sf = iscale.get_scaling_factor(v_comp['Liq', j], default=1, warning=True)
                     iscale.constraint_scaling_transform(c, sf)
+
+        if self.is_property_constructed('debye_huckel_constant'):
+            iscale.constraint_scaling_transform(self.eq_debye_huckel_constant, 10)
+
+        if self.is_property_constructed('ionic_strength'):
+            iscale.constraint_scaling_transform(self.eq_ionic_strength, 1)

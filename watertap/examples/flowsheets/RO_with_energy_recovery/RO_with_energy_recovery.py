@@ -27,6 +27,7 @@ from idaes.core.util.initialization import (solve_indexed_blocks,
                                             propagate_state)
 from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
+from idaes.generic_models.costing import UnitModelCostingBlock
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -38,7 +39,7 @@ from watertap.unit_models.reverse_osmosis_0D import (ReverseOsmosis0D,
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pump_isothermal import Pump
 from watertap.core.util.initialization import assert_degrees_of_freedom
-import watertap.examples.flowsheets.RO_with_energy_recovery.financials as financials
+from watertap.costing import WaterTAPCosting
 
 
 def main():
@@ -70,7 +71,7 @@ def build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={'dynamic': False})
     m.fs.properties = props.NaClParameterBlock()
-    financials.add_costing_param_block(m.fs)
+    m.fs.costing = WaterTAPCosting()
 
     # unit models
     m.fs.feed = Feed(default={'property_package': m.fs.properties})
@@ -94,22 +95,21 @@ def build():
     m.fs.product = Product(default={'property_package': m.fs.properties})
     m.fs.disposal = Product(default={'property_package': m.fs.properties})
 
-    # additional variables or expressions
-    product_flow_vol_total = m.fs.product.properties[0].flow_vol
-    m.fs.annual_water_production = Expression(
-        expr=pyunits.convert(product_flow_vol_total, to_units=pyunits.m ** 3 / pyunits.year)
-             * m.fs.costing_param.load_factor)
-    pump_power_total = m.fs.P1.work_mechanical[0] + m.fs.P2.work_mechanical[0]
-    m.fs.specific_energy_consumption = Expression(
-        expr=pyunits.convert(pump_power_total, to_units=pyunits.kW)
-             / pyunits.convert(product_flow_vol_total, to_units=pyunits.m**3 / pyunits.hr))
-
     # costing
-    m.fs.P1.get_costing(module=financials, pump_type="High pressure")
-    m.fs.P2.get_costing(module=financials, pump_type="High pressure")
-    m.fs.RO.get_costing(module=financials)
-    m.fs.PXR.get_costing(module=financials)
-    financials.get_system_costing(m.fs)
+    m.fs.costing.cost_flow(pyunits.convert(m.fs.P1.work_mechanical[0], to_units=pyunits.kW), "electricity")
+    m.fs.costing.cost_flow(pyunits.convert(m.fs.P2.work_mechanical[0], to_units=pyunits.kW), "electricity")
+    m.fs.P1.costing = UnitModelCostingBlock(default={
+            "flowsheet_costing_block":m.fs.costing})
+    m.fs.P2.costing = UnitModelCostingBlock(default={
+            "flowsheet_costing_block":m.fs.costing})
+            
+    m.fs.RO.costing = UnitModelCostingBlock(default={
+            "flowsheet_costing_block":m.fs.costing})
+    m.fs.PXR.costing = UnitModelCostingBlock(default={
+            "flowsheet_costing_block":m.fs.costing})
+    m.fs.costing.cost_process()
+    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_specific_energy_consumption(m.fs.product.properties[0].flow_vol)
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.S1.inlet)
@@ -139,9 +139,6 @@ def build():
     m.fs.S1.mixed_state[0].mass_frac_phase_comp
     m.fs.S1.PXR_state[0].flow_vol_phase['Liq']
     # unused scaling factors needed by IDAES base costing module
-    # TODO: update IDAES so that scaling factors are calculated from financial package
-    iscale.set_scaling_factor(m.fs.P1.costing.purchase_cost, 1)
-    iscale.set_scaling_factor(m.fs.P2.costing.purchase_cost, 1)
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
 
@@ -317,6 +314,8 @@ def initialize_system(m, solver=None):
     propagate_state(m.fs.s10)
     m.fs.M1.initialize(optarg=optarg, outlvl=idaeslog.INFO)
 
+    m.fs.costing.initialize()
+
 def optimize_set_up(m):
     # objective
     m.fs.objective = Objective(expr=m.fs.costing.LCOW)
@@ -344,7 +343,7 @@ def optimize_set_up(m):
         expr=m.fs.product.properties[0].mass_frac_phase_comp['Liq', 'NaCl'] <= m.fs.product_salinity)
     iscale.constraint_scaling_transform(m.fs.eq_product_quality, 1e3)  # scaling constraint
     m.fs.eq_minimum_water_flux = Constraint(
-        expr=m.fs.RO.flux_mass_io_phase_comp[0, 'out', 'Liq', 'H2O'] >= m.fs.minimum_water_flux)
+        expr=m.fs.RO.flux_mass_phase_comp[0, 1, 'Liq', 'H2O'] >= m.fs.minimum_water_flux)
 
     # ---checking model---
     assert_degrees_of_freedom(m, 1)
@@ -365,7 +364,7 @@ def display_system(m):
 
     print('Volumetric recovery: %.1f%%' % (value(m.fs.RO.recovery_vol_phase[0, 'Liq']) * 100))
     print('Water recovery: %.1f%%' % (value(m.fs.RO.recovery_mass_phase_comp[0, 'Liq', 'H2O']) * 100))
-    print('Energy Consumption: %.1f kWh/m3' % value(m.fs.specific_energy_consumption))
+    print('Energy Consumption: %.1f kWh/m3' % value(m.fs.costing.specific_energy_consumption))
     print('Levelized cost of water: %.2f $/m3' % value(m.fs.costing.LCOW))
 
 

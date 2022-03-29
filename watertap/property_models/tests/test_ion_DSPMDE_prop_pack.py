@@ -14,34 +14,23 @@
 import pytest
 from pyomo.environ import (ConcreteModel,
                            assert_optimal_termination,
-                           value,
                            Set,
                            Param,
-                           Var,
                            units as pyunits,
-                           Suffix,
-                           Constraint)
+                           Suffix)
 from idaes.core import (FlowsheetBlock,
                         MaterialFlowBasis,
-                        PhysicalParameterBlock,
-                        StateBlockData,
-                        StateBlock,
                         MaterialBalanceType,
-                        EnergyBalanceType,
                         )
-from idaes.core.util.scaling import calculate_scaling_factors, set_scaling_factor, get_scaling_factor
+from idaes.core.util.scaling import calculate_scaling_factors, get_scaling_factor
 
 from pyomo.util.check_units import assert_units_consistent
-from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock, DSPMDEStateBlock, ActivityCoefficientModel
-from idaes.generic_models.properties.tests.test_harness import \
-    PropertyTestHarness as PropertyTestHarness_idaes
-from watertap.property_models.tests.property_test_harness import \
-    (PropertyTestHarness, PropertyRegressionTest, PropertyCalculateStateTest)
+from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock, DSPMDEStateBlock, \
+    ActivityCoefficientModel, DensityCalculation
 from watertap.core.util.initialization import check_dof
 from idaes.core.util.model_statistics import *
 from idaes.core.util.scaling import unscaled_variables_generator, unscaled_constraints_generator, badly_scaled_var_generator
 from watertap.property_models.tests.property_test_harness import PropertyAttributeError
-from watertap.property_models.tests.property_test_harness import PropertyTestHarness
 from idaes.core.util import get_solver
 
 solver = get_solver()
@@ -125,7 +114,10 @@ def test_property_ions(model):
     m.fs.stream[0].temperature.fix(298.15)
     m.fs.stream[0].pressure.fix(101325)
 
-    m.fs.stream[0].assert_electroneutrality()
+    # with pytest.raises(AssertionError, match="Electroneutrality condition violated in fs.stream[0]. "
+    #                                          "Ion concentrations should be adjusted to bring the result "
+    #                                          "of -5.803108144576186 closer towards 0"):
+    m.fs.stream[0].assert_electroneutrality(defined_state=True)
 
     m.fs.stream[0].mole_frac_phase_comp
 
@@ -147,7 +139,6 @@ def test_property_ions(model):
 
     results = solver.solve(m)
     assert_optimal_termination(results)
-
 
     assert value(m.fs.stream[0].conc_mass_phase_comp['Liq','A']) == pytest.approx(2.1288e-1,  rel=1e-3)
 
@@ -205,7 +196,7 @@ def test_property_ions(model2):
     stream[0].charge_comp['C'] = 2
     stream[0].charge_comp['D'] = -1
 
-    stream[0].assert_electroneutrality()
+    stream[0].assert_electroneutrality(defined_state=True, tol=1e-8)
 
     stream[0].mole_frac_phase_comp
 
@@ -226,10 +217,10 @@ def test_property_ions(model2):
 
     results = solver.solve(m)
     assert_optimal_termination(results)
-    assert value(stream[0].flow_vol_phase['Liq']) == pytest.approx(1.82478e-5,  rel=1e-3)
+    assert value(stream[0].flow_vol_phase['Liq']) == pytest.approx(1.91524e-5,  rel=1e-3)
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def model3():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -238,7 +229,7 @@ def model3():
         "solute_list": ["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"]
         })
 
-    stream = m.fs.stream = m.fs.properties.build_state_block([0], default={'defined_state': True})
+    m.fs.stream = m.fs.properties.build_state_block([0], default={'defined_state': True})
 
     return m
 
@@ -291,9 +282,9 @@ def test_build(model3):
         c = getattr(m.fs.stream[0], 'eq_' + v)
         assert isinstance(c, Constraint)
 
-    assert number_variables(m) == 62
-    assert number_total_constraints(m) == 44
-    assert number_unused_variables(m) == 1  # pressure is unused
+    assert number_variables(m) == 64
+    assert number_total_constraints(m) == 46
+    assert number_unused_variables(m) == 6
 
 @pytest.mark.unit
 def test_general_methods(model3):
@@ -318,7 +309,7 @@ def test_default_scaling(model3):
                                 ('pressure', None): 1e-6,
                                 ('dens_mass_phase', 'Liq'): 1e-3,
                                 ('visc_d_phase', 'Liq'): 1e3,
-                                ('diffus_phase_comp', 'Liq'): 1e10}
+                                ('diffus_phase_comp', 'Liq'): 1e10,}
 
     assert len(default_scaling_var_dict) == len(m.fs.properties.default_scaling_factor)
     for t, sf in default_scaling_var_dict.items():
@@ -337,15 +328,17 @@ def test_scaling(model3):
 
     # check that all variables have scaling factors
     unscaled_var_list = list(unscaled_variables_generator(m))
+    [print(i) for i in unscaled_var_list]
     assert len(unscaled_var_list) == 0
 
     # check if any variables are badly scaled
     badly_scaled_var_list = list(badly_scaled_var_generator(m))
-    [print(i[0],i[1]) for i in badly_scaled_var_list]
     assert len(badly_scaled_var_list) == 0
 
     # check that all constraints have been scaled
     unscaled_constraint_list = list(unscaled_constraints_generator(m))
+    [print(i) for i in unscaled_constraint_list]
+
     assert len(unscaled_constraint_list) == 0
 
     # m.fs.stream[0].scaling_factor.display()
@@ -383,6 +376,8 @@ def test_seawater_data():
                    "Mg_2+": 2,
                    "Cl_-": -1,
                    "SO4_2-": -2},
+        "density_calculation": DensityCalculation.seawater,
+        "activity_coefficient_model": ActivityCoefficientModel.davies
     })
 
     m.fs.stream = stream = m.fs.properties.build_state_block([0], default={'defined_state': True})
@@ -405,7 +400,7 @@ def test_seawater_data():
     stream[0].temperature.fix(298.15)
     stream[0].pressure.fix(101325)
 
-    stream[0].assert_electroneutrality(tol=1e-2)
+    stream[0].assert_electroneutrality(defined_state=True, tol=1e-2, adjust_by_ion='Cl_-')
 
     metadata = m.fs.properties.get_metadata().properties
     for v_name in metadata:
@@ -419,8 +414,8 @@ def test_seawater_data():
     m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', 'H2O'))
     m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', 'Na_+'))
     m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', 'Cl_-'))
-    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e1, index=('Liq', 'Ca_2+'))
-    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e1, index=('Liq', 'SO4_2-'))
+    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e4, index=('Liq', 'Ca_2+'))
+    m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e4, index=('Liq', 'SO4_2-'))
     m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', 'Mg_2+'))
     calculate_scaling_factors(m)
 
@@ -442,38 +437,45 @@ def test_seawater_data():
     assert value(stream[0].flow_mol_phase_comp['Liq', 'Na_+']) == pytest.approx(0.4836,  rel=1e-3)
     assert value(stream[0].flow_mol_phase_comp['Liq', 'Ca_2+']) == pytest.approx(0.00955,  rel=1e-3)
     assert value(stream[0].flow_mol_phase_comp['Liq', 'Mg_2+']) == pytest.approx(0.05808,  rel=1e-3)
-    assert value(stream[0].flow_mol_phase_comp['Liq', 'Cl_-']) == pytest.approx(0.58,  rel=1e-3)
+    assert value(stream[0].flow_mol_phase_comp['Liq', 'Cl_-']) == pytest.approx(0.57443,  rel=1e-3)
     assert value(stream[0].flow_mol_phase_comp['Liq', 'SO4_2-']) == pytest.approx(0.02225,  rel=1e-3)
 
     assert value(stream[0].dens_mass_phase['Liq']) == pytest.approx(1023.816, rel=1e-3)
-    assert value(stream[0].pressure_osm) == pytest.approx(29.274e5, rel=1e-3)
+    assert value(stream[0].pressure_osm) == pytest.approx(29.132e5, rel=1e-3)
     assert value(stream[0].flow_vol) == pytest.approx(9.767e-4, rel=1e-3)
 
-    assert value(sum(stream[0].conc_mass_phase_comp['Liq', j] for j in m.fs.properties.solute_set)) == pytest.approx(36.176, rel=1e-3)
-    assert value(sum(stream[0].mass_frac_phase_comp['Liq', j] for j in m.fs.properties.solute_set)) == pytest.approx(35334e-6, rel=1e-3)
-    assert value(sum(stream[0].mass_frac_phase_comp['Liq', j] for j in m.fs.properties.component_list)) == pytest.approx(1, rel=1e-3)
-    assert value(sum(stream[0].mole_frac_phase_comp['Liq', j] for j in m.fs.properties.component_list)) == pytest.approx(1, rel=1e-3)
+    assert value(sum(stream[0].conc_mass_phase_comp['Liq', j]
+                     for j in m.fs.properties.solute_set)) == pytest.approx(35.9744, rel=1e-3)
+    assert value(sum(stream[0].mass_frac_phase_comp['Liq', j]
+                     for j in m.fs.properties.solute_set)) == pytest.approx(0.035142, rel=1e-3)
+    assert value(sum(stream[0].mass_frac_phase_comp['Liq', j]
+                     for j in m.fs.properties.component_list)) == pytest.approx(1, rel=1e-3)
+    assert value(sum(stream[0].mole_frac_phase_comp['Liq', j]
+                     for j in m.fs.properties.component_list)) == pytest.approx(1, rel=1e-3)
 
     assert value(stream[0].conc_mol_phase_comp['Liq', 'Na_+']) == pytest.approx(495.082, rel=1e-3)
-    assert value(stream[0].conc_mol_phase_comp['Liq', 'Cl_-']) == pytest.approx(593.813, rel=1e-3)
+    assert value(stream[0].conc_mol_phase_comp['Liq', 'Cl_-']) == pytest.approx(588.0431, rel=1e-3)
     assert value(stream[0].conc_mol_phase_comp['Liq', 'Ca_2+']) == pytest.approx(9.777, rel=1e-3)
     assert value(stream[0].conc_mol_phase_comp['Liq', 'SO4_2-']) == pytest.approx(22.780, rel=1e-3)
     assert value(stream[0].conc_mol_phase_comp['Liq', 'Mg_2+']) == pytest.approx(59.467, rel=1e-3)
 
     assert value(stream[0].conc_mass_phase_comp['Liq', 'Na_+']) == pytest.approx(11.387, rel=1e-3)
-    assert value(stream[0].conc_mass_phase_comp['Liq', 'Cl_-']) == pytest.approx(20.783, rel=1e-3)
+    assert value(stream[0].conc_mass_phase_comp['Liq', 'Cl_-']) == pytest.approx(20.5815, rel=1e-3)
     assert value(stream[0].conc_mass_phase_comp['Liq', 'Ca_2+']) == pytest.approx(0.391, rel=1e-3)
     assert value(stream[0].conc_mass_phase_comp['Liq', 'SO4_2-']) == pytest.approx(2.187, rel=1e-3)
     assert value(stream[0].conc_mass_phase_comp['Liq', 'Mg_2+']) == pytest.approx(1.427, rel=1e-3)
 
     assert value(stream[0].mole_frac_phase_comp['Liq', 'Na_+']) == pytest.approx(8.833e-3, rel=1e-3)
-    assert value(stream[0].mole_frac_phase_comp['Liq', 'Cl_-']) == pytest.approx(1.059e-2, rel=1e-3)
+    assert value(stream[0].mole_frac_phase_comp['Liq', 'Cl_-']) == pytest.approx(1.049e-2, rel=1e-3)
     assert value(stream[0].mole_frac_phase_comp['Liq', 'Ca_2+']) == pytest.approx(1.744e-4, rel=1e-3)
     assert value(stream[0].mole_frac_phase_comp['Liq', 'SO4_2-']) == pytest.approx(4.064e-4, rel=1e-3)
     assert value(stream[0].mole_frac_phase_comp['Liq', 'Mg_2+']) == pytest.approx(1.061e-3, rel=1e-3)
 
     assert value(stream[0].mass_frac_phase_comp['Liq', 'Na_+']) == pytest.approx(1.112e-2, rel=1e-3)
-    assert value(stream[0].mass_frac_phase_comp['Liq', 'Cl_-']) == pytest.approx(2.03e-2, rel=1e-3)
+    assert value(stream[0].mass_frac_phase_comp['Liq', 'Cl_-']) == pytest.approx(2.01e-2, rel=1e-3)
     assert value(stream[0].mass_frac_phase_comp['Liq', 'Ca_2+']) == pytest.approx(3.82e-4, rel=1e-3)
     assert value(stream[0].mass_frac_phase_comp['Liq', 'SO4_2-']) == pytest.approx(2.136e-3, rel=1e-3)
     assert value(stream[0].mass_frac_phase_comp['Liq', 'Mg_2+']) == pytest.approx(1.394e-3, rel=1e-3)
+
+    assert value(stream[0].debye_huckel_constant) == pytest.approx(0.01554, rel=1e-3)
+    assert value(stream[0].ionic_strength) == pytest.approx(0.73467, rel=1e-3)

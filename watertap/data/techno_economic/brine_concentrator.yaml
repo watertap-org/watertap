@@ -1,4 +1,20 @@
 default:
+  elec_coeff_1:
+    value: 9.73
+    units: kWh/m^3
+    reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for Water Utilities (2008).
+  elec_coeff_2:
+    value: 1.1E-4
+    units: L/mg*kWh/m^3
+    reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for Water Utilities (2008).
+  elec_coeff_3:
+    value: 10.4
+    units: kWh/m^3
+    reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for Water Utilities (2008).
+  elec_coeff_4:
+    value: 3.83E-5
+    units: kWh/m^6*hr
+    reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for Water Utilities (2008).
   recovery_frac_mass_H2O:
     value: 0.9
     units: dimensionless
@@ -144,3 +160,194 @@ default:
       value: 0.98
       units: dimensionless
       constituent_longform: zinc
+  capital_cost:
+    cost_factor: None
+    capital_a_parameter:
+      value: 15.1e6
+      units: USD_2007
+    capital_b_parameter:
+      value: 3.02e2
+      units: USD_2007/(mg/liter)
+    capital_c_parameter:
+      value: -18.8e6
+      units: USD_2007
+    capital_d_parameter:
+      value: 8.08e4
+      units: USD_2007/(m^3/hr)
+
+crystallizer:
+  elec_coeff_1:
+    value: 56.7
+    units: kWh/m^3
+    reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for Water Utilities (2008).
+  elec_coeff_2:
+    value: 1.83E-5
+    units: L/mg*kWh/m^3
+    reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for Water Utilities (2008).
+  elec_coeff_3:
+    value: 9.47
+    units: kWh/m^3
+    reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for Water Utilities (2008).
+  elec_coeff_4:
+    value: 8.63E-4
+    units: kWh/m^6*hr
+    reference: Survey of High-Recovery and Zero Liquid Discharge Technologies for Water Utilities (2008).
+  recovery_frac_mass_H2O:
+    value: 0.95
+    units: dimensionless
+    reference: Default value based on 5% purge rate per source. Survey of High-Recovery
+      and Zero Liquid Discharge Technologies for Water Utilities (2008).
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_solute:
+    aluminum:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: aluminum
+    arsenic:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: arsenic
+    barium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: barium
+    bicarbonate_alkalinity_as_caco3:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: bicarbonate_alkalinity_as_caco3
+    boron:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: boron
+    bromide:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: bromide
+    calcium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: calcium
+    chloride:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: chloride
+    chromium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: chromium
+    cyanide_as_free:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: cyanide_as_free
+    fluoride:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: fluoride
+    hardness:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: hardness
+    iron:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: iron
+    lead:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: lead
+    magnesium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: magnesium
+    manganese:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: manganese
+    mercury:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: mercury
+    nickel:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: nickel
+    nitrate:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: Nitrate
+    nitrite:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: Nitrite
+    phosphates:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: phosphates
+    potassium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: potassium
+    selenium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: selenium
+    silicon:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: silicon
+    silver:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: silver
+    sodium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: sodium
+    strontium:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: strontium
+    sulfate:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: sulfate
+    tds:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: tds
+    total_coliforms_fecal_ecoli:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: total_coliforms_fecal_ecoli
+    trihalomethanes:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: trihalomethanes
+    tss:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: tss
+    turbidity:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: turbidity
+    zinc:
+      value: 0.98
+      units: dimensionless
+      constituent_longform: zinc
+  capital_cost:
+    cost_factor: None
+    capital_a_parameter:
+      value: 1.41e6
+      units: USD_2007
+    capital_b_parameter:
+      value: -7.11E-1
+      units: USD_2007/(mg/liter)
+    capital_c_parameter:
+      value: 1.45e6
+      units: USD_2007
+    capital_d_parameter:
+      value: 5.55E5
+      units: USD_2007/(m^3/hr)
