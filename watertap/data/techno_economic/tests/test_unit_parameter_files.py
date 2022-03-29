@@ -70,6 +70,7 @@ def test_unit_parameter_files(tech):
 
     no_energy_electric_flow_vol_inlet = ["constructed_wetlands",
                                          "energy_recovery",
+                                         "gas_sparged_membrane",
                                          "mbr_denitrification",
                                          "mbr_nitrification",
                                          "multi_stage_bubble_aeration",
