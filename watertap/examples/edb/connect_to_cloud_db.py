@@ -15,7 +15,7 @@
 
     NOTE: To use the public EDB database server, user's MUST have pymongo installed
     with the optional srv service. If not installed, please run the following from
-    your [conda] environment. 
+    your [conda] environment.
 
     python -m pip install pymongo[srv]
 
@@ -49,4 +49,4 @@ if __name__ == "__main__":
         print("Error, cannot connect to cloud...")
         exit()
     base_obj = grab_base_thermo_config(db)
-    print(res)
+    print((db, is_connected))

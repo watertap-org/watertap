@@ -22,6 +22,7 @@ from watertap.examples.edb.solid_precipitation_reactions import (
     run_sol_liq_with_mockdb,
     run_liq_only_with_mockdb,
 )
+from watertap.examples.edb.connect_to_cloud_db import connect_to_cloud_edb
 
 # Import pyomo methods to check the system units
 from pyomo.util.check_units import assert_units_consistent
@@ -32,6 +33,11 @@ from idaes.core import AqueousPhase, VaporPhase, SolidPhase
 from idaes.core.components import Solvent, Solute, Cation, Anion, Component
 
 __author__ = "Austin Ladshaw"
+
+@pytest.mark.xpass
+def test_public_cloud_db_connection():
+    (database, is_connected) = connect_to_cloud_edb(test_invalid_host=True)
+    assert is_connected == True
 
 @pytest.mark.component
 def test_the_basics(edb):
@@ -154,7 +160,7 @@ def test_solid_precipitation_reactions(edb):
     assert 'CaOH_K' in model.fs.rxn_params.reaction_idx
     assert 'CaOH2_Ksp' in model.fs.rxn_params.reaction_idx
 
-    # Check for correct reaction order on solid species 
+    # Check for correct reaction order on solid species
     assert model.fs.rxn_params.reaction_CaOH2_Ksp.reaction_order[('Sol', 'Ca[OH]2')].value == 0
 
 @pytest.mark.component
