@@ -95,6 +95,7 @@ setup(
         "pyomo>=6.2",  # (also needed for units in electrolyte database (edb))
         # the following requirements are for the electrolyte database (edb)
         "pymongo>3",  # database interface
+        "pymongo[srv]", # required to connect to cloud mongodb 
         "fastjsonschema",  # schema validation
         "click",  # command-line tools with Click
         # tutorial tests
