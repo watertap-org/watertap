@@ -13,14 +13,16 @@
 
 import pytest
 from io import StringIO
-from pyomo.environ import value
+from pyomo.environ import value, assert_optimal_termination
 from watertap.examples.case_studies.municipal_treatment.municipal_treatment import main
 from idaes.core.util import get_solver
 
 # -----------------------------------------------------------------------------
 @pytest.mark.component
 def test_municipal_treatment():
-    m = main()
+    m, results = main()
+
+    assert_optimal_termination(results)
 
     assert value(m.fs.feed.properties[0].flow_mass_comp['H2O']) == pytest.approx(921.8, rel=1e-3)
     assert value(m.fs.feed.properties[0].flow_mass_comp['tds']) == pytest.approx(0.5811, rel=1e-3)

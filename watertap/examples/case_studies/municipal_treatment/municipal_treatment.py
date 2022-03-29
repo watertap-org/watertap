@@ -63,7 +63,7 @@ def main():
 
     initialize_system(m)  # initialization needed for ozone unit
 
-    solve(m)
+    results = solve(m)
     display_results(m)
 
     # TODO: add costing, currently costing functions only pass
@@ -71,9 +71,9 @@ def main():
     initialize_costing(m)
     assert_degrees_of_freedom(m, 0)
 
-    solve(m)
+    # results = solve(m)
     display_costing(m)
-    return m
+    return m, results
 
 
 def build():
