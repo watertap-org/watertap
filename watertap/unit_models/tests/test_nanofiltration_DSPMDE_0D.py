@@ -259,7 +259,7 @@ class TestNanoFiltration():
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
-        m.fs.unit.initialize(automate_rescale=True)
+        m.fs.unit.initialize_build(automate_rescale=True)
         results = solver.solve(m)
 
         # Check for optimal solution

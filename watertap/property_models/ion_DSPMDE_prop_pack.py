@@ -699,7 +699,6 @@ class DSPMDEStateBlockData(StateBlockData):
                         / (1 * pyunits.mole ** 0.5 / pyunits.kg ** 0.5
                            + I ** 0.5)
                            - b.params.debye_huckel_b * I))
-                # raise NotImplementedError(f"Davies model has not been implemented yet.")
         self.eq_act_coeff_phase_comp = Constraint(self.params.solute_set,
                                                   rule=rule_act_coeff_phase_comp)
     #TODO: note- assuming molal ionic strength goes into Debye Huckel relationship;

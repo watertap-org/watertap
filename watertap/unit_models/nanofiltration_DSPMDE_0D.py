@@ -44,7 +44,7 @@ from idaes.core.util import get_solver
 from idaes.core.util.math import smooth_min
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.core.util.scaling as iscale
 from idaes.core.util.constants import Constants
 from watertap.core.util.initialization import check_solve, check_dof
@@ -179,8 +179,9 @@ class NanofiltrationData(UnitModelBlockData):
             raise ConfigurationError("This NF model was expecting ions/solutes and did not receive any.")
 
     def build(self):
-        # Call UnitModel.build to setup dynamics
         super().build()
+
+        self._process_config()
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
@@ -191,12 +192,14 @@ class NanofiltrationData(UnitModelBlockData):
 
         self.io_list = io_list = Set(initialize=[0, 1])  # inlet/outlet set
 
-        self._process_config()
 
         if hasattr(self.config.property_package,'ion_set'):
             solute_set = self.config.property_package.ion_set
         elif hasattr(self.config.property_package,'solute_set'):
             solute_set = self.config.property_package.solute_set
+        else:
+            raise ConfigurationError("This NF model was expecting an "
+                                     "ion_set or solute_set and did not receive either.")
 
         solvent_set = self.config.property_package.solvent_set
         solvent_solute_set = solvent_set | solute_set
@@ -931,7 +934,7 @@ class NanofiltrationData(UnitModelBlockData):
             return (-b.gibbs_solvation_comp[t, j]
                     / (Constants.boltzmann_constant * b.feed_side.properties_in[t].temperature))
 
-    def initialize(
+    def initialize_build(
             blk,
             initialize_guess=None,
             state_args=None,
@@ -1050,14 +1053,19 @@ class NanofiltrationData(UnitModelBlockData):
             res = opt.solve(blk, tee=slc.tee)
             if not check_optimal_termination(res):
                 init_log.warn("Trouble solving NanofiltrationDSPMDE0D unit model. Trying one more time.")
-                # if automate_rescale:
-                #     blk._automate_rescale_variables()
                 res = opt.solve(blk, tee=slc.tee)
+                if not check_optimal_termination(res):
+                    raise InitializationError('The property package failed to solve during initialization.')
         check_solve(res, checkpoint='Solve in Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
         # Release Inlet state
         blk.feed_side.release_state(flags_feed_side, outlvl)
         # Rescale any badly scaled vars
-        blk._automate_rescale_variables()
+        if automate_rescale:
+            badly_scaled_vars = list(iscale.badly_scaled_var_generator(blk))
+            if len(badly_scaled_vars) > 0:
+                init_log.warn(f"After solve: {len(badly_scaled_vars)} poorly scaled "
+                              f"variable(s) will be rescaled so that each scaled variable value = 1")
+            blk._automate_rescale_variables()
         init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
     def _get_performance_contents(self, time_point=0):
