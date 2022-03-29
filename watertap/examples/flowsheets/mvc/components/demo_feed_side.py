@@ -25,7 +25,7 @@ def main():
     m.fs.properties_feed.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TDS'))
     m.fs.properties_vapor.set_default_scaling('flow_mass_phase_comp', 1, index=('Vap', 'H2O'))
     m.fs.properties_vapor.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-    #iscale.set_scaling_factor(m.fs.evaporator.heat_transfer, 1e-6)
+    #iscale.set_scaling_factor(m.fs.evaporator.heat_transfer, 1e-6) # found automatically now based on enthalpy flows
     iscale.calculate_scaling_factors(m)
 
     # state variables
@@ -47,9 +47,9 @@ def main():
     solver = get_solver()
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
-    bad_scale_var_gen = iscale.badly_scaled_var_generator(m)
-    for (var, val) in bad_scale_var_gen:
-        print(var.name, val)
+    # bad_scale_var_gen = iscale.badly_scaled_var_generator(m)
+    # for (var, val) in bad_scale_var_gen:
+    #     print(var.name, val)
 
     return m
 
