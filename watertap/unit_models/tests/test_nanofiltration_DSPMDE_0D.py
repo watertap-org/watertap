@@ -307,5 +307,5 @@ class TestNanoFiltration():
                                     'Mg_2+': 0.01546,
                                     }
         for j, val in intrinsic_rejection_dict.items():
-            assert (pytest.approx(val, rel=1e-2) ==
+            assert (pytest.approx(val, rel=5e-2) ==
                     value(m.fs.unit.rejection_intrinsic_phase_comp[0, 'Liq', j]))
