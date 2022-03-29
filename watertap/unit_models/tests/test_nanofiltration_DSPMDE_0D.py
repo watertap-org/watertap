@@ -249,12 +249,14 @@ class TestNanoFiltration():
 
         # not all constraints have scaling factor so skipping the check for unscaled constraints
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_initialize(self, NF_frame):
         m= NF_frame
         initialization_tester(m)
         # m.fs.unit.initialize(automate_rescale=True)  # this is the default for NFDSPM initialize but writing out anyway
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solve(self, NF_frame):
         m = NF_frame
@@ -279,6 +281,7 @@ class TestNanoFiltration():
         assert (abs(value(flow_mass_inlet - flow_mass_retentate - flow_mass_permeate
                           )) <= 1e-6)
 
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.component
     def test_solution(self, NF_frame):
         m = NF_frame
