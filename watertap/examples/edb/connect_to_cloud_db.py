@@ -22,7 +22,7 @@
     After you connect to the Cloud EDB, you can follow the other examples to build
     your IDAES config from that database. In the unit test, we use the cloud database
     to build a correct IDAES config for the same basic water example shown in file
-    'the_basics'. 
+    'the_basics'.
 
 """
 
@@ -33,11 +33,29 @@ __author__ = "Austin Ladshaw"
 
 USER_NAME = "edbnawi"
 PASSWORD = "edb-user"
+DB_NAME = "electrolytedb"
+
+BAD_USER_NAME = "nawiedb"
+BAD_DB_NAME = "edb"
 
 public_cloud_url = f"mongodb+srv://{USER_NAME}:{PASSWORD}@nawi-edb.utpac.mongodb.net"
 
+bad_cloud_url = f"mongodb+srv://{BAD_USER_NAME}:{PASSWORD}@nawi-edb.utpac.mongodb.net"
+
 def connect_to_cloud_edb(test_invalid_host=False):
     print("connecting to " + public_cloud_url)
-    db = ElectrolyteDB(url=public_cloud_url, db="electrolytedb", check_connection=True)
-    connected = db.can_connect(url=public_cloud_url, db="electrolytedb")
+    db = ElectrolyteDB(url=public_cloud_url, db=DB_NAME, check_connection=test_invalid_host)
+    connected = db.can_connect(url=public_cloud_url, db=DB_NAME)
+    return (db, connected)
+
+def bad_url_to_cloud_edb(test_invalid_host=False):
+    print("connecting to " + bad_cloud_url)
+    db = ElectrolyteDB(url=bad_cloud_url, db=DB_NAME, check_connection=test_invalid_host)
+    connected = db.can_connect(url=bad_cloud_url, db=DB_NAME)
+    return (db, connected)
+
+def bad_db_name_to_cloud_edb(test_invalid_host=False):
+    print("connecting to " + public_cloud_url)
+    db = ElectrolyteDB(url=public_cloud_url, db=BAD_DB_NAME, check_connection=test_invalid_host)
+    connected = db.can_connect(url=public_cloud_url, db=BAD_DB_NAME)
     return (db, connected)
