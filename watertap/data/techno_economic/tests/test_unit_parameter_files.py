@@ -63,12 +63,14 @@ def test_unit_parameter_files(tech):
                     "smp",
                     "sw_onshore_intake",
                     "tramp_oil_tank",
+                    "water_pumping_station",
                    ]
 
     siso_full_recovery = ["uv_aop", "uv", "fixed_bed", "decarbonator", "chlorination"]
 
     no_energy_electric_flow_vol_inlet = ["constructed_wetlands",
                                          "energy_recovery",
+                                         "gas_sparged_membrane",
                                          "mbr_denitrification",
                                          "mbr_nitrification",
                                          "multi_stage_bubble_aeration",
@@ -114,7 +116,9 @@ def test_unit_parameter_files(tech):
                                          "agglom_stacking",
                                          "storage_tank",
                                          "evaporation_pond",
-                                         "deep_well_injection"]
+                                         "deep_well_injection",
+                                         "water_pumping_station",
+                                         ]
 
     expected = ["recovery_frac_mass_H2O",
                 "default_removal_frac_mass_solute"]
