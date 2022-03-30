@@ -478,6 +478,7 @@ def test_seawater_data():
     assert value(stream[0].debye_huckel_constant) == pytest.approx(0.01554, rel=1e-3)
     assert value(stream[0].ionic_strength) == pytest.approx(0.73467, rel=1e-3)
 
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_assert_electroneutrality_get_property():
     m = ConcreteModel()
@@ -554,7 +555,7 @@ def test_assert_electroneutrality_get_property():
                                            adjust_by_ion='Cl_-')
     assert not hasattr(stream, 'charge_balance')
 
-
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_assert_electroneutrality_get_property():
     m = ConcreteModel()
@@ -625,7 +626,7 @@ def test_assert_electroneutrality_get_property():
                                            adjust_by_ion='Cl_-',
                                            get_property=1)
 
-    # check error when get_property receives anything other than str, list, or tuple of strings
+    # check error when electroneutralit condition violated for stringent tolerance
     stream[0].flow_mol_phase_comp.unfix()
     with pytest.raises(AssertionError,
                        match=re.escape("Electroneutrality condition violated in fs.stream[0]. "
