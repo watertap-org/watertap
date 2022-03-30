@@ -844,11 +844,11 @@ class DSPMDEStateBlockData(StateBlockData):
                     if get_property is not None:
                         if isinstance(get_property, str):
                             getattr(self, get_property)
-                        elif isinstance(get_property, list):
+                        elif isinstance(get_property, (list, tuple)):
                             for i in get_property:
                                 getattr(self, i)
                         else:
-                            raise TypeError("get_property must be a string or list of strings.")
+                            raise TypeError("get_property must be a string or list/tuple of strings.")
                         res_with_prop = solve.solve(self)
                         if not check_optimal_termination(res_with_prop):
                             raise ValueError(f'The stateblock failed to solve while solving with on-demand property'

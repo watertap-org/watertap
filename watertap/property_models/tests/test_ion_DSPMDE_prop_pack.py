@@ -10,6 +10,7 @@
 # "https://github.com/nawi-hub/proteuslib/"
 #
 ###############################################################################
+import re
 
 import pytest
 from pyomo.environ import (ConcreteModel,
@@ -553,3 +554,46 @@ def test_assert_electroneutrality_get_property():
                                            adjust_by_ion='Cl_-')
     assert not hasattr(stream, 'charge_balance')
 
+@pytest.mark.unit
+def test_assert_electroneutrality_get_property():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={'dynamic':False})
+    m.fs.properties = DSPMDEParameterBlock(default={
+        "solute_list": ["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],})
+    m.fs.stream = stream = m.fs.properties.build_state_block([0], default={'defined_state': True})
+
+    mass_flow_in = 1 * pyunits.kg / pyunits.s
+    feed_mass_frac = {'Na_+': 11122e-6,
+                      'Ca_2+': 382e-6,
+                      'Mg_2+': 1394e-6,
+                      'SO4_2-': 2136e-6,
+                      'Cl_-': 20300e-6}
+    for ion, x in feed_mass_frac.items():
+        mol_comp_flow = x * pyunits.kg / pyunits.kg * mass_flow_in / stream[0].mw_comp[ion]
+
+        stream[0].flow_mol_phase_comp['Liq', ion].fix(mol_comp_flow)
+
+    H2O_mass_frac = 1 - sum(x for x in feed_mass_frac.values())
+    H2O_mol_comp_flow = H2O_mass_frac * pyunits.kg / pyunits.kg * mass_flow_in / stream[0].mw_comp['H2O']
+
+    stream[0].flow_mol_phase_comp['Liq', 'H2O'].fix(H2O_mol_comp_flow)
+    stream[0].temperature.fix(298.15)
+    stream[0].pressure.fix(101325)
+
+    #check error when adjust_by_ion is not in solute list
+    with pytest.raises(ValueError, match="adjust_by_ion must be set to the name of an "
+                                         "ion in the list of solutes."):
+        stream[0].assert_electroneutrality(defined_state=True,
+                                           adjust_by_ion='foo')
+
+    #check error when get_property is not None and defined_state is NOT true
+    with pytest.raises(ValueError, match="Set defined_state to true if get_property"
+                                         " = flow_mass_phase_comp"):
+        stream[0].assert_electroneutrality(defined_state=False,
+                                           get_property='flow_mass_phase_comp')
+
+    #check error when state vars are fixed but defined_state is set to False
+    with pytest.raises(AssertionError, match=re.escape("fs.stream[0].flow_mol_phase_comp[Liq,Ca_2+] was fixed. "
+                                             "Either set defined_state=True or unfix flow_mol_phase_comp "
+                                             "for each solute to check that electroneutrality is satisfied.")):
+        stream[0].assert_electroneutrality(defined_state=False)
