@@ -50,14 +50,14 @@ bad_cloud_url = f"mongodb+srv://{BAD_NAME}:{PW}@nawi-edb.utpac.mongodb.net"
 @pytest.mark.component
 def test_bad_url_cloud_db_connection():
     with pytest.raises(OperationFailure, match="bad auth : Authentication failed"):
-        connect_to_cloud_edb(url = bad_cloud_url,
-                            db = DB_NAME,
+        connect_to_cloud_edb(bad_cloud_url,
+                            DB_NAME,
                             check_connection=True)
 
 @pytest.mark.component
 def test_bad_name_cloud_db_connection():
-    (database, is_connected) = connect_to_cloud_edb(url = public_cloud_url,
-                                                    db = BAD_DB_NAME,
+    (database, is_connected) = connect_to_cloud_edb(public_cloud_url,
+                                                    BAD_DB_NAME,
                                                     check_connection=True)
     assert is_connected == True
 
@@ -70,8 +70,8 @@ def test_bad_name_cloud_db_connection():
 # made, then this test will fail and will block PRs
 @pytest.mark.component
 def test_public_cloud_db_connection():
-    (database, is_connected) = connect_to_cloud_edb(url = public_cloud_url,
-                                                    db = DB_NAME,
+    (database, is_connected) = connect_to_cloud_edb(public_cloud_url,
+                                                    DB_NAME,
                                                     check_connection=True)
     assert is_connected == True
 
