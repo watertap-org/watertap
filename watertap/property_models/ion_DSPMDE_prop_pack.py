@@ -944,8 +944,6 @@ class DSPMDEStateBlockData(StateBlockData):
                           / iscale.get_scaling_factor(self.mw_comp[j]))
                     iscale.set_scaling_factor(self.conc_mol_phase_comp['Liq', j], sf)
 
-
-
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
         if self.is_property_constructed('pressure_osm'):

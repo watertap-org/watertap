@@ -230,7 +230,7 @@ class NanofiltrationData(UnitModelBlockData):
         tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = False  # these blocks are not inlets
 
-        # # Add permeate block
+        # Add permeate block
         self.permeate_side = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             io_list,
@@ -416,19 +416,19 @@ class NanofiltrationData(UnitModelBlockData):
                 self.io_list,
                 solute_set,
                 initialize=1e5,
-                bounds=(5e3, None), # #TODO:unsure of value ranges at the moment
+                bounds=(5e3, None),  # TODO:unsure of value ranges at the moment
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="Peclet number at inlet and outlet")
             self.spacer_mixing_efficiency = Var(
                 initialize=0.5,
-                # bounds=(1e2, 2e3), # #TODO:unsure of value ranges at the moment- since this is efficiency, assuming 0 -1
+                # bounds=(1e2, 2e3),  # TODO:unsure of value ranges at the moment- since this is efficiency, assuming 0 -1
                 domain=NonNegativeReals,
                 units=pyunits.dimensionless,
                 doc="Mixing efficiency of spacer net")
             self.spacer_mixing_length = Var(
                 initialize=0.6,
-                # bounds=(1e2, 5e3), # #TODO:unsure of value ranges at the moment- since this is efficiency, assuming 0 -1
+                # bounds=(1e2, 5e3),  #TODO:unsure of value ranges at the moment
                 domain=NonNegativeReals,
                 units=units_meta('length'),
                 doc="Characteristic length of spacer")
@@ -1040,15 +1040,15 @@ class NanofiltrationData(UnitModelBlockData):
                 init_log.warn(f"{len(badly_scaled_vars)} poorly scaled "
                               f"variable(s) will be rescaled so that each scaled variable value = 1")
                 self._automate_rescale_variables()
-        # # ---------------------------------------------------------------------
-        # # Solve unit with deactivated constraint
+        # ---------------------------------------------------------------------
+        # Solve unit with deactivated constraint
         # self.eq_solute_solvent_flux.deactivate()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
             if not check_optimal_termination(res):
                 init_log.warn("Trouble solving NanofiltrationDSPMDE0D unit model with deactivated constraint.")
-        # # ---------------------------------------------------------------------
-        # # Solve unit
+        # ---------------------------------------------------------------------
+        # Solve unit
         self.eq_solute_solvent_flux.activate()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
@@ -1208,6 +1208,8 @@ class NanofiltrationData(UnitModelBlockData):
 
     def _get_state_args(self, source, mixed_permeate_properties, initialize_guess, state_args):
         '''
+        This method returns state_args (initial guesses for state variable values) to be passed to
+        each stateblock during initialization.
         Arguments:
             source : property model containing inlet feed
             mixed_permeate_properties : mixed permeate property block
@@ -1321,8 +1323,8 @@ class NanofiltrationData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.membrane_thickness_effective) is None:
             iscale.set_scaling_factor(self.membrane_thickness_effective, 1e7)
 
-        # # setting scaling factors for variables
-        # # these variables should have user input, if not there will be a warning
+        # setting scaling factors for variables
+        # these variables should have user input, if not there will be a warning
         if iscale.get_scaling_factor(self.area) is None:
             sf = iscale.get_scaling_factor(self.area, default=1, warning=True)
             iscale.set_scaling_factor(self.area, sf)
@@ -1401,7 +1403,7 @@ class NanofiltrationData(UnitModelBlockData):
             if iscale.get_scaling_factor(self.width) is None:
                 iscale.set_scaling_factor(self.width, 1)
 
-        # # transforming constraints
+        # transforming constraints
         for (t, x, p), con in self.eq_water_flux.items():
             sf = (iscale.get_scaling_factor(self.flux_mol_phase_comp[t, x, p, 'H2O']) \
                  * iscale.get_scaling_factor(self.feed_side.properties_in[t].mw_comp['H2O'])

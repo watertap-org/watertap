@@ -302,3 +302,7 @@ class TestNanoFiltration():
         for j, val in intrinsic_rejection_dict.items():
             assert (pytest.approx(val, rel=5e-2) ==
                     value(m.fs.unit.rejection_intrinsic_phase_comp[0, 'Liq', j]))
+
+    @pytest.mark.unit
+    def test_report(self, NF_frame):
+        NF_frame.fs.unit.report()
