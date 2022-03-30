@@ -1068,6 +1068,9 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.config.process_subtype,
             ["capital_a_parameter", "capital_b_parameter", "pipe_cost_basis", "reference_state"])
 
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
         # Add cost variable and constraint
         blk.capital_cost = pyo.Var(
             initialize=1,
@@ -1082,6 +1085,11 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             pyo.units.convert(
                 pipe_cost_basis * blk.unit_model.pipe_distance[t0] * blk.unit_model.pipe_diameter[t0],
                 to_units=blk.config.flowsheet_costing_block.base_currency))
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
 
         blk.capital_cost_constraint = pyo.Constraint(
             expr=blk.capital_cost == expr)
