@@ -114,9 +114,6 @@ def test_property_ions(model):
     m.fs.stream[0].temperature.fix(298.15)
     m.fs.stream[0].pressure.fix(101325)
 
-    # with pytest.raises(AssertionError, match="Electroneutrality condition violated in fs.stream[0]. "
-    #                                          "Ion concentrations should be adjusted to bring the result "
-    #                                          "of -5.803108144576186 closer towards 0"):
     m.fs.stream[0].assert_electroneutrality(defined_state=True)
 
     m.fs.stream[0].mole_frac_phase_comp
