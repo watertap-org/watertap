@@ -22,11 +22,7 @@ from watertap.examples.edb.solid_precipitation_reactions import (
     run_sol_liq_with_mockdb,
     run_liq_only_with_mockdb,
 )
-from watertap.examples.edb.connect_to_cloud_db import (
-    connect_to_cloud_edb,
-    bad_url_to_cloud_edb,
-    bad_db_name_to_cloud_edb,
-)
+from watertap.examples.edb.connect_to_cloud_db import connect_to_cloud_edb
 
 # Import pyomo methods to check the system units
 from pyomo.util.check_units import assert_units_consistent
@@ -39,14 +35,30 @@ from pymongo.errors import OperationFailure
 
 __author__ = "Austin Ladshaw"
 
+## Set of var names for testing cloud connection
+NAME = "edbnawi"
+PW = "edb-user"
+DB_NAME = "electrolytedb"
+
+BAD_NAME = "nawiedb"
+BAD_DB_NAME = "edb"
+
+public_cloud_url = f"mongodb+srv://{NAME}:{PW}@nawi-edb.utpac.mongodb.net"
+
+bad_cloud_url = f"mongodb+srv://{BAD_NAME}:{PW}@nawi-edb.utpac.mongodb.net"
+
 @pytest.mark.component
 def test_bad_url_cloud_db_connection():
     with pytest.raises(OperationFailure, match="bad auth : Authentication failed"):
-        bad_url_to_cloud_edb(check_connection=True)
+        connect_to_cloud_edb(url = bad_cloud_url,
+                            db = DB_NAME,
+                            check_connection=True)
 
 @pytest.mark.component
 def test_bad_name_cloud_db_connection():
-    (database, is_connected) = bad_db_name_to_cloud_edb(check_connection=True)
+    (database, is_connected) = connect_to_cloud_edb(url = public_cloud_url,
+                                                    db = BAD_DB_NAME,
+                                                    check_connection=True)
     assert is_connected == True
 
     #Running with bad database name, but correct url will allow for a connection,
@@ -58,7 +70,9 @@ def test_bad_name_cloud_db_connection():
 # made, then this test will fail and will block PRs
 @pytest.mark.component
 def test_public_cloud_db_connection():
-    (database, is_connected) = connect_to_cloud_edb(check_connection=True)
+    (database, is_connected) = connect_to_cloud_edb(url = public_cloud_url,
+                                                    db = DB_NAME,
+                                                    check_connection=True)
     assert is_connected == True
 
     # Call the run_the_basics_with_mockdb function, but using the cloud db

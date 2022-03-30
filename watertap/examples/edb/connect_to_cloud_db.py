@@ -31,29 +31,8 @@ from watertap.edb import ElectrolyteDB
 
 __author__ = "Austin Ladshaw"
 
-NAME = "edbnawi"
-PW = "edb-user"
-DB_NAME = "electrolytedb"
-
-BAD_NAME = "nawiedb"
-BAD_DB_NAME = "edb"
-
-public_cloud_url = f"mongodb+srv://{NAME}:{PW}@nawi-edb.utpac.mongodb.net"
-
-bad_cloud_url = f"mongodb+srv://{BAD_NAME}:{PW}@nawi-edb.utpac.mongodb.net"
-
-def connect_to_cloud_edb(check_connection=False):
-    print("connecting to " + public_cloud_url)
-    db = ElectrolyteDB(url=public_cloud_url, db=DB_NAME, check_connection=check_connection)
-    connected = db.can_connect(url=public_cloud_url, db=DB_NAME)
-    return (db, connected)
-
-def bad_url_to_cloud_edb(check_connection=False):
-    print("connecting to " + bad_cloud_url)
-    db = ElectrolyteDB(url=bad_cloud_url, db=DB_NAME, check_connection=check_connection)
-
-def bad_db_name_to_cloud_edb(check_connection=False):
-    print("connecting to " + public_cloud_url)
-    db = ElectrolyteDB(url=public_cloud_url, db=BAD_DB_NAME, check_connection=check_connection)
-    connected = db.can_connect(url=public_cloud_url, db=BAD_DB_NAME)
+def connect_to_cloud_edb(url, db_name, check_connection=False):
+    print("connecting to " + url)
+    db = ElectrolyteDB(url=url, db=db_name, check_connection=check_connection)
+    connected = db.can_connect(url=url, db=db_name)
     return (db, connected)
