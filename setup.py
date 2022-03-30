@@ -36,7 +36,7 @@ for active use by water treatment researchers and engineers.""".replace(
 
 
 SPECIAL_DEPENDENCIES_FOR_RELEASE = [
-    "idaes-pse>=1.12.0",  # from PyPI
+    "idaes-pse==2.0.0a0",  # from PyPI
 ]
 
 SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
@@ -53,7 +53,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="0.4.0dev",
+    version="0.4.0rc0",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/plain",
@@ -91,7 +91,7 @@ setup(
     install_requires=[
         # primary requirements for unit and property models
         # maintainers: switch to SPECIAL_DEPENDENCIES_FOR_RELEASE when cutting a release of watertap
-        *SPECIAL_DEPENDENCIES_FOR_PRERELEASE,
+        *SPECIAL_DEPENDENCIES_FOR_RELEASE,
         "pyomo>=6.2",  # (also needed for units in electrolyte database (edb))
         # the following requirements are for the electrolyte database (edb)
         "pymongo>3",  # database interface
