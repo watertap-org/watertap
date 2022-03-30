@@ -457,7 +457,7 @@ class NanofiltrationData(UnitModelBlockData):
         @self.Expression(self.flowsheet().config.time,
                          doc="Average volumetric water flux")
         def flux_vol_water_avg(b, t):
-            return sum(b.flux_vol_water[t, x] for x in io_list) * 0.5
+            return sum(b.flux_vol_water[t, x] for x in io_list) / len(io_list)
 
         # Average mole flux of each component ------------------------------------#
         @self.Expression(self.flowsheet().config.time,
@@ -465,7 +465,7 @@ class NanofiltrationData(UnitModelBlockData):
                          solvent_solute_set,
                          doc="Average molar component flux")
         def flux_mol_phase_comp_avg(b, t, p, j):
-            return sum(b.flux_mol_phase_comp[t, x, p, j] for x in io_list) * 0.5
+            return sum(b.flux_mol_phase_comp[t, x, p, j] for x in io_list) / len(io_list)
 
         # Average concentration inside the membrane------------------------------------#
         @self.Expression(self.flowsheet().config.time,
@@ -475,7 +475,7 @@ class NanofiltrationData(UnitModelBlockData):
                          doc="Average molar concentration inside the membrane")
         def conc_mol_phase_comp_pore_avg(b, t, x, p, j):
             return (b.pore_entrance[t, x].conc_mol_phase_comp[p, j]
-                    + b.pore_exit[t, x].conc_mol_phase_comp[p, j]) * 0.5
+                    + b.pore_exit[t, x].conc_mol_phase_comp[p, j]) / len(io_list)
 
         # TODO - no relationship described between mixing length and spacer mixing efficiency with spacer porosity.
         #  Need effective cross-sectional area for velocity at inlet AND outlet. Assuming spacer porosity as an
