@@ -164,7 +164,6 @@ class NanofiltrationData(UnitModelBlockData):
             spiral wound module correlation"
         """))
 
-
     def _process_config(self):
         if len(self.config.property_package.solvent_set) > 1:
             raise ConfigurationError("NF model only supports one solvent component,"
@@ -191,7 +190,6 @@ class NanofiltrationData(UnitModelBlockData):
         units_meta = self.config.property_package.get_metadata().get_derived_units
 
         self.io_list = io_list = Set(initialize=[0, 1])  # inlet/outlet set
-
 
         if hasattr(self.config.property_package,'ion_set'):
             solute_set = self.config.property_package.ion_set
@@ -888,12 +886,10 @@ class NanofiltrationData(UnitModelBlockData):
                            (1 - b.lambda_comp[t, j] + eps) ** 2,
                            )
                 # Relationship used by Geraldes & Alves
-                # (1
-                #     - 2.3 * b.lambda_comp[t, j]
+                # (1 - 2.3 * b.lambda_comp[t, j]
                 #     + 1.154 * b.lambda_comp[t, j] ** 2
                 #     + 0.224 * b.lambda_comp[t, j] ** 3
                 #     )
-
 
         @self.Expression(self.flowsheet().config.time,
                          solute_set,
@@ -1308,7 +1304,6 @@ class NanofiltrationData(UnitModelBlockData):
             iscale.set_scaling_factor(var, sf / sv * rescale_factor)
             iscale.calculate_scaling_factors(self)
 
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
@@ -1347,7 +1342,6 @@ class NanofiltrationData(UnitModelBlockData):
                         prop_feed = self.feed_side.properties_in[t]
                     elif x == 1:
                         prop_feed = self.feed_side.properties_out[t]
-                        prop_interface_io = self.feed_side.properties_interface[t, x]
 
                     sf = (iscale.get_scaling_factor(prop_feed.dens_mass_phase['Liq'])
                           / iscale.get_scaling_factor(prop_feed.mw_comp[j])
@@ -1358,6 +1352,7 @@ class NanofiltrationData(UnitModelBlockData):
                     iscale.set_scaling_factor(v, sf)
 
                 if comp.is_solute():
+                    #Todo: revisit later
                     # sf = (iscale.get_scaling_factor(self.flux_mol_phase_comp[t, x, 'Liq', 'H2O'])
                     #       / iscale.get_scaling_factor(self.feed_side.properties_in[t].dens_mass_phase['Liq'])
                     #       * iscale.get_scaling_factor(self.feed_side.properties_in[t].mw_comp[j])
@@ -1412,15 +1407,16 @@ class NanofiltrationData(UnitModelBlockData):
             iscale.constraint_scaling_transform(con, sf)
 
         for (t, x, p, j), con in self.eq_solute_solvent_flux.items():
-            sf = (iscale.get_constraint_transform_applied_scaling_factor(self.eq_water_flux[t, x, p])
-                  * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
             #todo: revisit sf
+            # sf = (iscale.get_constraint_transform_applied_scaling_factor(self.eq_water_flux[t, x, p])
+            #       * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
             iscale.constraint_scaling_transform(con, 1e2)
 
         for (t, x, p, j), con in self.eq_solute_flux_concentration_polarization.items():
-            sf = (iscale.get_constraint_transform_applied_scaling_factor(self.eq_water_flux[t, x, p])
-                  * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
             #todo: revisit sf
+            # sf = (iscale.get_constraint_transform_applied_scaling_factor(self.eq_water_flux[t, x, p])
+            #       * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
+
             iscale.constraint_scaling_transform(con, 1e2)
 
         if self.config.mass_transfer_coefficient == MassTransferCoefficient.spiral_wound:
