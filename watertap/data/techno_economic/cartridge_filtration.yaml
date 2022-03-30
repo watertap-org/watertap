@@ -12,7 +12,7 @@ default:
       units: dimensionless
       constituent_longform: Nonvolatile TOC
     tss:
-      value: 0.5
+      value: 0.9
       units: dimensionless
       constituent_longform: Total Suspended Solids (TSS)
   energy_electric_flow_vol_inlet:
