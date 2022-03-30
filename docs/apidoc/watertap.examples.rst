@@ -7,7 +7,6 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   watertap.examples.case_studies
    watertap.examples.chemistry
    watertap.examples.flowsheets
 
