@@ -22,7 +22,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
-from watertap.unit_models.mvc.components.evaporator import Evaporator
+from watertap.unit_models.mvc.components import Evaporator
 import watertap.property_models.seawater_prop_pack as props_sw
 import watertap.property_models.water_prop_pack as props_w
 

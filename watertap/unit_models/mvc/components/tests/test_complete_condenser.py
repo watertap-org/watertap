@@ -21,7 +21,7 @@ from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 
-from watertap.unit_models.mvc.components.complete_condenser import Condenser
+from watertap.unit_models.mvc.components import Condenser
 import watertap.property_models.water_prop_pack as props
 
 solver = get_solver()
