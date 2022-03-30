@@ -42,11 +42,11 @@ __author__ = "Austin Ladshaw"
 @pytest.mark.component
 def test_bad_url_cloud_db_connection():
     with pytest.raises(OperationFailure, match="bad auth : Authentication failed"):
-        (database, is_connected) = bad_url_to_cloud_edb(test_invalid_host=True)
+        bad_url_to_cloud_edb(check_connection=True)
 
 @pytest.mark.component
 def test_bad_name_cloud_db_connection():
-    (database, is_connected) = bad_db_name_to_cloud_edb(test_invalid_host=True)
+    (database, is_connected) = bad_db_name_to_cloud_edb(check_connection=True)
     assert is_connected == True
 
     #Running with bad database name, but correct url will allow for a connection,
@@ -58,7 +58,7 @@ def test_bad_name_cloud_db_connection():
 # made, then this test will fail and will block PRs
 @pytest.mark.component
 def test_public_cloud_db_connection():
-    (database, is_connected) = connect_to_cloud_edb(test_invalid_host=True)
+    (database, is_connected) = connect_to_cloud_edb(check_connection=True)
     assert is_connected == True
 
     # Call the run_the_basics_with_mockdb function, but using the cloud db
