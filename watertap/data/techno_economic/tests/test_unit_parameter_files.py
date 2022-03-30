@@ -61,9 +61,11 @@ def test_unit_parameter_files(tech):
                     "storage_tank",
                     "static_mixer",
                     "smp",
+                    "surface_discharge",
                     "sw_onshore_intake",
                     "tramp_oil_tank",
                     "water_pumping_station",
+                    "well_field",
                    ]
 
     siso_full_recovery = ["uv_aop", "uv", "fixed_bed", "decarbonator", "chlorination"]
