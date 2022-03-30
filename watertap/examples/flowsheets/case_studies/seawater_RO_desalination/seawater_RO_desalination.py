@@ -622,6 +622,11 @@ def display_costing(m):
               " :   ",
               value(pyunits.convert(u.capital_cost,
                                     to_units=pyunits.USD_2018)))
+    for u in m.fs.ro_costing._registered_unit_costing:
+        print(u.name,
+              " :   ",
+              value(pyunits.convert(u.capital_cost,
+                                    to_units=pyunits.USD_2018)))
 
     print("\nUtility Costs\n")
     for f in m.fs.zo_costing.flow_types:
