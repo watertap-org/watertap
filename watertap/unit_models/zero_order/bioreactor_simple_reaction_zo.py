@@ -38,3 +38,43 @@ class BioreactorGasProductionZO(ZeroOrderBaseData):
         self._tech_type = "bioreactor_simple_reaction"
 
         build_sido_reactive(self)
+
+        # energy consumption
+        self.electricity = Var(self.flowsheet().time,
+                               initialize=1,
+                               bounds=(0, None),
+                               units=pyunits.kW,
+                               doc="Electricity consumption of unit")
+        self.heat = Var(self.flowsheet().time,
+                        initialize=1,
+                        bounds=(0, None),
+                        units=pyunits.kW,
+                        doc="Thermal energy consumption of unit")
+        self.energy_electric_mixer_volume = Var(
+            initialize=1,
+            bounds=(0, None),
+            units=pyunits.kW / pyunits.m ** 3,
+            doc="Electricity intensity of mixer with respect to reactor volume")
+        self.energy_thermal_flow_vol_inlet = Var(
+            initialize=1,
+            bounds=(0, None),
+            units=pyunits.kJ / pyunits.m ** 3,
+            doc="Thermal energy intensity of reactor with respect to inlet volumetric flowrate")
+
+
+
+        @self.Constraint(self.flowsheet().time,
+                         doc='Constraint for electricity consumption based on '
+                             'feed flowrate.')
+        def electricity_consumption(b, t):
+            return b.electricity[t] == (
+                    b.energy_electric_flow_vol_inlet *
+                    pyunits.convert(b.get_inlet_flow(t),
+                                    to_units=pyunits.m ** 3 / pyunits.hour))
+
+        self._fixed_perf_vars.append(self.energy_electric_flow_vol_inlet)
+        self._perf_var_dict["Electricity Intensity"] = \
+            self.energy_electric_flow_vol_inlet
+
+        self._perf_var_dict["Electricity Demand"] = self.electricity
+        self._perf_var_dict["Thermal Energy Demand"] = self.heat
