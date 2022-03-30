@@ -1416,7 +1416,6 @@ class NanofiltrationData(UnitModelBlockData):
             #todo: revisit sf
             # sf = (iscale.get_constraint_transform_applied_scaling_factor(self.eq_water_flux[t, x, p])
             #       * iscale.get_scaling_factor(self.mixed_permeate[t].conc_mol_phase_comp[p, j]))
-
             iscale.constraint_scaling_transform(con, 1e2)
 
         if self.config.mass_transfer_coefficient == MassTransferCoefficient.spiral_wound:
