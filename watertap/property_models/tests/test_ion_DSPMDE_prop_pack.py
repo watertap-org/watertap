@@ -476,3 +476,80 @@ def test_seawater_data():
 
     assert value(stream[0].debye_huckel_constant) == pytest.approx(0.01554, rel=1e-3)
     assert value(stream[0].ionic_strength) == pytest.approx(0.73467, rel=1e-3)
+
+@pytest.mark.component
+def test_assert_electroneutrality_get_property():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={'dynamic':False})
+    m.fs.properties = DSPMDEParameterBlock(default={
+        "solute_list": ["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
+        "diffusivity_data": {("Liq", "Ca_2+"): 0.792e-9,
+                             ("Liq", "SO4_2-"): 1.06e-9,
+                             ("Liq", "Na_+"): 1.33e-9,
+                             ("Liq", "Cl_-"): 2.03e-9,
+                             ("Liq", "Mg_2+"): 0.706e-9},
+        "mw_data": {"H2O": 18e-3,
+                    "Na_+": 23e-3,
+                    "Ca_2+": 40e-3,
+                    "Mg_2+": 24e-3,
+                    "Cl_-": 35e-3,
+                    "SO4_2-": 96e-3},
+        "stokes_radius_data": {"Na_+": 0.184e-9,
+                               "Ca_2+": 0.309e-9,
+                               "Mg_2+": 0.347e-9,
+                               "Cl_-": 0.121e-9,
+                               "SO4_2-": 0.230e-9},
+        "charge": {"Na_+": 1,
+                   "Ca_2+": 2,
+                   "Mg_2+": 2,
+                   "Cl_-": -1,
+                   "SO4_2-": -2},
+        "density_calculation": DensityCalculation.seawater,
+        "activity_coefficient_model": ActivityCoefficientModel.davies
+    })
+
+    m.fs.stream = stream = m.fs.properties.build_state_block([0], default={'defined_state': True})
+
+    mass_flow_in = 1 * pyunits.kg / pyunits.s
+    feed_mass_frac = {'Na_+': 11122e-6,
+                      'Ca_2+': 382e-6,
+                      'Mg_2+': 1394e-6,
+                      'SO4_2-': 2136e-6,
+                      'Cl_-': 20300e-6}
+    for ion, x in feed_mass_frac.items():
+        mol_comp_flow = x * pyunits.kg / pyunits.kg * mass_flow_in / stream[0].mw_comp[ion]
+
+        stream[0].flow_mol_phase_comp['Liq', ion].fix(mol_comp_flow)
+
+    H2O_mass_frac = 1 - sum(x for x in feed_mass_frac.values())
+    H2O_mol_comp_flow = H2O_mass_frac * pyunits.kg / pyunits.kg * mass_flow_in / stream[0].mw_comp['H2O']
+
+    stream[0].flow_mol_phase_comp['Liq', 'H2O'].fix(H2O_mol_comp_flow)
+    stream[0].temperature.fix(298.15)
+    stream[0].pressure.fix(101325)
+
+    assert not stream[0].is_property_constructed('pressure_osm')
+    assert not stream[0].is_property_constructed('mass_frac_phase_comp')
+
+    stream[0].assert_electroneutrality(defined_state=True,
+                                       adjust_by_ion='Cl_-',
+                                       get_property=['mass_frac_phase_comp', 'pressure_osm'])
+    assert stream[0].is_property_constructed('mass_frac_phase_comp')
+    assert stream[0].is_property_constructed('pressure_osm')
+    assert not hasattr(stream, 'charge_balance')
+
+    assert not stream[0].is_property_constructed('flow_vol')
+    stream[0].assert_electroneutrality(defined_state=True,
+                                       adjust_by_ion='Cl_-',
+                                       get_property='flow_vol')
+    assert stream[0].is_property_constructed('flow_vol')
+    assert not hasattr(stream, 'charge_balance')
+
+    # check that charge_balance constraint is deleted after failed solve
+    stream[0].flow_vol_phase.fix(1e5)
+    with pytest.raises(ValueError, match="The stateblock failed to solve while computing "
+                                         "concentrations to check the charge balance."):
+        stream[0].assert_electroneutrality(defined_state=True,
+                                           adjust_by_ion='Cl_-')
+    assert not hasattr(stream, 'charge_balance')
+

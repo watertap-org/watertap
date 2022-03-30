@@ -166,9 +166,6 @@ class TestNanoFiltration():
         m.fs.unit.channel_height.fix(5e-4)
         m.fs.unit.recovery_vol_phase[0, 'Liq'].fix(0.5)
 
-        # Set electroneutrality tolerance to 0 (value used in equality constraints for electroneutrality in unit model)
-        m.fs.unit.tol_electroneutrality = 0
-
         return m
 
     @pytest.mark.unit

@@ -229,6 +229,7 @@ class DSPMDEParameterData(PhysicalParameterBlock):
             within=Reals, initialize=-1.613e-5, units=dens_units * t_inv_units ** 2,
             doc='Mass density parameter B5')
 
+        # traditional parameters are the only Vars currently on the block and should be fixed
         for v in self.component_objects(Var):
             v.fix()
 
@@ -283,7 +284,7 @@ class _DSPMDEStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, state_args=None, state_vars_fixed=False,
+    def initialize(self, state_args=None, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
         """
@@ -328,17 +329,17 @@ class _DSPMDEStateBlock(StateBlock):
             which states were fixed during initialization.
         """
         # Get loggers
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="properties")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="properties")
 
         # Set solver and options
         opt = get_solver(solver, optarg)
 
         # Fix state variables
-        flags = fix_state_vars(blk, state_args)
+        flags = fix_state_vars(self, state_args)
         # Check when the state vars are fixed already result in dof 0
-        for k in blk.keys():
-            dof = degrees_of_freedom(blk[k])
+        for k in self.keys():
+            dof = degrees_of_freedom(self[k])
             if dof != 0:
                 raise InitializationError("\nWhile initializing {sb_name}, the degrees of freedom "
                                            "are {dof}, when zero is required. \nInitialization assumes "
@@ -347,19 +348,19 @@ class _DSPMDEStateBlock(StateBlock):
                                            "predetermined value, use the calculate_state method "
                                            "before using initialize to determine the values for "
                                            "the state variables and avoid fixing the property variables."
-                                           "".format(sb_name=blk.name, dof=dof))
+                                           "".format(sb_name=self.name, dof=dof))
 
         # ---------------------------------------------------------------------
         skip_solve = True  # skip solve if only state variables are present
-        for k in blk.keys():
-            if number_unfixed_variables(blk[k]) != 0:
+        for k in self.keys():
+            if number_unfixed_variables(self[k]) != 0:
 
                 skip_solve = False
 
         if not skip_solve:
             # Initialize properties
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+                results = solve_indexed_blocks(opt, [self], tee=slc.tee)
                 if not check_optimal_termination(results):
                     raise InitializationError('The property package failed to solve during initialization.')
             init_log.info_high("Property initialization: {}.".format(idaeslog.condition(results)))
@@ -370,7 +371,7 @@ class _DSPMDEStateBlock(StateBlock):
             if hold_state is True:
                 return flags
             else:
-                blk.release_state(flags)
+                self.release_state(flags)
 
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
@@ -732,11 +733,11 @@ class DSPMDEStateBlockData(StateBlockData):
                                                                * b.params.dielectric_constant
                                                                * Constants.boltzmann_constant
                                                                * b.temperature)) ** (3/2)
-                    *(pyunits.coulomb ** 3
-                      * pyunits.m ** 1.5
-                      / pyunits.farad ** 1.5
-                      / pyunits.J ** 1.5
-                      / pyunits.mol ** 0.5)**-1)
+                    * (pyunits.coulomb ** 3
+                    * pyunits.m ** 1.5
+                    / pyunits.farad ** 1.5
+                    / pyunits.J ** 1.5
+                    / pyunits.mol ** 0.5)**-1)
         self.eq_debye_huckel_constant = Constraint(rule=rule_debye_huckel_constant)
 
     #TODO: change osmotic pressure calc
@@ -793,7 +794,9 @@ class DSPMDEStateBlockData(StateBlockData):
     def assert_electroneutrality(self, tol=None, tee=True, defined_state=True, adjust_by_ion=None,
                                  get_property=None, solve=True):
         if tol is None:
-            tol = 0
+            tol = 1e-8
+        if not defined_state and get_property is not None:
+            raise ValueError(f'Set defined_state to true if get_property = {get_property}')
         if adjust_by_ion is not None:
             if adjust_by_ion in self.params.solute_set:
                 self.charge_balance = Constraint(expr=sum(self.charge_comp[j] * self.conc_mol_phase_comp['Liq', j]
@@ -815,9 +818,7 @@ class DSPMDEStateBlockData(StateBlockData):
                         f"{self.flow_mol_phase_comp['Liq', j]} was fixed. Either set defined_state=True or unfix "
                         f"flow_mol_phase_comp for each solute to check that electroneutrality is satisfied.")
 
-        if get_property is not None:
-            for i in [get_property]:
-                getattr(self, i)
+        # touch this var since it is required for this method
         self.conc_mol_phase_comp
 
         if solve:
@@ -835,16 +836,29 @@ class DSPMDEStateBlockData(StateBlockData):
                             for j in self.params.solute_set))
         if abs(val) <= tol:
             if adjust_by_ion is not None:
-                # self.flow_mol_phase_comp['Liq', adjust_by_ion].fix()
+                del self.charge_balance
                 ion_adjusted = self.flow_mol_phase_comp['Liq', adjust_by_ion].value
                 if defined_state:
                     self.flow_mol_phase_comp['Liq', adjust_by_ion].fix(ion_adjusted)
+                    # touch on-demand property desired
+                    if get_property is not None:
+                        if isinstance(get_property, str):
+                            getattr(self, get_property)
+                        elif isinstance(get_property, list):
+                            for i in get_property:
+                                getattr(self, i)
+                        else:
+                            raise TypeError("get_property must be a string or list of strings.")
+                        res_with_prop = solve.solve(self)
+                        if not check_optimal_termination(res_with_prop):
+                            raise ValueError(f'The stateblock failed to solve while solving with on-demand property'
+                                             f' {get_property}.')
                     msg = f"{adjust_by_ion} was adjusted and flow_mol_phase_comp['Liq',{adjust_by_ion}] was fixed " \
                           f"to {ion_adjusted}."
                 else:
                     msg = f"{adjust_by_ion} was adjusted and the value computed for flow_mol_phase_comp['Liq',{adjust_by_ion}]" \
                           f" is {ion_adjusted}."
-                del self.charge_balance
+
             else:
                 msg = ""
             if tee:

@@ -268,16 +268,7 @@ class NanofiltrationData(UnitModelBlockData):
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != 'none'):
             self.deltaP = Reference(self.feed_side.deltaP)
-        ###############################################################################################################
-        # Parameters
-        ###############################################################################################################
-        self.tol_electroneutrality = Param(
-            initialize=1e-6,
-            mutable=True,
-            domain=NonNegativeReals,
-            units=pyunits.mol/pyunits.m**3,
-            doc='Electroneutrality tolerance'
-            )
+
         ###############################################################################################################
         # Variables
         ###############################################################################################################
@@ -545,7 +536,7 @@ class NanofiltrationData(UnitModelBlockData):
         def eq_electroneutrality_interface(b, t, x, p):
             return (sum(b.feed_side.properties_interface[t, x].conc_mol_phase_comp[p, j] *
                     b.feed_side.properties_interface[t, x].charge_comp[j] for j in solute_set)
-                    == b.tol_electroneutrality)
+                    == 0)
             #todo: tolerance should just be 0
 
         # 4. Charge balance inside the membrane, DOF=N nodes across membrane thickness *2 for inlet/outlet: N=2, DOF=4
@@ -561,7 +552,7 @@ class NanofiltrationData(UnitModelBlockData):
                 pore_loc = b.pore_exit[t, x]
             return (sum(pore_loc.conc_mol_phase_comp[p, j]
                     * pore_loc.charge_comp[j] for j in solute_set)
-                    + b.membrane_charge_density[t] == b.tol_electroneutrality)
+                    + b.membrane_charge_density[t] == 0)
 
         # 4. Permeate electroneutrality, DOF=1 *2 for inlet/outlet:  DOF=2
         @self.Constraint(self.flowsheet().config.time,
@@ -570,7 +561,7 @@ class NanofiltrationData(UnitModelBlockData):
                          doc="Electroneutrality in permeate")
         def eq_electroneutrality_permeate(b, t, x, p):
             return (sum(b.permeate_side[t, x].conc_mol_phase_comp[p, j] *
-                        b.permeate_side[t, x].charge_comp[j] for j in solute_set) == b.tol_electroneutrality)
+                        b.permeate_side[t, x].charge_comp[j] for j in solute_set) == 0)
 
         # 5. Water flux via Hagen-Poiseuille relationship, DOF= 1 * 2 for inlet/outlet: DOF= 2
         @self.Constraint(self.flowsheet().config.time,
@@ -835,7 +826,7 @@ class NanofiltrationData(UnitModelBlockData):
                          doc="Electroneutrality in mixed permeate")
         def eq_electroneutrality_mixed_permeate(b, t, p):
             return (sum(b.mixed_permeate[t].conc_mol_phase_comp[p, j] *
-                        b.mixed_permeate[t].charge_comp[j] for j in solute_set) == b.tol_electroneutrality)
+                        b.mixed_permeate[t].charge_comp[j] for j in solute_set) == 0)
         #
         # Experimental constraint: feed electroneutrality
         @self.Constraint(self.flowsheet().config.time,
@@ -845,7 +836,7 @@ class NanofiltrationData(UnitModelBlockData):
             prop = b.feed_side.properties_out[t]
             return (sum(prop.conc_mol_phase_comp[p, j] *
                     prop.charge_comp[j] for j in solute_set)
-                    == b.tol_electroneutrality)
+                    == 0)
 
         # Experimental constraint: electroneutrality inside membrane
         @self.Constraint(self.flowsheet().config.time,
@@ -856,7 +847,7 @@ class NanofiltrationData(UnitModelBlockData):
             return (sum(b.conc_mol_phase_comp_pore_avg[t, x, p, j] *
                     b.feed_side.properties_in[t].charge_comp[j] for j in solute_set)
                     + b.membrane_charge_density[t]
-                    == b.tol_electroneutrality)
+                    == 0)
 
     def _make_expressions(self):
         solute_set = self.config.property_package.solute_set
