@@ -52,15 +52,14 @@ def test_compressor():
     m.fs.compressor.pressure_ratio.fix(2)
     m.fs.compressor.efficiency.fix(0.8)
 
-    # m.fs.compressor.eq_compressor_work.pprint()
-    # m.fs.compressor.control_volume.enthalpy_balances.pprint()
-    # assert False
-
-    # solving
+    # check build
     assert_units_consistent(m)
     assert (degrees_of_freedom(m) == 0)
 
-    m.fs.compressor.initialize(outlvl=idaeslog.INFO_HIGH)
+    # initialize
+    m.fs.compressor.initialize()
+
+    # solve
     solver = get_solver()
     results = solver.solve(m, tee=False)
     assert_optimal_termination(results)
