@@ -45,24 +45,34 @@ def test_unit_parameter_files(tech):
 
     # Iterate overall entries in tech data and check for expected contents
     # TODO : Need to check up on this once everything is done
-    pass_through = ["buffer_tank",
+    pass_through = ["blending_reservoir",
+                    "buffer_tank",
                     "chemical_addition",
                     "cooling_supply",
+                    "co2_addition",
+                    "energy_recovery",
                     "feed_water_tank",
+                    "injection_well_disposal",
+                    "intrusion_mitigation",
                     "landfill",
                     "municipal_drinking",
+                    "municipal_wwtp",
                     "pump",
                     "storage_tank",
                     "static_mixer",
-                    "co2_addition",
+                    "smp",
+                    "surface_discharge",
                     "sw_onshore_intake",
-                    "landfill_zld",
                     "tramp_oil_tank",
-                    ]
+                    "water_pumping_station",
+                    "well_field",
+                   ]
 
-    siso_full_recovery = ["uv_aop", "uv", "ion_exchange", "fixed_bed", "decarbonator", "chlorination"]
+    siso_full_recovery = ["uv_aop", "uv", "fixed_bed", "decarbonator", "chlorination"]
 
-    no_energy_electric_flow_vol_inlet = ["energy_recovery",
+    no_energy_electric_flow_vol_inlet = ["constructed_wetlands",
+                                         "energy_recovery",
+                                         "gas_sparged_membrane",
                                          "mbr_denitrification",
                                          "mbr_nitrification",
                                          "multi_stage_bubble_aeration",
@@ -106,8 +116,11 @@ def test_unit_parameter_files(tech):
                                          "lime_addition",
                                          "brine_concentrator",
                                          "agglom_stacking",
-                                         "landfill_zld",
-                                         "storage_tank"]
+                                         "storage_tank",
+                                         "evaporation_pond",
+                                         "deep_well_injection",
+                                         "water_pumping_station",
+                                         ]
 
     expected = ["recovery_frac_mass_H2O",
                 "default_removal_frac_mass_solute"]
@@ -137,7 +150,6 @@ def test_unit_parameter_files(tech):
                 k[e]["units"], units.dimensionless)
             assert "value" in k[e].keys()
             assert k[e]["value"] >= 0
-            assert k[e]["value"] <= 1
 
         # Check for specific removal fractions
         if "removal_frac_mass_solute" in k.keys():

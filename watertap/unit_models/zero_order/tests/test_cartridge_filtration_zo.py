@@ -17,17 +17,19 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    ConcreteModel, Constraint, value, Var, assert_optimal_termination)
+    Block, ConcreteModel, Constraint, value, Var, assert_optimal_termination)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
+from idaes.generic_models.costing import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import CartridgeFiltrationZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
@@ -108,17 +110,17 @@ class TestCartridgeFiltrationZO:
                 value(model.fs.unit.properties_in[0].conc_mass_comp["nonvolatile_toc"]))
         assert (pytest.approx(83.3333, rel=1e-5) ==
                 value(model.fs.unit.properties_in[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(0.011299, rel=1e-5) ==
+        assert (pytest.approx(0.010899, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(70.8027, rel=1e-5) ==
+        assert (pytest.approx(73.4012, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].conc_mass_comp["nonvolatile_toc"]))
-        assert (pytest.approx(44.2517, rel=1e-5) ==
+        assert (pytest.approx(9.17515, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(7.01e-4, rel=1e-5) ==
+        assert (pytest.approx(1.101e-3, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(285.307, rel=1e-5) ==
+        assert (pytest.approx(181.653, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nonvolatile_toc"]))
-        assert (pytest.approx(713.267, rel=1e-5) ==
+        assert (pytest.approx(817.439, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
         assert (pytest.approx(0.00864, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
@@ -151,16 +153,16 @@ Unit : fs.unit                                                             Time:
                   Electricity Demand :  0.0086400 : False : (0, None)
                Electricity Intensity : 0.00020000 :  True : (None, None)
     Solute Removal [nonvolatile_toc] :    0.20000 :  True : (0, None)
-                Solute Removal [tss] :    0.50000 :  True : (0, None)
+                Solute Removal [tss] :    0.90000 :  True : (0, None)
                       Water Recovery :    0.99990 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
                                          Inlet   Treated  Byproduct
-    Volumetric Flowrate                0.012000 0.011299 0.00070100
-    Mass Concentration H2O               833.33   884.95     1.4265
-    Mass Concentration nonvolatile_toc   83.333   70.803     285.31
-    Mass Concentration tss               83.333   44.252     713.27
+    Volumetric Flowrate                0.012000 0.010899 0.0011010 
+    Mass Concentration H2O               833.33   917.42   0.90827 
+    Mass Concentration nonvolatile_toc   83.333   73.401    181.65 
+    Mass Concentration tss               83.333   9.1752    817.44 
 ====================================================================================
 """
 
@@ -249,21 +251,21 @@ class TestCartridgeFiltrationZO_w_default_removal:
                 value(model.fs.unit.properties_in[0].conc_mass_comp["tss"]))
         assert (pytest.approx(76.923, rel=1e-5) ==
                 value(model.fs.unit.properties_in[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0.012299, rel=1e-5) ==
+        assert (pytest.approx(0.011899, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(65.0459, rel=1e-5) ==
+        assert (pytest.approx(67.2325, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].conc_mass_comp["nonvolatile_toc"]))
-        assert (pytest.approx(40.6537, rel=1e-5) ==
+        assert (pytest.approx(8.40407, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(81.3074, rel=1e-5) ==
+        assert (pytest.approx(84.0407, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(7.01e-4, rel=1e-5) ==
+        assert (pytest.approx(1.101e-3, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(285.307, rel=1e-5) ==
+        assert (pytest.approx(181.653, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nonvolatile_toc"]))
-        assert (pytest.approx(713.267, rel=1e-5) ==
+        assert (pytest.approx(817.439, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(1.14123e-6, rel=1e-5) ==
+        assert (pytest.approx(7.26612e-7, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
         assert (pytest.approx(0.00936, abs=1e-5) ==
                 value(model.fs.unit.electricity[0]))
@@ -297,18 +299,60 @@ Unit : fs.unit                                                             Time:
                Electricity Intensity : 0.00020000 :  True : (None, None)
                 Solute Removal [foo] :     0.0000 :  True : (0, None)
     Solute Removal [nonvolatile_toc] :    0.20000 :  True : (0, None)
-                Solute Removal [tss] :    0.50000 :  True : (0, None)
+                Solute Removal [tss] :    0.90000 :  True : (0, None)
                       Water Recovery :    0.99990 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
                                          Inlet   Treated  Byproduct
-    Volumetric Flowrate                0.013000 0.012299 0.00070100
-    Mass Concentration H2O               769.23   812.99     1.4265
-    Mass Concentration nonvolatile_toc   76.923   65.046     285.31
-    Mass Concentration tss               76.923   40.654     713.27
-    Mass Concentration foo               76.923   81.307 1.1412e-06
+    Volumetric Flowrate                0.013000 0.011899  0.0011010
+    Mass Concentration H2O               769.23   840.32    0.90827
+    Mass Concentration nonvolatile_toc   76.923   67.233     181.65
+    Mass Concentration tss               76.923   8.4041     817.44
+    Mass Concentration foo               76.923   84.041 7.2661e-07
 ====================================================================================
 """
 
         assert output in stream.getvalue()
+
+def test_costing():
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = WaterParameterBlock(
+        default={"solute_list": ["sulfur", "toc", "tss"]})
+
+    m.fs.costing = ZeroOrderCosting()
+
+    m.fs.unit1 = CartridgeFiltrationZO(default={
+        "property_package": m.fs.params,
+        "database": m.db})
+
+    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
+    m.fs.unit1.inlet.flow_mass_comp[0, "toc"].fix(2)
+    m.fs.unit1.inlet.flow_mass_comp[0, "tss"].fix(3)
+    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    m.fs.unit1.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": m.fs.costing})
+
+    assert isinstance(m.fs.costing.cartridge_filtration, Block)
+    assert isinstance(m.fs.costing.cartridge_filtration.capital_a_parameter,
+                      Var)
+    assert isinstance(m.fs.costing.cartridge_filtration.capital_b_parameter,
+                      Var)
+    assert isinstance(m.fs.costing.cartridge_filtration.reference_state, Var)
+
+    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
+                      Constraint)
+
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    assert m.fs.unit1.electricity[0] in \
+        m.fs.costing._registered_flows["electricity"]
