@@ -1,8 +1,6 @@
-from pyomo.environ import (ConcreteModel, value, Param, Var, Constraint, Expression, Objective, TransformationFactory,
-                           Block, NonNegativeReals, RangeSet, check_optimal_termination,assert_optimal_termination,
-                           units as pyunits)
-from pyomo.network import Arc, SequentialDecomposition
-from pyomo.util.check_units import assert_units_consistent
+from pyomo.environ import (ConcreteModel, TransformationFactory,
+                           assert_optimal_termination)
+from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
@@ -12,8 +10,8 @@ import idaes.logger as idaeslog
 from idaes.core.util.initialization import propagate_state
 
 # Import components
-from watertap.examples.flowsheets.mvc.components.evaporator import Evaporator
-from watertap.examples.flowsheets.mvc.components.compressor import Compressor
+from watertap.unit_models.mvc.components.evaporator import Evaporator
+from watertap.unit_models.mvc.components.compressor import Compressor
 # Import property packages
 import watertap.property_models.seawater_prop_pack as props_sw
 import watertap.property_models.water_prop_pack as props_w

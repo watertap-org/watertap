@@ -11,7 +11,6 @@
 #
 ###############################################################################
 from pyomo.environ import (ConcreteModel,
-                           SolverFactory,
                            assert_optimal_termination)
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
@@ -22,7 +21,7 @@ from idaes.generic_models.unit_models.heat_exchanger import (HeatExchanger,
 
 import idaes.core.util.scaling as iscale
 
-from watertap.examples.flowsheets.mvc.components.lmtd_chen_callback import delta_temperature_chen_callback
+from watertap.unit_models.mvc.components.lmtd_chen_callback import delta_temperature_chen_callback
 import watertap.property_models.seawater_prop_pack as props
 
 

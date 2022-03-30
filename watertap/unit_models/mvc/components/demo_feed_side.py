@@ -1,14 +1,12 @@
 from pyomo.environ import (ConcreteModel,
-                           SolverFactory,
                            assert_optimal_termination)
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
-import idaes.logger as idaeslog
 
-from watertap.examples.flowsheets.mvc.components.feed_side import Feed_side
+from watertap.unit_models.mvc.components.feed_side import Feed_side
 import watertap.property_models.seawater_prop_pack as props_sw
 import watertap.property_models.water_prop_pack as props_w
 

@@ -12,7 +12,7 @@
 ###############################################################################
 import pytest
 from io import StringIO
-from watertap.examples.flowsheets.mvc.components.demo_compressor import main as main_compressor
+from watertap.unit_models.mvc.components.demo_compressor import main as main_compressor
 from idaes.core.util import get_solver
 
 solver = get_solver()

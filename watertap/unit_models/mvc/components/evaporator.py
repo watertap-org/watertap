@@ -13,36 +13,27 @@
 
 # Import Pyomo libraries
 from pyomo.environ import (Block,
-                           Set,
                            Var,
-                           Param,
                            Suffix,
-                           NonNegativeReals,
-                           Reference,
                            units as pyunits,
                            ExternalFunction)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume0DBlock,
-                        declare_process_block_class,
+from idaes.core import (declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
-                        UnitModelBlockData,
-                        useDefault,
-                        MaterialFlowBasis)
+                        UnitModelBlockData)
 from idaes.core.util import get_solver
-from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.functions import functions_lib
-from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 # From watertap
-from watertap.examples.flowsheets.mvc.components.complete_condenser import Condenser
+from watertap.unit_models.mvc.components.complete_condenser import Condenser
 
 
 _log = idaeslog.getLogger(__name__)

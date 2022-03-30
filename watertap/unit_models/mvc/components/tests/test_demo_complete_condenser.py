@@ -10,23 +10,22 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-import sys
 import pytest
 from io import StringIO
-from watertap.examples.flowsheets.mvc.components.demo_heat_exchanger import main as main_heat_exchanger
+from watertap.unit_models.mvc.components.demo_complete_condenser import main as main_complete_condenser
 from idaes.core.util import get_solver
 
 solver = get_solver()
 
 # -----------------------------------------------------------------------------
-@pytest.mark.skipif(sys.platform.startswith("darwin"), reason="Heat exchanger needs complied IDAES extensions")
+@pytest.mark.component
 def test_heat_exchanger():
-    m = main_heat_exchanger()
+    m = main_complete_condenser()
 
     report_io = StringIO()
     m.fs.unit.report(ostream=report_io)
     output = \
-"""
+        """
 ====================================================================================
 Unit : fs.unit                                                             Time: 0.0
 ------------------------------------------------------------------------------------
@@ -34,25 +33,16 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key            : Value  : Fixed : Bounds
-           HX Area : 5.0000 :  True : (0, None)
-    HX Coefficient : 1000.0 :  True : (0, None)
-         Heat Duty : 89050. : False : (None, None)
-
-    Expressions: 
-
-    Key             : Value
-    Delta T Driving : 17.810
-         Delta T In : 9.2239
-        Delta T Out : 30.689
+    Key       : Value       : Fixed : Bounds
+    Heat duty : -2.4358e+06 : False : (None, None)
 
 ------------------------------------------------------------------------------------
     Stream Table
-                                         Hot Inlet  Hot Outlet  Cold Inlet  Cold Outlet
-    flow_mass_phase_comp ('Liq', 'H2O')     1.0000      1.0000     0.50000     0.50000 
-    flow_mass_phase_comp ('Liq', 'TDS')   0.010000    0.010000    0.010000    0.010000 
-    temperature                             350.00      328.69      298.00      340.78 
-    pressure                            2.0000e+05  2.0000e+05  2.0000e+05  2.0000e+05 
+                                           Inlet     Outlet  
+    flow_mass_phase_comp ('Liq', 'H2O') 1.0000e-08     1.0000
+    flow_mass_phase_comp ('Vap', 'H2O')     1.0000 1.0000e-10
+    temperature                             400.00     340.00
+    pressure                                50000.     50000.
 ====================================================================================
 """
     assert output == report_io.getvalue()
