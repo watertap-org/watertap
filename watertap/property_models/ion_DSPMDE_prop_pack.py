@@ -866,7 +866,7 @@ class DSPMDEStateBlockData(StateBlockData):
 
         else:
             raise AssertionError(f"Electroneutrality condition violated in {self}. Ion concentrations should be adjusted to bring "
-                                 f"the result of {val} closer towards 0.")
+                                 f"the result of {val:.2E} closer towards 0.")
 
     # -----------------------------------------------------------------------------
     # Scaling methods
@@ -934,10 +934,8 @@ class DSPMDEStateBlockData(StateBlockData):
                         sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', j], default=1)
                               / iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'], default=1))
                         iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], sf)
-                    elif comp.is_solvent():
-                        iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], 100)
                     else:
-                        raise TypeError(f'Catching components with missing scaling factors: comp={comp}, j = {j}')
+                        iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], 100)
 
         if self.is_property_constructed('conc_mass_phase_comp'):
             for j in self.params.component_list:

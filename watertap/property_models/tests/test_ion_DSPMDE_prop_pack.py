@@ -554,12 +554,27 @@ def test_assert_electroneutrality_get_property():
                                            adjust_by_ion='Cl_-')
     assert not hasattr(stream, 'charge_balance')
 
-@pytest.mark.unit
+
+@pytest.mark.component
 def test_assert_electroneutrality_get_property():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={'dynamic':False})
+    m.fs = FlowsheetBlock(default={'dynamic': False})
     m.fs.properties = DSPMDEParameterBlock(default={
-        "solute_list": ["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],})
+        "solute_list": ["Ca_2+", "SO4_2-", "Na_+", "Cl_-", "Mg_2+"],
+        "mw_data": {"H2O": 18e-3,
+                    "Na_+": 23e-3,
+                    "Ca_2+": 40e-3,
+                    "Mg_2+": 24e-3,
+                    "Cl_-": 35e-3,
+                    "SO4_2-": 96e-3},
+        "charge": {"Na_+": 1,
+                   "Ca_2+": 2,
+                   "Mg_2+": 2,
+                   "Cl_-": -1,
+                   "SO4_2-": -2},
+        "density_calculation": DensityCalculation.seawater,
+        "activity_coefficient_model": ActivityCoefficientModel.davies
+    })
     m.fs.stream = stream = m.fs.properties.build_state_block([0], default={'defined_state': True})
 
     mass_flow_in = 1 * pyunits.kg / pyunits.s
@@ -580,6 +595,11 @@ def test_assert_electroneutrality_get_property():
     stream[0].temperature.fix(298.15)
     stream[0].pressure.fix(101325)
 
+    # check get_property works with tuple
+    stream[0].assert_electroneutrality(defined_state=True,
+                                       adjust_by_ion='Cl_-',
+                                       get_property=('mass_frac_phase_comp', 'pressure_osm')
+                                       )
     #check error when adjust_by_ion is not in solute list
     with pytest.raises(ValueError, match="adjust_by_ion must be set to the name of an "
                                          "ion in the list of solutes."):
@@ -597,3 +617,20 @@ def test_assert_electroneutrality_get_property():
                                              "Either set defined_state=True or unfix flow_mol_phase_comp "
                                              "for each solute to check that electroneutrality is satisfied.")):
         stream[0].assert_electroneutrality(defined_state=False)
+
+    # check error when get_property receives anything other than str, list, or tuple of strings
+    with pytest.raises(TypeError,
+                       match=re.escape("get_property must be a string or list/tuple of strings.")):
+        stream[0].assert_electroneutrality(defined_state=True,
+                                           adjust_by_ion='Cl_-',
+                                           get_property=1)
+
+    # check error when get_property receives anything other than str, list, or tuple of strings
+    stream[0].flow_mol_phase_comp.unfix()
+    with pytest.raises(AssertionError,
+                       match=re.escape("Electroneutrality condition violated in fs.stream[0]. "
+                                       "Ion concentrations should be adjusted to bring "
+                                       "the result of 9.09E-13 closer towards 0.")):
+        stream[0].assert_electroneutrality(defined_state=False,
+                                           adjust_by_ion='Cl_-',
+                                           tol=1e-18)
