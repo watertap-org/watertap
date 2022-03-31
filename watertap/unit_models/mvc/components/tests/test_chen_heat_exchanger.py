@@ -30,7 +30,8 @@ import watertap.property_models.seawater_prop_pack as props
 solver = get_solver()
 
 # -----------------------------------------------------------------------------
-@pytest.mark.skipif(sys.platform.startswith("darwin"), reason="Heat exchanger needs complied IDAES extensions")
+@pytest.mark.requires_idaes_solver
+@pytest.mark.component
 def test_heat_exchanger():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={'dynamic': False})

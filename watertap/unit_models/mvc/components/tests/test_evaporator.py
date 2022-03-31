@@ -30,7 +30,7 @@ import watertap.property_models.water_prop_pack as props_w
 solver = get_solver()
 
 # -----------------------------------------------------------------------------
-@pytest.mark.skipif(sys.platform.startswith("darwin"), reason="Evaporator needs complied IDAES extensions")
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_evaporator():
     m = ConcreteModel()

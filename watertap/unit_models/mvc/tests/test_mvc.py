@@ -100,7 +100,7 @@ def initialize(m):
     propagate_state(m.fs.s01)
     m.fs.compressor.initialize(outlvl=idaeslog.INFO_HIGH)
 
-@pytest.mark.skipif(sys.platform.startswith("darwin"), reason="MVC needs complied IDAES extensions")
+@pytest.mark.requires_idaes_solver
 @pytest.mark.component
 def test_mvc():
     m = ConcreteModel()
