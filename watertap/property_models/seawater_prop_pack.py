@@ -360,6 +360,26 @@ class SeawaterParameterData(PhysicalParameterBlock):
             within=Reals, initialize=-2.079e-5, units=enth_mass_units * t_inv_units**4,
             doc='Latent heat of pure water parameter 4')
 
+        # Boiling point elevation parameters from eq. 36 in Sharqawy et al. (2010)
+        self.bpe_A0 = Var(
+            within=Reals, initialize=17.95, units= t_inv_units,
+            doc='Boiling point parameter A0')
+        self.bpe_A1 = Var(
+            within=Reals, initialize=2.823e-1, units=pyunits.dimensionless,
+            doc='Boiling point parameter A1')
+        self.bpe_A2 = Var(
+            within=Reals, initialize=-4.584e-4, units=pyunits.K,
+            doc='Boiling point parameter A2')
+        self.bpe_B0 = Var(
+            within=Reals, initialize=6.56, units=t_inv_units,
+            doc='Boiling point parameter B0')
+        self.bpe_B1 = Var(
+            within=Reals, initialize=5.267e-2, units=pyunits.dimensionless,
+            doc='Boiling point parameter B1')
+        self.bpe_B2 = Var(
+            within=Reals, initialize=1.536e-4, units=pyunits.K,
+            doc='Boiling point parameter B2')
+
         # traditional parameters are the only Vars currently on the block and should be fixed
         for v in self.component_objects(Var):
             v.fix()
@@ -635,7 +655,7 @@ class SeawaterStateBlockData(StateBlockData):
 
         self.pressure = Var(
             initialize=101325,
-            bounds=(1e5, 5e7),
+            bounds=(1e3, 5e7),
             domain=NonNegativeReals,
             units=pyunits.Pa,
             doc='Pressure')
