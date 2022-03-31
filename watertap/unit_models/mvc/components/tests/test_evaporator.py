@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
+import sys
 import pytest
 from io import StringIO
 
@@ -29,6 +30,7 @@ import watertap.property_models.water_prop_pack as props_w
 solver = get_solver()
 
 # -----------------------------------------------------------------------------
+@pytest.mark.skipif(sys.platform.startswith("darwin"), reason="Evaporator needs complied IDAES extensions")
 @pytest.mark.component
 def test_evaporator():
     m = ConcreteModel()

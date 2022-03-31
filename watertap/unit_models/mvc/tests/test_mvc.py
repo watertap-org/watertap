@@ -10,6 +10,7 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
+import sys
 import pytest
 from io import StringIO
 
@@ -99,7 +100,7 @@ def initialize(m):
     propagate_state(m.fs.s01)
     m.fs.compressor.initialize(outlvl=idaeslog.INFO_HIGH)
 
-
+@pytest.mark.skipif(sys.platform.startswith("darwin"), reason="MVC needs complied IDAES extensions")
 @pytest.mark.component
 def test_mvc():
     m = ConcreteModel()
