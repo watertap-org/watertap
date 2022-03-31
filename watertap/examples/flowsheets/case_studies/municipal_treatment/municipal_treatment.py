@@ -15,24 +15,16 @@ from pyomo.environ import (ConcreteModel,
                            TransformationFactory,
                            units as pyunits,
                            assert_optimal_termination,
-                           Block)
-from pyomo.network import Arc
+                           )
+from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
-from idaes.core.util.initialization import (propagate_state,
-                                            fix_state_vars,
-                                            revert_state_vars)
-from idaes.core.util.exceptions import ConfigurationError
-from idaes.generic_models.unit_models.translator import Translator
-from idaes.generic_models.unit_models import Mixer, Separator, Product
-from idaes.generic_models.unit_models.mixer import MomentumMixingType
+from idaes.generic_models.unit_models import Product
 import idaes.core.util.scaling as iscale
-import idaes.logger as idaeslog
 from idaes.generic_models.costing import UnitModelCostingBlock
 
-from watertap.core.util.infeasible import print_infeasible_bounds, print_infeasible_constraints, print_close_to_bounds
 from watertap.core.util.initialization import assert_degrees_of_freedom
 
 from watertap.core.wt_database import Database
@@ -52,7 +44,6 @@ from watertap.unit_models.zero_order import (FeedZO,
                                              StorageTankZO,
                                              BackwashSolidsHandlingZO)
 from watertap.core.zero_order_costing import ZeroOrderCosting
-from watertap.costing import WaterTAPCosting
 
 
 def main():
@@ -66,12 +57,12 @@ def main():
     results = solve(m)
     display_results(m)
 
-    # TODO: add costing, currently costing functions only pass
     add_costing(m)
     initialize_costing(m)
     assert_degrees_of_freedom(m, 0)
+    assert_units_consistent(m)
 
-    # results = solve(m)
+    results = solve(m)
     display_costing(m)
     return m, results
 
@@ -128,6 +119,7 @@ def build():
         "property_package": m.fs.prop,
         "database": m.db,
         "process_subtype": "treated"})
+    m.fs.product = Product(default={'property_package': m.fs.prop})
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.intake_pump.inlet)
@@ -142,6 +134,7 @@ def build():
     m.fs.s10 = Arc(source=m.fs.anion_exchange.treated, destination=m.fs.chlorination.inlet)
     m.fs.s11 = Arc(source=m.fs.chlorination.treated, destination=m.fs.storage.inlet)
     m.fs.s12 = Arc(source=m.fs.storage.outlet, destination=m.fs.recharge_pump.inlet)
+    m.fs.s13 = Arc(source=m.fs.recharge_pump.outlet, destination=m.fs.product.inlet)
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scaling
@@ -208,47 +201,10 @@ def set_operating_conditions(m):
 
 
 def initialize_system(m):
-    unit_list = ['feed', 'intake_pump', 'coag_and_floc',
-                 'sedimentation', 'ozonation', 'gravity_basin',
-                 'gac', 'backwash_pump', 'uv', 'anion_exchange',
-                 'chlorination', 'storage', 'recharge_pump']
-    unit_inlet_arc_dic = {'feed': None,
-                          'intake_pump': 's01',
-                          'coag_and_floc': 's02',
-                          'sedimentation': 's03',
-                          'ozonation': 's04',
-                          'gravity_basin': 's05',
-                          'gac': 's06',
-                          'uv': 's07',
-                          'backwash_pump': 's08',
-                          'anion_exchange': 's09',
-                          'chlorination': 's10',
-                          'storage': 's11',
-                          'recharge_pump': 's12'}
-    unit_inlet_properties_dic = {'feed': 'properties',
-                          'intake_pump': 'properties',
-                          'coag_and_floc': 'properties',
-                          'sedimentation': 'properties_in',
-                          'ozonation': 'properties_in',
-                          'gravity_basin': 'properties_in',
-                          'gac': 'properties_in',
-                          'uv': 'properties_in',
-                          'backwash_pump': 'properties',
-                          'anion_exchange': 'properties_in',
-                          'chlorination': 'properties_in',
-                          'storage': 'properties',
-                          'recharge_pump': 'properties'}
-
-    for u_str in unit_list:
-        if unit_inlet_arc_dic[u_str] is not None:
-            unit = getattr(m.fs, u_str)
-            arc = getattr(m.fs, unit_inlet_arc_dic[u_str])
-            inlet_blk = getattr(unit, unit_inlet_properties_dic[u_str])
-            propagate_state(arc)
-            if unit_inlet_properties_dic[u_str] == 'properties_in':
-                flags = fix_state_vars(inlet_blk)
-                solve(unit)
-                revert_state_vars(inlet_blk, flags)
+    seq = SequentialDecomposition()
+    seq.options.tear_set = []
+    seq.options.iterLim = 1
+    seq.run(m, lambda u: u.initialize())
 
 
 def solve(blk, solver=None, tee=False, check_termination=True):
@@ -264,28 +220,69 @@ def display_results(m):
     unit_list = ['feed', 'intake_pump', 'coag_and_floc',
                  'sedimentation', 'ozonation', 'gravity_basin',
                  'gac', 'backwash_pump', 'uv', 'anion_exchange',
-                 'chlorination', 'storage', 'recharge_pump']
+                 'chlorination', 'storage', 'recharge_pump', 'product']
 
     for u in unit_list:
-        if hasattr(m.fs, u):
-            unit = getattr(m.fs, u)
-            unit.report()
+        m.fs.component(u).report()
 
 
 def add_costing(m):
-    # TODO: add costing
-    pass
+    m.fs.costing = ZeroOrderCosting()
+    # typing aid
+    costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
+    m.fs.intake_pump.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.coag_and_floc.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.sedimentation.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.ozonation.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.gravity_basin.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.gac.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.backwash_pump.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.uv.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.anion_exchange.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.chlorination.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.storage.costing = UnitModelCostingBlock(**costing_kwargs)
+    m.fs.recharge_pump.costing = UnitModelCostingBlock(**costing_kwargs)
+
+    m.fs.costing.cost_process()
+    m.fs.costing.add_electricity_intensity(m.fs.product.properties[0].flow_vol)
+    m.fs.costing.add_LCOW(m.fs.product.properties[0].flow_vol)
 
 
 def initialize_costing(m):
-    # TODO: initialize costing
-    pass
+    m.fs.costing.initialize()
 
 
 def display_costing(m):
-     # TODO: display costing
-    pass
+
+    m.fs.costing.total_capital_cost.display()
+    m.fs.costing.total_operating_cost.display()
+    m.fs.costing.LCOW.display()
+
+    print("\nUnit Capital Costs\n")
+    for u in m.fs.costing._registered_unit_costing:
+        print(u.name,
+              " :   ",
+              value(pyunits.convert(u.capital_cost,
+                                    to_units=pyunits.USD_2018)))
+
+    print("\nUtility Costs\n")
+    for f in m.fs.costing.flow_types:
+        print(f, " :   ", value(pyunits.convert(
+            m.fs.costing.aggregate_flow_costs[f],
+            to_units=pyunits.USD_2018/pyunits.year)))
+
+    print("")
+    total_capital_cost = value(pyunits.convert(
+            m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2018))
+    print(f"Total Capital Costs: {total_capital_cost:.2f} M$")
+    total_operating_cost = value(pyunits.convert(
+            m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018/pyunits.year))
+    print(f"Total Operating Costs: {total_operating_cost:.2f} M$/year")
+    electricity_intensity = value(pyunits.convert(m.fs.costing.electricity_intensity, to_units=pyunits.kWh/pyunits.m**3))
+    print(f"Electricity Intensity: {electricity_intensity:.4f} kWh/m^3")
+    LCOW = value(pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018/pyunits.m**3))
+    print(f"Levelized Cost of Water: {LCOW:.4f} $/m^3")
 
 
 if __name__ == "__main__":
-    main()
+    m, results = main()
