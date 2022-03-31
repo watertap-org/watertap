@@ -62,7 +62,8 @@ Sets
 Degrees of Freedom and Variables
 --------------------------------
 Aside from the inlet feed state variables (i.e. temperature, pressure, component mass flowrates),
-the Coagulation-Flocculation model has an at least an additional 13 degrees of freedom that
+the Coagulation-Flocculation model has at least an additional 13 degrees of freedom that
+
 the user must specify. The table below gives an outline of these.
 
 .. csv-table::
