@@ -16,6 +16,7 @@ from .bio_active_filtration_zo import BioActiveFiltrationZO
 from .blending_reservoir_zo import BlendingReservoirZO
 from .cooling_tower_zo import CoolingTowerZO
 from .deep_well_injection_zo import DeepWellInjectionZO
+from .dmbr_zo import DMBRZO
 from .electrodialysis_reversal_zo import ElectrodialysisReversalZO
 from .aeration_basin_zo import AerationBasinZO
 from .air_flotation_zo import AirFlotationZO
@@ -31,6 +32,7 @@ from .feed_zo import FeedZO
 from .energy_recovery_zo import EnergyRecoveryZO
 from .iron_and_manganese_removal_zo import IronManganeseRemovalZO
 from .landfill_zo import LandfillZO
+from .mabr_zo import MABRZO
 from .mbr_zo import MBRZO
 from .media_filtration_zo import MediaFiltrationZO
 from .microfiltration_zo import MicroFiltrationZO
@@ -69,15 +71,18 @@ from .co2_addition_zo import CO2AdditionZO
 from .sludge_tank_zo import SludgeTankZO
 from .evaporation_pond_zo import EvaporationPondZO
 from .filter_press_zo import FilterPressZO
+from .water_pumping_station_zo import WaterPumpingStationZO
 from .well_field_zo import WellFieldZO
 from .intrusion_mitigation_zo import IntrusionMitigationZO
 from .injection_well_disposal_zo import InjectionWellDisposalZO
+from .surface_discharge_zo import SurfaceDischargeZO
 
 
 #=========================================================================================
 # Units explicitly for Wastewater Resource Recovery effort
 
 from .anaerobic_mbr_mec_zo import AnaerobicMBRMECZO
-from .cofermentation_zo import  CofermentationZO
+from .cofermentation_zo import CofermentationZO
 from .constructed_wetlands_zo import ConstructedWetlandsZO
+from .gas_sparged_membrane_zo import GasSpargedMembraneZO
 from .vfa_recovery_zo import VFARecoveryZO
