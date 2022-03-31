@@ -64,6 +64,7 @@ def fix_inlets(m):
     m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, 'Liq', 'Na_+'].fix(0.01)
     m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, 'Liq', 'Cl_-'].fix(0.01)
 
+    m.fs.unit.length.fix(1)
 
     print('----------------------------------------------')
     print('DOF after specifying:', degrees_of_freedom(m.fs))
@@ -95,18 +96,27 @@ def display_results(m):
 def view_model_constraints(m):
     # Display the material balance constraints
     m.fs.unit.dilute_side.material_balances.pprint()
-    m.fs.unit.concentrate_side.material_balances.pprint()
+    m.fs.unit.dilute_side.material_flow_dx_disc_eq.pprint()
+    m.fs.unit.dilute_side.mass_transfer_term.pprint()
+
+    print()
 
     # Display the mass transfer terms
-    m.fs.unit.dilute_side.mass_transfer_term.pprint()
+    m.fs.unit.concentrate_side.material_balances.pprint()
+    m.fs.unit.concentrate_side.material_flow_dx_disc_eq.pprint()
     m.fs.unit.concentrate_side.mass_transfer_term.pprint()
 
 def view_model_control_volumes(m):
     # Display the full control volume equation set
-    m.fs.unit.pprint()
+    m.fs.unit.dilute_side.pprint()
     print()
-    #m.fs.unit.concentrate_side.pprint()
+    m.fs.unit.concentrate_side.pprint()
 
+def view_model_properties(m):
+    # Display the full control volume equation set
+    m.fs.unit.dilute_side.properties.pprint()
+    print()
+    m.fs.unit.concentrate_side.properties.pprint()
 
 if __name__ == "__main__":
    m = build_model()
@@ -119,5 +129,6 @@ if __name__ == "__main__":
    #display_results(m)
 
 
-   #view_model_constraints(m)
-   view_model_control_volumes(m)
+   view_model_constraints(m)
+   #view_model_control_volumes(m)
+   #view_model_properties(m)

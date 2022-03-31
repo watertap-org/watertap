@@ -34,6 +34,7 @@ from idaes.core import (ControlVolume1DBlock,
                         useDefault,
                         MaterialFlowBasis)
 from idaes.core.control_volume1d import DistributedVars
+from idaes.core.util.misc import add_object_reference
 from idaes.core.util import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
@@ -169,7 +170,7 @@ class Electrodialysis1DData(UnitModelBlockData):
             domain=int,
             description="Number of finite elements in length domain",
             doc="""Number of finite elements to use when discretizing length
-            domain (default=20)"""))
+            domain (default=10)"""))
 
     CONFIG.declare("collocation_points", ConfigValue(
             default=2,
@@ -216,11 +217,10 @@ class Electrodialysis1DData(UnitModelBlockData):
             has_mass_transfer=True)
 
         # # TODO: Temporarily disabling energy balances
-        '''
-        self.dilute_side.add_energy_balances(
-            balance_type=self.config.energy_balance_type,
-            has_enthalpy_transfer=False)
-        '''
+        if hasattr(self.config, "energy_balance_type"):
+            self.dilute_side.add_energy_balances(
+                balance_type=self.config.energy_balance_type,
+                has_enthalpy_transfer=False)
 
         self.dilute_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
@@ -252,11 +252,10 @@ class Electrodialysis1DData(UnitModelBlockData):
             has_mass_transfer=True)
 
         # # TODO: Temporarily disabling energy balances
-        '''
-        self.concentrate_side.add_energy_balances(
-            balance_type=self.config.energy_balance_type,
-            has_enthalpy_transfer=False)
-        '''
+        if hasattr(self.config, "energy_balance_type"):
+            self.concentrate_side.add_energy_balances(
+                balance_type=self.config.energy_balance_type,
+                has_enthalpy_transfer=False)
 
         self.concentrate_side.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
@@ -265,16 +264,15 @@ class Electrodialysis1DData(UnitModelBlockData):
         # Apply transformation to concentrate_side
         self.concentrate_side.apply_transformation()
 
-        ## # TODO: Not sure what to do here in order to make sure each CV has same length...
-        #self.first_element = self.concentrate_side.length_domain.first()
-        #self.difference_elements = Set(ordered=True, initialize=(x for x in self.concentrate_side.length_domain if x != self.first_element))
-
         # Add ports (creates inlets and outlets for each channel)
         self.add_inlet_port(name='inlet_dilute', block=self.dilute_side)
         self.add_outlet_port(name='outlet_dilute', block=self.dilute_side)
 
         self.add_inlet_port(name='inlet_concentrate', block=self.concentrate_side)
         self.add_outlet_port(name='outlet_concentrate', block=self.concentrate_side)
+
+        """ Add references to the shared control volume length."""
+        add_object_reference(self, 'length', self.dilute_side.length)
 
         # -------- Add constraints ---------
         # # TODO: Add vars and associated constraints for all flux terms
@@ -286,32 +284,55 @@ class Electrodialysis1DData(UnitModelBlockData):
 
 
 
-        '''
+
         # # TODO: Summate the flux terms for each mass transfer term in each domain
+
+        # Adds isothermal constraint if no energy balance present
+        if not hasattr(self.config, "energy_balance_type"):
+            @self.Constraint(self.flowsheet().config.time,
+                             self.difference_elements,
+                             doc="Isothermal condition for dilute side")
+            def eq_isothermal_dilute(self, t, x):
+                return (self.dilute_side.properties[t, self.first_element].temperature == \
+                        self.dilute_side.properties[t, x].temperature)
+
+        if not hasattr(self.config, "energy_balance_type"):
+            @self.Constraint(self.flowsheet().config.time,
+                             self.difference_elements,
+                             doc="Isothermal condition for concentrate side")
+            def eq_isothermal_concentrate(self, t, x):
+                return (self.concentrate_side.properties[t, self.first_element].temperature == \
+                        self.concentrate_side.properties[t, x].temperature)
+
+        # Add constraint for equal length of each channel
+        @self.Constraint(doc="Constraint to ensure each channel has same length")
+        def eq_equal_length(self):
+            return self.dilute_side.length == self.concentrate_side.length
+
         # Add constraints for mass transfer terms (dilute_side)
         @self.Constraint(self.flowsheet().config.time,
+                         self.difference_elements,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Mass transfer term on dilute side")
-        def eq_mass_transfer_term_dilute(self, t, p, j):
+        def eq_mass_transfer_term_dilute(self, t, x, p, j):
             if j == 'H2O':
-                # do something else
-                return self.dilute_side.mass_transfer_term[t, p, j] == 0.0
+                return self.dilute_side.mass_transfer_term[t, x, p, j] == 0.0
             else:
-                return self.dilute_side.mass_transfer_term[t, p, j] == 0.0
+                return self.dilute_side.mass_transfer_term[t, x, p, j] == 0.0
 
         # Add constraints for mass transfer terms (concentrate_side)
         @self.Constraint(self.flowsheet().config.time,
+                         self.difference_elements,
                          self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Mass transfer term concentrate side")
-        def eq_mass_transfer_term_concentrate(self, t, p, j):
+        def eq_mass_transfer_term_concentrate(self, t, x, p, j):
             if j == 'H2O':
-                # do something else
-                return self.concentrate_side.mass_transfer_term[t, p, j] == 0.0
+                return self.concentrate_side.mass_transfer_term[t, x, p, j] == 0.0
             else:
-                return self.concentrate_side.mass_transfer_term[t, p, j] == 0.0
-        '''
+                return self.concentrate_side.mass_transfer_term[t, x, p, j] == 0.0
+
 
     # initialize method
     def initialize(
