@@ -12,10 +12,9 @@
 ###############################################################################
 
 import pytest
-from io import StringIO
 from pyomo.environ import value, assert_optimal_termination
-from watertap.examples.case_studies.municipal_treatment.municipal_treatment import main
-from idaes.core.util import get_solver
+from watertap.examples.flowsheets.case_studies.municipal_treatment.municipal_treatment import main
+
 
 # -----------------------------------------------------------------------------
 @pytest.mark.component
