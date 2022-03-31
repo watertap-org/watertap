@@ -7,7 +7,7 @@ This unit model implement the Donnan Steric Pore Model with Dielectric Exclusion
 
     The DSPM-DE model is still undergoing validation and refinement, as is this documentation.
 
-Equations
+Variables
 ----------
 .. csv-table::
    :header: "Description", "Symbol", "Variable", "Index", "Units"
