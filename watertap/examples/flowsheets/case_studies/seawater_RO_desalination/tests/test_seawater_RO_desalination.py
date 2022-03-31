@@ -14,8 +14,8 @@
 import pytest
 from io import StringIO
 from pyomo.environ import value
-from watertap.examples.case_studies.seawater_RO_desalination.seawater_RO_desalination import main
-from idaes.core.util import get_solver
+from watertap.examples.flowsheets.case_studies.seawater_RO_desalination.seawater_RO_desalination import main
+
 
 # -----------------------------------------------------------------------------
 @pytest.mark.component
