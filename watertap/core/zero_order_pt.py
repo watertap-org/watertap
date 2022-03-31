@@ -124,11 +124,6 @@ def initialize_pt(blk, state_args=None, outlvl=idaeslog.NOTSET,
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = solver_obj.solve(blk, tee=slc.tee)
 
-        if not check_optimal_termination(results):
-            raise InitializationError(
-                f"{blk.name} failed to initialize successfully. Please check "
-                f"the output logs for more information.")
-
         init_log.info_high(
             "Initialization Step 2 {}.".format(idaeslog.condition(results))
         )
@@ -139,6 +134,12 @@ def initialize_pt(blk, state_args=None, outlvl=idaeslog.NOTSET,
 
     init_log.info('Initialization Complete: {}'
                   .format(idaeslog.condition(results)))
+
+    if (number_activated_constraints(blk) > 0 and
+            not check_optimal_termination(results)):
+        raise InitializationError(
+            f"{blk.name} failed to initialize successfully. Please check "
+            f"the output logs for more information.")
 
 
 def calculate_scaling_factors_pt(self):
