@@ -100,8 +100,6 @@ setup(
         # tutorial tests
         "nbformat",
         "scipy",
-        # https://www.python.org/dev/peps/pep-0508/#environment-markers
-        'pywin32==225 ; platform_system=="Windows" and python_version>="3.8"',
         # for parameter_sweep
         "h5py",
     ],
