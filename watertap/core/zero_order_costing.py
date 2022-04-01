@@ -1004,7 +1004,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                 subtype=blk.unit_model.config.process_subtype)
 
         # Get costing parameter sub-block for this technology
-        [A] = _get_tech_parameters(
+        A = _get_tech_parameters(
             blk,
             parameter_dict,
             blk.unit_model.config.process_subtype,
@@ -1686,7 +1686,11 @@ def _get_tech_parameters(blk, parameter_dict, subtype, param_list):
             vobj = getattr(pblock, p)
             vlist.append(vobj[subtype])
 
-    return tuple(x for x in vlist)
+    # add conditional for cases where there is only one parameter returned
+    if len(vlist) == 1:
+        return vlist[0]
+    else:
+        return tuple(x for x in vlist)
 
 
 def _load_case_study_definition(self):
