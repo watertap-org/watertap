@@ -66,6 +66,7 @@ def test_unit_parameter_files(tech):
                     "tramp_oil_tank",
                     "water_pumping_station",
                     "well_field",
+                    "low_pressure_pump",
                    ]
 
     siso_full_recovery = ["uv_aop", "uv", "fixed_bed", "decarbonator", "chlorination"]
@@ -120,6 +121,7 @@ def test_unit_parameter_files(tech):
                                          "evaporation_pond",
                                          "deep_well_injection",
                                          "water_pumping_station",
+                                         "low_pressure_pump"
                                          ]
 
     expected = ["recovery_frac_mass_H2O",
