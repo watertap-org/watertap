@@ -699,8 +699,9 @@ def _save_results(sweep_params, local_values, global_values, local_results_dict,
             elif extension == '.csv' and write_csv is False:
                 warnings.warn("A CSV results filename was provided. Outputs will be created", UserWarning)
                 write_csv = True
-            # if (write_h5 or write_csv) and dirname != '':
-            os.makedirs(dirname, exist_ok=True)
+
+            if (write_h5 or write_csv) and dirname != '':
+                os.makedirs(dirname, exist_ok=True)
             # elif not write_h5 and not write_csv:
             #     warnings.warn("A results filename was provided but neither options to write H5 or csv was selected. No file will be written.", UserWarning)
 
