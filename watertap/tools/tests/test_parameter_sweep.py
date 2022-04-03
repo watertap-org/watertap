@@ -72,7 +72,7 @@ class TestParallelManager():
     def test_strip_extension(self):
         input_list = ['/my_dir/my_file.h5', 'my_file.csv', '/my_dir/myfile']
         extension_list = ['.h5', '.csv', '.h5']
-        true_list = [('/my_dir/my_file',1), ('my_file',1), ('/my_dir/myfile',0)]
+        true_list = [('/my_dir/my_file',1,'.h5'), ('my_file',1,'.csv'), ('/my_dir/myfile',0, None)]
         output_list = [_strip_extension(fname, ext) for fname,ext in zip(input_list,extension_list)]
         assert true_list == output_list
 
@@ -669,8 +669,8 @@ class TestParallelManager():
 
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs=None,
-                results_file_name = results_fname,
-                write_csv = True, write_h5 = True,
+                results_file_name = csv_results_file,
+                write_csv = False, write_h5 = True,
                 optimize_function=_optimization,
                 reinitialize_function=_reinitialize,
                 reinitialize_kwargs={'slack_penalty':10.},
@@ -746,8 +746,8 @@ class TestParallelManager():
 
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs=None,
-                results_file_name = results_fname,
-                write_csv = True, write_h5 = True,
+                results_file_name = h5_results_file,
+                write_csv = True, write_h5 = False,
                 optimize_function=_optimization,
                 reinitialize_function=_bad_reinitialize,
                 reinitialize_kwargs={'slack_penalty':10.},
@@ -910,39 +910,39 @@ class TestParallelManager():
                     reinitialize_kwargs=None,
                     mpi_comm = comm)
 
-    @pytest.mark.component
-    def test_parameter_sweep_no_file_warn(self, model, tmp_path):
-        comm, rank, num_procs = _init_mpi()
-        tmp_path = _get_rank0_path(comm, tmp_path)
-
-        m = model
-        m.fs.slack_penalty = 1000.
-        m.fs.slack.setub(0)
-
-        A = m.fs.input['a']
-        B = m.fs.input['b']
-        sweep_params = {A.name : (A, 0.1, 0.9, 3),
-                        B.name : (B, 0.0, 0.5, 3)}
-        outputs = {'output_c':m.fs.output['c'],
-                   'output_d':m.fs.output['d'],
-                   'performance':m.fs.performance,
-                   'objective':m.objective}
-        results_fname = os.path.join(tmp_path, 'global_results')
-
-        # Call the parameter_sweep function
-        warning_string = "A results filename was provided but neither options to write H5 or csv was selected. No file will be written."
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            parameter_sweep(m, sweep_params, outputs=outputs,
-                    results_file_name = results_fname,
-                    write_csv = False, write_h5 = False,
-                    optimize_function=_optimization,
-                    optimize_kwargs={'relax_feasibility':True},
-                    mpi_comm = comm)
-
-            filtered_user_warnings = [str(i.message) for i in w if i.category == UserWarning]
-            if rank == 0:
-                assert warning_string in filtered_user_warnings
+    # @pytest.mark.component
+    # def test_parameter_sweep_no_file_warn(self, model, tmp_path):
+    #     comm, rank, num_procs = _init_mpi()
+    #     tmp_path = _get_rank0_path(comm, tmp_path)
+    #
+    #     m = model
+    #     m.fs.slack_penalty = 1000.
+    #     m.fs.slack.setub(0)
+    #
+    #     A = m.fs.input['a']
+    #     B = m.fs.input['b']
+    #     sweep_params = {A.name : (A, 0.1, 0.9, 3),
+    #                     B.name : (B, 0.0, 0.5, 3)}
+    #     outputs = {'output_c':m.fs.output['c'],
+    #                'output_d':m.fs.output['d'],
+    #                'performance':m.fs.performance,
+    #                'objective':m.objective}
+    #     results_fname = os.path.join(tmp_path, 'global_results')
+    #
+    #     # Call the parameter_sweep function
+    #     warning_string = "A results filename was provided but neither options to write H5 or csv was selected. No file will be written."
+    #     with warnings.catch_warnings(record=True) as w:
+    #         warnings.simplefilter("always")
+    #         parameter_sweep(m, sweep_params, outputs=outputs,
+    #                 results_file_name = results_fname,
+    #                 write_csv = False, write_h5 = False,
+    #                 optimize_function=_optimization,
+    #                 optimize_kwargs={'relax_feasibility':True},
+    #                 mpi_comm = comm)
+    #
+    #         filtered_user_warnings = [str(i.message) for i in w if i.category == UserWarning]
+    #         if rank == 0:
+    #             assert warning_string in filtered_user_warnings
 
 
 def _optimization(m, relax_feasibility=False):

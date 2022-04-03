@@ -137,9 +137,9 @@ def _init_mpi(mpi_comm=None):
 
 def _strip_extension(file_name, extension):
     if file_name.lower().endswith(extension):
-        return file_name[:-len(extension)], 1
+        return file_name[:-len(extension)], 1, extension
     else:
-        return file_name, 0
+        return file_name, 0, None
 
 # ================================================================
 
@@ -149,11 +149,11 @@ def _process_results_filename(results_file_name):
     # Get the file name without the extension
     known_extensions = ['.h5', '.csv']
     for ext in known_extensions:
-        fname_no_ext, status = _strip_extension(results_file_name, ext)
+        fname_no_ext, status, extension = _strip_extension(results_file_name, ext)
         if status == 1:
             break
 
-    return dirname, fname_no_ext
+    return dirname, fname_no_ext, extension
 
 # ================================================================
 
@@ -690,13 +690,19 @@ def _save_results(sweep_params, local_values, global_values, local_results_dict,
         num_procs, interpolate_nan_outputs):
 
     if results_file_name is not None:
-        dirname, fname_no_ext = _process_results_filename(results_file_name)
+        dirname, fname_no_ext, extension = _process_results_filename(results_file_name)
         if rank == 0:
             # Create the directories for the results and/or for debugging
-            if (write_h5 or write_csv) and dirname != '':
-                os.makedirs(dirname, exist_ok=True)
-            elif not write_h5 and not write_csv:
-                warnings.warn("A results filename was provided but neither options to write H5 or csv was selected. No file will be written.", UserWarning)
+            if extension == '.h5' and write_h5 is False:
+                warnings.warn("An H5 results filename was provided. Outputs will be created", UserWarning)
+                write_h5 = True
+            elif extension == '.csv' and write_csv is False:
+                warnings.warn("A CSV results filename was provided. Outputs will be created", UserWarning)
+                write_csv = True
+            # if (write_h5 or write_csv) and dirname != '':
+            os.makedirs(dirname, exist_ok=True)
+            # elif not write_h5 and not write_csv:
+            #     warnings.warn("A results filename was provided but neither options to write H5 or csv was selected. No file will be written.", UserWarning)
 
             if debugging_data_dir is not None:
                 os.makedirs(debugging_data_dir, exist_ok=True)
