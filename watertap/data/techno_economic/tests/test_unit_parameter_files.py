@@ -120,6 +120,7 @@ def test_unit_parameter_files(tech):
                                          "evaporation_pond",
                                          "deep_well_injection",
                                          "water_pumping_station",
+                                         "photothermal_membrane",
                                          ]
 
     expected = ["recovery_frac_mass_H2O",

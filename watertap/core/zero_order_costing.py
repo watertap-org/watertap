@@ -48,6 +48,8 @@ from watertap.unit_models.zero_order import (
     EvaporationPondZO,
     FilterPressZO,
     WellFieldZO,
+    PhotothermalMembraneZO,
+    CANDOPZO,
     )
 
 
@@ -1453,6 +1455,63 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity")
 
+    def cost_photothermal_membrane(blk):
+        """
+        General method for costing photothermal membrane.
+        """
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        # Get costing parameter sub-block for this technology
+        wat_flux, memb_cost = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["water_flux",
+             "membrane_cost"])
+
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation")
+
+        expr = pyo.units.convert(
+            blk.unit_model.properties_byproduct[t0].flow_mass_comp["H2O"] / wat_flux * memb_cost,
+            to_units=blk.config.flowsheet_costing_block.base_currency)
+
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+
+        if factor == "TPEC":
+            expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            expr *= blk.config.flowsheet_costing_block.TIC
+
+        blk.capital_cost_constraint = pyo.Constraint(
+            expr=blk.capital_cost == expr)
+
+    def cost_CANDOP(blk):
+        """
+        General method for costing CANDO+P reactor.
+        """
+        # TODO
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+
+
     def _get_ozone_capital_cost(blk, A, B, C, D):
         """
         Generate expressions for capital cost of ozonation system.
@@ -1564,6 +1623,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                     EvaporationPondZO: cost_evaporation_pond,
                     FilterPressZO: cost_filter_press,
                     WellFieldZO: cost_well_field,
+                    PhotothermalMembraneZO: cost_photothermal_membrane,
+                    CANDOPZO: cost_CANDOP,
                     }
 
 

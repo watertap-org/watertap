@@ -1,0 +1,26 @@
+default:
+  recovery_frac_mass_H2O:
+    value: 0.1
+    units: dimensionless
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_solute:
+    cod:
+      value: 0
+      units: dimensionless
+      constituent_longform: Chemical Oxygen Demand (COD)
+    phosphates:
+      value: 0
+      units: dimensionless
+    nitrogen:
+      value: 0
+      units: dimensionless
+  capital_cost:
+    cost_factor: None
+    water_flux:
+      value: 1
+      units: kg/m^2/hr
+    membrane_cost:
+      value: 12
+      units: USD_2020/m^2
