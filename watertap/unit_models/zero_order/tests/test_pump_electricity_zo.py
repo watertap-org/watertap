@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-Tests for zero-order low pressure pump model
+Tests for zero-order pump electricity model
 """
 import pytest
 
@@ -33,7 +33,7 @@ from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
-class TestLowPressurePumpZO:
+class TestPumpElectricityZO:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -57,7 +57,7 @@ class TestLowPressurePumpZO:
     @pytest.mark.unit
     def test_build(self, model):
         assert model.fs.unit.config.database == model.db
-        assert model.fs.unit._tech_type == 'low_pressure_pump'
+        assert model.fs.unit._tech_type == 'pump_electricity'
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
         assert isinstance(model.fs.unit.lift_height, Var)
@@ -66,7 +66,7 @@ class TestLowPressurePumpZO:
 
     @pytest.mark.component
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("low_pressure_pump")
+        data = model.db.get_unit_operation_parameters("pump_electricity")
 
         model.fs.unit.load_parameters_from_database()
 
@@ -171,8 +171,8 @@ def test_costing():
     m.fs.unit1.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": m.fs.costing})
 
-    assert isinstance(m.fs.costing.low_pressure_pump, Block)
-    assert isinstance(m.fs.costing.low_pressure_pump.pump_cost,
+    assert isinstance(m.fs.costing.pump_electricity, Block)
+    assert isinstance(m.fs.costing.pump_electricity.pump_cost,
                       Var)
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
     assert isinstance(m.fs.unit1.costing.capital_cost_constraint,

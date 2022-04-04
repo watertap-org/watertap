@@ -35,7 +35,7 @@ class PumpElectricityZOData(ZeroOrderBaseData):
     def build(self):
         super().build()
 
-        self._tech_type = "low_pressure_pump"
+        self._tech_type = "pump_electricity"
 
         build_pt(self)
 

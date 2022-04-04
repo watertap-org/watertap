@@ -988,7 +988,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity")
 
-    def cost_low_pressure_pump(blk):
+    def cost_pump_electricity(blk):
         """
         General method for costing low pressure pump. Capital cost
         is based on the cost of inlet flow rate.
@@ -1613,7 +1613,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                     IronManganeseRemovalZO: cost_iron_and_manganese_removal,
                     OzoneZO: cost_ozonation,
                     OzoneAOPZO: cost_ozonation_aop,
-                    PumpElectricityZO: cost_low_pressure_pump,
+                    PumpElectricityZO: cost_pump_electricity,
                     SedimentationZO: cost_sedimentation,
                     StorageTankZO: cost_storage_tank,
                     SurfaceDischargeZO: cost_surface_discharge,
