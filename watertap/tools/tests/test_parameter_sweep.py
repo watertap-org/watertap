@@ -72,7 +72,7 @@ class TestParallelManager():
     def test_strip_extension(self):
         input_list = ['/my_dir/my_file.h5', 'my_file.csv', '/my_dir/myfile']
         extension_list = ['.h5', '.csv', '.h5']
-        true_list = [('/my_dir/my_file',1,'.h5'), ('my_file',1,'.csv'), ('/my_dir/myfile',0, None)]
+        true_list = [('/my_dir/my_file', '.h5'), ('my_file', '.csv'), ('/my_dir/myfile', None)]
         output_list = [_strip_extension(fname, ext) for fname,ext in zip(input_list,extension_list)]
         assert true_list == output_list
 
