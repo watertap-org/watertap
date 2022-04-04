@@ -15,10 +15,12 @@ This module contains the methods for constructing the material balances for
 zero-order pass-through unit models (i.e. units with a single inlet and single
 outlet where flow and composition do not change, such as pumps).
 """
-from pyomo.environ import Var, units as pyunits
+from pyomo.environ import check_optimal_termination
 
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
+from idaes.core.util.model_statistics import number_activated_constraints
+from idaes.core.util.exceptions import InitializationError
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
@@ -118,12 +120,13 @@ def initialize_pt(blk, state_args=None, outlvl=idaeslog.NOTSET,
 
     # ---------------------------------------------------------------------
     # Solve unit
-    with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        results = solver_obj.solve(blk, tee=slc.tee)
+    if number_activated_constraints(blk) > 0:
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = solver_obj.solve(blk, tee=slc.tee)
 
-    init_log.info_high(
-        "Initialization Step 2 {}.".format(idaeslog.condition(results))
-    )
+        init_log.info_high(
+            "Initialization Step 2 {}.".format(idaeslog.condition(results))
+        )
 
     # ---------------------------------------------------------------------
     # Release Inlet state
@@ -131,6 +134,12 @@ def initialize_pt(blk, state_args=None, outlvl=idaeslog.NOTSET,
 
     init_log.info('Initialization Complete: {}'
                   .format(idaeslog.condition(results)))
+
+    if (number_activated_constraints(blk) > 0 and
+            not check_optimal_termination(results)):
+        raise InitializationError(
+            f"{blk.name} failed to initialize successfully. Please check "
+            f"the output logs for more information.")
 
 
 def calculate_scaling_factors_pt(self):
