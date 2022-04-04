@@ -195,7 +195,7 @@ class _WaterStateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         '''
-        # For now, there are no ocnstraints in the property package, so only
+        # For now, there are no constraints in the property package, so only
         # fix state variables if required
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
 
