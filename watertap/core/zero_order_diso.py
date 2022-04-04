@@ -19,8 +19,10 @@ outlet where composition changes, such as a generic bioreactor).
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import InitializationError
 
-from pyomo.environ import NonNegativeReals, Var, units as pyunits
+from pyomo.environ import (
+    check_optimal_termination, NonNegativeReals, Var, units as pyunits)
 
 # Some more information about this module
 __author__ = "Adam Atia"
@@ -205,6 +207,11 @@ def initialize_diso(blk, state_args=None, outlvl=idaeslog.NOTSET,
     init_log.info_high(
         "Initialization Step 2 {}.".format(idaeslog.condition(results))
     )
+
+    if not check_optimal_termination(results):
+        raise InitializationError(
+            f"{blk.name} failed to initialize successfully. Please check "
+            f"the output logs for more information.")
 
     # ---------------------------------------------------------------------
     # Release Inlet state
