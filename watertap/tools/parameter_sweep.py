@@ -137,7 +137,7 @@ def _init_mpi(mpi_comm=None):
 
 def _strip_extension(file_name, extension):
     if file_name.lower().endswith(extension):
-        return file_name[:-len(extension)], 1, extension
+        return file_name[:-len(extension)], extension
     else:
         return file_name, 0, None
 
