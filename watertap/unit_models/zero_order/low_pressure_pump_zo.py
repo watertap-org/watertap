@@ -62,11 +62,9 @@ class PumpElectricityZOData(ZeroOrderBaseData):
                          doc='Constraint for electricity consumption based on '
                              'pump flowrate.')
         def electricity_consumption(b, t):
-            q_in = pyunits.convert(b.properties[t].flow_vol,
-                                   to_units=pyunits.m ** 3 / pyunits.s)
             return b.electricity[t] == pyunits.convert(
-                pyunits.convert(b.lift_height, to_units=pyunits.m) *
-                q_in * b.properties[t].dens_mass * Constants.acceleration_gravity / (b.eta_pump * b.eta_motor),
+                b.lift_height * b.properties[t].flow_vol * b.properties[t].dens_mass *
+                Constants.acceleration_gravity / (b.eta_pump * b.eta_motor),
                 to_units=pyunits.kW)
 
         self._perf_var_dict["Electricity (kW)"] = self.electricity
