@@ -26,7 +26,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.generic_models.costing import UnitModelCostingBlock
 
-from watertap.unit_models.zero_order import LowPressurePumpZO
+from watertap.unit_models.zero_order import PumpElectricityZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.core.zero_order_costing import ZeroOrderCosting
@@ -43,7 +43,7 @@ class TestLowPressurePumpZO:
         m.fs.params = WaterParameterBlock(
             default={"solute_list": ["bod", "nitrate", "tss"]})
 
-        m.fs.unit = LowPressurePumpZO(default={
+        m.fs.unit = PumpElectricityZO(default={
             "property_package": m.fs.params,
             "database": m.db})
 
@@ -157,7 +157,7 @@ def test_costing():
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = LowPressurePumpZO(default={
+    m.fs.unit1 = PumpElectricityZO(default={
         "property_package": m.fs.params,
         "database": m.db})
 

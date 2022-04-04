@@ -24,8 +24,8 @@ from idaes.core.util.constants import Constants
 __author__ = "Chenyu Wang"
 
 
-@declare_process_block_class("LowPressurePumpZO")
-class LowPressurePumpZOData(ZeroOrderBaseData):
+@declare_process_block_class("PumpElectricityZO")
+class PumpElectricityZOData(ZeroOrderBaseData):
     """
     Zero-Order model for a low pressure pump unit operation.
     """
