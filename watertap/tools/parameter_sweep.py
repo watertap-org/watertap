@@ -149,8 +149,8 @@ def _process_results_filename(results_file_name):
     # Get the file name without the extension
     known_extensions = ['.h5', '.csv']
     for ext in known_extensions:
-        fname_no_ext, status, extension = _strip_extension(results_file_name, ext)
-        if status == 1:
+        fname_no_ext, extension = _strip_extension(results_file_name, ext)
+        if extension is not None:
             break
 
     return dirname, fname_no_ext, extension
