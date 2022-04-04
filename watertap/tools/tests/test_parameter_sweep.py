@@ -15,6 +15,7 @@ import pytest
 import os
 import numpy as np
 import pyomo.environ as pyo
+import warnings
 
 from pyomo.environ import value
 
@@ -23,7 +24,7 @@ from watertap.tools.parameter_sweep import (_init_mpi,
                                             _build_combinations,
                                             _divide_combinations,
                                             _update_model_values,
-                                            _aggregate_results,
+                                            _aggregate_results_arr,
                                             _interp_nan_values,
                                             _process_sweep_params,
                                             _write_output_to_h5,
@@ -71,7 +72,7 @@ class TestParallelManager():
     def test_strip_extension(self):
         input_list = ['/my_dir/my_file.h5', 'my_file.csv', '/my_dir/myfile']
         extension_list = ['.h5', '.csv', '.h5']
-        true_list = ['/my_dir/my_file', 'my_file', '/my_dir/myfile']
+        true_list = [('/my_dir/my_file', '.h5'), ('my_file', '.csv'), ('/my_dir/myfile', None)]
         output_list = [_strip_extension(fname, ext) for fname,ext in zip(input_list,extension_list)]
         assert true_list == output_list
 
@@ -249,26 +250,56 @@ class TestParallelManager():
         assert value(m.fs.input['b']) == pytest.approx(new_values[1])
 
     @pytest.mark.unit
-    def test_aggregate_results(self):
+    def test_aggregate_results_arr(self):
         comm, rank, num_procs = _init_mpi()
+        input_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
+                                                      'units': 'None',
+                                                      'upper bound': 1,
+                                                      'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                      'fs.input[b]': {'lower bound': 0,
+                                                      'units': 'None',
+                                                      'upper bound': 1,
+                                                      'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                      'fs.output[c]': {'lower bound': 0,
+                                                       'units': 'None',
+                                                       'upper bound': 1,
+                                                       'value': np.array([0.2, 0.2, 0. , 1. , 1. , 0. , 0. , 0. , 0. ])},
+                                      'fs.output[d]': {'lower bound': 0,
+                                                       'units': 'None',
+                                                       'upper bound': 1,
+                                                       'value': np.array([0.  , 0.75, 0.  , 0.  , 0.75, 0.  , 0.  , 0.  , 0.  ])},
+                                      'fs.slack[ab_slack]': {'lower bound': 0,
+                                                             'units': 'None',
+                                                             'upper bound': 1,
+                                                             'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
+                                      'fs.slack[cd_slack]': {'lower bound': 0,
+                                                            'units': 'None',
+                                                            'upper bound': 1,
+                                                            'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])}},
+                         'solve_successful': [ True ]*9,
+                         'sweep_params': {'fs.input[a]': {'lower bound': 0,
+                                                          'units': 'None',
+                                                          'upper bound': 1,
+                                                          'value': np.array([0.1, 0.1, 0. , 0.5, 0.5, 0. , 0. , 0. , 0. ])},
+                                          'fs.input[b]': {'lower bound': 0,
+                                                          'units': 'None',
+                                                          'upper bound': 1,
+                                                          'value': np.array([0.  , 0.25, 0.  , 0.  , 0.25, 0.  , 0.  , 0.  , 0.  ])}}}
 
-        # print('Rank %d, num_procs %d' % (rank, num_procs))
+        global_num_cases = len(input_dict['sweep_params']['fs.input[a]']['value'])
+        global_results_arr = _aggregate_results_arr(input_dict, global_num_cases, comm, rank, num_procs)
+        reference_results_arr = np.array([[0.  , 0.  , 0.2 , 0.  , 0.  , 0.  ],
+                                          [0.  , 0.  , 0.2 , 0.75, 0.  , 0.  ],
+                                          [0.  , 0.  , 0.  , 0.  , 0.  , 0.  ],
+                                          [0.  , 0.  , 1.  , 0.  , 0.  , 0.  ],
+                                          [0.  , 0.  , 1.  , 0.75, 0.  , 0.  ],
+                                          [0.  , 0.  , 0.  , 0.  , 0.  , 0.  ],
+                                          [0.  , 0.  , 0.  , 0.  , 0.  , 0.  ],
+                                          [0.  , 0.  , 0.  , 0.  , 0.  , 0.  ],
+                                          [0.  , 0.  , 0.  , 0.  , 0.  , 0.  ]])
 
-        nn = 5
-        np.random.seed(1)
-        local_results = (rank+1)*np.random.rand(nn, 2)
-        global_values = np.random.rand(nn*num_procs, 4)
+        assert np.array_equal(global_results_arr, reference_results_arr)
 
-        global_results = _aggregate_results(local_results, global_values, comm, num_procs)
-
-        assert np.shape(global_results)[1] == np.shape(local_results)[1]
-        assert np.shape(global_results)[0] == np.shape(global_values)[0]
-
-        if rank == 0:
-            assert global_results[0, 0] == pytest.approx(local_results[0, 0])
-            assert global_results[0, 1] == pytest.approx(local_results[0, 1])
-            assert global_results[-1, 0] == pytest.approx(num_procs*local_results[-1, 0])
-            assert global_results[-1, 1] == pytest.approx(num_procs*local_results[-1, 1])
 
     @pytest.mark.unit
     def test_interp_nan_values(self):
@@ -299,42 +330,47 @@ class TestParallelManager():
         comm, rank, num_procs = _init_mpi()
         tmp_path = _get_rank0_path(comm, tmp_path)
 
-        reference_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
+        input_dict = {'outputs': {'fs.input[a]': {'lower bound': 0,
                                                       'units': 'None',
-                                                      'upper bound': 0,
+                                                      'upper bound': 1,
                                                       'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
                                       'fs.input[b]': {'lower bound': 0,
                                                       'units': 'None',
-                                                      'upper bound': 0,
+                                                      'upper bound': 1,
                                                       'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
                                       'fs.output[c]': {'lower bound': 0,
                                                        'units': 'None',
-                                                       'upper bound': 0,
+                                                       'upper bound': 1,
                                                        'value': np.array([0.2, 0.2, 0. , 1. , 1. , 0. , 0. , 0. , 0. ])},
                                       'fs.output[d]': {'lower bound': 0,
                                                        'units': 'None',
-                                                       'upper bound': 0,
+                                                       'upper bound': 1,
                                                        'value': np.array([0.  , 0.75, 0.  , 0.  , 0.75, 0.  , 0.  , 0.  , 0.  ])},
                                       'fs.slack[ab_slack]': {'lower bound': 0,
                                                              'units': 'None',
-                                                             'upper bound': 0,
+                                                             'upper bound': 1,
                                                              'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
                                       'fs.slack[cd_slack]': {'lower bound': 0,
                                                             'units': 'None',
-                                                            'upper bound': 0,
+                                                            'upper bound': 1,
                                                             'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])}},
                          'solve_successful': [ True ]*9,
-                         'sweep_params': {'fs.input[a]': {'lower bound': 0,
+                         'sweep_params': {'fs.input[a]': {'lower bound': None,
                                                           'units': 'None',
-                                                          'upper bound': 0,
+                                                          'upper bound': None,
                                                           'value': np.array([0.1, 0.1, 0. , 0.5, 0.5, 0. , 0. , 0. , 0. ])},
                                           'fs.input[b]': {'lower bound': 0,
                                                           'units': 'None',
-                                                          'upper bound': 0,
+                                                          'upper bound': 1,
                                                           'value': np.array([0.  , 0.25, 0.  , 0.  , 0.25, 0.  , 0.  , 0.  , 0.  ])}}}
 
+        import copy
+        reference_dict = copy.deepcopy(input_dict)
+        reference_dict['sweep_params']['fs.input[a]']['lower bound'] = np.finfo('d').min
+        reference_dict['sweep_params']['fs.input[a]']['upper bound'] = np.finfo('d').max
+
         h5_fname = "h5_test_{0}.h5".format(rank)
-        _write_output_to_h5(reference_dict, output_directory=tmp_path, fname=h5_fname)
+        _write_output_to_h5(input_dict, output_directory=tmp_path, fname=h5_fname)
         read_dictionary = _read_output_h5(os.path.join(tmp_path, h5_fname))
         _assert_dictionary_correctness(reference_dict, read_dictionary)
 
@@ -355,15 +391,15 @@ class TestParallelManager():
         sweep_params, sampling_type = _process_sweep_params(sweep_params)
         values = _build_combinations(sweep_params, sampling_type, None, comm, rank, num_procs)
         num_cases = np.shape(values)[0]
-        output_dict, outputs = _create_local_output_skeleton(model, sweep_params, None, num_cases)
+        output_dict = _create_local_output_skeleton(model, sweep_params, None, num_cases)
 
         truth_dict = {'outputs': {'fs.output[c]': {'lower bound': 0,
                                                    'units': 'None',
-                                                   'upper bound': 0,
+                                                   'upper bound': 1,
                                                    'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
                                   'fs.output[d]': {'lower bound': 0,
                                                    'units': 'None',
-                                                   'upper bound': 0,
+                                                   'upper bound': 1,
                                                    'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
                                   'fs.performance': {'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
                                   'fs.slack[ab_slack]': {'lower bound': 0,
@@ -377,11 +413,11 @@ class TestParallelManager():
                                   'objective': {'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])}},
                       'sweep_params': {'fs.input[a]': {'lower bound': 0,
                                                        'units': 'None',
-                                                       'upper bound': 0,
+                                                       'upper bound': 1,
                                                        'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])},
                                        'fs.input[b]': {'lower bound': 0,
                                                        'units': 'None',
-                                                       'upper bound': 0,
+                                                       'upper bound': 1,
                                                        'value': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0.])}}}
 
         _assert_dictionary_correctness(truth_dict, output_dict)
@@ -409,7 +445,7 @@ class TestParallelManager():
         local_num_cases = np.shape(local_values)[0]
 
 
-        local_output_dict, outputs = _create_local_output_skeleton(model, sweep_params, None, local_num_cases)
+        local_output_dict = _create_local_output_skeleton(model, sweep_params, None, local_num_cases)
 
         # Manually update the values in the numpy array
         for key, value in local_output_dict.items():
@@ -457,15 +493,18 @@ class TestParallelManager():
         outputs = {'output_c':m.fs.output['c'],
                    'output_d':m.fs.output['d'],
                    'performance':m.fs.performance}
-        results_file = os.path.join(tmp_path, 'global_results.csv')
-        h5_fname = "output_dict"
+
+        results_fname = os.path.join(tmp_path, 'global_results')
+        csv_results_file = str(results_fname) + '.csv'
+        h5_results_file = str(results_fname) + '.h5'
 
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs=outputs,
-                csv_results_file = results_file,
-                h5_results_file = h5_fname,
+                results_file_name = results_fname,
+                write_csv = True, write_h5 = True,
                 optimize_function=_optimization,
                 debugging_data_dir = tmp_path,
+                interpolate_nan_outputs = True,
                 mpi_comm = comm)
 
         # NOTE: rank 0 "owns" tmp_path, so it needs to be
@@ -474,14 +513,16 @@ class TestParallelManager():
         #       returns
         if rank == 0:
             # Check that the global results file is created
-            assert os.path.isfile(results_file)
+            assert os.path.isfile(csv_results_file)
+            assert os.path.isfile( os.path.join(tmp_path, 'interpolated_global_results.csv') )
 
             # Check that all local output files have been created
             for k in range(num_procs):
+                assert os.path.isfile(os.path.join(tmp_path,f'local_results_{k:03}.h5'))
                 assert os.path.isfile(os.path.join(tmp_path,f'local_results_{k:03}.csv'))
 
             # Attempt to read in the data
-            data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
+            data = np.genfromtxt(csv_results_file, skip_header=1, delimiter=',')
 
             # Compare the last row of the imported data to truth
             truth_data = [ 0.9, 0.5, np.nan, np.nan, np.nan]
@@ -491,11 +532,11 @@ class TestParallelManager():
         if rank == 0:
             truth_dict = {'outputs': {'output_c': {'lower bound': 0,
                                                        'units': 'None',
-                                                       'upper bound': 0,
+                                                       'upper bound': 1,
                                                        'value': np.array([0.2, 0.2, np.nan, 1., 1., np.nan, np.nan, np.nan, np.nan])},
                                       'output_d': {'lower bound': 0,
                                                        'units': 'None',
-                                                       'upper bound': 0,
+                                                       'upper bound': 1,
                                                        'value': np.array([0.  , 0.75,  np.nan, 0., 0.75,  np.nan, np.nan, np.nan, np.nan])},
                                       'performance': {'value': np.array([0.2 , 0.95,  np.nan, 1., 1.75,  np.nan, np.nan,  np.nan, np.nan])}},
                           'solve_successful': [True,
@@ -509,17 +550,17 @@ class TestParallelManager():
                                                False],
                           'sweep_params': {'fs.input[a]': {'lower bound': 0,
                                                            'units': 'None',
-                                                           'upper bound': 0,
+                                                           'upper bound': 1,
                                                            'value': np.array([0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9])},
                                            'fs.input[b]': {'lower bound': 0,
                                                            'units': 'None',
-                                                           'upper bound': 0,
+                                                           'upper bound': 1,
                                                            'value': np.array([0., 0.25, 0.5 , 0., 0.25, 0.5 , 0., 0.25, 0.5 ])}}}
 
-            h5_fpath = os.path.join(tmp_path, 'output_dict.h5')
-            read_dict = _read_output_h5(h5_fpath)
+            # h5_fpath = os.path.join(tmp_path, 'output_dict.h5')
+            read_dict = _read_output_h5(h5_results_file)
             _assert_dictionary_correctness(truth_dict, read_dict)
-            _assert_h5_csv_agreement(results_file, read_dict)
+            _assert_h5_csv_agreement(csv_results_file, read_dict)
 
             # Check if there is a text file created
             import ast
@@ -527,7 +568,7 @@ class TestParallelManager():
             truth_txt_dict = {'outputs': ['output_c', 'output_d', 'performance'],
                               'sweep_params': ['fs.input[a]', 'fs.input[b]']}
 
-            txt_fpath = os.path.join(tmp_path, '{0}.txt'.format(h5_fname))
+            txt_fpath = os.path.join(tmp_path, '{0}.txt'.format(results_fname))
             assert os.path.exists(txt_fpath)
             f = open(txt_fpath)
             f_contents = f.read()
@@ -554,13 +595,14 @@ class TestParallelManager():
                    'output_d':m.fs.output['d'],
                    'performance':m.fs.performance,
                    'objective':m.objective}
-        results_file = os.path.join(tmp_path, 'global_results_optimize.csv')
-        h5_fname = "output_dict_optimize"
+        results_fname = os.path.join(tmp_path, 'global_results')
+        csv_results_file = str(results_fname) + '.csv'
+        h5_results_file = str(results_fname) + '.h5'
 
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs=outputs,
-                csv_results_file = results_file,
-                h5_results_file = h5_fname,
+                results_file_name = results_fname,
+                write_csv = True, write_h5 = True,
                 optimize_function=_optimization,
                 optimize_kwargs={'relax_feasibility':True},
                 mpi_comm = comm)
@@ -571,10 +613,10 @@ class TestParallelManager():
         #       returns
         if rank == 0:
             # Check that the global results file is created
-            assert os.path.isfile(results_file)
+            assert os.path.isfile(csv_results_file)
 
             # Attempt to read in the data
-            data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
+            data = np.genfromtxt(csv_results_file, skip_header=1, delimiter=',')
             # Compare the last row of the imported data to truth
             truth_data = [ 0.9, 0.5, 1.0, 1.0, 2.0, 2.0 - 1000.*((2.*0.9 - 1.) + (3.*0.5 - 1.))]
             assert np.allclose(data[-1], truth_data, equal_nan=True)
@@ -584,28 +626,28 @@ class TestParallelManager():
 
             truth_dict = {'outputs': {'output_c': {'lower bound': 0,
                                                        'units': 'None',
-                                                       'upper bound': 0,
+                                                       'upper bound': 1,
                                                        'value': np.array([0.2, 0.2, 0.2, 1., 1., 1., 1., 1., 1.])},
                                       'output_d': {'lower bound': 0,
                                                        'units': 'None',
-                                                       'upper bound': 0,
+                                                       'upper bound': 1,
                                                        'value': np.array([9.98580690e-09, 0.75, 1., 9.99872731e-09, 0.75, 1., 9.99860382e-09, 0.75, 1.])},
                                       'performance': {'value': np.array([0.2, 0.95, 1.2, 1., 1.75, 2., 1., 1.75, 2.])},
                                       'objective': {'value': np.array([ 0.2,  9.50000020e-01, -4.98799990e+02,  1.,  1.75, -4.97999990e+02, -7.98999990e+02, -7.98249990e+02, 2.0 - 1000.*((2.*0.9 - 1.) + (3.*0.5 - 1.))])}},
                           'solve_successful': [True]*9,
                           'sweep_params': {'fs.input[a]': {'lower bound': 0,
                                                            'units': 'None',
-                                                           'upper bound': 0,
+                                                           'upper bound': 1,
                                                            'value': np.array([0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9])},
                                            'fs.input[b]': {'lower bound': 0,
                                                            'units': 'None',
-                                                           'upper bound': 0,
+                                                           'upper bound': 1,
                                                            'value': np.array([0., 0.25, 0.5 , 0., 0.25, 0.5, 0., 0.25, 0.5 ])}}}
 
-            h5_fpath = os.path.join(tmp_path, '{0}.h5'.format(h5_fname))
-            read_dict = _read_output_h5(h5_fpath)
+            # h5_fpath = os.path.join(tmp_path, '{0}.h5'.format(h5_results_file))
+            read_dict = _read_output_h5(h5_results_file)
             _assert_dictionary_correctness(truth_dict, read_dict)
-            _assert_h5_csv_agreement(results_file, read_dict)
+            _assert_h5_csv_agreement(csv_results_file, read_dict)
 
 
     @pytest.mark.component
@@ -621,13 +663,14 @@ class TestParallelManager():
         B = m.fs.input['b']
         sweep_params = {A.name : (A, 0.1, 0.9, 3),
                         B.name : (B, 0.0, 0.5, 3)}
-        results_file = os.path.join(tmp_path, 'global_results_recover.csv')
-        h5_fname = "output_dict_recover"
+        results_fname = os.path.join(tmp_path, 'global_results_recover')
+        csv_results_file = str(results_fname) + '.csv'
+        h5_results_file = str(results_fname) + '.h5'
 
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs=None,
-                csv_results_file = results_file,
-                h5_results_file = h5_fname,
+                results_file_name = csv_results_file,
+                write_csv = False, write_h5 = True,
                 optimize_function=_optimization,
                 reinitialize_function=_reinitialize,
                 reinitialize_kwargs={'slack_penalty':10.},
@@ -639,10 +682,10 @@ class TestParallelManager():
         #       returns
         if rank == 0:
             # Check that the global results file is created
-            assert os.path.isfile(results_file)
+            assert os.path.isfile(csv_results_file)
 
             # Attempt to read in the data
-            data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
+            data = np.genfromtxt(csv_results_file, skip_header=1, delimiter=',')
 
             # Compare the last row of the imported data to truth
             truth_data = [  0.9,   0.5, -11. ,   1. ,   1. ,   0.8,   0.5,   2. ]
@@ -652,11 +695,11 @@ class TestParallelManager():
 
             truth_dict = {'outputs': {'fs.output[c]': {'lower bound': 0,
                                                        'units': 'None',
-                                                       'upper bound': 0,
+                                                       'upper bound': 1,
                                                        'value': np.array([0.2, 0.2, 0.2, 1., 1., 1., 1., 1., 1.])},
                                       'fs.output[d]': {'lower bound': 0,
                                                        'units': 'None',
-                                                       'upper bound': 0,
+                                                       'upper bound': 1,
                                                        'value': np.array([0., 0.75, 1., 9.77756334e-09, 0.75, 1., 9.98605188e-09, 0.75, 1.0])},
                                       'fs.performance': {'value': np.array([0.2, 0.95, 1.2, 1., 1.75, 2., 1., 1.75, 2.])},
                                       'fs.slack[ab_slack]': {'lower bound': 0,
@@ -671,17 +714,17 @@ class TestParallelManager():
                           'solve_successful': [True]*9,
                           'sweep_params': {'fs.input[a]': {'lower bound': 0,
                                                            'units': 'None',
-                                                           'upper bound': 0,
+                                                           'upper bound': 1,
                                                            'value': np.array([0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9])},
                                            'fs.input[b]': {'lower bound': 0,
                                                            'units': 'None',
-                                                           'upper bound': 0,
+                                                           'upper bound': 1,
                                                            'value': np.array([0., 0.25, 0.5 , 0., 0.25, 0.5 , 0., 0.25, 0.5])}}}
 
-            h5_fpath = os.path.join(tmp_path, '{0}.h5'.format(h5_fname))
-            read_dict = _read_output_h5(h5_fpath)
+            # h5_fpath = os.path.join(tmp_path, '{0}.h5'.format(h5_fname))
+            read_dict = _read_output_h5(h5_results_file)
             _assert_dictionary_correctness(truth_dict, read_dict)
-            _assert_h5_csv_agreement(results_file, read_dict)
+            _assert_h5_csv_agreement(csv_results_file, read_dict)
 
 
     @pytest.mark.component
@@ -697,13 +740,14 @@ class TestParallelManager():
         B = m.fs.input['b']
         sweep_params = {A.name : (A, 0.1, 0.9, 3),
                         B.name : (B, 0.0, 0.5, 3)}
-        results_file = os.path.join(tmp_path, 'global_results_bad_recover.csv')
-        h5_fname = "output_dict_bad_recover"
+        results_fname = os.path.join(tmp_path, 'global_results_bad_recover')
+        csv_results_file = str(results_fname) + '.csv'
+        h5_results_file = str(results_fname) + '.h5'
 
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs=None,
-                csv_results_file = results_file,
-                h5_results_file = h5_fname,
+                results_file_name = h5_results_file,
+                write_csv = True, write_h5 = False,
                 optimize_function=_optimization,
                 reinitialize_function=_bad_reinitialize,
                 reinitialize_kwargs={'slack_penalty':10.},
@@ -715,10 +759,10 @@ class TestParallelManager():
         #       returns
         if rank == 0:
             # Check that the global results file is created
-            assert os.path.isfile(results_file)
+            assert os.path.isfile(csv_results_file)
 
             # Attempt to read in the data
-            data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
+            data = np.genfromtxt(csv_results_file, skip_header=1, delimiter=',')
 
             # Compare the last row of the imported data to truth
             truth_data = [ 0.9, 0.5, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]
@@ -727,11 +771,11 @@ class TestParallelManager():
         if rank == 0:
             truth_dict = {'outputs': {'fs.output[c]': {'lower bound': 0,
                                                        'units': 'None',
-                                                       'upper bound': 0,
+                                                       'upper bound': 1,
                                                        'value': np.array([0.2, 0.2, np.nan, 1. , 1. , np.nan, np.nan, np.nan, np.nan])},
                                       'fs.output[d]': {'lower bound': 0,
                                                        'units': 'None',
-                                                       'upper bound': 0,
+                                                       'upper bound': 1,
                                                        'value': np.array([0.  , 0.75, np.nan, 0., 0.75,  np.nan,  np.nan,  np.nan,  np.nan])},
                                       'fs.performance': {'value': np.array([0.2 , 0.95, np.nan, 1., 1.75,  np.nan,  np.nan,  np.nan,  np.nan])},
                                       'fs.slack[ab_slack]': {'lower bound': 0,
@@ -754,17 +798,16 @@ class TestParallelManager():
                                            False],
                           'sweep_params': {'fs.input[a]': {'lower bound': 0,
                                                            'units': 'None',
-                                                           'upper bound': 0,
+                                                           'upper bound': 1,
                                                            'value': np.array([0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9])},
                                            'fs.input[b]': {'lower bound': 0,
                                                            'units': 'None',
-                                                           'upper bound': 0,
+                                                           'upper bound': 1,
                                                            'value': np.array([0.  , 0.25, 0.5 , 0.  , 0.25, 0.5 , 0.  , 0.25, 0.5 ])}}}
 
-            h5_fpath = os.path.join(tmp_path, '{0}.h5'.format(h5_fname))
-            read_dict = _read_output_h5(h5_fpath)
+            read_dict = _read_output_h5(h5_results_file)
             _assert_dictionary_correctness(truth_dict, read_dict)
-            _assert_h5_csv_agreement(results_file, read_dict)
+            _assert_h5_csv_agreement(csv_results_file, read_dict)
 
     @pytest.mark.component
     def test_parameter_sweep_force_initialize(self, model, tmp_path):
@@ -779,13 +822,14 @@ class TestParallelManager():
         B = m.fs.input['b']
         sweep_params = {A.name : (A, 0.1, 0.9, 3),
                         B.name : (B, 0.0, 0.5, 3)}
-        results_file = os.path.join(tmp_path, 'global_results_recover.csv')
-        h5_fname = "output_dict_recover"
+        results_fname = os.path.join(tmp_path, 'global_results_force_initialize')
+        csv_results_file = str(results_fname) + '.csv'
+        h5_results_file = str(results_fname) + '.h5'
 
         # Call the parameter_sweep function
         parameter_sweep(m, sweep_params, outputs=None,
-                csv_results_file = results_file,
-                h5_results_file = h5_fname,
+                results_file_name = results_fname,
+                write_csv = True, write_h5 = True,
                 optimize_function=_optimization,
                 reinitialize_before_sweep=True,
                 reinitialize_function=_reinitialize,
@@ -798,10 +842,10 @@ class TestParallelManager():
         #       returns
         if rank == 0:
             # Check that the global results file is created
-            assert os.path.isfile(results_file)
+            assert os.path.isfile(csv_results_file)
 
             # Attempt to read in the data
-            data = np.genfromtxt(results_file, skip_header=1, delimiter=',')
+            data = np.genfromtxt(csv_results_file, skip_header=1, delimiter=',')
 
             # Compare the last row of the imported data to truth
             truth_data = [  0.9,   0.5, -11. ,   1. ,   1. ,   0.8,   0.5,   2. ]
@@ -811,11 +855,11 @@ class TestParallelManager():
 
             truth_dict = {'outputs': {'fs.output[c]': {'lower bound': 0,
                                                        'units': 'None',
-                                                       'upper bound': 0,
+                                                       'upper bound': 1,
                                                        'value': np.array([0.2, 0.2, 0.2, 1., 1., 1., 1., 1., 1.])},
                                       'fs.output[d]': {'lower bound': 0,
                                                        'units': 'None',
-                                                       'upper bound': 0,
+                                                       'upper bound': 1,
                                                        'value': np.array([0., 0.75, 1., 9.77756334e-09, 0.75, 1., 9.98605188e-09, 0.75, 1.0])},
                                       'fs.performance': {'value': np.array([0.2, 0.95, 1.2, 1., 1.75, 2., 1., 1.75, 2.])},
                                       'fs.slack[ab_slack]': {'lower bound': 0,
@@ -830,17 +874,16 @@ class TestParallelManager():
                           'solve_successful': [True]*9,
                           'sweep_params': {'fs.input[a]': {'lower bound': 0,
                                                            'units': 'None',
-                                                           'upper bound': 0,
+                                                           'upper bound': 1,
                                                            'value': np.array([0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9])},
                                            'fs.input[b]': {'lower bound': 0,
                                                            'units': 'None',
-                                                           'upper bound': 0,
+                                                           'upper bound': 1,
                                                            'value': np.array([0., 0.25, 0.5 , 0., 0.25, 0.5 , 0., 0.25, 0.5])}}}
 
-            h5_fpath = os.path.join(tmp_path, '{0}.h5'.format(h5_fname))
-            read_dict = _read_output_h5(h5_fpath)
+            read_dict = _read_output_h5(h5_results_file)
             _assert_dictionary_correctness(truth_dict, read_dict)
-            _assert_h5_csv_agreement(results_file, read_dict)
+            _assert_h5_csv_agreement(csv_results_file, read_dict)
 
     @pytest.mark.component
     def test_parameter_sweep_bad_force_initialize(self, model, tmp_path):
@@ -856,14 +899,11 @@ class TestParallelManager():
         sweep_params = {A.name : (A, 0.1, 0.9, 3),
                         B.name : (B, 0.0, 0.5, 3)}
 
-        results_file = os.path.join(tmp_path, 'global_results_recover.csv')
-        h5_fname = "output_dict_recover"
-
         with pytest.raises(ValueError):
             # Call the parameter_sweep function
             parameter_sweep(m, sweep_params, outputs=None,
-                    csv_results_file = results_file,
-                    h5_results_file = h5_fname,
+                    results_file_name = None,
+                    write_csv = False, write_h5 = False,
                     optimize_function=_optimization,
                     reinitialize_before_sweep=True,
                     reinitialize_function=None,
