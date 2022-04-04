@@ -702,8 +702,8 @@ def _save_results(sweep_params, local_values, global_values, local_results_dict,
 
             if (write_h5 or write_csv) and dirname != '':
                 os.makedirs(dirname, exist_ok=True)
-            # elif not write_h5 and not write_csv:
-            #     warnings.warn("A results filename was provided but neither options to write H5 or csv was selected. No file will be written.", UserWarning)
+            elif not write_h5 and not write_csv:
+                warnings.warn("A results filename was provided but neither options to write H5 or csv was selected. No file will be written.", UserWarning)
 
             if debugging_data_dir is not None:
                 os.makedirs(debugging_data_dir, exist_ok=True)
