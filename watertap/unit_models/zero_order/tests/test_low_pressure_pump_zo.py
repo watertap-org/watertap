@@ -104,7 +104,7 @@ class TestLowPressurePumpZO:
                 model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5) ==
                     value(model.fs.unit.outlet.flow_mass_comp[t, j]))
 
-        assert (pytest.approx(22.109214, rel=1e-5) ==
+        assert (pytest.approx(22.133976, rel=1e-5) ==
                 value(model.fs.unit.electricity[0]))
 
     @pytest.mark.solver
@@ -131,7 +131,7 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key              : Value  : Fixed : Bounds
-    Electricity (kW) : 22.109 : False : (0, None)
+    Electricity (kW) : 22.134 : False : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table

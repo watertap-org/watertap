@@ -18,6 +18,7 @@ from pyomo.environ import Constraint, Reference, units as pyunits, Var
 from idaes.core import declare_process_block_class
 
 from watertap.core import build_pt, pump_electricity, ZeroOrderBaseData
+from idaes.core.util.constants import Constants
 
 # Some more information about this module
 __author__ = "Chenyu Wang"
@@ -38,7 +39,7 @@ class LowPressurePumpZOData(ZeroOrderBaseData):
 
         build_pt(self)
 
-        self.lift_height = Var(units=pyunits.feet,
+        self.lift_height = Var(units=pyunits.m,
                             doc="Lift height for pump")
 
         self.eta_pump = Var(units=pyunits.dimensionless,
@@ -62,10 +63,10 @@ class LowPressurePumpZOData(ZeroOrderBaseData):
                              'pump flowrate.')
         def electricity_consumption(b, t):
             q_in = pyunits.convert(b.properties[t].flow_vol,
-                                   to_units=pyunits.gallon / pyunits.minute)
-            A = 3960 * pyunits.gallon * pyunits.foot / pyunits.minute / pyunits.horsepower
+                                   to_units=pyunits.m ** 3 / pyunits.s)
             return b.electricity[t] == pyunits.convert(
-                q_in * self.lift_height / (A * self.eta_pump * self.eta_motor),
+                pyunits.convert(b.lift_height, to_units=pyunits.m) *
+                q_in * b.properties[t].dens_mass * Constants.acceleration_gravity / (b.eta_pump * b.eta_motor),
                 to_units=pyunits.kW)
 
         self._perf_var_dict["Electricity (kW)"] = self.electricity

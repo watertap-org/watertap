@@ -1,7 +1,7 @@
 default: # low pressure pump
   lift_height:
-    value: 100
-    units: ft
+    value: 30.47 # 100 ft
+    units: m
   eta_pump:
     value: 0.9
     units: dimensionless
