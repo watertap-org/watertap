@@ -139,7 +139,7 @@ def _strip_extension(file_name, extension):
     if file_name.lower().endswith(extension):
         return file_name[:-len(extension)], extension
     else:
-        return file_name, 0, None
+        return file_name, None
 
 # ================================================================
 
