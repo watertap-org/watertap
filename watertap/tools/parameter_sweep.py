@@ -652,7 +652,7 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
                     pyo.assert_optimal_termination(results)
 
                 except:
-                    pass # Run Successful is still False
+                    pass # run_successful is still False
                 else:
                     run_successful = True
 
