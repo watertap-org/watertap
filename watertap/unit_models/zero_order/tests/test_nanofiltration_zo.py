@@ -490,30 +490,39 @@ def test_costing_non_default_subtype():
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = NanofiltrationZO(default={
+    m.fs.unit = NanofiltrationZO(default={
         "property_package": m.fs.params,
         "database": m.db,
         "process_subtype": "rHGO_dye_rejection"})
 
-    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
-    m.fs.unit1.inlet.flow_mass_comp[0, "tds"].fix(1)
-    m.fs.unit1.inlet.flow_mass_comp[0, "dye"].fix(2)
+    m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit.inlet.flow_mass_comp[0, "tds"].fix(1)
+    m.fs.unit.inlet.flow_mass_comp[0, "dye"].fix(2)
 
-    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    m.fs.unit.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(default={
+    m.fs.unit.costing = UnitModelCostingBlock(default={
         "flowsheet_costing_block": m.fs.costing})
 
-    m.fs.costing.display()
-
-    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
+    assert isinstance(m.fs.unit.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint,
                       Constraint)
     assert isinstance(m.fs.costing.nanofiltration, Block)
-    assert isinstance(m.fs.unit1.costing.fixed_operating_cost, Var)
-    assert isinstance(m.fs.unit1.costing.fixed_operating_cost_constraint,
+    assert isinstance(m.fs.unit.costing.fixed_operating_cost, Var)
+    assert isinstance(m.fs.unit.costing.fixed_operating_cost_constraint,
                       Constraint)
 
     assert_units_consistent(m.fs)
-    assert degrees_of_freedom(m.fs.unit1) == 0
+    assert degrees_of_freedom(m.fs.unit) == 0
+
+    initialization_tester(m)
+
+    results = solver.solve(m)
+
+    # Check for optimal solution
+    assert check_optimal_termination(results)
+
+    assert pytest.approx(39162.813807, rel=1e-5) == value(m.fs.unit.area)
+    assert pytest.approx(0.58744, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
+    assert pytest.approx(0.088116, rel=1e-5) == value(m.fs.unit.costing.fixed_operating_cost)
