@@ -30,6 +30,7 @@ from watertap.unit_models.zero_order import NanofiltrationZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.core.zero_order_costing import ZeroOrderCosting
+from watertap.costing.watertap_costing_package import cost_membrane
 
 solver = get_solver()
 
@@ -477,3 +478,39 @@ def test_costing():
 
     assert m.fs.unit1.electricity[0] in \
         m.fs.costing._registered_flows["electricity"]
+
+def test_costing_non_default_subtype():
+    m = ConcreteModel()
+    m.db = Database()
+
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = WaterParameterBlock(
+        default={"solute_list": ["tds", "dye"]})
+
+    m.fs.costing = ZeroOrderCosting()
+
+    m.fs.unit1 = NanofiltrationZO(default={
+        "property_package": m.fs.params,
+        "database": m.db,
+        "process_subtype": "rHGO_dye_rejection"})
+
+    m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
+    m.fs.unit1.inlet.flow_mass_comp[0, "tds"].fix(1)
+    m.fs.unit1.inlet.flow_mass_comp[0, "dye"].fix(2)
+
+    m.fs.unit1.load_parameters_from_database(use_default_removal=True)
+    assert degrees_of_freedom(m.fs.unit1) == 0
+
+    m.fs.unit1.costing = UnitModelCostingBlock(default={
+        "flowsheet_costing_block": m.fs.costing})
+
+    m.fs.costing.display()
+
+    assert isinstance(m.fs.unit1.costing.capital_cost, Var)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
+                      Constraint)
+    assert isinstance(m.fs.costing.nanofiltration, Block)
+
+    assert_units_consistent(m.fs)
+    assert degrees_of_freedom(m.fs.unit1) == 0

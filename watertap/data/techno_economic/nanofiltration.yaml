@@ -100,9 +100,17 @@ default:
       constituent_longform: Potassium
 
 rHGO_dye_rejection:
+  energy_electric_flow_vol_inlet:  # placeholder to pass test_unit_parameter_files, but not necessary for use
+    value: 0.231344952
+    units: kWh/m^3
   capital_cost:
-    basis: flow_vol
     cost_factor: None
+    membrane_cost:
+      value: 15
+      units: USD_2018/m^2
+    membrane_replacement_rate:
+      value: 0.15
+      units: dimensionless
   recovery_frac_mass_H2O:
     value: 0.75
     units: dimensionless

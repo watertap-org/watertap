@@ -25,6 +25,7 @@ from idaes.generic_models.costing.costing_base import (
     FlowsheetCostingBlockData, register_idaes_currency_units)
 
 from watertap.core.zero_order_base import ZeroOrderBase
+from watertap.costing.watertap_costing_package import cost_membrane
 from watertap.unit_models.zero_order import (
     BrineConcentratorZO,
     ChemicalAdditionZO,
@@ -38,6 +39,7 @@ from watertap.unit_models.zero_order import (
     MABRZO,
     IonExchangeZO,
     IronManganeseRemovalZO,
+    NanofiltrationZO,
     OzoneZO,
     OzoneAOPZO,
     PumpElectricityZO,
@@ -1510,6 +1512,69 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.config.flowsheet_costing_block.cost_flow(
             blk.unit_model.electricity[t0], "electricity")
 
+    def cost_nanofiltration(blk):
+        """
+        General method for costing nanofiltration. Costing is carried out
+        using either the general_power_law form or the standard form which
+        computes membrane cost and replacement rate.
+        """
+
+        t0 = blk.flowsheet().time.first()
+
+        # Get parameter dict from database
+        parameter_dict = \
+            blk.unit_model.config.database.get_unit_operation_parameters(
+                blk.unit_model._tech_type,
+                subtype=blk.unit_model.config.process_subtype)
+
+        if (blk.unit_model.config.process_subtype == "default"
+                or blk.unit_model.config.process_subtype is None):
+            ZeroOrderCostingData.cost_power_law_flow(blk)
+
+        else:
+            # Get costing parameter sub-block for this technology
+            mem_cost, rep_rate = _get_tech_parameters(
+                blk,
+                parameter_dict,
+                blk.unit_model.config.process_subtype,
+                ["membrane_cost", "membrane_replacement_rate"])
+
+            # Determine if a costing factor is required
+            factor = parameter_dict["capital_cost"]["cost_factor"]
+
+            # Add cost variable and constraint
+            blk.capital_cost = pyo.Var(
+                initialize=1,
+                units=blk.config.flowsheet_costing_block.base_currency,
+                bounds=(0, None),
+                doc="Capital cost of unit operation")
+
+            blk.fixed_operating_cost = pyo.Var(
+                initialize=1,
+                units=blk.config.flowsheet_costing_block.base_currency,
+                bounds=(0, None),
+                doc="Fixed operating cost of unit operation")
+
+            capex_expr = pyo.units.convert(
+                mem_cost * pyo.units.convert(blk.unit_model.area, to_units=pyo.units.m ** 2),
+                to_units=blk.config.flowsheet_costing_block.base_currency)
+
+            if factor == "TPEC":
+                capex_expr *= blk.config.flowsheet_costing_block.TPEC
+            elif factor == "TIC":
+                capex_expr *= blk.config.flowsheet_costing_block.TIC
+
+            blk.capital_cost_constraint = \
+                pyo.Constraint(expr=blk.capital_cost == capex_expr)
+
+            blk.fixed_operating_cost_constraint = \
+                pyo.Constraint(expr=blk.fixed_operating_cost ==
+                                    pyo.units.convert(rep_rate
+                                                      * mem_cost
+                                                      * pyo.units.convert(
+                                                      blk.unit_model.area, to_units=pyo.units.m ** 2),
+                                                      to_units=blk.config.flowsheet_costing_block.base_currency))
+
     def _get_ozone_capital_cost(blk, A, B, C, D):
         """
         Generate expressions for capital cost of ozonation system.
@@ -1611,6 +1676,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
                     MABRZO: cost_mabr,
                     IonExchangeZO: cost_ion_exchange,
                     IronManganeseRemovalZO: cost_iron_and_manganese_removal,
+                    NanofiltrationZO: cost_nanofiltration,
                     OzoneZO: cost_ozonation,
                     OzoneAOPZO: cost_ozonation_aop,
                     PumpElectricityZO: cost_pump_electricity,
