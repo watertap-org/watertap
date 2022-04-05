@@ -165,10 +165,10 @@ def set_defaults_from_yaml(m, yaml_filename, verbose=False):
             if component.mutable:
                 _set_value(component, key, default_value)
             else:
-                _log.warn(f"Cannot set value of non-mutable Param {component}")
+                _log.warning(f"Cannot set value of non-mutable Param {component}")
                 fail_count += 1
         else:
-            _log.warn(f"Cannot set value of component {component}")
+            _log.warning(f"Cannot set value of component {component}")
             fail_count += 1
 
     number_defaults = len(input_dict)
