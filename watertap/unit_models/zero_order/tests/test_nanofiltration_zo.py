@@ -511,6 +511,9 @@ def test_costing_non_default_subtype():
     assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
                       Constraint)
     assert isinstance(m.fs.costing.nanofiltration, Block)
+    assert isinstance(m.fs.unit1.costing.fixed_operating_cost, Var)
+    assert isinstance(m.fs.unit1.costing.fixed_operating_cost_constraint,
+                      Constraint)
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit1) == 0
