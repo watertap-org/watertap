@@ -38,7 +38,7 @@ class NanofiltrationZOData(ZeroOrderBaseData):
 
         build_sido(self)
 
-        if self.config.process_subtype != "default":
+        if self.config.process_subtype == "default" or self.config.process_subtype is None:
             constant_intensity(self)
         else:
             self.rejection_comp = Var(self.flowsheet().time,
@@ -57,15 +57,15 @@ class NanofiltrationZOData(ZeroOrderBaseData):
             self.area = Var(units=pyunits.m**2,
                             doc="Membrane area")
 
-            self._fixed_perf_vars.append(self.uv_reduced_equivalent_dose)
-            self._fixed_perf_vars.append(self.uv_transmittance_in)
+            self._fixed_perf_vars.append(self.applied_pressure)
+            self._fixed_perf_vars.append(self.water_permeability_coefficient)
 
 
             @self.Constraint(self.flowsheet().time,
                              doc="Water permeance constraint")
             def water_permeance_constraint(b, t):
-                return (b.properties_treated.flow_vol[t] ==
-                        pyunits.convert(b.water_permeability_coefficient * b.area * b.applied_pressure[t],
+                return (b.properties_treated[t].flow_vol ==
+                        pyunits.convert(b.water_permeability_coefficient[t] * b.area * b.applied_pressure[t],
                                         to_units=pyunits.m**3/pyunits.s))
 
             @self.Constraint(self.flowsheet().time,
@@ -78,4 +78,4 @@ class NanofiltrationZOData(ZeroOrderBaseData):
             self._perf_var_dict["Membrane Area (m^2)"] = self.area
             self._perf_var_dict["Net Driving Pressure (bar)"] = self.applied_pressure
             self._perf_var_dict["Water Permeability Coefficient (LMH/bar)"] = self.water_permeability_coefficient
-            self._perf_var_dict[f"Rejection (-)"] = self.rejection_comp
+            self._perf_var_dict[f"Rejection"] = self.rejection_comp

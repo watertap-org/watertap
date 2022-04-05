@@ -288,6 +288,153 @@ Unit : fs.unit                                                             Time:
 
         assert output in stream.getvalue()
 
+class TestNFZO_non_default_subtype:
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+        m.db = Database()
+
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.params = WaterParameterBlock(
+            default={"solute_list": ["tds", "dye"]})
+
+        m.fs.unit = NanofiltrationZO(default={
+            "property_package": m.fs.params,
+            "database": m.db,
+            "process_subtype": "rHGO_dye_rejection"})
+
+        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(0.9475)
+        m.fs.unit.inlet.flow_mass_comp[0, "tds"].fix(.05)
+        m.fs.unit.inlet.flow_mass_comp[0, "dye"].fix(0.0025)
+
+        return m
+
+    @pytest.mark.unit
+    def test_build(self, model):
+        assert model.fs.unit.config.database == model.db
+
+        assert isinstance(model.fs.unit.water_permeability_coefficient, Var)
+        assert isinstance(model.fs.unit.applied_pressure, Var)
+        assert isinstance(model.fs.unit.area, Var)
+        assert isinstance(model.fs.unit.rejection_comp, Var)
+        assert isinstance(model.fs.unit.rejection_constraint, Constraint)
+        assert isinstance(model.fs.unit.water_permeance_constraint, Constraint)
+
+    @pytest.mark.component
+    def test_load_parameters(self, model):
+        data = model.db.get_unit_operation_parameters("nanofiltration",
+                                                      subtype="rHGO_dye_rejection")
+
+        model.fs.unit.load_parameters_from_database(use_default_removal=True)
+
+        assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
+        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
+            data["recovery_frac_mass_H2O"]["value"]
+
+        for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
+            assert v.fixed
+            if j not in data["removal_frac_mass_solute"]:
+                assert v.value == data["default_removal_frac_mass_solute"]["value"]
+            else:
+                assert v.value == data["removal_frac_mass_solute"][j]["value"]
+
+        assert model.fs.unit.water_permeability_coefficient[0].fixed
+        assert model.fs.unit.water_permeability_coefficient[0].value == data[
+            "water_permeability_coefficient"]["value"]
+        assert model.fs.unit.applied_pressure[0].fixed
+        assert model.fs.unit.applied_pressure[0].value == data[
+            "applied_pressure"]["value"]
+
+    @pytest.mark.component
+    def test_degrees_of_freedom(self, model):
+        assert degrees_of_freedom(model.fs.unit) == 0
+
+    @pytest.mark.component
+    def test_unit_consistency(self, model):
+        assert_units_consistent(model.fs.unit)
+
+    @pytest.mark.component
+    def test_initialize(self, model):
+        initialization_tester(model)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, model):
+        results = solver.solve(model)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, model):
+        assert (pytest.approx(0.00074739, rel=1e-5) ==
+                value(model.fs.unit.properties_treated[0].flow_vol))
+        assert (pytest.approx(49.137649, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["tds"]))
+        assert (pytest.approx(0.053854, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["dye"]))
+
+        assert (pytest.approx(0.00025261, rel=1e-5) ==
+                value(model.fs.unit.properties_byproduct[0].flow_vol))
+        assert (pytest.approx(52.551416, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["tds"]))
+        assert (pytest.approx(9.73735178, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["dye"]))
+        assert (pytest.approx(3.9022551, rel=1e-5) ==
+                value(model.fs.unit.area))
+        assert (pytest.approx(0.978458, rel=1e-5) == value(
+            model.fs.unit.rejection_comp[0, "dye"]))
+        assert (pytest.approx(0.017247, rel=1e-5) == value(
+            model.fs.unit.rejection_comp[0, "tds"]))
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, model):
+        for j in model.fs.params.component_list:
+            assert 1e-5 >= abs(value(
+                model.fs.unit.inlet.flow_mass_comp[0, j] -
+                model.fs.unit.treated.flow_mass_comp[0, j] -
+                model.fs.unit.byproduct.flow_mass_comp[0, j]))
+
+    @pytest.mark.component
+    def test_report(self, model):
+        stream = StringIO()
+
+        model.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                                      : Value    : Fixed : Bounds
+                         Membrane Area (m^2) :   3.9023 : False : (None, None)
+                  Net Driving Pressure (bar) :   6.8950 :  True : (None, None)
+                             Rejection [dye] :  0.97846 : False : (None, None)
+                             Rejection [tds] : 0.017247 : False : (None, None)
+                        Solute Removal [dye] :  0.98390 :  True : (0, None)
+                        Solute Removal [tds] :  0.26550 :  True : (0, None)
+    Water Permeability Coefficient (LMH/bar) :   100.00 :  True : (None, None)
+                              Water Recovery :  0.75000 :  True : (1e-08, 1.0000001)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                              Inlet    Treated   Byproduct
+    Volumetric Flowrate    0.0010000 0.00074739 0.00025261
+    Mass Concentration H2O    947.50     950.81     937.71
+    Mass Concentration tds    50.000     49.138     52.551
+    Mass Concentration dye    2.5000   0.053854     9.7374
+====================================================================================
+"""
+
+        assert output in stream.getvalue()
 
 def test_costing():
     m = ConcreteModel()
