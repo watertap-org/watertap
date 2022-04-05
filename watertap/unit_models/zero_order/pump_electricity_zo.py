@@ -54,6 +54,12 @@ class PumpElectricityZOData(ZeroOrderBaseData):
             bounds=(0, None),
             doc="Electricity for low pressure pump")
 
+        self.applied_pressure = Var(
+            self.flowsheet().config.time,
+            units=pyunits.bar,
+            bounds=(0, None),
+            doc="Applied pressure")
+
         self._fixed_perf_vars.append(self.lift_height)
         self._fixed_perf_vars.append(self.eta_pump)
         self._fixed_perf_vars.append(self.eta_motor)
@@ -67,4 +73,13 @@ class PumpElectricityZOData(ZeroOrderBaseData):
                 Constants.acceleration_gravity / (b.eta_pump * b.eta_motor),
                 to_units=pyunits.kW)
 
+        @self.Constraint(self.flowsheet().time,
+                         doc='Constraint for pump applied pressure')
+        def applied_pressure_constraint(b, t):
+            return b.applied_pressure[t] == pyunits.convert(
+                b.lift_height * b.properties[t].dens_mass *
+                Constants.acceleration_gravity,
+                to_units=pyunits.bar)
+
         self._perf_var_dict["Electricity (kW)"] = self.electricity
+        self._perf_var_dict["Applied Pressure (bar)"] = self.applied_pressure
