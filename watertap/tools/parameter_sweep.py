@@ -374,7 +374,7 @@ def _create_local_output_skeleton(model, sweep_params, outputs, num_samples):
 def _create_component_output_skeleton(component, num_samples):
 
     comp_dict = {}
-    comp_dict["value"] = np.zeros(num_samples, dtype=np.float)
+    comp_dict["value"] = np.zeros(num_samples, dtype=np.float64)
     if hasattr(component, 'lb'):
         comp_dict["lower bound"] = component.lb
     if hasattr(component, 'ub'):
@@ -434,7 +434,7 @@ def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_pr
             for key, item in global_output_dict.items():
                 if key != "solve_successful":
                     for subkey, subitem in item.items():
-                        subitem['value'] = np.zeros(num_total_samples, dtype=np.float)
+                        subitem['value'] = np.zeros(num_total_samples, dtype=np.float64)
 
         else:
             global_output_dict = local_output_dict

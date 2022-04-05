@@ -14,6 +14,7 @@ class MarkerSpec(enum.Enum):
     component = "Quick tests that may require a solver"
     integration = "Long duration tests"
     build = "FIXME for building stuff?"
+    solver = "Tests that require a solver"
     requires_idaes_solver = "Tests that require a solver from the IDEAS extensions to pass"
 
     @property

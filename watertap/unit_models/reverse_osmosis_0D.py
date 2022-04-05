@@ -373,7 +373,7 @@ class ReverseOsmosisData(_ReverseOsmosisBaseData):
             res = opt.solve(blk, tee=slc.tee)
             # occasionally it might be worth retrying a solve
             if not check_optimal_termination(res):
-                init_log.warn("Trouble solving ReverseOsmosis0D unit model, trying one more time")
+                init_log.warning("Trouble solving ReverseOsmosis0D unit model, trying one more time")
                 res = opt.solve(blk, tee=slc.tee)
         check_solve(res, checkpoint='Initialization Step 3', logger=init_log, fail_flag=fail_on_warning)
         # ---------------------------------------------------------------------
