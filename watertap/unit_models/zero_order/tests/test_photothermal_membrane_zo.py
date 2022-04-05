@@ -68,7 +68,7 @@ class TestPhotothermalMembraneZO:
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
-            if j in data["removal_frac_mass_solute"]:
+            if j not in data["removal_frac_mass_solute"]:
                 assert v.value == data["default_removal_frac_mass_solute"]["value"]
             else:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
