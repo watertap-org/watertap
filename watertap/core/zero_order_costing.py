@@ -1518,7 +1518,23 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         using either the general_power_law form or the standard form which
         computes membrane cost and replacement rate.
         """
+        # Get cost method for this technology
+        cost_method = _get_unit_cost_method(blk)
+        valid_methods = ["cost_power_law_flow", "cost_membrane"]
+        if cost_method == "cost_power_law_flow":
+            ZeroOrderCostingData.cost_power_law_flow(blk)
+        elif cost_method == "cost_membrane":
+            ZeroOrderCostingData.cost_membrane(blk)
+        else:
+            raise KeyError(f"{cost_method} is not a relevant cost method for "
+                           f"{blk.unit_model._tech_type}. Specify one of the following "
+                           f"cost methods in the unit's YAML file: {valid_methods}")
 
+    def cost_membrane(blk):
+        """
+        Get membrane cost based on membrane area and unit membrane costs
+        as well as fixed operating cost for membrane replacement.
+        """
         t0 = blk.flowsheet().time.first()
 
         # Get parameter dict from database
@@ -1526,54 +1542,47 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             blk.unit_model.config.database.get_unit_operation_parameters(
                 blk.unit_model._tech_type,
                 subtype=blk.unit_model.config.process_subtype)
+        # Get costing parameter sub-block for this technology
+        mem_cost, rep_rate = _get_tech_parameters(
+            blk,
+            parameter_dict,
+            blk.unit_model.config.process_subtype,
+            ["membrane_cost", "membrane_replacement_rate"])
 
-        if (blk.unit_model.config.process_subtype == "default"
-                or blk.unit_model.config.process_subtype is None):
-            ZeroOrderCostingData.cost_power_law_flow(blk)
+        # Add cost variable and constraint
+        blk.capital_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Capital cost of unit operation")
 
-        else:
-            # Get costing parameter sub-block for this technology
-            mem_cost, rep_rate = _get_tech_parameters(
-                blk,
-                parameter_dict,
-                blk.unit_model.config.process_subtype,
-                ["membrane_cost", "membrane_replacement_rate"])
+        blk.fixed_operating_cost = pyo.Var(
+            initialize=1,
+            units=blk.config.flowsheet_costing_block.base_currency,
+            bounds=(0, None),
+            doc="Fixed operating cost of unit operation")
 
-            # Determine if a costing factor is required
-            factor = parameter_dict["capital_cost"]["cost_factor"]
+        capex_expr = pyo.units.convert(
+            mem_cost * pyo.units.convert(blk.unit_model.area, to_units=pyo.units.m ** 2),
+            to_units=blk.config.flowsheet_costing_block.base_currency)
 
-            # Add cost variable and constraint
-            blk.capital_cost = pyo.Var(
-                initialize=1,
-                units=blk.config.flowsheet_costing_block.base_currency,
-                bounds=(0, None),
-                doc="Capital cost of unit operation")
+        # Determine if a costing factor is required
+        factor = parameter_dict["capital_cost"]["cost_factor"]
+        if factor == "TPEC":
+            capex_expr *= blk.config.flowsheet_costing_block.TPEC
+        elif factor == "TIC":
+            capex_expr *= blk.config.flowsheet_costing_block.TIC
 
-            blk.fixed_operating_cost = pyo.Var(
-                initialize=1,
-                units=blk.config.flowsheet_costing_block.base_currency,
-                bounds=(0, None),
-                doc="Fixed operating cost of unit operation")
+        blk.capital_cost_constraint = \
+            pyo.Constraint(expr=blk.capital_cost == capex_expr)
 
-            capex_expr = pyo.units.convert(
-                mem_cost * pyo.units.convert(blk.unit_model.area, to_units=pyo.units.m ** 2),
-                to_units=blk.config.flowsheet_costing_block.base_currency)
-
-            if factor == "TPEC":
-                capex_expr *= blk.config.flowsheet_costing_block.TPEC
-            elif factor == "TIC":
-                capex_expr *= blk.config.flowsheet_costing_block.TIC
-
-            blk.capital_cost_constraint = \
-                pyo.Constraint(expr=blk.capital_cost == capex_expr)
-
-            blk.fixed_operating_cost_constraint = \
-                pyo.Constraint(expr=blk.fixed_operating_cost ==
-                                    pyo.units.convert(rep_rate
-                                                      * mem_cost
-                                                      * pyo.units.convert(
-                                                      blk.unit_model.area, to_units=pyo.units.m ** 2),
-                                                      to_units=blk.config.flowsheet_costing_block.base_currency))
+        blk.fixed_operating_cost_constraint = \
+            pyo.Constraint(expr=blk.fixed_operating_cost ==
+                                pyo.units.convert(rep_rate
+                                                  * mem_cost
+                                                  * pyo.units.convert(
+                                    blk.unit_model.area, to_units=pyo.units.m ** 2),
+                                                  to_units=blk.config.flowsheet_costing_block.base_currency))
 
     def _get_ozone_capital_cost(blk, A, B, C, D):
         """
@@ -1705,7 +1714,7 @@ def _get_tech_parameters(blk, parameter_dict, subtype, param_list):
         pblock = getattr(blk.config.flowsheet_costing_block,
                          blk.unit_model._tech_type)
     except AttributeError:
-        # Parameter Block for this technology haven't been added yet, create
+        # Parameter Block for this technology hasn't been added yet. Create it.
         pblock = pyo.Block()
 
         # Add block to FlowsheetCostingBlock
@@ -1757,6 +1766,24 @@ def _get_tech_parameters(blk, parameter_dict, subtype, param_list):
         return vlist[0]
     else:
         return tuple(x for x in vlist)
+
+def _get_unit_cost_method(blk):
+    """
+    Get a specified cost_method if one is defined in the YAML file.
+    This is meant for units with different cost methods between subtypes.
+    """
+    # Get parameter dict from database
+    parameter_dict = \
+        blk.unit_model.config.database.get_unit_operation_parameters(
+            blk.unit_model._tech_type,
+            subtype=blk.unit_model.config.process_subtype)
+
+    if "cost_method" not in parameter_dict['capital_cost']:
+        raise KeyError("Add a cost_method as a sub-key under capital_cost "
+                        "in the unit YAML file.")
+
+    return parameter_dict['capital_cost']['cost_method']
+
 
 
 def _load_case_study_definition(self):
