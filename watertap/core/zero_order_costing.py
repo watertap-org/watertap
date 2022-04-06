@@ -1555,7 +1555,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             bounds=(0, None),
             doc="Capital cost of unit operation")
 
-        blk.fixed_operating_cost = pyo.Var(
+        blk.variable_operating_cost = pyo.Var(
             initialize=1,
             units=blk.config.flowsheet_costing_block.base_currency,
             bounds=(0, None),
@@ -1575,8 +1575,8 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
         blk.capital_cost_constraint = \
             pyo.Constraint(expr=blk.capital_cost == capex_expr)
 
-        blk.fixed_operating_cost_constraint = \
-            pyo.Constraint(expr=blk.fixed_operating_cost ==
+        blk.variable_operating_cost_constraint = \
+            pyo.Constraint(expr=blk.variable_operating_cost ==
                                 pyo.units.convert(rep_rate
                                                   * mem_cost
                                                   * pyo.units.convert(
@@ -1778,8 +1778,8 @@ def _get_unit_cost_method(blk):
             subtype=blk.unit_model.config.process_subtype)
 
     if "cost_method" not in parameter_dict['capital_cost']:
-        raise KeyError("Add a cost_method as a sub-key under capital_cost "
-                        "in the unit YAML file.")
+        raise KeyError(f"Costing for {blk.unit_model._tech_type} requires a cost_method argument, however "
+                       f"this was not defined for process sub-type {blk.unit_model.config.process_subtype}.")
 
     return parameter_dict['capital_cost']['cost_method']
 
