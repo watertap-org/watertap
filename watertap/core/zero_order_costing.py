@@ -25,7 +25,6 @@ from idaes.generic_models.costing.costing_base import (
     FlowsheetCostingBlockData, register_idaes_currency_units)
 
 from watertap.core.zero_order_base import ZeroOrderBase
-from watertap.costing.watertap_costing_package import cost_membrane
 from watertap.unit_models.zero_order import (
     BrineConcentratorZO,
     ChemicalAdditionZO,
