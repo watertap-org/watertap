@@ -30,7 +30,6 @@ from watertap.unit_models.zero_order import NanofiltrationZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 from watertap.core.zero_order_costing import ZeroOrderCosting
-from watertap.costing.watertap_costing_package import cost_membrane
 
 solver = get_solver()
 
