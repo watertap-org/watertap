@@ -212,8 +212,8 @@ class Test_SecondaryTreatmentWWTPZOsubtype:
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
-
-def test_costing():
+@pytest.mark.parametrize("subtype", [k for k in params.keys()])
+def test_costing(subtype):
     m = ConcreteModel()
     m.db = Database()
 
@@ -226,7 +226,8 @@ def test_costing():
 
     m.fs.unit1 = SecondaryTreatmentWWTPZO(default={
         "property_package": m.fs.params,
-        "database": m.db})
+        "database": m.db,
+        "process_subtype": subtype})
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
