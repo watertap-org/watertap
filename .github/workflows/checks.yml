@@ -20,11 +20,11 @@ env:
   PYTEST_ADDOPTS: "--color=yes"
 
 jobs:
+
   code-formatting:
     name: Check code is formatted (Black)
     # OS and/or Python version don't make a difference, so we choose ubuntu and 3.8 as defaults
     runs-on: ubuntu-latest
-    if: 'false'
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -39,7 +39,8 @@ jobs:
           pip --no-cache-dir install --progress-bar off "$black_requirement"
       - name: Run Black to verify that the committed code is formatted
         run: |
-          black --check
+          black --check .
+
   tests:
     name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
