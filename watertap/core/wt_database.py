@@ -153,7 +153,7 @@ class Database:
             # Assume subtype is list-like and raise an exception if not
             try:
                 for s in subtype:
-                    # Iterate throguh provided subtypes and update parameters
+                    # Iterate through provided subtypes and update parameters
                     # Note that this will overwrite previous parameters if
                     # there is overlap, so we might need to be careful in use.
                     try:

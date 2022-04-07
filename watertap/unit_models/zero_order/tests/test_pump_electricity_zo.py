@@ -61,8 +61,10 @@ class TestPumpElectricityZO:
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
         assert isinstance(model.fs.unit.lift_height, Var)
+        assert isinstance(model.fs.unit.applied_pressure, Var)
         assert isinstance(model.fs.unit.eta_pump, Var)
         assert isinstance(model.fs.unit.eta_motor, Var)
+        assert isinstance(model.fs.unit.applied_pressure_constraint, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -130,8 +132,9 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key              : Value  : Fixed : Bounds
-    Electricity (kW) : 22.134 : False : (0, None)
+    Key                    : Value  : Fixed : Bounds
+    Applied Pressure (bar) : 2.9881 : False : (0, None)
+          Electricity (kW) : 22.134 : False : (0, None)
 
 ------------------------------------------------------------------------------------
     Stream Table

@@ -30,6 +30,8 @@ cryptosporidium:
   constituent_longform: Cryptosporidium
 cyanide_as_free:
   constituent_longform: cyanide_as_free
+dye:
+  constituent_longform: Dye
 eeq:
   constituent_longform: Estradiol Equivalency (EEQ)
 electrical_conductivity:
