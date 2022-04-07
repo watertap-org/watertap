@@ -213,7 +213,8 @@ class Test_CASZOsubtype:
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
 
-def test_costing():
+@pytest.mark.parametrize("subtype", [k for k in params.keys()])
+def test_costing(subtype):
     m = ConcreteModel()
     m.db = Database()
 
