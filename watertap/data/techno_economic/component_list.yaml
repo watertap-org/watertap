@@ -58,6 +58,8 @@ manganese:
   constituent_longform: Manganese
 mercury:
   constituent_longform: Mercury
+metals:
+  consituent_longform: Metals
 molybdenum:
   constituent_longform: Molybdenum
 ndma:
@@ -81,11 +83,15 @@ oily_matter:
 perfluorooctane_sulfonate_pfos:
   constituent_longform: Perfluorooctane sulfonate (PFOS)
 perfluorootanoate_pfoa:
-  constituent_longform: Perfluorootanoate (PFOA)
+  constituent_longform: Perfluorooctanoate (PFOA)
 phosphates:
   constituent_longform: Phosphates
+phosphorus:
+  consituent_longform: Phosphorus
 potassium:
   constituent_longform: Potassium
+protozoan_cysts_oocysts:
+  constituent_longform: Protozoan cysts and oocysts (typical units in Number/100 mL)
 radium_226:
   constituent_longform: Radium 226
 radium_228:
@@ -104,23 +110,28 @@ sulfate:
   constituent_longform: Sulfate
 sulfur:
   constituent_longform: Sulfur
+surfactants:
+  consituent_longform: Surfactants
 tds:
   constituent_longform: Total Dissolved Solids (TDS)
 toc:
   constituent_longform: Total Organic Carbon (TOC)
 total_coliforms_fecal_ecoli:
-  constituent_longform: "Total Coliforms (including fecal coliform and\uFFFD E.\
-    \ Coli)"
+  constituent_longform: Total Coliforms (including fecal coliform and E. Coli) (typical units in Number/100 mL)
+trace_constituents:
+  constituent_longform: Trace Constituents (e.g., pharmaceutical byproducts)
 trihalomethanes:
   constituent_longform: Trihalomethanes
 tss:
   constituent_longform: Total Suspended Solids (TSS)
 turbidity:
-  constituent_longform: Turbidity
+  constituent_longform: Turbidity (typical units in NTU)
 uranium:
   constituent_longform: Uranium
 viruses_enteric:
-  constituent_longform: Viruses (enteric)
+  constituent_longform: Viruses (enteric) (typical units in PFU/100 mL)
+voc:
+  constituent_longform: Volatile Organic Compounds (VOCs)
 zinc:
   constituent_longform: Zinc
 carbon_dioxide:
