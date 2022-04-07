@@ -8,6 +8,8 @@ arsenic:
   constituent_longform: Arsenic
 barium:
   constituent_longform: Barium
+bioconcentrated_phosphorous:
+  constituent_longform: Bioconcentrated phosphorous
 bicarbonate_alkalinity_as_caco3:
   constituent_longform: Bicarbonate Alkalinity as CaCO3
 bod:
@@ -72,6 +74,8 @@ nitrite:
   constituent_longform: Nitrite
 nitrogen:
   constituent_longform: Nitrogen
+nitrous_oxide:
+  constituent_longform: Nitrous Oxide
 nonbiodegradable_cod:
   constituent_longform: Nonbiodegradable Chemical Oxygen Demand (ffCOD)
 nonvolatile_toc:
