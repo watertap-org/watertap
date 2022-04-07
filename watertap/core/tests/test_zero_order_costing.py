@@ -188,7 +188,7 @@ class TestGeneralMethods:
 
     @pytest.mark.unit
     def test_get_tech_parameters_second_call(self, model):
-        # Use differnt parameter values- thes eshould be ignored
+        # Use different parameter values- these should be ignored
         parameters = {
             "capital_cost": {
                 "capital_a_parameter": {
