@@ -22,24 +22,31 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           Constraint,
-                           Param,
-                           Set,
-                           value,
-                           Var)
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    Constraint,
+    Param,
+    Set,
+    value,
+    Var,
+)
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
 
 from watertap.core import (
-    Database, WaterParameterBlock, WaterStateBlock, ZeroOrderBaseData)
+    Database,
+    WaterParameterBlock,
+    WaterStateBlock,
+    ZeroOrderBaseData,
+)
 from watertap.core.zero_order_sido_reactive import (
     build_sido_reactive,
     initialize_sidor,
     calculate_scaling_factors_sidor,
-    _get_Q_sidor)
+    _get_Q_sidor,
+)
 
 solver = get_solver()
 
@@ -65,12 +72,11 @@ class TestSIDOR:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
         m.fs.unit = DerivedSIDOR(
-            default={"property_package": m.fs.water_props,
-                     "database": m.db})
+            default={"property_package": m.fs.water_props, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
         m.fs.unit.inlet.flow_mass_comp[0, "A"].fix(10)
@@ -91,11 +97,13 @@ class TestSIDOR:
         assert model.fs.unit._stream_table_dict == {
             "Inlet": model.fs.unit.inlet,
             "Treated": model.fs.unit.treated,
-            "Byproduct": model.fs.unit.byproduct}
+            "Byproduct": model.fs.unit.byproduct,
+        }
         assert model.fs.unit._perf_var_dict == {
             "Water Recovery": model.fs.unit.recovery_frac_mass_H2O,
             "Solute Removal": model.fs.unit.removal_frac_mass_solute,
-            "Reaction Extent": model.fs.unit.extent_of_reaction}
+            "Reaction Extent": model.fs.unit.extent_of_reaction,
+        }
 
     @pytest.mark.unit
     def test_build(self, model):
@@ -139,17 +147,21 @@ class TestSIDOR:
 
     @pytest.mark.unit
     def test_key_components(self, model):
-        assert (str(model.fs.unit.properties_in[0].flow_mass_comp["A"]) in
-                str(model.fs.unit.reaction_extent_equation[0, "Rxn1"].body))
-        assert (str(model.fs.unit.properties_in[0].flow_mass_comp["B"]) in
-                str(model.fs.unit.reaction_extent_equation[0, "Rxn2"].body))
+        assert str(model.fs.unit.properties_in[0].flow_mass_comp["A"]) in str(
+            model.fs.unit.reaction_extent_equation[0, "Rxn1"].body
+        )
+        assert str(model.fs.unit.properties_in[0].flow_mass_comp["B"]) in str(
+            model.fs.unit.reaction_extent_equation[0, "Rxn2"].body
+        )
 
     @pytest.mark.unit
     def test_loading_data(self, model):
         # RXn 1 is all conversion ratios
         # Rxn 2 is all stocihiometry (incl. water)
-        cfactor = {"Rxn1": {"A": -1, "B": 1, "C": 0, "H2O": 0},
-                   "Rxn2": {"A": 0, "B": -1, "C": 22*2/20, "H2O": -1*18/20}}
+        cfactor = {
+            "Rxn1": {"A": -1, "B": 1, "C": 0, "H2O": 0},
+            "Rxn2": {"A": 0, "B": -1, "C": 22 * 2 / 20, "H2O": -1 * 18 / 20},
+        }
 
         for (r, j), p in model.fs.unit.generation_ratio.items():
             assert value(p) == cfactor[r][j]
@@ -174,27 +186,67 @@ class TestSIDOR:
     def test_scaling(self, model):
         iscale.calculate_scaling_factors(model)
 
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.water_recovery_equation[0]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.water_balance[0]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_removal_equation[0, "A"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_removal_equation[0, "B"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_removal_equation[0, "C"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_treated_equation[0, "A"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_treated_equation[0, "B"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_treated_equation[0, "C"]) == 1e5
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.water_recovery_equation[0]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.water_balance[0]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_removal_equation[0, "A"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_removal_equation[0, "B"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_removal_equation[0, "C"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_treated_equation[0, "A"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_treated_equation[0, "B"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_treated_equation[0, "C"]
+            )
+            == 1e5
+        )
 
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.reaction_extent_equation[0, "Rxn1"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.reaction_extent_equation[0, "Rxn2"]) == 1e5
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.reaction_extent_equation[0, "Rxn1"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.reaction_extent_equation[0, "Rxn2"]
+            )
+            == 1e5
+        )
 
     @pytest.mark.component
     def test_initialization(self, model):
@@ -211,23 +263,31 @@ class TestSIDOR:
     def test_solution(self, model):
         model.fs.unit.treated.display()
         model.fs.unit.byproduct.display()
-        assert (pytest.approx((1000-0.1*20*18/20)*0.85, rel=1e-5) ==
-                value(model.fs.unit.treated.flow_mass_comp[0, "H2O"]))
-        assert (pytest.approx((1000-0.1*20*18/20)*0.15, rel=1e-5) ==
-                value(model.fs.unit.byproduct.flow_mass_comp[0, "H2O"]))
+        assert pytest.approx((1000 - 0.1 * 20 * 18 / 20) * 0.85, rel=1e-5) == value(
+            model.fs.unit.treated.flow_mass_comp[0, "H2O"]
+        )
+        assert pytest.approx((1000 - 0.1 * 20 * 18 / 20) * 0.15, rel=1e-5) == value(
+            model.fs.unit.byproduct.flow_mass_comp[0, "H2O"]
+        )
 
-        assert (pytest.approx((10*0.2)*(1-0.5), rel=1e-5) ==
-                value(model.fs.unit.treated.flow_mass_comp[0, "A"]))
-        assert (pytest.approx((10*0.2)*0.5, rel=1e-5) ==
-                value(model.fs.unit.byproduct.flow_mass_comp[0, "A"]))
-        assert (pytest.approx((20+0.8*10-0.1*20)*(1-0.4), rel=1e-5) ==
-                value(model.fs.unit.treated.flow_mass_comp[0, "B"]))
-        assert (pytest.approx((20+0.8*10-0.1*20)*0.4, rel=1e-5) ==
-                value(model.fs.unit.byproduct.flow_mass_comp[0, "B"]))
-        assert (pytest.approx(30+0.1*20*2*22/20, rel=1e-5) ==
-                value(model.fs.unit.treated.flow_mass_comp[0, "C"]))
-        assert (pytest.approx(0, rel=1e-5) ==
-                value(model.fs.unit.byproduct.flow_mass_comp[0, "C"]))
+        assert pytest.approx((10 * 0.2) * (1 - 0.5), rel=1e-5) == value(
+            model.fs.unit.treated.flow_mass_comp[0, "A"]
+        )
+        assert pytest.approx((10 * 0.2) * 0.5, rel=1e-5) == value(
+            model.fs.unit.byproduct.flow_mass_comp[0, "A"]
+        )
+        assert pytest.approx((20 + 0.8 * 10 - 0.1 * 20) * (1 - 0.4), rel=1e-5) == value(
+            model.fs.unit.treated.flow_mass_comp[0, "B"]
+        )
+        assert pytest.approx((20 + 0.8 * 10 - 0.1 * 20) * 0.4, rel=1e-5) == value(
+            model.fs.unit.byproduct.flow_mass_comp[0, "B"]
+        )
+        assert pytest.approx(30 + 0.1 * 20 * 2 * 22 / 20, rel=1e-5) == value(
+            model.fs.unit.treated.flow_mass_comp[0, "C"]
+        )
+        assert pytest.approx(0, rel=1e-5) == value(
+            model.fs.unit.byproduct.flow_mass_comp[0, "C"]
+        )
 
     # Conservation would be similar to above, as need to calculate generation
 
@@ -279,16 +339,16 @@ class TestSIDORErrors:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
         with pytest.raises(
-                KeyError,
-                match="fs.unit - database provided does not contain a list of "
-                "reactions for this technology."):
+            KeyError,
+            match="fs.unit - database provided does not contain a list of "
+            "reactions for this technology.",
+        ):
             m.fs.unit = DerivedSIDOR(
-                default={"property_package": m.fs.water_props,
-                         "database": m.db})
+                default={"property_package": m.fs.water_props, "database": m.db}
+            )
 
     @pytest.mark.unit
     def test_missing_conversion(self):
@@ -298,21 +358,20 @@ class TestSIDORErrors:
 
         # Load data from YAML so that we can modify it
         m.db._get_technology("test_sidor_data")
-        m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
+        m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
         with pytest.raises(
-                KeyError,
-                match="fs.unit - database provided does not "
-                "contain an entry for conversion for reaction Rxn3."):
+            KeyError,
+            match="fs.unit - database provided does not "
+            "contain an entry for conversion for reaction Rxn3.",
+        ):
             m.fs.unit = DerivedSIDOR(
-                default={"property_package": m.fs.water_props,
-                         "database": m.db})
+                default={"property_package": m.fs.water_props, "database": m.db}
+            )
 
     @pytest.mark.unit
     def test_missing_key_reactant(self):
@@ -322,24 +381,22 @@ class TestSIDORErrors:
 
         # Load data from YAML so that we can modify it
         m.db._get_technology("test_sidor_data")
-        m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
-        R3 = m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"]
+        m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
+        R3 = m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"]
         R3["conversion"] = 0.5
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
         with pytest.raises(
-                KeyError,
-                match="fs.unit - database provided does not "
-                "contain an entry for key_reactant for reaction Rxn3."):
+            KeyError,
+            match="fs.unit - database provided does not "
+            "contain an entry for key_reactant for reaction Rxn3.",
+        ):
             m.fs.unit = DerivedSIDOR(
-                default={"property_package": m.fs.water_props,
-                         "database": m.db})
+                default={"property_package": m.fs.water_props, "database": m.db}
+            )
 
     @pytest.mark.unit
     def test_invlaid_key_reactant(self):
@@ -349,26 +406,24 @@ class TestSIDORErrors:
 
         # Load data from YAML so that we can modify it
         m.db._get_technology("test_sidor_data")
-        m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
-        R3 = m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"]
+        m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
+        R3 = m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"]
         R3["conversion"] = 0.5
         R3["key_reactant"] = "foo"
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
         with pytest.raises(
-                ValueError,
-                match="fs.unit - key_reactant foo for reaction Rxn3 "
-                "is not in the component list used by the assigned property "
-                "package."):
+            ValueError,
+            match="fs.unit - key_reactant foo for reaction Rxn3 "
+            "is not in the component list used by the assigned property "
+            "package.",
+        ):
             m.fs.unit = DerivedSIDOR(
-                default={"property_package": m.fs.water_props,
-                         "database": m.db})
+                default={"property_package": m.fs.water_props, "database": m.db}
+            )
 
     @pytest.mark.unit
     def test_missing_stoichiometry(self):
@@ -378,25 +433,23 @@ class TestSIDORErrors:
 
         # Load data from YAML so that we can modify it
         m.db._get_technology("test_sidor_data")
-        m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
-        R3 = m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"]
+        m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
+        R3 = m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"]
         R3["conversion"] = 0.5
         R3["key_reactant"] = "A"
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
         with pytest.raises(
-                KeyError,
-                match="fs.unit - database provided does not "
-                "contain an entry for stoichiometry for reaction Rxn3."):
+            KeyError,
+            match="fs.unit - database provided does not "
+            "contain an entry for stoichiometry for reaction Rxn3.",
+        ):
             m.fs.unit = DerivedSIDOR(
-                default={"property_package": m.fs.water_props,
-                         "database": m.db})
+                default={"property_package": m.fs.water_props, "database": m.db}
+            )
 
     @pytest.mark.unit
     def test_ratio_and_order(self):
@@ -406,27 +459,25 @@ class TestSIDORErrors:
 
         # Load data from YAML so that we can modify it
         m.db._get_technology("test_sidor_data")
-        m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
-        R3 = m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"]
+        m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
+        R3 = m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"]
         R3["conversion"] = 0.5
         R3["key_reactant"] = "A"
         R3["stoichiometry"] = {"A": {"order": 1, "conversion_ratio": 1}}
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
         with pytest.raises(
-                RuntimeError,
-                match="fs.unit - database provides entries for both "
-                "conversion_ratio and reaction order in reaction Rxn3. "
-                "Please provide only one or the other."):
+            RuntimeError,
+            match="fs.unit - database provides entries for both "
+            "conversion_ratio and reaction order in reaction Rxn3. "
+            "Please provide only one or the other.",
+        ):
             m.fs.unit = DerivedSIDOR(
-                default={"property_package": m.fs.water_props,
-                         "database": m.db})
+                default={"property_package": m.fs.water_props, "database": m.db}
+            )
 
     @pytest.mark.unit
     def test_no_ratio_or_order(self):
@@ -436,27 +487,25 @@ class TestSIDORErrors:
 
         # Load data from YAML so that we can modify it
         m.db._get_technology("test_sidor_data")
-        m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
-        R3 = m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"]
+        m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
+        R3 = m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"]
         R3["conversion"] = 0.5
         R3["key_reactant"] = "A"
         R3["stoichiometry"] = {"A": {}}
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
         with pytest.raises(
-                RuntimeError,
-                match="fs.unit - database provided does not "
-                "contain any information for conversion_ratio or reaction "
-                "order w.r.t. species A in reaction Rxn3."):
+            RuntimeError,
+            match="fs.unit - database provided does not "
+            "contain any information for conversion_ratio or reaction "
+            "order w.r.t. species A in reaction Rxn3.",
+        ):
             m.fs.unit = DerivedSIDOR(
-                default={"property_package": m.fs.water_props,
-                         "database": m.db})
+                default={"property_package": m.fs.water_props, "database": m.db}
+            )
 
     @pytest.mark.unit
     def test_order_no_mw(self):
@@ -466,28 +515,28 @@ class TestSIDORErrors:
 
         # Load data from YAML so that we can modify it
         m.db._get_technology("test_sidor_data")
-        m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
-        R3 = m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"]
+        m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
+        R3 = m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"]
         R3["conversion"] = 0.5
         R3["key_reactant"] = "B"
-        R3["stoichiometry"] = {"A": {"order": 1},
-                               "B": {"order": 1, "molecular_weight": 1}}
+        R3["stoichiometry"] = {
+            "A": {"order": 1},
+            "B": {"order": 1, "molecular_weight": 1},
+        }
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
         with pytest.raises(
-                KeyError,
-                match="fs.unit - database provided does not "
-                "contain an entry for molecular_weight w.r.t. "
-                "species A in reaction Rxn3."):
+            KeyError,
+            match="fs.unit - database provided does not "
+            "contain an entry for molecular_weight w.r.t. "
+            "species A in reaction Rxn3.",
+        ):
             m.fs.unit = DerivedSIDOR(
-                default={"property_package": m.fs.water_props,
-                         "database": m.db})
+                default={"property_package": m.fs.water_props, "database": m.db}
+            )
 
     @pytest.mark.unit
     def test_order_no_key_order(self):
@@ -497,27 +546,25 @@ class TestSIDORErrors:
 
         # Load data from YAML so that we can modify it
         m.db._get_technology("test_sidor_data")
-        m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
-        R3 = m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"]
+        m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
+        R3 = m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"]
         R3["conversion"] = 0.5
         R3["key_reactant"] = "B"
         R3["stoichiometry"] = {"A": {"order": 1, "molecular_weight": 1}}
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
         with pytest.raises(
-                KeyError,
-                match="fs.unit - database provided does not "
-                "contain an entry for order w.r.t. species "
-                "B in reaction Rxn3."):
+            KeyError,
+            match="fs.unit - database provided does not "
+            "contain an entry for order w.r.t. species "
+            "B in reaction Rxn3.",
+        ):
             m.fs.unit = DerivedSIDOR(
-                default={"property_package": m.fs.water_props,
-                         "database": m.db})
+                default={"property_package": m.fs.water_props, "database": m.db}
+            )
 
     @pytest.mark.unit
     def test_order_no_key_mw(self):
@@ -527,25 +574,25 @@ class TestSIDORErrors:
 
         # Load data from YAML so that we can modify it
         m.db._get_technology("test_sidor_data")
-        m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
-        R3 = m.db._cached_files[
-            "test_sidor_data"]["default"]["reactions"]["Rxn3"]
+        m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"] = {}
+        R3 = m.db._cached_files["test_sidor_data"]["default"]["reactions"]["Rxn3"]
         R3["conversion"] = 0.5
         R3["key_reactant"] = "B"
-        R3["stoichiometry"] = {"A": {"order": 1, "molecular_weight": 1},
-                               "B": {"order": 1}}
+        R3["stoichiometry"] = {
+            "A": {"order": 1, "molecular_weight": 1},
+            "B": {"order": 1},
+        }
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
         with pytest.raises(
-                KeyError,
-                match="fs.unit - database provided does not "
-                "contain an entry for molecular_weight w.r.t. "
-                "species B in reaction Rxn3."):
+            KeyError,
+            match="fs.unit - database provided does not "
+            "contain an entry for molecular_weight w.r.t. "
+            "species B in reaction Rxn3.",
+        ):
             m.fs.unit = DerivedSIDOR(
-                default={"property_package": m.fs.water_props,
-                         "database": m.db})
+                default={"property_package": m.fs.water_props, "database": m.db}
+            )

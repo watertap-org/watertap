@@ -27,11 +27,19 @@ from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
 from watertap.unit_models.pump_isothermal import Pump
 from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 
-from watertap.examples.flowsheets.lsrro.lsrro import (build, set_operating_conditions,
-        initialize, optimize_set_up, solve, display_system, display_design, display_state)
+from watertap.examples.flowsheets.lsrro.lsrro import (
+    build,
+    set_operating_conditions,
+    initialize,
+    optimize_set_up,
+    solve,
+    display_system,
+    display_design,
+    display_state,
+)
+
 
 class _TestLSRRO:
-
     @pytest.fixture(scope="class")
     def model(self):
         return build(number_of_stages=self.number_of_stages)
@@ -49,9 +57,9 @@ class _TestLSRRO:
         # stages
         assert fs.NumberOfStages.value == self.number_of_stages
         assert len(fs.StageSet) == self.number_of_stages
-        assert list(fs.StageSet) == list(range(1,self.number_of_stages+1))
-        assert list(fs.LSRRO_StageSet) == list(range(2,self.number_of_stages+1))
-        assert list(fs.NonFinal_StageSet) == list(range(1,self.number_of_stages))
+        assert list(fs.StageSet) == list(range(1, self.number_of_stages + 1))
+        assert list(fs.LSRRO_StageSet) == list(range(2, self.number_of_stages + 1))
+        assert list(fs.NonFinal_StageSet) == list(range(1, self.number_of_stages))
 
         assert isinstance(fs.NumberOfStages, pyo.Param)
         assert isinstance(fs.StageSet, pyo.RangeSet)
@@ -91,38 +99,81 @@ class _TestLSRRO:
         assert isinstance(fs.eq_water_recovery, pyo.Constraint)
 
         # costing blocks and variables
-        costing_units = ['PrimaryPumps', 'BoosterPumps', 'ROUnits', 'EnergyRecoveryDevice']
+        costing_units = [
+            "PrimaryPumps",
+            "BoosterPumps",
+            "ROUnits",
+            "EnergyRecoveryDevice",
+        ]
         for unit in costing_units:
             for blk in fs.component(unit).values():
                 assert isinstance(blk.costing, pyo.Block)
                 assert isinstance(blk.costing.capital_cost, pyo.Var)
-                if unit == 'ROUnits':
+                if unit == "ROUnits":
                     assert isinstance(blk.costing.fixed_operating_cost, pyo.Var)
         assert isinstance(fs.costing.annual_water_production, pyo.Expression)
         assert isinstance(fs.costing.specific_energy_consumption, pyo.Expression)
 
-        costing_var_names = ['total_investment_cost', 'maintenance_labor_chemical_operating_cost',
-                             'total_operating_cost', 'LCOW']
+        costing_var_names = [
+            "total_investment_cost",
+            "maintenance_labor_chemical_operating_cost",
+            "total_operating_cost",
+            "LCOW",
+        ]
         for varname in costing_var_names:
             assert isinstance(fs.costing.component(varname), pyo.Var)
 
         # arcs
         last_stage = self.number_of_stages
         arc_source_sink = [
-                (fs.feed_to_pump, fs.feed.outlet, fs.PrimaryPumps[1].inlet),
-                (fs.primary_RO_to_product, fs.ROUnits[1].permeate, fs.product.inlet),
-                (fs.pump_to_stage, fs.PrimaryPumps[last_stage].outlet, fs.ROUnits[last_stage].inlet),
-                (fs.stage_to_erd, fs.ROUnits[last_stage].retentate, fs.EnergyRecoveryDevice.inlet),
-                (fs.erd_to_disposal, fs.EnergyRecoveryDevice.outlet, fs.disposal.inlet),
-                ]
+            (fs.feed_to_pump, fs.feed.outlet, fs.PrimaryPumps[1].inlet),
+            (fs.primary_RO_to_product, fs.ROUnits[1].permeate, fs.product.inlet),
+            (
+                fs.pump_to_stage,
+                fs.PrimaryPumps[last_stage].outlet,
+                fs.ROUnits[last_stage].inlet,
+            ),
+            (
+                fs.stage_to_erd,
+                fs.ROUnits[last_stage].retentate,
+                fs.EnergyRecoveryDevice.inlet,
+            ),
+            (fs.erd_to_disposal, fs.EnergyRecoveryDevice.outlet, fs.disposal.inlet),
+        ]
 
-        for idx in range(1,self.number_of_stages):
-            arc_source_sink.append((fs.pump_to_mixer[idx], fs.PrimaryPumps[idx].outlet, fs.Mixers[idx].upstream))
-            arc_source_sink.append((fs.mixer_to_stage[idx], fs.Mixers[idx].outlet, fs.ROUnits[idx].inlet))
-            arc_source_sink.append((fs.stage_to_pump[idx], fs.ROUnits[idx].retentate, fs.PrimaryPumps[idx+1].inlet))
-        for idx in range(2,self.number_of_stages+1):
-            arc_source_sink.append((fs.stage_to_eq_pump[idx], fs.ROUnits[idx].permeate, fs.BoosterPumps[idx].inlet))
-            arc_source_sink.append((fs.eq_pump_to_mixer[idx], fs.BoosterPumps[idx].outlet, fs.Mixers[idx-1].downstream))
+        for idx in range(1, self.number_of_stages):
+            arc_source_sink.append(
+                (
+                    fs.pump_to_mixer[idx],
+                    fs.PrimaryPumps[idx].outlet,
+                    fs.Mixers[idx].upstream,
+                )
+            )
+            arc_source_sink.append(
+                (fs.mixer_to_stage[idx], fs.Mixers[idx].outlet, fs.ROUnits[idx].inlet)
+            )
+            arc_source_sink.append(
+                (
+                    fs.stage_to_pump[idx],
+                    fs.ROUnits[idx].retentate,
+                    fs.PrimaryPumps[idx + 1].inlet,
+                )
+            )
+        for idx in range(2, self.number_of_stages + 1):
+            arc_source_sink.append(
+                (
+                    fs.stage_to_eq_pump[idx],
+                    fs.ROUnits[idx].permeate,
+                    fs.BoosterPumps[idx].inlet,
+                )
+            )
+            arc_source_sink.append(
+                (
+                    fs.eq_pump_to_mixer[idx],
+                    fs.BoosterPumps[idx].outlet,
+                    fs.Mixers[idx - 1].downstream,
+                )
+            )
 
         for arc, src, dest in arc_source_sink:
             assert arc.src is src
@@ -131,8 +182,8 @@ class _TestLSRRO:
         # additional bounds
         for blk in model.component_data_objects(pyo.Block, descend_into=True):
             # NaCl solubility limit
-            if hasattr(blk, 'mass_frac_phase_comp'):
-                blk.mass_frac_phase_comp['Liq', 'NaCl'].ub == 0.26
+            if hasattr(blk, "mass_frac_phase_comp"):
+                blk.mass_frac_phase_comp["Liq", "NaCl"].ub == 0.26
 
         # high-level checks
         model.compute_statistics()
@@ -149,7 +200,7 @@ class _TestLSRRO:
 
     @staticmethod
     def _test_no_badly_scaled_vars(m):
-        for v,_ in badly_scaled_var_generator(m):
+        for v, _ in badly_scaled_var_generator(m):
             # TODO: COSTING_UPDATE come back after costing has scaling strategy
             if "costing" in v.name:
                 continue
@@ -164,8 +215,12 @@ class _TestLSRRO:
         # feed
         self._test_fixed_value(fs.feed.pressure[0], 101325)
         self._test_fixed_value(fs.feed.temperature[0], 298.15)
-        self._test_fixed_value(fs.feed.flow_mass_phase_comp[0, 'Liq', 'NaCl'], 70./1000.)
-        self._test_fixed_value(fs.feed.flow_mass_phase_comp[0, 'Liq', 'H2O'], (1. - 70./1000.))
+        self._test_fixed_value(
+            fs.feed.flow_mass_phase_comp[0, "Liq", "NaCl"], 70.0 / 1000.0
+        )
+        self._test_fixed_value(
+            fs.feed.flow_mass_phase_comp[0, "Liq", "H2O"], (1.0 - 70.0 / 1000.0)
+        )
 
         # pumps
         for pump in fs.PrimaryPumps.values():
@@ -175,7 +230,9 @@ class _TestLSRRO:
             assert not pump.control_volume.properties_out[0].pressure.fixed
             self._test_fixed_value(pump.efficiency_pump[0], 0.75)
         for pump in fs.EnergyRecoveryDevice.values():
-            self._test_fixed_value(pump.control_volume.properties_out[0].pressure, 101325)
+            self._test_fixed_value(
+                pump.control_volume.properties_out[0].pressure, 101325
+            )
             self._test_fixed_value(pump.efficiency_pump[0], 0.80)
 
         # RO units
@@ -184,13 +241,13 @@ class _TestLSRRO:
                 self._test_fixed_value(acomp, 4.2e-12)
             for bcomp in ro.B_comp.values():
                 if idx > 1:
-                    self._test_fixed_value(bcomp, 3.5e-8*100.)
+                    self._test_fixed_value(bcomp, 3.5e-8 * 100.0)
                 else:
                     self._test_fixed_value(bcomp, 3.5e-8)
 
             self._test_fixed_value(ro.channel_height, 1e-3)
             self._test_fixed_value(ro.spacer_porosity, 0.97)
-            self._test_fixed_value(ro.area, 100/float(idx))
+            self._test_fixed_value(ro.area, 100 / float(idx))
             self._test_fixed_value(ro.width, 5)
             self._test_fixed_value(ro.permeate.pressure[0], 101325)
 
@@ -231,7 +288,9 @@ class _TestLSRRO:
 
     @pytest.mark.component
     def test_optimize_set_up(self, model, optimization_data):
-        optimize_set_up(model, water_recovery=optimization_data[model.fs.water_recovery])
+        optimize_set_up(
+            model, water_recovery=optimization_data[model.fs.water_recovery]
+        )
         fs = model.fs
 
         for pump in fs.PrimaryPumps.values():
@@ -263,22 +322,19 @@ class TestLSRRO_1Stage(_TestLSRRO):
     number_of_variables = 303
     number_of_constraints = 193
 
-    display_system = \
-"""----system metrics----
+    display_system = """----system metrics----
 Feed: 1.00 kg/s, 70000 ppm
 Product: 0.180 kg/s, 1592 ppm
 Volumetric water recovery: 18.0%
 Energy Consumption: 3.8 kWh/m3
 Levelized cost of water: 1.73 $/m3
 """
-    display_design = \
-"""--decision variables--
+    display_design = """--decision variables--
 Stage 1 operating pressure 75.0 bar
 Stage 1 membrane area      100.0 m2
 Stage 1 salt perm. coeff.  0.1 LMH
 """
-    display_state = \
-"""--------state---------
+    display_state = """--------state---------
 Feed                : 1.000 kg/s, 70000 ppm, 1.0 bar
 Primary Pump 1 out  : 1.000 kg/s, 70000 ppm, 75.0 bar
 RO 1 permeate       : 0.180 kg/s, 1592 ppm, 1.0 bar
@@ -293,11 +349,11 @@ Product             : 0.180 kg/s, 1592 ppm, 1.0 bar
         data = pyo.ComponentMap()
         fs = model.fs
 
-        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.179331
-        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.286037e-3
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.750668
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.697139e-1
-        data[fs.costing.LCOW]   = 1.73465
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.179331
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.286037e-3
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.750668
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.697139e-1
+        data[fs.costing.LCOW] = 1.73465
         data[fs.water_recovery] = 0.5
 
         return data
@@ -307,11 +363,11 @@ Product             : 0.180 kg/s, 1592 ppm, 1.0 bar
         data = pyo.ComponentMap()
         fs = model.fs
 
-        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.179331
-        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.286037e-3
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.750668
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.697139e-1
-        data[fs.costing.LCOW]   = 1.73465
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.179331
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.286037e-3
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.750668
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.697139e-1
+        data[fs.costing.LCOW] = 1.73465
         data[fs.water_recovery] = 0.179618
 
         return data
@@ -321,11 +377,11 @@ Product             : 0.180 kg/s, 1592 ppm, 1.0 bar
         data = pyo.ComponentMap()
         fs = model.fs
 
-        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.385923
-        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.4824263e-3
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.544077
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.695177e-1
-        data[fs.costing.LCOW]   = 1.02780
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.385923
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.4824263e-3
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.544077
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.695177e-1
+        data[fs.costing.LCOW] = 1.02780
         data[fs.water_recovery] = 0.386405
 
         return data
@@ -338,16 +394,14 @@ class TestLSRRO_2Stage(_TestLSRRO):
     number_of_variables = 544
     number_of_constraints = 379
 
-    display_system = \
-"""----system metrics----
+    display_system = """----system metrics----
 Feed: 1.00 kg/s, 70000 ppm
 Product: 0.297 kg/s, 926 ppm
 Volumetric water recovery: 29.7%
 Energy Consumption: 6.3 kWh/m3
 Levelized cost of water: 1.59 $/m3
 """
-    display_design = \
-"""--decision variables--
+    display_design = """--decision variables--
 Stage 1 operating pressure 75.0 bar
 Stage 1 membrane area      100.0 m2
 Stage 1 salt perm. coeff.  0.1 LMH
@@ -355,8 +409,7 @@ Stage 2 operating pressure 75.0 bar
 Stage 2 membrane area      50.0 m2
 Stage 2 salt perm. coeff.  12.6 LMH
 """
-    display_state = \
-"""--------state---------
+    display_state = """--------state---------
 Feed                : 1.000 kg/s, 70000 ppm, 1.0 bar
 Primary Pump 1 out  : 1.000 kg/s, 70000 ppm, 75.0 bar
 Mixer 1 recycle     : 0.308 kg/s, 37757 ppm, 75.0 bar
@@ -378,11 +431,11 @@ Product             : 0.297 kg/s, 926 ppm, 1.0 bar
         data = pyo.ComponentMap()
         fs = model.fs
 
-        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.298029
-        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.274413e-3
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.633927
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.697161e-1
-        data[fs.costing.LCOW]   = 1.52640
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.298029
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.274413e-3
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.633927
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.697161e-1
+        data[fs.costing.LCOW] = 1.52640
         data[fs.water_recovery] = 0.5
 
         return data
@@ -392,11 +445,11 @@ Product             : 0.297 kg/s, 926 ppm, 1.0 bar
         data = pyo.ComponentMap()
         fs = model.fs
 
-        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.296269
-        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.274578e-3
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.633730
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.697254e-1
-        data[fs.costing.LCOW]   = 1.59283
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.296269
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.274578e-3
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.633730
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.697254e-1
+        data[fs.costing.LCOW] = 1.59283
         data[fs.water_recovery] = 0.296544
 
         return data
@@ -406,11 +459,11 @@ Product             : 0.297 kg/s, 926 ppm, 1.0 bar
         data = pyo.ComponentMap()
         fs = model.fs
 
-        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.732053
-        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.456208e-3
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.197952
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.695438e-1
-        data[fs.costing.LCOW]   = 1.17018
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.732053
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.456208e-3
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.197952
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.695438e-1
+        data[fs.costing.LCOW] = 1.17018
         data[fs.water_recovery] = 0.732504
 
         return data
@@ -423,16 +476,14 @@ class TestLSRRO_3Stage(_TestLSRRO):
     number_of_variables = 785
     number_of_constraints = 565
 
-    display_system = \
-"""----system metrics----
+    display_system = """----system metrics----
 Feed: 1.00 kg/s, 70000 ppm
 Product: 0.330 kg/s, 823 ppm
 Volumetric water recovery: 33.0%
 Energy Consumption: 7.8 kWh/m3
 Levelized cost of water: 1.74 $/m3
 """
-    display_design = \
-"""--decision variables--
+    display_design = """--decision variables--
 Stage 1 operating pressure 75.0 bar
 Stage 1 membrane area      100.0 m2
 Stage 1 salt perm. coeff.  0.1 LMH
@@ -443,8 +494,7 @@ Stage 3 operating pressure 75.0 bar
 Stage 3 membrane area      33.3 m2
 Stage 3 salt perm. coeff.  12.6 LMH
 """
-    display_state = \
-"""--------state---------
+    display_state = """--------state---------
 Feed                : 1.000 kg/s, 70000 ppm, 1.0 bar
 Primary Pump 1 out  : 1.000 kg/s, 70000 ppm, 75.0 bar
 Mixer 1 recycle     : 0.348 kg/s, 32663 ppm, 75.0 bar
@@ -473,11 +523,11 @@ Product             : 0.330 kg/s, 823 ppm, 1.0 bar
         data = pyo.ComponentMap()
         fs = model.fs
 
-        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.351684
-        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.269335e-3
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.606601
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.695767e-1
-        data[fs.costing.LCOW]   = 1.54711
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.351684
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.269335e-3
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.606601
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.695767e-1
+        data[fs.costing.LCOW] = 1.54711
         data[fs.water_recovery] = 0.5
 
         return data
@@ -487,11 +537,11 @@ Product             : 0.330 kg/s, 823 ppm, 1.0 bar
         data = pyo.ComponentMap()
         fs = model.fs
 
-        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.329390
-        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.271454e-3
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.600609
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.697285e-1
-        data[fs.costing.LCOW]   = 1.74197
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.329390
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.271454e-3
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.600609
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.697285e-1
+        data[fs.costing.LCOW] = 1.74197
         data[fs.water_recovery] = 0.329661
 
         return data
@@ -501,17 +551,17 @@ Product             : 0.330 kg/s, 823 ppm, 1.0 bar
         data = pyo.ComponentMap()
         fs = model.fs
 
-        data[fs.product.flow_mass_phase_comp[0,'Liq','H2O']]   = 0.732036
-        data[fs.product.flow_mass_phase_comp[0,'Liq','NaCl']]  = 0.448848e-3
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','H2O']]  = 0.197967
-        data[fs.disposal.flow_mass_phase_comp[0,'Liq','NaCl']] = 0.695512e-1
-        data[fs.costing.LCOW]   = 1.46933
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.732036
+        data[fs.product.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.448848e-3
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "H2O"]] = 0.197967
+        data[fs.disposal.flow_mass_phase_comp[0, "Liq", "NaCl"]] = 0.695512e-1
+        data[fs.costing.LCOW] = 1.46933
         data[fs.water_recovery] = 0.732481
 
         return data
 
 
-'''
+"""
 class TestLSRRO_NStage(_TestLSRRO):
 
     number_of_stages = 
@@ -564,4 +614,4 @@ class TestLSRRO_NStage(_TestLSRRO):
         data[fs.water_recovery] = 
 
         return data
-'''
+"""

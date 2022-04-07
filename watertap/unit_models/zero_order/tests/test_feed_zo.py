@@ -64,14 +64,15 @@ class TestFeedZO:
 
         model.fs.unit.load_feed_data_from_database()
 
-        assert pytest.approx(data["default_flow"]["value"],
-                             rel=1e-12) == value(
-            model.fs.unit.flow_vol[0])
+        assert pytest.approx(data["default_flow"]["value"], rel=1e-12) == value(
+            model.fs.unit.flow_vol[0]
+        )
         assert model.fs.unit.flow_vol[0].fixed
 
         for j, v in data["solutes"].items():
             assert pytest.approx(v["value"], rel=1e-12) == value(
-                model.fs.unit.conc_mass_comp[0, j])
+                model.fs.unit.conc_mass_comp[0, j]
+            )
             assert model.fs.unit.conc_mass_comp[0, j].fixed
 
     @pytest.mark.unit
@@ -100,14 +101,15 @@ class TestFeedZO:
         model.fs.unit.load_feed_data_from_database(overwrite=True)
 
         # This should have reset the value of all variables
-        assert pytest.approx(data["default_flow"]["value"],
-                             rel=1e-12) == value(
-            model.fs.unit.flow_vol[0])
+        assert pytest.approx(data["default_flow"]["value"], rel=1e-12) == value(
+            model.fs.unit.flow_vol[0]
+        )
         assert model.fs.unit.flow_vol[0].fixed
 
         for j, v in data["solutes"].items():
             assert pytest.approx(v["value"], rel=1e-12) == value(
-                model.fs.unit.conc_mass_comp[0, j])
+                model.fs.unit.conc_mass_comp[0, j]
+            )
             assert model.fs.unit.conc_mass_comp[0, j].fixed
 
     @pytest.mark.unit
@@ -127,10 +129,14 @@ class TestFeedZO:
 
         model.fs.unit.load_feed_data_from_database(overwrite=True)
 
-        assert ("fs.unit no default flowrate was defined in database water "
-                "source. Value was not fixed.") in caplog.text
-        assert ("fs.unit component tds was not defined in database water "
-                "source. Value was not fixed.") in caplog.text
+        assert (
+            "fs.unit no default flowrate was defined in database water "
+            "source. Value was not fixed."
+        ) in caplog.text
+        assert (
+            "fs.unit component tds was not defined in database water "
+            "source. Value was not fixed."
+        ) in caplog.text
 
 
 @pytest.mark.component
@@ -147,18 +153,20 @@ def test_initialize():
 
     initialization_tester(m)
 
-    res = {'H2O': 4263.816948529999,
-           'boron': 0.020166519999999997,
-           'bromide': 0.3038727899999999,
-           'calcium': 1.8773196799999994,
-           'chloride': 87.82519459999996,
-           'magnesium': 5.857457399999998,
-           'potassium': 1.8117784899999994,
-           'sodium': 48.945060699999985,
-           'strontium': 0.005958289999999999,
-           'sulfate': 12.283243999999996,
-           'tds': 160.41549999999995,
-           'tss': 0.13749899999999993}
+    res = {
+        "H2O": 4263.816948529999,
+        "boron": 0.020166519999999997,
+        "bromide": 0.3038727899999999,
+        "calcium": 1.8773196799999994,
+        "chloride": 87.82519459999996,
+        "magnesium": 5.857457399999998,
+        "potassium": 1.8117784899999994,
+        "sodium": 48.945060699999985,
+        "strontium": 0.005958289999999999,
+        "sulfate": 12.283243999999996,
+        "tds": 160.41549999999995,
+        "tss": 0.13749899999999993,
+    }
 
     for (t, j), v in m.fs.unit.outlet.flow_mass_comp.items():
         assert value(v) == pytest.approx(res[j], rel=1e-5)

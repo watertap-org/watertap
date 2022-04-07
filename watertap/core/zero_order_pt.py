@@ -15,10 +15,12 @@ This module contains the methods for constructing the material balances for
 zero-order pass-through unit models (i.e. units with a single inlet and single
 outlet where flow and composition do not change, such as pumps).
 """
-from pyomo.environ import Var, units as pyunits
+from pyomo.environ import check_optimal_termination
 
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
+from idaes.core.util.model_statistics import number_activated_constraints
+from idaes.core.util.exceptions import InitializationError
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
@@ -51,23 +53,22 @@ def build_pt(self):
     tmp_dict["defined_state"] = True
 
     self.properties = self.config.property_package.build_state_block(
-        self.flowsheet().time,
-        doc="Material properties in unit",
-        default=tmp_dict)
+        self.flowsheet().time, doc="Material properties in unit", default=tmp_dict
+    )
 
     # Create Ports
     self.add_port("inlet", self.properties, doc="Inlet port")
     self.add_port("outlet", self.properties, doc="Outlet port")
 
-    self._stream_table_dict = {"Inlet": self.inlet,
-                               "Outlet": self.outlet}
+    self._stream_table_dict = {"Inlet": self.inlet, "Outlet": self.outlet}
 
     self._get_Q = _get_Q_pt
 
 
-def initialize_pt(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                  solver=None, optarg=None):
-    '''
+def initialize_pt(
+    blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+):
+    """
     Initialization routine for pass-through unit models.
 
     Keyword Arguments:
@@ -83,7 +84,7 @@ def initialize_pt(blk, state_args=None, outlvl=idaeslog.NOTSET,
 
     Returns:
         None
-    '''
+    """
     init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
     solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
@@ -92,10 +93,7 @@ def initialize_pt(blk, state_args=None, outlvl=idaeslog.NOTSET,
     # Get initial guesses for inlet if none provided
     if state_args is None:
         state_args = {}
-        state_dict = (
-            blk.properties[
-                blk.flowsheet().time.first()]
-            .define_port_members())
+        state_dict = blk.properties[blk.flowsheet().time.first()].define_port_members()
 
         for k in state_dict.keys():
             if state_dict[k].is_indexed():
@@ -112,25 +110,31 @@ def initialize_pt(blk, state_args=None, outlvl=idaeslog.NOTSET,
         optarg=optarg,
         solver=solver,
         state_args=state_args,
-        hold_state=True
+        hold_state=True,
     )
-    init_log.info_high('Initialization Step 1 Complete.')
+    init_log.info_high("Initialization Step 1 Complete.")
 
     # ---------------------------------------------------------------------
     # Solve unit
-    with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        results = solver_obj.solve(blk, tee=slc.tee)
+    if number_activated_constraints(blk) > 0:
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = solver_obj.solve(blk, tee=slc.tee)
 
-    init_log.info_high(
-        "Initialization Step 2 {}.".format(idaeslog.condition(results))
-    )
+        init_log.info_high(
+            "Initialization Step 2 {}.".format(idaeslog.condition(results))
+        )
 
     # ---------------------------------------------------------------------
     # Release Inlet state
     blk.properties.release_state(flags, outlvl)
 
-    init_log.info('Initialization Complete: {}'
-                  .format(idaeslog.condition(results)))
+    init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
+
+    if number_activated_constraints(blk) > 0 and not check_optimal_termination(results):
+        raise InitializationError(
+            f"{blk.name} failed to initialize successfully. Please check "
+            f"the output logs for more information."
+        )
 
 
 def calculate_scaling_factors_pt(self):

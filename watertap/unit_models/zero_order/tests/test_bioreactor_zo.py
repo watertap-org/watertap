@@ -17,7 +17,13 @@ import pytest
 from io import StringIO
 
 from pyomo.environ import (
-    Block, check_optimal_termination, ConcreteModel, Constraint, value, Var)
+    Block,
+    check_optimal_termination,
+    ConcreteModel,
+    Constraint,
+    value,
+    Var,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -42,11 +48,12 @@ class TestBioreactorZO:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["boron", "selenium", "foo"]})
+            default={"solute_list": ["boron", "selenium", "foo"]}
+        )
 
-        m.fs.unit = BioreactorZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = BioreactorZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "boron"].fix(1)
@@ -71,8 +78,10 @@ class TestBioreactorZO:
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-            data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
@@ -106,15 +115,19 @@ class TestBioreactorZO:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(9.7002, rel=1e-3) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(2.0618e-2, rel=1e-3) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["boron"]))
-        assert (pytest.approx(3.608e-3, rel=1e-3) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["selenium"]))
-        assert (pytest.approx(1.0308e-1, rel=1e-3) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0, abs=1e-8) == value(model.fs.unit.electricity[0]))
+        assert pytest.approx(9.7002, rel=1e-3) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(2.0618e-2, rel=1e-3) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["boron"]
+        )
+        assert pytest.approx(3.608e-3, rel=1e-3) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["selenium"]
+        )
+        assert pytest.approx(1.0308e-1, rel=1e-3) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(0, abs=1e-8) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.component
     def test_report(self, model):
@@ -156,14 +169,13 @@ def test_costing():
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = BioreactorZO(default={
-        "property_package": m.fs.params,
-        "database": m.db})
+    m.fs.unit1 = BioreactorZO(
+        default={"property_package": m.fs.params, "database": m.db}
+    )
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -172,22 +184,19 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(default={
-        "flowsheet_costing_block": m.fs.costing})
+    m.fs.unit1.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
 
     assert isinstance(m.fs.costing.bioreactor, Block)
-    assert isinstance(m.fs.costing.bioreactor.capital_a_parameter,
-                      Var)
-    assert isinstance(m.fs.costing.bioreactor.capital_b_parameter,
-                      Var)
+    assert isinstance(m.fs.costing.bioreactor.capital_a_parameter, Var)
+    assert isinstance(m.fs.costing.bioreactor.capital_b_parameter, Var)
     assert isinstance(m.fs.costing.bioreactor.reference_state, Var)
 
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
-                      Constraint)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    assert m.fs.unit1.electricity[0] in \
-        m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]

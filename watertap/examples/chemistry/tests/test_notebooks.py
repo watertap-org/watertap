@@ -82,6 +82,7 @@ def mongodb():
         _log.warning(f"Could not connect to MongoDB: {err}")
     return False
 
+
 # Tests
 # =====
 
@@ -95,4 +96,3 @@ def test_edb_notebooks(docs_root):
             continue
         print(f"run notebook: {nb_path}")
         run_notebook(nb_path)
-

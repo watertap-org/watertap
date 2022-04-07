@@ -19,14 +19,17 @@ from io import StringIO
 from idaes.core import declare_process_block_class, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
-from pyomo.environ import (ConcreteModel,
-                           value)
+from pyomo.environ import ConcreteModel, value
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
 from watertap.core import WaterParameterBlock, WaterStateBlock, ZeroOrderBaseData
 from watertap.core.zero_order_pt import (
-    build_pt, initialize_pt, calculate_scaling_factors_pt, _get_Q_pt)
+    build_pt,
+    initialize_pt,
+    calculate_scaling_factors_pt,
+    _get_Q_pt,
+)
 
 solver = get_solver()
 
@@ -46,11 +49,9 @@ class TestPT:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
-        m.fs.unit = DerivedPT(
-            default={"property_package": m.fs.water_props})
+        m.fs.unit = DerivedPT(default={"property_package": m.fs.water_props})
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
         m.fs.unit.inlet.flow_mass_comp[0, "A"].fix(10)
@@ -69,7 +70,8 @@ class TestPT:
         assert model.fs.unit._get_Q is _get_Q_pt
         assert model.fs.unit._stream_table_dict == {
             "Inlet": model.fs.unit.inlet,
-            "Outlet": model.fs.unit.outlet}
+            "Outlet": model.fs.unit.outlet,
+        }
         assert model.fs.unit._perf_var_dict == {}
 
     @pytest.mark.unit
@@ -92,9 +94,9 @@ class TestPT:
     @pytest.mark.component
     def test_solution(self, model):
         for (t, j), v in model.fs.unit.outlet.flow_mass_comp.items():
-            assert (pytest.approx(value(
-                model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5) ==
-                value(v))
+            assert pytest.approx(
+                value(model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5
+            ) == value(v)
 
     @pytest.mark.component
     def test_report(self, model):

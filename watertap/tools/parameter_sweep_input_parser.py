@@ -11,18 +11,21 @@
 #
 ###############################################################################
 
-from watertap.tools.parameter_sweep import (LinearSample,
-                                            UniformSample,
-                                            NormalSample,
-                                            LatinHypercubeSample,
-                                            _read_output_h5)
+from watertap.tools.parameter_sweep import (
+    LinearSample,
+    UniformSample,
+    NormalSample,
+    LatinHypercubeSample,
+    _read_output_h5,
+)
 import yaml
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
+
 def _yaml_to_dict(yaml_filename):
-    """ Reads and stores a yaml file as a dictionary
+    """Reads and stores a yaml file as a dictionary
 
     Args:
         yaml_filename (str):
@@ -39,16 +42,16 @@ def _yaml_to_dict(yaml_filename):
         # Open the yaml file and import the contents into a
         # dictionary with the same structure
         with open(yaml_filename) as fp:
-            input_dict = yaml.load(fp, Loader = yaml.FullLoader)
+            input_dict = yaml.load(fp, Loader=yaml.FullLoader)
 
     except:
-        raise ValueError('Could not open file %s' % (yaml_filename))
+        raise ValueError("Could not open file %s" % (yaml_filename))
 
     return input_dict
 
 
 def get_sweep_params_from_yaml(m, yaml_filename):
-    """ Creates a dictionary of swept model parameters specified via yaml file
+    """Creates a dictionary of swept model parameters specified via yaml file
 
     This function creates a dictionary of the items to vary during a parameter
     sweep where the variable name, model attribute, and sweeping domain are
@@ -88,44 +91,44 @@ def get_sweep_params_from_yaml(m, yaml_filename):
 
     for param, values in input_dict.items():
 
-        # Find the specified component on the model 
-        component = m.find_component(values['param'])
+        # Find the specified component on the model
+        component = m.find_component(values["param"])
 
         if component is None:
             raise ValueError(f'Could not acccess attribute {values["param"]}')
 
-        if values['type'] == 'LinearSample':
-            sweep_params[param] = LinearSample(component,
-                                                values['lower_limit'],
-                                                values['upper_limit'],
-                                                values['num_samples'])
+        if values["type"] == "LinearSample":
+            sweep_params[param] = LinearSample(
+                component,
+                values["lower_limit"],
+                values["upper_limit"],
+                values["num_samples"],
+            )
 
-        elif values['type'] == 'UniformSample':
-            sweep_params[param] = UniformSample(component,
-                                                values['lower_limit'],
-                                                values['upper_limit'])
+        elif values["type"] == "UniformSample":
+            sweep_params[param] = UniformSample(
+                component, values["lower_limit"], values["upper_limit"]
+            )
 
-        elif values['type'] == 'NormalSample':
-            sweep_params[param] = NormalSample(component,
-                                               values['mean'],
-                                               values['std'])
+        elif values["type"] == "NormalSample":
+            sweep_params[param] = NormalSample(component, values["mean"], values["std"])
 
-        elif values['type'] == 'LatinHypercubeSample':
-            sweep_params[param] = LatinHypercubeSample(component,
-                                                       values['lower_limit'],
-                                                       values['upper_limit'])
+        elif values["type"] == "LatinHypercubeSample":
+            sweep_params[param] = LatinHypercubeSample(
+                component, values["lower_limit"], values["upper_limit"]
+            )
 
     return sweep_params
 
 
 def _set_value(component, key, default_value):
-   _log.debug(f'Property: {key}')
-   _log.debug(f'New Value: {default_value:.6e}, Old Value: {component.value:.6e}')
-   component.value = default_value
+    _log.debug(f"Property: {key}")
+    _log.debug(f"New Value: {default_value:.6e}, Old Value: {component.value:.6e}")
+    component.value = default_value
 
 
 def set_defaults_from_yaml(m, yaml_filename, verbose=False):
-    """ Sets default model values using values stored in a yaml file
+    """Sets default model values using values stored in a yaml file
 
     This function reads a yaml file with the structure::
 
@@ -153,7 +156,7 @@ def set_defaults_from_yaml(m, yaml_filename, verbose=False):
 
     for key, default_value in input_dict.items():
 
-        # Find the specified component on the model 
+        # Find the specified component on the model
         component = m.find_component(key)
 
         if component is None:
@@ -165,11 +168,13 @@ def set_defaults_from_yaml(m, yaml_filename, verbose=False):
             if component.mutable:
                 _set_value(component, key, default_value)
             else:
-                _log.warn(f"Cannot set value of non-mutable Param {component}")
+                _log.warning(f"Cannot set value of non-mutable Param {component}")
                 fail_count += 1
         else:
-            _log.warn(f"Cannot set value of component {component}")
+            _log.warning(f"Cannot set value of component {component}")
             fail_count += 1
 
     number_defaults = len(input_dict)
-    print(f'Set {number_defaults-fail_count} of {number_defaults} options to default values ({fail_count} failures, see warnings)')
+    print(
+        f"Set {number_defaults-fail_count} of {number_defaults} options to default values ({fail_count} failures, see warnings)"
+    )
