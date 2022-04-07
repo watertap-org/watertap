@@ -38,21 +38,19 @@ class WellFieldZOData(ZeroOrderBaseData):
         self._tech_type = "well_field"
         build_pt(self)
         self._Q = Reference(self.properties[:].flow_vol)
-        
+
         pump_electricity(self, self._Q)
 
-        self.pipe_distance = Var(self.flowsheet().config.time,
-                                 units=pyunits.miles,
-                                 doc='Piping distance')
+        self.pipe_distance = Var(
+            self.flowsheet().config.time, units=pyunits.miles, doc="Piping distance"
+        )
 
-        self.pipe_diameter = Var(self.flowsheet().config.time,
-                                 units=pyunits.inches,
-                                 doc='Pipe diameter')
+        self.pipe_diameter = Var(
+            self.flowsheet().config.time, units=pyunits.inches, doc="Pipe diameter"
+        )
 
         self._fixed_perf_vars.append(self.pipe_distance)
         self._fixed_perf_vars.append(self.pipe_diameter)
 
         self._perf_var_dict["Pipe Distance (miles)"] = self.pipe_distance
         self._perf_var_dict["Pipe Diameter (inches)"] = self.pipe_diameter
-
-

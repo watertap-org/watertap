@@ -38,4 +38,3 @@ class CO2AdditionZOData(ZeroOrderBaseData):
 
         build_pt(self)
         constant_intensity(self)
-        

@@ -23,11 +23,13 @@ from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.config import bin_directory as idaes_bin_directory
 
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           Constraint,
-                           value,
-                           Var)
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    Constraint,
+    value,
+    Var,
+)
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
@@ -35,8 +37,11 @@ from pyomo.util.check_units import assert_units_consistent
 from watertap.core import WaterParameterBlock, WaterStateBlock
 from watertap.core.wt_database import Database
 from watertap.unit_models.zero_order import GasSpargedMembraneZO
-from watertap.unit_models.zero_order.gas_sparged_membrane_zo import initialize_sido, \
-    calculate_scaling_factors_gas_extraction, _get_Q_gas_extraction
+from watertap.unit_models.zero_order.gas_sparged_membrane_zo import (
+    initialize_sido,
+    calculate_scaling_factors_gas_extraction,
+    _get_Q_gas_extraction,
+)
 
 solver = get_solver()
 
@@ -48,12 +53,11 @@ class TestGasSpargedMembraneZO:
         m.db = Database()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["cod"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["cod"]})
 
         m.fs.unit = GasSpargedMembraneZO(
-            default={"property_package": m.fs.water_props,
-                     "database": m.db})
+            default={"property_package": m.fs.water_props, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
         m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(1)
@@ -71,13 +75,15 @@ class TestGasSpargedMembraneZO:
         assert model.fs.unit._stream_table_dict == {
             "Inlet": model.fs.unit.inlet,
             "Treated": model.fs.unit.treated,
-            "Byproduct": model.fs.unit.byproduct}
+            "Byproduct": model.fs.unit.byproduct,
+        }
         assert model.fs.unit._perf_var_dict == {
             "Water Recovery": model.fs.unit.recovery_frac_mass_H2O,
             "Solute Removal": model.fs.unit.removal_frac_mass_solute,
             "Mass of gas extracted per mass flow of influent(kg/d/(kg/d)": model.fs.unit.gas_mass_influent_ratio,
             "Mass flow of gas extracted (kg/s))": model.fs.unit.flow_mass_gas_extraction,
-            "Electricity Demand": model.fs.unit.electricity}
+            "Electricity Demand": model.fs.unit.electricity,
+        }
 
     @pytest.mark.unit
     def test_build(self, model):
@@ -114,16 +120,20 @@ class TestGasSpargedMembraneZO:
         model.fs.unit.load_parameters_from_database()
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-            data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.gas_mass_influent_ratio[0].fixed
-        assert model.fs.unit.gas_mass_influent_ratio[0].value == data[
-            "gas_mass_influent_ratio"]["value"]
+        assert (
+            model.fs.unit.gas_mass_influent_ratio[0].value
+            == data["gas_mass_influent_ratio"]["value"]
+        )
 
     @pytest.mark.unit
     def test_degrees_of_freedom(self, model):
@@ -137,14 +147,30 @@ class TestGasSpargedMembraneZO:
     def test_scaling(self, model):
         iscale.calculate_scaling_factors(model)
 
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.water_recovery_equation[0]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.mass_balance[0]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_removal_equation[0, "cod"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_treated_equation[0, "cod"]) == 1e5
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.water_recovery_equation[0]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.mass_balance[0]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_removal_equation[0, "cod"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_treated_equation[0, "cod"]
+            )
+            == 1e5
+        )
 
     @pytest.mark.component
     def test_initialization(self, model):
@@ -159,47 +185,70 @@ class TestGasSpargedMembraneZO:
 
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(979, rel=1e-5) ==
-                value(model.fs.unit.treated.flow_mass_comp[0, "H2O"]))
-        assert (pytest.approx(20.58784, rel=1e-5) ==
-                value(model.fs.unit.byproduct.flow_mass_comp[0, "H2O"]))
-        assert (pytest.approx(0, abs=1e-5) ==
-                value(model.fs.unit.treated.flow_mass_comp[0, "cod"]))
-        assert (pytest.approx(1, rel=1e-5) ==
-                value(model.fs.unit.byproduct.flow_mass_comp[0, "cod"]))
+        assert pytest.approx(979, rel=1e-5) == value(
+            model.fs.unit.treated.flow_mass_comp[0, "H2O"]
+        )
+        assert pytest.approx(20.58784, rel=1e-5) == value(
+            model.fs.unit.byproduct.flow_mass_comp[0, "H2O"]
+        )
+        assert pytest.approx(0, abs=1e-5) == value(
+            model.fs.unit.treated.flow_mass_comp[0, "cod"]
+        )
+        assert pytest.approx(1, rel=1e-5) == value(
+            model.fs.unit.byproduct.flow_mass_comp[0, "cod"]
+        )
 
-        assert (pytest.approx(1.001, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].flow_vol))
-        assert (pytest.approx(0.9990001, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["cod"]))
-        assert (pytest.approx(0.979, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(0, abs=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["cod"]))
-        assert (pytest.approx(0.021588, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(46.32238, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["cod"]))
-        assert (pytest.approx(368.855328, abs=1e-5) ==
-                value(model.fs.unit.electricity[0]))
-        assert (pytest.approx(5*value(model.fs.unit.properties_in[0].flow_vol)*0.08235, rel=1e-5) ==
-                value(model.fs.unit.flow_mass_gas_extraction[0]))
-
+        assert pytest.approx(1.001, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].flow_vol
+        )
+        assert pytest.approx(0.9990001, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["cod"]
+        )
+        assert pytest.approx(0.979, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(0, abs=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["cod"]
+        )
+        assert pytest.approx(0.021588, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].flow_vol
+        )
+        assert pytest.approx(46.32238, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["cod"]
+        )
+        assert pytest.approx(368.855328, abs=1e-5) == value(
+            model.fs.unit.electricity[0]
+        )
+        assert pytest.approx(
+            5 * value(model.fs.unit.properties_in[0].flow_vol) * 0.08235, rel=1e-5
+        ) == value(model.fs.unit.flow_mass_gas_extraction[0])
 
     @pytest.mark.component
     def test_conservation(self, model):
         for (t, j) in model.fs.unit.inlet.flow_mass_comp.keys():
             if j != "H2O":
-                assert (abs(value(model.fs.unit.inlet.flow_mass_comp[t, j] -
-                                  model.fs.unit.treated.flow_mass_comp[t, j] -
-                                  model.fs.unit.byproduct.flow_mass_comp[t, j]))
-                        <= 1e-6)
+                assert (
+                    abs(
+                        value(
+                            model.fs.unit.inlet.flow_mass_comp[t, j]
+                            - model.fs.unit.treated.flow_mass_comp[t, j]
+                            - model.fs.unit.byproduct.flow_mass_comp[t, j]
+                        )
+                    )
+                    <= 1e-6
+                )
             else:
-                assert (abs(value(model.fs.unit.inlet.flow_mass_comp[t, j] -
-                                  model.fs.unit.treated.flow_mass_comp[t, j] -
-                                  model.fs.unit.byproduct.flow_mass_comp[t, j] -
-                                  model.fs.unit.flow_mass_gas_extraction[t]))
-                        <= 1e-6)
+                assert (
+                    abs(
+                        value(
+                            model.fs.unit.inlet.flow_mass_comp[t, j]
+                            - model.fs.unit.treated.flow_mass_comp[t, j]
+                            - model.fs.unit.byproduct.flow_mass_comp[t, j]
+                            - model.fs.unit.flow_mass_gas_extraction[t]
+                        )
+                    )
+                    <= 1e-6
+                )
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component

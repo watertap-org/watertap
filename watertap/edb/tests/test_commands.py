@@ -44,15 +44,8 @@ class Expected:
             self.file_path = Path(self.file_name)
 
     def __repr__(self):
-        kv_repr = [
-            f"{k}={v!r}"
-            for k, v in asdict(self).items()
-            if v is not None
-        ]
-        return (
-            f"{type(self).__name__}"
-            f"({', '.join(kv_repr)})"
-        )
+        kv_repr = [f"{k}={v!r}" for k, v in asdict(self).items() if v is not None]
+        return f"{type(self).__name__}" f"({', '.join(kv_repr)})"
 
     def __eq__(self, other: Union["Expected", Result]):
         if isinstance(other, Result):
@@ -107,6 +100,7 @@ class EDBClientFactory:
 @pytest.fixture(scope="function")
 def mock_edb(monkeypatch) -> EDBClientFactory:
     import mongomock
+
     # NOTE since mongomock clients store data in memory,
     # the same MongoClient instance must be kept and used for the lifetime of the fixture
     # to be able to access the EDB data for e.g. assertions
@@ -155,7 +149,6 @@ def run_in_empty_dir(tmp_path: Path) -> Path:
 
 
 class TestBaseCommand:
-
     @pytest.fixture(
         scope="function",
         params=[
@@ -168,7 +161,13 @@ class TestBaseCommand:
         ],
         ids=_display_param,
     )
-    def run_command(self, request, runner, edb, mandatory_subcommand_args=tuple(["info", "--type", "reaction"])) -> Outcome:
+    def run_command(
+        self,
+        request,
+        runner,
+        edb,
+        mandatory_subcommand_args=tuple(["info", "--type", "reaction"]),
+    ) -> Outcome:
         flags, expected = request.param
         args = flags + list(mandatory_subcommand_args)
         result = runner.invoke(commands.command_base, args)
@@ -182,14 +181,16 @@ class TestBaseCommand:
         return logger.getEffectiveLevel()
 
     @pytest.mark.unit
-    def test_verbosity_options_set_log_level(self, run_command: Outcome, current_log_level: LogLevel):
+    def test_verbosity_options_set_log_level(
+        self, run_command: Outcome, current_log_level: LogLevel
+    ):
         result, expected = run_command
         assert result == expected
         if expected.success:
             assert current_log_level == expected.log_level
 
-class TestLoad:
 
+class TestLoad:
     @pytest.fixture(scope="function")
     def access_loadable_data(self, tmp_path: Path) -> Path:
         src = commands.get_edb_data("filename").parent
@@ -207,27 +208,47 @@ class TestLoad:
         scope="function",
         params=[
             pytest.param(
-                Invocation(["load", "--bootstrap", "--validate"], Expected(ExitCode.OK)),
-                marks=pytest.mark.xfail(reason="Validation for 'base' not yet available")
+                Invocation(
+                    ["load", "--bootstrap", "--validate"], Expected(ExitCode.OK)
+                ),
+                marks=pytest.mark.xfail(
+                    reason="Validation for 'base' not yet available"
+                ),
             ),
             Invocation(["load", "--bootstrap", "--no-validate"]),
             Invocation(["load"], Expected(ExitCode.INVALID_USAGE)),
             Invocation(["load", "--file", "reaction.json", "--type", "reaction"]),
             Invocation(["load", "--file", "component.json", "--type", "component"]),
             Invocation(["load", "--file", "base.json", "--type", "base"]),
-            Invocation(["load", "--file", "base.json"], Expected(ExitCode.INVALID_USAGE)),
+            Invocation(
+                ["load", "--file", "base.json"], Expected(ExitCode.INVALID_USAGE)
+            ),
             # to test the validation from the point of view of the command line, we use valid files and data types,
             # but switched, e.g. base.json as component.
             # the command should fail unless the validation is turned off (default is on)
-            Invocation(["load", "--file", "base.json", "--type", "component", "--no-validate"], Expected(ExitCode.OK)),
-            Invocation(["load", "--file", "base.json", "--type", "component", "--validate"], Expected(ExitCode.DATABASE_ERROR)),
+            Invocation(
+                ["load", "--file", "base.json", "--type", "component", "--no-validate"],
+                Expected(ExitCode.OK),
+            ),
+            Invocation(
+                ["load", "--file", "base.json", "--type", "component", "--validate"],
+                Expected(ExitCode.DATABASE_ERROR),
+            ),
             # this tests that the default behavior is to validate if no flag is given
-            Invocation(["load", "--file", "base.json", "--type", "component"], Expected(ExitCode.DATABASE_ERROR)),
-            Invocation(["load", "--bootstrap", "--url", _INVALID.url], Expected(ExitCode.DATABASE_ERROR)),
+            Invocation(
+                ["load", "--file", "base.json", "--type", "component"],
+                Expected(ExitCode.DATABASE_ERROR),
+            ),
+            Invocation(
+                ["load", "--bootstrap", "--url", _INVALID.url],
+                Expected(ExitCode.DATABASE_ERROR),
+            ),
         ],
-        ids=_display_param
+        ids=_display_param,
     )
-    def run_from_empty_db(self, request, runner, empty_edb, access_loadable_data) -> Outcome:
+    def run_from_empty_db(
+        self, request, runner, empty_edb, access_loadable_data
+    ) -> Outcome:
         invocation = request.param
         result = runner.invoke(commands.command_base, invocation.args)
         return result, invocation.expected
@@ -244,7 +265,7 @@ class TestLoad:
         params=[
             (["load", "--bootstrap"], Expected(ExitCode.DATABASE_ERROR)),
         ],
-        ids=_display_param
+        ids=_display_param,
     )
     def run_from_populated_db(self, request, runner, populated_edb) -> Outcome:
         args, expected = request.param
@@ -252,25 +273,40 @@ class TestLoad:
         return result, expected
 
     @pytest.mark.unit
-    def test_from_populated_db(self, run_from_populated_db: Outcome, edb: ElectrolyteDB):
+    def test_from_populated_db(
+        self, run_from_populated_db: Outcome, edb: ElectrolyteDB
+    ):
         result, expected = run_from_populated_db
         assert result == expected, result.stdout
         assert not edb.is_empty()
 
 
 class TestDump:
-
     @pytest.fixture(
         scope="function",
         params=[
-            (["dump", "--type", "reaction", "--file", "reaction.json"], Expected(file_name="reaction.json")),
-            (["dump", "--type", "base", "--file", "base.json"], Expected(file_name="base.json")),
-            (["dump", "--type", "component", "--file", "component.json"], Expected(file_name="component.json")),
-            (["dump", "--type", _INVALID.data_type, "--file", "invalid.json"], Expected(ExitCode.INVALID_USAGE)),
+            (
+                ["dump", "--type", "reaction", "--file", "reaction.json"],
+                Expected(file_name="reaction.json"),
+            ),
+            (
+                ["dump", "--type", "base", "--file", "base.json"],
+                Expected(file_name="base.json"),
+            ),
+            (
+                ["dump", "--type", "component", "--file", "component.json"],
+                Expected(file_name="component.json"),
+            ),
+            (
+                ["dump", "--type", _INVALID.data_type, "--file", "invalid.json"],
+                Expected(ExitCode.INVALID_USAGE),
+            ),
         ],
-        ids=_display_param
+        ids=_display_param,
     )
-    def run_from_populated_db(self, request, runner, populated_edb, tmp_path) -> Outcome:
+    def run_from_populated_db(
+        self, request, runner, populated_edb, tmp_path
+    ) -> Outcome:
         args, expected = request.param
         with _changing_cwd(tmp_path) as dest_dir:
             result = runner.invoke(commands.command_base, args)
@@ -280,14 +316,13 @@ class TestDump:
 
     @pytest.mark.unit
     def test_from_populated_db(self, run_from_populated_db: Outcome):
-        result, expected = run_from_populated_db 
+        result, expected = run_from_populated_db
         assert result == expected, result.stdout
         if expected.file_name is not None:
             assert expected.file_path.exists()
 
 
 class TestDrop:
-
     @pytest.fixture(
         scope="function",
         params=[
@@ -298,7 +333,7 @@ class TestDrop:
         ids=_display_param,
     )
     def run_from_populated_db(self, request, runner, populated_edb) -> Outcome:
-        args , expected = request.param
+        args, expected = request.param
         result = runner.invoke(commands.command_base, args)
         return result, expected
 
@@ -319,7 +354,7 @@ class TestInfo:
             (["info", "--type", "reaction"], Expected(ExitCode.OK)),
             (["info", "--type", _INVALID.data_type], Expected(ExitCode.INVALID_USAGE)),
         ],
-        ids=_display_param
+        ids=_display_param,
     )
     def run_command(self, request, runner, edb) -> Outcome:
         args, expected = request.param
@@ -346,13 +381,17 @@ class TestSchema:
     @pytest.fixture(
         scope="function",
         params=[
-            fmt if is_available
+            fmt
+            if is_available
             else pytest.param(
-                fmt, marks=pytest.mark.xfail(reason=f"Schema output format '{fmt}' not yet supported")
+                fmt,
+                marks=pytest.mark.xfail(
+                    reason=f"Schema output format '{fmt}' not yet supported"
+                ),
             )
             for fmt, is_available in format_available.items()
         ],
-        ids=str
+        ids=str,
     )
     def output_format(self, request):
         return request.param
@@ -370,7 +409,9 @@ class TestSchema:
         ],
         ids=_display_param,
     )
-    def run_command(self, request, output_format: str, runner, edb, run_in_empty_dir) -> Outcome:
+    def run_command(
+        self, request, output_format: str, runner, edb, run_in_empty_dir
+    ) -> Outcome:
         args, expected = request.param
         args.extend(["--format", output_format])
         result = runner.invoke(commands.command_base, args)
@@ -381,6 +422,7 @@ class TestSchema:
         result, expected = run_command
         assert result == expected, result.stdout
         if expected.success:
-            text = expected.file_path.read_text() if expected.file_path else result.stdout
+            text = (
+                expected.file_path.read_text() if expected.file_path else result.stdout
+            )
             assert len(text) >= min_text_length
-            

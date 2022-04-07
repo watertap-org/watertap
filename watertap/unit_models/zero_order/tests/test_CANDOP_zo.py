@@ -17,7 +17,14 @@ import pytest
 
 from io import StringIO
 
-from pyomo.environ import Block, Var, Constraint, ConcreteModel, value, assert_optimal_termination
+from pyomo.environ import (
+    Block,
+    Var,
+    Constraint,
+    ConcreteModel,
+    value,
+    assert_optimal_termination,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -33,6 +40,7 @@ from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
+
 class TestCANDOPZO:
     @pytest.fixture(scope="class")
     def model(self):
@@ -41,11 +49,19 @@ class TestCANDOPZO:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["nitrogen", "phosphates", "bioconcentrated_phosphorous", "nitrous_oxide"]})
+            default={
+                "solute_list": [
+                    "nitrogen",
+                    "phosphates",
+                    "bioconcentrated_phosphorous",
+                    "nitrous_oxide",
+                ]
+            }
+        )
 
-        m.fs.unit = CANDOPZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = CANDOPZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
         m.fs.unit.inlet.flow_mass_comp[0, "nitrogen"].fix(1)
@@ -71,22 +87,28 @@ class TestCANDOPZO:
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-               data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
-            if j not in data['removal_frac_mass_solute'].keys():
+            if j not in data["removal_frac_mass_solute"].keys():
                 assert v.value == data["default_removal_frac_mass_solute"]["value"]
             else:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.electricity_intensity_N.fixed
-        assert model.fs.unit.electricity_intensity_N.value == data[
-            "electricity_intensity_N"]["value"]
+        assert (
+            model.fs.unit.electricity_intensity_N.value
+            == data["electricity_intensity_N"]["value"]
+        )
         assert model.fs.unit.oxygen_nitrogen_ratio.fixed
-        assert model.fs.unit.oxygen_nitrogen_ratio.value == data[
-            "oxygen_nitrogen_ratio"]["value"]
+        assert (
+            model.fs.unit.oxygen_nitrogen_ratio.value
+            == data["oxygen_nitrogen_ratio"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -113,42 +135,74 @@ class TestCANDOPZO:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(0.122, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].flow_vol))
-        assert (pytest.approx(8.196721, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["nitrogen"]))
-        assert (pytest.approx(8.196721, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["phosphates"]))
+        assert pytest.approx(0.122, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].flow_vol
+        )
+        assert pytest.approx(8.196721, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["nitrogen"]
+        )
+        assert pytest.approx(8.196721, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["phosphates"]
+        )
 
-        assert (pytest.approx(0.1205, rel=1e-2) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(2.074689, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["nitrogen"]))
-        assert (pytest.approx(2.074689, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["phosphates"]))
-        assert value(model.fs.unit.properties_treated[0].conc_mass_comp["bioconcentrated_phosphorous"]) < 1e-6
-        assert value(model.fs.unit.properties_treated[0].conc_mass_comp["nitrous_oxide"]) < 1e-6
+        assert pytest.approx(0.1205, rel=1e-2) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(2.074689, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["nitrogen"]
+        )
+        assert pytest.approx(2.074689, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["phosphates"]
+        )
+        assert (
+            value(
+                model.fs.unit.properties_treated[0].conc_mass_comp[
+                    "bioconcentrated_phosphorous"
+                ]
+            )
+            < 1e-6
+        )
+        assert (
+            value(model.fs.unit.properties_treated[0].conc_mass_comp["nitrous_oxide"])
+            < 1e-6
+        )
 
-        assert (pytest.approx(0.0015, rel=1e-2) ==
-                value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrogen"]) < 1e-6
-        assert value(model.fs.unit.properties_byproduct[0].conc_mass_comp["phosphates"]) < 1e-6
-        assert (pytest.approx(500, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["bioconcentrated_phosphorous"]))
-        assert (pytest.approx(500, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrous_oxide"]))
+        assert pytest.approx(0.0015, rel=1e-2) == value(
+            model.fs.unit.properties_byproduct[0].flow_vol
+        )
+        assert (
+            value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrogen"])
+            < 1e-6
+        )
+        assert (
+            value(model.fs.unit.properties_byproduct[0].conc_mass_comp["phosphates"])
+            < 1e-6
+        )
+        assert pytest.approx(500, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp[
+                "bioconcentrated_phosphorous"
+            ]
+        )
+        assert pytest.approx(500, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrous_oxide"]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-6 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] +
-                sum(model.fs.unit.generation_rxn_comp[0, r, j]
-                    for r in model.fs.unit.reaction_set) -
-                model.fs.unit.treated.flow_mass_comp[0, j] -
-                model.fs.unit.byproduct.flow_mass_comp[0, j]))
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    + sum(
+                        model.fs.unit.generation_rxn_comp[0, r, j]
+                        for r in model.fs.unit.reaction_set
+                    )
+                    - model.fs.unit.treated.flow_mass_comp[0, j]
+                    - model.fs.unit.byproduct.flow_mass_comp[0, j]
+                )
+            )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -188,16 +242,23 @@ Unit : fs.unit                                                             Time:
 """
         assert output in stream.getvalue()
 
+
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["nitrogen", "phosphates", "bioconcentrated_phosphorous", "nitrous_oxide"]})
+        default={
+            "solute_list": [
+                "nitrogen",
+                "phosphates",
+                "bioconcentrated_phosphorous",
+                "nitrous_oxide",
+            ]
+        }
+    )
     m.fs.costing = ZeroOrderCosting()
-    m.fs.unit = CANDOPZO(default={
-        "property_package": m.fs.params,
-        "database": m.db})
+    m.fs.unit = CANDOPZO(default={"property_package": m.fs.params, "database": m.db})
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
     m.fs.unit.inlet.flow_mass_comp[0, "nitrogen"].fix(1)
@@ -208,21 +269,21 @@ def test_costing():
 
     assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit.costing = UnitModelCostingBlock(default={
-        "flowsheet_costing_block": m.fs.costing})
+    m.fs.unit.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
 
     assert isinstance(m.fs.costing.CANDO_P, Block)
     assert isinstance(m.fs.costing.CANDO_P.sizing_parameter, Var)
     assert isinstance(m.fs.costing.CANDO_P.sizing_cost, Var)
 
     assert isinstance(m.fs.unit.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit.costing.capital_cost_constraint,
-                      Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit) == 0
     initialization_tester(m)
 
-    assert (pytest.approx(42.651167, rel=1e-5) == value(m.fs.unit.costing.capital_cost))
+    assert pytest.approx(42.651167, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
 
-    assert m.fs.unit.electricity[0] in  m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]

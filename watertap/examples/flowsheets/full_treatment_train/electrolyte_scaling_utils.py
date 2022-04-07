@@ -21,7 +21,7 @@ from idaes.core.util import scaling as iscale
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 
 # Import specific pyomo objects
-from pyomo.environ import (value, Suffix)
+from pyomo.environ import value, Suffix
 
 __author__ = "Austin Ladshaw"
 
@@ -30,33 +30,38 @@ __author__ = "Austin Ladshaw"
 #   and scaling for electrolyte systems.
 #
 #       Assumes using FTPx as the state_vars
-def approximate_chemical_state_args(unit, rxn_params, reaction_config, contains_stoich_reactions=False):
+def approximate_chemical_state_args(
+    unit, rxn_params, reaction_config, contains_stoich_reactions=False
+):
     state_args = {}
     stoich_extents = {}
 
     # Set bulk values to their inlets
-    state_args['pressure'] = unit.inlet.pressure[0].value
-    state_args['temperature'] = unit.inlet.temperature[0].value
-    state_args['flow_mol'] = unit.inlet.flow_mol[0].value
+    state_args["pressure"] = unit.inlet.pressure[0].value
+    state_args["temperature"] = unit.inlet.temperature[0].value
+    state_args["flow_mol"] = unit.inlet.flow_mol[0].value
 
     # Set species based on inlets (and outlets for stoich reaction)
-    state_args['mole_frac_comp'] = {}
+    state_args["mole_frac_comp"] = {}
     min = 1e-08
     for i in unit.control_volume.properties_in[0.0].mole_frac_comp:
         # Set state args to inlets on first pass
         if unit.inlet.mole_frac_comp[0, i].value > min:
-            state_args['mole_frac_comp'][i] = unit.inlet.mole_frac_comp[0, i].value
+            state_args["mole_frac_comp"][i] = unit.inlet.mole_frac_comp[0, i].value
         else:
-            state_args['mole_frac_comp'][i] = min
+            state_args["mole_frac_comp"][i] = min
 
     # Iterate through outlet mole fractions and note the fixed variables
     fixed = {}
     for i, species in unit.outlet.mole_frac_comp:
         if unit.outlet.mole_frac_comp[i, species].is_fixed():
             fixed[species] = True
-            state_args['mole_frac_comp'][species] = unit.outlet.mole_frac_comp[0, species].value
+            state_args["mole_frac_comp"][species] = unit.outlet.mole_frac_comp[
+                0, species
+            ].value
 
     return state_args, stoich_extents
+
 
 # Perform scaling transformations for equilibrium reactions (if they exist)
 def calculate_chemical_scaling_factors_for_equilibrium_log_reactions(unit, rxn_params):
@@ -64,11 +69,16 @@ def calculate_chemical_scaling_factors_for_equilibrium_log_reactions(unit, rxn_p
         for i in unit.control_volume.equilibrium_reaction_extent_index:
             if i[1] != "dummy":
                 scale = value(unit.control_volume.reactions[0.0].k_eq[i[1]].expr)
-                iscale.set_scaling_factor(unit.control_volume.equilibrium_reaction_extent[0.0,i[1]], 10/scale)
-                iscale.constraint_scaling_transform(unit.control_volume.reactions[0.0].
-                        equilibrium_constraint[i[1]], 0.1)
+                iscale.set_scaling_factor(
+                    unit.control_volume.equilibrium_reaction_extent[0.0, i[1]],
+                    10 / scale,
+                )
+                iscale.constraint_scaling_transform(
+                    unit.control_volume.reactions[0.0].equilibrium_constraint[i[1]], 0.1
+                )
     except:
         pass
+
 
 # # Perform scaling transformations for mass balances
 def calculate_chemical_scaling_factors_for_material_balances(unit):
@@ -80,12 +90,23 @@ def calculate_chemical_scaling_factors_for_material_balances(unit):
             scale = unit.inlet.mole_frac_comp[0, i[1]].value
         else:
             scale = min
-        iscale.set_scaling_factor(unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10/scale)
-        iscale.set_scaling_factor(unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10/scale)
-        iscale.set_scaling_factor(unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10/scale)
+        iscale.set_scaling_factor(
+            unit.control_volume.properties_out[0.0].mole_frac_comp[i[1]], 10 / scale
+        )
+        iscale.set_scaling_factor(
+            unit.control_volume.properties_out[0.0].mole_frac_phase_comp[i], 10 / scale
+        )
+        iscale.set_scaling_factor(
+            unit.control_volume.properties_out[0.0].flow_mol_phase_comp[i], 10 / scale
+        )
         iscale.constraint_scaling_transform(
-            unit.control_volume.properties_out[0.0].component_flow_balances[i[1]], 10/scale)
-        iscale.constraint_scaling_transform(unit.control_volume.material_balances[0.0,i[1]], 10/scale)
+            unit.control_volume.properties_out[0.0].component_flow_balances[i[1]],
+            10 / scale,
+        )
+        iscale.constraint_scaling_transform(
+            unit.control_volume.material_balances[0.0, i[1]], 10 / scale
+        )
+
 
 # # Perform scaling transformations for energy balances
 def calculate_chemical_scaling_factors_for_energy_balances(unit):
@@ -93,20 +114,33 @@ def calculate_chemical_scaling_factors_for_energy_balances(unit):
     min = 1
     try:
         for phase in unit.control_volume.properties_in[0.0].enth_mol_phase:
-            val = abs(value(unit.control_volume.properties_in[0.0].enth_mol_phase[phase].expr))
+            val = abs(
+                value(unit.control_volume.properties_in[0.0].enth_mol_phase[phase].expr)
+            )
             if val >= max:
                 max = val
             if val <= min:
                 val = min
-            iscale.set_scaling_factor(unit.control_volume.properties_in[0.0]._enthalpy_flow_term[phase], 10/val)
-            iscale.set_scaling_factor(unit.control_volume.properties_out[0.0]._enthalpy_flow_term[phase], 10/val)
+            iscale.set_scaling_factor(
+                unit.control_volume.properties_in[0.0]._enthalpy_flow_term[phase],
+                10 / val,
+            )
+            iscale.set_scaling_factor(
+                unit.control_volume.properties_out[0.0]._enthalpy_flow_term[phase],
+                10 / val,
+            )
 
-        iscale.constraint_scaling_transform(unit.control_volume.enthalpy_balances[0.0], 10/max)
+        iscale.constraint_scaling_transform(
+            unit.control_volume.enthalpy_balances[0.0], 10 / max
+        )
     except:
         pass
 
+
 # Serially calculate all scaling factors needed
-def calculate_chemical_scaling_factors(unit, thermo_params, rxn_params, state_args, output_jac=False):
+def calculate_chemical_scaling_factors(
+    unit, thermo_params, rxn_params, state_args, output_jac=False
+):
     calculate_chemical_scaling_factors_for_equilibrium_log_reactions(unit, rxn_params)
     calculate_chemical_scaling_factors_for_energy_balances(unit)
     calculate_chemical_scaling_factors_for_material_balances(unit)

@@ -17,7 +17,14 @@ import pytest
 
 from io import StringIO
 
-from pyomo.environ import Block, Var, Constraint, ConcreteModel, value, assert_optimal_termination
+from pyomo.environ import (
+    Block,
+    Var,
+    Constraint,
+    ConcreteModel,
+    value,
+    assert_optimal_termination,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -33,6 +40,7 @@ from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
+
 class TestPhotothermalMembraneZO:
     @pytest.fixture(scope="class")
     def model(self):
@@ -40,12 +48,11 @@ class TestPhotothermalMembraneZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-                default={"solute_list": ["nitrogen"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["nitrogen"]})
 
-        m.fs.unit = PhotothermalMembraneZO(default={
-                        "property_package": m.fs.params,
-                        "database": m.db})
+        m.fs.unit = PhotothermalMembraneZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
         m.fs.unit.inlet.flow_mass_comp[0, "nitrogen"].fix(1)
@@ -66,8 +73,10 @@ class TestPhotothermalMembraneZO:
 
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-               data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
@@ -101,29 +110,41 @@ class TestPhotothermalMembraneZO:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(0.013, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(0.108, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(923.076923, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["H2O"]))
-        assert (pytest.approx(76.923077, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["nitrogen"]))
-        assert (pytest.approx(1000, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["H2O"]))
-        assert value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrogen"]) < 1e-6
-        assert (value(model.fs.unit.properties_in[0].flow_mass_comp["nitrogen"]) ==
-                value(model.fs.unit.properties_treated[0].flow_mass_comp["nitrogen"]))
+        assert pytest.approx(0.013, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(0.108, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].flow_vol
+        )
+        assert pytest.approx(923.076923, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["H2O"]
+        )
+        assert pytest.approx(76.923077, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["nitrogen"]
+        )
+        assert pytest.approx(1000, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["H2O"]
+        )
+        assert (
+            value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrogen"])
+            < 1e-6
+        )
+        assert value(
+            model.fs.unit.properties_in[0].flow_mass_comp["nitrogen"]
+        ) == value(model.fs.unit.properties_treated[0].flow_mass_comp["nitrogen"])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-5 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] -
-                model.fs.unit.treated.flow_mass_comp[0, j] -
-                model.fs.unit.byproduct.flow_mass_comp[0, j]))
+            assert 1e-5 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    - model.fs.unit.treated.flow_mass_comp[0, j]
+                    - model.fs.unit.byproduct.flow_mass_comp[0, j]
+                )
+            )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -153,15 +174,16 @@ Unit : fs.unit                                                             Time:
 """
         assert output in stream.getvalue()
 
+
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.params = WaterParameterBlock(default={"solute_list": ["nitrogen"]})
     m.fs.costing = ZeroOrderCosting()
-    m.fs.unit = PhotothermalMembraneZO(default={
-        "property_package": m.fs.params,
-        "database": m.db})
+    m.fs.unit = PhotothermalMembraneZO(
+        default={"property_package": m.fs.params, "database": m.db}
+    )
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
     m.fs.unit.inlet.flow_mass_comp[0, "nitrogen"].fix(1)
@@ -169,8 +191,9 @@ def test_costing():
 
     assert degrees_of_freedom(m.fs.unit) == 0
 
-    m.fs.unit.costing = UnitModelCostingBlock(default={
-        "flowsheet_costing_block": m.fs.costing})
+    m.fs.unit.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
 
     assert isinstance(m.fs.costing.photothermal_membrane, Block)
     assert isinstance(m.fs.costing.photothermal_membrane.membrane_cost, Var)
@@ -182,4 +205,4 @@ def test_costing():
     assert degrees_of_freedom(m.fs.unit) == 0
     initialization_tester(m)
 
-    assert (pytest.approx(4.719596, rel=1e-5) == value(m.fs.unit.costing.capital_cost))
+    assert pytest.approx(4.719596, rel=1e-5) == value(m.fs.unit.costing.capital_cost)

@@ -13,8 +13,7 @@
 import pytest
 from io import StringIO
 
-from pyomo.environ import (ConcreteModel,
-                           assert_optimal_termination)
+from pyomo.environ import ConcreteModel, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
@@ -30,19 +29,19 @@ solver = get_solver()
 @pytest.mark.component
 def test_complete_condense():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={'dynamic': False})
+    m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = props.WaterParameterBlock()
     m.fs.unit = Condenser(default={"property_package": m.fs.properties})
 
     # scaling
-    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Vap', 'H2O'))
-    m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Vap", "H2O"))
+    m.fs.properties.set_default_scaling("flow_mass_phase_comp", 1, index=("Liq", "H2O"))
     iscale.set_scaling_factor(m.fs.unit.control_volume.heat, 1e-6)
     iscale.calculate_scaling_factors(m)
 
     # state variables
-    m.fs.unit.inlet.flow_mass_phase_comp[0, 'Vap', 'H2O'].fix(1)
-    m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(1e-8)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Vap", "H2O"].fix(1)
+    m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1e-8)
     m.fs.unit.inlet.temperature[0].fix(400)  # K
     m.fs.unit.inlet.pressure[0].fix(0.5e5)  # Pa
 
@@ -50,7 +49,7 @@ def test_complete_condense():
 
     # solving
     assert_units_consistent(m)
-    assert (degrees_of_freedom(m) == 0)
+    assert degrees_of_freedom(m) == 0
 
     m.fs.unit.initialize()
 
@@ -60,8 +59,7 @@ def test_complete_condense():
 
     report_io = StringIO()
     m.fs.unit.report(ostream=report_io)
-    output = \
-        """
+    output = """
 ====================================================================================
 Unit : fs.unit                                                             Time: 0.0
 ------------------------------------------------------------------------------------

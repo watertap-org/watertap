@@ -37,35 +37,47 @@ class IronManganeseRemovalZOData(ZeroOrderBaseData):
 
         build_sido(self)
 
-        self.air_water_ratio = Var(self.flowsheet().time,
-                                units=pyunits.dimensionless,
-                                doc="Ratio of air to water")
+        self.air_water_ratio = Var(
+            self.flowsheet().time,
+            units=pyunits.dimensionless,
+            doc="Ratio of air to water",
+        )
 
-        self.flow_basis = Var(self.flowsheet().time,
-                                   units=pyunits.m**3/pyunits.hour,
-                                   doc="Flow basis")
+        self.flow_basis = Var(
+            self.flowsheet().time, units=pyunits.m**3 / pyunits.hour, doc="Flow basis"
+        )
 
-        self.air_flow_rate = Var(self.flowsheet().time,
-                                   units=pyunits.m ** 3 / pyunits.hour,
-                                   doc="Air flow rate")
+        self.air_flow_rate = Var(
+            self.flowsheet().time,
+            units=pyunits.m**3 / pyunits.hour,
+            doc="Air flow rate",
+        )
 
-        self.electricity_intensity_parameter = Var(units=pyunits.hp/(pyunits.m ** 3 / pyunits.hour),
-                              doc="Constant in electricity intensity equation")
+        self.electricity_intensity_parameter = Var(
+            units=pyunits.hp / (pyunits.m**3 / pyunits.hour),
+            doc="Constant in electricity intensity equation",
+        )
 
-        self.filter_surf_area = Var(units=pyunits.m ** 2,
-                                    doc="Dual media filter surface area")
+        self.filter_surf_area = Var(
+            units=pyunits.m**2, doc="Dual media filter surface area"
+        )
 
-        self.num_filter_units = Var(units=pyunits.dimensionless,
-                                    doc="Number of dual media filter units")
+        self.num_filter_units = Var(
+            units=pyunits.dimensionless, doc="Number of dual media filter units"
+        )
 
-        self.electricity = Var(self.flowsheet().config.time,
-                                units=pyunits.kW,
-                                bounds=(0, None),
-                                doc="Power consumption of iron and manganese removal")
+        self.electricity = Var(
+            self.flowsheet().config.time,
+            units=pyunits.kW,
+            bounds=(0, None),
+            doc="Power consumption of iron and manganese removal",
+        )
 
-        self.electricity_intensity = Var(self.flowsheet().config.time,
-                                         units=pyunits.kWh / pyunits.m ** 3,
-                                         doc="Specific energy consumption with respect to feed flowrate")
+        self.electricity_intensity = Var(
+            self.flowsheet().config.time,
+            units=pyunits.kWh / pyunits.m**3,
+            doc="Specific energy consumption with respect to feed flowrate",
+        )
 
         self._fixed_perf_vars.append(self.air_water_ratio)
         self._fixed_perf_vars.append(self.flow_basis)
@@ -73,29 +85,32 @@ class IronManganeseRemovalZOData(ZeroOrderBaseData):
         self._fixed_perf_vars.append(self.filter_surf_area)
         self._fixed_perf_vars.append(self.num_filter_units)
 
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Air flow rate constraint")
+        @self.Constraint(self.flowsheet().config.time, doc="Air flow rate constraint")
         def air_flow_rate_constraint(b, t):
-            q_in = pyunits.convert(b.properties_in[t].flow_vol,
-                                   to_units=pyunits.m**3/pyunits.hour)
-            return (b.air_flow_rate[t] ==
-                    b.air_water_ratio[t] * q_in)
+            q_in = pyunits.convert(
+                b.properties_in[t].flow_vol, to_units=pyunits.m**3 / pyunits.hour
+            )
+            return b.air_flow_rate[t] == b.air_water_ratio[t] * q_in
 
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Electricity intensity constraint")
+        @self.Constraint(
+            self.flowsheet().config.time, doc="Electricity intensity constraint"
+        )
         def electricity_intensity_constraint(b, t):
-            return b.electricity_intensity[t] == pyunits.convert(b.electricity_intensity_parameter
-                                                                 * b.air_water_ratio[t],
-                                                                 to_units=pyunits.kWh/pyunits.m**3)
+            return b.electricity_intensity[t] == pyunits.convert(
+                b.electricity_intensity_parameter * b.air_water_ratio[t],
+                to_units=pyunits.kWh / pyunits.m**3,
+            )
 
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Power consumption constraint")
+        @self.Constraint(
+            self.flowsheet().config.time, doc="Power consumption constraint"
+        )
         def electricity_constraint(b, t):
-            q_in = pyunits.convert(b.properties_in[t].flow_vol,
-                                   to_units=pyunits.m**3/pyunits.hour)
-            return (b.electricity[t] ==
-                    b.electricity_intensity[t] * q_in)
+            q_in = pyunits.convert(
+                b.properties_in[t].flow_vol, to_units=pyunits.m**3 / pyunits.hour
+            )
+            return b.electricity[t] == b.electricity_intensity[t] * q_in
 
         self._perf_var_dict["Power Consumption (kW)"] = self.electricity
-        self._perf_var_dict["Electricity intensity per Inlet Flowrate  (kWh/m3)"] = \
-            self.electricity_intensity
+        self._perf_var_dict[
+            "Electricity intensity per Inlet Flowrate  (kWh/m3)"
+        ] = self.electricity_intensity

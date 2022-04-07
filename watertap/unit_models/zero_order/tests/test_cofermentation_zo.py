@@ -17,8 +17,14 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    ConcreteModel, Constraint, value, Var, assert_optimal_termination, TransformationFactory,
-    units as pyunits)
+    ConcreteModel,
+    Constraint,
+    value,
+    Var,
+    assert_optimal_termination,
+    TransformationFactory,
+    units as pyunits,
+)
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.network import Arc
 
@@ -34,6 +40,7 @@ from watertap.core.zero_order_properties import WaterParameterBlock
 
 solver = get_solver()
 
+
 class TestCofermentationZO:
     @pytest.fixture(scope="class")
     def model(self):
@@ -41,31 +48,59 @@ class TestCofermentationZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["cod"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["cod"]})
 
-        m.fs.unit = CofermentationZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
-        m.fs.feed1 = FeedZO(default={
-            "property_package": m.fs.params,
-        })
-        m.fs.feed2 = FeedZO(default={
-            "property_package": m.fs.params,
-        })
+        m.fs.unit = CofermentationZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
+        m.fs.feed1 = FeedZO(
+            default={
+                "property_package": m.fs.params,
+            }
+        )
+        m.fs.feed2 = FeedZO(
+            default={
+                "property_package": m.fs.params,
+            }
+        )
 
-        m.fs.feed1.flow_vol[0].fix(value(pyunits.convert(32.1 * pyunits.L / pyunits.day,
-                                                         to_units=pyunits.m ** 3 / pyunits.s)))
-        m.fs.feed1.conc_mass_comp[0, 'cod'].fix(value(pyunits.convert(69781.93146 * pyunits.mg / pyunits.L,
-                                                                      to_units=pyunits.kg / pyunits.m ** 3)))
+        m.fs.feed1.flow_vol[0].fix(
+            value(
+                pyunits.convert(
+                    32.1 * pyunits.L / pyunits.day, to_units=pyunits.m**3 / pyunits.s
+                )
+            )
+        )
+        m.fs.feed1.conc_mass_comp[0, "cod"].fix(
+            value(
+                pyunits.convert(
+                    69781.93146 * pyunits.mg / pyunits.L,
+                    to_units=pyunits.kg / pyunits.m**3,
+                )
+            )
+        )
 
-        m.fs.feed2.flow_vol[0].fix(value(pyunits.convert(3.21 * pyunits.L / pyunits.day,
-                                                         to_units=pyunits.m ** 3 / pyunits.s)))
-        m.fs.feed2.conc_mass_comp[0, 'cod'].fix(value(pyunits.convert(1e4 * pyunits.mg / pyunits.L,
-                                                                      to_units=pyunits.kg / pyunits.m ** 3)))
+        m.fs.feed2.flow_vol[0].fix(
+            value(
+                pyunits.convert(
+                    3.21 * pyunits.L / pyunits.day, to_units=pyunits.m**3 / pyunits.s
+                )
+            )
+        )
+        m.fs.feed2.conc_mass_comp[0, "cod"].fix(
+            value(
+                pyunits.convert(
+                    1e4 * pyunits.mg / pyunits.L, to_units=pyunits.kg / pyunits.m**3
+                )
+            )
+        )
 
-        m.fs.feed1_to_coferm = Arc(source=m.fs.feed1.outlet, destination=m.fs.unit.inlet1)
-        m.fs.feed2_to_coferm = Arc(source=m.fs.feed2.outlet, destination=m.fs.unit.inlet2)
+        m.fs.feed1_to_coferm = Arc(
+            source=m.fs.feed1.outlet, destination=m.fs.unit.inlet1
+        )
+        m.fs.feed2_to_coferm = Arc(
+            source=m.fs.feed2.outlet, destination=m.fs.unit.inlet2
+        )
 
         TransformationFactory("network.expand_arcs").apply_to(m)
 
@@ -86,16 +121,20 @@ class TestCofermentationZO:
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-            data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -122,29 +161,46 @@ class TestCofermentationZO:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(7.8892e-9, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx( 0.68163, rel=1e-5) ==
-                value(pyunits.convert(model.fs.unit.properties_treated[0].flow_mass_comp["cod"],
-                                      to_units=pyunits.kg/pyunits.day)))
-        assert (pytest.approx(0, abs=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert pytest.approx(7.8892e-9, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(0.68163, rel=1e-5) == value(
+            pyunits.convert(
+                model.fs.unit.properties_treated[0].flow_mass_comp["cod"],
+                to_units=pyunits.kg / pyunits.day,
+            )
+        )
+        assert pytest.approx(0, abs=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.solute_set:
-            assert 1e-6 >= abs(value(
-                ((1 - model.fs.unit.removal_frac_mass_solute[0, j]) *
-                 (model.fs.unit.properties_in1[0].flow_mass_comp[j]
-                 + model.fs.unit.properties_in2[0].flow_mass_comp[j]) -
-                 model.fs.unit.properties_treated[0].flow_mass_comp[j])))
-        assert 1e-6 >= abs((value(
-            (model.fs.unit.properties_in1[0].flow_mass_comp["H2O"]
-             + model.fs.unit.properties_in2[0].flow_mass_comp["H2O"])
-             * model.fs.unit.recovery_frac_mass_H2O[0] -
-             model.fs.unit.properties_treated[0].flow_mass_comp["H2O"])))
+            assert 1e-6 >= abs(
+                value(
+                    (
+                        (1 - model.fs.unit.removal_frac_mass_solute[0, j])
+                        * (
+                            model.fs.unit.properties_in1[0].flow_mass_comp[j]
+                            + model.fs.unit.properties_in2[0].flow_mass_comp[j]
+                        )
+                        - model.fs.unit.properties_treated[0].flow_mass_comp[j]
+                    )
+                )
+            )
+        assert 1e-6 >= abs(
+            (
+                value(
+                    (
+                        model.fs.unit.properties_in1[0].flow_mass_comp["H2O"]
+                        + model.fs.unit.properties_in2[0].flow_mass_comp["H2O"]
+                    )
+                    * model.fs.unit.recovery_frac_mass_H2O[0]
+                    - model.fs.unit.properties_treated[0].flow_mass_comp["H2O"]
+                )
+            )
+        )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -185,8 +241,11 @@ def test_COD_not_in_solute_list():
 
     model.fs = FlowsheetBlock(default={"dynamic": False})
     model.fs.params = WaterParameterBlock(default={"solute_list": ["foo"]})
-    with pytest.raises(ValueError,
-                       match="cod must be included in the solute list since"
-                             " this unit model converts cod to nonbiodegradable_cod."):
-        model.fs.unit = CofermentationZO(default={"property_package": model.fs.params,
-                                                  "database": model.db})
+    with pytest.raises(
+        ValueError,
+        match="cod must be included in the solute list since"
+        " this unit model converts cod to nonbiodegradable_cod.",
+    ):
+        model.fs.unit = CofermentationZO(
+            default={"property_package": model.fs.params, "database": model.db}
+        )

@@ -23,6 +23,7 @@ from watertap.core import build_sido, constant_intensity, ZeroOrderBaseData
 # Some more information about this module
 __author__ = "Marcus Holly"
 
+
 @declare_process_block_class("WalnutShellFilterZO")
 class WalnutShellFilterZOData(ZeroOrderBaseData):
     """
