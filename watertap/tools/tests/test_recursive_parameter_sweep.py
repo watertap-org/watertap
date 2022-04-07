@@ -32,7 +32,9 @@ from watertap.tools.parameter_sweep import (_init_mpi,
                                             LinearSample,
                                             UniformSample,
                                             NormalSample,
-                                            SamplingType)
+                                            SamplingType,
+                                            LatinHypercubeSample)
+
 from watertap.tools.recursive_parameter_sweep import (_aggregate_filtered_input_arr,
                                                       recursive_parameter_sweep)
 from watertap.tools.tests.test_parameter_sweep import _get_rank0_path
@@ -59,7 +61,7 @@ def model():
     # Declare decision variable and param
     m.fs.x = pyo.Var()
     m.fs.a = pyo.Param(mutable=True)
-    m.fs.success_prob = pyo.Param(initialize=0.7)
+    m.fs.success_prob = pyo.Param(initialize=0.5)
 
     # Define expressions and constraints:
     # Numbers must sum to success_prob and x must be positive
@@ -143,19 +145,20 @@ def test_recursive_parameter_sweep(model, tmp_path):
         results_file_name=results_fname, write_csv=True, write_h5=True,
         req_num_samples=num_samples, debugging_data_dir=tmp_path, seed=seed)
 
-    # reference_save_data = np.array([[0.38344152, 0.31655848],
-    #                                 [0.4236548 , 0.2763452 ],
-    #                                 [0.43758721, 0.26241279],
-    #                                 [0.54488318, 0.15511682],
-    #                                 [0.5488135 , 0.1511865 ],
-    #                                 [0.60276338, 0.09723662],
-    #                                 [0.64589411, 0.05410589],
-    #                                 [0.0202184 , 0.6797816 ],
-    #                                 [0.07103606, 0.62896394],
-    #                                 [0.0871293 , 0.6128707 ]])
+    reference_save_data = np.array([[0.38344152, 0.11655848],
+                                    [ 0.4236548, 0.0763452 ],
+                                    [0.43758721, 0.06241279],
+                                    [ 0.0202184, 0.4797816 ],
+                                    [0.07103606, 0.42896394],
+                                    [ 0.0871293, 0.4128707 ],
+                                    [0.46147936, 0.03852064],
+                                    [0.11827443, 0.38172557],
+                                    [0.14335329, 0.35664671],
+                                    [0.41466194, 0.08533806]])
 
     assert np.shape(return_save_data) == (10,2)
-    # assert np.allclose(reference_save_data, return_save_data, equal_nan=True)
+    assert np.allclose(reference_save_data, return_save_data, equal_nan=True)
+    assert np.allclose(np.sum(return_save_data, axis=1), value(m.fs.success_prob))
 
     if rank == 0:
         # Check that the global results file is created

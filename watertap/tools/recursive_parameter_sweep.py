@@ -162,12 +162,18 @@ def recursive_parameter_sweep(model, sweep_params, outputs=None, results_file_na
 
         local_output_collection[loop_ctr] = _do_param_sweep(model, sweep_params, outputs, local_values,
             optimize_function, optimize_kwargs, reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep, comm)
-        fail_counter = sum(local_output_collection[loop_ctr]["solve_successful"])
 
-        n_successful_solves = local_num_cases - fail_counter
-        n_successful_list = comm.allgather(n_successful_solves)
+        # Get the number of successful solves on this proc (sum of boolean flags)
+        success_count = sum(local_output_collection[loop_ctr]["solve_successful"])
+        failure_count = local_num_cases - success_count
+
+        # Get the global number of successful solves and update the number of remaining samples
+        n_successful_list = comm.allgather(success_count)
         n_samples_remaining -= sum(n_successful_list)
-        num_total_samples = int(np.ceil(2 * n_samples_remaining))
+
+        # The total number of samples to generate at the next iteration is a multiple of the total remaining samples
+        safety_factor = 2
+        num_total_samples = int(np.ceil(safety_factor * n_samples_remaining))
         loop_ctr += 1
 
     # Now that we have all of the local output dictionaries, we need to construct
