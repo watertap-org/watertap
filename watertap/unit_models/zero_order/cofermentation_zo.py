@@ -36,13 +36,14 @@ class CofermentationZOData(ZeroOrderBaseData):
 
         self._tech_type = "cofermentation"
 
-
-        #TODO: consider making a diso_reactive build function and adding conditional for
+        # TODO: consider making a diso_reactive build function and adding conditional for
         # cod/nonbiodegradable cod to be in solute set. For now, unit assumes any solutes provided are
         # cod with a removal fraction to get the final ffCOD (i.e., (1-removal_frac)*mass_cod_in = mass_ffCOD
 
         if "cod" not in self.config.property_package.solute_set:
-            raise ValueError('cod must be included in the solute list since'
-                             ' this unit model converts cod to nonbiodegradable_cod.')
+            raise ValueError(
+                "cod must be included in the solute list since"
+                " this unit model converts cod to nonbiodegradable_cod."
+            )
         build_diso(self)
         constant_intensity(self)

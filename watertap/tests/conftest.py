@@ -23,8 +23,7 @@ def get_docs_root():
 
 @pytest.fixture(scope="session")
 def docs_root():
-    """Find docs root, or call pytest.skip
-    """
+    """Find docs root, or call pytest.skip"""
     start, result = get_docs_root()
     if result is None:
         pytest.skip(f"No directory '{DOCS_DIR}' found from '{start}'")
@@ -42,7 +41,6 @@ def check_for_mongodb() -> bool:
 
 @pytest.fixture(scope="module")
 def electrolytedb():
-    """See if EDB can be instantiated, or call pytest.skip
-    """
+    """See if EDB can be instantiated, or call pytest.skip"""
     if not check_for_mongodb():
         pytest.skip("MongoDB is required")

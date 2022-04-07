@@ -75,6 +75,7 @@
 from pyomo.environ import (
     ConcreteModel,
 )
+
 # Import the idaes objects for Generic Properties and Reactions
 from idaes.generic_models.properties.core.generic.generic_property import (
     GenericParameterBlock,
@@ -88,6 +89,7 @@ from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReac
 
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock
+
 # ========= These imports (above) are for testing the configs from EDB ===============
 
 
@@ -112,6 +114,7 @@ def grab_thermo_Liq_FpcTP_base(db):
     base = db.get_base("thermo_Liq_FpcTP")
     return base
 
+
 # ========================== (6) ================================
 # Get chemical components/species for a simulation case
 #       NOTE: This function here also returns a 'list' of the
@@ -124,7 +127,7 @@ def get_components_and_add_to_idaes_config(db, base_obj, comp_list):
     # Iterate through the results object and add the components
     #   to the base_obj
     for comp_obj in res_obj_comps:
-        print("Adding " + str(comp_obj.name) + "" )
+        print("Adding " + str(comp_obj.name) + "")
         base_obj.add(comp_obj)
     print()
     return base_obj
@@ -151,8 +154,8 @@ def build_equilibrium_model(thermo_config, reaction_config):
     model.fs = FlowsheetBlock(default={"dynamic": False})
     model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
     model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params, **reaction_config}
-        )
+        default={"property_package": model.fs.thermo_params, **reaction_config}
+    )
 
     model.fs.unit = EquilibriumReactor(
         default={

@@ -40,16 +40,17 @@ def test_no_subtype():
     m.db = Database()
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
 
-    with pytest.raises(ConfigurationError,
-                       match="fs.unit - zero-order chemical addition "
-                       "operations require the process_subtype configuration "
-                       "argument to be set"):
-        m.fs.unit = ChemicalAdditionZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+    with pytest.raises(
+        ConfigurationError,
+        match="fs.unit - zero-order chemical addition "
+        "operations require the process_subtype configuration "
+        "argument to be set",
+    ):
+        m.fs.unit = ChemicalAdditionZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
 
 class TestChemAddZOAmmonia:
@@ -60,12 +61,16 @@ class TestChemAddZOAmmonia:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["sulfur", "toc", "tss"]})
+            default={"solute_list": ["sulfur", "toc", "tss"]}
+        )
 
-        m.fs.unit = ChemicalAdditionZO(default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": "default"})
+        m.fs.unit = ChemicalAdditionZO(
+            default={
+                "property_package": m.fs.params,
+                "database": m.db,
+                "process_subtype": "default",
+            }
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
         m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -122,15 +127,17 @@ class TestChemAddZOAmmonia:
     @pytest.mark.component
     def test_solution(self, model):
         for t, j in model.fs.unit.inlet.flow_mass_comp:
-            assert (pytest.approx(value(
-                model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5) ==
-                value(model.fs.unit.outlet.flow_mass_comp[t, j]))
+            assert pytest.approx(
+                value(model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5
+            ) == value(model.fs.unit.outlet.flow_mass_comp[t, j])
 
-        assert (pytest.approx(2.012e-6, rel=1e-5) ==
-                value(model.fs.unit.chemical_flow_vol[0]))
+        assert pytest.approx(2.012e-6, rel=1e-5) == value(
+            model.fs.unit.chemical_flow_vol[0]
+        )
 
-        assert (pytest.approx(7.41395e-4, rel=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert pytest.approx(7.41395e-4, rel=1e-5) == value(
+            model.fs.unit.electricity[0]
+        )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -176,39 +183,42 @@ class TestPumpZOsubtype:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["sulfur", "toc", "tss"]})
+            default={"solute_list": ["sulfur", "toc", "tss"]}
+        )
 
         return m
 
     @pytest.mark.parametrize("subtype", [k for k in params.keys()])
     @pytest.mark.component
     def test_load_parameters(self, model, subtype):
-        model.fs.unit = ChemicalAdditionZO(default={
-            "property_package": model.fs.params,
-            "database": db,
-            "process_subtype": subtype})
+        model.fs.unit = ChemicalAdditionZO(
+            default={
+                "property_package": model.fs.params,
+                "database": db,
+                "process_subtype": subtype,
+            }
+        )
 
         model.fs.unit.config.process_subtype = subtype
-        data = db.get_unit_operation_parameters(
-            "chemical_addition", subtype=subtype)
+        data = db.get_unit_operation_parameters("chemical_addition", subtype=subtype)
 
         model.fs.unit.load_parameters_from_database()
 
         assert model.fs.unit.chemical_dosage[0].fixed
-        assert model.fs.unit.chemical_dosage[0].value == data[
-            "chemical_dosage"]["value"]
+        assert (
+            model.fs.unit.chemical_dosage[0].value == data["chemical_dosage"]["value"]
+        )
 
         assert model.fs.unit.solution_density.fixed
-        assert model.fs.unit.solution_density.value == data[
-            "solution_density"]["value"]
+        assert model.fs.unit.solution_density.value == data["solution_density"]["value"]
 
         assert model.fs.unit.ratio_in_solution.fixed
-        assert model.fs.unit.ratio_in_solution.value == data[
-            "ratio_in_solution"]["value"]
+        assert (
+            model.fs.unit.ratio_in_solution.value == data["ratio_in_solution"]["value"]
+        )
 
 
-@pytest.mark.parametrize("subtype", [k for k in params.keys()
-                                     if k != "default"])
+@pytest.mark.parametrize("subtype", [k for k in params.keys() if k != "default"])
 def test_costing(subtype):
     print(subtype)
     m = ConcreteModel()
@@ -216,15 +226,17 @@ def test_costing(subtype):
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = ChemicalAdditionZO(default={
-        "property_package": m.fs.params,
-        "database": m.db,
-        "process_subtype": subtype})
+    m.fs.unit1 = ChemicalAdditionZO(
+        default={
+            "property_package": m.fs.params,
+            "database": m.db,
+            "process_subtype": subtype,
+        }
+    )
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -233,26 +245,24 @@ def test_costing(subtype):
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(default={
-        "flowsheet_costing_block": m.fs.costing})
+    m.fs.unit1.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
 
     assert isinstance(m.fs.costing.chemical_addition, Block)
-    assert isinstance(m.fs.costing.chemical_addition.capital_a_parameter,
-                      Var)
-    assert isinstance(m.fs.costing.chemical_addition.capital_b_parameter,
-                      Var)
+    assert isinstance(m.fs.costing.chemical_addition.capital_a_parameter, Var)
+    assert isinstance(m.fs.costing.chemical_addition.capital_b_parameter, Var)
 
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
-                      Constraint)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    assert m.fs.unit1.electricity[0] in \
-        m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
 
-    assert str(m.fs.unit1.chemical_dosage[0] *
-               m.fs.unit1.properties[0].flow_vol /
-               m.fs.unit1.ratio_in_solution) == str(
-                   m.fs.costing._registered_flows[subtype][0])
+    assert str(
+        m.fs.unit1.chemical_dosage[0]
+        * m.fs.unit1.properties[0].flow_vol
+        / m.fs.unit1.ratio_in_solution
+    ) == str(m.fs.costing._registered_flows[subtype][0])

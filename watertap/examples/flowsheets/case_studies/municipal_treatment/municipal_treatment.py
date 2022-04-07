@@ -10,12 +10,13 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-from pyomo.environ import (ConcreteModel,
-                           value,
-                           TransformationFactory,
-                           units as pyunits,
-                           assert_optimal_termination,
-                           )
+from pyomo.environ import (
+    ConcreteModel,
+    value,
+    TransformationFactory,
+    units as pyunits,
+    assert_optimal_termination,
+)
 from pyomo.network import Arc, SequentialDecomposition
 from pyomo.util.check_units import assert_units_consistent
 
@@ -29,20 +30,22 @@ from watertap.core.util.initialization import assert_degrees_of_freedom
 
 from watertap.core.wt_database import Database
 import watertap.core.zero_order_properties as prop_ZO
-from watertap.unit_models.zero_order import (FeedZO,
-                                             MunicipalDrinkingZO,
-                                             WaterPumpingStationZO,
-                                             PumpZO,
-                                             CoagulationFlocculationZO,
-                                             SedimentationZO,
-                                             OzoneZO,
-                                             FixedBedZO,
-                                             GACZO,
-                                             UVZO,
-                                             IonExchangeZO,
-                                             ChlorinationZO,
-                                             StorageTankZO,
-                                             BackwashSolidsHandlingZO)
+from watertap.unit_models.zero_order import (
+    FeedZO,
+    MunicipalDrinkingZO,
+    WaterPumpingStationZO,
+    PumpZO,
+    CoagulationFlocculationZO,
+    SedimentationZO,
+    OzoneZO,
+    FixedBedZO,
+    GACZO,
+    UVZO,
+    IonExchangeZO,
+    ChlorinationZO,
+    StorageTankZO,
+    BackwashSolidsHandlingZO,
+)
 from watertap.core.zero_order_costing import ZeroOrderCosting
 
 
@@ -73,65 +76,85 @@ def build():
     m.db = Database()
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.prop = prop_ZO.WaterParameterBlock(default={"solute_list": ["tds", "tss", "toc"]})
+    m.fs.prop = prop_ZO.WaterParameterBlock(
+        default={"solute_list": ["tds", "tss", "toc"]}
+    )
 
     # unit models
-    m.fs.feed = FeedZO(default={'property_package': m.fs.prop})
-    m.fs.intake_pump = WaterPumpingStationZO(default={
-        "property_package": m.fs.prop,
-        "database": m.db,
-        "process_subtype": "raw"})
-    m.fs.coag_and_floc = CoagulationFlocculationZO(default={
-        "property_package": m.fs.prop,
-        "database": m.db})
-    m.fs.sedimentation = SedimentationZO(default={
-        "property_package": m.fs.prop,
-        "database": m.db})
-    m.fs.ozonation = OzoneZO(default={
-        "property_package": m.fs.prop,
-        "database": m.db})
-    m.fs.gravity_basin = FixedBedZO(default={
-        "property_package": m.fs.prop,
-        "database": m.db,
-        "process_subtype": "gravity_basin"})
-    m.fs.gac = GACZO(default={
-        "property_package": m.fs.prop,
-        "database": m.db,
-        "process_subtype": "pressure_vessel"})
-    m.fs.backwash_pump = WaterPumpingStationZO(default={
-        "property_package": m.fs.prop,
-        "database": m.db,
-        "process_subtype": "treated"})
-    m.fs.uv = UVZO(default={
-        "property_package": m.fs.prop,
-        "database": m.db})
-    m.fs.anion_exchange = IonExchangeZO(default={
-        "property_package": m.fs.prop,
-        "database": m.db,
-        "process_subtype": "anion_exchange"})
-    m.fs.chlorination = ChlorinationZO(default={
-        "property_package": m.fs.prop,
-        "database": m.db})
-    m.fs.storage = StorageTankZO(default={
-        "property_package": m.fs.prop,
-        "database": m.db})
-    m.fs.recharge_pump = WaterPumpingStationZO(default={
-        "property_package": m.fs.prop,
-        "database": m.db,
-        "process_subtype": "treated"})
-    m.fs.product = Product(default={'property_package': m.fs.prop})
+    m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
+    m.fs.intake_pump = WaterPumpingStationZO(
+        default={
+            "property_package": m.fs.prop,
+            "database": m.db,
+            "process_subtype": "raw",
+        }
+    )
+    m.fs.coag_and_floc = CoagulationFlocculationZO(
+        default={"property_package": m.fs.prop, "database": m.db}
+    )
+    m.fs.sedimentation = SedimentationZO(
+        default={"property_package": m.fs.prop, "database": m.db}
+    )
+    m.fs.ozonation = OzoneZO(default={"property_package": m.fs.prop, "database": m.db})
+    m.fs.gravity_basin = FixedBedZO(
+        default={
+            "property_package": m.fs.prop,
+            "database": m.db,
+            "process_subtype": "gravity_basin",
+        }
+    )
+    m.fs.gac = GACZO(
+        default={
+            "property_package": m.fs.prop,
+            "database": m.db,
+            "process_subtype": "pressure_vessel",
+        }
+    )
+    m.fs.backwash_pump = WaterPumpingStationZO(
+        default={
+            "property_package": m.fs.prop,
+            "database": m.db,
+            "process_subtype": "treated",
+        }
+    )
+    m.fs.uv = UVZO(default={"property_package": m.fs.prop, "database": m.db})
+    m.fs.anion_exchange = IonExchangeZO(
+        default={
+            "property_package": m.fs.prop,
+            "database": m.db,
+            "process_subtype": "anion_exchange",
+        }
+    )
+    m.fs.chlorination = ChlorinationZO(
+        default={"property_package": m.fs.prop, "database": m.db}
+    )
+    m.fs.storage = StorageTankZO(
+        default={"property_package": m.fs.prop, "database": m.db}
+    )
+    m.fs.recharge_pump = WaterPumpingStationZO(
+        default={
+            "property_package": m.fs.prop,
+            "database": m.db,
+            "process_subtype": "treated",
+        }
+    )
+    m.fs.product = Product(default={"property_package": m.fs.prop})
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.intake_pump.inlet)
     m.fs.s02 = Arc(source=m.fs.intake_pump.outlet, destination=m.fs.coag_and_floc.inlet)
-    m.fs.s03 = Arc(source=m.fs.coag_and_floc.outlet, destination=m.fs.sedimentation.inlet)
+    m.fs.s03 = Arc(
+        source=m.fs.coag_and_floc.outlet, destination=m.fs.sedimentation.inlet
+    )
     m.fs.s04 = Arc(source=m.fs.sedimentation.treated, destination=m.fs.ozonation.inlet)
     m.fs.s05 = Arc(source=m.fs.ozonation.treated, destination=m.fs.gravity_basin.inlet)
     m.fs.s06 = Arc(source=m.fs.gravity_basin.treated, destination=m.fs.gac.inlet)
     m.fs.s07 = Arc(source=m.fs.gac.treated, destination=m.fs.uv.inlet)
     m.fs.s08 = Arc(source=m.fs.gac.byproduct, destination=m.fs.backwash_pump.inlet)
     m.fs.s09 = Arc(source=m.fs.uv.treated, destination=m.fs.anion_exchange.inlet)
-    m.fs.s10 = Arc(source=m.fs.anion_exchange.treated, destination=m.fs.chlorination.inlet)
+    m.fs.s10 = Arc(
+        source=m.fs.anion_exchange.treated, destination=m.fs.chlorination.inlet
+    )
     m.fs.s11 = Arc(source=m.fs.chlorination.treated, destination=m.fs.storage.inlet)
     m.fs.s12 = Arc(source=m.fs.storage.outlet, destination=m.fs.recharge_pump.inlet)
     m.fs.s13 = Arc(source=m.fs.recharge_pump.outlet, destination=m.fs.product.inlet)
@@ -146,10 +169,10 @@ def build():
 def set_operating_conditions(m):
     # ---specifications---
     # feed
-    flow_vol = 0.9224 * pyunits.m**3/pyunits.s
-    conc_mass_tds = 0.63 * pyunits.kg/pyunits.m**3
-    conc_mass_tss = 0.006525 * pyunits.kg/pyunits.m**3
-    conc_mass_toc = 0.004 * pyunits.kg / pyunits.m ** 3
+    flow_vol = 0.9224 * pyunits.m**3 / pyunits.s
+    conc_mass_tds = 0.63 * pyunits.kg / pyunits.m**3
+    conc_mass_tss = 0.006525 * pyunits.kg / pyunits.m**3
+    conc_mass_toc = 0.004 * pyunits.kg / pyunits.m**3
 
     m.fs.feed.flow_vol[0].fix(flow_vol)
     m.fs.feed.conc_mass_comp[0, "tds"].fix(conc_mass_tds)
@@ -217,10 +240,22 @@ def solve(blk, solver=None, tee=False, check_termination=True):
 
 
 def display_results(m):
-    unit_list = ['feed', 'intake_pump', 'coag_and_floc',
-                 'sedimentation', 'ozonation', 'gravity_basin',
-                 'gac', 'backwash_pump', 'uv', 'anion_exchange',
-                 'chlorination', 'storage', 'recharge_pump', 'product']
+    unit_list = [
+        "feed",
+        "intake_pump",
+        "coag_and_floc",
+        "sedimentation",
+        "ozonation",
+        "gravity_basin",
+        "gac",
+        "backwash_pump",
+        "uv",
+        "anion_exchange",
+        "chlorination",
+        "storage",
+        "recharge_pump",
+        "product",
+    ]
 
     for u in unit_list:
         m.fs.component(u).report()
@@ -260,27 +295,45 @@ def display_costing(m):
 
     print("\nUnit Capital Costs\n")
     for u in m.fs.costing._registered_unit_costing:
-        print(u.name,
-              " :   ",
-              value(pyunits.convert(u.capital_cost,
-                                    to_units=pyunits.USD_2018)))
+        print(
+            u.name,
+            " :   ",
+            value(pyunits.convert(u.capital_cost, to_units=pyunits.USD_2018)),
+        )
 
     print("\nUtility Costs\n")
     for f in m.fs.costing.flow_types:
-        print(f, " :   ", value(pyunits.convert(
-            m.fs.costing.aggregate_flow_costs[f],
-            to_units=pyunits.USD_2018/pyunits.year)))
+        print(
+            f,
+            " :   ",
+            value(
+                pyunits.convert(
+                    m.fs.costing.aggregate_flow_costs[f],
+                    to_units=pyunits.USD_2018 / pyunits.year,
+                )
+            ),
+        )
 
     print("")
-    total_capital_cost = value(pyunits.convert(
-            m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2018))
+    total_capital_cost = value(
+        pyunits.convert(m.fs.costing.total_capital_cost, to_units=pyunits.MUSD_2018)
+    )
     print(f"Total Capital Costs: {total_capital_cost:.2f} M$")
-    total_operating_cost = value(pyunits.convert(
-            m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018/pyunits.year))
+    total_operating_cost = value(
+        pyunits.convert(
+            m.fs.costing.total_operating_cost, to_units=pyunits.MUSD_2018 / pyunits.year
+        )
+    )
     print(f"Total Operating Costs: {total_operating_cost:.2f} M$/year")
-    electricity_intensity = value(pyunits.convert(m.fs.costing.electricity_intensity, to_units=pyunits.kWh/pyunits.m**3))
+    electricity_intensity = value(
+        pyunits.convert(
+            m.fs.costing.electricity_intensity, to_units=pyunits.kWh / pyunits.m**3
+        )
+    )
     print(f"Electricity Intensity: {electricity_intensity:.4f} kWh/m^3")
-    LCOW = value(pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018/pyunits.m**3))
+    LCOW = value(
+        pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
+    )
     print(f"Levelized Cost of Water: {LCOW:.4f} $/m^3")
 
 

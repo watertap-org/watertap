@@ -17,7 +17,13 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    Block, ConcreteModel, Constraint, value, Var, assert_optimal_termination)
+    Block,
+    ConcreteModel,
+    Constraint,
+    value,
+    Var,
+    assert_optimal_termination,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -41,12 +47,11 @@ class TestSedimentationZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["tss", "foo"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["tss", "foo"]})
 
-        m.fs.unit = SedimentationZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = SedimentationZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(3)
@@ -65,8 +70,7 @@ class TestSedimentationZO_w_default_removal:
 
         assert isinstance(model.fs.unit.settling_velocity, Var)
         assert isinstance(model.fs.unit.basin_surface_area, Var)
-        assert isinstance(model.fs.unit.basin_surface_area_constraint,
-                          Constraint)
+        assert isinstance(model.fs.unit.basin_surface_area_constraint, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -75,24 +79,29 @@ class TestSedimentationZO_w_default_removal:
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-            data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             if j == "foo":
-                assert v.value == data[
-                    "default_removal_frac_mass_solute"]["value"]
+                assert v.value == data["default_removal_frac_mass_solute"]["value"]
             else:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
 
         assert model.fs.unit.settling_velocity[0].fixed
-        assert model.fs.unit.settling_velocity[0].value == data[
-            "settling_velocity"]["value"]
+        assert (
+            model.fs.unit.settling_velocity[0].value
+            == data["settling_velocity"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -119,39 +128,50 @@ class TestSedimentationZO_w_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(1.4e-2, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].flow_vol))
-        assert (pytest.approx(214.2857, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(71.4286, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(1.10265e-2, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(2.4960, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(90.690, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(2.9735e-3, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(999.66, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(0, abs=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0, abs=1e-5) ==
-                value(model.fs.unit.electricity[0]))
-        assert (pytest.approx(30.139, rel=1e-5) ==
-                value(model.fs.unit.basin_surface_area[0]))
-
+        assert pytest.approx(1.4e-2, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].flow_vol
+        )
+        assert pytest.approx(214.2857, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(71.4286, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(1.10265e-2, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(2.4960, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(90.690, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(2.9735e-3, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].flow_vol
+        )
+        assert pytest.approx(999.66, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(0, abs=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(0, abs=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(30.139, rel=1e-5) == value(
+            model.fs.unit.basin_surface_area[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-6 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] -
-                model.fs.unit.treated.flow_mass_comp[0, j] -
-                model.fs.unit.byproduct.flow_mass_comp[0, j]))
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    - model.fs.unit.treated.flow_mass_comp[0, j]
+                    - model.fs.unit.byproduct.flow_mass_comp[0, j]
+                )
+            )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -196,13 +216,15 @@ class TestSedimentationZO_phosphorus_capture_tss:
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["tss"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["tss"]})
 
-        m.fs.unit = SedimentationZO(default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": "phosphorus_capture"})
+        m.fs.unit = SedimentationZO(
+            default={
+                "property_package": m.fs.params,
+                "database": m.db,
+                "process_subtype": "phosphorus_capture",
+            }
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(3)
@@ -220,38 +242,46 @@ class TestSedimentationZO_phosphorus_capture_tss:
 
         assert isinstance(model.fs.unit.settling_velocity, Var)
         assert isinstance(model.fs.unit.basin_surface_area, Var)
-        assert isinstance(model.fs.unit.basin_surface_area_constraint,
-                          Constraint)
+        assert isinstance(model.fs.unit.basin_surface_area_constraint, Constraint)
         assert isinstance(model.fs.unit.final_phosphate_mass, Var)
         assert isinstance(model.fs.unit.phosphate_mass_flow_constraint, Constraint)
         assert isinstance(model.fs.unit.phosphorus_solids_ratio, Var)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("sedimentation",
-                                                      subtype="phosphorus_capture")
+        data = model.db.get_unit_operation_parameters(
+            "sedimentation", subtype="phosphorus_capture"
+        )
 
         model.fs.unit.load_parameters_from_database()
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-            data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
 
         assert model.fs.unit.settling_velocity[0].fixed
-        assert model.fs.unit.settling_velocity[0].value == data[
-            "settling_velocity"]["value"]
+        assert (
+            model.fs.unit.settling_velocity[0].value
+            == data["settling_velocity"]["value"]
+        )
 
         assert model.fs.unit.phosphorus_solids_ratio[0].fixed
-        assert model.fs.unit.phosphorus_solids_ratio[0].value == data[
-            "phosphorus_solids_ratio"]["value"]
+        assert (
+            model.fs.unit.phosphorus_solids_ratio[0].value
+            == data["phosphorus_solids_ratio"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -276,30 +306,38 @@ class TestSedimentationZO_phosphorus_capture_tss:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(0.009864, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(0.3041363, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(0.0031360, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(955.68, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(0, abs=1e-5) ==
-                value(model.fs.unit.electricity[0]))
-        assert (pytest.approx(27.986, rel=1e-5) ==
-                value(model.fs.unit.basin_surface_area[0]))
-        assert (pytest.approx(0.44955, rel=1e-5) ==
-                value(model.fs.unit.final_phosphate_mass[0]))
+        assert pytest.approx(0.009864, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(0.3041363, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(0.0031360, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].flow_vol
+        )
+        assert pytest.approx(955.68, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(0, abs=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(27.986, rel=1e-5) == value(
+            model.fs.unit.basin_surface_area[0]
+        )
+        assert pytest.approx(0.44955, rel=1e-5) == value(
+            model.fs.unit.final_phosphate_mass[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-6 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] -
-                model.fs.unit.treated.flow_mass_comp[0, j] -
-                model.fs.unit.byproduct.flow_mass_comp[0, j]))
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    - model.fs.unit.treated.flow_mass_comp[0, j]
+                    - model.fs.unit.byproduct.flow_mass_comp[0, j]
+                )
+            )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -344,13 +382,15 @@ class TestSedimentationZO_phosphorus_capture_phosphates:
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["phosphates"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["phosphates"]})
 
-        m.fs.unit = SedimentationZO(default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": "phosphorus_capture"})
+        m.fs.unit = SedimentationZO(
+            default={
+                "property_package": m.fs.params,
+                "database": m.db,
+                "process_subtype": "phosphorus_capture",
+            }
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "phosphates"].fix(3)
@@ -368,38 +408,46 @@ class TestSedimentationZO_phosphorus_capture_phosphates:
 
         assert isinstance(model.fs.unit.settling_velocity, Var)
         assert isinstance(model.fs.unit.basin_surface_area, Var)
-        assert isinstance(model.fs.unit.basin_surface_area_constraint,
-                          Constraint)
+        assert isinstance(model.fs.unit.basin_surface_area_constraint, Constraint)
         assert isinstance(model.fs.unit.final_solids_mass, Var)
         assert isinstance(model.fs.unit.solids_mass_flow_constraint, Constraint)
         assert isinstance(model.fs.unit.phosphorus_solids_ratio, Var)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("sedimentation",
-                                                      subtype="phosphorus_capture")
+        data = model.db.get_unit_operation_parameters(
+            "sedimentation", subtype="phosphorus_capture"
+        )
 
         model.fs.unit.load_parameters_from_database()
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-            data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
 
         assert model.fs.unit.settling_velocity[0].fixed
-        assert model.fs.unit.settling_velocity[0].value == data[
-            "settling_velocity"]["value"]
+        assert (
+            model.fs.unit.settling_velocity[0].value
+            == data["settling_velocity"]["value"]
+        )
 
         assert model.fs.unit.phosphorus_solids_ratio[0].fixed
-        assert model.fs.unit.phosphorus_solids_ratio[0].value == data[
-            "phosphorus_solids_ratio"]["value"]
+        assert (
+            model.fs.unit.phosphorus_solids_ratio[0].value
+            == data["phosphorus_solids_ratio"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -424,30 +472,38 @@ class TestSedimentationZO_phosphorus_capture_phosphates:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(0.009864, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(0.3041363, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["phosphates"]))
-        assert (pytest.approx(0.0031360, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(955.68, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["phosphates"]))
-        assert (pytest.approx(0, abs=1e-5) ==
-                value(model.fs.unit.electricity[0]))
-        assert (pytest.approx(27.986, rel=1e-5) ==
-                value(model.fs.unit.basin_surface_area[0]))
-        assert (pytest.approx(19.980, rel=1e-5) ==
-                value(model.fs.unit.final_solids_mass[0]))
+        assert pytest.approx(0.009864, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(0.3041363, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["phosphates"]
+        )
+        assert pytest.approx(0.0031360, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].flow_vol
+        )
+        assert pytest.approx(955.68, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["phosphates"]
+        )
+        assert pytest.approx(0, abs=1e-5) == value(model.fs.unit.electricity[0])
+        assert pytest.approx(27.986, rel=1e-5) == value(
+            model.fs.unit.basin_surface_area[0]
+        )
+        assert pytest.approx(19.980, rel=1e-5) == value(
+            model.fs.unit.final_solids_mass[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-6 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] -
-                model.fs.unit.treated.flow_mass_comp[0, j] -
-                model.fs.unit.byproduct.flow_mass_comp[0, j]))
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    - model.fs.unit.treated.flow_mass_comp[0, j]
+                    - model.fs.unit.byproduct.flow_mass_comp[0, j]
+                )
+            )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -488,18 +544,18 @@ Unit : fs.unit                                                             Time:
 db = Database()
 params = db._get_technology("sedimentation")
 
+
 class TestSedimentationZOsubtype:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["tds", "tss"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["tds", "tss"]})
 
-        m.fs.unit = SedimentationZO(default={
-            "property_package": m.fs.params,
-            "database": db})
+        m.fs.unit = SedimentationZO(
+            default={"property_package": m.fs.params, "database": db}
+        )
 
         return m
 
@@ -526,14 +582,13 @@ def test_costing(subtype):
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = SedimentationZO(default={
-        "property_package": m.fs.params,
-        "database": m.db})
+    m.fs.unit1 = SedimentationZO(
+        default={"property_package": m.fs.params, "database": m.db}
+    )
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -542,51 +597,58 @@ def test_costing(subtype):
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(default={
-        "flowsheet_costing_block": m.fs.costing})
+    m.fs.unit1.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
 
     assert isinstance(m.fs.costing.sedimentation, Block)
-    assert isinstance(m.fs.costing.sedimentation.capital_a_parameter,
-                      Var)
-    assert isinstance(m.fs.costing.sedimentation.capital_b_parameter,
-                      Var)
+    assert isinstance(m.fs.costing.sedimentation.capital_a_parameter, Var)
+    assert isinstance(m.fs.costing.sedimentation.capital_b_parameter, Var)
 
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
-                      Constraint)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    assert m.fs.unit1.electricity[0] in \
-        m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]
+
 
 @pytest.mark.unit
 def test_phosphorus_capture_no_tss_or_phosphate_in_solute_list_error():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["foo"]})
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["foo"]})
 
-    with pytest.raises(KeyError,
-                       match="One of the following should be specified in the solute_list: "
-                             "tss or phosphates."):
-        m.fs.unit = SedimentationZO(default={
-            "property_package": m.fs.params,
-            "database": db,
-            "process_subtype": "phosphorus_capture"})
+    with pytest.raises(
+        KeyError,
+        match="One of the following should be specified in the solute_list: "
+        "tss or phosphates.",
+    ):
+        m.fs.unit = SedimentationZO(
+            default={
+                "property_package": m.fs.params,
+                "database": db,
+                "process_subtype": "phosphorus_capture",
+            }
+        )
+
 
 @pytest.mark.unit
 def test_phosphorus_capture_phosphate_tss_in_solute_list_error():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["tss", "phosphates"]})
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["tss", "phosphates"]})
 
-    with pytest.raises(KeyError,
-                       match="tss and phosphates cannot both be defined in the "
-                             "solute_list. Please choose one."):
-        m.fs.unit = SedimentationZO(default={
-            "property_package": m.fs.params,
-            "database": db,
-            "process_subtype": "phosphorus_capture"})
+    with pytest.raises(
+        KeyError,
+        match="tss and phosphates cannot both be defined in the "
+        "solute_list. Please choose one.",
+    ):
+        m.fs.unit = SedimentationZO(
+            default={
+                "property_package": m.fs.params,
+                "database": db,
+                "process_subtype": "phosphorus_capture",
+            }
+        )

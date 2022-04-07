@@ -40,9 +40,10 @@ class MABRZOOData(ZeroOrderBaseData):
         constant_intensity(self)
 
         self.blower_size = Var(
-            units=pyunits.m ** 2,
-            bounds=(0,None),
-            doc="Sizing variable for blower size")
+            units=pyunits.m**2,
+            bounds=(0, None),
+            doc="Sizing variable for blower size",
+        )
 
         self._fixed_perf_vars.append(self.blower_size)
 
