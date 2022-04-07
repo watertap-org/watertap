@@ -51,6 +51,6 @@ class PhotothermalMembraneData(ZeroOrderBaseData):
         self._perf_var_dict["Membrane Area"] = self.membrane_area
 
         @self.Constraint(self.flowsheet().time,
-                         doc='Constraint for oxygen consumption.')
+                         doc='Constraint for water flux.')
         def wat_flux(b, t):
             return b.properties_in[t].flow_mass_comp["H2O"] == (pyunits.convert(b.water_flux * b.membrane_area, to_units=pyunits.kg/pyunits.s))
