@@ -123,6 +123,7 @@ def test_unit_parameter_files(tech):
                                          "water_pumping_station",
                                          "photothermal_membrane",
                                          "pump_electricity",
+                                         "CANDO_P",
                                          ]
 
     expected = ["recovery_frac_mass_H2O",

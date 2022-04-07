@@ -56,6 +56,9 @@ class TestPhotothermalMembraneZO:
     def test_build(self, model):
         assert model.fs.unit.config.database is model.db
         assert model.fs.unit._tech_type == "photothermal_membrane"
+        assert isinstance(model.fs.unit.water_flux, Var)
+        assert isinstance(model.fs.unit.membrane_area, Var)
+        assert isinstance(model.fs.unit.wat_flux, Constraint)
 
     @pytest.mark.component
     def test_load_parameters(self, model):
@@ -134,9 +137,11 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                       : Value   : Fixed : Bounds
-    Solute Removal [nitrogen] :  0.0000 :  True : (0, None)
-               Water Recovery : 0.10000 :  True : (1e-08, 1.0000001)
+    Key                       : Value      : Fixed : Bounds
+                Membrane Area : 4.3200e+05 : False : (0, None)
+    Solute Removal [nitrogen] :     0.0000 :  True : (0, None)
+                   Water Flux :     1.0000 :  True : (0, None)
+               Water Recovery :    0.10000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
@@ -168,7 +173,6 @@ def test_costing():
         "flowsheet_costing_block": m.fs.costing})
 
     assert isinstance(m.fs.costing.photothermal_membrane, Block)
-    assert isinstance(m.fs.costing.photothermal_membrane.water_flux, Var)
     assert isinstance(m.fs.costing.photothermal_membrane.membrane_cost, Var)
 
     assert isinstance(m.fs.unit.costing.capital_cost, Var)

@@ -36,3 +36,21 @@ class PhotothermalMembraneData(ZeroOrderBaseData):
         self._tech_type = "photothermal_membrane"
 
         build_sido(self)
+
+        # Create water flux variable
+        self.water_flux = Var(units=pyunits.kg/(pyunits.m**2 * pyunits.hr),
+                              bounds=(0, None),
+                              doc="Water flux through membrane")
+        self._perf_var_dict["Water Flux"] = self.water_flux
+        self._fixed_perf_vars.append(self.water_flux)
+
+        # Create membrane area variable
+        self.membrane_area = Var(units=pyunits.m**2,
+                                 bounds=(0, None),
+                                 doc="Membrane area")
+        self._perf_var_dict["Membrane Area"] = self.membrane_area
+
+        @self.Constraint(self.flowsheet().time,
+                         doc='Constraint for oxygen consumption.')
+        def wat_flux(b, t):
+            return b.properties_in[t].flow_mass_comp["H2O"] == (pyunits.convert(b.water_flux * b.membrane_area, to_units=pyunits.kg/pyunits.s))
