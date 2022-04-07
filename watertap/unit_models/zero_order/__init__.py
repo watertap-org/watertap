@@ -14,6 +14,7 @@
 from .backwash_solids_handling_zo import BackwashSolidsHandlingZO
 from .bio_active_filtration_zo import BioActiveFiltrationZO
 from .blending_reservoir_zo import BlendingReservoirZO
+from .conventional_activated_sludge_zo import CASZO
 from .cooling_tower_zo import CoolingTowerZO
 from .deep_well_injection_zo import DeepWellInjectionZO
 from .dmbr_zo import DMBRZO
@@ -77,12 +78,15 @@ from .well_field_zo import WellFieldZO
 from .intrusion_mitigation_zo import IntrusionMitigationZO
 from .injection_well_disposal_zo import InjectionWellDisposalZO
 from .surface_discharge_zo import SurfaceDischargeZO
+from .photothermal_membrane_zo import PhotothermalMembraneZO
+from .CANDOP_zo import CANDOPZO
 
 
 #=========================================================================================
 # Units explicitly for Wastewater Resource Recovery effort
 
 from .anaerobic_mbr_mec_zo import AnaerobicMBRMECZO
+from .secondary_treatment_wwtp_zo import SecondaryTreatmentWWTPZO
 from .cofermentation_zo import CofermentationZO
 from .constructed_wetlands_zo import ConstructedWetlandsZO
 from .gas_sparged_membrane_zo import GasSpargedMembraneZO
