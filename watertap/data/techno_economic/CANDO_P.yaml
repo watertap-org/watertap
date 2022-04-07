@@ -18,7 +18,7 @@ default:
     nitrogen:
       value: 0
       units: dimensionless
-    bcp:
+    bioconcentrated_phosphorous:
       value: 1
       units: dimensionless
     nitrous_oxide:
@@ -39,7 +39,7 @@ default:
       stoichiometry:
         phosphates:
           conversion_ratio: -1
-        bcp:
+        bioconcentrated_phosphorous:
           conversion_ratio: 1
   capital_cost:
     cost_factor: None

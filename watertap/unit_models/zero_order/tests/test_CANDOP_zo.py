@@ -41,7 +41,7 @@ class TestCANDOPZO:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["nitrogen", "phosphates", "bcp", "nitrous_oxide"]})
+            default={"solute_list": ["nitrogen", "phosphates", "bioconcentrated_phosphorous", "nitrous_oxide"]})
 
         m.fs.unit = CANDOPZO(default={
             "property_package": m.fs.params,
@@ -50,7 +50,7 @@ class TestCANDOPZO:
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
         m.fs.unit.inlet.flow_mass_comp[0, "nitrogen"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "phosphates"].fix(1)
-        m.fs.unit.inlet.flow_mass_comp[0, "bcp"].fix(0)
+        m.fs.unit.inlet.flow_mass_comp[0, "bioconcentrated_phosphorous"].fix(0)
         m.fs.unit.inlet.flow_mass_comp[0, "nitrous_oxide"].fix(0)
 
         return m
@@ -126,7 +126,7 @@ class TestCANDOPZO:
                 value(model.fs.unit.properties_treated[0].conc_mass_comp["nitrogen"]))
         assert (pytest.approx(2.074689, rel=1e-5) ==
                 value(model.fs.unit.properties_treated[0].conc_mass_comp["phosphates"]))
-        assert value(model.fs.unit.properties_treated[0].conc_mass_comp["bcp"]) < 1e-6
+        assert value(model.fs.unit.properties_treated[0].conc_mass_comp["bioconcentrated_phosphorous"]) < 1e-6
         assert value(model.fs.unit.properties_treated[0].conc_mass_comp["nitrous_oxide"]) < 1e-6
 
         assert (pytest.approx(0.0015, rel=1e-2) ==
@@ -134,7 +134,7 @@ class TestCANDOPZO:
         assert value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrogen"]) < 1e-6
         assert value(model.fs.unit.properties_byproduct[0].conc_mass_comp["phosphates"]) < 1e-6
         assert (pytest.approx(500, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["bcp"]))
+                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["bioconcentrated_phosphorous"]))
         assert (pytest.approx(500, rel=1e-5) ==
                 value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrous_oxide"]))
 
@@ -169,7 +169,7 @@ Unit : fs.unit                                                             Time:
     Oxygen consumed / nitrogen reacted ratio (mass basis) :  3.5000 :  True : (0, None)
                              Reaction Extent [n_reaction] : 0.75000 : False : (None, None)
                              Reaction Extent [p_reaction] : 0.75000 : False : (None, None)
-                                     Solute Removal [bcp] :  1.0000 :  True : (0, None)
+             Solute Removal [bioconcentrated_phosphorous] :  1.0000 :  True : (0, None)
                                 Solute Removal [nitrogen] :  0.0000 :  True : (0, None)
                            Solute Removal [nitrous_oxide] :  1.0000 :  True : (0, None)
                               Solute Removal [phosphates] :  0.0000 :  True : (0, None)
@@ -177,13 +177,13 @@ Unit : fs.unit                                                             Time:
 
 ------------------------------------------------------------------------------------
     Stream Table
-                                       Inlet   Treated   Byproduct
-    Volumetric Flowrate              0.12200    0.12050  0.0015000
-    Mass Concentration H2O            983.61     995.85 6.6667e-08
-    Mass Concentration nitrogen       8.1967     2.0747 6.6670e-08
-    Mass Concentration phosphates     8.1967     2.0747 6.6670e-08
-    Mass Concentration bcp            0.0000 8.2992e-10     500.00
-    Mass Concentration nitrous_oxide  0.0000 8.2992e-10     500.00
+                                                     Inlet   Treated   Byproduct
+    Volumetric Flowrate                            0.12200    0.12050  0.0015000
+    Mass Concentration H2O                          983.61     995.85 6.6667e-08
+    Mass Concentration nitrogen                     8.1967     2.0747 6.6670e-08
+    Mass Concentration phosphates                   8.1967     2.0747 6.6670e-08
+    Mass Concentration bioconcentrated_phosphorous  0.0000 8.2992e-10     500.00
+    Mass Concentration nitrous_oxide                0.0000 8.2992e-10     500.00
 ====================================================================================
 """
         assert output in stream.getvalue()
@@ -193,7 +193,7 @@ def test_costing():
     m.db = Database()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["nitrogen", "phosphates", "bcp", "nitrous_oxide"]})
+        default={"solute_list": ["nitrogen", "phosphates", "bioconcentrated_phosphorous", "nitrous_oxide"]})
     m.fs.costing = ZeroOrderCosting()
     m.fs.unit = CANDOPZO(default={
         "property_package": m.fs.params,
@@ -202,7 +202,7 @@ def test_costing():
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
     m.fs.unit.inlet.flow_mass_comp[0, "nitrogen"].fix(1)
     m.fs.unit.inlet.flow_mass_comp[0, "phosphates"].fix(1)
-    m.fs.unit.inlet.flow_mass_comp[0, "bcp"].fix(0)
+    m.fs.unit.inlet.flow_mass_comp[0, "bioconcentrated_phosphorous"].fix(0)
     m.fs.unit.inlet.flow_mass_comp[0, "nitrous_oxide"].fix(0)
     m.fs.unit.load_parameters_from_database(use_default_removal=True)
 

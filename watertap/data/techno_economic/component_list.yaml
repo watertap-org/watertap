@@ -8,7 +8,7 @@ arsenic:
   constituent_longform: Arsenic
 barium:
   constituent_longform: Barium
-bcp:
+bioconcentrated_phosphorous:
   constituent_longform: Bioconcentrated phosphorous
 bicarbonate_alkalinity_as_caco3:
   constituent_longform: Bicarbonate Alkalinity as CaCO3
