@@ -14,8 +14,7 @@ import sys
 import pytest
 from io import StringIO
 
-from pyomo.environ import (ConcreteModel,
-                           assert_optimal_termination)
+from pyomo.environ import ConcreteModel, assert_optimal_termination
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
@@ -34,17 +33,29 @@ solver = get_solver()
 @pytest.mark.component
 def test_evaporator():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={'dynamic': False})
+    m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties_feed = props_sw.SeawaterParameterBlock()
     m.fs.properties_vapor = props_w.WaterParameterBlock()
-    m.fs.evaporator = Evaporator(default={"property_package_feed": m.fs.properties_feed,
-                                          "property_package_vapor": m.fs.properties_vapor, })
+    m.fs.evaporator = Evaporator(
+        default={
+            "property_package_feed": m.fs.properties_feed,
+            "property_package_vapor": m.fs.properties_vapor,
+        }
+    )
 
     # scaling
-    m.fs.properties_feed.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-    m.fs.properties_feed.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TDS'))
-    m.fs.properties_vapor.set_default_scaling('flow_mass_phase_comp', 1, index=('Vap', 'H2O'))
-    m.fs.properties_vapor.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
+    m.fs.properties_feed.set_default_scaling(
+        "flow_mass_phase_comp", 1, index=("Liq", "H2O")
+    )
+    m.fs.properties_feed.set_default_scaling(
+        "flow_mass_phase_comp", 1e2, index=("Liq", "TDS")
+    )
+    m.fs.properties_vapor.set_default_scaling(
+        "flow_mass_phase_comp", 1, index=("Vap", "H2O")
+    )
+    m.fs.properties_vapor.set_default_scaling(
+        "flow_mass_phase_comp", 1, index=("Liq", "H2O")
+    )
     iscale.set_scaling_factor(m.fs.evaporator.area, 1e-3)
     iscale.set_scaling_factor(m.fs.evaporator.U, 1e-3)
     iscale.set_scaling_factor(m.fs.evaporator.delta_temperature_in, 1e-1)
@@ -57,14 +68,14 @@ def test_evaporator():
 
     # state variables
     # Feed inlet
-    m.fs.evaporator.inlet_feed.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(10)
-    m.fs.evaporator.inlet_feed.flow_mass_phase_comp[0, 'Liq', 'TDS'].fix(0.05)
+    m.fs.evaporator.inlet_feed.flow_mass_phase_comp[0, "Liq", "H2O"].fix(10)
+    m.fs.evaporator.inlet_feed.flow_mass_phase_comp[0, "Liq", "TDS"].fix(0.05)
     m.fs.evaporator.inlet_feed.temperature[0].fix(273.15 + 50.52)  # K
     m.fs.evaporator.inlet_feed.pressure[0].fix(1e5)  # Pa
 
     # Condenser inlet
-    m.fs.evaporator.inlet_condenser.flow_mass_phase_comp[0, 'Vap', 'H2O'].fix(0.5)
-    m.fs.evaporator.inlet_condenser.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(1e-8)
+    m.fs.evaporator.inlet_condenser.flow_mass_phase_comp[0, "Vap", "H2O"].fix(0.5)
+    m.fs.evaporator.inlet_condenser.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1e-8)
     m.fs.evaporator.inlet_condenser.temperature[0].fix(400)  # K
     m.fs.evaporator.inlet_condenser.pressure[0].fix(0.5e5)  # Pa
 
@@ -75,7 +86,7 @@ def test_evaporator():
 
     # check build
     assert_units_consistent(m)
-    assert (degrees_of_freedom(m) == 0)
+    assert degrees_of_freedom(m) == 0
 
     # initialize
     m.fs.evaporator.initialize()
@@ -88,6 +99,10 @@ def test_evaporator():
     # check values, TODO: make a report for the evaporator
     # m.fs.evaporator.display()
     vapor_blk = m.fs.evaporator.feed_side.properties_vapor[0]
-    assert vapor_blk.flow_mass_phase_comp['Vap', 'H2O'].value == pytest.approx(0.3540, rel=1e-3)
+    assert vapor_blk.flow_mass_phase_comp["Vap", "H2O"].value == pytest.approx(
+        0.3540, rel=1e-3
+    )
     assert m.fs.evaporator.lmtd.value == pytest.approx(12.30, rel=1e-3)
-    assert m.fs.evaporator.feed_side.heat_transfer.value == pytest.approx(1.230e6, rel=1e-3)
+    assert m.fs.evaporator.feed_side.heat_transfer.value == pytest.approx(
+        1.230e6, rel=1e-3
+    )

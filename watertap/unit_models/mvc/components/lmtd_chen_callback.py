@@ -14,6 +14,7 @@
 from pyomo.environ import units as pyunits, ExternalFunction
 from idaes.core.util.functions import functions_lib
 
+
 def delta_temperature_chen_callback(b):
     r"""
     This is a callback for a temperature difference expression to calculate
@@ -30,9 +31,8 @@ def delta_temperature_chen_callback(b):
     # external function that ruturns the real root, for the cuberoot of negitive
     # numbers, so it will return without error for positive and negitive dT.
     b.cbrt = ExternalFunction(
-        library=functions_lib(),
-        function="cbrt",
-        arg_units=[temp_units**3])
+        library=functions_lib(), function="cbrt", arg_units=[temp_units**3]
+    )
 
     @b.Expression(b.flowsheet().time)
     def delta_temperature(b, t):

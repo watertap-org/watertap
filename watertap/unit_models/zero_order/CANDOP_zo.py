@@ -38,10 +38,12 @@ class CANDOPData(ZeroOrderBaseData):
         build_sido_reactive(self)
 
         # Create electricity variable
-        self.electricity = Var(self.flowsheet().time,
-                               units=pyunits.kW,
-                               bounds=(0, None),
-                               doc="Electricity consumption of unit")
+        self.electricity = Var(
+            self.flowsheet().time,
+            units=pyunits.kW,
+            bounds=(0, None),
+            doc="Electricity consumption of unit",
+        )
         self._perf_var_dict["Electricity Demand"] = self.electricity
 
         # Create electricity intensity variable and constraint. For this
@@ -51,33 +53,50 @@ class CANDOPData(ZeroOrderBaseData):
         #      accounts pumping, oxygenation, and stirring. At some point,
         #      perhaps we should come back and adjust the model to account for
         #      pumping costs separately.
-        self.electricity_intensity_N = Var(units=pyunits.kWh/pyunits.kg,
-                                           bounds=(0, None),
-                                           doc="Electricity demand per kg N reacted")
+        self.electricity_intensity_N = Var(
+            units=pyunits.kWh / pyunits.kg,
+            bounds=(0, None),
+            doc="Electricity demand per kg N reacted",
+        )
         self._fixed_perf_vars.append(self.electricity_intensity_N)
         self._perf_var_dict["Electricity Intensity"] = self.electricity_intensity_N
-        @self.Constraint(self.flowsheet().time,
-                         doc='Constraint for electricity consumption based on '
-                             'nitrogen consumed.')
+
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Constraint for electricity consumption based on " "nitrogen consumed.",
+        )
         def electricity_consumption(b, t):
-            return b.electricity[t] == (pyunits.convert(b.extent_of_reaction[t, "n_reaction"] * b.electricity_intensity_N, to_units=pyunits.kW))
+            return b.electricity[t] == (
+                pyunits.convert(
+                    b.extent_of_reaction[t, "n_reaction"] * b.electricity_intensity_N,
+                    to_units=pyunits.kW,
+                )
+            )
 
         # Create oxygen demand variables and constraint. The amount of oxygen
         # consumed is assumed to be a linear function of the amount of
         # nitrogen reacted.
-        self.O2_demand = Var(self.flowsheet().time,
-                             units=pyunits.kg/pyunits.s,
-                             bounds=(0, None),
-                             doc="Oxygen demand")
+        self.O2_demand = Var(
+            self.flowsheet().time,
+            units=pyunits.kg / pyunits.s,
+            bounds=(0, None),
+            doc="Oxygen demand",
+        )
         self._perf_var_dict["Oxygen Demand"] = self.O2_demand
-        self.oxygen_nitrogen_ratio = Var(units=pyunits.dimensionless,
-                                         bounds=(0, None),
-                                         doc="Oxygen consumed / nitrogen reacted ratio")
+        self.oxygen_nitrogen_ratio = Var(
+            units=pyunits.dimensionless,
+            bounds=(0, None),
+            doc="Oxygen consumed / nitrogen reacted ratio",
+        )
         self._fixed_perf_vars.append(self.oxygen_nitrogen_ratio)
-        self._perf_var_dict["Oxygen consumed / nitrogen reacted ratio (mass basis)"] = self.oxygen_nitrogen_ratio
-        @self.Constraint(self.flowsheet().time,
-                         doc='Constraint for oxygen consumption.')
+        self._perf_var_dict[
+            "Oxygen consumed / nitrogen reacted ratio (mass basis)"
+        ] = self.oxygen_nitrogen_ratio
+
+        @self.Constraint(
+            self.flowsheet().time, doc="Constraint for oxygen consumption."
+        )
         def oxygen_consumption(b, t):
-            return b.O2_demand[t] == (b.extent_of_reaction[t, "n_reaction"] * b.oxygen_nitrogen_ratio)
-
-
+            return b.O2_demand[t] == (
+                b.extent_of_reaction[t, "n_reaction"] * b.oxygen_nitrogen_ratio
+            )

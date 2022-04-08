@@ -64,26 +64,35 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
     # Nanofiltration
     if hasattr(m.fs, "NF"):
         if kwargs["NF_type"] == "ZO":
-            m.fs.NF.costing = UnitModelCostingBlock(default={
-                "flowsheet_costing_block":m.fs.costing,
-                })
+            m.fs.NF.costing = UnitModelCostingBlock(
+                default={
+                    "flowsheet_costing_block": m.fs.costing,
+                }
+            )
         elif kwargs["NF_type"] == "Sep":
             raise NotImplementedError(
                 "get_costing will not be implemented for the NF separator model."
             )
     if hasattr(m.fs, "pump_NF"):
-        m.fs.pump_NF.costing = UnitModelCostingBlock(default={
-                "flowsheet_costing_block":m.fs.costing,
-                "costing_method_arguments":{"pump_type":PumpType.low_pressure},
-                })
-        m.fs.costing.cost_flow(pyunits.convert(m.fs.pump_NF.work_mechanical[0], to_units=pyunits.kW), "electricity")
+        m.fs.pump_NF.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+                "costing_method_arguments": {"pump_type": PumpType.low_pressure},
+            }
+        )
+        m.fs.costing.cost_flow(
+            pyunits.convert(m.fs.pump_NF.work_mechanical[0], to_units=pyunits.kW),
+            "electricity",
+        )
 
     # Reverse Osmosis
     if hasattr(m.fs, "RO"):
         if kwargs["RO_type"] == "0D" or kwargs["RO_type"] == "1D":
-            m.fs.RO.costing = UnitModelCostingBlock(default={
-                "flowsheet_costing_block":m.fs.costing,
-                })
+            m.fs.RO.costing = UnitModelCostingBlock(
+                default={
+                    "flowsheet_costing_block": m.fs.costing,
+                }
+            )
         elif kwargs["RO_type"] == "Sep":
             raise NotImplementedError(
                 "get_costing will not be implemented for the RO separator model."
@@ -91,60 +100,88 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
 
     # Stage 2 RO
     if hasattr(m.fs, "RO2"):
-        m.fs.RO2.costing = UnitModelCostingBlock(default={
-            "flowsheet_costing_block":m.fs.costing,
-            "costing_method_arguments":{"ro_type":ROType.high_pressure},
-            })
+        m.fs.RO2.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+                "costing_method_arguments": {"ro_type": ROType.high_pressure},
+            }
+        )
 
     # Pump
     if hasattr(m.fs, "pump_RO"):
-        m.fs.pump_RO.costing = UnitModelCostingBlock(default={
-            "flowsheet_costing_block":m.fs.costing,
-            "costing_method_arguments":{"pump_type":PumpType.high_pressure},
-            })
-        m.fs.costing.cost_flow(pyunits.convert(m.fs.pump_RO.work_mechanical[0], to_units=pyunits.kW), "electricity")
+        m.fs.pump_RO.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+                "costing_method_arguments": {"pump_type": PumpType.high_pressure},
+            }
+        )
+        m.fs.costing.cost_flow(
+            pyunits.convert(m.fs.pump_RO.work_mechanical[0], to_units=pyunits.kW),
+            "electricity",
+        )
 
     # Stage 2 pump
     if hasattr(m.fs, "pump_RO2"):
-        m.fs.pump_RO2.costing = UnitModelCostingBlock(default={
-            "flowsheet_costing_block":m.fs.costing,
-            "costing_method_arguments":{"pump_type":PumpType.high_pressure},
-            })
-        m.fs.costing.cost_flow(pyunits.convert(m.fs.pump_RO2.work_mechanical[0], to_units=pyunits.kW), "electricity")
+        m.fs.pump_RO2.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+                "costing_method_arguments": {"pump_type": PumpType.high_pressure},
+            }
+        )
+        m.fs.costing.cost_flow(
+            pyunits.convert(m.fs.pump_RO2.work_mechanical[0], to_units=pyunits.kW),
+            "electricity",
+        )
 
     # ERD
     if hasattr(m.fs, "ERD"):
-        m.fs.ERD.costing = UnitModelCostingBlock(default={
-            "flowsheet_costing_block":m.fs.costing,
-            "costing_method_arguments":{"pump_type":PumpType.pressure_exchanger},
-            })
-        m.fs.costing.cost_flow(pyunits.convert(m.fs.ERD.work_mechanical[0], to_units=pyunits.kW), "electricity")
+        m.fs.ERD.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+                "costing_method_arguments": {"pump_type": PumpType.pressure_exchanger},
+            }
+        )
+        m.fs.costing.cost_flow(
+            pyunits.convert(m.fs.ERD.work_mechanical[0], to_units=pyunits.kW),
+            "electricity",
+        )
 
     # Pretreatment
     if hasattr(m.fs, "stoich_softening_mixer_unit"):
-        m.fs.stoich_softening_mixer_unit.costing = UnitModelCostingBlock(default={
-            "flowsheet_costing_block":m.fs.costing,
-            "costing_method_arguments":{"mixer_type":MixerType.CaOH2},
-            })
-        m.fs.costing.cost_flow(m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0] * \
-                m.fs.stoich_softening_mixer_unit.lime_stream.mole_frac_comp[0, "Ca(OH)2"], "CaOH2")
-
+        m.fs.stoich_softening_mixer_unit.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+                "costing_method_arguments": {"mixer_type": MixerType.CaOH2},
+            }
+        )
+        m.fs.costing.cost_flow(
+            m.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0]
+            * m.fs.stoich_softening_mixer_unit.lime_stream.mole_frac_comp[0, "Ca(OH)2"],
+            "CaOH2",
+        )
 
     # Post-treatment
     if hasattr(m.fs, "ideal_naocl_mixer_unit"):
         # print('FOUND CHLORINATION UNIT')
-        m.fs.ideal_naocl_mixer_unit.costing = UnitModelCostingBlock(default={
-            "flowsheet_costing_block":m.fs.costing,
-            "costing_method_arguments":{"mixer_type":MixerType.NaOCl},
-            })
-        m.fs.costing.cost_flow(m.fs.ideal_naocl_mixer_unit.naocl_stream.flow_mol[0] *\
-                m.fs.ideal_naocl_mixer_unit.naocl_stream.mole_frac_comp[0, "OCl_-"], "NaOCl")
+        m.fs.ideal_naocl_mixer_unit.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+                "costing_method_arguments": {"mixer_type": MixerType.NaOCl},
+            }
+        )
+        m.fs.costing.cost_flow(
+            m.fs.ideal_naocl_mixer_unit.naocl_stream.flow_mol[0]
+            * m.fs.ideal_naocl_mixer_unit.naocl_stream.mole_frac_comp[0, "OCl_-"],
+            "NaOCl",
+        )
 
     if hasattr(m.fs, "mixer_permeate"):
-        m.fs.mixer_permeate.costing = UnitModelCostingBlock(default={
-            "flowsheet_costing_block":m.fs.costing,
-            "costing_method_arguments":{"mixer_type":MixerType.default},
-            })
+        m.fs.mixer_permeate.costing = UnitModelCostingBlock(
+            default={
+                "flowsheet_costing_block": m.fs.costing,
+                "costing_method_arguments": {"mixer_type": MixerType.default},
+            }
+        )
 
     # call get_system_costing for whole flowsheet
     m.fs.costing.cost_process()
@@ -225,9 +262,11 @@ def display_costing(m):
         )
         / m.fs.costing.annual_water_production,
         "Lime softener CAPEX": m.fs.lime_softening_unit_capex,
-        "Lime softener OPEX": m.fs.costing.aggregate_flow_costs["CaOH2"]/m.fs.costing.annual_water_production,
+        "Lime softener OPEX": m.fs.costing.aggregate_flow_costs["CaOH2"]
+        / m.fs.costing.annual_water_production,
         "Chlorination CAPEX": m.fs.chlorination_unit_capex,
-        "Chlorination OPEX": m.fs.costing.aggregate_flow_costs["NaOCl"]/m.fs.costing.annual_water_production,
+        "Chlorination OPEX": m.fs.costing.aggregate_flow_costs["NaOCl"]
+        / m.fs.costing.annual_water_production,
     }
 
     for item, val in cost_dict.items():

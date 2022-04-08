@@ -41,11 +41,12 @@ class TestLandfillZOdefault:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["sulfur", "toc", "tss"]})
+            default={"solute_list": ["sulfur", "toc", "tss"]}
+        )
 
-        m.fs.unit = LandfillZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = LandfillZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1e-5)
         m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(10)
@@ -57,7 +58,7 @@ class TestLandfillZOdefault:
     @pytest.mark.unit
     def test_build(self, model):
         assert model.fs.unit.config.database == model.db
-        assert model.fs.unit._tech_type == 'landfill'
+        assert model.fs.unit._tech_type == "landfill"
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.capacity_basis, Var)
         assert isinstance(model.fs.unit.total_mass, Var)
@@ -71,12 +72,13 @@ class TestLandfillZOdefault:
         model.fs.unit.load_parameters_from_database()
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
 
         assert model.fs.unit.capacity_basis[0].fixed
-        assert model.fs.unit.capacity_basis[0].value == data[
-            "capacity_basis"]["value"]
+        assert model.fs.unit.capacity_basis[0].value == data["capacity_basis"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -95,13 +97,11 @@ class TestLandfillZOdefault:
     @pytest.mark.component
     def test_solution(self, model):
         for t, j in model.fs.unit.inlet.flow_mass_comp:
-            assert (pytest.approx(value(
-                model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5) ==
-                value(model.fs.unit.outlet.flow_mass_comp[t, j]))
-        assert (pytest.approx(216000.036, abs=1e-5) ==
-                value(model.fs.unit.total_mass[0]))
-        assert (pytest.approx(0.0, abs=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+            assert pytest.approx(
+                value(model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5
+            ) == value(model.fs.unit.outlet.flow_mass_comp[t, j])
+        assert pytest.approx(216000.036, abs=1e-5) == value(model.fs.unit.total_mass[0])
+        assert pytest.approx(0.0, abs=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.component
     def test_report(self, model):
@@ -136,8 +136,10 @@ Unit : fs.unit                                                             Time:
 
         assert output == stream.getvalue()
 
+
 db = Database()
 params = db._get_technology("landfill")
+
 
 class TestLandfillZOsubtype:
     @pytest.fixture(scope="class")
@@ -146,11 +148,12 @@ class TestLandfillZOsubtype:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["sulfur", "toc", "tss"]})
+            default={"solute_list": ["sulfur", "toc", "tss"]}
+        )
 
-        m.fs.unit = LandfillZO(default={
-            "property_package": m.fs.params,
-            "database": db})
+        m.fs.unit = LandfillZO(
+            default={"property_package": m.fs.params, "database": db}
+        )
 
         return m
 
@@ -158,22 +161,23 @@ class TestLandfillZOsubtype:
     @pytest.mark.component
     def test_load_parameters(self, model, subtype):
         model.fs.unit.config.process_subtype = subtype
-        data = db.get_unit_operation_parameters(
-            "landfill", subtype=subtype)
+        data = db.get_unit_operation_parameters("landfill", subtype=subtype)
 
         model.fs.unit.load_parameters_from_database()
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
 
         assert model.fs.unit.capacity_basis[0].fixed
-        assert model.fs.unit.capacity_basis[0].value == data[
-            "capacity_basis"]["value"]
+        assert model.fs.unit.capacity_basis[0].value == data["capacity_basis"]["value"]
 
 
 db = Database()
 params = db._get_technology("landfill")
+
 
 @pytest.mark.parametrize("subtype", [k for k in params.keys()])
 def test_costing(subtype):
@@ -181,13 +185,15 @@ def test_costing(subtype):
     m.db = Database()
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
     m.fs.costing = ZeroOrderCosting()
-    m.fs.unit = LandfillZO(default={
-                    "property_package": m.fs.params,
-                    "database": m.db,
-                    "process_subtype": subtype})
+    m.fs.unit = LandfillZO(
+        default={
+            "property_package": m.fs.params,
+            "database": m.db,
+            "process_subtype": subtype,
+        }
+    )
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1e-5)
     m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(1000)
@@ -196,16 +202,16 @@ def test_costing(subtype):
 
     m.fs.unit.load_parameters_from_database()
 
-    m.fs.unit.costing = UnitModelCostingBlock(default={
-                    "flowsheet_costing_block": m.fs.costing})
+    m.fs.unit.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
 
     assert isinstance(m.fs.costing.landfill, Block)
     assert isinstance(m.fs.costing.landfill.capital_a_parameter, Var)
     assert isinstance(m.fs.costing.landfill.capital_b_parameter, Var)
 
     assert isinstance(m.fs.unit.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit.costing.capital_cost_constraint,
-                      Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
     assert_units_consistent(m.fs)
 
     assert degrees_of_freedom(m.fs.unit) == 0
@@ -213,15 +219,13 @@ def test_costing(subtype):
     initialization_tester(m)
     _ = solver.solve(m)
 
-    assert isinstance(m.fs.unit.costing.capital_cost_constraint,
-                            Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
     if subtype == "default":
-        assert (pytest.approx(43.5627, rel=1e-5) ==
-                value(m.fs.unit.costing.capital_cost))
+        assert pytest.approx(43.5627, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
     if subtype == "landfill_zld":
-        assert (pytest.approx(20.09155, rel=1e-5) ==
-                value(m.fs.unit.costing.capital_cost))
+        assert pytest.approx(20.09155, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
 
-    assert m.fs.unit.electricity[0] in \
-        m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]
