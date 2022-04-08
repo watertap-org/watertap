@@ -167,11 +167,14 @@ class ElectrolyteDB:
             mc = None
             self._mongoclient_connect_status["initial"] = str(conn_err)
             if "CERTIFICATE_VERIFY_FAILED" in str(conn_err):
-                _log.warning(f"MongoDB connection failed due to certificate "
-                             f"verification.")
+                _log.warning(
+                    f"MongoDB connection failed due to certificate " f"verification."
+                )
                 if certifi is not None:
-                    _log.info("Retrying MongoDB connection with explicit location "
-                              f"for client certificates ({certifi.where()})")
+                    _log.info(
+                        "Retrying MongoDB connection with explicit location "
+                        f"for client certificates ({certifi.where()})"
+                    )
                     try:
                         mc = MongoClient(url, tlsCAFile=certifi.where(), **client_kw)
                         if self._client_can_connect(mc):
@@ -293,11 +296,11 @@ class ElectrolyteDB:
                         disallow = True
                     for n in item[stoich_field][phase]:
                         stoich[n] = item[stoich_field][phase][n]
-                #If the item involves a phase that is not allowed, then move on to next item
-                if (disallow):
+                # If the item involves a phase that is not allowed, then move on to next item
+                if disallow:
                     continue
-                #If stoich is empty, then move on to next item
-                if (stoich == {}):
+                # If stoich is empty, then move on to next item
+                if stoich == {}:
                     continue
                 if any_components:
                     # look for non-empty intersection
@@ -312,9 +315,11 @@ class ElectrolyteDB:
                         # Add a reaction if all the products/reactants
                         #   can be formed. This allows addition of reactions
                         #   that may include species not yet considered.
-                        if (include_new_components == True):
+                        if include_new_components == True:
                             for side in -1, 1:
-                                side_keys = (k for k, v in stoich.items() if abs(v)/v == side)
+                                side_keys = (
+                                    k for k, v in stoich.items() if abs(v) / v == side
+                                )
                                 if set(side_keys).issubset(cnames):
                                     found.append(item)
                                     break  # found; stop
@@ -364,7 +369,9 @@ class ElectrolyteDB:
             No return, just display info to console
         """
         for item in self.get_base():
-            print(f"base name: {item.name}\t\tdescription -> {self._base_desc(item.name)}")
+            print(
+                f"base name: {item.name}\t\tdescription -> {self._base_desc(item.name)}"
+            )
 
     def _base_desc(self, name) -> str:
         """Creates a description of a base based on the standard naming
@@ -381,14 +388,18 @@ class ElectrolyteDB:
         else:
             items = name.split("_")
             if len(items) < 3:
-                raise BadConfiguration("ElectrolyteDB._base_desc", self.get_base(name).idaes_config,
-                    missing=None,why="\nName of base ("+name+") is of unknown format\n")
+                raise BadConfiguration(
+                    "ElectrolyteDB._base_desc",
+                    self.get_base(name).idaes_config,
+                    missing=None,
+                    why="\nName of base (" + name + ") is of unknown format\n",
+                )
             if items[0] == "thermo":
                 desc = "ThermoConfig: "
             else:
                 desc = "ReactionConfig: "
             desc += "uses " + items[-1] + " state vars for "
-            for i in range(1,len(items)-1):
+            for i in range(1, len(items) - 1):
                 desc += items[i] + ","
             desc += " phases"
 
@@ -463,7 +474,8 @@ class ElectrolyteDB:
             if Reaction.NAMES.reaction_order not in param:
                 if Reaction.NAMES.stoich in rec:
                     param[Reaction.NAMES.reaction_order] = rec[
-                        Reaction.NAMES.stoich].copy()
+                        Reaction.NAMES.stoich
+                    ].copy()
                 else:
                     param[Reaction.NAMES.reaction_order] = {
                         phase: {} for phase in Reaction.PHASES
@@ -495,6 +507,7 @@ class ElectrolyteDB:
         else:
             charge = input_charge
         return f"{symbols}{charge}"
+
 
 # Helper function used by _process_component above
 def get_elements_from_components(components):

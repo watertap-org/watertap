@@ -40,27 +40,29 @@ class StorageTankZOData(ZeroOrderBaseData):
 
         self._tech_type = "storage_tank"
 
-        self.storage_time = Var(self.flowsheet().time,
-                                units=pyunits.hours,
-                                doc="Storage time needed")
+        self.storage_time = Var(
+            self.flowsheet().time, units=pyunits.hours, doc="Storage time needed"
+        )
 
-        self.surge_capacity = Var(self.flowsheet().time,
-                                units=pyunits.dimensionless,
-                                doc="Additional capacity needed for surge flow")
+        self.surge_capacity = Var(
+            self.flowsheet().time,
+            units=pyunits.dimensionless,
+            doc="Additional capacity needed for surge flow",
+        )
 
         self._fixed_perf_vars.append(self.storage_time)
         self._fixed_perf_vars.append(self.surge_capacity)
 
-        self.tank_volume = Var(self.flowsheet().time,
-                                    units=pyunits.m**3,
-                                    doc="Storage tank volume")
+        self.tank_volume = Var(
+            self.flowsheet().time, units=pyunits.m**3, doc="Storage tank volume"
+        )
 
-        @self.Constraint(self.flowsheet().time,
-                    doc='Tank volume constraint')
+        @self.Constraint(self.flowsheet().time, doc="Tank volume constraint")
         def tank_volume_constraint(b, t):
-            return b.tank_volume[t] == pyunits.convert(b.properties[t].flow_vol, to_units=pyunits.m**3/pyunits.hr) * b.storage_time[t] * (1 + b.surge_capacity[t])
+            return b.tank_volume[t] == pyunits.convert(
+                b.properties[t].flow_vol, to_units=pyunits.m**3 / pyunits.hr
+            ) * b.storage_time[t] * (1 + b.surge_capacity[t])
 
         self._perf_var_dict["Storage Time (hr)"] = self.storage_time
         self._perf_var_dict["Surge Capacity (%)"] = self.surge_capacity
         self._perf_var_dict["Tank Volume (m3)"] = self.tank_volume
-    

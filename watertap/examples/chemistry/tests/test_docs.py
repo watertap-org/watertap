@@ -4,6 +4,7 @@ Tests for documentation
 # stdlib
 from pathlib import Path
 import re
+
 # third-party
 import pytest
 
@@ -37,7 +38,7 @@ def get_autodoc(pth):
     with open(pth, encoding="utf-8") as f:
         for i, line in enumerate(f):
             if mode == "text":
-                match = re.match(r'..\s+auto(\w+)::\s*([a-zA-Z][a-zaA-Z_.0-9]*)', line)
+                match = re.match(r"..\s+auto(\w+)::\s*([a-zA-Z][a-zaA-Z_.0-9]*)", line)
                 if match:
                     auto_what = match.group(1)
                     auto_name = match.group(2)
@@ -46,7 +47,7 @@ def get_autodoc(pth):
                     mode = "autodoc"
             elif mode == "autodoc":
                 # blank or unindented line, back to text mode
-                if not re.match(r'^\s\s', line):
+                if not re.match(r"^\s\s", line):
                     yield auto_what, auto_name, auto_where, auto_options
                     auto_what = None
                     mode = "text"

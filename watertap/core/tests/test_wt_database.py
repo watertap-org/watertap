@@ -26,30 +26,39 @@ def test_default_path():
     assert os.path.normpath(db._dbpath) == os.path.normpath(
         os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "..", "..", "data", "techno_economic"))
+            "..",
+            "..",
+            "data",
+            "techno_economic",
+        )
+    )
 
 
 @pytest.mark.unit
 def test_invalid_path():
-    with pytest.raises(OSError,
-                       match="Could not find requested path foo. Please "
-                       "check that this path exists."):
+    with pytest.raises(
+        OSError,
+        match="Could not find requested path foo. Please "
+        "check that this path exists.",
+    ):
         Database(dbpath="foo")
 
 
 @pytest.mark.unit
 def test_custom_path():
     # Pick a path we know will exist, even if it isn't a data folder
-    db = Database(dbpath=os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "..", "..", "core"))
+    db = Database(
+        dbpath=os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "..", "..", "core"
+        )
+    )
 
     assert db._dbpath == os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "..", "..", "core")
+        os.path.dirname(os.path.abspath(__file__)), "..", "..", "core"
+    )
 
 
-class TestDatabase():
+class TestDatabase:
     @pytest.fixture(scope="class")
     def db(self):
         return Database()
@@ -79,8 +88,7 @@ class TestDatabase():
 
     @pytest.mark.unit
     def test_get_technology_invalid(self, db):
-        with pytest.raises(KeyError,
-                           match="Could not find entry for foo in database."):
+        with pytest.raises(KeyError, match="Could not find entry for foo in database."):
             db._get_technology("foo")
 
         assert len(db._cached_files) == 1
@@ -99,9 +107,10 @@ class TestDatabase():
 
     @pytest.mark.unit
     def test_get_unit_operation_parameters_invalid_subtype(self, db):
-        with pytest.raises(KeyError,
-                           match="Received unrecognised subtype foo for "
-                           "technology nanofiltration."):
+        with pytest.raises(
+            KeyError,
+            match="Received unrecognised subtype foo for " "technology nanofiltration.",
+        ):
             db.get_unit_operation_parameters("nanofiltration", subtype="foo")
 
     @pytest.mark.unit
@@ -109,11 +118,11 @@ class TestDatabase():
         # First, insert some data for a subtype into nanofiltration entry
         db._cached_files["nanofiltration"]["subtype1"] = {
             "recovery_frac_mass_H2O": "overloaded",
-            "new_param": True}
+            "new_param": True,
+        }
 
         # Load data for subtype
-        data = db.get_unit_operation_parameters(
-            "nanofiltration", subtype="subtype1")
+        data = db.get_unit_operation_parameters("nanofiltration", subtype="subtype1")
 
         # Check data
         for k, v in data.items():
@@ -127,22 +136,24 @@ class TestDatabase():
 
     @pytest.mark.unit
     def test_get_unit_operation_parameters_invalid_list_of_subtype(self, db):
-        with pytest.raises(KeyError,
-                           match="Received unrecognised subtype foo for "
-                           "technology nanofiltration."):
+        with pytest.raises(
+            KeyError,
+            match="Received unrecognised subtype foo for " "technology nanofiltration.",
+        ):
             db.get_unit_operation_parameters(
-                "nanofiltration", subtype=["subtype1", "foo"])
+                "nanofiltration", subtype=["subtype1", "foo"]
+            )
 
     @pytest.mark.unit
     def test_get_unit_operation_parameters_multi_subtype(self, db):
         # First, insert some data for a 2nd subtype into nanofiltration entry
         db._cached_files["nanofiltration"]["subtype2"] = {
             "recovery_frac_mass_H2O": "overloaded_again",
-            "new_param_2": False}
+            "new_param_2": False,
+        }
 
         # Load data for subtype
-        data = db.get_unit_operation_parameters(
-            "nanofiltration", subtype="subtype2")
+        data = db.get_unit_operation_parameters("nanofiltration", subtype="subtype2")
 
         # Check data
         for k, v in data.items():
@@ -158,36 +169,58 @@ class TestDatabase():
 
     @pytest.mark.unit
     def test_get_unit_operation_parameters_subtype_argument(self, db):
-        with pytest.raises(TypeError,
-                           match="Unexpected type for subtype 12: must be "
-                           "string or list like."):
-            db.get_unit_operation_parameters(
-                "nanofiltration", subtype=12)
+        with pytest.raises(
+            TypeError,
+            match="Unexpected type for subtype 12: must be " "string or list like.",
+        ):
+            db.get_unit_operation_parameters("nanofiltration", subtype=12)
 
     @pytest.mark.unit
     def test_get_solute_set_default(self, db):
         comp_set = db.get_solute_set()
 
         assert comp_set == [
-            "boron", "bromide", "calcium", "chloride", "magnesium",
-            "potassium", "sodium", "strontium", "sulfate", "tds", "tss"]
+            "boron",
+            "bromide",
+            "calcium",
+            "chloride",
+            "magnesium",
+            "potassium",
+            "sodium",
+            "strontium",
+            "sulfate",
+            "tds",
+            "tss",
+        ]
 
     @pytest.mark.unit
     def test_get_solute_set_specified(self, db):
         comp_set = db.get_solute_set("seawater")
 
         assert comp_set == [
-            "boron", "bromide", "calcium", "chloride", "magnesium",
-            "potassium", "sodium", "strontium", "sulfate", "tds", "tss"]
+            "boron",
+            "bromide",
+            "calcium",
+            "chloride",
+            "magnesium",
+            "potassium",
+            "sodium",
+            "strontium",
+            "sulfate",
+            "tds",
+            "tss",
+        ]
 
     @pytest.mark.unit
     def test_get_solute_set_no_default(self, db):
         # First, delete default entry from database
         del db._cached_files["water_sources"]["default"]
 
-        with pytest.raises(KeyError,
-                           match="Database has not defined a default water "
-                           "source and none was provided."):
+        with pytest.raises(
+            KeyError,
+            match="Database has not defined a default water "
+            "source and none was provided.",
+        ):
             db.get_solute_set()
 
     @pytest.mark.unit

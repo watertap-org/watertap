@@ -17,7 +17,13 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    Block, ConcreteModel, Constraint, value, Var, assert_optimal_termination)
+    Block,
+    ConcreteModel,
+    Constraint,
+    value,
+    Var,
+    assert_optimal_termination,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -42,11 +48,12 @@ class TestAerationBasinZO_no_default:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["viruses_enteric", "bod"]})
+            default={"solute_list": ["viruses_enteric", "bod"]}
+        )
 
-        m.fs.unit = AerationBasinZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = AerationBasinZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
@@ -69,16 +76,20 @@ class TestAerationBasinZO_no_default:
         model.fs.unit.load_parameters_from_database()
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-            data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -105,36 +116,47 @@ class TestAerationBasinZO_no_default:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(1.2e-2, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].flow_vol))
-        assert (pytest.approx(83.3333, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["viruses_enteric"]))
-        assert (pytest.approx(83.3333, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["bod"]))
-        assert (pytest.approx(0.01031, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(0.9699321, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["viruses_enteric"]))
-        assert (pytest.approx(29.097963, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["bod"]))
-        assert (pytest.approx(0.001690, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(585.798816, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["viruses_enteric"]))
-        assert (pytest.approx(414.201183, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["bod"]))
-        assert (pytest.approx(17.80995, abs=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert pytest.approx(1.2e-2, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].flow_vol
+        )
+        assert pytest.approx(83.3333, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["viruses_enteric"]
+        )
+        assert pytest.approx(83.3333, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["bod"]
+        )
+        assert pytest.approx(0.01031, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(0.9699321, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["viruses_enteric"]
+        )
+        assert pytest.approx(29.097963, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["bod"]
+        )
+        assert pytest.approx(0.001690, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].flow_vol
+        )
+        assert pytest.approx(585.798816, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["viruses_enteric"]
+        )
+        assert pytest.approx(414.201183, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["bod"]
+        )
+        assert pytest.approx(17.80995, abs=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-6 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] -
-                model.fs.unit.treated.flow_mass_comp[0, j] -
-                model.fs.unit.byproduct.flow_mass_comp[0, j]))
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    - model.fs.unit.treated.flow_mass_comp[0, j]
+                    - model.fs.unit.byproduct.flow_mass_comp[0, j]
+                )
+            )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -169,6 +191,7 @@ Unit : fs.unit                                                             Time:
 
         assert output in stream.getvalue()
 
+
 class TestAerationBasinZO_w_default_removal:
     @pytest.fixture(scope="class")
     def model(self):
@@ -177,11 +200,12 @@ class TestAerationBasinZO_w_default_removal:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["viruses_enteric", "bod", "foo"]})
+            default={"solute_list": ["viruses_enteric", "bod", "foo"]}
+        )
 
-        m.fs.unit = AerationBasinZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = AerationBasinZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
@@ -205,8 +229,10 @@ class TestAerationBasinZO_w_default_removal:
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-            data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
@@ -216,8 +242,10 @@ class TestAerationBasinZO_w_default_removal:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -244,42 +272,58 @@ class TestAerationBasinZO_w_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(1.3e-2, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].flow_vol))
-        assert (pytest.approx(76.9231, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["viruses_enteric"]))
-        assert (pytest.approx(76.9231, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["bod"]))
-        assert (pytest.approx(76.9231, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0.01131, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(0.884173, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["viruses_enteric"]))
-        assert (pytest.approx(26.52519, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["bod"]))
-        assert (pytest.approx(88.417, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0.0016900, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(585.798, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["viruses_enteric"]))
-        assert (pytest.approx(414.20, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["bod"]))
-        assert (pytest.approx(4.7337e-07, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(19.29411198, abs=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert pytest.approx(1.3e-2, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].flow_vol
+        )
+        assert pytest.approx(76.9231, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["viruses_enteric"]
+        )
+        assert pytest.approx(76.9231, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["bod"]
+        )
+        assert pytest.approx(76.9231, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(0.01131, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(0.884173, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["viruses_enteric"]
+        )
+        assert pytest.approx(26.52519, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["bod"]
+        )
+        assert pytest.approx(88.417, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(0.0016900, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].flow_vol
+        )
+        assert pytest.approx(585.798, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["viruses_enteric"]
+        )
+        assert pytest.approx(414.20, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["bod"]
+        )
+        assert pytest.approx(4.7337e-07, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(19.29411198, abs=1e-5) == value(
+            model.fs.unit.electricity[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-6 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] -
-                model.fs.unit.treated.flow_mass_comp[0, j] -
-                model.fs.unit.byproduct.flow_mass_comp[0, j]))
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    - model.fs.unit.treated.flow_mass_comp[0, j]
+                    - model.fs.unit.byproduct.flow_mass_comp[0, j]
+                )
+            )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -316,6 +360,7 @@ Unit : fs.unit                                                             Time:
 
         assert output in stream.getvalue()
 
+
 db = Database()
 params = db._get_technology("aeration_basin")
 
@@ -326,12 +371,11 @@ class Test_AerationBasin_ZOsubtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["viruses_enteric"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["viruses_enteric"]})
 
-        m.fs.unit = AerationBasinZO(default={
-            "property_package": m.fs.params,
-            "database": db})
+        m.fs.unit = AerationBasinZO(
+            default={"property_package": m.fs.params, "database": db}
+        )
 
         return m
 
@@ -354,14 +398,13 @@ def test_costing():
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = AerationBasinZO(default={
-        "property_package": m.fs.params,
-        "database": m.db})
+    m.fs.unit1 = AerationBasinZO(
+        default={"property_package": m.fs.params, "database": m.db}
+    )
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -370,22 +413,19 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(default={
-        "flowsheet_costing_block": m.fs.costing})
+    m.fs.unit1.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
 
     assert isinstance(m.fs.costing.aeration_basin, Block)
-    assert isinstance(m.fs.costing.aeration_basin.capital_a_parameter,
-                      Var)
-    assert isinstance(m.fs.costing.aeration_basin.capital_b_parameter,
-                      Var)
+    assert isinstance(m.fs.costing.aeration_basin.capital_a_parameter, Var)
+    assert isinstance(m.fs.costing.aeration_basin.capital_b_parameter, Var)
     assert isinstance(m.fs.costing.aeration_basin.reference_state, Var)
 
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
-                      Constraint)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    assert m.fs.unit1.electricity[0] in \
-        m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]

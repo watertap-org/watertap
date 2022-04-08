@@ -13,11 +13,24 @@
 import pytest
 from pyomo.environ import ConcreteModel, value
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.properties.core.generic.generic_property import GenericParameterBlock
-from idaes.core.util.scaling import calculate_scaling_factors, get_scaling_factor, constraint_scaling_transform
+from idaes.generic_models.properties.core.generic.generic_property import (
+    GenericParameterBlock,
+)
+from idaes.core.util.scaling import (
+    calculate_scaling_factors,
+    get_scaling_factor,
+    constraint_scaling_transform,
+)
 from idaes.core.util import get_solver
-from watertap.examples.flowsheets.full_treatment_train.model_components.eNRTL import entrl_config_FTPx, entrl_config_FpcTP
-from watertap.examples.flowsheets.full_treatment_train.util import check_scaling, solve_block
+from watertap.examples.flowsheets.full_treatment_train.model_components.eNRTL import (
+    entrl_config_FTPx,
+    entrl_config_FpcTP,
+)
+from watertap.examples.flowsheets.full_treatment_train.util import (
+    check_scaling,
+    solve_block,
+)
+
 
 def simulate_enrtl_FTPx(state_var_args):
     m = ConcreteModel()
@@ -25,12 +38,13 @@ def simulate_enrtl_FTPx(state_var_args):
     m.fs.params = GenericParameterBlock(default=entrl_config_FTPx.configuration)
 
     m.fs.state = m.fs.params.build_state_block(
-        m.fs.time, default={"defined_state": True})
+        m.fs.time, default={"defined_state": True}
+    )
 
     for (v_name, ind), val in state_var_args.items():
         var = getattr(m.fs.state[0], v_name)
         var[ind].fix(val)
-    m.fs.state[0].flow_mol_phase['Liq'].value = 1
+    m.fs.state[0].flow_mol_phase["Liq"].value = 1
 
     # scale model
     calculate_scaling_factors(m)
@@ -40,25 +54,29 @@ def simulate_enrtl_FTPx(state_var_args):
     results = solver.solve(m)
 
     ksp = 3.2e-9  # Gibbs energy gives 3.9e-8, but this fits expectations better
-    saturation_index = value(m.fs.state[0].act_phase_comp["Liq", "Ca_2+"]
-                             * m.fs.state[0].act_phase_comp["Liq", "SO4_2-"]
-                             * m.fs.state[0].act_phase_comp["Liq", "H2O"] ** 2 /
-                             ksp)
+    saturation_index = value(
+        m.fs.state[0].act_phase_comp["Liq", "Ca_2+"]
+        * m.fs.state[0].act_phase_comp["Liq", "SO4_2-"]
+        * m.fs.state[0].act_phase_comp["Liq", "H2O"] ** 2
+        / ksp
+    )
     return saturation_index
 
 
 @pytest.mark.component
 def test_enrtl_FTPx_0():
     # seawater concentration
-    state_var_args = {('temperature', None): 298,
-                      ('pressure', None): 101325,
-                      ('flow_mol', None): 100,
-                      ('mole_frac_comp', 'Na_+'): 0.008845,
-                      ('mole_frac_comp', 'Ca_2+'): 0.000174,
-                      ('mole_frac_comp', 'Mg_2+'): 0.001049,
-                      ('mole_frac_comp', 'SO4_2-'): 0.000407,
-                      ('mole_frac_comp', 'Cl_-'): 0.010479,
-                      ('mole_frac_comp', 'H2O'): 0.979046}
+    state_var_args = {
+        ("temperature", None): 298,
+        ("pressure", None): 101325,
+        ("flow_mol", None): 100,
+        ("mole_frac_comp", "Na_+"): 0.008845,
+        ("mole_frac_comp", "Ca_2+"): 0.000174,
+        ("mole_frac_comp", "Mg_2+"): 0.001049,
+        ("mole_frac_comp", "SO4_2-"): 0.000407,
+        ("mole_frac_comp", "Cl_-"): 0.010479,
+        ("mole_frac_comp", "H2O"): 0.979046,
+    }
     saturation_index = simulate_enrtl_FTPx(state_var_args)
     assert saturation_index == pytest.approx(0.2198, rel=1e-3)
 
@@ -66,15 +84,17 @@ def test_enrtl_FTPx_0():
 @pytest.mark.component
 def test_enrtl_FTPx_1():
     # 2 times seawater concentration
-    state_var_args = {('temperature', None): 298,
-                      ('pressure', None): 101325,
-                      ('flow_mol', None): 100,
-                      ('mole_frac_comp', 'Na_+'): 0.017327,
-                      ('mole_frac_comp', 'Ca_2+'): 0.000341,
-                      ('mole_frac_comp', 'Mg_2+'): 0.002054,
-                      ('mole_frac_comp', 'SO4_2-'): 0.000796,
-                      ('mole_frac_comp', 'Cl_-'): 0.020529,
-                      ('mole_frac_comp', 'H2O'): 0.958952}
+    state_var_args = {
+        ("temperature", None): 298,
+        ("pressure", None): 101325,
+        ("flow_mol", None): 100,
+        ("mole_frac_comp", "Na_+"): 0.017327,
+        ("mole_frac_comp", "Ca_2+"): 0.000341,
+        ("mole_frac_comp", "Mg_2+"): 0.002054,
+        ("mole_frac_comp", "SO4_2-"): 0.000796,
+        ("mole_frac_comp", "Cl_-"): 0.020529,
+        ("mole_frac_comp", "H2O"): 0.958952,
+    }
     saturation_index = simulate_enrtl_FTPx(state_var_args)
     assert saturation_index == pytest.approx(0.4333, rel=1e-3)
 
@@ -85,7 +105,8 @@ def simulate_enrtl_FpcTP(state_var_args):
     m.fs.params = GenericParameterBlock(default=entrl_config_FpcTP.configuration)
 
     m.fs.state = m.fs.params.build_state_block(
-        m.fs.time, default={"defined_state": True})
+        m.fs.time, default={"defined_state": True}
+    )
 
     for (v_name, ind), val in state_var_args.items():
         var = getattr(m.fs.state[0], v_name)
@@ -105,10 +126,12 @@ def simulate_enrtl_FpcTP(state_var_args):
     solve_block(m)
 
     ksp = 3.2e-9  # Gibbs energy gives 3.9e-8, but this fits expectations better
-    saturation_index = value(m.fs.state[0].act_phase_comp["Liq", "Ca_2+"]
-                             * m.fs.state[0].act_phase_comp["Liq", "SO4_2-"]
-                             * m.fs.state[0].act_phase_comp["Liq", "H2O"] ** 2 /
-                             ksp)
+    saturation_index = value(
+        m.fs.state[0].act_phase_comp["Liq", "Ca_2+"]
+        * m.fs.state[0].act_phase_comp["Liq", "SO4_2-"]
+        * m.fs.state[0].act_phase_comp["Liq", "H2O"] ** 2
+        / ksp
+    )
     return saturation_index
 
 
@@ -116,28 +139,31 @@ def simulate_enrtl_FpcTP(state_var_args):
 def test_enrtl_FpcTP_1():
     # standard seawater concentration
     feed_flow_mass = 1  # kg/s
-    feed_mass_frac_comp = {'Na_+': 11122e-6,
-                           'Ca_2+': 382e-6,
-                           'Mg_2+': 1394e-6,
-                           'SO4_2-': 2136e-6,
-                           'Cl_-': 20316.88e-6}
-    feed_mass_frac_comp['H2O'] = 1 - sum(x for x in feed_mass_frac_comp.values())
+    feed_mass_frac_comp = {
+        "Na_+": 11122e-6,
+        "Ca_2+": 382e-6,
+        "Mg_2+": 1394e-6,
+        "SO4_2-": 2136e-6,
+        "Cl_-": 20316.88e-6,
+    }
+    feed_mass_frac_comp["H2O"] = 1 - sum(x for x in feed_mass_frac_comp.values())
 
-    mw_comp = {'H2O': 18.015e-3,
-               'Na_+': 22.990e-3,
-               'Ca_2+': 40.078e-3,
-               'Mg_2+': 24.305e-3,
-               'SO4_2-': 96.06e-3,
-               'Cl_-': 35.453e-3}
+    mw_comp = {
+        "H2O": 18.015e-3,
+        "Na_+": 22.990e-3,
+        "Ca_2+": 40.078e-3,
+        "Mg_2+": 24.305e-3,
+        "SO4_2-": 96.06e-3,
+        "Cl_-": 35.453e-3,
+    }
 
     feed_flow_mol_comp = {}
     for j in feed_mass_frac_comp:
         feed_flow_mol_comp[j] = feed_flow_mass * feed_mass_frac_comp[j] / mw_comp[j]
 
-    state_var_args = {('temperature', None): 298,
-                      ('pressure', None): 101325}
+    state_var_args = {("temperature", None): 298, ("pressure", None): 101325}
     for j in feed_flow_mol_comp:
-        state_var_args[('flow_mol_phase_comp', ('Liq', j))] = feed_flow_mol_comp[j]
+        state_var_args[("flow_mol_phase_comp", ("Liq", j))] = feed_flow_mol_comp[j]
 
     saturation_index = simulate_enrtl_FpcTP(state_var_args)
     assert saturation_index == pytest.approx(0.2200, rel=1e-3)
@@ -147,30 +173,33 @@ def test_enrtl_FpcTP_1():
 def test_enrtl_FpcTP_2():
     # seawater concentration with 50% water removal
     feed_flow_mass = 1  # kg/s
-    feed_mass_frac_comp = {'Na_+': 11122e-6,
-                           'Ca_2+': 382e-6,
-                           'Mg_2+': 1394e-6,
-                           'SO4_2-': 2136e-6,
-                           'Cl_-': 20316.88e-6}
-    feed_mass_frac_comp['H2O'] = 1 - sum(x for x in feed_mass_frac_comp.values())
+    feed_mass_frac_comp = {
+        "Na_+": 11122e-6,
+        "Ca_2+": 382e-6,
+        "Mg_2+": 1394e-6,
+        "SO4_2-": 2136e-6,
+        "Cl_-": 20316.88e-6,
+    }
+    feed_mass_frac_comp["H2O"] = 1 - sum(x for x in feed_mass_frac_comp.values())
 
-    mw_comp = {'H2O': 18.015e-3,
-               'Na_+': 22.990e-3,
-               'Ca_2+': 40.078e-3,
-               'Mg_2+': 24.305e-3,
-               'SO4_2-': 96.06e-3,
-               'Cl_-': 35.453e-3}
+    mw_comp = {
+        "H2O": 18.015e-3,
+        "Na_+": 22.990e-3,
+        "Ca_2+": 40.078e-3,
+        "Mg_2+": 24.305e-3,
+        "SO4_2-": 96.06e-3,
+        "Cl_-": 35.453e-3,
+    }
 
     feed_flow_mol_comp = {}
     for j in feed_mass_frac_comp:
         feed_flow_mol_comp[j] = feed_flow_mass * feed_mass_frac_comp[j] / mw_comp[j]
-        if j == 'H2O':
+        if j == "H2O":
             feed_flow_mol_comp[j] = feed_flow_mol_comp[j] / 2
 
-    state_var_args = {('temperature', None): 298,
-                      ('pressure', None): 101325}
+    state_var_args = {("temperature", None): 298, ("pressure", None): 101325}
     for j in feed_flow_mol_comp:
-        state_var_args[('flow_mol_phase_comp', ('Liq', j))] = feed_flow_mol_comp[j]
+        state_var_args[("flow_mol_phase_comp", ("Liq", j))] = feed_flow_mol_comp[j]
 
     saturation_index = simulate_enrtl_FpcTP(state_var_args)
     assert saturation_index == pytest.approx(0.4344, rel=1e-3)

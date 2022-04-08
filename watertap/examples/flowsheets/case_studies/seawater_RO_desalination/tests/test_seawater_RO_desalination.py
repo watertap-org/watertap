@@ -14,18 +14,19 @@
 import pytest
 from io import StringIO
 from pyomo.environ import value
-from watertap.examples.flowsheets.case_studies.seawater_RO_desalination.seawater_RO_desalination import main
+from watertap.examples.flowsheets.case_studies.seawater_RO_desalination.seawater_RO_desalination import (
+    main,
+)
 
 
 # -----------------------------------------------------------------------------
 @pytest.mark.component
 def test_seawater_RO_desalination_pressure_exchanger():
-    m = main(erd_type='pressure_exchanger')
+    m = main(erd_type="pressure_exchanger")
 
     report_io = StringIO()
     m.fs.feed.report(ostream=report_io)
-    output = \
-        """
+    output = """
 ====================================================================================
 Unit : fs.feed                                                             Time: 0.0
 ------------------------------------------------------------------------------------
@@ -41,8 +42,7 @@ Unit : fs.feed                                                             Time:
 
     report_io = StringIO()
     m.fs.desalination.P1.report(ostream=report_io)
-    output = \
-        """
+    output = """
 ====================================================================================
 Unit : fs.desalination.P1                                                  Time: 0.0
 ------------------------------------------------------------------------------------
@@ -69,8 +69,7 @@ Unit : fs.desalination.P1                                                  Time:
 
     report_io = StringIO()
     m.fs.desalination.RO.report(ostream=report_io)
-    output = \
-        """
+    output = """
 ====================================================================================
 Unit : fs.desalination.RO                                                  Time: 0.0
 ------------------------------------------------------------------------------------
@@ -96,8 +95,7 @@ Unit : fs.desalination.RO                                                  Time:
 
     report_io = StringIO()
     m.fs.municipal.report(ostream=report_io)
-    output = \
-        """
+    output = """
 ====================================================================================
 Unit : fs.municipal                                                        Time: 0.0
 ------------------------------------------------------------------------------------
@@ -123,12 +121,11 @@ Unit : fs.municipal                                                        Time:
 
 @pytest.mark.component
 def test_seawater_RO_desalination_pump_as_turbine():
-    m = main(erd_type='pump_as_turbine')
+    m = main(erd_type="pump_as_turbine")
 
     report_io = StringIO()
     m.fs.feed.report(ostream=report_io)
-    output = \
-        """
+    output = """
 ====================================================================================
 Unit : fs.feed                                                             Time: 0.0
 ------------------------------------------------------------------------------------
@@ -144,8 +141,7 @@ Unit : fs.feed                                                             Time:
 
     report_io = StringIO()
     m.fs.desalination.P1.report(ostream=report_io)
-    output = \
-        """
+    output = """
 ====================================================================================
 Unit : fs.desalination.P1                                                  Time: 0.0
 ------------------------------------------------------------------------------------
@@ -172,8 +168,7 @@ Unit : fs.desalination.P1                                                  Time:
 
     report_io = StringIO()
     m.fs.desalination.RO.report(ostream=report_io)
-    output = \
-        """
+    output = """
 ====================================================================================
 Unit : fs.desalination.RO                                                  Time: 0.0
 ------------------------------------------------------------------------------------
@@ -199,8 +194,7 @@ Unit : fs.desalination.RO                                                  Time:
 
     report_io = StringIO()
     m.fs.municipal.report(ostream=report_io)
-    output = \
-        """
+    output = """
 ====================================================================================
 Unit : fs.municipal                                                        Time: 0.0
 ------------------------------------------------------------------------------------
