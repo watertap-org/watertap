@@ -12,12 +12,14 @@
 ###############################################################################
 
 import pytest
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
-                           value,
-                           Constraint,
-                           Var)
+from pyomo.environ import (
+    ConcreteModel,
+    TerminationCondition,
+    SolverStatus,
+    value,
+    Constraint,
+    Var,
+)
 from idaes.core import FlowsheetBlock
 from watertap.unit_models.pump_isothermal import Pump
 import watertap.property_models.seawater_prop_pack as props
@@ -25,11 +27,13 @@ import watertap.property_models.seawater_prop_pack as props
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util.scaling import (calculate_scaling_factors,
-                                     unscaled_variables_generator,
-                                     unscaled_constraints_generator,
-                                     get_scaling_factor,
-                                     set_scaling_factor)
+from idaes.core.util.scaling import (
+    calculate_scaling_factors,
+    unscaled_variables_generator,
+    unscaled_constraints_generator,
+    get_scaling_factor,
+    set_scaling_factor,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -39,7 +43,8 @@ solver = get_solver()
 
 # -----------------------------------------------------------------------------
 
-class TestPumpIsothermal():
+
+class TestPumpIsothermal:
     @pytest.fixture(scope="class")
     def Pump_frame(self):
         m = ConcreteModel()
@@ -58,10 +63,12 @@ class TestPumpIsothermal():
         efi_pump = 0.75
 
         feed_mass_frac_H2O = 1 - feed_mass_frac_TDS
-        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS'].fix(
-            feed_flow_mass * feed_mass_frac_TDS)
-        m.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(
-            feed_flow_mass * feed_mass_frac_H2O)
+        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
+            feed_flow_mass * feed_mass_frac_TDS
+        )
+        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            feed_flow_mass * feed_mass_frac_H2O
+        )
         m.fs.unit.inlet.pressure[0].fix(feed_pressure_in)
         m.fs.unit.inlet.temperature[0].fix(feed_temperature)
         m.fs.unit.outlet.pressure[0].fix(feed_pressure_out)
@@ -73,30 +80,36 @@ class TestPumpIsothermal():
         m = Pump_frame
 
         # check that IDAES pump model has not changed variable and constraint names
-        var_list = ['work_mechanical', 'deltaP', 'ratioP', 'work_fluid', 'efficiency_pump']
+        var_list = [
+            "work_mechanical",
+            "deltaP",
+            "ratioP",
+            "work_fluid",
+            "efficiency_pump",
+        ]
         for v in var_list:
             assert hasattr(m.fs.unit, v)
             var = getattr(m.fs.unit, v)
             assert isinstance(var, Var)
 
-        con_list = ['ratioP_calculation', 'fluid_work_calculation', 'actual_work']
+        con_list = ["ratioP_calculation", "fluid_work_calculation", "actual_work"]
         for c in con_list:
             assert hasattr(m.fs.unit, c)
             con = getattr(m.fs.unit, c)
             assert isinstance(con, Constraint)
 
         # check that IDAES control volume has not changed variable and constraint names
-        assert hasattr(m.fs.unit.control_volume, 'work')
-        assert hasattr(m.fs.unit.control_volume, 'deltaP')
+        assert hasattr(m.fs.unit.control_volume, "work")
+        assert hasattr(m.fs.unit.control_volume, "deltaP")
 
-        assert hasattr(m.fs.unit.control_volume, 'material_balances')
-        assert hasattr(m.fs.unit.control_volume, 'pressure_balance')
+        assert hasattr(m.fs.unit.control_volume, "material_balances")
+        assert hasattr(m.fs.unit.control_volume, "pressure_balance")
 
         # check that energy balance was removed
-        assert not hasattr(m.fs.unit.control_volume, 'enthalpy_balances')
+        assert not hasattr(m.fs.unit.control_volume, "enthalpy_balances")
 
         # check that isothermal constraint was added
-        assert hasattr(m.fs.unit.control_volume, 'isothermal_balance')
+        assert hasattr(m.fs.unit.control_volume, "isothermal_balance")
         assert isinstance(m.fs.unit.control_volume.isothermal_balance, Constraint)
 
     @pytest.mark.unit
@@ -108,11 +121,17 @@ class TestPumpIsothermal():
     def test_calculate_scaling(self, Pump_frame):
         m = Pump_frame
 
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-        m.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TDS'))
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1, index=("Liq", "H2O")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e2, index=("Liq", "TDS")
+        )
         calculate_scaling_factors(m)
 
-        if get_scaling_factor(m.fs.unit.ratioP) is None:  # if IDAES hasn't specified a scaling factor
+        if (
+            get_scaling_factor(m.fs.unit.ratioP) is None
+        ):  # if IDAES hasn't specified a scaling factor
             set_scaling_factor(m.fs.unit.ratioP, 1)
 
         # check that all variables have scaling factors
@@ -132,43 +151,54 @@ class TestPumpIsothermal():
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-               TerminationCondition.optimal
+        assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
     @pytest.mark.component
     def test_conservation(self, Pump_frame):
         m = Pump_frame
         b = m.fs.unit.control_volume
-        comp_lst = ['TDS', 'H2O']
+        comp_lst = ["TDS", "H2O"]
 
         for t in m.fs.config.time:
             # mass balance
             for j in comp_lst:
-                assert (abs(
-                    value(b.properties_in[t].flow_mass_phase_comp['Liq', j]
-                          - b.properties_out[t].flow_mass_phase_comp['Liq', j]))
-                        <= 1e-6)
+                assert (
+                    abs(
+                        value(
+                            b.properties_in[t].flow_mass_phase_comp["Liq", j]
+                            - b.properties_out[t].flow_mass_phase_comp["Liq", j]
+                        )
+                    )
+                    <= 1e-6
+                )
             # energy balance
-            assert (abs(
-                value(b.properties_in[t].enth_flow
-                      - b.properties_out[t].enth_flow))
-                    <= 1e-6)
+            assert (
+                abs(value(b.properties_in[t].enth_flow - b.properties_out[t].enth_flow))
+                <= 1e-6
+            )
 
     @pytest.mark.component
     def test_solution(self, Pump_frame):
         m = Pump_frame
 
         # pump variables
-        assert (pytest.approx(521.06, rel=1e-3) == value(m.fs.unit.work_mechanical[0]))
-        assert (pytest.approx(4e5, rel=1e-3) == value(m.fs.unit.deltaP[0]))
-        assert (pytest.approx(5, rel=1e-3) == value(m.fs.unit.ratioP[0]))
-        assert (pytest.approx(390.79, rel=1e-3) == value(m.fs.unit.work_fluid[0]))
+        assert pytest.approx(521.06, rel=1e-3) == value(m.fs.unit.work_mechanical[0])
+        assert pytest.approx(4e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
+        assert pytest.approx(5, rel=1e-3) == value(m.fs.unit.ratioP[0])
+        assert pytest.approx(390.79, rel=1e-3) == value(m.fs.unit.work_fluid[0])
 
         # outlet state variables
-        assert (pytest.approx(0.965, rel=1e-3) ==
-                value(m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp['Liq', 'H2O']))
-        assert (pytest.approx(0.035, rel=1e-3) ==
-                value(m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp['Liq', 'TDS']))
-        assert (pytest.approx(298.15, rel=1e-5) ==
-                value(m.fs.unit.control_volume.properties_out[0].temperature))
+        assert pytest.approx(0.965, rel=1e-3) == value(
+            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                "Liq", "H2O"
+            ]
+        )
+        assert pytest.approx(0.035, rel=1e-3) == value(
+            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                "Liq", "TDS"
+            ]
+        )
+        assert pytest.approx(298.15, rel=1e-5) == value(
+            m.fs.unit.control_volume.properties_out[0].temperature
+        )

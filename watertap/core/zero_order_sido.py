@@ -18,8 +18,14 @@ zero-order single inlet-double outlet (SIDO) unit models.
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import InitializationError
 
-from pyomo.environ import NonNegativeReals, Var, units as pyunits
+from pyomo.environ import (
+    check_optimal_termination,
+    NonNegativeReals,
+    Var,
+    units as pyunits,
+)
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
@@ -62,32 +68,27 @@ def build_sido(self):
     tmp_dict["defined_state"] = True
 
     self.properties_in = self.config.property_package.build_state_block(
-        self.flowsheet().time,
-        doc="Material properties at inlet",
-        default=tmp_dict)
+        self.flowsheet().time, doc="Material properties at inlet", default=tmp_dict
+    )
 
     tmp_dict_2 = dict(**tmp_dict)
     tmp_dict_2["defined_state"] = False
 
-    self.properties_treated = \
-        self.config.property_package.build_state_block(
-            self.flowsheet().time,
-            doc="Material properties of treated water",
-            default=tmp_dict_2)
-    self.properties_byproduct = \
-        self.config.property_package.build_state_block(
-            self.flowsheet().time,
-            doc="Material properties of byproduct stream",
-            default=tmp_dict_2)
+    self.properties_treated = self.config.property_package.build_state_block(
+        self.flowsheet().time,
+        doc="Material properties of treated water",
+        default=tmp_dict_2,
+    )
+    self.properties_byproduct = self.config.property_package.build_state_block(
+        self.flowsheet().time,
+        doc="Material properties of byproduct stream",
+        default=tmp_dict_2,
+    )
 
     # Create Ports
     self.add_port("inlet", self.properties_in, doc="Inlet port")
-    self.add_port("treated",
-                  self.properties_treated,
-                  doc="Treated water outlet port")
-    self.add_port("byproduct",
-                  self.properties_byproduct,
-                  doc="Byproduct outlet port")
+    self.add_port("treated", self.properties_treated, doc="Treated water outlet port")
+    self.add_port("byproduct", self.properties_byproduct, doc="Byproduct outlet port")
 
     # Add performance variables
     self.recovery_frac_mass_H2O = Var(
@@ -95,53 +96,64 @@ def build_sido(self):
         initialize=0.8,
         domain=NonNegativeReals,
         units=pyunits.dimensionless,
-        bounds=(1E-8, 1.0000001),
-        doc='Mass recovery fraction of water in the treated stream')
+        bounds=(1e-8, 1.0000001),
+        doc="Mass recovery fraction of water in the treated stream",
+    )
     self.removal_frac_mass_solute = Var(
         self.flowsheet().time,
         self.config.property_package.solute_set,
         domain=NonNegativeReals,
         initialize=0.01,
         units=pyunits.dimensionless,
-        doc='Solute removal fraction on a mass basis')
+        doc="Solute removal fraction on a mass basis",
+    )
 
     # Add performance constraints
     # Water recovery
-    @self.Constraint(self.flowsheet().time, doc='Water recovery equation')
+    @self.Constraint(self.flowsheet().time, doc="Water recovery equation")
     def water_recovery_equation(b, t):
-        return (b.recovery_frac_mass_H2O[t] *
-                b.properties_in[t].flow_mass_comp["H2O"] ==
-                b.properties_treated[t].flow_mass_comp["H2O"])
+        return (
+            b.recovery_frac_mass_H2O[t] * b.properties_in[t].flow_mass_comp["H2O"]
+            == b.properties_treated[t].flow_mass_comp["H2O"]
+        )
 
     # Flow balance
-    @self.Constraint(self.flowsheet().time, doc='Overall flow balance')
+    @self.Constraint(self.flowsheet().time, doc="Overall flow balance")
     def water_balance(b, t):
-        return (b.properties_in[t].flow_mass_comp["H2O"] ==
-                b.properties_treated[t].flow_mass_comp["H2O"] +
-                b.properties_byproduct[t].flow_mass_comp["H2O"])
+        return (
+            b.properties_in[t].flow_mass_comp["H2O"]
+            == b.properties_treated[t].flow_mass_comp["H2O"]
+            + b.properties_byproduct[t].flow_mass_comp["H2O"]
+        )
 
     # Solute removal
-    @self.Constraint(self.flowsheet().time,
-                     self.config.property_package.solute_set,
-                     doc='Solute removal equations')
+    @self.Constraint(
+        self.flowsheet().time,
+        self.config.property_package.solute_set,
+        doc="Solute removal equations",
+    )
     def solute_removal_equation(b, t, j):
-        return (b.removal_frac_mass_solute[t, j] *
-                b.properties_in[t].flow_mass_comp[j] ==
-                b.properties_byproduct[t].flow_mass_comp[j])
+        return (
+            b.removal_frac_mass_solute[t, j] * b.properties_in[t].flow_mass_comp[j]
+            == b.properties_byproduct[t].flow_mass_comp[j]
+        )
 
     # Solute concentration of treated stream
-    @self.Constraint(self.flowsheet().time,
-                     self.config.property_package.solute_set,
-                     doc='Constraint for solute concentration in treated '
-                     'stream.')
+    @self.Constraint(
+        self.flowsheet().time,
+        self.config.property_package.solute_set,
+        doc="Constraint for solute concentration in treated " "stream.",
+    )
     def solute_treated_equation(b, t, j):
-        return ((1 - b.removal_frac_mass_solute[t, j]) *
-                b.properties_in[t].flow_mass_comp[j] ==
-                b.properties_treated[t].flow_mass_comp[j])
+        return (1 - b.removal_frac_mass_solute[t, j]) * b.properties_in[
+            t
+        ].flow_mass_comp[j] == b.properties_treated[t].flow_mass_comp[j]
 
-    self._stream_table_dict = {"Inlet": self.inlet,
-                               "Treated": self.treated,
-                               "Byproduct": self.byproduct}
+    self._stream_table_dict = {
+        "Inlet": self.inlet,
+        "Treated": self.treated,
+        "Byproduct": self.byproduct,
+    }
 
     self._perf_var_dict["Water Recovery"] = self.recovery_frac_mass_H2O
     self._perf_var_dict["Solute Removal"] = self.removal_frac_mass_solute
@@ -149,9 +161,10 @@ def build_sido(self):
     self._get_Q = _get_Q_sido
 
 
-def initialize_sido(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                    solver=None, optarg=None):
-    '''
+def initialize_sido(
+    blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
+):
+    """
     Initialization routine for single inlet-double outlet unit models.
 
     Keyword Arguments:
@@ -167,7 +180,7 @@ def initialize_sido(blk, state_args=None, outlvl=idaeslog.NOTSET,
 
     Returns:
         None
-    '''
+    """
     if optarg is None:
         optarg = {}
 
@@ -180,10 +193,9 @@ def initialize_sido(blk, state_args=None, outlvl=idaeslog.NOTSET,
     # Get initial guesses for inlet if none provided
     if state_args is None:
         state_args = {}
-        state_dict = (
-            blk.properties_in[
-                blk.flowsheet().time.first()]
-            .define_port_members())
+        state_dict = blk.properties_in[
+            blk.flowsheet().time.first()
+        ].define_port_members()
 
         for k in state_dict.keys():
             if state_dict[k].is_indexed():
@@ -200,73 +212,84 @@ def initialize_sido(blk, state_args=None, outlvl=idaeslog.NOTSET,
         optarg=optarg,
         solver=solver,
         state_args=state_args,
-        hold_state=True
+        hold_state=True,
     )
     blk.properties_treated.initialize(
         outlvl=outlvl,
         optarg=optarg,
         solver=solver,
         state_args=state_args,
-        hold_state=False
+        hold_state=False,
     )
     blk.properties_byproduct.initialize(
         outlvl=outlvl,
         optarg=optarg,
         solver=solver,
         state_args=state_args,
-        hold_state=False
+        hold_state=False,
     )
 
-    init_log.info_high('Initialization Step 1 Complete.')
+    init_log.info_high("Initialization Step 1 Complete.")
 
     # ---------------------------------------------------------------------
     # Solve unit
     with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
         results = solver_obj.solve(blk, tee=slc.tee)
 
-    init_log.info_high(
-        "Initialization Step 2 {}.".format(idaeslog.condition(results))
-    )
+    init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(results)))
 
     # ---------------------------------------------------------------------
     # Release Inlet state
     blk.properties_in.release_state(flags, outlvl)
 
-    init_log.info('Initialization Complete: {}'
-                  .format(idaeslog.condition(results)))
+    init_log.info("Initialization Complete: {}".format(idaeslog.condition(results)))
+
+    if not check_optimal_termination(results):
+        raise InitializationError(
+            f"{blk.name} failed to initialize successfully. Please check "
+            f"the output logs for more information."
+        )
 
 
 def calculate_scaling_factors_sido(self):
     # Get default scale factors and do calculations from base classes
     for t, v in self.water_recovery_equation.items():
         iscale.constraint_scaling_transform(
-            v, iscale.get_scaling_factor(
+            v,
+            iscale.get_scaling_factor(
                 self.properties_in[t].flow_mass_comp["H2O"],
                 default=1,
                 warning=True,
-                hint=" for water recovery"))
+                hint=" for water recovery",
+            ),
+        )
 
     for t, v in self.water_balance.items():
         iscale.constraint_scaling_transform(
-            v, iscale.get_scaling_factor(
-                self.properties_in[t].flow_mass_comp["H2O"],
-                default=1,
-                warning=False))  # would just be a duplicate of above
+            v,
+            iscale.get_scaling_factor(
+                self.properties_in[t].flow_mass_comp["H2O"], default=1, warning=False
+            ),
+        )  # would just be a duplicate of above
 
     for (t, j), v in self.solute_removal_equation.items():
         iscale.constraint_scaling_transform(
-            v, iscale.get_scaling_factor(
+            v,
+            iscale.get_scaling_factor(
                 self.properties_in[t].flow_mass_comp[j],
                 default=1,
                 warning=True,
-                hint=" for solute removal"))
+                hint=" for solute removal",
+            ),
+        )
 
     for (t, j), v in self.solute_treated_equation.items():
         iscale.constraint_scaling_transform(
-            v, iscale.get_scaling_factor(
-                self.properties_in[t].flow_mass_comp[j],
-                default=1,
-                warning=False))  # would just be a duplicate of above
+            v,
+            iscale.get_scaling_factor(
+                self.properties_in[t].flow_mass_comp[j], default=1, warning=False
+            ),
+        )  # would just be a duplicate of above
 
 
 def _get_Q_sido(self, t):

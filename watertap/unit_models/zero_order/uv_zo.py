@@ -41,17 +41,22 @@ class UVZOData(ZeroOrderBaseData):
         build_siso(self)
         constant_intensity(self)
 
-        self.uv_reduced_equivalent_dose = Var(self.flowsheet().time,
-                                              units=pyunits.mJ/pyunits.cm**2,
-                                              doc="Reduced equivalent dosage")
-        self.uv_transmittance_in = Var(self.flowsheet().time,
-                                       units=pyunits.dimensionless,
-                                       doc="UV transmittance of solution at UV reactor inlet")
+        self.uv_reduced_equivalent_dose = Var(
+            self.flowsheet().time,
+            units=pyunits.mJ / pyunits.cm**2,
+            doc="Reduced equivalent dosage",
+        )
+        self.uv_transmittance_in = Var(
+            self.flowsheet().time,
+            units=pyunits.dimensionless,
+            doc="UV transmittance of solution at UV reactor inlet",
+        )
 
         self.recovery_frac_mass_H2O.fix(1)
         self._fixed_perf_vars.append(self.uv_reduced_equivalent_dose)
         self._fixed_perf_vars.append(self.uv_transmittance_in)
 
-
-        self._perf_var_dict["UV Reduced Equivalent Dosage (mJ/cm^2)"] = self.uv_reduced_equivalent_dose
+        self._perf_var_dict[
+            "UV Reduced Equivalent Dosage (mJ/cm^2)"
+        ] = self.uv_reduced_equivalent_dose
         self._perf_var_dict["UV Transmittance of Feed"] = self.uv_transmittance_in

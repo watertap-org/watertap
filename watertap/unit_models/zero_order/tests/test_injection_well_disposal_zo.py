@@ -17,7 +17,13 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    ConcreteModel, Constraint, value, Block, Var, assert_optimal_termination)
+    ConcreteModel,
+    Constraint,
+    value,
+    Block,
+    Var,
+    assert_optimal_termination,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -33,6 +39,7 @@ from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
+
 class TestInjectionWellDisposalZO:
     @pytest.fixture(scope="class")
     def model(self):
@@ -41,11 +48,12 @@ class TestInjectionWellDisposalZO:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["tss", "sulfate", "foo", "bar"]})
+            default={"solute_list": ["tss", "sulfate", "foo", "bar"]}
+        )
 
-        m.fs.unit = InjectionWellDisposalZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = InjectionWellDisposalZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(123)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(4)
@@ -58,7 +66,7 @@ class TestInjectionWellDisposalZO:
     @pytest.mark.unit
     def test_build(self, model):
         assert model.fs.unit.config.database is model.db
-        assert model.fs.unit._tech_type == 'injection_well_disposal'
+        assert model.fs.unit._tech_type == "injection_well_disposal"
 
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
@@ -71,8 +79,10 @@ class TestInjectionWellDisposalZO:
         model.fs.unit.load_parameters_from_database()
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -99,10 +109,12 @@ class TestInjectionWellDisposalZO:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(0.136575, rel=1e-5) ==
-                value(model.fs.unit.properties[0].flow_vol))
-        assert (pytest.approx(201.385403, abs=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert pytest.approx(0.136575, rel=1e-5) == value(
+            model.fs.unit.properties[0].flow_vol
+        )
+        assert pytest.approx(201.385403, abs=1e-5) == value(
+            model.fs.unit.electricity[0]
+        )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -136,19 +148,22 @@ Unit : fs.unit                                                             Time:
 
         assert output == stream.getvalue()
 
+
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["tss", "sulfate", "foo", "bar"]})
+        default={"solute_list": ["tss", "sulfate", "foo", "bar"]}
+    )
     m.fs.costing = ZeroOrderCosting()
-    m.fs.unit = InjectionWellDisposalZO(default={
-        "property_package": m.fs.params,
-        "database": m.db})
-    m.fs.unit.costing = UnitModelCostingBlock(default={
-                                            "flowsheet_costing_block": m.fs.costing})
+    m.fs.unit = InjectionWellDisposalZO(
+        default={"property_package": m.fs.params, "database": m.db}
+    )
+    m.fs.unit.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(123)
     m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(4)
     m.fs.unit.inlet.flow_mass_comp[0, "sulfate"].fix(0.005)
@@ -166,6 +181,4 @@ def test_costing():
     assert isinstance(m.fs.costing.injection_well_disposal.capital_b_parameter, Var)
 
     assert isinstance(m.fs.unit.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit.costing.capital_cost_constraint,
-                      Constraint)
-                      
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)

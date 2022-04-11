@@ -15,93 +15,122 @@
 
 from pyomo.environ import ConcreteModel, Constraint
 from idaes.core import FlowsheetBlock
+
 # from idaes.generic_models.unit_models import Separator  # replaced separator
-from idaes.generic_models.unit_models.separator import SplittingType, EnergySplittingType
-from idaes.core.util.scaling import calculate_scaling_factors, set_scaling_factor, constraint_scaling_transform
-from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
-from watertap.examples.flowsheets.full_treatment_train.util import solve_block, check_dof
+from idaes.generic_models.unit_models.separator import (
+    SplittingType,
+    EnergySplittingType,
+)
+from idaes.core.util.scaling import (
+    calculate_scaling_factors,
+    set_scaling_factor,
+    constraint_scaling_transform,
+)
+from watertap.examples.flowsheets.full_treatment_train.model_components import (
+    property_models,
+)
+from watertap.examples.flowsheets.full_treatment_train.util import (
+    solve_block,
+    check_dof,
+)
 from watertap.examples.flowsheets.full_treatment_train.model_components import Separator
 
 
-def build_SepRO(m, base='TDS'):
+def build_SepRO(m, base="TDS"):
     """
     Builds RO model based on the IDAES separator.
     Requires prop_TDS property package.
     """
     prop = property_models.get_prop(m, base=base)
 
-    m.fs.RO = Separator(default={
-        "property_package": prop,
-        "outlet_list": ['retentate', 'permeate'],
-        "split_basis": SplittingType.componentFlow,
-        "energy_split_basis": EnergySplittingType.equal_temperature})
+    m.fs.RO = Separator(
+        default={
+            "property_package": prop,
+            "outlet_list": ["retentate", "permeate"],
+            "split_basis": SplittingType.componentFlow,
+            "energy_split_basis": EnergySplittingType.equal_temperature,
+        }
+    )
 
     # specify
-    if base == 'TDS':
-        m.fs.RO.split_fraction[0, 'permeate', 'H2O'].fix(0.5)
-        m.fs.RO.split_fraction[0, 'permeate', 'TDS'].fix(0.01)
+    if base == "TDS":
+        m.fs.RO.split_fraction[0, "permeate", "H2O"].fix(0.5)
+        m.fs.RO.split_fraction[0, "permeate", "TDS"].fix(0.01)
     else:
-        raise ValueError('Unexpected property base {base} provided to build_SepRO'
-                         ''.format(base=base))
+        raise ValueError(
+            "Unexpected property base {base} provided to build_SepRO"
+            "".format(base=base)
+        )
 
     # scale
-    set_scaling_factor(m.fs.RO.split_fraction, 1)  # TODO: IDAES should set these scaling factors by default
-    constraint_scaling_transform(m.fs.RO.sum_split_frac[0.0, 'H2O'], 1)
-    constraint_scaling_transform(m.fs.RO.sum_split_frac[0.0, 'TDS'], 1)
+    set_scaling_factor(
+        m.fs.RO.split_fraction, 1
+    )  # TODO: IDAES should set these scaling factors by default
+    constraint_scaling_transform(m.fs.RO.sum_split_frac[0.0, "H2O"], 1)
+    constraint_scaling_transform(m.fs.RO.sum_split_frac[0.0, "TDS"], 1)
 
 
-def build_SepNF(m, base='ion'):
+def build_SepNF(m, base="ion"):
     """
     Builds NF model based on the IDAES separator for a specified property base.
     Requires prop_ion or prop_salt property package.
     """
     prop = property_models.get_prop(m, base=base)
 
-    m.fs.NF = Separator(default={
-        "property_package": prop,
-        "outlet_list": ['retentate', 'permeate'],
-        "split_basis": SplittingType.componentFlow,
-        "energy_split_basis": EnergySplittingType.equal_temperature})
+    m.fs.NF = Separator(
+        default={
+            "property_package": prop,
+            "outlet_list": ["retentate", "permeate"],
+            "split_basis": SplittingType.componentFlow,
+            "energy_split_basis": EnergySplittingType.equal_temperature,
+        }
+    )
 
     # specify
-    if base == 'ion':
-        m.fs.NF.split_fraction[0, 'permeate', 'H2O'].fix(0.9)
-        m.fs.NF.split_fraction[0, 'permeate', 'Na'].fix(0.9)
-        m.fs.NF.split_fraction[0, 'permeate', 'Ca'].fix(0.1)
-        m.fs.NF.split_fraction[0, 'permeate', 'Mg'].fix(0.1)
-        m.fs.NF.split_fraction[0, 'permeate', 'SO4'].fix(0.1)
+    if base == "ion":
+        m.fs.NF.split_fraction[0, "permeate", "H2O"].fix(0.9)
+        m.fs.NF.split_fraction[0, "permeate", "Na"].fix(0.9)
+        m.fs.NF.split_fraction[0, "permeate", "Ca"].fix(0.1)
+        m.fs.NF.split_fraction[0, "permeate", "Mg"].fix(0.1)
+        m.fs.NF.split_fraction[0, "permeate", "SO4"].fix(0.1)
         # Cl split fraction determined through electro-neutrality for the retentate
-        charge_dict = {'Na': 1, 'Ca': 2, 'Mg': 2, 'SO4': -2, 'Cl': -1}
+        charge_dict = {"Na": 1, "Ca": 2, "Mg": 2, "SO4": -2, "Cl": -1}
         m.fs.NF.EN_out = Constraint(
-            expr=0 ==
-                 sum(charge_dict[j] * m.fs.NF.retentate_state[0].flow_mol_phase_comp['Liq', j]
-                     for j in charge_dict))
+            expr=0
+            == sum(
+                charge_dict[j]
+                * m.fs.NF.retentate_state[0].flow_mol_phase_comp["Liq", j]
+                for j in charge_dict
+            )
+        )
         constraint_scaling_transform(m.fs.NF.EN_out, 1)
-    elif base == 'salt':
-        m.fs.NF.split_fraction[0, 'permeate', 'H2O'].fix(0.9)
-        m.fs.NF.split_fraction[0, 'permeate', 'NaCl'].fix(0.9)
-        m.fs.NF.split_fraction[0, 'permeate', 'CaSO4'].fix(0.1)
-        m.fs.NF.split_fraction[0, 'permeate', 'MgSO4'].fix(0.1)
-        m.fs.NF.split_fraction[0, 'permeate', 'MgCl2'].fix(0.2)
+    elif base == "salt":
+        m.fs.NF.split_fraction[0, "permeate", "H2O"].fix(0.9)
+        m.fs.NF.split_fraction[0, "permeate", "NaCl"].fix(0.9)
+        m.fs.NF.split_fraction[0, "permeate", "CaSO4"].fix(0.1)
+        m.fs.NF.split_fraction[0, "permeate", "MgSO4"].fix(0.1)
+        m.fs.NF.split_fraction[0, "permeate", "MgCl2"].fix(0.2)
 
     # scale
-    set_scaling_factor(m.fs.NF.split_fraction, 1)  # TODO: IDAES should set these scaling factors by default
-    if base == 'ion':
-        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'H2O'], 1)
-        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'Na'], 1)
-        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'Ca'], 1)
-        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'Mg'], 1)
-        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'SO4'], 1)
-        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'Cl'], 1)
-    elif base == 'salt':
-        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'H2O'], 1)
-        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'NaCl'], 1)
-        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'CaSO4'], 1)
-        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'MgSO4'], 1)
-        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, 'MgCl2'], 1)
+    set_scaling_factor(
+        m.fs.NF.split_fraction, 1
+    )  # TODO: IDAES should set these scaling factors by default
+    if base == "ion":
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, "H2O"], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, "Na"], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, "Ca"], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, "Mg"], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, "SO4"], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, "Cl"], 1)
+    elif base == "salt":
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, "H2O"], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, "NaCl"], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, "CaSO4"], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, "MgSO4"], 1)
+        constraint_scaling_transform(m.fs.NF.sum_split_frac[0.0, "MgCl2"], 1)
 
 
-def solve_SepRO(base='TDS'):
+def solve_SepRO(base="TDS"):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     property_models.build_prop(m, base=base)
@@ -119,7 +148,7 @@ def solve_SepRO(base='TDS'):
     return m
 
 
-def solve_SepNF(base='ion'):
+def solve_SepNF(base="ion"):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     property_models.build_prop(m, base=base)
@@ -139,6 +168,6 @@ def solve_SepNF(base='ion'):
 
 
 if __name__ == "__main__":
-    solve_SepRO(base='TDS')
-    solve_SepNF(base='ion')
-    solve_SepNF(base='salt')
+    solve_SepRO(base="TDS")
+    solve_SepNF(base="ion")
+    solve_SepNF(base="salt")

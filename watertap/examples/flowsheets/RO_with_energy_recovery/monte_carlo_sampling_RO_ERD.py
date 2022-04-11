@@ -12,36 +12,59 @@
 ###############################################################################
 
 from idaes.core.util import get_solver
-from watertap.tools.parameter_sweep import UniformSample, NormalSample, LatinHypercubeSample, parameter_sweep
+from watertap.tools.parameter_sweep import (
+    UniformSample,
+    NormalSample,
+    LatinHypercubeSample,
+    parameter_sweep,
+)
 
-from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (build,
+from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
+    build,
     set_operating_conditions,
     initialize_system,
     solve,
-    optimize)
+    optimize,
+)
 
-from watertap.tools.parameter_sweep_input_parser import (get_sweep_params_from_yaml,
-    set_defaults_from_yaml)
+from watertap.tools.parameter_sweep_input_parser import (
+    get_sweep_params_from_yaml,
+    set_defaults_from_yaml,
+)
+
 
 def get_sweep_params(m, use_LHS=False):
     sweep_params = {}
 
     # Define the sampling type and ranges for three different variables
     if use_LHS:
-        sweep_params['A_comp'] = LatinHypercubeSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
-        sweep_params['B_comp'] = LatinHypercubeSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
-        sweep_params['Spacer_porosity'] = LatinHypercubeSample(m.fs.RO.spacer_porosity, 0.95, 0.99)
+        sweep_params["A_comp"] = LatinHypercubeSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
+        sweep_params["B_comp"] = LatinHypercubeSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
+        sweep_params["Spacer_porosity"] = LatinHypercubeSample(
+            m.fs.RO.spacer_porosity, 0.95, 0.99
+        )
 
     else:
-        sweep_params['A_comp'] = NormalSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
-        sweep_params['B_comp'] = NormalSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
-        sweep_params['Spacer_porosity'] = UniformSample(m.fs.RO.spacer_porosity, 0.95, 0.99)
+        sweep_params["A_comp"] = NormalSample(m.fs.RO.A_comp, 4.0e-12, 0.5e-12)
+        sweep_params["B_comp"] = NormalSample(m.fs.RO.B_comp, 3.5e-8, 0.5e-8)
+        sweep_params["Spacer_porosity"] = UniformSample(
+            m.fs.RO.spacer_porosity, 0.95, 0.99
+        )
 
     return sweep_params
 
-def run_parameter_sweep(csv_results_file=None, h5_results_file=None, seed=None, use_LHS=False, read_sweep_params_from_file=False,
-        sweep_params_fname='mc_sweep_params.yaml', read_model_defauls_from_file=False,
-        defaults_fname='default_configuration.yaml'):
+
+def run_parameter_sweep(
+    results_file_name=None,
+    write_csv=False,
+    write_h5=False,
+    seed=None,
+    use_LHS=False,
+    read_sweep_params_from_file=False,
+    sweep_params_fname="mc_sweep_params.yaml",
+    read_model_defauls_from_file=False,
+    defaults_fname="default_configuration.yaml",
+):
 
     # Set up the solver
     solver = get_solver()
@@ -66,19 +89,29 @@ def run_parameter_sweep(csv_results_file=None, h5_results_file=None, seed=None, 
 
     # Define the outputs to be saved
     outputs = {}
-    outputs['EC'] = m.fs.costing.specific_energy_consumption
-    outputs['LCOW'] = m.fs.costing.LCOW
+    outputs["EC"] = m.fs.costing.specific_energy_consumption
+    outputs["LCOW"] = m.fs.costing.LCOW
 
     # Run the parameter sweep study using num_samples randomly drawn from the above range
     num_samples = 10
 
     # Run the parameter sweep
-    global_results = parameter_sweep(m, sweep_params, outputs, csv_results_file=csv_results_file,
-            h5_results_file=h5_results_file, optimize_function=optimize, optimize_kwargs={'solver':solver, 'check_termination':False},
-            num_samples=num_samples, seed=seed)
+    global_results = parameter_sweep(
+        m,
+        sweep_params,
+        outputs,
+        results_file_name=results_file_name,
+        write_csv=write_csv,
+        write_h5=write_h5,
+        optimize_function=optimize,
+        optimize_kwargs={"solver": solver, "check_termination": False},
+        num_samples=num_samples,
+        seed=seed,
+    )
 
     return global_results
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # For testing this file, a seed needs to be provided as an additional argument, i.e. seed=1
-    run_parameter_sweep('output/monte_carlo_results.csv')
+    run_parameter_sweep("output/monte_carlo_results.csv")

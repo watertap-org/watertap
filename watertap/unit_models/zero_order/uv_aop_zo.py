@@ -36,26 +36,25 @@ class UVAOPZOData(UVZOData):
 
         self._tech_type = "uv_aop"
 
-
-        self.oxidant_dose = Var(self.flowsheet().time,
-                                units=pyunits.mg/pyunits.L,
-                                doc="Oxidant dosage")
+        self.oxidant_dose = Var(
+            self.flowsheet().time, units=pyunits.mg / pyunits.L, doc="Oxidant dosage"
+        )
 
         self.chemical_flow_mass = Var(
             self.flowsheet().time,
-            units=pyunits.kg/pyunits.s,
+            units=pyunits.kg / pyunits.s,
             bounds=(0, None),
-            doc="Mass flow rate of oxidant solution")
-
+            doc="Mass flow rate of oxidant solution",
+        )
 
         self._fixed_perf_vars.append(self.oxidant_dose)
 
-        @self.Constraint(self.flowsheet().time,
-                         doc="Chemical mass flow constraint")
+        @self.Constraint(self.flowsheet().time, doc="Chemical mass flow constraint")
         def chemical_flow_mass_constraint(b, t):
-            return (b.chemical_flow_mass[t] ==
-                    pyunits.convert(b.oxidant_dose[t]
-                    * b.properties_in[t].flow_vol, to_units=pyunits.kg/pyunits.s))
+            return b.chemical_flow_mass[t] == pyunits.convert(
+                b.oxidant_dose[t] * b.properties_in[t].flow_vol,
+                to_units=pyunits.kg / pyunits.s,
+            )
 
         self._perf_var_dict["Oxidant Dosage (mg/L)"] = self.oxidant_dose
         self._perf_var_dict["Oxidant Flow (kg/s)"] = self.chemical_flow_mass
