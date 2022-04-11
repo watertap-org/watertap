@@ -24,10 +24,10 @@ from watertap.core import build_sido_reactive, constant_intensity, ZeroOrderBase
 __author__ = "Tim Bartholomew"
 
 
-@declare_process_block_class("BioreactorSimpleReactionZO")
-class BioreactorGasProductionZO(ZeroOrderBaseData):
+@declare_process_block_class("MetabZO")
+class MetabZOData(ZeroOrderBaseData):
     """
-    Zero-Order model for a bioreactor with simple reactions
+    Zero-Order model for a METAB bioreactor
     """
 
     CONFIG = ZeroOrderBaseData.CONFIG()
@@ -35,7 +35,7 @@ class BioreactorGasProductionZO(ZeroOrderBaseData):
     def build(self):
         super().build()
 
-        self._tech_type = "bioreactor_simple_reaction"
+        self._tech_type = "metab"
 
         build_sido_reactive(self)
 

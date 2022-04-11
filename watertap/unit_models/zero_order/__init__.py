@@ -22,7 +22,7 @@ from .electrodialysis_reversal_zo import ElectrodialysisReversalZO
 from .aeration_basin_zo import AerationBasinZO
 from .air_flotation_zo import AirFlotationZO
 from .bioreactor_zo import BioreactorZO
-from .bioreactor_simple_reaction_zo import BioreactorSimpleReactionZO
+from .metab_zo import MetabZO
 from .buffer_tank_zo import BufferTankZO
 from .chemical_addition_zo import ChemicalAdditionZO
 from .cartridge_filtration_zo import CartridgeFiltrationZO

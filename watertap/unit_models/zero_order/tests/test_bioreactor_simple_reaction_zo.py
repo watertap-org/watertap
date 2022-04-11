@@ -25,13 +25,13 @@ from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 
-from watertap.unit_models.zero_order import BioreactorSimpleReactionZO
+from watertap.unit_models.zero_order import MetabZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
 
 solver = get_solver()
 
-class TestBioreactorSimpleReactionZO:
+class TestMetabZO:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -42,7 +42,7 @@ class TestBioreactorSimpleReactionZO:
             default={"solute_list": ["cod",
                                      "H2"]})
 
-        m.fs.unit = BioreactorSimpleReactionZO(default={
+        m.fs.unit = MetabZO(default={
             "property_package": m.fs.params,
             "database": m.db,
             "process_subtype": "METAB_H2"})
@@ -59,7 +59,7 @@ class TestBioreactorSimpleReactionZO:
 
     @pytest.mark.component
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("bioreactor_simple_reaction")
+        data = model.db.get_unit_operation_parameters("metab")
 
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
