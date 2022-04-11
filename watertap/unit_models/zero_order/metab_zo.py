@@ -36,8 +36,9 @@ class MetabZOData(ZeroOrderBaseData):
         super().build()
 
         self._tech_type = "metab"
-
         build_sido_reactive(self)
+
+        self._gas_comp = self.config.process_subtype
 
         # unit variables
         self.volume = Var(initialize=1,
@@ -94,7 +95,7 @@ class MetabZOData(ZeroOrderBaseData):
                     b.energy_electric_mixer_vol * b.volume
                     + b.energy_electric_vacuum_flow_vol_byproduct
                     * pyunits.convert(
-                b.properties_byproduct[t].flow_mass_comp['H2'],
+                b.properties_byproduct[t].flow_mass_comp[b._gas_comp],
                 to_units=pyunits.kg / pyunits.hr)
             )
 

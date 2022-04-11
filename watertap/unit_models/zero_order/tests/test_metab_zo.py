@@ -31,7 +31,7 @@ from watertap.core.zero_order_properties import WaterParameterBlock
 
 solver = get_solver()
 
-class TestMetabZO:
+class TestMetabZO_H2:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -45,7 +45,7 @@ class TestMetabZO:
         m.fs.unit = MetabZO(default={
             "property_package": m.fs.params,
             "database": m.db,
-            "process_subtype": "METAB_H2"})
+            "process_subtype": "H2"})
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(0.01)
@@ -84,7 +84,6 @@ class TestMetabZO:
     @pytest.mark.component
     def test_solve(self, model):
         results = solver.solve(model)
-
         # Check for optimal solution
         assert_optimal_termination(results)
 
@@ -92,18 +91,12 @@ class TestMetabZO:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(1.01e-3, rel=1e-3) ==
-                value(model.fs.unit.properties_in[0].flow_vol))
-        assert (pytest.approx(9.901, rel=1e-3) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["cod"]))
-
-        assert (pytest.approx(1.008e-3, rel=1e-3) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(7.740, rel=1e-3) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["cod"]))
-
+        assert (pytest.approx(1, rel=1e-3) ==
+                value(model.fs.unit.properties_treated[0].flow_mass_comp["H2O"]))
         assert (pytest.approx(1.107e-5, rel=1e-3) ==
-                value(model.fs.unit.properties_byproduct[0].flow_mass_comp['H2']))
+                value(model.fs.unit.properties_byproduct[0].flow_mass_comp["H2"]))
+        assert (pytest.approx(7.800e-3, rel=1e-3) ==
+                value(model.fs.unit.properties_treated[0].flow_mass_comp["cod"]))
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -129,53 +122,139 @@ Unit : fs.unit                                                             Time:
 ------------------------------------------------------------------------------------
     Unit Performance
 
-    Variables:
+    Variables: 
 
     Key                         : Value     : Fixed : Bounds
+             Electricity Demand :    368.28 : False : (0, None)
     Reaction Extent [cod_to_H2] : 0.0022000 : False : (None, None)
             Solute Removal [H2] :    1.0000 :  True : (0, None)
            Solute Removal [cod] :    0.0000 :  True : (0, None)
+          Thermal Energy Demand :    79.537 : False : (0, None)
                  Water Recovery :    1.0000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
                               Inlet    Treated   Byproduct
-    Volumetric Flowrate    0.0010100  0.0010078 1.1068e-08
-    Mass Concentration H2O    990.10     992.26   0.072278
-    Mass Concentration cod    9.9010     7.7396   0.072278
-    Mass Concentration H2     0.0000 7.9381e-07     999.86
+    Volumetric Flowrate    0.0010100  0.0010078 1.1066e-08
+    Mass Concentration H2O    990.10     992.26 9.7518e-09
+    Mass Concentration cod    9.9010     7.7396 9.1163e-09
+    Mass Concentration H2     0.0000 1.2301e-12     1000.0
 ====================================================================================
 """
-        assert output in stream.getvalue()
+        assert output == stream.getvalue()
 
+class TestMetabZO_CH4:
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+        m.db = Database()
 
-# db = Database()
-# params = db._get_technology("anaerobic_mbr_mec")
-#
-#
-# class Test_AnMBRMEC_ZO_subtype:
-#     @pytest.fixture(scope="class")
-#     def model(self):
-#         m = ConcreteModel()
-#
-#         m.fs = FlowsheetBlock(default={"dynamic": False})
-#         m.fs.params = WaterParameterBlock(
-#             default={"solute_list": ["cod", "nonbiodegradable_cod"]})
-#
-#         m.fs.unit = AnaerobicMBRMECZO(default={
-#             "property_package": m.fs.params,
-#             "database": db})
-#
-#         return m
-#
-#     @pytest.mark.parametrize("subtype", [params.keys()])
-#     @pytest.mark.component
-#     def test_load_parameters(self, model, subtype):
-#         model.fs.unit.config.process_subtype = subtype
-#         data = db.get_unit_operation_parameters("anaerobic_mbr_mec", subtype=subtype)
-#
-#         model.fs.unit.load_parameters_from_database()
-#
-#         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
-#             assert v.fixed
-#             assert v.value == data["removal_frac_mass_solute"][j]["value"]
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.params = WaterParameterBlock(
+            default={"solute_list": ["cod",
+                                     "H2",
+                                     "CH4"]})
+
+        m.fs.unit = MetabZO(default={
+            "property_package": m.fs.params,
+            "database": m.db,
+            "process_subtype": "CH4"})
+
+        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
+        m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(0.01)
+        m.fs.unit.inlet.flow_mass_comp[0, "H2"].fix(0)
+        m.fs.unit.inlet.flow_mass_comp[0, "CH4"].fix(0)
+
+        return m
+
+    @pytest.mark.unit
+    def test_build(self, model):
+        assert model.fs.unit.config.database == model.db
+
+    @pytest.mark.component
+    def test_load_parameters(self, model):
+        data = model.db.get_unit_operation_parameters("metab")
+
+        model.fs.unit.load_parameters_from_database(use_default_removal=True)
+
+        assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
+        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
+            data["recovery_frac_mass_H2O"]["value"]
+
+    @pytest.mark.component
+    def test_degrees_of_freedom(self, model):
+        assert degrees_of_freedom(model.fs.unit) == 0
+
+    @pytest.mark.component
+    def test_unit_consistency(self, model):
+        assert_units_consistent(model.fs.unit)
+
+    @pytest.mark.component
+    def test_initialize(self, model):
+        initialization_tester(model)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, model):
+        results = solver.solve(model)
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, model):
+        assert (pytest.approx(1, rel=1e-3) ==
+                value(model.fs.unit.properties_treated[0].flow_mass_comp["H2O"]))
+        assert (pytest.approx(5.959e-4, rel=1e-3) ==
+                value(model.fs.unit.properties_byproduct[0].flow_mass_comp["CH4"]))
+        assert (pytest.approx(4.100e-3, rel=1e-3) ==
+                value(model.fs.unit.properties_treated[0].flow_mass_comp["cod"]))
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, model):
+        for j in model.fs.params.component_list:
+            assert 1e-6 >= abs(value(
+                model.fs.unit.inlet.flow_mass_comp[0, j] +
+                sum(model.fs.unit.generation_rxn_comp[0, r, j]
+                    for r in model.fs.unit.reaction_set) -
+                model.fs.unit.treated.flow_mass_comp[0, j] -
+                model.fs.unit.byproduct.flow_mass_comp[0, j]))
+
+    @pytest.mark.component
+    def test_report(self, model):
+        stream = StringIO()
+
+        model.fs.unit.report(ostream=stream)
+
+        output = """
+====================================================================================
+Unit : fs.unit                                                             Time: 0.0
+------------------------------------------------------------------------------------
+    Unit Performance
+
+    Variables: 
+
+    Key                         : Value      : Fixed : Bounds
+             Electricity Demand :     34.998 : False : (0, None)
+    Reaction Extent [cod_to_H2] :  0.0059000 : False : (None, None)
+           Solute Removal [CH4] :     1.0000 :  True : (0, None)
+            Solute Removal [H2] :     0.0000 :  True : (0, None)
+           Solute Removal [cod] :     0.0000 :  True : (0, None)
+          Thermal Energy Demand : 4.4467e-11 : False : (0, None)
+                 Water Recovery :     1.0000 :  True : (1e-08, 1.0000001)
+
+------------------------------------------------------------------------------------
+    Stream Table
+                              Inlet    Treated   Byproduct
+    Volumetric Flowrate    0.0010100  0.0010041 5.9590e-07
+    Mass Concentration H2O    990.10     995.92 2.9371e-06
+    Mass Concentration cod    9.9010     4.0833 2.9371e-06
+    Mass Concentration H2     0.0000 1.7431e-09 2.9371e-06
+    Mass Concentration CH4    0.0000 2.5872e-09     1000.0
+====================================================================================
+"""
+        assert output == stream.getvalue()

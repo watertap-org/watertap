@@ -42,3 +42,40 @@ H2:
   energy_electric_vacuum_flow_vol_byproduct:
     value: 9190
     units: kW/(kg/hr)
+CH4:
+  recovery_frac_mass_H2O:
+    value: 1
+    units: dimensionless
+  default_removal_frac_mass_solute:
+    value: 0
+    units: dimensionless
+  removal_frac_mass_solute:
+    cod:
+      value: 0
+      units: dimensionless
+      constituent_longform: Chemical Oxygen Demand
+    CH4:
+      value: 1
+      units: dimensionless
+      constituent_longform: Hydrogen
+  reactions:
+    cod_to_H2:
+      key_reactant: cod
+      conversion: 0.59
+      stoichiometry:
+        cod:
+          conversion_ratio: -1
+        CH4:
+          conversion_ratio: 0.101
+  hydraulic_retention_time:
+    value: 12
+    units: hour
+  energy_electric_mixer_vol:
+    value: 0.049875
+    units: kW/m^3
+  energy_thermal_flow_vol_inlet:
+    value: 0
+    units: kJ/m^3
+  energy_electric_vacuum_flow_vol_byproduct:
+    value: 15.3
+    units: kW/(kg/hr)
