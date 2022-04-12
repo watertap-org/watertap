@@ -42,6 +42,35 @@ H2:
   energy_electric_vacuum_flow_vol_byproduct:
     value: 9190
     units: kW/(kg/hr)
+  capital_cost:
+    cost_factor: TIC
+    reactor_cost:
+      value: 789
+      units: USD_2020/m^3
+    mixer_cost:
+      value: 2740
+      units: USD_2020/kW
+    bead_bulk_density:
+      value: 23.9
+      units: kg/m^3
+    bead_cost:
+      value: 1440
+      units: USD_2020/kg
+    bead_replacement_factor:
+      value: 0.3
+      units: 1/year
+    membrane_sidestream_fraction:
+      value: 0.1
+      units: dimensionless
+    membrane_specific_size:
+      value: 6.67
+      units: m^2/(m^3/hr)
+    membrane_cost:
+      value: 498
+      units: USD_2020/m^2
+    vacuum_cost:
+      value: 59300
+      units: USD_2020/(kg/hr)
 CH4:
   recovery_frac_mass_H2O:
     value: 1
@@ -68,7 +97,7 @@ CH4:
         CH4:
           conversion_ratio: 0.101
   hydraulic_retention_time:
-    value: 12
+    value: 150
     units: hour
   energy_electric_mixer_vol:
     value: 0.049875
@@ -79,3 +108,32 @@ CH4:
   energy_electric_vacuum_flow_vol_byproduct:
     value: 15.3
     units: kW/(kg/hr)
+  capital_cost:
+    cost_factor: TIC
+    reactor_cost:
+      value: 789
+      units: USD_2020/m^3
+    mixer_cost:
+      value: 2740
+      units: USD_2020/kW
+    bead_bulk_density:
+      value: 23.9
+      units: kg/m^3
+    bead_cost:
+      value: 1440
+      units: USD_2020/kg
+    bead_replacement_factor:
+      value: 0.3
+      units: 1/year
+    membrane_sidestream_fraction:
+      value: 0.1
+      units: dimensionless
+    membrane_specific_size:
+      value: 6.67
+      units: m^2/(m^3/hr)
+    membrane_cost:
+      value: 498
+      units: USD_2020/m^2
+    vacuum_cost:
+      value: 59300
+      units: USD_2020/(kg/hr)
