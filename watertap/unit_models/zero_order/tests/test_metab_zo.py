@@ -14,20 +14,23 @@
 Tests for zero-order bioreactor with simple reactions
 """
 import pytest
-
+import os
 from io import StringIO
 from pyomo.environ import (
-    ConcreteModel, Constraint, value, Var, assert_optimal_termination, units as pyunits)
+    ConcreteModel, Block, value, Var, assert_optimal_termination, units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
+from idaes.generic_models.costing import UnitModelCostingBlock
 
 from watertap.unit_models.zero_order import MetabZO
 from watertap.core.wt_database import Database
 from watertap.core.zero_order_properties import WaterParameterBlock
+from watertap.core.zero_order_costing import ZeroOrderCosting
+
 
 solver = get_solver()
 
@@ -239,22 +242,231 @@ Unit : fs.unit                                                             Time:
     Variables: 
 
     Key                         : Value      : Fixed : Bounds
-             Electricity Demand :     34.998 : False : (0, None)
+             Electricity Demand :     60.024 : False : (0, None)
     Reaction Extent [cod_to_H2] :  0.0059000 : False : (None, None)
            Solute Removal [CH4] :     1.0000 :  True : (0, None)
             Solute Removal [H2] :     0.0000 :  True : (0, None)
            Solute Removal [cod] :     0.0000 :  True : (0, None)
-          Thermal Energy Demand : 4.4467e-11 : False : (0, None)
+          Thermal Energy Demand : 1.0088e-14 : False : (0, None)
                  Water Recovery :     1.0000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
                               Inlet    Treated   Byproduct
     Volumetric Flowrate    0.0010100  0.0010041 5.9590e-07
-    Mass Concentration H2O    990.10     995.92 2.9371e-06
-    Mass Concentration cod    9.9010     4.0833 2.9371e-06
-    Mass Concentration H2     0.0000 1.7431e-09 2.9371e-06
-    Mass Concentration CH4    0.0000 2.5872e-09     1000.0
+    Mass Concentration H2O    990.10     995.92 1.6781e-08
+    Mass Concentration cod    9.9010     4.0833 1.6929e-08
+    Mass Concentration H2     0.0000 1.0047e-11 1.6929e-08
+    Mass Concentration CH4    0.0000 2.7912e-09     1000.0
 ====================================================================================
 """
         assert output == stream.getvalue()
+
+
+class TestMetabZO_H2_cost:
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+        m.db = Database()
+
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.params = WaterParameterBlock(
+            default={"solute_list": ["cod", "H2"]})
+
+        source_file = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "..",
+            "..",
+            "..",
+            "examples",
+            "flowsheets",
+            "case_studies",
+            "wastewater_resource_recovery",
+            "metab",
+            "metab_global_costing.yaml",
+        )
+        m.fs.costing = ZeroOrderCosting(
+            default={"case_study_definition": source_file}
+        )
+
+        m.fs.unit = MetabZO(default={
+            "property_package": m.fs.params,
+            "database": m.db,
+            "process_subtype": "H2"})
+
+        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
+        m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(0.01)
+        m.fs.unit.inlet.flow_mass_comp[0, "H2"].fix(0)
+
+        m.db.get_unit_operation_parameters("metab")
+        m.fs.unit.load_parameters_from_database(use_default_removal=True)
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            default={"flowsheet_costing_block": m.fs.costing}
+        )
+
+        m.fs.costing.cost_process()
+
+        return m
+
+    @pytest.mark.unit
+    def test_build(self, model):
+        # unit costing
+        assert isinstance(model.fs.costing.metab, Block)
+        assert isinstance(model.fs.unit.costing.capital_cost, Var)
+        assert isinstance(model.fs.unit.costing.fixed_operating_cost, Var)
+
+        # flowsheet block
+        assert model.fs.unit.electricity[0] in model.fs.costing._registered_flows["electricity"]
+        assert model.fs.unit.heat[0] in model.fs.costing._registered_flows["heat"]
+        assert "H2_product" in model.fs.costing._registered_flows
+
+        assert isinstance(model.fs.costing.total_capital_cost, Var)
+        assert isinstance(model.fs.costing.total_fixed_operating_cost, Var)
+        assert isinstance(model.fs.costing.aggregate_flow_costs, Var)
+
+    @pytest.mark.component
+    def test_degrees_of_freedom(self, model):
+        assert degrees_of_freedom(model.fs.unit) == 0
+
+    @pytest.mark.component
+    def test_unit_consistency(self, model):
+        assert_units_consistent(model.fs.unit)
+
+    @pytest.mark.component
+    def test_initialize(self, model):
+        initialization_tester(model)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, model):
+        results = solver.solve(model)
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+    @pytest.mark.component
+    def test_cost_solution(self, model):
+        # unit model
+        assert (pytest.approx(3.091e6, rel=1e-3) ==
+                value(model.fs.unit.costing.capital_cost))
+        assert (pytest.approx(4.505e5, rel=1e-3) ==
+                value(model.fs.unit.costing.fixed_operating_cost))
+
+        # flowsheet
+        assert (pytest.approx(
+            value(model.fs.unit.costing.capital_cost), rel=1e-5)
+                == value(model.fs.costing.total_capital_cost))
+        assert (pytest.approx(5.432e5, rel=1e-3) ==
+                value(model.fs.costing.total_fixed_operating_cost))
+        agg_flow_costs = model.fs.costing.aggregate_flow_costs
+        assert (pytest.approx(-256.0, rel=1e-3) ==
+                value(agg_flow_costs['H2_product']))
+        assert (pytest.approx(2.583e5, rel=1e-3) ==
+                value(agg_flow_costs['electricity']))
+        assert (pytest.approx(1.531e4, rel=1e-3) ==
+                value(agg_flow_costs['heat']))
+
+class TestMetabZO_CH4_cost:
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+        m.db = Database()
+
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.params = WaterParameterBlock(
+            default={"solute_list": ["cod", "CH4"]})
+
+        source_file = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "..",
+            "..",
+            "..",
+            "examples",
+            "flowsheets",
+            "case_studies",
+            "wastewater_resource_recovery",
+            "metab",
+            "metab_global_costing.yaml",
+        )
+        m.fs.costing = ZeroOrderCosting(
+            default={"case_study_definition": source_file}
+        )
+
+        m.fs.unit = MetabZO(default={
+            "property_package": m.fs.params,
+            "database": m.db,
+            "process_subtype": "CH4"})
+
+        m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
+        m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(0.01)
+        m.fs.unit.inlet.flow_mass_comp[0, "CH4"].fix(0)
+
+        m.db.get_unit_operation_parameters("metab")
+        m.fs.unit.load_parameters_from_database(use_default_removal=True)
+
+        m.fs.unit.costing = UnitModelCostingBlock(
+            default={"flowsheet_costing_block": m.fs.costing}
+        )
+
+        m.fs.costing.cost_process()
+
+        return m
+
+    @pytest.mark.unit
+    def test_build(self, model):
+        # unit costing
+        assert isinstance(model.fs.costing.metab, Block)
+        assert isinstance(model.fs.unit.costing.capital_cost, Var)
+        assert isinstance(model.fs.unit.costing.fixed_operating_cost, Var)
+
+        # flowsheet block
+        assert model.fs.unit.electricity[0] in model.fs.costing._registered_flows["electricity"]
+        assert model.fs.unit.heat[0] in model.fs.costing._registered_flows["heat"]
+        assert "CH4_product" in model.fs.costing._registered_flows
+
+        assert isinstance(model.fs.costing.total_capital_cost, Var)
+        assert isinstance(model.fs.costing.total_fixed_operating_cost, Var)
+        assert isinstance(model.fs.costing.aggregate_flow_costs, Var)
+
+    @pytest.mark.component
+    def test_degrees_of_freedom(self, model):
+        assert degrees_of_freedom(model.fs.unit) == 0
+
+    @pytest.mark.component
+    def test_unit_consistency(self, model):
+        assert_units_consistent(model.fs.unit)
+
+    @pytest.mark.component
+    def test_initialize(self, model):
+        initialization_tester(model)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, model):
+        results = solver.solve(model)
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+    @pytest.mark.component
+    def test_cost_solution(self, model):
+        # unit model
+        assert (pytest.approx(3.881e7, rel=1e-3) ==
+                value(model.fs.unit.costing.capital_cost))
+        assert (pytest.approx(5.631e6, rel=1e-3) ==
+                value(model.fs.unit.costing.fixed_operating_cost))
+
+        # flowsheet
+        assert (pytest.approx(
+            value(model.fs.unit.costing.capital_cost), rel=1e-5)
+                == value(model.fs.costing.total_capital_cost))
+        assert (pytest.approx(6.795e6, rel=1e-3) ==
+                value(model.fs.costing.total_fixed_operating_cost))
+        agg_flow_costs = model.fs.costing.aggregate_flow_costs
+        assert (pytest.approx(-5735, rel=1e-3) ==
+                value(agg_flow_costs['CH4_product']))
+        assert (pytest.approx(4.209e4, rel=1e-3) ==
+                value(agg_flow_costs['electricity']))
+        assert (pytest.approx(0, abs=1e-3) ==
+                value(agg_flow_costs['heat']))
