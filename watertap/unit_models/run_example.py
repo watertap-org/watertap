@@ -13,10 +13,117 @@ import idaes.logger as idaeslog
 from watertap.property_models.ion_DSPMDE_prop_pack import DSPMDEParameterBlock
 from electrodialysis_1D import Electrodialysis1D
 
+from idaes.generic_models.properties.core.generic.generic_property import (
+    GenericParameterBlock,
+)
+
+from idaes.core import AqueousPhase
+from idaes.core.components import Solvent, Solute, Cation, Anion
+from idaes.core.phases import PhaseType as PT
+
+from idaes.generic_models.properties.core.pure.ConstantProperties import Constant
+from idaes.generic_models.properties.core.state_definitions import FpcTP
+from idaes.generic_models.properties.core.eos.ideal import Ideal
+
 from idaes.core.util import get_solver
 
 solver = get_solver()
 
+# Configuration dictionary for generic
+thermo_config = {
+    "components": {
+        "H2O": {
+            "type": Solvent,
+            # Define the methods used to calculate the following properties
+            "dens_mol_liq_comp": Constant,
+            "enth_mol_liq_comp": Constant,
+            "cp_mol_liq_comp": Constant,
+            "entr_mol_liq_comp": Constant,
+            # Parameter data is always associated with the methods defined above
+            "parameter_data": {
+                "mw": (18.0153, pyunits.g / pyunits.mol),
+                "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                "cp_mol_liq_comp_coeff": (75.312, pyunits.J / pyunits.mol / pyunits.K),
+                "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
+            },
+            # End parameter_data
+        },
+        "Na_+": {
+            "type": Cation,
+            "charge": 1,
+            # Define the methods used to calculate the following properties
+            "dens_mol_liq_comp": Constant,
+            "enth_mol_liq_comp": Constant,
+            "cp_mol_liq_comp": Constant,
+            "entr_mol_liq_comp": Constant,
+            # Parameter data is always associated with the methods defined above
+            "parameter_data": {
+                "mw": (22.989769, pyunits.g / pyunits.mol),
+                "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                "cp_mol_liq_comp_coeff": (75.312, pyunits.J / pyunits.mol / pyunits.K),
+                "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
+            },
+            # End parameter_data
+        },
+        "Cl_-": {
+            "type": Anion,
+            "charge": -1,
+            # Define the methods used to calculate the following properties
+            "dens_mol_liq_comp": Constant,
+            "enth_mol_liq_comp": Constant,
+            "cp_mol_liq_comp": Constant,
+            "entr_mol_liq_comp": Constant,
+            # Parameter data is always associated with the methods defined above
+            "parameter_data": {
+                "mw": (35.453, pyunits.g / pyunits.mol),
+                "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                "cp_mol_liq_comp_coeff": (75.312, pyunits.J / pyunits.mol / pyunits.K),
+                "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
+            },
+            # End parameter_data
+        },
+        "NaCl": {
+            "type": Solute,
+            "valid_phase_types": PT.aqueousPhase,
+            # Define the methods used to calculate the following properties
+            "dens_mol_liq_comp": Constant,
+            "enth_mol_liq_comp": Constant,
+            "cp_mol_liq_comp": Constant,
+            "entr_mol_liq_comp": Constant,
+            # Parameter data is always associated with the methods defined above
+            "parameter_data": {
+                "mw": (58.442, pyunits.g / pyunits.mol),
+                "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                "cp_mol_liq_comp_coeff": (75.312, pyunits.J / pyunits.mol / pyunits.K),
+                "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
+            },
+            # End parameter_data
+        },
+    },
+    # End Component list
+    "phases": {
+        "Liq": {"type": AqueousPhase, "equation_of_state": Ideal},
+    },
+    "state_definition": FpcTP,
+    "state_bounds": {
+        "temperature": (273.15, 300, 650),
+        "pressure": (5e4, 1e5, 1e6),
+    },
+    "pressure_ref": 1e5,
+    "temperature_ref": 300,
+    "base_units": {
+        "time": pyunits.s,
+        "length": pyunits.m,
+        "mass": pyunits.kg,
+        "amount": pyunits.mol,
+        "temperature": pyunits.K,
+    }
+}
+# End thermo_config definition
 
 def build_model():
     # create model, flowsheet
@@ -41,6 +148,42 @@ def build_model():
     }
     # attach prop pack to flowsheet
     m.fs.properties = DSPMDEParameterBlock(default=ion_dict)
+
+    # build the unit model, pass prop pack to the model
+    m.fs.unit = Electrodialysis1D(default={
+        "property_package": m.fs.properties })
+
+
+    print('----------------------------------------------')
+    print('DOF before specifying:', degrees_of_freedom(m.fs))
+
+    assert_units_consistent(m)
+
+    return m
+
+def build_model_generic():
+    # create model, flowsheet
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    # create dict to define ions (the prop pack of Adam requires this)
+    ion_dict = {
+        "solute_list": ["Na_+", "Cl_-", "NaCl"],
+        "diffusivity_data": {("Liq", "Na_+"): 1.33e-9,
+                             ("Liq", "Cl_-"): 2.03e-9,
+                             ("Liq", "NaCl"): 1.70e-9},
+        "mw_data": {"H2O": 18e-3,
+                    "Na_+": 23e-3,
+                    "Cl_-": 35e-3,
+                    "NaCl": 58e-3},
+        "stokes_radius_data": {"Na_+": 0.184e-9,
+                               "Cl_-": 0.121e-9,
+                               "NaCl": 0.305e-9},
+        "charge": {"Na_+": 1,
+                   "Cl_-": -1,
+                   "NaCl": 0},
+    }
+    # attach prop pack to flowsheet
+    m.fs.properties = GenericParameterBlock(default=thermo_config)
 
     # build the unit model, pass prop pack to the model
     m.fs.unit = Electrodialysis1D(default={
@@ -133,7 +276,8 @@ def view_model_properties(m):
     m.fs.unit.concentrate_side.properties.pprint()
 
 if __name__ == "__main__":
-   m = build_model()
+   #m = build_model()
+   m = build_model_generic()
    fix_inlets_and_vars(m)
    scale_model(m)
 
