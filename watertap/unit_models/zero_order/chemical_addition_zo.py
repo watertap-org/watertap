@@ -41,29 +41,35 @@ class ChemicalAdditionZOData(ZeroOrderBaseData):
         if self.config.process_subtype is None:
             raise ConfigurationError(
                 f"{self.name} - zero-order chemical addition operations "
-                "require the process_subtype configuration argument to be set")
+                "require the process_subtype configuration argument to be set"
+            )
 
         build_pt(self)
 
-        self.chemical_dosage = pyo.Var(self.flowsheet().time,
-                                       units=pyo.units.mg/pyo.units.L,
-                                       bounds=(0, None),
-                                       doc="Dosing rate of chemical")
+        self.chemical_dosage = pyo.Var(
+            self.flowsheet().time,
+            units=pyo.units.mg / pyo.units.L,
+            bounds=(0, None),
+            doc="Dosing rate of chemical",
+        )
 
         self.solution_density = pyo.Var(
             bounds=(0, None),
-            units=pyo.units.kg/pyo.units.m**3,
-            doc="Mass density of chemical solution")
+            units=pyo.units.kg / pyo.units.m**3,
+            doc="Mass density of chemical solution",
+        )
         self.ratio_in_solution = pyo.Var(
             bounds=(0, 1),
             units=pyo.units.dimensionless,
-            doc="Mass fraction of chemical in solution")
+            doc="Mass fraction of chemical in solution",
+        )
 
         self.chemical_flow_vol = pyo.Var(
             self.flowsheet().time,
-            units=pyo.units.m**3/pyo.units.s,
+            units=pyo.units.m**3 / pyo.units.s,
             bounds=(0, None),
-            doc="Volumetric flow rate of chemical solution")
+            doc="Volumetric flow rate of chemical solution",
+        )
 
         self._fixed_perf_vars.append(self.chemical_dosage)
         self._fixed_perf_vars.append(self.solution_density)
@@ -73,12 +79,15 @@ class ChemicalAdditionZOData(ZeroOrderBaseData):
         self._perf_var_dict["Chemical Flow"] = self.chemical_flow_vol
 
         def rule_chem_flow(blk, t):
-            return (blk.chemical_flow_vol[t] ==
-                    pyo.units.convert(
-                        blk.chemical_dosage[t]*blk.properties[t].flow_vol /
-                        (blk.solution_density*blk.ratio_in_solution),
-                        to_units=pyo.units.m**3/pyo.units.s))
+            return blk.chemical_flow_vol[t] == pyo.units.convert(
+                blk.chemical_dosage[t]
+                * blk.properties[t].flow_vol
+                / (blk.solution_density * blk.ratio_in_solution),
+                to_units=pyo.units.m**3 / pyo.units.s,
+            )
+
         self.chemical_flow_constraint = pyo.Constraint(
-            self.flowsheet().time, rule=rule_chem_flow)
+            self.flowsheet().time, rule=rule_chem_flow
+        )
 
         pump_electricity(self, self.chemical_flow_vol)

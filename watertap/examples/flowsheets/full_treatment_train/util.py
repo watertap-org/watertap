@@ -15,10 +15,16 @@ from pyomo.environ import check_optimal_termination, TransformationFactory
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.scaling import (unscaled_variables_generator,
-                                     unscaled_constraints_generator,
-                                     calculate_scaling_factors)
-from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve as _check_solve
+from idaes.core.util.scaling import (
+    unscaled_variables_generator,
+    unscaled_constraints_generator,
+    calculate_scaling_factors,
+)
+from watertap.core.util.initialization import (
+    assert_degrees_of_freedom,
+    check_solve as _check_solve,
+)
+
 
 def solve_block(blk, solver=None, tee=False, fail_flag=True):
     if solver is None:

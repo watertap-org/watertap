@@ -38,8 +38,10 @@ class AnaerobicMBRMECZOData(ZeroOrderBaseData):
         self._tech_type = "anaerobic_mbr_mec"
 
         if "nonbiodegradable_cod" not in self.config.property_package.solute_set:
-            raise ValueError('nonbiodegradable_cod must be included in the solute list since'
-                             ' this unit model converts cod to nonbiodegradable_cod.')
+            raise ValueError(
+                "nonbiodegradable_cod must be included in the solute list since"
+                " this unit model converts cod to nonbiodegradable_cod."
+            )
 
         build_sido_reactive(self)
         constant_intensity(self)

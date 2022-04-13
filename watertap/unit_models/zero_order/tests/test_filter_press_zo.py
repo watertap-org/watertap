@@ -17,7 +17,13 @@ import pytest
 from io import StringIO
 
 from pyomo.environ import (
-    Block, check_optimal_termination, ConcreteModel, Constraint, value, Var)
+    Block,
+    check_optimal_termination,
+    ConcreteModel,
+    Constraint,
+    value,
+    Var,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -41,12 +47,11 @@ class TestFilterPressZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={
-                "solute_list": ["tss"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["tss"]})
 
-
-        m.fs.unit = FilterPressZO(default={"property_package": m.fs.params,
-                                    "database": m.db})
+        m.fs.unit = FilterPressZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(23)
@@ -75,23 +80,27 @@ class TestFilterPressZO:
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
             if j not in data["removal_frac_mass_solute"]:
-                assert v.value == data[
-                    "default_removal_frac_mass_solute"]["value"]
+                assert v.value == data["default_removal_frac_mass_solute"]["value"]
             else:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.hours_per_day_operation[0].fixed
-        assert model.fs.unit.hours_per_day_operation[0].value == data[
-            "hours_per_day_operation"]["value"]
+        assert (
+            model.fs.unit.hours_per_day_operation[0].value
+            == data["hours_per_day_operation"]["value"]
+        )
         assert model.fs.unit.cycle_time[0].fixed
-        assert model.fs.unit.cycle_time[0].value == data[
-            "cycle_time"]["value"]
+        assert model.fs.unit.cycle_time[0].value == data["cycle_time"]["value"]
         assert model.fs.unit.electricity_a_parameter[0].fixed
-        assert model.fs.unit.electricity_a_parameter[0].value == data[
-            "electricity_a_parameter"]["value"]
+        assert (
+            model.fs.unit.electricity_a_parameter[0].value
+            == data["electricity_a_parameter"]["value"]
+        )
         assert model.fs.unit.electricity_b_parameter[0].fixed
-        assert model.fs.unit.electricity_b_parameter[0].value == data[
-            "electricity_b_parameter"]["value"]
+        assert (
+            model.fs.unit.electricity_b_parameter[0].value
+            == data["electricity_b_parameter"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
@@ -122,42 +131,49 @@ class TestFilterPressZO:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(0.024, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].flow_vol))
-        assert (pytest.approx(41.66666, rel=1e-5) == value(
-            model.fs.unit.properties_in[0].conc_mass_comp[
-                "H2O"]))
-        assert (pytest.approx(958.33333, rel=1e-5) == value(
-            model.fs.unit.properties_in[0].conc_mass_comp[
-                "tss"]))
+        assert pytest.approx(0.024, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].flow_vol
+        )
+        assert pytest.approx(41.66666, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["H2O"]
+        )
+        assert pytest.approx(958.33333, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["tss"]
+        )
 
-        assert (pytest.approx(0.000460, rel=1e-3) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(0.217344, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp[
-                "H2O"]))
-        assert (pytest.approx(999.782655, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp[
-                "tss"]))
+        assert pytest.approx(0.000460, rel=1e-3) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(0.217344, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["H2O"]
+        )
+        assert pytest.approx(999.782655, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["tss"]
+        )
 
-        assert (pytest.approx(0.0235399, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(42.476815, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp[
-                "H2O"]))
-        assert (pytest.approx(957.523184, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp[
-                "tss"]))
+        assert pytest.approx(0.0235399, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].flow_vol
+        )
+        assert pytest.approx(42.476815, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["H2O"]
+        )
+        assert pytest.approx(957.523184, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-6 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] -
-                model.fs.unit.treated.flow_mass_comp[0, j] -
-                model.fs.unit.byproduct.flow_mass_comp[0, j]))
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    - model.fs.unit.treated.flow_mass_comp[0, j]
+                    - model.fs.unit.byproduct.flow_mass_comp[0, j]
+                )
+            )
+
     @pytest.mark.component
     def test_report(self, model):
         stream = StringIO()
@@ -189,17 +205,18 @@ Unit : fs.unit                                                             Time:
 
         assert output in stream.getvalue()
 
+
 def test_costing():
 
     m = ConcreteModel()
     m.db = Database()
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(default={
-            "solute_list": ["tss"]})
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["tss"]})
 
-    m.fs.unit = FilterPressZO(default={"property_package": m.fs.params,
-                                "database": m.db})
+    m.fs.unit = FilterPressZO(
+        default={"property_package": m.fs.params, "database": m.db}
+    )
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
     m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(23)
@@ -207,19 +224,18 @@ def test_costing():
     m.fs.costing = ZeroOrderCosting()
     m.fs.unit.load_parameters_from_database()
 
-    m.fs.unit.costing = UnitModelCostingBlock(default={
-        "flowsheet_costing_block": m.fs.costing})
+    m.fs.unit.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
 
     assert isinstance(m.fs.costing.filter_press, Block)
     assert isinstance(m.fs.costing.filter_press.capital_a_parameter, Var)
     assert isinstance(m.fs.costing.filter_press.capital_b_parameter, Var)
 
     assert isinstance(m.fs.unit.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit.costing.capital_cost_constraint,
-                      Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit) == 0
 
-    assert m.fs.unit.electricity[0] in \
-        m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]

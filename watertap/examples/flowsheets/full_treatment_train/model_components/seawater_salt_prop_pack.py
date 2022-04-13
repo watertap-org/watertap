@@ -15,27 +15,38 @@
 Simple property package for Na-Ca-Mg-SO4-Cl solution represented with salts
 """
 
-from pyomo.environ import (Constraint,
-                           Var,
-                           Param,
-                           Expression,
-                           Reals,
-                           NonNegativeReals,
-                           Suffix)
+from pyomo.environ import (
+    Constraint,
+    Var,
+    Param,
+    Expression,
+    Reals,
+    NonNegativeReals,
+    Suffix,
+)
 from pyomo.environ import units as pyunits
 
 # Import IDAES cores
-from idaes.core import (declare_process_block_class,
-                        MaterialFlowBasis,
-                        PhysicalParameterBlock,
-                        StateBlockData,
-                        StateBlock,
-                        MaterialBalanceType,
-                        EnergyBalanceType)
+from idaes.core import (
+    declare_process_block_class,
+    MaterialFlowBasis,
+    PhysicalParameterBlock,
+    StateBlockData,
+    StateBlock,
+    MaterialBalanceType,
+    EnergyBalanceType,
+)
 from idaes.core.components import Component, Solute, Solvent
 from idaes.core.phases import LiquidPhase
-from idaes.core.util.initialization import fix_state_vars, revert_state_vars, solve_indexed_blocks
-from idaes.core.util.model_statistics import degrees_of_freedom, number_unfixed_variables
+from idaes.core.util.initialization import (
+    fix_state_vars,
+    revert_state_vars,
+    solve_indexed_blocks,
+)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_unfixed_variables,
+)
 from idaes.core.util.exceptions import PropertyPackageError
 from idaes.core.util.misc import extract_data
 import idaes.core.util.scaling as iscale
@@ -51,9 +62,9 @@ class PropParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
     def build(self):
-        '''
+        """
         Callable method for Block construction.
-        '''
+        """
         super(PropParameterData, self).build()
 
         self._state_block_class = PropStateBlock
@@ -69,50 +80,61 @@ class PropParameterData(PhysicalParameterBlock):
         self.MgCl2 = Solute()
 
         # molecular weight
-        mw_comp_data = {'H2O': 18.015e-3,
-                        'NaCl': 58.44e-3,
-                        'CaSO4': 136.14e-3,
-                        'MgSO4': 120.37e-3,
-                        'MgCl2': 95.21e-3}
+        mw_comp_data = {
+            "H2O": 18.015e-3,
+            "NaCl": 58.44e-3,
+            "CaSO4": 136.14e-3,
+            "MgSO4": 120.37e-3,
+            "MgCl2": 95.21e-3,
+        }
 
-        self.mw_comp = Param(self.component_list,
-                             mutable=False,
-                             initialize=extract_data(mw_comp_data),
-                             units=pyunits.kg / pyunits.mol,
-                             doc="Molecular weight")
+        self.mw_comp = Param(
+            self.component_list,
+            mutable=False,
+            initialize=extract_data(mw_comp_data),
+            units=pyunits.kg / pyunits.mol,
+            doc="Molecular weight",
+        )
 
-        self.dens_mass = Param(mutable=False,
-                               initialize=1000,
-                               units=pyunits.kg / pyunits.m**3,
-                               doc="Density")
+        self.dens_mass = Param(
+            mutable=False,
+            initialize=1000,
+            units=pyunits.kg / pyunits.m**3,
+            doc="Density",
+        )
 
-        self.cp = Param(mutable=False,
-                        initialize=4.2e3,
-                        units=pyunits.J / (pyunits.kg * pyunits.K))
-
+        self.cp = Param(
+            mutable=False, initialize=4.2e3, units=pyunits.J / (pyunits.kg * pyunits.K)
+        )
 
         # ---default scaling---
-        self.set_default_scaling('temperature', 1e-2)
-        self.set_default_scaling('pressure', 1e-6)
+        self.set_default_scaling("temperature", 1e-2)
+        self.set_default_scaling("pressure", 1e-6)
 
     @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
         obj.add_properties(
-            {'flow_mass_phase_comp': {'method': None},
-             'temperature': {'method': None},
-             'pressure': {'method': None},
-             'mass_frac_phase_comp': {'method': '_mass_frac_phase_comp'},
-             'flow_vol': {'method': '_flow_vol'},
-             'flow_mol_phase_comp': {'method': '_flow_mol_phase_comp'},
-             'enth_flow': {'method': '_enth_flow'},
-            })
+            {
+                "flow_mass_phase_comp": {"method": None},
+                "temperature": {"method": None},
+                "pressure": {"method": None},
+                "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
+                "flow_vol": {"method": "_flow_vol"},
+                "flow_mol_phase_comp": {"method": "_flow_mol_phase_comp"},
+                "enth_flow": {"method": "_enth_flow"},
+            }
+        )
 
-        obj.add_default_units({'time': pyunits.s,
-                               'length': pyunits.m,
-                               'mass': pyunits.kg,
-                               'amount': pyunits.mol,
-                               'temperature': pyunits.K})
+        obj.add_default_units(
+            {
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            }
+        )
 
 
 class _PropStateBlock(StateBlock):
@@ -121,9 +143,15 @@ class _PropStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(self, state_args=None, state_vars_fixed=False,
-                   hold_state=False, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg=None):
+    def initialize(
+        self,
+        state_args=None,
+        state_vars_fixed=False,
+        hold_state=False,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
+    ):
         """
         Initialization routine for property package.
         Keyword Arguments:
@@ -178,14 +206,16 @@ class _PropStateBlock(StateBlock):
         for k in self.keys():
             dof = degrees_of_freedom(self[k])
             if dof != 0:
-                raise PropertyPackageError("\nWhile initializing {sb_name}, the degrees of freedom "
-                                           "are {dof}, when zero is required. \nInitialization assumes "
-                                           "that the state variables should be fixed and that no other "
-                                           "variables are fixed. \nIf other properties have a "
-                                           "predetermined value, use the calculate_state method "
-                                           "before using initialize to determine the values for "
-                                           "the state variables and avoid fixing the property variables."
-                                           "".format(sb_name=self.name, dof=dof))
+                raise PropertyPackageError(
+                    "\nWhile initializing {sb_name}, the degrees of freedom "
+                    "are {dof}, when zero is required. \nInitialization assumes "
+                    "that the state variables should be fixed and that no other "
+                    "variables are fixed. \nIf other properties have a "
+                    "predetermined value, use the calculate_state method "
+                    "before using initialize to determine the values for "
+                    "the state variables and avoid fixing the property variables."
+                    "".format(sb_name=self.name, dof=dof)
+                )
 
         # ---------------------------------------------------------------------
         skip_solve = True  # skip solve if only state variables are present
@@ -197,7 +227,9 @@ class _PropStateBlock(StateBlock):
             # Initialize properties
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = solve_indexed_blocks(opt, [self], tee=slc.tee)
-            init_log.info_high("Property initialization: {}.".format(idaeslog.condition(results)))
+            init_log.info_high(
+                "Property initialization: {}.".format(idaeslog.condition(results))
+            )
 
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state
@@ -208,7 +240,7 @@ class _PropStateBlock(StateBlock):
                 self.release_state(flags)
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
-        '''
+        """
         Method to release state variables fixed during initialisation.
 
         Keyword Arguments:
@@ -217,14 +249,14 @@ class _PropStateBlock(StateBlock):
                     unfixed. This dict is returned by initialize if
                     hold_state=True.
             outlvl : sets output level of of logging
-        '''
+        """
         # Unfix state variables
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
         revert_state_vars(self, flags)
-        init_log.info_high('{} State Released.'.format(self.name))
+        init_log.info_high("{} State Released.".format(self.name))
 
-@declare_process_block_class("PropStateBlock",
-                             block_class=_PropStateBlock)
+
+@declare_process_block_class("PropStateBlock", block_class=_PropStateBlock)
 class PropStateBlockData(StateBlockData):
     def build(self):
         """Callable method for Block construction."""
@@ -232,11 +264,13 @@ class PropStateBlockData(StateBlockData):
 
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
-        seawater_mass_frac_dict = {('Liq', 'NaCl'): 2.827e-2,
-                                   ('Liq', 'CaSO4'): 1.298e-3,
-                                   ('Liq', 'MgSO4'): 1.529e-3,
-                                   ('Liq', 'MgCl2'): 4.251e-3,
-                                   ('Liq', 'H2O'): 0.9647}
+        seawater_mass_frac_dict = {
+            ("Liq", "NaCl"): 2.827e-2,
+            ("Liq", "CaSO4"): 1.298e-3,
+            ("Liq", "MgSO4"): 1.529e-3,
+            ("Liq", "MgCl2"): 4.251e-3,
+            ("Liq", "H2O"): 0.9647,
+        }
 
         # Add state variables
         self.flow_mass_phase_comp = Var(
@@ -245,22 +279,25 @@ class PropStateBlockData(StateBlockData):
             initialize=seawater_mass_frac_dict,
             bounds=(1e-8, 100),
             domain=NonNegativeReals,
-            units=pyunits.kg/pyunits.s,
-            doc='Mass flow rate')
+            units=pyunits.kg / pyunits.s,
+            doc="Mass flow rate",
+        )
 
         self.temperature = Var(
             initialize=298.15,
             bounds=(273.15, 1000),
             domain=NonNegativeReals,
             units=pyunits.degK,
-            doc='State temperature')
+            doc="State temperature",
+        )
 
         self.pressure = Var(
             initialize=101325,
             bounds=(1e5, 5e7),
             domain=NonNegativeReals,
             units=pyunits.Pa,
-            doc='State pressure')
+            doc="State pressure",
+        )
 
     # -----------------------------------------------------------------------------
     # Property Methods
@@ -271,25 +308,37 @@ class PropStateBlockData(StateBlockData):
             initialize=0.1,
             bounds=(1e-8, None),
             units=pyunits.dimensionless,
-            doc='Mass fraction')
+            doc="Mass fraction",
+        )
 
         def rule_mass_frac_phase_comp(b, j):
-            return (b.mass_frac_phase_comp['Liq', j] == b.flow_mass_phase_comp['Liq', j] /
-                    sum(b.flow_mass_phase_comp['Liq', j]
-                        for j in self.params.component_list))
-        self.eq_mass_frac_phase_comp = Constraint(self.params.component_list, rule=rule_mass_frac_phase_comp)
+            return b.mass_frac_phase_comp["Liq", j] == b.flow_mass_phase_comp[
+                "Liq", j
+            ] / sum(
+                b.flow_mass_phase_comp["Liq", j] for j in self.params.component_list
+            )
+
+        self.eq_mass_frac_phase_comp = Constraint(
+            self.params.component_list, rule=rule_mass_frac_phase_comp
+        )
 
     def _flow_vol(self):
         self.flow_vol = Var(
             initialize=1e-3,
             bounds=(1e-8, None),
-            units=pyunits.m**3/pyunits.s,
-            doc="Volumetric flow rate")
+            units=pyunits.m**3 / pyunits.s,
+            doc="Volumetric flow rate",
+        )
 
         def rule_flow_vol(b):
-            return (b.flow_vol
-                    == sum(b.flow_mass_phase_comp['Liq', j] for j in b.params.component_list)
-                    / b.params.dens_mass)
+            return (
+                b.flow_vol
+                == sum(
+                    b.flow_mass_phase_comp["Liq", j] for j in b.params.component_list
+                )
+                / b.params.dens_mass
+            )
+
         self.eq_flow_vol = Constraint(rule=rule_flow_vol)
 
     def _flow_mol_phase_comp(self):
@@ -298,22 +347,31 @@ class PropStateBlockData(StateBlockData):
             self.params.component_list,
             initialize=1,
             bounds=(1e-8, None),
-            units=pyunits.mol/pyunits.s,
-            doc="Molar flowrate")
+            units=pyunits.mol / pyunits.s,
+            doc="Molar flowrate",
+        )
 
         def rule_flow_mol_phase_comp(b, j):
-            return (b.flow_mol_phase_comp['Liq', j] ==
-                    b.flow_mass_phase_comp['Liq', j] / b.params.mw_comp[j])
-        self.eq_flow_mol_phase_comp = Constraint(self.params.component_list, rule=rule_flow_mol_phase_comp)
+            return (
+                b.flow_mol_phase_comp["Liq", j]
+                == b.flow_mass_phase_comp["Liq", j] / b.params.mw_comp[j]
+            )
+
+        self.eq_flow_mol_phase_comp = Constraint(
+            self.params.component_list, rule=rule_flow_mol_phase_comp
+        )
 
     def _enth_flow(self):
         # enthalpy flow expression for get_enthalpy_flow_terms method
         temperature_ref = 273.15 * pyunits.K
 
         def rule_enth_flow(b):  # enthalpy flow [J/s]
-            return (b.params.cp
-                    * sum(b.flow_mass_phase_comp['Liq', j] for j in b.params.component_list)
-                    * (b.temperature - temperature_ref))
+            return (
+                b.params.cp
+                * sum(b.flow_mass_phase_comp["Liq", j] for j in b.params.component_list)
+                * (b.temperature - temperature_ref)
+            )
+
         self.enth_flow = Expression(rule=rule_enth_flow)
 
     # -----------------------------------------------------------------------------
@@ -347,9 +405,11 @@ class PropStateBlockData(StateBlockData):
 
     def define_state_vars(self):
         """Define state vars."""
-        return {"flow_mass_phase_comp": self.flow_mass_phase_comp,
-                "temperature": self.temperature,
-                "pressure": self.pressure}
+        return {
+            "flow_mass_phase_comp": self.flow_mass_phase_comp,
+            "temperature": self.temperature,
+            "pressure": self.pressure,
+        }
 
     # -----------------------------------------------------------------------------
     # Scaling methods
@@ -373,73 +433,102 @@ class PropStateBlockData(StateBlockData):
             iscale.set_scaling_factor(self.params.cp, 1e-3)
 
         # these variables should have user input
-        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'], default=1, warning=True)
-            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'], sf)
+        if iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", "H2O"]) is None:
+            sf = iscale.get_scaling_factor(
+                self.flow_mass_phase_comp["Liq", "H2O"], default=1, warning=True
+            )
+            iscale.set_scaling_factor(self.flow_mass_phase_comp["Liq", "H2O"], sf)
 
-        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'NaCl']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'NaCl'], default=1e2, warning=True)
-            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'Cl'], sf)
+        if iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", "NaCl"]) is None:
+            sf = iscale.get_scaling_factor(
+                self.flow_mass_phase_comp["Liq", "NaCl"], default=1e2, warning=True
+            )
+            iscale.set_scaling_factor(self.flow_mass_phase_comp["Liq", "Cl"], sf)
 
-        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'CaSO4']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'CaSO4'], default=1e3, warning=True)
-            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'CaSO4'], sf)
+        if iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", "CaSO4"]) is None:
+            sf = iscale.get_scaling_factor(
+                self.flow_mass_phase_comp["Liq", "CaSO4"], default=1e3, warning=True
+            )
+            iscale.set_scaling_factor(self.flow_mass_phase_comp["Liq", "CaSO4"], sf)
 
-        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'MgSO4']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'MgSO4'], default=1e3, warning=True)
-            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'MgSO4'], sf)
+        if iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", "MgSO4"]) is None:
+            sf = iscale.get_scaling_factor(
+                self.flow_mass_phase_comp["Liq", "MgSO4"], default=1e3, warning=True
+            )
+            iscale.set_scaling_factor(self.flow_mass_phase_comp["Liq", "MgSO4"], sf)
 
-        if iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'MgCl2']) is None:
-            sf = iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'MgCl2'], default=1e3, warning=True)
-            iscale.set_scaling_factor(self.flow_mass_phase_comp['Liq', 'MgCl2'], sf)
+        if iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", "MgCl2"]) is None:
+            sf = iscale.get_scaling_factor(
+                self.flow_mass_phase_comp["Liq", "MgCl2"], default=1e3, warning=True
+            )
+            iscale.set_scaling_factor(self.flow_mass_phase_comp["Liq", "MgCl2"], sf)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
-        if self.is_property_constructed('mass_frac_phase_comp'):
+        if self.is_property_constructed("mass_frac_phase_comp"):
             for j in self.params.component_list:
-                if iscale.get_scaling_factor(self.mass_frac_phase_comp['Liq', j]) is None:
-                    if j == 'H2O':
-                        iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], 1)
+                if (
+                    iscale.get_scaling_factor(self.mass_frac_phase_comp["Liq", j])
+                    is None
+                ):
+                    if j == "H2O":
+                        iscale.set_scaling_factor(
+                            self.mass_frac_phase_comp["Liq", j], 1
+                        )
                     else:
-                        sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', j])
-                              / iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O']))
-                        iscale.set_scaling_factor(self.mass_frac_phase_comp['Liq', j], sf)
+                        sf = iscale.get_scaling_factor(
+                            self.flow_mass_phase_comp["Liq", j]
+                        ) / iscale.get_scaling_factor(
+                            self.flow_mass_phase_comp["Liq", "H2O"]
+                        )
+                        iscale.set_scaling_factor(
+                            self.mass_frac_phase_comp["Liq", j], sf
+                        )
 
-        if self.is_property_constructed('flow_vol'):
-            sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'])
-                  / iscale.get_scaling_factor(self.params.dens_mass))
+        if self.is_property_constructed("flow_vol"):
+            sf = iscale.get_scaling_factor(
+                self.flow_mass_phase_comp["Liq", "H2O"]
+            ) / iscale.get_scaling_factor(self.params.dens_mass)
             iscale.set_scaling_factor(self.flow_vol, sf)
 
-        if self.is_property_constructed('flow_mol_phase_comp'):
+        if self.is_property_constructed("flow_mol_phase_comp"):
             for j in self.params.component_list:
-                if iscale.get_scaling_factor(self.flow_mol_phase_comp['Liq', j]) is None:
-                    sf = (iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', j])
-                          / iscale.get_scaling_factor(self.params.mw_comp[j]))
-                    iscale.set_scaling_factor(self.flow_mol_phase_comp['Liq', j], sf)
+                if (
+                    iscale.get_scaling_factor(self.flow_mol_phase_comp["Liq", j])
+                    is None
+                ):
+                    sf = iscale.get_scaling_factor(
+                        self.flow_mass_phase_comp["Liq", j]
+                    ) / iscale.get_scaling_factor(self.params.mw_comp[j])
+                    iscale.set_scaling_factor(self.flow_mol_phase_comp["Liq", j], sf)
 
-        if self.is_property_constructed('enth_flow'):
+        if self.is_property_constructed("enth_flow"):
             if iscale.get_scaling_factor(self.enth_flow) is None:
-                sf = (iscale.get_scaling_factor(self.params.cp)
-                      * iscale.get_scaling_factor(self.flow_mass_phase_comp['Liq', 'H2O'])
-                      * 1e-1)  # temperature change on the order of 1e1
+                sf = (
+                    iscale.get_scaling_factor(self.params.cp)
+                    * iscale.get_scaling_factor(self.flow_mass_phase_comp["Liq", "H2O"])
+                    * 1e-1
+                )  # temperature change on the order of 1e1
                 iscale.set_scaling_factor(self.enth_flow, sf)
 
         # transforming constraints
         # property relationships with no index, simple constraint
-        v_str_lst_simple = ['flow_vol']
+        v_str_lst_simple = ["flow_vol"]
         for v_str in v_str_lst_simple:
             if self.is_property_constructed(v_str):
                 v = getattr(self, v_str)
                 sf = iscale.get_scaling_factor(v, default=1, warning=True)
-                c = getattr(self, 'eq_' + v_str)
+                c = getattr(self, "eq_" + v_str)
                 iscale.constraint_scaling_transform(c, sf)
 
         # property relationships indexed by component and phase
-        v_str_lst_phase_comp = ['mass_frac_phase_comp', 'flow_mol_phase_comp']
+        v_str_lst_phase_comp = ["mass_frac_phase_comp", "flow_mol_phase_comp"]
         for v_str in v_str_lst_phase_comp:
             if self.is_property_constructed(v_str):
                 v_comp = getattr(self, v_str)
-                c_comp = getattr(self, 'eq_' + v_str)
+                c_comp = getattr(self, "eq_" + v_str)
                 for j, c in c_comp.items():
-                    sf = iscale.get_scaling_factor(v_comp['Liq', j], default=1, warning=True)
+                    sf = iscale.get_scaling_factor(
+                        v_comp["Liq", j], default=1, warning=True
+                    )
                     iscale.constraint_scaling_transform(c, sf)
