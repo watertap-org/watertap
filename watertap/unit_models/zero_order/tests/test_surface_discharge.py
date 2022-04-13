@@ -17,7 +17,14 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    ConcreteModel, Constraint, Param, Block, value, Var, assert_optimal_termination)
+    ConcreteModel,
+    Constraint,
+    Param,
+    Block,
+    value,
+    Var,
+    assert_optimal_termination,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -33,6 +40,7 @@ from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
+
 class TestSurfaceDischargeZO:
     @pytest.fixture(scope="class")
     def model(self):
@@ -41,11 +49,12 @@ class TestSurfaceDischargeZO:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-                default={"solute_list": ["toc", "nitrate", "sulfate", "bar"]})
+            default={"solute_list": ["toc", "nitrate", "sulfate", "bar"]}
+        )
 
-        m.fs.unit = SurfaceDischargeZO(default={
-                        "property_package": m.fs.params,
-                        "database": m.db})
+        m.fs.unit = SurfaceDischargeZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
         m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(1)
@@ -74,11 +83,9 @@ class TestSurfaceDischargeZO:
         model.fs.unit.load_parameters_from_database()
 
         assert model.fs.unit.pipe_distance[0].fixed
-        assert model.fs.unit.pipe_distance[0].value == data[
-                "pipe_distance"]["value"]
+        assert model.fs.unit.pipe_distance[0].value == data["pipe_distance"]["value"]
         assert model.fs.unit.pipe_diameter[0].fixed
-        assert model.fs.unit.pipe_diameter[0].value == data[
-                "pipe_diameter"]["value"]
+        assert model.fs.unit.pipe_diameter[0].value == data["pipe_diameter"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -106,21 +113,23 @@ class TestSurfaceDischargeZO:
     @pytest.mark.component
     def test_solution(self, model):
         for t, j in model.fs.unit.inlet.flow_mass_comp:
-            assert (pytest.approx(value(
-                model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5) ==
-                    value(model.fs.unit.outlet.flow_mass_comp[t, j]))
+            assert pytest.approx(
+                value(model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5
+            ) == value(model.fs.unit.outlet.flow_mass_comp[t, j])
 
-        assert (pytest.approx(60.174085, rel=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert pytest.approx(60.174085, rel=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-6 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] -
-                model.fs.unit.outlet.flow_mass_comp[0, j]))
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    - model.fs.unit.outlet.flow_mass_comp[0, j]
+                )
+            )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -164,12 +173,16 @@ class TestSurfaceDischargeZOsubtype:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-                default={"solute_list": ["toc", "nitrate", "sulfate", "bar"]})
+            default={"solute_list": ["toc", "nitrate", "sulfate", "bar"]}
+        )
 
-        m.fs.unit = SurfaceDischargeZO(default={
-                        "property_package": m.fs.params,
-                        "database": m.db,
-                        "process_subtype": "emwd"})
+        m.fs.unit = SurfaceDischargeZO(
+            default={
+                "property_package": m.fs.params,
+                "database": m.db,
+                "process_subtype": "emwd",
+            }
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
         m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(1)
@@ -193,16 +206,16 @@ class TestSurfaceDischargeZOsubtype:
 
     @pytest.mark.component
     def test_load_parameters(self, model):
-        data = model.db.get_unit_operation_parameters("surface_discharge", subtype="emwd")
+        data = model.db.get_unit_operation_parameters(
+            "surface_discharge", subtype="emwd"
+        )
 
         model.fs.unit.load_parameters_from_database()
 
         assert model.fs.unit.pipe_distance[0].fixed
-        assert model.fs.unit.pipe_distance[0].value == data[
-            "pipe_distance"]["value"]
+        assert model.fs.unit.pipe_distance[0].value == data["pipe_distance"]["value"]
         assert model.fs.unit.pipe_diameter[0].fixed
-        assert model.fs.unit.pipe_diameter[0].value == data[
-            "pipe_diameter"]["value"]
+        assert model.fs.unit.pipe_diameter[0].value == data["pipe_diameter"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -230,21 +243,23 @@ class TestSurfaceDischargeZOsubtype:
     @pytest.mark.component
     def test_solution(self, model):
         for t, j in model.fs.unit.inlet.flow_mass_comp:
-            assert (pytest.approx(value(
-                model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5) ==
-                    value(model.fs.unit.outlet.flow_mass_comp[t, j]))
+            assert pytest.approx(
+                value(model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5
+            ) == value(model.fs.unit.outlet.flow_mass_comp[t, j])
 
-        assert (pytest.approx(60.174085, rel=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert pytest.approx(60.174085, rel=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-6 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] -
-                model.fs.unit.outlet.flow_mass_comp[0, j]))
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    - model.fs.unit.outlet.flow_mass_comp[0, j]
+                )
+            )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -279,8 +294,11 @@ Unit : fs.unit                                                             Time:
 
         assert output in stream.getvalue()
 
+
 db = Database()
 params = db._get_technology("surface_discharge")
+
+
 @pytest.mark.parametrize("subtype", [k for k in params.keys()])
 def test_costing(subtype):
     m = ConcreteModel()
@@ -288,12 +306,16 @@ def test_costing(subtype):
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["toc", "nitrate", "sulfate", "bar"]})
+        default={"solute_list": ["toc", "nitrate", "sulfate", "bar"]}
+    )
     m.fs.costing = ZeroOrderCosting()
-    m.fs.unit = SurfaceDischargeZO(default={
-        "property_package": m.fs.params,
-        "database": m.db,
-        "process_subtype": subtype})
+    m.fs.unit = SurfaceDischargeZO(
+        default={
+            "property_package": m.fs.params,
+            "database": m.db,
+            "process_subtype": subtype,
+        }
+    )
 
     m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(120)
     m.fs.unit.inlet.flow_mass_comp[0, "toc"].fix(1)
@@ -304,22 +326,21 @@ def test_costing(subtype):
     m.fs.unit.load_parameters_from_database()
 
     assert degrees_of_freedom(m.fs.unit) == 0
-    m.fs.unit.costing = UnitModelCostingBlock(default={
-        "flowsheet_costing_block": m.fs.costing})
+    m.fs.unit.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit) == 0
     initialization_tester(m)
     _ = solver.solve(m)
 
-    assert isinstance(m.fs.unit.costing.capital_cost_constraint,
-                      Constraint)
+    assert isinstance(m.fs.unit.costing.capital_cost_constraint, Constraint)
 
     if subtype == "default":
-        assert (pytest.approx(2.8785, rel=1e-5) ==
-                value(m.fs.unit.costing.capital_cost))
+        assert pytest.approx(2.8785, rel=1e-5) == value(m.fs.unit.costing.capital_cost)
     if subtype == "emwd":
-        assert (pytest.approx(22.705337, rel=1e-5) ==
-                value(m.fs.unit.costing.capital_cost))
+        assert pytest.approx(22.705337, rel=1e-5) == value(
+            m.fs.unit.costing.capital_cost
+        )
 
-    assert m.fs.unit.electricity[0] in \
-           m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit.electricity[0] in m.fs.costing._registered_flows["electricity"]

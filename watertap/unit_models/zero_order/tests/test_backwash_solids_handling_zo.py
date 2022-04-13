@@ -17,7 +17,14 @@ import pytest
 from io import StringIO
 
 from pyomo.environ import (
-    Block, check_optimal_termination, ConcreteModel, Constraint, value, Var, Param)
+    Block,
+    check_optimal_termination,
+    ConcreteModel,
+    Constraint,
+    value,
+    Var,
+    Param,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -42,11 +49,12 @@ class TestBackwashSolidsHandling_w_default_removal:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["nitrate", "tss", "toc", "foo"]})
+            default={"solute_list": ["nitrate", "tss", "toc", "foo"]}
+        )
 
-        m.fs.unit = BackwashSolidsHandlingZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = BackwashSolidsHandlingZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "nitrate"].fix(1)
@@ -74,8 +82,10 @@ class TestBackwashSolidsHandling_w_default_removal:
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-               data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
@@ -109,29 +119,37 @@ class TestBackwashSolidsHandling_w_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(9.5011, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(0.0052625, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]))
-        assert (pytest.approx(0.0052625, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(0.0052625, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["toc"]))
-        assert (pytest.approx(0.10525, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0.50285, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(1.88923, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrate"]))
-        assert (pytest.approx(1.88923, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(1.88923, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["toc"]))
-        assert (pytest.approx(1.9887e-08, rel=1e-5) == value(
-            model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(3686.342, rel=1e-5) ==
-                value(model.fs.unit.electricity[0]))
-
+        assert pytest.approx(9.5011, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(0.0052625, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]
+        )
+        assert pytest.approx(0.0052625, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(0.0052625, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["toc"]
+        )
+        assert pytest.approx(0.10525, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(0.50285, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].flow_vol
+        )
+        assert pytest.approx(1.88923, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["nitrate"]
+        )
+        assert pytest.approx(1.88923, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(1.88923, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["toc"]
+        )
+        assert pytest.approx(1.9887e-08, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(3686.342, rel=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.component
     def test_report(self, model):
@@ -179,12 +197,11 @@ class TestIXZOsubtype:
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["nitrate"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["nitrate"]})
 
-        m.fs.unit = BackwashSolidsHandlingZO(default={
-            "property_package": m.fs.params,
-            "database": db})
+        m.fs.unit = BackwashSolidsHandlingZO(
+            default={"property_package": m.fs.params, "database": db}
+        )
 
         return m
 
@@ -192,7 +209,9 @@ class TestIXZOsubtype:
     @pytest.mark.component
     def test_load_parameters(self, model, subtype):
         model.fs.unit.config.process_subtype = subtype
-        data = db.get_unit_operation_parameters("backwash_solids_handling", subtype=subtype)
+        data = db.get_unit_operation_parameters(
+            "backwash_solids_handling", subtype=subtype
+        )
 
         model.fs.unit.load_parameters_from_database()
 
@@ -207,14 +226,13 @@ def test_costing():
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = BackwashSolidsHandlingZO(default={
-        "property_package": m.fs.params,
-        "database": m.db})
+    m.fs.unit1 = BackwashSolidsHandlingZO(
+        default={"property_package": m.fs.params, "database": m.db}
+    )
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -223,23 +241,19 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(default={
-        "flowsheet_costing_block": m.fs.costing})
+    m.fs.unit1.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
 
     assert isinstance(m.fs.costing.backwash_solids_handling, Block)
-    assert isinstance(
-        m.fs.costing.backwash_solids_handling.capital_a_parameter, Var)
-    assert isinstance(
-        m.fs.costing.backwash_solids_handling.capital_b_parameter, Var)
-    assert isinstance(m.fs.costing.backwash_solids_handling.reference_state,
-                      Var)
+    assert isinstance(m.fs.costing.backwash_solids_handling.capital_a_parameter, Var)
+    assert isinstance(m.fs.costing.backwash_solids_handling.capital_b_parameter, Var)
+    assert isinstance(m.fs.costing.backwash_solids_handling.reference_state, Var)
 
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
-                      Constraint)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    assert m.fs.unit1.electricity[0] in \
-        m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]

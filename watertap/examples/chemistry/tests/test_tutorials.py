@@ -10,11 +10,11 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-'''
+"""
     This test is for the tutorials in the ../../tutorials/ directory.
     For now, it merely checks that the tutorials execute without raising
     an exception, it does not check for correctness
-'''
+"""
 
 import nbformat
 import unittest
@@ -22,19 +22,23 @@ import glob
 import os.path
 from nbconvert.preprocessors import ExecutePreprocessor
 
-_tutorials_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../..', '..', 'tutorials')
-_notebooks = glob.glob(os.path.join(_tutorials_dir, '**', '*.ipynb'), recursive=True)
+_tutorials_dir = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "../../..", "..", "tutorials"
+)
+_notebooks = glob.glob(os.path.join(_tutorials_dir, "**", "*.ipynb"), recursive=True)
+
 
 class TestTutorials(unittest.TestCase):
-
     def test_tutorials(self):
         for notebook_filename in _notebooks:
             with self.subTest(notebook=os.path.basename(notebook_filename)):
                 with open(notebook_filename) as f:
                     nb = nbformat.read(f, as_version=4)
                 ep = ExecutePreprocessor()
-                ep.preprocess(nb, 
-                        {'metadata': {'path':f'{os.path.dirname(notebook_filename)}'}}) 
+                ep.preprocess(
+                    nb, {"metadata": {"path": f"{os.path.dirname(notebook_filename)}"}}
+                )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

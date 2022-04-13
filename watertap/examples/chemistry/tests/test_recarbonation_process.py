@@ -119,7 +119,7 @@ thermo_config = {
                 "temperature_crit": (647, pyunits.K),
                 # Comes from Perry's Handbook:  p. 2-98
                 "dens_mol_liq_comp_coeff": {
-                    "1": (5.459, pyunits.kmol * pyunits.m ** -3),
+                    "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
                     "4": (0.081, pyunits.dimensionless),
@@ -129,40 +129,40 @@ thermo_config = {
                 # Comes from Perry's Handbook:  p. 2-174
                 "cp_mol_liq_comp_coeff": {
                     "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "cp_mol_ig_comp_coeff": {
                     "A": (30.09200, pyunits.J / pyunits.mol / pyunits.K),
                     "B": (
                         6.832514,
                         pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -1,
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-1,
                     ),
                     "C": (
                         6.793435,
                         pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -2,
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-2,
                     ),
                     "D": (
                         -2.534480,
                         pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -3,
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-3,
                     ),
                     "E": (
                         0.082139,
                         pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** 2,
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**2,
                     ),
                     "F": (-250.8810, pyunits.kJ / pyunits.mol),
                     "G": (223.3967, pyunits.J / pyunits.mol / pyunits.K),
@@ -193,7 +193,7 @@ thermo_config = {
                 "pressure_crit": (73.825e5, pyunits.Pa),
                 "temperature_crit": (304.23, pyunits.K),
                 "dens_mol_liq_comp_coeff": {
-                    "1": (0.000789, pyunits.kmol * pyunits.m ** -3),
+                    "1": (0.000789, pyunits.kmol * pyunits.m**-3),
                     "2": (0.000956, pyunits.dimensionless),
                     "3": (500.78, pyunits.K),
                     "4": (0.94599, pyunits.dimensionless),
@@ -203,30 +203,30 @@ thermo_config = {
                     "B": (
                         55.18696,
                         pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -1,
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-1,
                     ),
                     "C": (
                         -33.69137,
                         pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -2,
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-2,
                     ),
                     "D": (
                         7.948387,
                         pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** -3,
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**-3,
                     ),
                     "E": (
                         -0.136638,
                         pyunits.J
-                        * pyunits.mol ** -1
-                        * pyunits.K ** -1
-                        * pyunits.kiloK ** 2,
+                        * pyunits.mol**-1
+                        * pyunits.K**-1
+                        * pyunits.kiloK**2,
                     ),
                     "F": (-403.6075, pyunits.kJ / pyunits.mol),
                     "G": (228.2431, pyunits.J / pyunits.mol / pyunits.K),
@@ -234,10 +234,10 @@ thermo_config = {
                 },
                 "cp_mol_liq_comp_coeff": {
                     "1": (-8.3043e6, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (1.0437e5, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (4.333e2, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (6.0052e-1, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (1.0437e5, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (4.333e2, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (6.0052e-1, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "enth_mol_form_liq_comp_ref": (-285.83, pyunits.kJ / pyunits.mol),
                 "enth_mol_form_vap_comp_ref": (-393.52, pyunits.kJ / pyunits.mol),
@@ -262,7 +262,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (1.00784, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
-                    "1": (5.459, pyunits.kmol * pyunits.m ** -3),
+                    "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
                     "4": (0.081, pyunits.dimensionless),
@@ -270,10 +270,10 @@ thermo_config = {
                 "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "entr_mol_form_liq_comp_ref": (
                     -10.75,
@@ -293,7 +293,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (17.008, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
-                    "1": (5.459, pyunits.kmol * pyunits.m ** -3),
+                    "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
                     "4": (0.081, pyunits.dimensionless),
@@ -301,10 +301,10 @@ thermo_config = {
                 "enth_mol_form_liq_comp_ref": (-230.000, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "entr_mol_form_liq_comp_ref": (
                     -10.75,
@@ -324,7 +324,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (62.03, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
-                    "1": (5.4495, pyunits.kmol * pyunits.m ** -3),
+                    "1": (5.4495, pyunits.kmol * pyunits.m**-3),
                     "2": (0.427, pyunits.dimensionless),
                     "3": (429.69, pyunits.K),
                     "4": (0.259, pyunits.dimensionless),
@@ -332,10 +332,10 @@ thermo_config = {
                 "enth_mol_form_liq_comp_ref": (-699.7, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (135749.9, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (0, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (0, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (0, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (0, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (0, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (0, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "entr_mol_form_liq_comp_ref": (
                     187,
@@ -355,7 +355,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (61.0168, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
-                    "1": (5.4495, pyunits.kmol * pyunits.m ** -3),
+                    "1": (5.4495, pyunits.kmol * pyunits.m**-3),
                     "2": (0.427, pyunits.dimensionless),
                     "3": (429.69, pyunits.K),
                     "4": (0.259, pyunits.dimensionless),
@@ -363,10 +363,10 @@ thermo_config = {
                 "enth_mol_form_liq_comp_ref": (-692, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (135749.9, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (0, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (0, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (0, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (0, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (0, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (0, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "entr_mol_form_liq_comp_ref": (
                     91.2,
@@ -386,7 +386,7 @@ thermo_config = {
             "parameter_data": {
                 "mw": (60.01, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": {
-                    "1": (5.4495, pyunits.kmol * pyunits.m ** -3),
+                    "1": (5.4495, pyunits.kmol * pyunits.m**-3),
                     "2": (0.427, pyunits.dimensionless),
                     "3": (429.69, pyunits.K),
                     "4": (0.259, pyunits.dimensionless),
@@ -394,10 +394,10 @@ thermo_config = {
                 "enth_mol_form_liq_comp_ref": (-677.1, pyunits.J / pyunits.mol),
                 "cp_mol_liq_comp_coeff": {
                     "1": (135749.9, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (0, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (0, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (0, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (0, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (0, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (0, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "entr_mol_form_liq_comp_ref": (
                     -56.9,
@@ -452,8 +452,8 @@ reaction_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (55.830, pyunits.J/pyunits.mol),
-                "k_eq_ref": (10**-14/55.2/55.2, pyunits.dimensionless),
+                "dh_rxn_ref": (55.830, pyunits.J / pyunits.mol),
+                "k_eq_ref": (10**-14 / 55.2 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
                 #    manually set reaction order here to override
@@ -478,7 +478,7 @@ reaction_config = {
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
                 "dh_rxn_ref": (0, pyunits.kJ / pyunits.mol),
-                "k_eq_ref": (1.7*10**-3, pyunits.dimensionless),
+                "k_eq_ref": (1.7 * 10**-3, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
                 #    manually set reaction order here to override
@@ -502,8 +502,8 @@ reaction_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (7.7, pyunits.kJ/pyunits.mol),
-                "k_eq_ref": (10**-6.35/55.2, pyunits.dimensionless),
+                "dh_rxn_ref": (7.7, pyunits.kJ / pyunits.mol),
+                "k_eq_ref": (10**-6.35 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
                 #    manually set reaction order here to override
@@ -527,8 +527,8 @@ reaction_config = {
             "equilibrium_form": log_power_law_equil,
             "concentration_form": ConcentrationForm.moleFraction,
             "parameter_data": {
-                "dh_rxn_ref": (14.9, pyunits.kJ/pyunits.mol),
-                "k_eq_ref": (10**-10.33/55.2, pyunits.dimensionless),
+                "dh_rxn_ref": (14.9, pyunits.kJ / pyunits.mol),
+                "k_eq_ref": (10**-10.33 / 55.2, pyunits.dimensionless),
                 "T_eq_ref": (298, pyunits.K),
                 # By default, reaction orders follow stoichiometry
                 #    manually set reaction order here to override
@@ -576,15 +576,15 @@ class TestCarbonationProcess:
         model.fs.unit.inlet.pressure.fix(101325.0)
         model.fs.unit.inlet.temperature.fix(298.0)
 
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H_+"].fix( 0.0 )
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "OH_-"].fix( 0.0 )
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2CO3"].fix( 0.0 )
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "HCO3_-"].fix( 0.0 )
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO3_2-"].fix( 0.0 )
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Vap", "CO2"].fix( 0.0005*10 )
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO2"].fix( 0.0 )
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Vap", "H2O"].fix( 0.0 )
-        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix( (1 - 0.0005)*10 )
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H_+"].fix(0.0)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "OH_-"].fix(0.0)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2CO3"].fix(0.0)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "HCO3_-"].fix(0.0)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO3_2-"].fix(0.0)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Vap", "CO2"].fix(0.0005 * 10)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "CO2"].fix(0.0)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Vap", "H2O"].fix(0.0)
+        model.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix((1 - 0.0005) * 10)
 
         return model
 
@@ -677,12 +677,24 @@ class TestCarbonationProcess:
         )
         assert pytest.approx(55.165246, rel=1e-4) == total_molar_density
         pH = -value(
-            log10(value(model.fs.unit.control_volume.properties_out[0.0].
-                mole_frac_phase_comp["Liq","H_+"]) * total_molar_density)
+            log10(
+                value(
+                    model.fs.unit.control_volume.properties_out[
+                        0.0
+                    ].mole_frac_phase_comp["Liq", "H_+"]
+                )
+                * total_molar_density
+            )
         )
         pOH = -value(
-            log10(value(model.fs.unit.control_volume.properties_out[0.0].
-                mole_frac_phase_comp["Liq","OH_-"])  * total_molar_density)
+            log10(
+                value(
+                    model.fs.unit.control_volume.properties_out[
+                        0.0
+                    ].mole_frac_phase_comp["Liq", "OH_-"]
+                )
+                * total_molar_density
+            )
         )
         assert pytest.approx(5.339891, rel=1e-4) == pH
         assert pytest.approx(8.660655, rel=1e-4) == pOH

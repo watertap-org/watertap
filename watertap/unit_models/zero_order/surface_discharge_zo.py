@@ -41,13 +41,13 @@ class SurfaceDischargeData(ZeroOrderBaseData):
 
         pump_electricity(self, self._Q)
 
-        self.pipe_distance = Var(self.flowsheet().config.time,
-                                 units=pyunits.miles,
-                                 doc='Piping distance')
+        self.pipe_distance = Var(
+            self.flowsheet().config.time, units=pyunits.miles, doc="Piping distance"
+        )
 
-        self.pipe_diameter = Var(self.flowsheet().config.time,
-                                 units=pyunits.inches,
-                                 doc='Pipe diameter')
+        self.pipe_diameter = Var(
+            self.flowsheet().config.time, units=pyunits.inches, doc="Pipe diameter"
+        )
 
         self._fixed_perf_vars.append(self.pipe_distance)
         self._fixed_perf_vars.append(self.pipe_diameter)

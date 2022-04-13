@@ -93,7 +93,11 @@ schemas = {
             },
             "phase_equilibrium_form": {
                 "type": "object",
-                "properties": {phase1+"-"+phase2: {"type": "string"} for phase1 in Reaction.PHASES for phase2 in Reaction.PHASES},
+                "properties": {
+                    phase1 + "-" + phase2: {"type": "string"}
+                    for phase1 in Reaction.PHASES
+                    for phase2 in Reaction.PHASES
+                },
             },
             "parameter_data": {
                 "type": "object",

@@ -15,22 +15,26 @@ from watertap.property_models.coagulation_prop_pack import CoagulationParameterB
 from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
 from watertap.property_models.seawater_prop_pack import SeawaterParameterBlock
 from watertap.unit_models.coag_floc_model import CoagulationFlocculation
-from pyomo.environ import (ConcreteModel,
-                           assert_optimal_termination,
-                           value,
-                           Set,
-                           Param,
-                           Var,
-                           units as pyunits,
-                           Suffix,
-                           Constraint,
-                           SolverFactory,
-                           SolverStatus,
-                           TerminationCondition)
-from idaes.core import (FlowsheetBlock,
-                        MaterialFlowBasis,
-                        MaterialBalanceType,
-                        EnergyBalanceType)
+from pyomo.environ import (
+    ConcreteModel,
+    assert_optimal_termination,
+    value,
+    Set,
+    Param,
+    Var,
+    units as pyunits,
+    Suffix,
+    Constraint,
+    SolverFactory,
+    SolverStatus,
+    TerminationCondition,
+)
+from idaes.core import (
+    FlowsheetBlock,
+    MaterialFlowBasis,
+    MaterialBalanceType,
+    EnergyBalanceType,
+)
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.util.check_units import assert_units_consistent
@@ -46,7 +50,7 @@ solver = get_solver()
 
 # -----------------------------------------------------------------------------
 # Start test class
-class TestCoagulation_withChemicals():
+class TestCoagulation_withChemicals:
     @pytest.fixture(scope="class")
     def coag_obj_w_chems(self):
         model = ConcreteModel()
@@ -55,22 +59,28 @@ class TestCoagulation_withChemicals():
         ## NOTE: These values provided are just DUMMY values for the purposes
         #        of testing. They are not meant to be representative of any
         #        particular chemicals or real-world additives.
-        chem_dict = {'Alum':
-                        {"parameter_data":
-                            {"mw_additive": (200, pyunits.g/pyunits.mol),
-                            "moles_salt_per_mole_additive": 3,
-                            "mw_salt": (100, pyunits.g/pyunits.mol)}
-                        },
-                      'Poly':
-                        {"parameter_data":
-                            {"mw_additive": (25, pyunits.g/pyunits.mol),
-                            "moles_salt_per_mole_additive": 0,
-                            "mw_salt": (23, pyunits.g/pyunits.mol)}
-                        }
-                     }
-        model.fs.unit = CoagulationFlocculation(default={
-            "property_package": model.fs.properties,
-            "chemical_additives": chem_dict })
+        chem_dict = {
+            "Alum": {
+                "parameter_data": {
+                    "mw_additive": (200, pyunits.g / pyunits.mol),
+                    "moles_salt_per_mole_additive": 3,
+                    "mw_salt": (100, pyunits.g / pyunits.mol),
+                }
+            },
+            "Poly": {
+                "parameter_data": {
+                    "mw_additive": (25, pyunits.g / pyunits.mol),
+                    "moles_salt_per_mole_additive": 0,
+                    "mw_salt": (23, pyunits.g / pyunits.mol),
+                }
+            },
+        }
+        model.fs.unit = CoagulationFlocculation(
+            default={
+                "property_package": model.fs.properties,
+                "chemical_additives": chem_dict,
+            }
+        )
 
         return model
 
@@ -112,17 +122,17 @@ class TestCoagulation_withChemicals():
         model.fs.unit.fix_tss_turbidity_relation_defaults()
         model.fs.unit.initial_turbidity_ntu.fix()
         model.fs.unit.final_turbidity_ntu.fix(5)
-        model.fs.unit.chemical_doses[0, 'Alum'].fix(10)
-        model.fs.unit.chemical_doses[0, 'Poly'].fix(5)
+        model.fs.unit.chemical_doses[0, "Alum"].fix(10)
+        model.fs.unit.chemical_doses[0, "Poly"].fix(5)
 
         # set the inlet streams
         assert degrees_of_freedom(model) == 6
         model.fs.unit.inlet.pressure.fix(101325)
         model.fs.unit.inlet.temperature.fix(298.15)
-        model.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(1)
-        model.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS'].fix(0.01)
-        model.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'TSS'].fix(0.01)
-        model.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'Sludge'].fix(0.0)
+        model.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1)
+        model.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(0.01)
+        model.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TSS"].fix(0.01)
+        model.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "Sludge"].fix(0.0)
 
         assert degrees_of_freedom(model) == 0
 
@@ -131,10 +141,18 @@ class TestCoagulation_withChemicals():
         model = coag_obj_w_chems
 
         # Set some scaling factors and look for 'bad' scaling
-        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TSS'))
-        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TDS'))
-        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'Sludge'))
+        model.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1, index=("Liq", "H2O")
+        )
+        model.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e2, index=("Liq", "TSS")
+        )
+        model.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e2, index=("Liq", "TDS")
+        )
+        model.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e2, index=("Liq", "Sludge")
+        )
         iscale.calculate_scaling_factors(model.fs)
 
         # check that all variables have scaling factors
@@ -143,9 +161,9 @@ class TestCoagulation_withChemicals():
 
         # check if any variables are badly scaled
         badly_scaled_var_values = {
-        var.name: val
-        for (var, val) in iscale.badly_scaled_var_generator(
-            model, large=1e2, small=1e-2
+            var.name: val
+            for (var, val) in iscale.badly_scaled_var_generator(
+                model, large=1e2, small=1e-2
             )
         }
         assert not badly_scaled_var_values
@@ -164,9 +182,9 @@ class TestCoagulation_withChemicals():
 
         # first, check to make sure that after initialized, the scaling is still good
         badly_scaled_var_values = {
-        var.name: val
-        for (var, val) in iscale.badly_scaled_var_generator(
-            model, large=1e2, small=1e-2
+            var.name: val
+            for (var, val) in iscale.badly_scaled_var_generator(
+                model, large=1e2, small=1e-2
             )
         }
         assert not badly_scaled_var_values
@@ -179,22 +197,31 @@ class TestCoagulation_withChemicals():
     def test_solution(self, coag_obj_w_chems):
         model = coag_obj_w_chems
 
-        assert value(model.fs.unit.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(1,  rel=1e-4)
-        assert value(model.fs.unit.outlet.flow_mass_phase_comp[0, 'Liq', 'Sludge']) == pytest.approx(0.00999,  rel=1e-4)
-        assert value(model.fs.unit.outlet.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(0.010015,  rel=1e-4)
-        assert value(model.fs.unit.outlet.flow_mass_phase_comp[0, 'Liq', 'TSS']) == pytest.approx(9.36352e-06,  rel=1e-4)
+        assert value(
+            model.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(1, rel=1e-4)
+        assert value(
+            model.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "Sludge"]
+        ) == pytest.approx(0.00999, rel=1e-4)
+        assert value(
+            model.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+        ) == pytest.approx(0.010015, rel=1e-4)
+        assert value(
+            model.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "TSS"]
+        ) == pytest.approx(9.36352e-06, rel=1e-4)
 
 
 # -----------------------------------------------------------------------------
 # Start test class without chemicals added
-class TestCoagulation_withNoChemicals():
+class TestCoagulation_withNoChemicals:
     @pytest.fixture(scope="class")
     def coag_obj_wo_chems(self):
         model = ConcreteModel()
         model.fs = FlowsheetBlock(default={"dynamic": False})
         model.fs.properties = CoagulationParameterBlock()
-        model.fs.unit = CoagulationFlocculation(default={
-            "property_package": model.fs.properties})
+        model.fs.unit = CoagulationFlocculation(
+            default={"property_package": model.fs.properties}
+        )
 
         return model
 
@@ -241,13 +268,13 @@ class TestCoagulation_withNoChemicals():
         assert degrees_of_freedom(model) == 6
 
         tss_in = value(model.fs.unit.compute_inlet_tss_mass_flow(0))
-        assert tss_in == pytest.approx(0.0093,  rel=1e-4)
+        assert tss_in == pytest.approx(0.0093, rel=1e-4)
         model.fs.unit.inlet.pressure.fix(101325)
         model.fs.unit.inlet.temperature.fix(298.15)
-        model.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'H2O'].fix(1)
-        model.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'TDS'].fix(0.01)
-        model.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'TSS'].fix(tss_in)
-        model.fs.unit.inlet.flow_mass_phase_comp[0, 'Liq', 'Sludge'].fix(0.0)
+        model.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1)
+        model.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(0.01)
+        model.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TSS"].fix(tss_in)
+        model.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "Sludge"].fix(0.0)
 
         assert degrees_of_freedom(model) == 0
 
@@ -256,11 +283,19 @@ class TestCoagulation_withNoChemicals():
         model = coag_obj_wo_chems
 
         # Set some scaling factors and look for 'bad' scaling
-        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1, index=('Liq', 'H2O'))
-        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TSS'))
-        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'TDS'))
-        model.fs.properties.set_default_scaling('flow_mass_phase_comp', 1e2, index=('Liq', 'Sludge'))
-        #iscale.set_scaling_factor(model.fs.unit.tss_loss_rate, 100)
+        model.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1, index=("Liq", "H2O")
+        )
+        model.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e2, index=("Liq", "TSS")
+        )
+        model.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e2, index=("Liq", "TDS")
+        )
+        model.fs.properties.set_default_scaling(
+            "flow_mass_phase_comp", 1e2, index=("Liq", "Sludge")
+        )
+        # iscale.set_scaling_factor(model.fs.unit.tss_loss_rate, 100)
         iscale.calculate_scaling_factors(model.fs)
 
         # check that all variables have scaling factors
@@ -269,9 +304,9 @@ class TestCoagulation_withNoChemicals():
 
         # check if any variables are badly scaled
         badly_scaled_var_values = {
-        var.name: val
-        for (var, val) in iscale.badly_scaled_var_generator(
-            model, large=1e2, small=1e-2
+            var.name: val
+            for (var, val) in iscale.badly_scaled_var_generator(
+                model, large=1e2, small=1e-2
             )
         }
         print(iscale.get_scaling_factor(model.fs.unit.tss_loss_rate))
@@ -291,9 +326,9 @@ class TestCoagulation_withNoChemicals():
 
         # first, check to make sure that after initialized, the scaling is still good
         badly_scaled_var_values = {
-        var.name: val
-        for (var, val) in iscale.badly_scaled_var_generator(
-            model, large=1e2, small=1e-2
+            var.name: val
+            for (var, val) in iscale.badly_scaled_var_generator(
+                model, large=1e2, small=1e-2
             )
         }
         assert not badly_scaled_var_values
@@ -306,14 +341,23 @@ class TestCoagulation_withNoChemicals():
     def test_solution(self, coag_obj_wo_chems):
         model = coag_obj_wo_chems
 
-        assert value(model.fs.unit.outlet.flow_mass_phase_comp[0, 'Liq', 'H2O']) == pytest.approx(1,  rel=1e-4)
-        assert value(model.fs.unit.outlet.flow_mass_phase_comp[0, 'Liq', 'Sludge']) == pytest.approx(0.0091127,  rel=1e-4)
-        assert value(model.fs.unit.outlet.flow_mass_phase_comp[0, 'Liq', 'TDS']) == pytest.approx(0.01,  rel=1e-4)
-        assert value(model.fs.unit.outlet.flow_mass_phase_comp[0, 'Liq', 'TSS']) == pytest.approx(0.00018725,  rel=1e-4)
+        assert value(
+            model.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "H2O"]
+        ) == pytest.approx(1, rel=1e-4)
+        assert value(
+            model.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "Sludge"]
+        ) == pytest.approx(0.0091127, rel=1e-4)
+        assert value(
+            model.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
+        ) == pytest.approx(0.01, rel=1e-4)
+        assert value(
+            model.fs.unit.outlet.flow_mass_phase_comp[0, "Liq", "TSS"]
+        ) == pytest.approx(0.00018725, rel=1e-4)
+
 
 # -----------------------------------------------------------------------------
 # Start test class with bad config
-class TestCoagulation_withBadConfig():
+class TestCoagulation_withBadConfig:
     @pytest.fixture(scope="class")
     def coag_obj_bad_config(self):
         model = ConcreteModel()
@@ -326,81 +370,126 @@ class TestCoagulation_withBadConfig():
     def test_build_model_catch_errors(self, coag_obj_bad_config):
         model = coag_obj_bad_config
 
-        bad_dict1 = {'Alum':
-                        {"foo_bar":
-                            {"mw_additive": (200, pyunits.g/pyunits.mol),
-                            "moles_salt_per_mole_additive": 3,
-                            "mw_salt": (100, pyunits.g/pyunits.mol)}
-                        }
-                     }
-        with pytest.raises(ConfigurationError, match="Did not provide a 'parameter_data' for chemical"):
-            model.fs.unit = CoagulationFlocculation(default={
-                "property_package": model.fs.properties,
-                "chemical_additives": bad_dict1 })
+        bad_dict1 = {
+            "Alum": {
+                "foo_bar": {
+                    "mw_additive": (200, pyunits.g / pyunits.mol),
+                    "moles_salt_per_mole_additive": 3,
+                    "mw_salt": (100, pyunits.g / pyunits.mol),
+                }
+            }
+        }
+        with pytest.raises(
+            ConfigurationError, match="Did not provide a 'parameter_data' for chemical"
+        ):
+            model.fs.unit = CoagulationFlocculation(
+                default={
+                    "property_package": model.fs.properties,
+                    "chemical_additives": bad_dict1,
+                }
+            )
 
-        bad_dict2 = {'Alum':
-                        {"parameter_data":
-                            {"foo_bar": (200, pyunits.g/pyunits.mol),
-                            "moles_salt_per_mole_additive": 3,
-                            "mw_salt": (100, pyunits.g/pyunits.mol)}
-                        }
-                     }
-        with pytest.raises(ConfigurationError, match="Did not provide a 'mw_additive' for chemical"):
-            model.fs.unit = CoagulationFlocculation(default={
-                "property_package": model.fs.properties,
-                "chemical_additives": bad_dict2 })
+        bad_dict2 = {
+            "Alum": {
+                "parameter_data": {
+                    "foo_bar": (200, pyunits.g / pyunits.mol),
+                    "moles_salt_per_mole_additive": 3,
+                    "mw_salt": (100, pyunits.g / pyunits.mol),
+                }
+            }
+        }
+        with pytest.raises(
+            ConfigurationError, match="Did not provide a 'mw_additive' for chemical"
+        ):
+            model.fs.unit = CoagulationFlocculation(
+                default={
+                    "property_package": model.fs.properties,
+                    "chemical_additives": bad_dict2,
+                }
+            )
 
-        bad_dict3 = {'Alum':
-                        {"parameter_data":
-                            {"mw_additive": (200, pyunits.g/pyunits.mol),
-                            "moles_salt_per_mole_additive": "foo-bar",
-                            "mw_salt": (100, pyunits.g/pyunits.mol)}
-                        }
-                     }
-        with pytest.raises(ConfigurationError, match="Did not provide a number for 'moles_salt_per_mole_additive'"):
-            model.fs.unit = CoagulationFlocculation(default={
-                "property_package": model.fs.properties,
-                "chemical_additives": bad_dict3 })
+        bad_dict3 = {
+            "Alum": {
+                "parameter_data": {
+                    "mw_additive": (200, pyunits.g / pyunits.mol),
+                    "moles_salt_per_mole_additive": "foo-bar",
+                    "mw_salt": (100, pyunits.g / pyunits.mol),
+                }
+            }
+        }
+        with pytest.raises(
+            ConfigurationError,
+            match="Did not provide a number for 'moles_salt_per_mole_additive'",
+        ):
+            model.fs.unit = CoagulationFlocculation(
+                default={
+                    "property_package": model.fs.properties,
+                    "chemical_additives": bad_dict3,
+                }
+            )
 
-        bad_dict4 = {'Alum':
-                        {"parameter_data":
-                            {"mw_additive": (200, pyunits.g/pyunits.mol),
-                            "foo-bar": 3,
-                            "mw_salt": (100, pyunits.g/pyunits.mol)}
-                        }
-                     }
-        with pytest.raises(ConfigurationError, match="Did not provide a 'moles_salt_per_mole_additive' for chemical"):
-            model.fs.unit = CoagulationFlocculation(default={
-                "property_package": model.fs.properties,
-                "chemical_additives": bad_dict4 })
+        bad_dict4 = {
+            "Alum": {
+                "parameter_data": {
+                    "mw_additive": (200, pyunits.g / pyunits.mol),
+                    "foo-bar": 3,
+                    "mw_salt": (100, pyunits.g / pyunits.mol),
+                }
+            }
+        }
+        with pytest.raises(
+            ConfigurationError,
+            match="Did not provide a 'moles_salt_per_mole_additive' for chemical",
+        ):
+            model.fs.unit = CoagulationFlocculation(
+                default={
+                    "property_package": model.fs.properties,
+                    "chemical_additives": bad_dict4,
+                }
+            )
 
-        bad_dict5 = {'Alum':
-                        {"parameter_data":
-                            {"mw_additive": (200, pyunits.g/pyunits.mol),
-                            "moles_salt_per_mole_additive": 3,
-                            "foo-bar": (100, pyunits.g/pyunits.mol)}
-                        }
-                     }
-        with pytest.raises(ConfigurationError, match="Did not provide a 'mw_salt' for chemical"):
-            model.fs.unit = CoagulationFlocculation(default={
-                "property_package": model.fs.properties,
-                "chemical_additives": bad_dict5 })
+        bad_dict5 = {
+            "Alum": {
+                "parameter_data": {
+                    "mw_additive": (200, pyunits.g / pyunits.mol),
+                    "moles_salt_per_mole_additive": 3,
+                    "foo-bar": (100, pyunits.g / pyunits.mol),
+                }
+            }
+        }
+        with pytest.raises(
+            ConfigurationError, match="Did not provide a 'mw_salt' for chemical"
+        ):
+            model.fs.unit = CoagulationFlocculation(
+                default={
+                    "property_package": model.fs.properties,
+                    "chemical_additives": bad_dict5,
+                }
+            )
 
-        bad_dict6 = {'Alum':
-                        {"parameter_data":
-                            {"mw_additive": "not a tuple",
-                            "moles_salt_per_mole_additive": 3,
-                            "mw_salt": (100, pyunits.g/pyunits.mol)}
-                        }
-                     }
-        with pytest.raises(ConfigurationError, match="Did not provide a tuple for 'mw_additive'"):
-            model.fs.unit = CoagulationFlocculation(default={
-                "property_package": model.fs.properties,
-                "chemical_additives": bad_dict6 })
+        bad_dict6 = {
+            "Alum": {
+                "parameter_data": {
+                    "mw_additive": "not a tuple",
+                    "moles_salt_per_mole_additive": 3,
+                    "mw_salt": (100, pyunits.g / pyunits.mol),
+                }
+            }
+        }
+        with pytest.raises(
+            ConfigurationError, match="Did not provide a tuple for 'mw_additive'"
+        ):
+            model.fs.unit = CoagulationFlocculation(
+                default={
+                    "property_package": model.fs.properties,
+                    "chemical_additives": bad_dict6,
+                }
+            )
+
 
 # -----------------------------------------------------------------------------
 # Start test class with bad config
-class TestCoagulation_withBadProperties():
+class TestCoagulation_withBadProperties:
     @pytest.fixture(scope="class")
     def coag_obj_bad_properties(self):
         model = ConcreteModel()
@@ -412,20 +501,26 @@ class TestCoagulation_withBadProperties():
     def test_build_model_catch_prop_errors(self, coag_obj_bad_properties):
         model = coag_obj_bad_properties
 
-        error_msg = ("Coagulation-Flocculation model MUST contain ('Liq','TDS') "
-                    "as a component, but the property package has only specified "
-                    "the following components [('Liq', 'H2O'), ('Liq', 'NaCl')]")
+        error_msg = (
+            "Coagulation-Flocculation model MUST contain ('Liq','TDS') "
+            "as a component, but the property package has only specified "
+            "the following components [('Liq', 'H2O'), ('Liq', 'NaCl')]"
+        )
         with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
             model.fs.properties = NaClParameterBlock()
-            model.fs.unit = CoagulationFlocculation(default={
-                "property_package": model.fs.properties })
+            model.fs.unit = CoagulationFlocculation(
+                default={"property_package": model.fs.properties}
+            )
 
-        error_msg = ("Coagulation-Flocculation model MUST contain ('Liq','Sludge') "
-                    "as a component, but the property package has only specified "
-                    "the following components [('Liq', 'H2O'), ('Liq', 'TDS')]")
+        error_msg = (
+            "Coagulation-Flocculation model MUST contain ('Liq','Sludge') "
+            "as a component, but the property package has only specified "
+            "the following components [('Liq', 'H2O'), ('Liq', 'TDS')]"
+        )
         with pytest.raises(ConfigurationError, match=re.escape(error_msg)):
             model.fs.properties = SeawaterParameterBlock()
-            model.fs.unit = CoagulationFlocculation(default={
-                "property_package": model.fs.properties })
+            model.fs.unit = CoagulationFlocculation(
+                default={"property_package": model.fs.properties}
+            )
 
         # NOTE: package must also contain ('Liq','TSS') as a component
