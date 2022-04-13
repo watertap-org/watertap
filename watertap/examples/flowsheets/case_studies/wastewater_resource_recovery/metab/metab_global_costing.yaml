@@ -7,10 +7,10 @@ defined_flows:
   heat:
     value: 0.0000061
     units: USD_2020/kJ
-  H2_product:
+  hydrogen_product:
     value: -2
     units: USD_2020/kg
-  CH4_product:
+  methane_product:
     value: -0.305
     units: USD_2020/kg
 global_parameters:

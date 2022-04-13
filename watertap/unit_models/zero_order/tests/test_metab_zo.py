@@ -41,26 +41,26 @@ from watertap.core.zero_order_costing import ZeroOrderCosting
 solver = get_solver()
 
 
-class TestMetabZO_H2:
+class TestMetabZO_hydrogen:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["cod", "H2"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["cod", "hydrogen"]})
 
         m.fs.unit = MetabZO(
             default={
                 "property_package": m.fs.params,
                 "database": m.db,
-                "process_subtype": "H2",
+                "process_subtype": "hydrogen",
             }
         )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(0.01)
-        m.fs.unit.inlet.flow_mass_comp[0, "H2"].fix(0)
+        m.fs.unit.inlet.flow_mass_comp[0, "hydrogen"].fix(0)
 
         return m
 
@@ -108,7 +108,7 @@ class TestMetabZO_H2:
             model.fs.unit.properties_treated[0].flow_mass_comp["H2O"]
         )
         assert pytest.approx(1.107e-5, rel=1e-3) == value(
-            model.fs.unit.properties_byproduct[0].flow_mass_comp["H2"]
+            model.fs.unit.properties_byproduct[0].flow_mass_comp["hydrogen"]
         )
         assert pytest.approx(7.800e-3, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["cod"]
@@ -145,47 +145,47 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                         : Value     : Fixed : Bounds
-             Electricity Demand :    368.28 : False : (0, None)
-    Reaction Extent [cod_to_H2] : 0.0022000 : False : (None, None)
-            Solute Removal [H2] :    1.0000 :  True : (0, None)
-           Solute Removal [cod] :    0.0000 :  True : (0, None)
-          Thermal Energy Demand :    79.537 : False : (0, None)
-                 Water Recovery :    1.0000 :  True : (1e-08, 1.0000001)
+    Key                               : Value     : Fixed : Bounds
+                   Electricity Demand :    368.28 : False : (0, None)
+    Reaction Extent [cod_to_hydrogen] : 0.0022000 : False : (None, None)
+                 Solute Removal [cod] :    0.0000 :  True : (0, None)
+            Solute Removal [hydrogen] :    1.0000 :  True : (0, None)
+                Thermal Energy Demand :    79.537 : False : (0, None)
+                       Water Recovery :    1.0000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
-                              Inlet    Treated   Byproduct
-    Volumetric Flowrate    0.0010100  0.0010078 1.1066e-08
-    Mass Concentration H2O    990.10     992.26 9.7518e-09
-    Mass Concentration cod    9.9010     7.7396 9.1163e-09
-    Mass Concentration H2     0.0000 1.2301e-12     1000.0
+                                   Inlet    Treated   Byproduct
+    Volumetric Flowrate         0.0010100  0.0010078 1.1066e-08
+    Mass Concentration H2O         990.10     992.26 9.7518e-09
+    Mass Concentration cod         9.9010     7.7396 9.1163e-09
+    Mass Concentration hydrogen    0.0000 1.2301e-12     1000.0
 ====================================================================================
 """
         assert output == stream.getvalue()
 
 
-class TestMetabZO_CH4:
+class TestMetabZO_methane:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["cod", "H2", "CH4"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["cod", "hydrogen", "methane"]})
 
         m.fs.unit = MetabZO(
             default={
                 "property_package": m.fs.params,
                 "database": m.db,
-                "process_subtype": "CH4",
+                "process_subtype": "methane",
             }
         )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(0.01)
-        m.fs.unit.inlet.flow_mass_comp[0, "H2"].fix(0)
-        m.fs.unit.inlet.flow_mass_comp[0, "CH4"].fix(0)
+        m.fs.unit.inlet.flow_mass_comp[0, "hydrogen"].fix(0)
+        m.fs.unit.inlet.flow_mass_comp[0, "methane"].fix(0)
 
         return m
 
@@ -233,7 +233,7 @@ class TestMetabZO_CH4:
             model.fs.unit.properties_treated[0].flow_mass_comp["H2O"]
         )
         assert pytest.approx(5.959e-4, rel=1e-3) == value(
-            model.fs.unit.properties_byproduct[0].flow_mass_comp["CH4"]
+            model.fs.unit.properties_byproduct[0].flow_mass_comp["methane"]
         )
         assert pytest.approx(4.100e-3, rel=1e-3) == value(
             model.fs.unit.properties_treated[0].flow_mass_comp["cod"]
@@ -270,36 +270,36 @@ Unit : fs.unit                                                             Time:
 
     Variables: 
 
-    Key                         : Value      : Fixed : Bounds
-             Electricity Demand :     60.024 : False : (0, None)
-    Reaction Extent [cod_to_H2] :  0.0059000 : False : (None, None)
-           Solute Removal [CH4] :     1.0000 :  True : (0, None)
-            Solute Removal [H2] :     0.0000 :  True : (0, None)
-           Solute Removal [cod] :     0.0000 :  True : (0, None)
-          Thermal Energy Demand : 1.0088e-14 : False : (0, None)
-                 Water Recovery :     1.0000 :  True : (1e-08, 1.0000001)
+    Key                              : Value      : Fixed : Bounds
+                  Electricity Demand :     60.024 : False : (0, None)
+    Reaction Extent [cod_to_methane] :  0.0059000 : False : (None, None)
+                Solute Removal [cod] :     0.0000 :  True : (0, None)
+           Solute Removal [hydrogen] :     0.0000 :  True : (0, None)
+            Solute Removal [methane] :     1.0000 :  True : (0, None)
+               Thermal Energy Demand : 1.0088e-14 : False : (0, None)
+                      Water Recovery :     1.0000 :  True : (1e-08, 1.0000001)
 
 ------------------------------------------------------------------------------------
     Stream Table
-                              Inlet    Treated   Byproduct
-    Volumetric Flowrate    0.0010100  0.0010041 5.9590e-07
-    Mass Concentration H2O    990.10     995.92 1.6781e-08
-    Mass Concentration cod    9.9010     4.0833 1.6929e-08
-    Mass Concentration H2     0.0000 1.0047e-11 1.6929e-08
-    Mass Concentration CH4    0.0000 2.7912e-09     1000.0
+                                   Inlet    Treated   Byproduct
+    Volumetric Flowrate         0.0010100  0.0010041 5.9590e-07
+    Mass Concentration H2O         990.10     995.92 1.6781e-08
+    Mass Concentration cod         9.9010     4.0833 1.6929e-08
+    Mass Concentration hydrogen    0.0000 1.0047e-11 1.6929e-08
+    Mass Concentration methane     0.0000 2.7912e-09     1000.0
 ====================================================================================
 """
         assert output == stream.getvalue()
 
 
-class TestMetabZO_H2_cost:
+class TestMetabZO_hydrogen_cost:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["cod", "H2"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["cod", "hydrogen"]})
 
         source_file = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -319,13 +319,13 @@ class TestMetabZO_H2_cost:
             default={
                 "property_package": m.fs.params,
                 "database": m.db,
-                "process_subtype": "H2",
+                "process_subtype": "hydrogen",
             }
         )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(0.01)
-        m.fs.unit.inlet.flow_mass_comp[0, "H2"].fix(0)
+        m.fs.unit.inlet.flow_mass_comp[0, "hydrogen"].fix(0)
 
         m.db.get_unit_operation_parameters("metab")
         m.fs.unit.load_parameters_from_database(use_default_removal=True)
@@ -351,7 +351,7 @@ class TestMetabZO_H2_cost:
             in model.fs.costing._registered_flows["electricity"]
         )
         assert model.fs.unit.heat[0] in model.fs.costing._registered_flows["heat"]
-        assert "H2_product" in model.fs.costing._registered_flows
+        assert "hydrogen_product" in model.fs.costing._registered_flows
 
         assert isinstance(model.fs.costing.total_capital_cost, Var)
         assert isinstance(model.fs.costing.total_fixed_operating_cost, Var)
@@ -395,19 +395,19 @@ class TestMetabZO_H2_cost:
             model.fs.costing.total_fixed_operating_cost
         )
         agg_flow_costs = model.fs.costing.aggregate_flow_costs
-        assert pytest.approx(-698.4, rel=1e-3) == value(agg_flow_costs["H2_product"])
+        assert pytest.approx(-698.4, rel=1e-3) == value(agg_flow_costs["hydrogen_product"])
         assert pytest.approx(2.583e5, rel=1e-3) == value(agg_flow_costs["electricity"])
         assert pytest.approx(1.531e4, rel=1e-3) == value(agg_flow_costs["heat"])
 
 
-class TestMetabZO_CH4_cost:
+class TestMetabZO_methane_cost:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["cod", "CH4"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["cod", "methane"]})
 
         source_file = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -427,13 +427,13 @@ class TestMetabZO_CH4_cost:
             default={
                 "property_package": m.fs.params,
                 "database": m.db,
-                "process_subtype": "CH4",
+                "process_subtype": "methane",
             }
         )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(0.01)
-        m.fs.unit.inlet.flow_mass_comp[0, "CH4"].fix(0)
+        m.fs.unit.inlet.flow_mass_comp[0, "methane"].fix(0)
 
         m.db.get_unit_operation_parameters("metab")
         m.fs.unit.load_parameters_from_database(use_default_removal=True)
@@ -459,7 +459,7 @@ class TestMetabZO_CH4_cost:
             in model.fs.costing._registered_flows["electricity"]
         )
         assert model.fs.unit.heat[0] in model.fs.costing._registered_flows["heat"]
-        assert "CH4_product" in model.fs.costing._registered_flows
+        assert "methane_product" in model.fs.costing._registered_flows
 
         assert isinstance(model.fs.costing.total_capital_cost, Var)
         assert isinstance(model.fs.costing.total_fixed_operating_cost, Var)
@@ -503,6 +503,6 @@ class TestMetabZO_CH4_cost:
             model.fs.costing.total_fixed_operating_cost
         )
         agg_flow_costs = model.fs.costing.aggregate_flow_costs
-        assert pytest.approx(-5735, rel=1e-3) == value(agg_flow_costs["CH4_product"])
+        assert pytest.approx(-5735, rel=1e-3) == value(agg_flow_costs["methane_product"])
         assert pytest.approx(4.209e4, rel=1e-3) == value(agg_flow_costs["electricity"])
         assert pytest.approx(0, abs=1e-3) == value(agg_flow_costs["heat"])

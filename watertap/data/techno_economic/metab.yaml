@@ -5,7 +5,7 @@ default:
   default_removal_frac_mass_solute:
     value: 0
     units: dimensionless
-H2:
+hydrogen:
   recovery_frac_mass_H2O:
     value: 1
     units: dimensionless
@@ -17,18 +17,18 @@ H2:
       value: 0
       units: dimensionless
       constituent_longform: Chemical Oxygen Demand
-    H2:
+    hydrogen:
       value: 1
       units: dimensionless
       constituent_longform: Hydrogen
   reactions:
-    cod_to_H2:
+    cod_to_hydrogen:
       key_reactant: cod
       conversion: 0.22
       stoichiometry:
         cod:
           conversion_ratio: -1
-        H2:
+        hydrogen:
           conversion_ratio: 0.00503
   hydraulic_retention_time:
     value: 12
@@ -71,7 +71,7 @@ H2:
     vacuum_cost:
       value: 59300
       units: USD_2020/(kg/hr)
-CH4:
+methane:
   recovery_frac_mass_H2O:
     value: 1
     units: dimensionless
@@ -83,18 +83,18 @@ CH4:
       value: 0
       units: dimensionless
       constituent_longform: Chemical Oxygen Demand
-    CH4:
+    methane:
       value: 1
       units: dimensionless
       constituent_longform: Hydrogen
   reactions:
-    cod_to_H2:
+    cod_to_methane:
       key_reactant: cod
       conversion: 0.59
       stoichiometry:
         cod:
           conversion_ratio: -1
-        CH4:
+        methane:
           conversion_ratio: 0.101
   hydraulic_retention_time:
     value: 150
