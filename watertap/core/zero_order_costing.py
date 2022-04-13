@@ -1036,7 +1036,7 @@ class ZeroOrderCostingData(FlowsheetCostingBlockData):
             initialize=1,
             units=blk.config.flowsheet_costing_block.base_currency,
             bounds=(0, None),
-            doc="Direct capital cost of membrane",
+            doc="Direct capital cost of vacuum pump",
         )
         blk.eq_DCC_reactor = pyo.Constraint(
             expr=blk.DCC_reactor ==
