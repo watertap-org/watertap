@@ -15,13 +15,15 @@ This module contains the general purpose property package for zero-order
 unit models. Zero-order models do not track temperature and pressure, or any
 form of energy flow.
 """
-from idaes.core import (EnergyBalanceType,
-                        MaterialBalanceType,
-                        MaterialFlowBasis,
-                        PhysicalParameterBlock,
-                        StateBlock,
-                        StateBlockData,
-                        declare_process_block_class)
+from idaes.core import (
+    EnergyBalanceType,
+    MaterialBalanceType,
+    MaterialFlowBasis,
+    PhysicalParameterBlock,
+    StateBlock,
+    StateBlockData,
+    declare_process_block_class,
+)
 from idaes.core.components import Solvent, Solute
 from idaes.core.phases import LiquidPhase
 from idaes.core.util.misc import add_object_reference
@@ -30,11 +32,7 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
 
-from pyomo.environ import (Expression,
-                           Param,
-                           PositiveReals,
-                           units as pyunits,
-                           Var)
+from pyomo.environ import Expression, Param, PositiveReals, units as pyunits, Var
 from pyomo.common.config import ConfigValue
 
 # Some more inforation about this module
@@ -52,23 +50,34 @@ class WaterParameterBlockData(PhysicalParameterBlock):
     Defines component and phase lists, along with base units and constant
     parameters.
     """
+
     CONFIG = PhysicalParameterBlock.CONFIG()
 
-    CONFIG.declare('database', ConfigValue(
-        description='An instance of a WaterTAP Database to use for parameters.'
-        ))
-    CONFIG.declare('water_source', ConfigValue(
-        description=
-        'Water source to use when looking up parameters from database.'))
-    CONFIG.declare("solute_list", ConfigValue(
-        domain=list,
-        description="List of solute species of interest. If None, will use "
-        "all species defined in the water_source provided."))
+    CONFIG.declare(
+        "database",
+        ConfigValue(
+            description="An instance of a WaterTAP Database to use for parameters."
+        ),
+    )
+    CONFIG.declare(
+        "water_source",
+        ConfigValue(
+            description="Water source to use when looking up parameters from database."
+        ),
+    )
+    CONFIG.declare(
+        "solute_list",
+        ConfigValue(
+            domain=list,
+            description="List of solute species of interest. If None, will use "
+            "all species defined in the water_source provided.",
+        ),
+    )
 
     def build(self):
-        '''
+        """
         Callable method for Block construction.
-        '''
+        """
         super().build()
 
         self._state_block_class = WaterStateBlock
@@ -80,8 +89,7 @@ class WaterParameterBlockData(PhysicalParameterBlock):
         # Get component set from database if provided
         comp_set = None
         if self.config.database is not None:
-            comp_set = self.config.database.get_solute_set(
-                self.config.water_source)
+            comp_set = self.config.database.get_solute_set(self.config.water_source)
 
         # Check definition of solute list
         solute_list = self.config.solute_list
@@ -91,7 +99,8 @@ class WaterParameterBlockData(PhysicalParameterBlock):
                 # No solute list in database and none provided.
                 raise ConfigurationError(
                     f"{self.name} no solute_list or database was defined. "
-                    f"Users must provide at least one of these arguments.")
+                    f"Users must provide at least one of these arguments."
+                )
             else:
                 solute_list = comp_set
         elif self.config.database is not None:
@@ -99,8 +108,10 @@ class WaterParameterBlockData(PhysicalParameterBlock):
             # components are supported
             for j in solute_list:
                 if j not in comp_set:
-                    _log.info(f"{self.name} component {j} is not defined in "
-                              f"the water_sources database file.")
+                    _log.info(
+                        f"{self.name} component {j} is not defined in "
+                        f"the water_sources database file."
+                    )
         else:
             # User provided list but no database - assume they know what they
             # are doing
@@ -110,33 +121,35 @@ class WaterParameterBlockData(PhysicalParameterBlock):
             self.add_component(str(j), Solute())
 
         # Define default value for mass density of solution
-        self.dens_mass_default = 1000*pyunits.kg/pyunits.m**3
+        self.dens_mass_default = 1000 * pyunits.kg / pyunits.m**3
         # Define default value for dynamic viscosity of solution
-        self.visc_d_default = 0.001*pyunits.kg/pyunits.m/pyunits.s
-
+        self.visc_d_default = 0.001 * pyunits.kg / pyunits.m / pyunits.s
 
         # ---------------------------------------------------------------------
         # Set default scaling factors
-        self.default_scaling_factor = {
-            ("flow_vol"): 1e3,
-            ("conc_mass_comp"): 1e2}
+        self.default_scaling_factor = {("flow_vol"): 1e3, ("conc_mass_comp"): 1e2}
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({
-                'time': pyunits.s,
-                'length': pyunits.m,
-                'mass': pyunits.kg,
-                'amount': pyunits.mol,
-                'temperature': pyunits.K,
-                })
+        obj.add_default_units(
+            {
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            }
+        )
 
         obj.add_properties(
-            {'flow_mass_comp': {'method': None},
-             'flow_vol': {'method': '_flow_vol'},
-             'conc_mass_comp': {'method': '_conc_mass_comp'},
-             'dens_mass': {'method': '_dens_mass'},
-             'visc_d': {'method': '_visc_d'}})
+            {
+                "flow_mass_comp": {"method": None},
+                "flow_vol": {"method": "_flow_vol"},
+                "conc_mass_comp": {"method": "_conc_mass_comp"},
+                "dens_mass": {"method": "_dens_mass"},
+                "visc_d": {"method": "_visc_d"},
+            }
+        )
 
 
 class _WaterStateBlock(StateBlock):
@@ -144,14 +157,17 @@ class _WaterStateBlock(StateBlock):
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
-    def initialize(blk,
-                   state_args=None,
-                   state_vars_fixed=False,
-                   hold_state=False,
-                   outlvl=idaeslog.NOTSET,
-                   solver=None,
-                   optarg=None):
-        '''
+
+    def initialize(
+        blk,
+        state_args=None,
+        state_vars_fixed=False,
+        hold_state=False,
+        outlvl=idaeslog.NOTSET,
+        solver=None,
+        optarg=None,
+    ):
+        """
         Initialization routine for property package.
 
         Keyword Arguments:
@@ -194,12 +210,12 @@ class _WaterStateBlock(StateBlock):
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
-        '''
-        # For now, there are no ocnstraints in the property package, so only
+        """
+        # For now, there are no constraints in the property package, so only
         # fix state variables if required
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
 
-        init_log.info('Initialization Complete.')
+        init_log.info("Initialization Complete.")
 
         if hold_state is True:
             flags = fix_state_vars(blk, state_args)
@@ -208,7 +224,7 @@ class _WaterStateBlock(StateBlock):
             return
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
-        '''
+        """
         Method to release state variables fixed during initialization.
 
         Keyword Arguments:
@@ -217,7 +233,7 @@ class _WaterStateBlock(StateBlock):
                     unfixed. This dict is returned by initialize if
                     hold_state=True.
             outlvl : sets output level of of logging
-        '''
+        """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
 
         if flags is None:
@@ -225,11 +241,10 @@ class _WaterStateBlock(StateBlock):
 
         # Unfix state variables
         revert_state_vars(blk, flags)
-        init_log.info('State Released.')
+        init_log.info("State Released.")
 
 
-@declare_process_block_class("WaterStateBlock",
-                             block_class=_WaterStateBlock)
+@declare_process_block_class("WaterStateBlock", block_class=_WaterStateBlock)
 class WaterStateBlockData(StateBlockData):
     """
     General purpose StateBlock for Zero-Order unit models.
@@ -239,38 +254,47 @@ class WaterStateBlockData(StateBlockData):
         super().build()
 
         # Create state variables
-        self.flow_mass_comp = Var(self.component_list,
-                                  initialize=1,
-                                  domain=PositiveReals,
-                                  doc='Mass flowrate of each component',
-                                  units=pyunits.kg/pyunits.s)
+        self.flow_mass_comp = Var(
+            self.component_list,
+            initialize=1,
+            domain=PositiveReals,
+            doc="Mass flowrate of each component",
+            units=pyunits.kg / pyunits.s,
+        )
 
     # -------------------------------------------------------------------------
     # Other properties
     def _conc_mass_comp(self):
         def rule_cmc(blk, j):
-            return (blk.flow_mass_comp[j] /
-                    sum(self.flow_mass_comp[k] for k in self.component_list) *
-                    blk.dens_mass)
-        self.conc_mass_comp = Expression(self.component_list,
-                                         rule=rule_cmc)
+            return (
+                blk.flow_mass_comp[j]
+                / sum(self.flow_mass_comp[k] for k in self.component_list)
+                * blk.dens_mass
+            )
+
+        self.conc_mass_comp = Expression(self.component_list, rule=rule_cmc)
 
     def _dens_mass(self):
-        self.dens_mass = Param(initialize=self.params.dens_mass_default,
-                               units=pyunits.kg/pyunits.m**3,
-                               mutable=True,
-                               doc="Mass density of flow")
+        self.dens_mass = Param(
+            initialize=self.params.dens_mass_default,
+            units=pyunits.kg / pyunits.m**3,
+            mutable=True,
+            doc="Mass density of flow",
+        )
 
     def _flow_vol(self):
         self.flow_vol = Expression(
-            expr=sum(self.flow_mass_comp[j] for j in self.component_list) /
-            self.dens_mass)
+            expr=sum(self.flow_mass_comp[j] for j in self.component_list)
+            / self.dens_mass
+        )
 
     def _visc_d(self):
-        self.visc_d = Param(initialize=self.params.visc_d_default,
-                            units=pyunits.kg/pyunits.m/pyunits.s,
-                            mutable=True,
-                            doc="Dynamic viscosity of solution")
+        self.visc_d = Param(
+            initialize=self.params.visc_d_default,
+            units=pyunits.kg / pyunits.m / pyunits.s,
+            mutable=True,
+            doc="Dynamic viscosity of solution",
+        )
 
     def get_material_flow_terms(blk, p, j):
         return blk.flow_mass_comp[j]
@@ -294,8 +318,10 @@ class WaterStateBlockData(StateBlockData):
         return {"flow_mass_comp": blk.flow_mass_comp}
 
     def define_display_vars(blk):
-        return {"Volumetric Flowrate": blk.flow_vol,
-                "Mass Concentration": blk.conc_mass_comp}
+        return {
+            "Volumetric Flowrate": blk.flow_vol,
+            "Mass Concentration": blk.conc_mass_comp,
+        }
 
     def get_material_flow_basis(blk):
         return MaterialFlowBasis.mass
@@ -309,7 +335,7 @@ class WaterStateBlockData(StateBlockData):
 
         for j, v in self.flow_mass_comp.items():
             if iscale.get_scaling_factor(v) is None:
-                iscale.set_scaling_factor(v, d_sf_Q*d_sf_c)
+                iscale.set_scaling_factor(v, d_sf_Q * d_sf_c)
 
         if self.is_property_constructed("flow_vol"):
             if iscale.get_scaling_factor(self.flow_vol) is None:
@@ -320,8 +346,7 @@ class WaterStateBlockData(StateBlockData):
                 sf_c = iscale.get_scaling_factor(self.conc_mass_comp[j])
                 if sf_c is None:
                     try:
-                        sf_c = self.params.default_scaling_factor[
-                            ("conc_mass_comp", j)]
+                        sf_c = self.params.default_scaling_factor[("conc_mass_comp", j)]
                     except KeyError:
                         sf_c = d_sf_c
                     iscale.set_scaling_factor(self.conc_mass_comp[j], sf_c)

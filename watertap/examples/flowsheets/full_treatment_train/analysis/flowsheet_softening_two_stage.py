@@ -10,18 +10,20 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-'''
+"""
 mutable parameters for optimization:
     m.fs.system_recovery_target
     m.fs.max_allowable_pressure
-'''
+"""
 from pyomo.environ import ConcreteModel, TransformationFactory
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 
-from watertap.examples.flowsheets.full_treatment_train.util import (solve_block,
-                                                             check_dof)
+from watertap.examples.flowsheets.full_treatment_train.util import (
+    solve_block,
+    check_dof,
+)
 
 import watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_softening as flowsheet_softening
 import watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_two_stage as flowsheet_two_stage
@@ -32,10 +34,10 @@ def build(m, **kwargs):
     Build a flowsheet with softening pretreatment and RO.
     """
 
-    assert kwargs['RO_base'] == 'TDS'
-    assert not kwargs['has_desal_feed']
+    assert kwargs["RO_base"] == "TDS"
+    assert not kwargs["has_desal_feed"]
     flowsheet_softening.build_components(m)
-    flowsheet_two_stage.build_components(m, pretrt_type='softening', **kwargs)
+    flowsheet_two_stage.build_components(m, pretrt_type="softening", **kwargs)
 
     return m
 
@@ -97,8 +99,7 @@ def solve_flowsheet(**desal_kwargs):
     solve_block(m, tee=False, fail_flag=True)
 
     # report
-    print('==================================='
-          '\n          Simulation          ')
+    print("===================================" "\n          Simulation          ")
     report(m, **desal_kwargs)
 
     return m
@@ -109,8 +110,7 @@ def optimize_flowsheet(system_recovery=0.50, **kwargs):
     set_up_optimization(m, system_recovery=system_recovery, **kwargs)
     optimize(m)
 
-    print('==================================='
-          '\n       Optimization            ')
+    print("===================================" "\n       Optimization            ")
     report(m, **flowsheet_two_stage.desal_kwargs)
 
     return m
@@ -118,6 +118,7 @@ def optimize_flowsheet(system_recovery=0.50, **kwargs):
 
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) == 1:
         m = solve_flowsheet()
     else:

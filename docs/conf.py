@@ -13,19 +13,20 @@
 import os
 import sys
 import sphinx_rtd_theme
-sys.path.insert(0, os.path.abspath('..'))
+
+sys.path.insert(0, os.path.abspath(".."))
 # sys.path.insert(0,os.path.dirname(sys.path[0]))
 
 # -- Project information -----------------------------------------------------
 
-project = 'WaterTAP'
-copyright = '2021, NAWI'
-author = 'NAWI'
+project = "WaterTAP"
+copyright = "2021, NAWI"
+author = "NAWI"
 
 # The full version, including alpha/beta/rc tags
-release = '0.4.0dev'
+release = "0.5.0dev"
 # The short X.Y version
-version = '0.4.0dev'
+version = "0.5.0dev"
 # -- General configuration ---------------------------------------------------
 
 
@@ -33,46 +34,44 @@ version = '0.4.0dev'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx_rtd_theme',
-    'sphinx.ext.napoleon',  # Google and NumPy-style docstrings
-    'sphinx.ext.autodoc',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.coverage',
-    'sphinx.ext.mathjax',
-    'sphinx.ext.ifconfig',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages',
-    'sphinx.ext.autosectionlabel',
-    'sphinx.ext.doctest',
-    'myst_parser',
-    'nbsphinx',  # Jupyter notebooks as docs
+    "sphinx_rtd_theme",
+    "sphinx.ext.napoleon",  # Google and NumPy-style docstrings
+    "sphinx.ext.autodoc",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.coverage",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.ifconfig",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.githubpages",
+    "sphinx.ext.autosectionlabel",
+    "sphinx.ext.doctest",
+    "myst_parser",
+    "nbsphinx",  # Jupyter notebooks as docs
 ]
 
 autosectionlabel_prefix_document = True
 autodoc_warningiserror = False  # suppress warnings during autodoc
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'apidoc/*tests*']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "apidoc/*tests*"]
 
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
-html_css_files = [
-    'custom.css'
-]
+html_static_path = ["_static"]
+html_css_files = ["custom.css"]
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.

@@ -39,7 +39,10 @@ class Database:
         if dbpath is None:
             self._dbpath = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "..", "data", "techno_economic")
+                "..",
+                "data",
+                "techno_economic",
+            )
         else:
             self._dbpath = dbpath
 
@@ -47,7 +50,8 @@ class Database:
             if not os.path.isdir(self._dbpath):
                 raise OSError(
                     f"Could not find requested path {self._dbpath}. Please "
-                    f"check that this path exists.")
+                    f"check that this path exists."
+                )
 
         # Create placeholder _component_list attribute
         self._component_list = None
@@ -72,8 +76,7 @@ class Database:
         else:
             # Else load data from required file
             try:
-                with open(os.path.join(self._dbpath, "water_sources.yaml"),
-                          "r") as f:
+                with open(os.path.join(self._dbpath, "water_sources.yaml"), "r") as f:
                     lines = f.read()
                     f.close()
             except OSError:
@@ -91,7 +94,8 @@ class Database:
             except KeyError:
                 raise KeyError(
                     "Database has not defined a default water source and "
-                    "none was provided.")
+                    "none was provided."
+                )
 
         return source_data[water_source]
 
@@ -148,12 +152,13 @@ class Database:
             except KeyError:
                 raise KeyError(
                     f"Received unrecognised subtype {subtype} for technology "
-                    f"{technology}.")
+                    f"{technology}."
+                )
         else:
             # Assume subtype is list-like and raise an exception if not
             try:
                 for s in subtype:
-                    # Iterate throguh provided subtypes and update parameters
+                    # Iterate through provided subtypes and update parameters
                     # Note that this will overwrite previous parameters if
                     # there is overlap, so we might need to be careful in use.
                     try:
@@ -161,11 +166,13 @@ class Database:
                     except KeyError:
                         raise KeyError(
                             f"Received unrecognised subtype {s} for "
-                            f"technology {technology}.")
+                            f"technology {technology}."
+                        )
             except TypeError:
                 raise TypeError(
                     f"Unexpected type for subtype {subtype}: must be string "
-                    f"or list like.")
+                    f"or list like."
+                )
 
         return sparams
 
@@ -191,13 +198,11 @@ class Database:
         else:
             # Else load data from required file
             try:
-                with open(os.path.join(self._dbpath, technology+".yaml"),
-                          "r") as f:
+                with open(os.path.join(self._dbpath, technology + ".yaml"), "r") as f:
                     lines = f.read()
                     f.close()
             except OSError:
-                raise KeyError(
-                    f"Could not find entry for {technology} in database.")
+                raise KeyError(f"Could not find entry for {technology} in database.")
 
             fdata = yaml.load(lines, yaml.Loader)
 
@@ -214,8 +219,7 @@ class Database:
             None
         """
         try:
-            with open(os.path.join(self._dbpath, "component_list.yaml"),
-                      "r") as f:
+            with open(os.path.join(self._dbpath, "component_list.yaml"), "r") as f:
                 lines = f.read()
                 f.close()
         except OSError:

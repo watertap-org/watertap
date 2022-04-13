@@ -80,6 +80,7 @@
 from pyomo.environ import (
     ConcreteModel,
 )
+
 # Import the idaes objects for Generic Properties and Reactions
 from idaes.generic_models.properties.core.generic.generic_property import (
     GenericParameterBlock,
@@ -93,6 +94,7 @@ from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReac
 
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock
+
 # ========= These imports (above) are for testing the configs from EDB ===============
 
 
@@ -122,18 +124,22 @@ def grab_thermo_Liq_Sol_FpcTP_base(db):
     base = db.get_base("thermo_Liq_Sol_FpcTP")
     return base
 
+
 # ========================== (7) ================================
 # Grab the reactions associated with the list of components and add
 #   them to a reaction base as equilibrium reactions. You can also
 #   provide a list of valid phases when requesting reactions. By
 #   doing so, you can remove possible reactions if they include
 #   a species in an invalid phase.
-def add_equilibrium_reactions_by_phase_to_react_base(db, react_base_obj, comp_list, phase_list):
+def add_equilibrium_reactions_by_phase_to_react_base(
+    db, react_base_obj, comp_list, phase_list
+):
     react_obj = db.get_reactions(component_names=comp_list, phases=phase_list)
     for r in react_obj:
         print("Found reaction: " + str(r.name))
         react_base_obj.add(r)
     return react_base_obj
+
 
 # Run script for testing
 def run_sol_liq_with_mockdb(db):
@@ -144,7 +150,7 @@ def run_sol_liq_with_mockdb(db):
 
     # In this example, both Sol and Liq phases will be considered valid
     #   when searching for reactions in the database.
-    phase_list = ["Sol","Liq"]
+    phase_list = ["Sol", "Liq"]
 
     base_obj = get_components_and_add_to_idaes_config(db, base_obj, comp_list)
 
@@ -152,16 +158,21 @@ def run_sol_liq_with_mockdb(db):
     react_base = grab_base_reaction_config(db)
 
     # Add reactions to the reaction base as 'equilibrium'
-    react_base = add_equilibrium_reactions_by_phase_to_react_base(db, react_base, comp_list, phase_list)
+    react_base = add_equilibrium_reactions_by_phase_to_react_base(
+        db, react_base, comp_list, phase_list
+    )
 
     thermo_config = base_obj.idaes_config
     reaction_config = react_base.idaes_config
 
-    #Prior to sending the config to the IDAES objects, we will manually modifiy the
+    # Prior to sending the config to the IDAES objects, we will manually modifiy the
     #   reaction order for the solubility equation.
-    reaction_config["equilibrium_reactions"]["CaOH2_Ksp"]["parameter_data"]["reaction_order"][('Sol', 'Ca[OH]2')] = 0
+    reaction_config["equilibrium_reactions"]["CaOH2_Ksp"]["parameter_data"][
+        "reaction_order"
+    ][("Sol", "Ca[OH]2")] = 0
     model = build_equilibrium_model(thermo_config, reaction_config)
     return model
+
 
 # Run script for testing
 def run_liq_only_with_mockdb(db):
@@ -180,7 +191,9 @@ def run_liq_only_with_mockdb(db):
     react_base = grab_base_reaction_config(db)
 
     # Add reactions to the reaction base as 'equilibrium'
-    react_base = add_equilibrium_reactions_by_phase_to_react_base(db, react_base, comp_list, phase_list)
+    react_base = add_equilibrium_reactions_by_phase_to_react_base(
+        db, react_base, comp_list, phase_list
+    )
 
     thermo_config = base_obj.idaes_config
     reaction_config = react_base.idaes_config

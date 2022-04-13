@@ -74,4 +74,3 @@ def test_edb_notebooks(docs_root, electrolytedb):
             continue
         print(f"run notebook: {nb_path}")
         run_notebook(nb_path)
-

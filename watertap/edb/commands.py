@@ -57,13 +57,9 @@ class DatabaseError(EDBCommandError):
     def validation_failed(cls, record, display: bool = False):
         parts = ["Validation failed"]
         if display:
-            parts += [
-                "Record:",
-                json.dumps(record, indent=2)
-            ]
-        return cls(
-            "\n".join(parts)
-        )
+            parts += ["Record:", json.dumps(record, indent=2)]
+        return cls("\n".join(parts))
+
 
 class MissingRequired(EDBCommandError):
     exit_code: ExitCode = ExitCode.INVALID_USAGE
@@ -140,7 +136,8 @@ def command_base(verbose, quiet):
     if verbose > 0:
         _h = logging.StreamHandler()
         _h.setFormatter(
-            logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s"))
+            logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s")
+        )
         log_root.addHandler(_h)
         log_root.setLevel(level_from_verbosity(verbose))
     else:
@@ -230,8 +227,7 @@ def _load(input_file, data_type, edb, do_validate=True):
                     # we might want to accumulate the invalid records and corresponding errors
                     # and display all of them at the end
                     raise DatabaseError.validation_failed(
-                        record,
-                        display=bool(print_messages)
+                        record, display=bool(print_messages)
                     ) from err
                 data.append(record)
     else:
@@ -447,22 +443,28 @@ def info(data_type, url, database):
     _log.debug("Retrieving records")
 
     if data_type == "base":
-        print("Info: Base configuration files are for initializing "
-                "thermo or reaction configuration dictionaries \n"
-                "used by the IDAES GenericParameterBlock and "
-                "GenericReactionParameterBlock\n")
+        print(
+            "Info: Base configuration files are for initializing "
+            "thermo or reaction configuration dictionaries \n"
+            "used by the IDAES GenericParameterBlock and "
+            "GenericReactionParameterBlock\n"
+        )
         print("Loaded base options:")
         print("--------------------")
         edb.list_bases()
     elif data_type == "component":
-        print("Info: Components are chemical species registered "
-                "within the database. They are stored with their \n"
-                "appropriate methods and/or parameters necessary "
-                "for calculating properties of the phases and/or \n"
-                "mixtures of phases.\n\nTo view loaded components, use the "
-                "'edb dump' command.")
+        print(
+            "Info: Components are chemical species registered "
+            "within the database. They are stored with their \n"
+            "appropriate methods and/or parameters necessary "
+            "for calculating properties of the phases and/or \n"
+            "mixtures of phases.\n\nTo view loaded components, use the "
+            "'edb dump' command."
+        )
     else:
-        print("Info: Reactions are registered relationships between "
-                "component records within the database.\nThese currently include, "
-                "(i) equilibrium reactions and (ii) solubility products.\n\n"
-                "To view loaded reactions, use the 'edb dump' command." )
+        print(
+            "Info: Reactions are registered relationships between "
+            "component records within the database.\nThese currently include, "
+            "(i) equilibrium reactions and (ii) solubility products.\n\n"
+            "To view loaded reactions, use the 'edb dump' command."
+        )

@@ -20,30 +20,39 @@ from math import isclose
 from pyomo.environ import Var, Constraint, value
 from pyomo.util.infeasible import log_infeasible_constraints, log_infeasible_bounds
 
-_logger = logging.getLogger('watertap.core.util.infeasible.print')
+_logger = logging.getLogger("watertap.core.util.infeasible.print")
 _logger.setLevel(logging.DEBUG)
+
 
 @contextmanager
 def _logging_handler(output_file):
     if output_file is None:
         _handler = logging.StreamHandler(stream=sys.stdout)
     else:
-        _handler = logging.FileHandler(output_file, mode='w')
-    _handler.setFormatter(logging.Formatter('%(message)s'))
+        _handler = logging.FileHandler(output_file, mode="w")
+    _handler.setFormatter(logging.Formatter("%(message)s"))
     _logger.addHandler(_handler)
     try:
         yield _logger
     finally:
         _logger.removeHandler(_handler)
 
-def print_infeasible_constraints(m, tol=1e-6, print_expression=False,
-        print_variables=False, output_file=None):
+
+def print_infeasible_constraints(
+    m, tol=1e-6, print_expression=False, print_variables=False, output_file=None
+):
     """
     print the infeasble constraints in the model
     """
     with _logging_handler(output_file) as logger:
-        log_infeasible_constraints(m, tol=tol, logger=logger,
-                log_expression=print_expression, log_variables=print_variables)
+        log_infeasible_constraints(
+            m,
+            tol=tol,
+            logger=logger,
+            log_expression=print_expression,
+            log_variables=print_variables,
+        )
+
 
 def print_infeasible_bounds(m, tol=1e-6, output_file=None):
     """
@@ -51,6 +60,7 @@ def print_infeasible_bounds(m, tol=1e-6, output_file=None):
     """
     with _logging_handler(output_file) as logger:
         log_infeasible_bounds(m, tol=tol, logger=logger)
+
 
 def print_variables_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-12):
     """
@@ -65,12 +75,14 @@ def print_variables_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-12):
         else:
             _eval_close(var, val, rel_tol, abs_tol)
 
+
 def print_constraints_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-5):
     """
     print constraints close to their bounds
     """
-    for con in m.component_data_objects(ctype=Constraint,
-            descend_into=True, active=True):
+    for con in m.component_data_objects(
+        ctype=Constraint, descend_into=True, active=True
+    ):
         if con.equality:
             continue
         val = value(con.body, exception=False)
@@ -78,6 +90,7 @@ def print_constraints_close_to_bounds(m, rel_tol=1e-4, abs_tol=1e-5):
             print(f"Cannot evaluate Constraint {con.name}: missing variable value")
         else:
             _eval_close(con, val, rel_tol, abs_tol)
+
 
 def print_close_to_bounds(m, rel_tol=1e-04, abs_tol=1e-12):
     """
@@ -88,9 +101,13 @@ def print_close_to_bounds(m, rel_tol=1e-04, abs_tol=1e-12):
 
 
 def _eval_close(obj, val, rel_tol, abs_tol):
-    lb = value(obj.lb); ub = value(obj.ub)
-    if lb is not None and ub is not None and \
-            isclose(lb, ub, rel_tol=rel_tol, abs_tol=abs_tol):
+    lb = value(obj.lb)
+    ub = value(obj.ub)
+    if (
+        lb is not None
+        and ub is not None
+        and isclose(lb, ub, rel_tol=rel_tol, abs_tol=abs_tol)
+    ):
         return
     if lb is not None and isclose(lb, val, rel_tol=rel_tol, abs_tol=abs_tol):
         print(f"{obj.name} near LB of {lb}")

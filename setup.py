@@ -43,7 +43,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
     # update with a tag from the nawi-hub/idaes-pse
     # when a version of IDAES newer than the latest stable release from PyPI
     # will become needed for the watertap development
-    #"idaes-pse[prerelease] @ https://github.com/watertap-org/idaes-pse/archive/1.12.1.watertap.2022.02.04.zip",
+    # "idaes-pse[prerelease] @ https://github.com/watertap-org/idaes-pse/archive/1.12.1.watertap.2022.02.04.zip",
     "idaes-pse[prerelease] @ https://github.com/watertap-org/idaes-pse/archive/1.14.0dev0.watertap.2022.03.11.zip"
 ]
 
@@ -53,7 +53,7 @@ SPECIAL_DEPENDENCIES_FOR_PRERELEASE = [
 setup(
     name="watertap",
     url="https://github.com/watertap-org/watertap",
-    version="0.4.0dev",
+    version="0.5.0dev",
     description="WaterTAP modeling library",
     long_description=long_description,
     long_description_content_type="text/plain",
@@ -101,8 +101,6 @@ setup(
         # tutorial tests
         "nbformat",
         "scipy",
-        # https://www.python.org/dev/peps/pep-0508/#environment-markers
-        'pywin32==225 ; platform_system=="Windows" and python_version>="3.8"',
         # for parameter_sweep
         "h5py",
     ],
@@ -125,7 +123,7 @@ setup(
             # other requirements
             "pytest",  # test framework
             "pytest-cov",  # code coverage
-            "mongomock", # mongodb mocking for testing
+            "mongomock",  # mongodb mocking for testing
         ],
     },
     package_data={  # Optional

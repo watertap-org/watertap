@@ -9,22 +9,25 @@ from pprint import pformat
 
 class Error(Exception):
     """Abstract base class for all EDB errors."""
+
     pass
 
 
 class ConfigGeneratorError(Error):
     """Base class of errors for ConfigGenerator actions and effects."""
+
     pass
 
 
 class DataWrapperError(Error):
-    """"Base class of errors for DataWrapper actions and effects."""
+    """ "Base class of errors for DataWrapper actions and effects."""
+
     pass
 
 
 class BadConfiguration(DataWrapperError):
-    """Bad configuration provided to build a DataWrapper class.
-    """
+    """Bad configuration provided to build a DataWrapper class."""
+
     def __init__(self, whoami: str, config: Dict, missing: str = None, why: str = None):
         if missing:
             why = f"Missing field '{missing}'"
@@ -36,10 +39,8 @@ class BadConfiguration(DataWrapperError):
 
 
 class ValidationError(Error):
-    """Validation error.
-    """
+    """Validation error."""
+
     def __init__(self, err):
         msg = f"{err}"
         super().__init__(msg)
-
-

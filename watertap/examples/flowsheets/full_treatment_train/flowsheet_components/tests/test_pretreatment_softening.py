@@ -13,7 +13,9 @@
 import pytest
 from pyomo.environ import ConcreteModel, value, TransformationFactory
 from idaes.core import FlowsheetBlock
-from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import pretreatment_softening
+from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
+    pretreatment_softening,
+)
 from watertap.examples.flowsheets.full_treatment_train.util import check_dof
 
 
@@ -21,10 +23,12 @@ from watertap.examples.flowsheets.full_treatment_train.util import check_dof
 def test_solve():
     m = pretreatment_softening.solve()
     m.fs.display()
-    assert value(m.fs.stoich_softening_separator_unit.waste_stream_state[0].flow_mol) \
-           == pytest.approx(0.5639516, rel=1e-3)
-    assert value(m.fs.stoich_softening_separator_unit.outlet_stream_state[0].flow_mol) \
-           == pytest.approx(54.52455, rel=1e-3)
+    assert value(
+        m.fs.stoich_softening_separator_unit.waste_stream_state[0].flow_mol
+    ) == pytest.approx(0.5639516, rel=1e-3)
+    assert value(
+        m.fs.stoich_softening_separator_unit.outlet_stream_state[0].flow_mol
+    ) == pytest.approx(54.52455, rel=1e-3)
 
 
 @pytest.mark.unit
@@ -39,4 +43,3 @@ def test_build_and_scale():
     check_dof(m)
     m.fs.feed.display()
     # check_scaling(m, scale_func=pretreatment_softening.scale)
-
