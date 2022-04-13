@@ -41,71 +41,90 @@ class MetabZOData(ZeroOrderBaseData):
         self._gas_comp = self.config.process_subtype
 
         # unit variables
-        self.volume = Var(initialize=1,
-                          bounds=(0, None),
-                          units=pyunits.m**3,
-                          doc="Reactor volume")
-        self.hydraulic_retention_time = Var(initialize=1,
-                                            bounds=(0, None),
-                                            units=pyunits.hr,
-                                            doc="Hydraulic residence time")
+        self.volume = Var(
+            initialize=1, bounds=(0, None), units=pyunits.m**3, doc="Reactor volume"
+        )
+        self.hydraulic_retention_time = Var(
+            initialize=1,
+            bounds=(0, None),
+            units=pyunits.hr,
+            doc="Hydraulic residence time",
+        )
         self._fixed_perf_vars.append(self.hydraulic_retention_time)
 
-        @self.Constraint(doc='Constraint for reactor volume based on hydraulic residence time')
+        @self.Constraint(
+            doc="Constraint for reactor volume based on hydraulic residence time"
+        )
         def eq_reactor_volume(b):
             return b.volume == (
-                    pyunits.convert(b.get_inlet_flow(0), to_units=pyunits.m ** 3 / pyunits.hour)
-                    * b.hydraulic_retention_time)
+                pyunits.convert(
+                    b.get_inlet_flow(0), to_units=pyunits.m**3 / pyunits.hour
+                )
+                * b.hydraulic_retention_time
+            )
 
         # energy consumption
-        self.electricity = Var(self.flowsheet().time,
-                               initialize=1,
-                               bounds=(0, None),
-                               units=pyunits.kW,
-                               doc="Electricity consumption of unit")
-        self.heat = Var(self.flowsheet().time,
-                        initialize=1,
-                        bounds=(0, None),
-                        units=pyunits.kW,
-                        doc="Thermal energy consumption of unit")
+        self.electricity = Var(
+            self.flowsheet().time,
+            initialize=1,
+            bounds=(0, None),
+            units=pyunits.kW,
+            doc="Electricity consumption of unit",
+        )
+        self.heat = Var(
+            self.flowsheet().time,
+            initialize=1,
+            bounds=(0, None),
+            units=pyunits.kW,
+            doc="Thermal energy consumption of unit",
+        )
         self.energy_electric_mixer_vol = Var(
             initialize=1,
             bounds=(0, None),
-            units=pyunits.kW / pyunits.m ** 3,
-            doc="Electricity intensity of mixer with respect to reactor volume")
+            units=pyunits.kW / pyunits.m**3,
+            doc="Electricity intensity of mixer with respect to reactor volume",
+        )
         self._fixed_perf_vars.append(self.energy_electric_mixer_vol)
         self.energy_electric_vacuum_flow_vol_byproduct = Var(
             initialize=1,
             bounds=(0, None),
-            units=pyunits.kW / (pyunits.kg/pyunits.hr),
-            doc="Electricity intensity of vacuum pump with respect to product gas flow")
+            units=pyunits.kW / (pyunits.kg / pyunits.hr),
+            doc="Electricity intensity of vacuum pump with respect to product gas flow",
+        )
         self._fixed_perf_vars.append(self.energy_electric_vacuum_flow_vol_byproduct)
         self.energy_thermal_flow_vol_inlet = Var(
             initialize=1,
             bounds=(0, None),
-            units=pyunits.kJ / pyunits.m ** 3,
-            doc="Thermal energy intensity of reactor with respect to inlet volumetric flowrate")
+            units=pyunits.kJ / pyunits.m**3,
+            doc="Thermal energy intensity of reactor with respect to inlet volumetric flowrate",
+        )
         self._fixed_perf_vars.append(self.energy_thermal_flow_vol_inlet)
 
-        @self.Constraint(self.flowsheet().time,
-                         doc='Constraint for electricity consumption based on '
-                             'feed flowrate.')
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Constraint for electricity consumption based on " "feed flowrate.",
+        )
         def electricity_consumption(b, t):
             return b.electricity[t] == (
-                    b.energy_electric_mixer_vol * b.volume
-                    + b.energy_electric_vacuum_flow_vol_byproduct
-                    * pyunits.convert(
-                b.properties_byproduct[t].flow_mass_comp[b._gas_comp],
-                to_units=pyunits.kg / pyunits.hr)
+                b.energy_electric_mixer_vol * b.volume
+                + b.energy_electric_vacuum_flow_vol_byproduct
+                * pyunits.convert(
+                    b.properties_byproduct[t].flow_mass_comp[b._gas_comp],
+                    to_units=pyunits.kg / pyunits.hr,
+                )
             )
 
-        @self.Constraint(self.flowsheet().time,
-                         doc='Constraint for heat demand based on '
-                             'feed flowrate.')
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Constraint for heat demand based on " "feed flowrate.",
+        )
         def heat_demand(b, t):
             return b.heat[t] == (
-                    b.energy_thermal_flow_vol_inlet
-                    * pyunits.convert(b.get_inlet_flow(t), to_units=pyunits.m**3 / pyunits.s))
+                b.energy_thermal_flow_vol_inlet
+                * pyunits.convert(
+                    b.get_inlet_flow(t), to_units=pyunits.m**3 / pyunits.s
+                )
+            )
 
         self._perf_var_dict["Electricity Demand"] = self.electricity
         self._perf_var_dict["Thermal Energy Demand"] = self.heat

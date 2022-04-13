@@ -17,7 +17,13 @@ import pytest
 import os
 from io import StringIO
 from pyomo.environ import (
-    ConcreteModel, Block, value, Var, assert_optimal_termination, units as pyunits)
+    ConcreteModel,
+    Block,
+    value,
+    Var,
+    assert_optimal_termination,
+    units as pyunits,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -34,6 +40,7 @@ from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
+
 class TestMetabZO_H2:
     @pytest.fixture(scope="class")
     def model(self):
@@ -41,14 +48,15 @@ class TestMetabZO_H2:
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["cod",
-                                     "H2"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["cod", "H2"]})
 
-        m.fs.unit = MetabZO(default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": "H2"})
+        m.fs.unit = MetabZO(
+            default={
+                "property_package": m.fs.params,
+                "database": m.db,
+                "process_subtype": "H2",
+            }
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(0.01)
@@ -67,8 +75,10 @@ class TestMetabZO_H2:
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-            data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -94,24 +104,32 @@ class TestMetabZO_H2:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(1, rel=1e-3) ==
-                value(model.fs.unit.properties_treated[0].flow_mass_comp["H2O"]))
-        assert (pytest.approx(1.107e-5, rel=1e-3) ==
-                value(model.fs.unit.properties_byproduct[0].flow_mass_comp["H2"]))
-        assert (pytest.approx(7.800e-3, rel=1e-3) ==
-                value(model.fs.unit.properties_treated[0].flow_mass_comp["cod"]))
+        assert pytest.approx(1, rel=1e-3) == value(
+            model.fs.unit.properties_treated[0].flow_mass_comp["H2O"]
+        )
+        assert pytest.approx(1.107e-5, rel=1e-3) == value(
+            model.fs.unit.properties_byproduct[0].flow_mass_comp["H2"]
+        )
+        assert pytest.approx(7.800e-3, rel=1e-3) == value(
+            model.fs.unit.properties_treated[0].flow_mass_comp["cod"]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-6 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] +
-                sum(model.fs.unit.generation_rxn_comp[0, r, j]
-                    for r in model.fs.unit.reaction_set) -
-                model.fs.unit.treated.flow_mass_comp[0, j] -
-                model.fs.unit.byproduct.flow_mass_comp[0, j]))
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    + sum(
+                        model.fs.unit.generation_rxn_comp[0, r, j]
+                        for r in model.fs.unit.reaction_set
+                    )
+                    - model.fs.unit.treated.flow_mass_comp[0, j]
+                    - model.fs.unit.byproduct.flow_mass_comp[0, j]
+                )
+            )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -146,6 +164,7 @@ Unit : fs.unit                                                             Time:
 """
         assert output == stream.getvalue()
 
+
 class TestMetabZO_CH4:
     @pytest.fixture(scope="class")
     def model(self):
@@ -153,15 +172,15 @@ class TestMetabZO_CH4:
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["cod",
-                                     "H2",
-                                     "CH4"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["cod", "H2", "CH4"]})
 
-        m.fs.unit = MetabZO(default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": "CH4"})
+        m.fs.unit = MetabZO(
+            default={
+                "property_package": m.fs.params,
+                "database": m.db,
+                "process_subtype": "CH4",
+            }
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(0.01)
@@ -181,8 +200,10 @@ class TestMetabZO_CH4:
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-            data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -208,24 +229,32 @@ class TestMetabZO_CH4:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(1, rel=1e-3) ==
-                value(model.fs.unit.properties_treated[0].flow_mass_comp["H2O"]))
-        assert (pytest.approx(5.959e-4, rel=1e-3) ==
-                value(model.fs.unit.properties_byproduct[0].flow_mass_comp["CH4"]))
-        assert (pytest.approx(4.100e-3, rel=1e-3) ==
-                value(model.fs.unit.properties_treated[0].flow_mass_comp["cod"]))
+        assert pytest.approx(1, rel=1e-3) == value(
+            model.fs.unit.properties_treated[0].flow_mass_comp["H2O"]
+        )
+        assert pytest.approx(5.959e-4, rel=1e-3) == value(
+            model.fs.unit.properties_byproduct[0].flow_mass_comp["CH4"]
+        )
+        assert pytest.approx(4.100e-3, rel=1e-3) == value(
+            model.fs.unit.properties_treated[0].flow_mass_comp["cod"]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-6 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] +
-                sum(model.fs.unit.generation_rxn_comp[0, r, j]
-                    for r in model.fs.unit.reaction_set) -
-                model.fs.unit.treated.flow_mass_comp[0, j] -
-                model.fs.unit.byproduct.flow_mass_comp[0, j]))
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    + sum(
+                        model.fs.unit.generation_rxn_comp[0, r, j]
+                        for r in model.fs.unit.reaction_set
+                    )
+                    - model.fs.unit.treated.flow_mass_comp[0, j]
+                    - model.fs.unit.byproduct.flow_mass_comp[0, j]
+                )
+            )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -270,8 +299,7 @@ class TestMetabZO_H2_cost:
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["cod", "H2"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["cod", "H2"]})
 
         source_file = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -285,14 +313,15 @@ class TestMetabZO_H2_cost:
             "metab",
             "metab_global_costing.yaml",
         )
-        m.fs.costing = ZeroOrderCosting(
-            default={"case_study_definition": source_file}
-        )
+        m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
 
-        m.fs.unit = MetabZO(default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": "H2"})
+        m.fs.unit = MetabZO(
+            default={
+                "property_package": m.fs.params,
+                "database": m.db,
+                "process_subtype": "H2",
+            }
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(0.01)
@@ -317,7 +346,10 @@ class TestMetabZO_H2_cost:
         assert isinstance(model.fs.unit.costing.fixed_operating_cost, Var)
 
         # flowsheet block
-        assert model.fs.unit.electricity[0] in model.fs.costing._registered_flows["electricity"]
+        assert (
+            model.fs.unit.electricity[0]
+            in model.fs.costing._registered_flows["electricity"]
+        )
         assert model.fs.unit.heat[0] in model.fs.costing._registered_flows["heat"]
         assert "H2_product" in model.fs.costing._registered_flows
 
@@ -348,24 +380,25 @@ class TestMetabZO_H2_cost:
     @pytest.mark.component
     def test_cost_solution(self, model):
         # unit model
-        assert (pytest.approx(3.091e6, rel=1e-3) ==
-                value(model.fs.unit.costing.capital_cost))
-        assert (pytest.approx(4.505e5, rel=1e-3) ==
-                value(model.fs.unit.costing.fixed_operating_cost))
+        assert pytest.approx(3.091e6, rel=1e-3) == value(
+            model.fs.unit.costing.capital_cost
+        )
+        assert pytest.approx(4.505e5, rel=1e-3) == value(
+            model.fs.unit.costing.fixed_operating_cost
+        )
 
         # flowsheet
-        assert (pytest.approx(
-            value(model.fs.unit.costing.capital_cost), rel=1e-5)
-                == value(model.fs.costing.total_capital_cost))
-        assert (pytest.approx(5.432e5, rel=1e-3) ==
-                value(model.fs.costing.total_fixed_operating_cost))
+        assert pytest.approx(
+            value(model.fs.unit.costing.capital_cost), rel=1e-5
+        ) == value(model.fs.costing.total_capital_cost)
+        assert pytest.approx(5.432e5, rel=1e-3) == value(
+            model.fs.costing.total_fixed_operating_cost
+        )
         agg_flow_costs = model.fs.costing.aggregate_flow_costs
-        assert (pytest.approx(-256.0, rel=1e-3) ==
-                value(agg_flow_costs['H2_product']))
-        assert (pytest.approx(2.583e5, rel=1e-3) ==
-                value(agg_flow_costs['electricity']))
-        assert (pytest.approx(1.531e4, rel=1e-3) ==
-                value(agg_flow_costs['heat']))
+        assert pytest.approx(-256.0, rel=1e-3) == value(agg_flow_costs["H2_product"])
+        assert pytest.approx(2.583e5, rel=1e-3) == value(agg_flow_costs["electricity"])
+        assert pytest.approx(1.531e4, rel=1e-3) == value(agg_flow_costs["heat"])
+
 
 class TestMetabZO_CH4_cost:
     @pytest.fixture(scope="class")
@@ -374,8 +407,7 @@ class TestMetabZO_CH4_cost:
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["cod", "CH4"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["cod", "CH4"]})
 
         source_file = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -389,14 +421,15 @@ class TestMetabZO_CH4_cost:
             "metab",
             "metab_global_costing.yaml",
         )
-        m.fs.costing = ZeroOrderCosting(
-            default={"case_study_definition": source_file}
-        )
+        m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
 
-        m.fs.unit = MetabZO(default={
-            "property_package": m.fs.params,
-            "database": m.db,
-            "process_subtype": "CH4"})
+        m.fs.unit = MetabZO(
+            default={
+                "property_package": m.fs.params,
+                "database": m.db,
+                "process_subtype": "CH4",
+            }
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1)
         m.fs.unit.inlet.flow_mass_comp[0, "cod"].fix(0.01)
@@ -421,7 +454,10 @@ class TestMetabZO_CH4_cost:
         assert isinstance(model.fs.unit.costing.fixed_operating_cost, Var)
 
         # flowsheet block
-        assert model.fs.unit.electricity[0] in model.fs.costing._registered_flows["electricity"]
+        assert (
+            model.fs.unit.electricity[0]
+            in model.fs.costing._registered_flows["electricity"]
+        )
         assert model.fs.unit.heat[0] in model.fs.costing._registered_flows["heat"]
         assert "CH4_product" in model.fs.costing._registered_flows
 
@@ -452,21 +488,21 @@ class TestMetabZO_CH4_cost:
     @pytest.mark.component
     def test_cost_solution(self, model):
         # unit model
-        assert (pytest.approx(3.881e7, rel=1e-3) ==
-                value(model.fs.unit.costing.capital_cost))
-        assert (pytest.approx(5.631e6, rel=1e-3) ==
-                value(model.fs.unit.costing.fixed_operating_cost))
+        assert pytest.approx(3.881e7, rel=1e-3) == value(
+            model.fs.unit.costing.capital_cost
+        )
+        assert pytest.approx(5.631e6, rel=1e-3) == value(
+            model.fs.unit.costing.fixed_operating_cost
+        )
 
         # flowsheet
-        assert (pytest.approx(
-            value(model.fs.unit.costing.capital_cost), rel=1e-5)
-                == value(model.fs.costing.total_capital_cost))
-        assert (pytest.approx(6.795e6, rel=1e-3) ==
-                value(model.fs.costing.total_fixed_operating_cost))
+        assert pytest.approx(
+            value(model.fs.unit.costing.capital_cost), rel=1e-5
+        ) == value(model.fs.costing.total_capital_cost)
+        assert pytest.approx(6.795e6, rel=1e-3) == value(
+            model.fs.costing.total_fixed_operating_cost
+        )
         agg_flow_costs = model.fs.costing.aggregate_flow_costs
-        assert (pytest.approx(-5735, rel=1e-3) ==
-                value(agg_flow_costs['CH4_product']))
-        assert (pytest.approx(4.209e4, rel=1e-3) ==
-                value(agg_flow_costs['electricity']))
-        assert (pytest.approx(0, abs=1e-3) ==
-                value(agg_flow_costs['heat']))
+        assert pytest.approx(-5735, rel=1e-3) == value(agg_flow_costs["CH4_product"])
+        assert pytest.approx(4.209e4, rel=1e-3) == value(agg_flow_costs["electricity"])
+        assert pytest.approx(0, abs=1e-3) == value(agg_flow_costs["heat"])
