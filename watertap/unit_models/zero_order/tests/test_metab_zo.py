@@ -172,7 +172,9 @@ class TestMetabZO_methane:
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["cod", "hydrogen", "methane"]})
+        m.fs.params = WaterParameterBlock(
+            default={"solute_list": ["cod", "hydrogen", "methane"]}
+        )
 
         m.fs.unit = MetabZO(
             default={
@@ -395,7 +397,9 @@ class TestMetabZO_hydrogen_cost:
             model.fs.costing.total_fixed_operating_cost
         )
         agg_flow_costs = model.fs.costing.aggregate_flow_costs
-        assert pytest.approx(-698.4, rel=1e-3) == value(agg_flow_costs["hydrogen_product"])
+        assert pytest.approx(-698.4, rel=1e-3) == value(
+            agg_flow_costs["hydrogen_product"]
+        )
         assert pytest.approx(2.583e5, rel=1e-3) == value(agg_flow_costs["electricity"])
         assert pytest.approx(1.531e4, rel=1e-3) == value(agg_flow_costs["heat"])
 
@@ -503,6 +507,8 @@ class TestMetabZO_methane_cost:
             model.fs.costing.total_fixed_operating_cost
         )
         agg_flow_costs = model.fs.costing.aggregate_flow_costs
-        assert pytest.approx(-5735, rel=1e-3) == value(agg_flow_costs["methane_product"])
+        assert pytest.approx(-5735, rel=1e-3) == value(
+            agg_flow_costs["methane_product"]
+        )
         assert pytest.approx(4.209e4, rel=1e-3) == value(agg_flow_costs["electricity"])
         assert pytest.approx(0, abs=1e-3) == value(agg_flow_costs["heat"])
