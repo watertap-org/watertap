@@ -131,6 +131,8 @@ class TestMetabZO_hydrogen:
                 )
             )
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_report(self, model):
         stream = StringIO()
@@ -258,6 +260,8 @@ class TestMetabZO_methane:
                 )
             )
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_report(self, model):
         stream = StringIO()
@@ -379,6 +383,8 @@ class TestMetabZO_hydrogen_cost:
         # Check for optimal solution
         assert_optimal_termination(results)
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_cost_solution(self, model):
         # unit model
@@ -489,6 +495,8 @@ class TestMetabZO_methane_cost:
         # Check for optimal solution
         assert_optimal_termination(results)
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_cost_solution(self, model):
         # unit model
