@@ -17,7 +17,12 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    ConcreteModel, Constraint, value, Var, assert_optimal_termination)
+    ConcreteModel,
+    Constraint,
+    value,
+    Var,
+    assert_optimal_termination,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -39,12 +44,11 @@ class TestConstructedWetlandsZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["nitrate"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["nitrate"]})
 
-        m.fs.unit = ConstructedWetlandsZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = ConstructedWetlandsZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "nitrate"].fix(1)
@@ -55,7 +59,6 @@ class TestConstructedWetlandsZO_w_default_removal:
     def test_build(self, model):
         assert model.fs.unit.config.database is model.db
 
-
     @pytest.mark.component
     def test_load_parameters(self, model):
         data = model.db.get_unit_operation_parameters("constructed_wetlands")
@@ -63,8 +66,10 @@ class TestConstructedWetlandsZO_w_default_removal:
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-            data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
@@ -98,13 +103,16 @@ class TestConstructedWetlandsZO_w_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(0.0091, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(65.93406, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]))
-        assert (value(model.fs.unit.properties_in[0].flow_mass_comp["H2O"]
-                      * model.fs.unit.recovery_frac_mass_H2O[0]) ==
-                value(model.fs.unit.properties_treated[0].flow_mass_comp["H2O"]))
+        assert pytest.approx(0.0091, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(65.93406, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["nitrate"]
+        )
+        assert value(
+            model.fs.unit.properties_in[0].flow_mass_comp["H2O"]
+            * model.fs.unit.recovery_frac_mass_H2O[0]
+        ) == value(model.fs.unit.properties_treated[0].flow_mass_comp["H2O"])
 
     @pytest.mark.component
     def test_report(self, model):

@@ -6,9 +6,9 @@ from watertap.edb.commands import _load_bootstrap
 
 
 class MockDB(ElectrolyteDB):
-
     def __init__(self, db="foo", **kwargs):
         from mongomock import MongoClient
+
         self._client = MongoClient()
         self._db = getattr(self._client, db)
         # note: don't call superclass!
@@ -32,7 +32,9 @@ def edb(pytestconfig: Config) -> ElectrolyteDB:
         if mock_allowed:
             _edb = MockDB()
         else:
-            pytest.fail("EDB could not connect to a database instance, but mocking is not allowed")
+            pytest.fail(
+                "EDB could not connect to a database instance, but mocking is not allowed"
+            )
     _load_bootstrap(_edb)
     yield _edb
     _reset(_edb)

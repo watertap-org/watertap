@@ -39,22 +39,24 @@ class CoolingTowerZOData(ZeroOrderBaseData):
         build_sido(self)
         constant_intensity(self)
 
-        self.cycles = Var(units=pyunits.dimensionless,
-                          doc="Cycles of concentration")
+        self.cycles = Var(units=pyunits.dimensionless, doc="Cycles of concentration")
 
-        self.blowdown = Var(self.flowsheet().time,
-                                units=pyunits.m**3/pyunits.hour,
-                                doc="Flowrate of blowdown")
-
+        self.blowdown = Var(
+            self.flowsheet().time,
+            units=pyunits.m**3 / pyunits.hour,
+            doc="Flowrate of blowdown",
+        )
 
         self._fixed_perf_vars.append(self.cycles)
 
-        @self.Constraint(self.flowsheet().time,
-                    doc='Blowdown constraint')
+        @self.Constraint(self.flowsheet().time, doc="Blowdown constraint")
         def blowdown_constraint(b, t):
-            q_in = pyunits.convert(b.properties_in[t].flow_vol,
-                                   to_units=pyunits.m**3/pyunits.hour)
-            return b.blowdown[t] == pyunits.convert(q_in*b.cycles, to_units=pyunits.m**3/pyunits.hour)
+            q_in = pyunits.convert(
+                b.properties_in[t].flow_vol, to_units=pyunits.m**3 / pyunits.hour
+            )
+            return b.blowdown[t] == pyunits.convert(
+                q_in * b.cycles, to_units=pyunits.m**3 / pyunits.hour
+            )
 
         self._perf_var_dict["Cycles"] = self.cycles
         self._perf_var_dict["Blowdown flowrate (m^3/hr)"] = self.blowdown

@@ -32,15 +32,17 @@ np.set_printoptions(linewidth=200)
 
 # ================================================================
 
+
 class SamplingType(Enum):
     FIXED = auto()
     RANDOM = auto()
     RANDOM_LHS = auto()
 
+
 # ================================================================
 
-class _Sample(ABC):
 
+class _Sample(ABC):
     def __init__(self, pyomo_object, *args, **kwargs):
         # Check for indexed with single value
         if pyomo_object.is_indexed() and len(pyomo_object) == 1:
@@ -49,9 +51,13 @@ class _Sample(ABC):
 
         # Make sure we are a Var() or Param()
         if not (pyomo_object.is_parameter_type() or pyomo_object.is_variable_type()):
-            raise ValueError(f"The sweep parameter needs to be a pyomo Param or Var but {type(pyomo_object)} was provided instead.")
+            raise ValueError(
+                f"The sweep parameter needs to be a pyomo Param or Var but {type(pyomo_object)} was provided instead."
+            )
         if pyomo_object.is_parameter_type() and not pyomo_object.mutable:
-            raise ValueError(f"Parameter {pyomo_object} is not mutable, and so cannot be set by parameter_sweep")
+            raise ValueError(
+                f"Parameter {pyomo_object} is not mutable, and so cannot be set by parameter_sweep"
+            )
         self.pyomo_object = pyomo_object
         self.setup(*args, **kwargs)
 
@@ -63,18 +69,22 @@ class _Sample(ABC):
     def setup(self, *args, **kwargs):
         pass
 
+
 # ================================================================
+
 
 class RandomSample(_Sample):
     sampling_type = SamplingType.RANDOM
 
+
 class FixedSample(_Sample):
     sampling_type = SamplingType.FIXED
 
+
 # ================================================================
 
-class LinearSample(FixedSample):
 
+class LinearSample(FixedSample):
     def sample(self, num_samples):
         return np.linspace(self.lower_limit, self.upper_limit, self.num_samples)
 
@@ -83,10 +93,11 @@ class LinearSample(FixedSample):
         self.upper_limit = upper_limit
         self.num_samples = num_samples
 
+
 # ================================================================
 
-class UniformSample(RandomSample):
 
+class UniformSample(RandomSample):
     def sample(self, num_samples):
         return np.random.uniform(self.lower_limit, self.upper_limit, num_samples)
 
@@ -94,10 +105,11 @@ class UniformSample(RandomSample):
         self.lower_limit = lower_limit
         self.upper_limit = upper_limit
 
+
 # ================================================================
 
-class NormalSample(RandomSample):
 
+class NormalSample(RandomSample):
     def sample(self, num_samples):
         return np.random.normal(self.mean, self.sd, num_samples)
 
@@ -105,7 +117,9 @@ class NormalSample(RandomSample):
         self.mean = mean
         self.sd = sd
 
+
 # ================================================================
+
 
 class LatinHypercubeSample(_Sample):
     sampling_type = SamplingType.RANDOM_LHS
@@ -117,7 +131,9 @@ class LatinHypercubeSample(_Sample):
         self.lower_limit = lower_limit
         self.upper_limit = upper_limit
 
+
 # ================================================================
+
 
 def _init_mpi(mpi_comm=None):
 
@@ -125,7 +141,9 @@ def _init_mpi(mpi_comm=None):
         try:
             from mpi4py import MPI
         except:
-            warnings.warn("Could not import mpi4py from current environment (defaulting to serial).")
+            warnings.warn(
+                "Could not import mpi4py from current environment (defaulting to serial)."
+            )
             return None, 0, 1
 
         else:
@@ -133,15 +151,35 @@ def _init_mpi(mpi_comm=None):
 
     return mpi_comm, mpi_comm.Get_rank(), mpi_comm.Get_size()
 
+
 # ================================================================
+
 
 def _strip_extension(file_name, extension):
     if file_name.lower().endswith(extension):
-        return file_name[:-len(extension)]
+        return file_name[: -len(extension)], extension
     else:
-        return file_name
+        return file_name, None
+
 
 # ================================================================
+
+
+def _process_results_filename(results_file_name):
+    # Get the directory path
+    dirname = os.path.dirname(results_file_name)
+    # Get the file name without the extension
+    known_extensions = [".h5", ".csv"]
+    for ext in known_extensions:
+        fname_no_ext, extension = _strip_extension(results_file_name, ext)
+        if extension is not None:
+            break
+
+    return dirname, fname_no_ext, extension
+
+
+# ================================================================
+
 
 def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
     num_var_params = len(d)
@@ -167,7 +205,9 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
         elif sampling_type == SamplingType.RANDOM_LHS:
             lb = [val[0] for val in param_values]
             ub = [val[1] for val in param_values]
-            lhs = sampling.LatinHypercubeSampling([lb, ub], number_of_samples=num_samples, sampling_type='creation')
+            lhs = sampling.LatinHypercubeSampling(
+                [lb, ub], number_of_samples=num_samples, sampling_type="creation"
+            )
             global_combo_array = lhs.sample_points()
             sorting = np.argsort(global_combo_array[:, 0])
             global_combo_array = global_combo_array[sorting, :]
@@ -185,7 +225,10 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
             nx = 1
             for k, v in d.items():
                 nx *= v.num_samples
-        elif sampling_type == SamplingType.RANDOM or sampling_type == SamplingType.RANDOM_LHS:
+        elif (
+            sampling_type == SamplingType.RANDOM
+            or sampling_type == SamplingType.RANDOM_LHS
+        ):
             nx = num_samples
         else:
             raise ValueError(f"Unknown sampling type: {sampling_type}")
@@ -203,7 +246,9 @@ def _build_combinations(d, sampling_type, num_samples, comm, rank, num_procs):
 
     return global_combo_array
 
+
 # ================================================================
+
 
 def _divide_combinations(global_combo_array, rank, num_procs):
 
@@ -217,7 +262,9 @@ def _divide_combinations(global_combo_array, rank, num_procs):
 
     return local_combo_array
 
+
 # ================================================================
+
 
 def _update_model_values(m, param_dict, values):
 
@@ -236,34 +283,31 @@ def _update_model_values(m, param_dict, values):
         else:
             raise RuntimeError(f"Unrecognized Pyomo object {param}")
 
+
 # ================================================================
 
-def _aggregate_results(local_results, global_values, comm, num_procs):
 
-    if num_procs > 1: # pragma: no cover
-        local_results = local_results.astype(np.float64)
+def _aggregate_results_arr(global_results_dict, num_cases, comm, rank, num_procs):
 
-        global_results = np.zeros((np.shape(global_values)[0], np.shape(local_results)[1]), dtype=np.float64)
+    global_results = np.zeros(
+        (num_cases, len(global_results_dict["outputs"])), dtype=np.float64
+    )
 
-        # Collect the number of result values to be sent from each process
-        send_counts = np.zeros(num_procs, dtype=np.int64)
-        comm.Gather(np.int64(np.size(local_results)), send_counts, root=0)
+    if rank == 0:
+        for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
+            global_results[:, i] = item["value"][:num_cases]
 
-        # Collect the global results results onto rank 0
-        comm.Gatherv(local_results, (global_results, send_counts), root=0)
-
-        # Broadcast the results to all ranks
+    if num_procs > 1:  # pragma: no cover
         comm.Bcast(global_results, root=0)
-
-    else:
-        global_results = np.copy(local_results)
 
     return global_results
 
+
 # ================================================================
 
+
 def _default_optimize(model, options=None, tee=False):
-    '''
+    """
     Default optimization function used in parameter_sweep.
     Optimizes ``model`` using the IDAES default solver.
     Raises a RuntimeError if the TerminationCondition is not optimal
@@ -276,12 +320,14 @@ def _default_optimize(model, options=None, tee=False):
                              Default is None
         tee (options) : To display the solver log. Default it False
 
-    '''
+    """
     solver = get_solver(options=options)
     results = solver.solve(model, tee=tee)
     return results
 
+
 # ================================================================
+
 
 def _process_sweep_params(sweep_params):
 
@@ -305,7 +351,9 @@ def _process_sweep_params(sweep_params):
 
     return sweep_params, sampling_type
 
+
 # ================================================================
+
 
 def _interp_nan_values(global_values, global_results):
 
@@ -325,16 +373,19 @@ def _interp_nan_values(global_values, global_results):
         # Interpolate to get a value for nan points where possible
         for k in range(n_outs):
             y0 = global_results[mask, k]
-            yi = griddata(x0, y0, global_values, method='linear', rescale=True).reshape(-1)
+            yi = griddata(x0, y0, global_values, method="linear", rescale=True).reshape(
+                -1
+            )
             global_results_clean[~mask, k] = yi[~mask]
 
     else:
         warnings.warn("Too few points to perform interpolation.")
 
-
     return global_results_clean
 
+
 # ================================================================
+
 
 def _create_local_output_skeleton(model, sweep_params, outputs, num_samples):
 
@@ -348,70 +399,89 @@ def _create_local_output_skeleton(model, sweep_params, outputs, num_samples):
     for sweep_param in sweep_params.values():
         var = sweep_param.pyomo_object
         sweep_param_objs.add(var)
-        output_dict["sweep_params"][var.name] =  _create_component_output_skeleton(var, num_samples)
+        output_dict["sweep_params"][var.name] = _create_component_output_skeleton(
+            var, num_samples
+        )
 
     if outputs is None:
-        outputs = {}
-
         # No outputs are specified, so every Var, Expression, and Objective on the model should be saved
-        for pyo_obj in model.component_data_objects((pyo.Var, pyo.Expression, pyo.Objective), active=True):
+        for pyo_obj in model.component_data_objects(
+            (pyo.Var, pyo.Expression, pyo.Objective), active=True
+        ):
             # Only need to save this variable if it isn't one of the value in sweep_params
             if pyo_obj not in sweep_param_objs:
-                output_dict["outputs"][pyo_obj.name] = _create_component_output_skeleton(pyo_obj, num_samples)
-                outputs[pyo_obj.name] = pyo_obj
+                output_dict["outputs"][
+                    pyo_obj.name
+                ] = _create_component_output_skeleton(pyo_obj, num_samples)
 
     else:
         # Save only the outputs specified in the outputs dictionary
         for short_name, pyo_obj in outputs.items():
-            output_dict["outputs"][short_name] = _create_component_output_skeleton(pyo_obj, num_samples)
+            output_dict["outputs"][short_name] = _create_component_output_skeleton(
+                pyo_obj, num_samples
+            )
 
-    return output_dict, outputs
+    return output_dict
+
 
 # ================================================================
+
 
 def _create_component_output_skeleton(component, num_samples):
 
     comp_dict = {}
-    comp_dict["value"] = np.zeros(num_samples, dtype=np.float)
-    if hasattr(component, 'lb'):
+    comp_dict["value"] = np.zeros(num_samples, dtype=np.float64)
+    if hasattr(component, "lb"):
         comp_dict["lower bound"] = component.lb
-    if hasattr(component, 'ub'):
-        comp_dict["upper bound"] = component.lb
-    if hasattr(component, 'get_units'):
+    if hasattr(component, "ub"):
+        comp_dict["upper bound"] = component.ub
+    if hasattr(component, "get_units"):
         unit_obj = component.get_units()
         if unit_obj is not None:
             comp_dict["units"] = component.get_units().name
         else:
             comp_dict["units"] = "None"
 
+    # Add information to this output that WILL NOT be written as part
+    # of the file saving step.
+    comp_dict["_pyo_obj"] = component
+
     return comp_dict
+
 
 # ================================================================
 
-def _update_local_output_dict(model, sweep_params, case_number, sweep_vals, run_successful, output_dict, outputs):
+
+def _update_local_output_dict(
+    model, sweep_params, case_number, sweep_vals, run_successful, output_dict
+):
 
     # Get the inputs
     op_ps_dict = output_dict["sweep_params"]
     for key, item in sweep_params.items():
         var_name = item.pyomo_object.name
-        op_ps_dict[var_name]['value'][case_number] = item.pyomo_object.value
+        op_ps_dict[var_name]["value"][case_number] = item.pyomo_object.value
 
     # Get the outputs from model
     if run_successful:
-        for label, pyo_obj in outputs.items():
-            output_dict["outputs"][label]["value"][case_number] = pyo.value(pyo_obj)
+        for label, val in output_dict["outputs"].items():
+            output_dict["outputs"][label]["value"][case_number] = pyo.value(
+                val["_pyo_obj"]
+            )
 
     else:
-        for label in outputs.keys():
+        for label in output_dict["outputs"].keys():
             output_dict["outputs"][label]["value"][case_number] = np.nan
 
+
 # ================================================================
+
 
 def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_procs):
 
     if num_procs == 1:
         global_output_dict = local_output_dict
-    else: # pragma: no cover
+    else:  # pragma: no cover
         # We make the assumption that the parameter sweep is running the same
         # flowsheet num_samples number of times, i.e., the structure of the
         # local_output_dict remains the same across all mpi_ranks
@@ -428,51 +498,164 @@ def _create_global_output(local_output_dict, req_num_samples, comm, rank, num_pr
             for key, item in global_output_dict.items():
                 if key != "solve_successful":
                     for subkey, subitem in item.items():
-                        subitem['value'] = np.zeros(num_total_samples, dtype=np.float)
+                        subitem["value"] = np.zeros(num_total_samples, dtype=np.float64)
 
         else:
             global_output_dict = local_output_dict
 
         # Finally collect the values
-        for key, item in local_output_dict.items(): # This probably doesnt work
+        for key, item in local_output_dict.items():  # This probably doesnt work
             if key != "solve_successful":
                 for subkey, subitem in item.items():
-                    comm.Gatherv(sendbuf=subitem["value"],
-                                 recvbuf=(global_output_dict[key][subkey]["value"], sample_split_arr),
-                                 root=0)
+                    comm.Gatherv(
+                        sendbuf=subitem["value"],
+                        recvbuf=(
+                            global_output_dict[key][subkey]["value"],
+                            sample_split_arr,
+                        ),
+                        root=0,
+                    )
 
                     # Trim to the exact number
-                    global_output_dict[key][subkey]["value"] = global_output_dict[key][subkey]["value"][0:req_num_samples]
+                    global_output_dict[key][subkey]["value"] = global_output_dict[key][
+                        subkey
+                    ]["value"][0:req_num_samples]
 
             elif key == "solve_successful":
-                local_solve_successful = np.fromiter(item, dtype=np.bool, count=len(item))
+                local_solve_successful = np.fromiter(
+                    item, dtype=np.bool, count=len(item)
+                )
 
                 if rank == 0:
                     global_solve_successful = np.empty(num_total_samples, dtype=np.bool)
                 else:
                     global_solve_successful = None
 
-                comm.Gatherv(sendbuf=local_solve_successful,
-                             recvbuf=(global_solve_successful, sample_split_arr),
-                             root=0)
+                comm.Gatherv(
+                    sendbuf=local_solve_successful,
+                    recvbuf=(global_solve_successful, sample_split_arr),
+                    root=0,
+                )
 
                 if rank == 0:
                     global_output_dict[key] = global_solve_successful[0:req_num_samples]
 
     return global_output_dict
 
+
 # ================================================================
 
-def _write_outputs(output_dict, output_directory, h5_results_file, txt_options="metadata"):
 
-    if not h5_results_file.endswith(".h5"):
-        h5_results_file += ".h5"
+def _write_to_csv(
+    sweep_params,
+    global_values,
+    global_results_dict,
+    global_results_arr,
+    rank,
+    write_csv,
+    dirname,
+    fname,
+    interpolate_nan_outputs,
+):
+
+    # Create the dataframe that is going to be written to a CSV
+    global_save_data = np.hstack((global_values, global_results_arr))
+
+    if rank == 0:
+        data_header = ",".join(itertools.chain(sweep_params))
+        for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
+            data_header = ",".join([data_header, key])
+
+        if write_csv and fname is not None:
+            # Write the CSV
+            csv_results_file = os.path.join(str(dirname), fname + ".csv")
+            np.savetxt(
+                csv_results_file,
+                global_save_data,
+                header=data_header,
+                delimiter=",",
+                fmt="%.6e",
+            )
+
+            # If we want the interpolated output_list in CSV
+            if interpolate_nan_outputs:
+                global_results_clean = _interp_nan_values(
+                    global_values, global_results_arr
+                )
+                global_save_data_clean = np.hstack(
+                    (global_values, global_results_clean)
+                )
+
+                head, tail = os.path.split(csv_results_file)
+
+                if head == "":
+                    interp_file = "interpolated_%s" % (tail)
+                else:
+                    interp_file = "%s/interpolated_%s" % (head, tail)
+
+                np.savetxt(
+                    interp_file,
+                    global_save_data_clean,
+                    header=data_header,
+                    delimiter=",",
+                    fmt="%.6e",
+                )
+
+    return global_save_data
+
+
+# ================================================================
+
+
+def _write_debug_data(
+    sweep_params,
+    local_values,
+    local_results_dict,
+    debugging_data_dir,
+    rank,
+    write_h5,
+    write_csv,
+):
+
+    if write_h5:
+        fname_h5 = f"local_results_{rank:03}.h5"
+        _write_output_to_h5(local_results_dict, debugging_data_dir, fname_h5)
+    if write_csv:
+        fname_csv = f"local_results_{rank:03}.csv"
+
+        data_header = ",".join(itertools.chain(sweep_params))
+        local_results = np.zeros(
+            (np.shape(local_values)[0], len(local_results_dict["outputs"])),
+            dtype=np.float64,
+        )
+        for i, (key, item) in enumerate(local_results_dict["outputs"].items()):
+            data_header = ",".join([data_header, key])
+            local_results[:, i] = item["value"][:]
+
+        local_save_data = np.hstack((local_values, local_results))
+
+        # Save the local data
+        np.savetxt(
+            os.path.join(debugging_data_dir, fname_csv),
+            local_save_data,
+            header=data_header,
+            delimiter=", ",
+            fmt="%.6e",
+        )
+
+
+# ================================================================
+
+
+def _write_outputs(output_dict, output_directory, fname_no_ext, txt_options="metadata"):
+
+    h5_results_file = fname_no_ext + ".h5"
 
     _write_output_to_h5(output_dict, output_directory, h5_results_file)
 
     # We will also create a companion txt file by default which contains
     # the metadata of the h5 file in a user readable format.
-    txt_fname = _strip_extension(h5_results_file,".h5") + ".txt"
+    txt_fname = fname_no_ext + ".txt"
     txt_fpath = os.path.join(output_directory, txt_fname)
     if "solve_successful" in output_dict.keys():
         output_dict.pop("solve_successful")
@@ -480,7 +663,7 @@ def _write_outputs(output_dict, output_directory, h5_results_file, txt_options="
         my_dict = copy.deepcopy(output_dict)
         for key, value in my_dict.items():
             for subkey, subvalue in value.items():
-                subvalue.pop('value')
+                subvalue.pop("value")
     elif txt_options == "keys":
         my_dict = {}
         for key, value in output_dict.items():
@@ -491,68 +674,89 @@ def _write_outputs(output_dict, output_directory, h5_results_file, txt_options="
     with open(txt_fpath, "w") as log_file:
         pprint.pprint(my_dict, log_file)
 
+
 # ================================================================
+
 
 def _write_output_to_h5(output_dict, output_directory, fname):
 
     fpath = os.path.join(output_directory, fname)
-    f = h5py.File(fpath, 'w')
+    f = h5py.File(fpath, "w")
     for key, item in output_dict.items():
         grp = f.create_group(key)
         if key != "solve_successful":
             for subkey, subitem in item.items():
                 subgrp = grp.create_group(subkey)
                 for subsubkey, subsubitem in subitem.items():
-                    if subsubkey == 'lower bound' and subsubitem is None:
-                        subgrp.create_dataset(subsubkey, data=np.finfo('d').min)
-                    elif subsubkey == 'upper bound' and subsubitem is None:
-                        subgrp.create_dataset(subsubkey, data=np.finfo('d').max)
-                    else:
-                        subgrp.create_dataset(subsubkey, data=output_dict[key][subkey][subsubkey])
-        elif key == 'solve_successful':
+                    if subsubkey[0] != "_":
+                        if subsubkey == "lower bound" and subsubitem is None:
+                            subgrp.create_dataset(subsubkey, data=np.finfo("d").min)
+                        elif subsubkey == "upper bound" and subsubitem is None:
+                            subgrp.create_dataset(subsubkey, data=np.finfo("d").max)
+                        else:
+                            subgrp.create_dataset(subsubkey, data=subsubitem)
+        elif key == "solve_successful":
             grp.create_dataset(key, data=output_dict[key])
 
     f.close()
 
+
 # ================================================================
+
 
 def _read_output_h5(filepath):
 
-    f = h5py.File(filepath , 'r')
+    f = h5py.File(filepath, "r")
 
     l1_keys = list(f.keys())
     output_dict = {}
-    for key in l1_keys: # Input or Output
-        if key != 'solve_successful':
+    for key in l1_keys:  # Input or Output
+        if key != "solve_successful":
             output_dict[key] = {}
             l2_keys = list(f[key].keys())
-            for subkey in l2_keys: # Variable name
+            for subkey in l2_keys:  # Variable name
                 output_dict[key][subkey] = {}
                 l3_keys = list(f[key][subkey].keys())
-                for subsubkey in l3_keys: # variable metadata
+                for subsubkey in l3_keys:  # variable metadata
                     output_dict[key][subkey][subsubkey] = f[key][subkey][subsubkey][()]
                     if subsubkey == "units":
                         # The strings are recovered in bytes. we choose to convert it to utf-8
-                        output_dict[key][subkey][subsubkey] = output_dict[key][subkey][subsubkey].decode("utf-8")
-        elif key == 'solve_successful':
-            output_dict[key] = list(f[key]['solve_successful'][()])
+                        output_dict[key][subkey][subsubkey] = output_dict[key][subkey][
+                            subsubkey
+                        ].decode("utf-8")
+        elif key == "solve_successful":
+            output_dict[key] = list(f[key]["solve_successful"][()])
 
     f.close()
 
     return output_dict
 
+
 # ================================================================
 
-def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_function, optimize_kwargs,
-        reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep, comm):
+
+def _do_param_sweep(
+    model,
+    sweep_params,
+    outputs,
+    local_values,
+    optimize_function,
+    optimize_kwargs,
+    reinitialize_function,
+    reinitialize_kwargs,
+    reinitialize_before_sweep,
+    comm,
+):
 
     # Initialize space to hold results
     local_num_cases = np.shape(local_values)[0]
 
     # Create the output skeleton for storing detailed data
-    local_output_dict, outputs = _create_local_output_skeleton(model, sweep_params, outputs, local_num_cases)
+    local_output_dict = _create_local_output_skeleton(
+        model, sweep_params, outputs, local_num_cases
+    )
 
-    local_results = np.zeros((local_num_cases, len(outputs)))
+    local_results = np.zeros((local_num_cases, len(local_output_dict["outputs"])))
 
     local_solve_successful_list = []
 
@@ -564,14 +768,16 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
         # Update the model values with a single combination from the parameter space
         _update_model_values(model, sweep_params, local_values[k, :])
 
-        run_successful = False #until proven otherwise
+        run_successful = False  # until proven otherwise
 
         # Forced reinitialization of the flowsheet if enabled
         if reinitialize_before_sweep:
             try:
                 assert reinitialize_function is not None
             except:
-                raise ValueError("Reinitialization function was not specified. The model will not be reinitialized.")
+                raise ValueError(
+                    "Reinitialization function was not specified. The model will not be reinitialized."
+                )
             else:
                 reinitialize_function(model, **reinitialize_kwargs)
 
@@ -582,115 +788,175 @@ def _do_param_sweep(model, sweep_params, outputs, local_values, optimize_functio
             pyo.assert_optimal_termination(results)
 
         except:
-            # If the run is infeasible, report nan
-            local_results[k, :] = np.nan
+            # run_successful remains false. We try to reinitialize and solve again
+            if reinitialize_function is not None:
+                try:
+                    reinitialize_function(model, **reinitialize_kwargs)
+                    with capture_output():
+                        results = optimize_function(model, **optimize_kwargs)
+                    pyo.assert_optimal_termination(results)
+
+                except:
+                    pass  # run_successful is still False
+                else:
+                    run_successful = True
 
         else:
             # If the simulation suceeds, report stats
-            local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
             run_successful = True
 
-        # If the initial attempt failed and additional conditions are met, try
-        # to reinitialize and resolve.
-        if not run_successful and (reinitialize_function is not None):
-            try:
-                reinitialize_function(model, **reinitialize_kwargs)
-                with capture_output():
-                    results = optimize_function(model, **optimize_kwargs)
-                pyo.assert_optimal_termination(results)
-
-            except:
-                pass
-            else:
-                local_results[k, :] = [pyo.value(outcome) for outcome in outputs.values()]
-                run_successful = True
-
         # Update the loop based on the reinitialization
-        _update_local_output_dict(model, sweep_params, k, local_values[k, :], run_successful, local_output_dict, outputs)
+        _update_local_output_dict(
+            model,
+            sweep_params,
+            k,
+            local_values[k, :],
+            run_successful,
+            local_output_dict,
+        )
 
         local_solve_successful_list.append(run_successful)
 
     local_output_dict["solve_successful"] = local_solve_successful_list
 
-    return local_results, local_output_dict
+    return local_output_dict
+
 
 # ================================================================
 
-def _aggregate_local_results(global_values, local_results, local_output_dict,
-        num_samples, local_num_cases, comm, rank, num_procs):
 
-    global_results = _aggregate_results(local_results, global_values, comm, num_procs)
-    global_output_dict = _create_global_output(local_output_dict, num_samples, comm, rank, num_procs)
+def _aggregate_local_results(
+    global_values,
+    local_output_dict,
+    num_samples,
+    local_num_cases,
+    comm,
+    rank,
+    num_procs,
+):
 
-    return global_results, global_output_dict
+    # Create the dictionary
+    global_results_dict = _create_global_output(
+        local_output_dict, num_samples, comm, rank, num_procs
+    )
+
+    # Create the array
+    num_global_samples = np.shape(global_values)[0]
+    global_results_arr = _aggregate_results_arr(
+        global_results_dict, num_global_samples, comm, rank, num_procs
+    )
+
+    return global_results_dict, global_results_arr
+
 
 # ================================================================
 
-def _save_results(sweep_params, outputs, local_values, global_values, local_results,
-        global_results, global_output_dict, csv_results_file, h5_results_file,
-        debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs):
 
-    # Make a directory for saved outputs
-    if rank == 0:
-        if csv_results_file is not None:
-            if not csv_results_file.endswith(".csv"):
-                csv_results_file += ".csv"
-            dirname = os.path.dirname(csv_results_file)
-            if dirname != '':
+def _save_results(
+    sweep_params,
+    local_values,
+    global_values,
+    local_results_dict,
+    global_results_dict,
+    global_results_arr,
+    results_file_name,
+    write_csv,
+    write_h5,
+    debugging_data_dir,
+    comm,
+    rank,
+    num_procs,
+    interpolate_nan_outputs,
+):
+
+    if results_file_name is not None:
+        dirname, fname_no_ext, extension = _process_results_filename(results_file_name)
+        if rank == 0:
+            # Create the directories for the results and/or for debugging
+            if extension == ".h5" and write_h5 is False:
+                warnings.warn(
+                    "An H5 results filename was provided. Outputs will be created",
+                    UserWarning,
+                )
+                write_h5 = True
+            elif extension == ".csv" and write_csv is False:
+                warnings.warn(
+                    "A CSV results filename was provided. Outputs will be created",
+                    UserWarning,
+                )
+                write_csv = True
+
+            if (write_h5 or write_csv) and dirname != "":
                 os.makedirs(dirname, exist_ok=True)
+            elif not write_h5 and not write_csv:
+                warnings.warn(
+                    "A results filename was provided but neither options to write H5 or csv was selected. No file will be written.",
+                    UserWarning,
+                )
 
-        if debugging_data_dir is not None:
-            os.makedirs(debugging_data_dir, exist_ok=True)
+            if debugging_data_dir is not None:
+                os.makedirs(debugging_data_dir, exist_ok=True)
+    else:
+        dirname = None
+        fname_no_ext = None
 
-    if num_procs > 1:
+    if num_procs > 1:  # pragma: no cover
         comm.Barrier()
 
-    # Write a header string for all data files
-    data_header = ','.join(itertools.chain(sweep_params,global_output_dict['outputs']))
-
+    # Handle values in the debugging data_directory
     if debugging_data_dir is not None:
-        # Create the local filename and data
-        fname = os.path.join(debugging_data_dir, f'local_results_{rank:03}.csv')
-        local_save_data = np.hstack((local_values, local_results))
+        _write_debug_data(
+            sweep_params,
+            local_values,
+            local_results_dict,
+            debugging_data_dir,
+            rank,
+            write_h5,
+            write_csv,
+        )
 
-        # Save the local data
-        np.savetxt(fname, local_save_data, header=data_header, delimiter=', ', fmt='%.6e')
+    global_save_data = _write_to_csv(
+        sweep_params,
+        global_values,
+        global_results_dict,
+        global_results_arr,
+        rank,
+        write_csv,
+        dirname,
+        fname_no_ext,
+        interpolate_nan_outputs,
+    )
 
-    # Create the global filename and data
-    global_save_data = np.hstack((global_values, global_results))
-
-    if rank == 0 and csv_results_file is not None:
-        # Save the global data
-        np.savetxt(csv_results_file, global_save_data, header=data_header, delimiter=',', fmt='%.6e')
-
-        if interpolate_nan_outputs:
-            global_results_clean = _interp_nan_values(global_values, global_results)
-            global_save_data_clean = np.hstack((global_values, global_results_clean))
-
-            head, tail = os.path.split(csv_results_file)
-
-            if head == '':
-                interp_file = 'interpolated_%s' % (tail)
-            else:
-                interp_file = '%s/interpolated_%s' % (head, tail)
-
-            np.savetxt(interp_file, global_save_data_clean, header=data_header, delimiter=',', fmt='%.6e')
-
-    if rank == 0 and h5_results_file is not None:
+    if rank == 0 and write_h5:
         # Save the data of output dictionary
-        _write_outputs(global_output_dict, dirname, h5_results_file, txt_options="keys")
+        _write_outputs(global_results_dict, dirname, fname_no_ext, txt_options="keys")
 
     return global_save_data
 
 
 # ================================================================
 
-def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, h5_results_file=None,
-        optimize_function=_default_optimize, optimize_kwargs=None, reinitialize_function=None,
-        reinitialize_kwargs=None, reinitialize_before_sweep=False, mpi_comm=None, debugging_data_dir=None,
-        interpolate_nan_outputs=False, num_samples=None, seed=None):
 
-    '''
+def parameter_sweep(
+    model,
+    sweep_params,
+    outputs=None,
+    results_file_name=None,
+    write_csv=False,
+    write_h5=False,
+    optimize_function=_default_optimize,
+    optimize_kwargs=None,
+    reinitialize_function=None,
+    reinitialize_kwargs=None,
+    reinitialize_before_sweep=False,
+    mpi_comm=None,
+    debugging_data_dir=None,
+    interpolate_nan_outputs=False,
+    num_samples=None,
+    seed=None,
+):
+
+    """
     This function offers a general way to perform repeated optimizations
     of a model for the purposes of exploring a parameter space while
     monitoring multiple outputs.
@@ -715,13 +981,16 @@ def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, h5
                   variables, parameters, and expressions which provides very thorough results
                   at the cost of large file sizes.
 
-        csv_results_file (optional) : The path and file name where the results are to be saved;
+        results_file_name (optional) : The path and file name without extensions where the results are to be saved;
                                    subdirectories will be created as needed.
 
-        h5_results_file (optional) : The file name without the extension where the results are to be saved;
-                                   The path is identified from the arguments of `csv_results_file`. This
-                                   filename is used when creating the H5 file and the companion text file
-                                   which contains the variable names contained within the H5 file.
+        write_csv (optional) : Boolean option to write a csv file using `results_file_name`, i.e.,
+                               `{results_file_name}.csv`. The default is False to prevent silent file generation.
+
+        write_h5 (optional) : Boolean option to write a csv file using `results_file_name`, i.e.,
+                              `{results_file_name}.h5`. The default is False to prevent silent file generation.
+                              writing an h5 file will also create a companion text file `{results_file_name}.txt`
+                              which contains the variable names contained within the H5 file.
 
         optimize_function (optional) : A user-defined function to perform the optimization of flowsheet
                                        ``model`` and loads the results back into ``model``. The first
@@ -774,7 +1043,7 @@ def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, h5
         save_data : A list were the first N columns are the values of the parameters passed
                     by ``sweep_params`` and the remaining columns are the values of the
                     simulation identified by the ``outputs`` argument.
-    '''
+    """
 
     # Get an MPI communicator
     comm, rank, num_procs = _init_mpi(mpi_comm)
@@ -786,7 +1055,9 @@ def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, h5
     np.random.seed(seed)
 
     # Enumerate/Sample the parameter space
-    global_values = _build_combinations(sweep_params, sampling_type, num_samples, comm, rank, num_procs)
+    global_values = _build_combinations(
+        sweep_params, sampling_type, num_samples, comm, rank, num_procs
+    )
 
     # divide the workload between processors
     local_values = _divide_combinations(global_values, rank, num_procs)
@@ -800,18 +1071,49 @@ def parameter_sweep(model, sweep_params, outputs=None, csv_results_file=None, h5
         reinitialize_kwargs = dict()
 
     # Do the Loop
-    local_results, local_output_dict = _do_param_sweep(model, sweep_params, outputs, local_values,
-        optimize_function, optimize_kwargs, reinitialize_function, reinitialize_kwargs, reinitialize_before_sweep,
-        comm)
+    local_results_dict = _do_param_sweep(
+        model,
+        sweep_params,
+        outputs,
+        local_values,
+        optimize_function,
+        optimize_kwargs,
+        reinitialize_function,
+        reinitialize_kwargs,
+        reinitialize_before_sweep,
+        comm,
+    )
 
     # Aggregate results on Master
-    global_results, global_output_dict = _aggregate_local_results(global_values, local_results, local_output_dict,
-            num_samples, local_num_cases, comm, rank, num_procs)
+    global_results_dict, global_results_arr = _aggregate_local_results(
+        global_values,
+        local_results_dict,
+        num_samples,
+        local_num_cases,
+        comm,
+        rank,
+        num_procs,
+    )
 
     # Save to file
-    global_save_data = _save_results(sweep_params, outputs, local_values, global_values, local_results, global_results, global_output_dict,
-        csv_results_file, h5_results_file, debugging_data_dir, comm, rank, num_procs, interpolate_nan_outputs)
+    global_save_data = _save_results(
+        sweep_params,
+        local_values,
+        global_values,
+        local_results_dict,
+        global_results_dict,
+        global_results_arr,
+        results_file_name,
+        write_csv,
+        write_h5,
+        debugging_data_dir,
+        comm,
+        rank,
+        num_procs,
+        interpolate_nan_outputs,
+    )
 
     return global_save_data
+
 
 # ================================================================

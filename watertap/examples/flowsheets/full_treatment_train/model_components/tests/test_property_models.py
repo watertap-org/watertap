@@ -12,31 +12,57 @@
 ###############################################################################
 import pytest
 from pyomo.environ import value
-from watertap.examples.flowsheets.full_treatment_train.model_components import property_models
+from watertap.examples.flowsheets.full_treatment_train.model_components import (
+    property_models,
+)
 
 
 @pytest.mark.component
 def test_feed_TDS():
-    m = property_models.solve_specify_feed(base='TDS')
-    assert value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'TDS']) == pytest.approx(0.035, rel=1e-3)
+    m = property_models.solve_specify_feed(base="TDS")
+    assert value(m.fs.stream[0].mass_frac_phase_comp["Liq", "TDS"]) == pytest.approx(
+        0.035, rel=1e-3
+    )
 
 
 @pytest.mark.component
 def test_feed_ion():
-    m = property_models.solve_specify_feed(base='ion')
-    assert value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'Ca']) == pytest.approx(3.82e-4, rel=1e-3)
-    assert value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'Cl']) == pytest.approx(2.032e-2, rel=1e-3)
-    assert value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'H2O']) == pytest.approx(0.9646, rel=1e-3)
-    assert value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'Mg']) == pytest.approx(1.394e-3, rel=1e-3)
-    assert value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'Na']) == pytest.approx(1.112e-2, rel=1e-3)
-    assert value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'SO4']) == pytest.approx(2.136e-3, rel=1e-3)
+    m = property_models.solve_specify_feed(base="ion")
+    assert value(m.fs.stream[0].mass_frac_phase_comp["Liq", "Ca"]) == pytest.approx(
+        3.82e-4, rel=1e-3
+    )
+    assert value(m.fs.stream[0].mass_frac_phase_comp["Liq", "Cl"]) == pytest.approx(
+        2.032e-2, rel=1e-3
+    )
+    assert value(m.fs.stream[0].mass_frac_phase_comp["Liq", "H2O"]) == pytest.approx(
+        0.9646, rel=1e-3
+    )
+    assert value(m.fs.stream[0].mass_frac_phase_comp["Liq", "Mg"]) == pytest.approx(
+        1.394e-3, rel=1e-3
+    )
+    assert value(m.fs.stream[0].mass_frac_phase_comp["Liq", "Na"]) == pytest.approx(
+        1.112e-2, rel=1e-3
+    )
+    assert value(m.fs.stream[0].mass_frac_phase_comp["Liq", "SO4"]) == pytest.approx(
+        2.136e-3, rel=1e-3
+    )
 
 
 @pytest.mark.component
 def test_feed_salt():
-    m = property_models.solve_specify_feed(base='salt')
-    assert value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'CaSO4']) == pytest.approx(1.298e-3, rel=1e-3)
-    assert value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'H2O']) == pytest.approx(0.9646, rel=1e-3)
-    assert value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'MgCl2']) == pytest.approx(4.251e-3, rel=1e-3)
-    assert value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'MgSO4']) == pytest.approx(1.529e-3, rel=1e-3)
-    assert value(m.fs.stream[0].mass_frac_phase_comp['Liq', 'NaCl']) == pytest.approx(2.827e-2, rel=1e-3)
+    m = property_models.solve_specify_feed(base="salt")
+    assert value(m.fs.stream[0].mass_frac_phase_comp["Liq", "CaSO4"]) == pytest.approx(
+        1.298e-3, rel=1e-3
+    )
+    assert value(m.fs.stream[0].mass_frac_phase_comp["Liq", "H2O"]) == pytest.approx(
+        0.9646, rel=1e-3
+    )
+    assert value(m.fs.stream[0].mass_frac_phase_comp["Liq", "MgCl2"]) == pytest.approx(
+        4.251e-3, rel=1e-3
+    )
+    assert value(m.fs.stream[0].mass_frac_phase_comp["Liq", "MgSO4"]) == pytest.approx(
+        1.529e-3, rel=1e-3
+    )
+    assert value(m.fs.stream[0].mass_frac_phase_comp["Liq", "NaCl"]) == pytest.approx(
+        2.827e-2, rel=1e-3
+    )

@@ -38,4 +38,3 @@ class BackwashSolidsHandlingZOData(ZeroOrderBaseData):
         build_sido(self)
         self._Q = Reference(self.properties_in[:].flow_vol)
         pump_electricity(self, self._Q)
-
