@@ -24,6 +24,9 @@ from pyomo.environ import (Block,
                            units as pyunits)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
+# Import Watertap cores
+from watertap.core.util.initialization import check_solve, check_dof
+
 # Import IDAES cores
 from idaes.core import (ControlVolume1DBlock,
                         declare_process_block_class,
@@ -193,7 +196,40 @@ class Electrodialysis1DData(UnitModelBlockData):
 
         # Add unit variables and parameters
         # # TODO: Add material props for membranes and such here
-        #   membrane area
+
+        # Refer to the solute_set of the property package for a set of ions
+        full_set = self.config.property_package.component_list
+
+        # # TODO: Current Issue with how a set of components is defined in Adam's prop pack
+        #   Issue is that all non-H2O species are added as 'Solutes', which DO NOT have
+        #   a 'charge' parameter inherently in the GenericProperties system. Also, the
+        #   generic system does not support a property called 'charge_comp' as is done
+        #   in Adam's prop pack for this info. Therefore, if we want this to work with
+        #   either, we need to update Adam's prop pack or setup the logic in this model
+        #   on how to handle situations for either case.
+        #
+        #   e.g., try to grab cation_set, anion_set, and solute_set,
+        #           if not available, grab component_list and look for 'charge_comp'.
+
+        # Each dilute_side and concentrate_side pair has 2 membranes
+        #   cem = Cation-Exchange Membrane
+        #   aem = Anion-Exchange Membrane
+        self.membrane_set = Set(initialize = ['cem','aem'])
+
+        self.cell_width = Var(
+            initialize = 0.1,
+            bounds = (1e-3, 1e2),
+            units = pyunits.m,
+            doc = "The width of the electrodialysis cell, denoted as b in the model description"
+        )
+
+        self.membrane_thickness = Var(
+            self.membrane_set,
+            initialize = 0.0001,
+            bounds = (1e-6, 1e-1),
+            units = pyunits.m,
+            doc = "Membrane thickness for each membrane"
+        )
 
 
         # Build control volume for dilute side
@@ -271,8 +307,12 @@ class Electrodialysis1DData(UnitModelBlockData):
         self.add_inlet_port(name='inlet_concentrate', block=self.concentrate_side)
         self.add_outlet_port(name='outlet_concentrate', block=self.concentrate_side)
 
-        """ Add references to the shared control volume length."""
-        add_object_reference(self, 'length', self.dilute_side.length)
+        """
+            Add references to the shared control volume length.
+            This is the same length for the full electrodialysis cell,
+            and is denoted as 'l' in the model description.
+        """
+        add_object_reference(self, 'cell_length', self.dilute_side.length)
 
         # -------- Add constraints ---------
         # # TODO: Add vars and associated constraints for all flux terms
@@ -335,12 +375,15 @@ class Electrodialysis1DData(UnitModelBlockData):
 
 
     # initialize method
-    def initialize(
+    def initialize_build(
             blk,
             state_args=None,
             outlvl=idaeslog.NOTSET,
             solver=None,
-            optarg=None):
+            optarg=None,
+            fail_on_warning=False,
+            ignore_dof=False
+    ):
         """
         General wrapper for pressure changer initialization routines
 
@@ -353,6 +396,8 @@ class Electrodialysis1DData(UnitModelBlockData):
             optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
                      initialization (default = None)
+            fail_on_warning : boolean argument to fail or only produce  warning upon unsuccessful solve (default=False)
+            ignore_dof : boolean argument to ignore when DOF != 0 (default=False)
 
         Returns: None
         """
@@ -373,6 +418,9 @@ class Electrodialysis1DData(UnitModelBlockData):
         # ---------------------------------------------------------------------
 
         # ---------------------------------------------------------------------
+        if not ignore_dof:
+            check_dof(blk, fail_flag=fail_on_warning, logger=init_log)
+
         # Initialize concentrate_side block
         flags = blk.concentrate_side.initialize(
             outlvl=outlvl,
@@ -389,6 +437,12 @@ class Electrodialysis1DData(UnitModelBlockData):
             res = opt.solve(blk, tee=slc.tee)
         init_log.info_high(
             "Initialization Step 3 {}.".format(idaeslog.condition(res)))
+        check_solve(
+            res,
+            logger=init_log,
+            fail_flag=fail_on_warning,
+            checkpoint="Initialization Step 3",
+        )
 
         # ---------------------------------------------------------------------
         # Release state
