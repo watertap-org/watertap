@@ -395,7 +395,7 @@ class TestMetabZO_H2_cost:
             model.fs.costing.total_fixed_operating_cost
         )
         agg_flow_costs = model.fs.costing.aggregate_flow_costs
-        assert pytest.approx(-256.0, rel=1e-3) == value(agg_flow_costs["H2_product"])
+        assert pytest.approx(-698.4, rel=1e-3) == value(agg_flow_costs["H2_product"])
         assert pytest.approx(2.583e5, rel=1e-3) == value(agg_flow_costs["electricity"])
         assert pytest.approx(1.531e4, rel=1e-3) == value(agg_flow_costs["heat"])
 

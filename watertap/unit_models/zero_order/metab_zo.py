@@ -69,14 +69,14 @@ class MetabZOData(ZeroOrderBaseData):
             initialize=1,
             bounds=(0, None),
             units=pyunits.kW,
-            doc="Electricity consumption of unit",
+            doc="Electricity demand of unit",
         )
         self.heat = Var(
             self.flowsheet().time,
             initialize=1,
             bounds=(0, None),
             units=pyunits.kW,
-            doc="Thermal energy consumption of unit",
+            doc="Thermal demand of unit",
         )
         self.energy_electric_mixer_vol = Var(
             initialize=1,
