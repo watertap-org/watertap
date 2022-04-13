@@ -47,37 +47,39 @@ public_cloud_url = f"mongodb+srv://{NAME}:{PW}@nawi-edb.utpac.mongodb.net"
 
 bad_cloud_url = f"mongodb+srv://{BAD_NAME}:{PW}@nawi-edb.utpac.mongodb.net"
 
+
 @pytest.mark.component
 def test_bad_url_cloud_db_connection():
     with pytest.raises(OperationFailure, match="bad auth : Authentication failed"):
-        connect_to_cloud_edb(bad_cloud_url,
-                            DB_NAME,
-                            check_connection=True)
+        connect_to_cloud_edb(bad_cloud_url, DB_NAME, check_connection=True)
+
 
 @pytest.mark.component
 def test_bad_name_cloud_db_connection():
-    (database, is_connected) = connect_to_cloud_edb(public_cloud_url,
-                                                    BAD_DB_NAME,
-                                                    check_connection=True)
+    (database, is_connected) = connect_to_cloud_edb(
+        public_cloud_url, BAD_DB_NAME, check_connection=True
+    )
     assert is_connected == True
 
-    #Running with bad database name, but correct url will allow for a connection,
-    #but will raise errors when trying to access data.
+    # Running with bad database name, but correct url will allow for a connection,
+    # but will raise errors when trying to access data.
     with pytest.raises(IndexError, match="No bases found in DB"):
         run_the_basics_with_mockdb(database)
+
 
 # NOTE: As it currently stands, if the connection to the cloud cannot be
 # made, then this test will fail and will block PRs
 @pytest.mark.component
 def test_public_cloud_db_connection():
-    (database, is_connected) = connect_to_cloud_edb(public_cloud_url,
-                                                    DB_NAME,
-                                                    check_connection=True)
+    (database, is_connected) = connect_to_cloud_edb(
+        public_cloud_url, DB_NAME, check_connection=True
+    )
     assert is_connected == True
 
     # Call the run_the_basics_with_mockdb function, but using the cloud db
     #       NOTE: Cloud DB and bootstrap/local are expected to give same result
     assert run_the_basics_with_mockdb(database) == True
+
 
 @pytest.mark.component
 def test_the_basics(edb):
@@ -212,7 +214,11 @@ def test_solid_precipitation_reactions(edb):
     )
 
     # Check for correct reaction order on solid species
-    assert model.fs.rxn_params.reaction_CaOH2_Ksp.reaction_order[('Sol', 'Ca[OH]2')].value == 0
+    assert (
+        model.fs.rxn_params.reaction_CaOH2_Ksp.reaction_order[("Sol", "Ca[OH]2")].value
+        == 0
+    )
+
 
 @pytest.mark.component
 def test_solid_precipitation_reactions_liq_only(edb):

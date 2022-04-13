@@ -31,6 +31,7 @@ from watertap.edb import ElectrolyteDB
 
 __author__ = "Austin Ladshaw"
 
+
 def connect_to_cloud_edb(url, db_name, check_connection=False):
     print("connecting to " + url)
     db = ElectrolyteDB(url=url, db=db_name, check_connection=check_connection)
