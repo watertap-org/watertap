@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a bioreactor with simple reactions
+This module contains a zero-order representation of a METAB bioreactor with simple reactions
 (i.e. conversion fractions for key reagents and conversion ratios for other reactive species).
 """
 
