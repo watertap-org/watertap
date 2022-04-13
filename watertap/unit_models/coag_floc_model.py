@@ -13,17 +13,19 @@
 
 # Import Pyomo libraries
 from math import pi
-from pyomo.environ import (Block,
-                           Set,
-                           Var,
-                           Param,
-                           Expression,
-                           Suffix,
-                           NonNegativeReals,
-                           PositiveIntegers,
-                           Reference,
-                           value,
-                           units as pyunits)
+from pyomo.environ import (
+    Block,
+    Set,
+    Var,
+    Param,
+    Expression,
+    Suffix,
+    NonNegativeReals,
+    PositiveIntegers,
+    Reference,
+    value,
+    units as pyunits,
+)
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -366,8 +368,9 @@ class CoagulationFlocculationData(UnitModelBlockData):
             mutable=True,
             initialize=molar_rat,
             domain=NonNegativeReals,
-            units=pyunits.mol/pyunits.mol,
-            doc='Moles of the produced salts from 1 mole of chemical additives')
+            units=pyunits.mol / pyunits.mol,
+            doc="Moles of the produced salts from 1 mole of chemical additives",
+        )
 
         # Below set of Vars are for the power usage of the unit
         #       User's will need to provide scaling factors for these
@@ -381,14 +384,16 @@ class CoagulationFlocculationData(UnitModelBlockData):
             bounds=(0.1, 10000),
             domain=NonNegativeReals,
             units=pyunits.s,
-            doc='Hydraulic retention time of each rapid mixing basin in seconds')
+            doc="Hydraulic retention time of each rapid mixing basin in seconds",
+        )
 
         self.num_rapid_mixing_basins = Var(
             initialize=1,
             bounds=(1, 10),
             domain=PositiveIntegers,
             units=pyunits.dimensionless,
-            doc='Number of rapid mixing basins in series')
+            doc="Number of rapid mixing basins in series",
+        )
 
         self.rapid_mixing_vel_grad = Var(
             self.flowsheet().config.time,
@@ -396,7 +401,8 @@ class CoagulationFlocculationData(UnitModelBlockData):
             bounds=(0.1, 10000),
             domain=NonNegativeReals,
             units=pyunits.s**-1,
-            doc='Velocity gradient in each rapid mixing basin in (m/s)/m')
+            doc="Velocity gradient in each rapid mixing basin in (m/s)/m",
+        )
 
         # NOTE: There are 2 modes for flocculation mixing discussed in literature
         #       Here we are only intially defining the 'Paddle-Wheel' mode. Other
@@ -408,21 +414,24 @@ class CoagulationFlocculationData(UnitModelBlockData):
             bounds=(10, 10000),
             domain=NonNegativeReals,
             units=pyunits.s,
-            doc='Hydraulic retention time of the flocculation mixing basin in seconds')
+            doc="Hydraulic retention time of the flocculation mixing basin in seconds",
+        )
 
         self.single_paddle_length = Var(
             initialize=2,
             bounds=(0.1, 100),
             domain=NonNegativeReals,
             units=pyunits.m,
-            doc='Length of a single paddle blade (from center of rotation to the edge) in meters')
+            doc="Length of a single paddle blade (from center of rotation to the edge) in meters",
+        )
 
         self.single_paddle_width = Var(
             initialize=0.5,
             bounds=(0.01, 100),
             domain=NonNegativeReals,
             units=pyunits.m,
-            doc='Width of a single paddle blade in meters')
+            doc="Width of a single paddle blade in meters",
+        )
 
         self.paddle_rotational_speed = Var(
             self.flowsheet().config.time,
@@ -430,7 +439,8 @@ class CoagulationFlocculationData(UnitModelBlockData):
             bounds=(0.01, 10000),
             domain=NonNegativeReals,
             units=pyunits.s**-1,
-            doc='Rotational speed of the paddles in revolutions per second')
+            doc="Rotational speed of the paddles in revolutions per second",
+        )
 
         self.paddle_drag_coef = Var(
             self.flowsheet().config.time,
@@ -438,29 +448,32 @@ class CoagulationFlocculationData(UnitModelBlockData):
             bounds=(0.1, 10),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc='Drag coefficient for the paddles in the flocculation basin')
+            doc="Drag coefficient for the paddles in the flocculation basin",
+        )
 
         self.vel_fraction = Var(
             initialize=0.7,
             bounds=(0.6, 0.9),
             domain=NonNegativeReals,
             units=pyunits.dimensionless,
-            doc='Fraction of actual paddle velocity relative to local water velocity')
+            doc="Fraction of actual paddle velocity relative to local water velocity",
+        )
 
         self.num_paddle_wheels = Var(
             initialize=4,
             bounds=(1, 10),
             domain=PositiveIntegers,
             units=pyunits.dimensionless,
-            doc='Number of rotating paddle wheels in the flocculation basin')
+            doc="Number of rotating paddle wheels in the flocculation basin",
+        )
 
         self.num_paddles_per_wheel = Var(
             initialize=4,
             bounds=(1, 10),
             domain=PositiveIntegers,
             units=pyunits.dimensionless,
-            doc='Number of paddles attached to each rotating wheel in the flocculation basin')
-
+            doc="Number of paddles attached to each rotating wheel in the flocculation basin",
+        )
 
         # Build control volume for feed side
         self.control_volume = ControlVolume0DBlock(
@@ -626,16 +639,24 @@ class CoagulationFlocculationData(UnitModelBlockData):
             initialize=1,
             bounds=(0, 1000),
             domain=NonNegativeReals,
-            units=units_meta('length')**3,
-            doc='Volume of each rapid mixing basin in the series')
+            units=units_meta("length") ** 3,
+            doc="Volume of each rapid mixing basin in the series",
+        )
 
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Constraint for the volume of each rapid mixing basin")
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Constraint for the volume of each rapid mixing basin",
+        )
         def eq_rapid_mixing_basin_vol(self, t):
-            flow_rate = pyunits.convert(self.control_volume.properties_in[t].flow_vol_phase['Liq'],
-                                    to_units=units_meta('length')**3/pyunits.s)
+            flow_rate = pyunits.convert(
+                self.control_volume.properties_in[t].flow_vol_phase["Liq"],
+                to_units=units_meta("length") ** 3 / pyunits.s,
+            )
 
-            return (self.rapid_mixing_basin_vol[t] == flow_rate*self.rapid_mixing_retention_time[t])
+            return (
+                self.rapid_mixing_basin_vol[t]
+                == flow_rate * self.rapid_mixing_retention_time[t]
+            )
 
         # Constraint for the power usage of the rapid mixers
         #   Mines, R.O., Environmental engineering: Principles
@@ -647,19 +668,26 @@ class CoagulationFlocculationData(UnitModelBlockData):
             bounds=(0, 100),
             domain=NonNegativeReals,
             units=pyunits.kW,
-            doc='Power usage of the rapid mixing basins in kW')
+            doc="Power usage of the rapid mixing basins in kW",
+        )
 
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Constraint for the power usage of the rapid mixing basins")
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Constraint for the power usage of the rapid mixing basins",
+        )
         def eq_rapid_mixing_power(self, t):
-            vel_grad = pyunits.convert(self.rapid_mixing_vel_grad[t], to_units=units_meta('time')**-1)
-            power_usage = pyunits.convert(vel_grad**2 *
-                                self.control_volume.properties_out[t].visc_d['Liq'] *
-                                self.rapid_mixing_basin_vol[t] *
-                                self.num_rapid_mixing_basins,
-                                to_units=pyunits.kW)
+            vel_grad = pyunits.convert(
+                self.rapid_mixing_vel_grad[t], to_units=units_meta("time") ** -1
+            )
+            power_usage = pyunits.convert(
+                vel_grad**2
+                * self.control_volume.properties_out[t].visc_d["Liq"]
+                * self.rapid_mixing_basin_vol[t]
+                * self.num_rapid_mixing_basins,
+                to_units=pyunits.kW,
+            )
 
-            return (self.rapid_mixing_power[t] == power_usage)
+            return self.rapid_mixing_power[t] == power_usage
 
         # Constraint for the volume of the flocculation basin
         #   Mines, R.O., Environmental engineering: Principles
@@ -670,16 +698,21 @@ class CoagulationFlocculationData(UnitModelBlockData):
             initialize=10,
             bounds=(0, 10000),
             domain=NonNegativeReals,
-            units=units_meta('length')**3,
-            doc='Volume of the flocculation basin')
+            units=units_meta("length") ** 3,
+            doc="Volume of the flocculation basin",
+        )
 
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Constraint for the volume of the flocculation basin")
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Constraint for the volume of the flocculation basin",
+        )
         def eq_floc_basin_vol(self, t):
-            flow_rate = pyunits.convert(self.control_volume.properties_in[t].flow_vol_phase['Liq'],
-                                    to_units=units_meta('length')**3/pyunits.s)
+            flow_rate = pyunits.convert(
+                self.control_volume.properties_in[t].flow_vol_phase["Liq"],
+                to_units=units_meta("length") ** 3 / pyunits.s,
+            )
 
-            return (self.floc_basin_vol[t] == flow_rate*self.floc_retention_time[t])
+            return self.floc_basin_vol[t] == flow_rate * self.floc_retention_time[t]
 
         # Constraint for the velocity of the paddle wheels
         #   Mines, R.O., Environmental engineering: Principles
@@ -690,16 +723,21 @@ class CoagulationFlocculationData(UnitModelBlockData):
             initialize=1,
             bounds=(0, 100),
             domain=NonNegativeReals,
-            units=units_meta('length')*units_meta('time')**-1,
-            doc='Velocity of the wheels in the flocculation basin')
+            units=units_meta("length") * units_meta("time") ** -1,
+            doc="Velocity of the wheels in the flocculation basin",
+        )
 
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Constraint for the velocity of the wheels in the flocculation basin")
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Constraint for the velocity of the wheels in the flocculation basin",
+        )
         def eq_floc_wheel_speed(self, t):
-            wheel_rate = pyunits.convert(pi*self.single_paddle_length*self.paddle_rotational_speed[t],
-                                    to_units=units_meta('length')*units_meta('time')**-1)
+            wheel_rate = pyunits.convert(
+                pi * self.single_paddle_length * self.paddle_rotational_speed[t],
+                to_units=units_meta("length") * units_meta("time") ** -1,
+            )
 
-            return (self.floc_wheel_speed[t] == wheel_rate)
+            return self.floc_wheel_speed[t] == wheel_rate
 
         # Constraint for the power usage of the flocculation mixer
         #   Mines, R.O., Environmental engineering: Principles
@@ -711,21 +749,32 @@ class CoagulationFlocculationData(UnitModelBlockData):
             bounds=(0, 100),
             domain=NonNegativeReals,
             units=pyunits.kW,
-            doc='Power usage of the flocculation basin in kW')
+            doc="Power usage of the flocculation basin in kW",
+        )
 
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Constraint for the power usage of the flocculation basin")
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Constraint for the power usage of the flocculation basin",
+        )
         def eq_flocculation_power(self, t):
-            total_area = pyunits.convert(self.single_paddle_width * self.single_paddle_length *
-                                self.num_paddle_wheels * self.num_paddles_per_wheel,
-                                to_units=units_meta('length')**2)
-            power_usage = pyunits.convert(0.5 * self.paddle_drag_coef[t] * total_area *
-                                self.control_volume.properties_out[t].dens_mass_phase['Liq'] *
-                                self.vel_fraction**3 * self.floc_wheel_speed[t]**3,
-                                to_units=pyunits.kW)
+            total_area = pyunits.convert(
+                self.single_paddle_width
+                * self.single_paddle_length
+                * self.num_paddle_wheels
+                * self.num_paddles_per_wheel,
+                to_units=units_meta("length") ** 2,
+            )
+            power_usage = pyunits.convert(
+                0.5
+                * self.paddle_drag_coef[t]
+                * total_area
+                * self.control_volume.properties_out[t].dens_mass_phase["Liq"]
+                * self.vel_fraction**3
+                * self.floc_wheel_speed[t] ** 3,
+                to_units=pyunits.kW,
+            )
 
-            return (self.flocculation_power[t] == power_usage)
-
+            return self.flocculation_power[t] == power_usage
 
         self.total_power = Var(
             self.flowsheet().config.time,
@@ -733,12 +782,18 @@ class CoagulationFlocculationData(UnitModelBlockData):
             bounds=(0, 100),
             domain=NonNegativeReals,
             units=pyunits.kW,
-            doc='Power usage of the full unit model in kW')
+            doc="Power usage of the full unit model in kW",
+        )
 
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Constraint for the power usage of the full unit model")
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Constraint for the power usage of the full unit model",
+        )
         def eq_total_power(self, t):
-            return (self.total_power[t] == self.flocculation_power[t] + self.rapid_mixing_power[t])
+            return (
+                self.total_power[t]
+                == self.flocculation_power[t] + self.rapid_mixing_power[t]
+            )
 
     # Return a scalar expression for the inlet concentration of TSS
     def compute_inlet_tss_mass_concentration(self, t):
@@ -872,37 +927,57 @@ class CoagulationFlocculationData(UnitModelBlockData):
         # scaling factors for power usage in rapid mixing
         #       Display warning
         if iscale.get_scaling_factor(self.rapid_mixing_retention_time) is None:
-            sf = iscale.get_scaling_factor(self.rapid_mixing_retention_time, default=1e-1, warning=True)
+            sf = iscale.get_scaling_factor(
+                self.rapid_mixing_retention_time, default=1e-1, warning=True
+            )
             iscale.set_scaling_factor(self.rapid_mixing_retention_time, sf)
         if iscale.get_scaling_factor(self.num_rapid_mixing_basins) is None:
-            sf = iscale.get_scaling_factor(self.num_rapid_mixing_basins, default=1, warning=True)
+            sf = iscale.get_scaling_factor(
+                self.num_rapid_mixing_basins, default=1, warning=True
+            )
             iscale.set_scaling_factor(self.num_rapid_mixing_basins, sf)
         if iscale.get_scaling_factor(self.rapid_mixing_vel_grad) is None:
-            sf = iscale.get_scaling_factor(self.rapid_mixing_vel_grad, default=1e-2, warning=True)
+            sf = iscale.get_scaling_factor(
+                self.rapid_mixing_vel_grad, default=1e-2, warning=True
+            )
             iscale.set_scaling_factor(self.rapid_mixing_vel_grad, sf)
         if iscale.get_scaling_factor(self.floc_retention_time) is None:
-            sf = iscale.get_scaling_factor(self.floc_retention_time, default=1e-3, warning=True)
+            sf = iscale.get_scaling_factor(
+                self.floc_retention_time, default=1e-3, warning=True
+            )
             iscale.set_scaling_factor(self.floc_retention_time, sf)
         if iscale.get_scaling_factor(self.single_paddle_length) is None:
-            sf = iscale.get_scaling_factor(self.single_paddle_length, default=1, warning=True)
+            sf = iscale.get_scaling_factor(
+                self.single_paddle_length, default=1, warning=True
+            )
             iscale.set_scaling_factor(self.single_paddle_length, sf)
         if iscale.get_scaling_factor(self.single_paddle_width) is None:
-            sf = iscale.get_scaling_factor(self.single_paddle_width, default=1, warning=True)
+            sf = iscale.get_scaling_factor(
+                self.single_paddle_width, default=1, warning=True
+            )
             iscale.set_scaling_factor(self.single_paddle_width, sf)
         if iscale.get_scaling_factor(self.paddle_rotational_speed) is None:
-            sf = iscale.get_scaling_factor(self.paddle_rotational_speed, default=10, warning=True)
+            sf = iscale.get_scaling_factor(
+                self.paddle_rotational_speed, default=10, warning=True
+            )
             iscale.set_scaling_factor(self.paddle_rotational_speed, sf)
         if iscale.get_scaling_factor(self.paddle_drag_coef) is None:
-            sf = iscale.get_scaling_factor(self.paddle_drag_coef, default=1, warning=True)
+            sf = iscale.get_scaling_factor(
+                self.paddle_drag_coef, default=1, warning=True
+            )
             iscale.set_scaling_factor(self.paddle_drag_coef, sf)
         if iscale.get_scaling_factor(self.vel_fraction) is None:
             sf = iscale.get_scaling_factor(self.vel_fraction, default=1, warning=True)
             iscale.set_scaling_factor(self.vel_fraction, sf)
         if iscale.get_scaling_factor(self.num_paddle_wheels) is None:
-            sf = iscale.get_scaling_factor(self.num_paddle_wheels, default=1, warning=True)
+            sf = iscale.get_scaling_factor(
+                self.num_paddle_wheels, default=1, warning=True
+            )
             iscale.set_scaling_factor(self.num_paddle_wheels, sf)
         if iscale.get_scaling_factor(self.num_paddles_per_wheel) is None:
-            sf = iscale.get_scaling_factor(self.num_paddles_per_wheel, default=1, warning=True)
+            sf = iscale.get_scaling_factor(
+                self.num_paddles_per_wheel, default=1, warning=True
+            )
             iscale.set_scaling_factor(self.num_paddles_per_wheel, sf)
 
         # set scaling for tss_loss_rate
@@ -971,10 +1046,12 @@ class CoagulationFlocculationData(UnitModelBlockData):
             sf1 = 0
             sf2 = 0
             for t in self.control_volume.properties_out:
-                sf1 += iscale.get_scaling_factor(self.control_volume.properties_out[t].flow_vol_phase['Liq'])
+                sf1 += iscale.get_scaling_factor(
+                    self.control_volume.properties_out[t].flow_vol_phase["Liq"]
+                )
             sf2 = iscale.get_scaling_factor(self.rapid_mixing_retention_time)
             sf1 = sf1 / len(self.control_volume.properties_in)
-            sf = sf1*sf2
+            sf = sf1 * sf2
             iscale.set_scaling_factor(self.rapid_mixing_basin_vol, sf)
 
             for ind, c in self.eq_rapid_mixing_basin_vol.items():
@@ -985,12 +1062,14 @@ class CoagulationFlocculationData(UnitModelBlockData):
             sf1 = 0
             sf2 = 0
             for t in self.control_volume.properties_out:
-                sf1 += iscale.get_scaling_factor(self.control_volume.properties_out[t].visc_d['Liq'])
+                sf1 += iscale.get_scaling_factor(
+                    self.control_volume.properties_out[t].visc_d["Liq"]
+                )
             sf2 = iscale.get_scaling_factor(self.rapid_mixing_vel_grad)
             sf3 = iscale.get_scaling_factor(self.rapid_mixing_basin_vol)
             sf4 = iscale.get_scaling_factor(self.num_rapid_mixing_basins)
             sf1 = sf1 / len(self.control_volume.properties_in)
-            sf = sf1*sf2**2*sf3*sf4
+            sf = sf1 * sf2**2 * sf3 * sf4
             iscale.set_scaling_factor(self.rapid_mixing_power, sf)
 
             for ind, c in self.eq_rapid_mixing_power.items():
@@ -1001,10 +1080,12 @@ class CoagulationFlocculationData(UnitModelBlockData):
             sf1 = 0
             sf2 = 0
             for t in self.control_volume.properties_out:
-                sf1 += iscale.get_scaling_factor(self.control_volume.properties_out[t].flow_vol_phase['Liq'])
+                sf1 += iscale.get_scaling_factor(
+                    self.control_volume.properties_out[t].flow_vol_phase["Liq"]
+                )
             sf2 = iscale.get_scaling_factor(self.floc_retention_time)
             sf1 = sf1 / len(self.control_volume.properties_in)
-            sf = sf1*sf2
+            sf = sf1 * sf2
             iscale.set_scaling_factor(self.floc_basin_vol, sf)
 
             for ind, c in self.eq_floc_basin_vol.items():
@@ -1014,7 +1095,7 @@ class CoagulationFlocculationData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.floc_wheel_speed[t]) is None:
             sf1 = iscale.get_scaling_factor(self.paddle_rotational_speed)
             sf2 = iscale.get_scaling_factor(self.single_paddle_length)
-            sf = sf1*sf2*pi/10
+            sf = sf1 * sf2 * pi / 10
             iscale.set_scaling_factor(self.floc_wheel_speed, sf)
 
             for ind, c in self.eq_floc_wheel_speed.items():
@@ -1026,14 +1107,16 @@ class CoagulationFlocculationData(UnitModelBlockData):
             sf2 = iscale.get_scaling_factor(self.vel_fraction)
             sf3 = 0
             for t in self.control_volume.properties_out:
-                sf3 += iscale.get_scaling_factor(self.control_volume.properties_out[t].dens_mass_phase['Liq'])
+                sf3 += iscale.get_scaling_factor(
+                    self.control_volume.properties_out[t].dens_mass_phase["Liq"]
+                )
             sf3 = sf3 / len(self.control_volume.properties_in)
             sf4 = iscale.get_scaling_factor(self.single_paddle_length)
             sf5 = iscale.get_scaling_factor(self.single_paddle_width)
             sf6 = iscale.get_scaling_factor(self.num_paddle_wheels)
             sf7 = iscale.get_scaling_factor(self.num_paddles_per_wheel)
             sf8 = iscale.get_scaling_factor(self.paddle_drag_coef)
-            sf = 0.5*sf8*(sf4*sf5*sf6*sf7)*sf3*sf2**3*sf1**3*500
+            sf = 0.5 * sf8 * (sf4 * sf5 * sf6 * sf7) * sf3 * sf2**3 * sf1**3 * 500
             iscale.set_scaling_factor(self.flocculation_power, sf)
 
             for ind, c in self.eq_flocculation_power.items():
@@ -1043,7 +1126,7 @@ class CoagulationFlocculationData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.total_power[t]) is None:
             sf1 = iscale.get_scaling_factor(self.flocculation_power)
             sf2 = iscale.get_scaling_factor(self.rapid_mixing_power)
-            sf = (sf1 + sf2)/2
+            sf = (sf1 + sf2) / 2
             iscale.set_scaling_factor(self.total_power, sf)
 
             for ind, c in self.eq_total_power.items():
@@ -1110,10 +1193,22 @@ class CoagulationFlocculationData(UnitModelBlockData):
 
         # update scaling for control_volume.properties_out
         for t in self.control_volume.properties_out:
-            if iscale.get_scaling_factor(self.control_volume.properties_out[t].dens_mass_phase) is None:
-                iscale.set_scaling_factor(self.control_volume.properties_out[t].dens_mass_phase, 1e-3)
-            if iscale.get_scaling_factor(self.control_volume.properties_out[t].visc_d) is None:
-                iscale.set_scaling_factor(self.control_volume.properties_out[t].visc_d, 1e3)
+            if (
+                iscale.get_scaling_factor(
+                    self.control_volume.properties_out[t].dens_mass_phase
+                )
+                is None
+            ):
+                iscale.set_scaling_factor(
+                    self.control_volume.properties_out[t].dens_mass_phase, 1e-3
+                )
+            if (
+                iscale.get_scaling_factor(self.control_volume.properties_out[t].visc_d)
+                is None
+            ):
+                iscale.set_scaling_factor(
+                    self.control_volume.properties_out[t].visc_d, 1e3
+                )
 
             # need to update scaling factors for TSS, Sludge, and TDS to account for the
             #   expected change in their respective values from the loss/gain rates
@@ -1152,16 +1247,19 @@ class CoagulationFlocculationData(UnitModelBlockData):
                         self.control_volume.properties_out[t].mass_frac_phase_comp[ind]
                     )
                     sf_new = iscale.get_scaling_factor(self.tss_loss_rate)
-                    iscale.set_scaling_factor(self.control_volume.properties_out[t].mass_frac_phase_comp[ind], 100*sf_new*(sf_new/sf_og))
+                    iscale.set_scaling_factor(
+                        self.control_volume.properties_out[t].mass_frac_phase_comp[ind],
+                        100 * sf_new * (sf_new / sf_og),
+                    )
 
     def _get_performance_contents(self, time_point=0):
         t = time_point
-        return { "vars" : { "Total Power Usage  (kW)" : self.total_power[t],
-                            "Rapid Mixing Power (kW)" : self.rapid_mixing_power[t],
-                            "Flocc Mixing Power (kW)" : self.flocculation_power[t],
-                          },
-                "exprs" : {
-                          },
-                "params" : {
-                           },
-               }
+        return {
+            "vars": {
+                "Total Power Usage  (kW)": self.total_power[t],
+                "Rapid Mixing Power (kW)": self.rapid_mixing_power[t],
+                "Flocc Mixing Power (kW)": self.flocculation_power[t],
+            },
+            "exprs": {},
+            "params": {},
+        }

@@ -14,17 +14,19 @@
 Initial property package for water treatment via a Coagulation-Flocculation process
 """
 
-from pyomo.environ import (Constraint,
-                           Var,
-                           Param,
-                           Expression,
-                           Reals,
-                           NonNegativeReals,
-                           Suffix,
-                           value,
-                           exp,
-                           assert_optimal_termination,
-                           check_optimal_termination)
+from pyomo.environ import (
+    Constraint,
+    Var,
+    Param,
+    Expression,
+    Reals,
+    NonNegativeReals,
+    Suffix,
+    value,
+    exp,
+    assert_optimal_termination,
+    check_optimal_termination,
+)
 
 from pyomo.environ import units as pyunits
 
@@ -162,26 +164,27 @@ class CoagulationParameterData(PhysicalParameterBlock):
         #     Liquids. Hemisphere Publishing Corp. (1989)
         self.mu_A = Param(
             domain=Reals,
-            initialize=2.939E-5,
+            initialize=2.939e-5,
             mutable=True,
             units=pyunits.kg / pyunits.m / pyunits.s,
-            doc='Pre-exponential factor for viscosity calculation')
+            doc="Pre-exponential factor for viscosity calculation",
+        )
 
         self.mu_B = Param(
             domain=Reals,
             initialize=507.88,
             mutable=True,
             units=pyunits.K,
-            doc='Exponential numerator term for viscosity calculation')
+            doc="Exponential numerator term for viscosity calculation",
+        )
 
         self.mu_C = Param(
             domain=Reals,
             initialize=149.3,
             mutable=True,
             units=pyunits.K,
-            doc='Exponential denominator term for viscosity calculation')
-
-
+            doc="Exponential denominator term for viscosity calculation",
+        )
 
         # ---default scaling---
         self.set_default_scaling("temperature", 1e-2)
@@ -191,22 +194,28 @@ class CoagulationParameterData(PhysicalParameterBlock):
     def define_metadata(cls, obj):
         """Define properties supported and units."""
         obj.add_properties(
-            {'flow_mass_phase_comp': {'method': None},
-             'temperature': {'method': None},
-             'pressure': {'method': None},
-             'mass_frac_phase_comp': {'method': '_mass_frac_phase_comp'},
-             'dens_mass_phase': {'method': '_dens_mass_phase'},
-             'flow_vol_phase': {'method': '_flow_vol_phase'},
-             'conc_mass_phase_comp': {'method': '_conc_mass_phase_comp'},
-             'visc_d': {'method': '_visc_d'},
-             'enth_flow': {'method': '_enth_flow'},
-            })
+            {
+                "flow_mass_phase_comp": {"method": None},
+                "temperature": {"method": None},
+                "pressure": {"method": None},
+                "mass_frac_phase_comp": {"method": "_mass_frac_phase_comp"},
+                "dens_mass_phase": {"method": "_dens_mass_phase"},
+                "flow_vol_phase": {"method": "_flow_vol_phase"},
+                "conc_mass_phase_comp": {"method": "_conc_mass_phase_comp"},
+                "visc_d": {"method": "_visc_d"},
+                "enth_flow": {"method": "_enth_flow"},
+            }
+        )
 
-        obj.add_default_units({'time': pyunits.s,
-                               'length': pyunits.m,
-                               'mass': pyunits.kg,
-                               'amount': pyunits.mol,
-                               'temperature': pyunits.K})
+        obj.add_default_units(
+            {
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            }
+        )
 
 
 # this second class contains methods that are applied to state blocks as a whole,
@@ -605,17 +614,21 @@ class CoagulationStateBlockData(StateBlockData):
     def _visc_d(self):
         self.visc_d = Var(
             self.params.phase_list,
-            initialize={'Liq': 0.001},
-            bounds=(1E-6, 0.01),
+            initialize={"Liq": 0.001},
+            bounds=(1e-6, 0.01),
             units=pyunits.kg / pyunits.m / pyunits.s,
-            doc="Dynamic viscosity")
+            doc="Dynamic viscosity",
+        )
 
         #   Adjustment for dynamic viscosity as a function of temperature
         #   -------------------------------------------------------------
         #   D.S. Viswananth, G. Natarajan. Data Book on the Viscosity of
         #     Liquids. Hemisphere Publishing Corp. (1989)
         def rule_visc_d(b, p):
-            return (b.visc_d[p] == (b.params.mu_A * exp(b.params.mu_B / (b.temperature - b.params.mu_C)) ) )
+            return b.visc_d[p] == (
+                b.params.mu_A * exp(b.params.mu_B / (b.temperature - b.params.mu_C))
+            )
+
         self.eq_visc_d = Constraint(self.params.phase_list, rule=rule_visc_d)
 
     def _enth_flow(self):
@@ -756,18 +769,22 @@ class CoagulationStateBlockData(StateBlockData):
 
             # Apply constraint scaling
             for pair in self.seawater_mass_frac_dict.keys():
-                sf = iscale.get_scaling_factor(self.conc_mass_phase_comp[pair], default=1, warning=True)
-                iscale.constraint_scaling_transform(self.eq_conc_mass_phase_comp[pair], sf)
+                sf = iscale.get_scaling_factor(
+                    self.conc_mass_phase_comp[pair], default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(
+                    self.eq_conc_mass_phase_comp[pair], sf
+                )
 
-        if self.is_property_constructed('visc_d'):
+        if self.is_property_constructed("visc_d"):
             if iscale.get_scaling_factor(self.visc_d) is None:
                 iscale.set_scaling_factor(self.visc_d, 1e3)
 
             # transforming constraints
             sf = iscale.get_scaling_factor(self.visc_d)
-            iscale.constraint_scaling_transform(self.eq_visc_d['Liq'], sf)
+            iscale.constraint_scaling_transform(self.eq_visc_d["Liq"], sf)
 
-        if self.is_property_constructed('enth_flow'):
+        if self.is_property_constructed("enth_flow"):
             if iscale.get_scaling_factor(self.enth_flow) is None:
                 sf = (
                     iscale.get_scaling_factor(self.params.cp)
