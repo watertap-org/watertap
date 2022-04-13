@@ -17,7 +17,14 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    ConcreteModel, Constraint, Param, Block, value, Var, assert_optimal_termination)
+    ConcreteModel,
+    Constraint,
+    Param,
+    Block,
+    value,
+    Var,
+    assert_optimal_termination,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -33,6 +40,7 @@ from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
+
 class TestDeepWellInjectionZO:
     @pytest.fixture(scope="class")
     def model(self):
@@ -41,11 +49,12 @@ class TestDeepWellInjectionZO:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["sulfur", "toc", "tss"]})
+            default={"solute_list": ["sulfur", "toc", "tss"]}
+        )
 
-        m.fs.unit = DeepWellInjectionZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = DeepWellInjectionZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1e-5)
         m.fs.unit.inlet.flow_mass_comp[0, "sulfur"].fix(10)
@@ -57,7 +66,7 @@ class TestDeepWellInjectionZO:
     @pytest.mark.unit
     def test_build(self, model):
         assert model.fs.unit.config.database == model.db
-        assert model.fs.unit._tech_type == 'deep_well_injection'
+        assert model.fs.unit._tech_type == "deep_well_injection"
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
         assert isinstance(model.fs.unit.lift_height, Param)
@@ -66,7 +75,6 @@ class TestDeepWellInjectionZO:
         assert isinstance(model.fs.unit.pipe_distance, Var)
         assert isinstance(model.fs.unit.pipe_diameter, Var)
 
-
     @pytest.mark.component
     def test_load_parameters(self, model):
         data = model.db.get_unit_operation_parameters("deep_well_injection")
@@ -74,14 +82,11 @@ class TestDeepWellInjectionZO:
         model.fs.unit.load_parameters_from_database()
 
         assert model.fs.unit.pipe_distance[0].fixed
-        assert model.fs.unit.pipe_distance[0].value == data[
-            "pipe_distance"]["value"]
+        assert model.fs.unit.pipe_distance[0].value == data["pipe_distance"]["value"]
         assert model.fs.unit.pipe_diameter[0].fixed
-        assert model.fs.unit.pipe_diameter[0].value == data[
-            "pipe_diameter"]["value"]
+        assert model.fs.unit.pipe_diameter[0].value == data["pipe_diameter"]["value"]
         assert model.fs.unit.flow_basis[0].fixed
-        assert model.fs.unit.flow_basis[0].value == data[
-            "flow_basis"]["value"]
+        assert model.fs.unit.flow_basis[0].value == data["flow_basis"]["value"]
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -109,21 +114,23 @@ class TestDeepWellInjectionZO:
     @pytest.mark.component
     def test_solution(self, model):
         for t, j in model.fs.unit.inlet.flow_mass_comp:
-            assert (pytest.approx(value(
-                model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5) ==
-                    value(model.fs.unit.outlet.flow_mass_comp[t, j]))
+            assert pytest.approx(
+                value(model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5
+            ) == value(model.fs.unit.outlet.flow_mass_comp[t, j])
 
-        assert (pytest.approx(22.109214, rel=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert pytest.approx(22.109214, rel=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-6 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] -
-                model.fs.unit.outlet.flow_mass_comp[0, j]))
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    - model.fs.unit.outlet.flow_mass_comp[0, j]
+                )
+            )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -157,20 +164,20 @@ Unit : fs.unit                                                             Time:
 
         assert output in stream.getvalue()
 
+
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = DeepWellInjectionZO(default={
-        "property_package": m.fs.params,
-        "database": m.db})
+    m.fs.unit1 = DeepWellInjectionZO(
+        default={"property_package": m.fs.params, "database": m.db}
+    )
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(1e-5)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(10)
@@ -179,22 +186,18 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database()
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(default={
-        "flowsheet_costing_block": m.fs.costing})
+    m.fs.unit1.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
 
     assert isinstance(m.fs.costing.deep_well_injection, Block)
-    assert isinstance(m.fs.costing.deep_well_injection.well_pump_cost,
-                      Var)
-    assert isinstance(m.fs.costing.deep_well_injection.pipe_cost_basis,
-                      Var)
-    assert isinstance(m.fs.costing.deep_well_injection.flow_exponent,
-                      Var)
+    assert isinstance(m.fs.costing.deep_well_injection.well_pump_cost, Var)
+    assert isinstance(m.fs.costing.deep_well_injection.pipe_cost_basis, Var)
+    assert isinstance(m.fs.costing.deep_well_injection.flow_exponent, Var)
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
-                      Constraint)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    assert m.fs.unit1.electricity[0] in \
-        m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]

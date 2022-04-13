@@ -17,7 +17,13 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    Block, ConcreteModel, Constraint, value, Var, assert_optimal_termination)
+    Block,
+    ConcreteModel,
+    Constraint,
+    value,
+    Var,
+    assert_optimal_termination,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -33,6 +39,7 @@ from watertap.core.zero_order_costing import ZeroOrderCosting
 
 solver = get_solver()
 
+
 class TestWalnutShellFilterZO_w_default_removal:
     @pytest.fixture(scope="class")
     def model(self):
@@ -40,17 +47,23 @@ class TestWalnutShellFilterZO_w_default_removal:
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(default={"solute_list": ["nonvolatile_toc",
-                                                                    "tds",
-                                                                    "chloride",
-                                                                    "electrical_conductivity",
-                                                                    "sodium",
-                                                                    "tss",
-                                                                    "foo"]})
+        m.fs.params = WaterParameterBlock(
+            default={
+                "solute_list": [
+                    "nonvolatile_toc",
+                    "tds",
+                    "chloride",
+                    "electrical_conductivity",
+                    "sodium",
+                    "tss",
+                    "foo",
+                ]
+            }
+        )
 
-        m.fs.unit = WalnutShellFilterZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = WalnutShellFilterZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
         m.fs.unit.inlet.flow_mass_comp[0, "nonvolatile_toc"].fix(1)
@@ -78,8 +91,10 @@ class TestWalnutShellFilterZO_w_default_removal:
         model.fs.unit.load_parameters_from_database(use_default_removal=True)
 
         assert model.fs.unit.recovery_frac_mass_H2O[0].fixed
-        assert model.fs.unit.recovery_frac_mass_H2O[0].value == \
-            data["recovery_frac_mass_H2O"]["value"]
+        assert (
+            model.fs.unit.recovery_frac_mass_H2O[0].value
+            == data["recovery_frac_mass_H2O"]["value"]
+        )
 
         for (t, j), v in model.fs.unit.removal_frac_mass_solute.items():
             assert v.fixed
@@ -89,8 +104,10 @@ class TestWalnutShellFilterZO_w_default_removal:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -117,66 +134,98 @@ class TestWalnutShellFilterZO_w_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(1.007, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].flow_vol))
-        assert (pytest.approx(0.993049, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["nonvolatile_toc"]))
-        assert (pytest.approx(0.993049, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["tds"]))
-        assert (pytest.approx(0.993049, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["chloride"]))
-        assert (pytest.approx(0.993049, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["electrical_conductivity"]))
-        assert (pytest.approx(0.993049, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["sodium"]))
-        assert (pytest.approx(0.993049, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(0.993049, rel=1e-5) ==
-                value(model.fs.unit.properties_in[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0.99208, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(0.80639, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["nonvolatile_toc"]))
-        assert (pytest.approx(0.1007983, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["tds"]))
-        assert (pytest.approx(0.050399, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["chloride"]))
-        assert (pytest.approx(0.050399, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["electrical_conductivity"]))
-        assert (pytest.approx(0.050399, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["sodium"]))
-        assert (pytest.approx(0.0302395, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(1.007983, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(0.01492, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].flow_vol))
-        assert (pytest.approx(13.4048, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["nonvolatile_toc"]))
-        assert (pytest.approx(60.322, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tds"]))
-        assert (pytest.approx(63.673, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["chloride"]))
-        assert (pytest.approx(63.673, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["electrical_conductivity"]))
-        assert (pytest.approx(63.673, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["sodium"]))
-        assert (pytest.approx(65.013, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(6.7024e-07, rel=1e-5) ==
-                value(model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]))
-        assert (pytest.approx(1.007*0*3600, abs=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert pytest.approx(1.007, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].flow_vol
+        )
+        assert pytest.approx(0.993049, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["nonvolatile_toc"]
+        )
+        assert pytest.approx(0.993049, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["tds"]
+        )
+        assert pytest.approx(0.993049, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["chloride"]
+        )
+        assert pytest.approx(0.993049, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["electrical_conductivity"]
+        )
+        assert pytest.approx(0.993049, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["sodium"]
+        )
+        assert pytest.approx(0.993049, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(0.993049, rel=1e-5) == value(
+            model.fs.unit.properties_in[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(0.99208, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(0.80639, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["nonvolatile_toc"]
+        )
+        assert pytest.approx(0.1007983, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["tds"]
+        )
+        assert pytest.approx(0.050399, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["chloride"]
+        )
+        assert pytest.approx(0.050399, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp[
+                "electrical_conductivity"
+            ]
+        )
+        assert pytest.approx(0.050399, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["sodium"]
+        )
+        assert pytest.approx(0.0302395, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(1.007983, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(0.01492, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].flow_vol
+        )
+        assert pytest.approx(13.4048, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["nonvolatile_toc"]
+        )
+        assert pytest.approx(60.322, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["tds"]
+        )
+        assert pytest.approx(63.673, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["chloride"]
+        )
+        assert pytest.approx(63.673, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp[
+                "electrical_conductivity"
+            ]
+        )
+        assert pytest.approx(63.673, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["sodium"]
+        )
+        assert pytest.approx(65.013, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(6.7024e-07, rel=1e-5) == value(
+            model.fs.unit.properties_byproduct[0].conc_mass_comp["foo"]
+        )
+        assert pytest.approx(1.007 * 0 * 3600, abs=1e-5) == value(
+            model.fs.unit.electricity[0]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
         for j in model.fs.params.component_list:
-            assert 1e-6 >= abs(value(
-                model.fs.unit.inlet.flow_mass_comp[0, j] -
-                model.fs.unit.treated.flow_mass_comp[0, j] -
-                model.fs.unit.byproduct.flow_mass_comp[0, j]))
+            assert 1e-6 >= abs(
+                value(
+                    model.fs.unit.inlet.flow_mass_comp[0, j]
+                    - model.fs.unit.treated.flow_mass_comp[0, j]
+                    - model.fs.unit.byproduct.flow_mass_comp[0, j]
+                )
+            )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -221,20 +270,20 @@ Unit : fs.unit                                                             Time:
 
         assert output in stream.getvalue()
 
+
 def test_costing():
     m = ConcreteModel()
     m.db = Database()
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = WalnutShellFilterZO(default={
-        "property_package": m.fs.params,
-        "database": m.db})
+    m.fs.unit1 = WalnutShellFilterZO(
+        default={"property_package": m.fs.params, "database": m.db}
+    )
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -243,22 +292,19 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(default={
-        "flowsheet_costing_block": m.fs.costing})
+    m.fs.unit1.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
 
     assert isinstance(m.fs.costing.walnut_shell_filter, Block)
-    assert isinstance(m.fs.costing.walnut_shell_filter.capital_a_parameter,
-                      Var)
-    assert isinstance(m.fs.costing.walnut_shell_filter.capital_b_parameter,
-                      Var)
+    assert isinstance(m.fs.costing.walnut_shell_filter.capital_a_parameter, Var)
+    assert isinstance(m.fs.costing.walnut_shell_filter.capital_b_parameter, Var)
     assert isinstance(m.fs.costing.walnut_shell_filter.reference_state, Var)
 
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
-                      Constraint)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    assert m.fs.unit1.electricity[0] in \
-        m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]

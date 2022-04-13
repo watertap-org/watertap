@@ -17,7 +17,14 @@ import pytest
 
 from io import StringIO
 from pyomo.environ import (
-    Block, ConcreteModel, Constraint, value, Var, assert_optimal_termination, units as pyunits)
+    Block,
+    ConcreteModel,
+    Constraint,
+    value,
+    Var,
+    assert_optimal_termination,
+    units as pyunits,
+)
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import FlowsheetBlock
@@ -41,12 +48,11 @@ class TestCoagFlocZO:
         m.db = Database()
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["tss"]})
+        m.fs.params = WaterParameterBlock(default={"solute_list": ["tss"]})
 
-        m.fs.unit = CoagulationFlocculationZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = CoagulationFlocculationZO(
+            default={"property_package": m.fs.params, "database": m.db}
+        )
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10)
         m.fs.unit.inlet.flow_mass_comp[0, "tss"].fix(3)
@@ -56,37 +62,41 @@ class TestCoagFlocZO:
     @pytest.mark.unit
     def test_build(self, model):
         assert model.fs.unit.config.database == model.db
-        vars = {'alum_dose',
-                'polymer_dose',
-                'anion_to_cation_polymer_ratio',
-                'chemical_flow_mass',
-                'chemical_flow_mass',
-                'rapid_mix_retention_time',
-                'floc_retention_time',
-                'rapid_mix_basin_vol',
-                'floc_basin_vol',
-                'num_rapid_mixers',
-                'num_floc_mixers',
-                'num_rapid_mix_processes',
-                'num_floc_processes',
-                'num_coag_processes',
-                'num_floc_injection_processes',
-                'velocity_gradient_rapid_mix',
-                'velocity_gradient_floc',
-                'power_rapid_mix',
-                'power_floc',
-                'anionic_polymer_dose',
-                'cationic_polymer_dose',
-                'electricity'}
-        cons = {'rapid_mix_basin_vol_constraint',
-                'floc_basin_vol_constraint',
-                'chemical_flow_constraint',
-                'chemical_flow_constraint',
-                'rule_power_rapid_mix',
-                'rule_power_floc',
-                'anionic_polymer_dose_constraint',
-                'cationic_polymer_dose_constraint',
-                'electricity_constraint'}
+        vars = {
+            "alum_dose",
+            "polymer_dose",
+            "anion_to_cation_polymer_ratio",
+            "chemical_flow_mass",
+            "chemical_flow_mass",
+            "rapid_mix_retention_time",
+            "floc_retention_time",
+            "rapid_mix_basin_vol",
+            "floc_basin_vol",
+            "num_rapid_mixers",
+            "num_floc_mixers",
+            "num_rapid_mix_processes",
+            "num_floc_processes",
+            "num_coag_processes",
+            "num_floc_injection_processes",
+            "velocity_gradient_rapid_mix",
+            "velocity_gradient_floc",
+            "power_rapid_mix",
+            "power_floc",
+            "anionic_polymer_dose",
+            "cationic_polymer_dose",
+            "electricity",
+        }
+        cons = {
+            "rapid_mix_basin_vol_constraint",
+            "floc_basin_vol_constraint",
+            "chemical_flow_constraint",
+            "chemical_flow_constraint",
+            "rule_power_rapid_mix",
+            "rule_power_floc",
+            "anionic_polymer_dose_constraint",
+            "cationic_polymer_dose_constraint",
+            "electricity_constraint",
+        }
         for var in vars:
             assert isinstance(getattr(model.fs.unit, var), Var)
         for con in cons:
@@ -99,55 +109,72 @@ class TestCoagFlocZO:
         model.fs.unit.load_parameters_from_database()
 
         assert model.fs.unit.alum_dose[0].fixed
-        assert value(model.fs.unit.alum_dose[0]) == data['alum_dose']['value']
+        assert value(model.fs.unit.alum_dose[0]) == data["alum_dose"]["value"]
 
         assert model.fs.unit.polymer_dose[0].fixed
-        assert value(model.fs.unit.polymer_dose[0]) == data['polymer_dose']['value']
+        assert value(model.fs.unit.polymer_dose[0]) == data["polymer_dose"]["value"]
 
         assert model.fs.unit.anion_to_cation_polymer_ratio[0].fixed
-        assert value(model.fs.unit.anion_to_cation_polymer_ratio[0]) == \
-               data['anion_to_cation_polymer_ratio']['value']
+        assert (
+            value(model.fs.unit.anion_to_cation_polymer_ratio[0])
+            == data["anion_to_cation_polymer_ratio"]["value"]
+        )
 
         assert model.fs.unit.rapid_mix_retention_time[0].fixed
-        assert value(model.fs.unit.rapid_mix_retention_time[0]) == \
-               data['rapid_mix_retention_time']['value']
-
+        assert (
+            value(model.fs.unit.rapid_mix_retention_time[0])
+            == data["rapid_mix_retention_time"]["value"]
+        )
 
         assert model.fs.unit.floc_retention_time[0].fixed
-        assert value(model.fs.unit.floc_retention_time[0]) == \
-               data['floc_retention_time']['value']
+        assert (
+            value(model.fs.unit.floc_retention_time[0])
+            == data["floc_retention_time"]["value"]
+        )
 
         assert model.fs.unit.num_rapid_mixers.fixed
-        assert value(model.fs.unit.num_rapid_mixers) == \
-               data['num_rapid_mixers']['value']
+        assert (
+            value(model.fs.unit.num_rapid_mixers) == data["num_rapid_mixers"]["value"]
+        )
 
         assert model.fs.unit.num_floc_mixers.fixed
-        assert value(model.fs.unit.num_floc_mixers) == \
-               data['num_floc_mixers']['value']
+        assert value(model.fs.unit.num_floc_mixers) == data["num_floc_mixers"]["value"]
 
         assert model.fs.unit.num_rapid_mix_processes.fixed
-        assert value(model.fs.unit.num_rapid_mix_processes) == \
-               data['num_rapid_mix_processes']['value']
+        assert (
+            value(model.fs.unit.num_rapid_mix_processes)
+            == data["num_rapid_mix_processes"]["value"]
+        )
 
         assert model.fs.unit.num_floc_processes.fixed
-        assert value(model.fs.unit.num_floc_processes) == \
-               data['num_floc_processes']['value']
+        assert (
+            value(model.fs.unit.num_floc_processes)
+            == data["num_floc_processes"]["value"]
+        )
 
         assert model.fs.unit.num_coag_processes.fixed
-        assert value(model.fs.unit.num_coag_processes) == \
-               data['num_coag_processes']['value']
+        assert (
+            value(model.fs.unit.num_coag_processes)
+            == data["num_coag_processes"]["value"]
+        )
 
         assert model.fs.unit.num_floc_injection_processes.fixed
-        assert value(model.fs.unit.num_floc_injection_processes) == \
-               data['num_floc_injection_processes']['value']
+        assert (
+            value(model.fs.unit.num_floc_injection_processes)
+            == data["num_floc_injection_processes"]["value"]
+        )
 
         assert model.fs.unit.velocity_gradient_rapid_mix[0].fixed
-        assert value(model.fs.unit.velocity_gradient_rapid_mix[0]) == \
-               data['velocity_gradient_rapid_mix']['value']
+        assert (
+            value(model.fs.unit.velocity_gradient_rapid_mix[0])
+            == data["velocity_gradient_rapid_mix"]["value"]
+        )
 
         assert model.fs.unit.velocity_gradient_floc[0].fixed
-        assert value(model.fs.unit.velocity_gradient_floc[0]) == \
-               data['velocity_gradient_floc']['value']
+        assert (
+            value(model.fs.unit.velocity_gradient_floc[0])
+            == data["velocity_gradient_floc"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -160,7 +187,6 @@ class TestCoagFlocZO:
         assert_units_equivalent(model.fs.unit.floc_retention_time, pyunits.min)
         assert_units_equivalent(model.fs.unit.rapid_mix_basin_vol, pyunits.m**3)
         assert_units_equivalent(model.fs.unit.floc_basin_vol, pyunits.m**3)
-
 
     @pytest.mark.component
     def test_initialize(self, model):
@@ -180,30 +206,31 @@ class TestCoagFlocZO:
     @pytest.mark.component
     def test_solution(self, model):
         for t, j in model.fs.unit.inlet.flow_mass_comp:
-            assert (pytest.approx(value(
-                model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5) ==
-                    value(model.fs.unit.outlet.flow_mass_comp[t, j]))
+            assert pytest.approx(
+                value(model.fs.unit.inlet.flow_mass_comp[t, j]), rel=1e-5
+            ) == value(model.fs.unit.outlet.flow_mass_comp[t, j])
 
-        assert (pytest.approx(0.057915, rel=1e-5) ==
-                value(model.fs.unit.power_rapid_mix[0]))
+        assert pytest.approx(0.057915, rel=1e-5) == value(
+            model.fs.unit.power_rapid_mix[0]
+        )
 
-        assert (pytest.approx(0.179712, rel=1e-5) ==
-                value(model.fs.unit.power_floc[0]))
+        assert pytest.approx(0.179712, rel=1e-5) == value(model.fs.unit.power_floc[0])
 
-        assert (pytest.approx(0.237627, rel=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert pytest.approx(0.237627, rel=1e-5) == value(model.fs.unit.electricity[0])
 
-        assert (pytest.approx(0.071500, rel=1e-5) ==
-                value(model.fs.unit.rapid_mix_basin_vol))
+        assert pytest.approx(0.071500, rel=1e-5) == value(
+            model.fs.unit.rapid_mix_basin_vol
+        )
 
-        assert (pytest.approx(9.360, rel=1e-5) ==
-                value(model.fs.unit.floc_basin_vol))
+        assert pytest.approx(9.360, rel=1e-5) == value(model.fs.unit.floc_basin_vol)
 
-        assert (pytest.approx(900, rel=1e-5) ==
-                value(model.fs.unit.velocity_gradient_rapid_mix[0]))
+        assert pytest.approx(900, rel=1e-5) == value(
+            model.fs.unit.velocity_gradient_rapid_mix[0]
+        )
 
-        assert (pytest.approx(80, rel=1e-5) ==
-                value(model.fs.unit.velocity_gradient_floc[0]))
+        assert pytest.approx(80, rel=1e-5) == value(
+            model.fs.unit.velocity_gradient_floc[0]
+        )
 
     @pytest.mark.component
     def test_report(self, model):
@@ -252,14 +279,13 @@ def test_costing():
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["sulfur", "toc", "tss"]})
+    m.fs.params = WaterParameterBlock(default={"solute_list": ["sulfur", "toc", "tss"]})
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = CoagulationFlocculationZO(default={
-        "property_package": m.fs.params,
-        "database": m.db})
+    m.fs.unit1 = CoagulationFlocculationZO(
+        default={"property_package": m.fs.params, "database": m.db}
+    )
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "sulfur"].fix(1)
@@ -268,21 +294,18 @@ def test_costing():
     m.fs.unit1.load_parameters_from_database(use_default_removal=True)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(default={
-        "flowsheet_costing_block": m.fs.costing})
+    m.fs.unit1.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
 
     assert isinstance(m.fs.costing.coag_and_floc, Block)
-    assert isinstance(m.fs.costing.coag_and_floc.capital_mix_a_parameter,
-                      Var)
-    assert isinstance(m.fs.costing.coag_and_floc.capital_mix_b_parameter,
-                      Var)
+    assert isinstance(m.fs.costing.coag_and_floc.capital_mix_a_parameter, Var)
+    assert isinstance(m.fs.costing.coag_and_floc.capital_mix_b_parameter, Var)
 
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
-                      Constraint)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    assert m.fs.unit1.electricity[0] in \
-        m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]

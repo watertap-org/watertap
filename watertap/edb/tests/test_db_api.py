@@ -70,11 +70,11 @@ def test_edb_load(edb):
 @pytest.mark.component
 @requires_mongo
 def test_edb_get_components(edb):
-    res_obj_comps = edb.get_components(element_names=["H","O"])
+    res_obj_comps = edb.get_components(element_names=["H", "O"])
     for comp_obj in res_obj_comps:
         assert type(comp_obj) is Component
 
-    # Just test the _process_species function 
+    # Just test the _process_species function
     assert edb._process_species("H2O") == "H2O"
     assert edb._process_species("H_+") == "H"
     assert edb._process_species("OH_-") == "OH"
@@ -99,67 +99,58 @@ def insert_reactions(collection, data):
 
 # Data for get_reactions tests
 
-data1 = [{
-    "stoichiometry": {"Liq": {"H2O": -1, "CO2": -1, "H2CO3": 1}},
-    "heat_of_reaction": "constant_dh_rxn",
-    "equilibrium_constant": "van_t_hoff",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
-    "parameter_data": {
-        "dh_rxn_ref": [{"v": 0, "u": "kJ/mol", "i": 0}],
-        "k_eq_ref": [{"v": 0.0017, "u": "m**3/mol", "i": 0}],
-        "T_eq_ref": [{"v": 300, "u": "K", "i": 0}],
+data1 = [
+    {
+        "stoichiometry": {"Liq": {"H2O": -1, "CO2": -1, "H2CO3": 1}},
+        "heat_of_reaction": "constant_dh_rxn",
+        "equilibrium_constant": "van_t_hoff",
+        "equilibrium_form": "log_power_law",
+        "concentration_form": "ConcentrationForm.molarity",
+        "parameter_data": {
+            "dh_rxn_ref": [{"v": 0, "u": "kJ/mol", "i": 0}],
+            "k_eq_ref": [{"v": 0.0017, "u": "m**3/mol", "i": 0}],
+            "T_eq_ref": [{"v": 300, "u": "K", "i": 0}],
+        },
+        "type": "equilibrium",
+        "name": "CO2_to_H2CO3",
+        "components": ["CO2", "H2CO3"],
+        "reactant_elements": ["C", "O", "H"],
     },
-    "type": "equilibrium",
-    "name": "CO2_to_H2CO3",
-    "components": ["CO2", "H2CO3"],
-    "reactant_elements": ["C", "O", "H"],
-}, {
-    "stoichiometry": {"Liq": {"H2O": -1, "H_+": 1, "OH_-": 1}},
-    "heat_of_reaction": "constant_dh_rxn",
-    "equilibrium_constant": "van_t_hoff_aqueous",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
-    "parameter_data": {
-        "dh_rxn_ref": [{"v": 55.83, "u": "kJ/mol", "i": 0}],
-        "ds_rxn_ref": [{"v": -80.7, "u": "J/mol/K", "i": 0}],
+    {
+        "stoichiometry": {"Liq": {"H2O": -1, "H_+": 1, "OH_-": 1}},
+        "heat_of_reaction": "constant_dh_rxn",
+        "equilibrium_constant": "van_t_hoff_aqueous",
+        "equilibrium_form": "log_power_law",
+        "concentration_form": "ConcentrationForm.molarity",
+        "parameter_data": {
+            "dh_rxn_ref": [{"v": 55.83, "u": "kJ/mol", "i": 0}],
+            "ds_rxn_ref": [{"v": -80.7, "u": "J/mol/K", "i": 0}],
+        },
+        "type": "equilibrium",
+        "name": "H2O_Kw",
+        "components": ["H2O", "Kw"],
+        "reactant_elements": ["O", "H"],
     },
-    "type": "equilibrium",
-    "name": "H2O_Kw",
-    "components": ["H2O", "Kw"],
-    "reactant_elements": ["O", "H"],
-}]
+]
 
 # add one more record to data1
-data2 = data1.copy() + [{
-    "stoichiometry": {
-        "Liq": {
-            "H2CO3": -1,
-            "H_+": 1,
-            "HCO3_-": 1
-        }
-    },
-    "heat_of_reaction": "constant_dh_rxn",
-    "equilibrium_constant": "van_t_hoff_aqueous",
-    "equilibrium_form": "log_power_law",
-    "concentration_form": "ConcentrationForm.molarity",
-    "parameter_data": {
-        "dh_rxn_ref": [{
-            "v": 7.7,
-            "u": "kJ/mol",
-            "i": 0
-        }],
-        "ds_rxn_ref": [{
-            "v": -95.8,
-            "u": "J/mol/K",
-            "i": 0
-        }]
-    },
-    "type": "equilibrium",
-    "name": "H2CO3_Ka1",
-    "components": ["H2CO3", "Ka1"],
-    "reactant_elements": ["C", "O", "H"]
-}]
+data2 = data1.copy() + [
+    {
+        "stoichiometry": {"Liq": {"H2CO3": -1, "H_+": 1, "HCO3_-": 1}},
+        "heat_of_reaction": "constant_dh_rxn",
+        "equilibrium_constant": "van_t_hoff_aqueous",
+        "equilibrium_form": "log_power_law",
+        "concentration_form": "ConcentrationForm.molarity",
+        "parameter_data": {
+            "dh_rxn_ref": [{"v": 7.7, "u": "kJ/mol", "i": 0}],
+            "ds_rxn_ref": [{"v": -95.8, "u": "J/mol/K", "i": 0}],
+        },
+        "type": "equilibrium",
+        "name": "H2CO3_Ka1",
+        "components": ["H2CO3", "Ka1"],
+        "reactant_elements": ["C", "O", "H"],
+    }
+]
 
 
 # The way to read this parameterized test is:
@@ -169,16 +160,21 @@ data2 = data1.copy() + [{
 #   and getting reactions with *all* components and *new* components should
 #   return 'new_num' records
 @pytest.mark.unit
-@pytest.mark.parametrize("components,data,any_num,all_num,new_num", [
-    (["H2O", "CO2", "H2CO3"], data1, 2, 1, 2),
-    (["H2O", "H +", "OH -", "H2CO3", "HCO3 -"], data2, 3, 2, 3),
-    (["H2CO3"], data2, 2, 0, 2),
-])
+@pytest.mark.parametrize(
+    "components,data,any_num,all_num,new_num",
+    [
+        (["H2O", "CO2", "H2CO3"], data1, 2, 1, 2),
+        (["H2O", "H +", "OH -", "H2CO3", "HCO3 -"], data2, 3, 2, 3),
+        (["H2CO3"], data2, 2, 0, 2),
+    ],
+)
 def test_get_reactions(mockdb, components, data, any_num, all_num, new_num):
     insert_reactions(mockdb._db.reaction, data)
     reactions = mockdb.get_reactions(components, any_components=True)
     assert len(list(reactions)) == any_num
     reactions = mockdb.get_reactions(components, any_components=False)
     assert len(list(reactions)) == all_num
-    reactions = mockdb.get_reactions(components, any_components=False, include_new_components = True)
+    reactions = mockdb.get_reactions(
+        components, any_components=False, include_new_components=True
+    )
     assert len(list(reactions)) == new_num

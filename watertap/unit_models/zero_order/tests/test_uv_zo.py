@@ -17,7 +17,13 @@ import pytest
 from io import StringIO
 
 from pyomo.environ import (
-    check_optimal_termination, ConcreteModel, Constraint, value, Var, Block)
+    check_optimal_termination,
+    ConcreteModel,
+    Constraint,
+    value,
+    Var,
+    Block,
+)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -42,16 +48,18 @@ class TestUVZO_with_default_removal:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["viruses_enteric",
-                                     "tss",
-                                     "toc",
-                                     "cryptosporidium",
-                                     "total_coliforms_fecal_ecoli"]})
+            default={
+                "solute_list": [
+                    "viruses_enteric",
+                    "tss",
+                    "toc",
+                    "cryptosporidium",
+                    "total_coliforms_fecal_ecoli",
+                ]
+            }
+        )
 
-        m.fs.unit = UVZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
-
+        m.fs.unit = UVZO(default={"property_package": m.fs.params, "database": m.db})
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
@@ -65,7 +73,7 @@ class TestUVZO_with_default_removal:
     @pytest.mark.unit
     def test_build(self, model):
         assert model.fs.unit.config.database == model.db
-        assert model.fs.unit._tech_type == 'uv'
+        assert model.fs.unit._tech_type == "uv"
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
@@ -88,14 +96,20 @@ class TestUVZO_with_default_removal:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
         assert model.fs.unit.uv_reduced_equivalent_dose[0].fixed
-        assert model.fs.unit.uv_reduced_equivalent_dose[0].value == data[
-            "uv_reduced_equivalent_dose"]["value"]
+        assert (
+            model.fs.unit.uv_reduced_equivalent_dose[0].value
+            == data["uv_reduced_equivalent_dose"]["value"]
+        )
         assert model.fs.unit.uv_transmittance_in[0].fixed
-        assert model.fs.unit.uv_transmittance_in[0].value == data[
-            "uv_transmittance_in"]["value"]
+        assert (
+            model.fs.unit.uv_transmittance_in[0].value
+            == data["uv_transmittance_in"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -122,14 +136,16 @@ class TestUVZO_with_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(10.004926, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(0.1889939, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["toc"]))
-        assert (pytest.approx(0.299852, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["tss"]))
-        assert (pytest.approx(3605.04, rel=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert pytest.approx(10.004926, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(0.1889939, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["toc"]
+        )
+        assert pytest.approx(0.299852, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["tss"]
+        )
+        assert pytest.approx(3605.04, rel=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.component
     def test_report(self, model):
@@ -180,14 +196,17 @@ class TestUVZO_w_o_default_removal:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.params = WaterParameterBlock(
-            default={"solute_list": ["viruses_enteric",
-                                     "toc",
-                                     "cryptosporidium",
-                                     "total_coliforms_fecal_ecoli"]})
+            default={
+                "solute_list": [
+                    "viruses_enteric",
+                    "toc",
+                    "cryptosporidium",
+                    "total_coliforms_fecal_ecoli",
+                ]
+            }
+        )
 
-        m.fs.unit = UVZO(default={
-            "property_package": m.fs.params,
-            "database": m.db})
+        m.fs.unit = UVZO(default={"property_package": m.fs.params, "database": m.db})
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(10000)
         m.fs.unit.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
@@ -199,7 +218,7 @@ class TestUVZO_w_o_default_removal:
     @pytest.mark.unit
     def test_build(self, model):
         assert model.fs.unit.config.database == model.db
-        assert model.fs.unit._tech_type == 'uv'
+        assert model.fs.unit._tech_type == "uv"
         assert isinstance(model.fs.unit.electricity, Var)
         assert isinstance(model.fs.unit.energy_electric_flow_vol_inlet, Var)
         assert isinstance(model.fs.unit.electricity_consumption, Constraint)
@@ -222,14 +241,20 @@ class TestUVZO_w_o_default_removal:
                 assert v.value == data["removal_frac_mass_solute"][j]["value"]
 
         assert model.fs.unit.energy_electric_flow_vol_inlet.fixed
-        assert model.fs.unit.energy_electric_flow_vol_inlet.value == data[
-            "energy_electric_flow_vol_inlet"]["value"]
+        assert (
+            model.fs.unit.energy_electric_flow_vol_inlet.value
+            == data["energy_electric_flow_vol_inlet"]["value"]
+        )
         assert model.fs.unit.uv_reduced_equivalent_dose[0].fixed
-        assert model.fs.unit.uv_reduced_equivalent_dose[0].value == data[
-            "uv_reduced_equivalent_dose"]["value"]
+        assert (
+            model.fs.unit.uv_reduced_equivalent_dose[0].value
+            == data["uv_reduced_equivalent_dose"]["value"]
+        )
         assert model.fs.unit.uv_transmittance_in[0].fixed
-        assert model.fs.unit.uv_transmittance_in[0].value == data[
-            "uv_transmittance_in"]["value"]
+        assert (
+            model.fs.unit.uv_transmittance_in[0].value
+            == data["uv_transmittance_in"]["value"]
+        )
 
     @pytest.mark.component
     def test_degrees_of_freedom(self, model):
@@ -256,18 +281,24 @@ class TestUVZO_w_o_default_removal:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(10.00193, rel=1e-5) ==
-                value(model.fs.unit.properties_treated[0].flow_vol))
-        assert (pytest.approx(0.189051, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["toc"]))
-        assert (pytest.approx(5.498941e-6, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["cryptosporidium"]))
-        assert (pytest.approx(1.799653e-6, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["total_coliforms_fecal_ecoli"]))
-        assert (pytest.approx(0.0034590, rel=1e-5) == value(
-            model.fs.unit.properties_treated[0].conc_mass_comp["viruses_enteric"]))
-        assert (pytest.approx(3603.96, rel=1e-5) ==
-                value(model.fs.unit.electricity[0]))
+        assert pytest.approx(10.00193, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].flow_vol
+        )
+        assert pytest.approx(0.189051, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["toc"]
+        )
+        assert pytest.approx(5.498941e-6, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["cryptosporidium"]
+        )
+        assert pytest.approx(1.799653e-6, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp[
+                "total_coliforms_fecal_ecoli"
+            ]
+        )
+        assert pytest.approx(0.0034590, rel=1e-5) == value(
+            model.fs.unit.properties_treated[0].conc_mass_comp["viruses_enteric"]
+        )
+        assert pytest.approx(3603.96, rel=1e-5) == value(model.fs.unit.electricity[0])
 
     @pytest.mark.component
     def test_report(self, model):
@@ -315,15 +346,12 @@ def test_costing():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.params = WaterParameterBlock(
-        default={"solute_list": ["viruses_enteric",
-                                 "toc",
-                                 "cryptosporidium"]})
+        default={"solute_list": ["viruses_enteric", "toc", "cryptosporidium"]}
+    )
 
     m.fs.costing = ZeroOrderCosting()
 
-    m.fs.unit1 = UVZO(default={
-        "property_package": m.fs.params,
-        "database": m.db})
+    m.fs.unit1 = UVZO(default={"property_package": m.fs.params, "database": m.db})
 
     m.fs.unit1.inlet.flow_mass_comp[0, "H2O"].fix(10000)
     m.fs.unit1.inlet.flow_mass_comp[0, "viruses_enteric"].fix(1)
@@ -333,8 +361,9 @@ def test_costing():
 
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    m.fs.unit1.costing = UnitModelCostingBlock(default={
-        "flowsheet_costing_block": m.fs.costing})
+    m.fs.unit1.costing = UnitModelCostingBlock(
+        default={"flowsheet_costing_block": m.fs.costing}
+    )
 
     assert isinstance(m.fs.costing.uv, Block)
     assert isinstance(m.fs.costing.uv.uv_capital_a_parameter, Var)
@@ -342,11 +371,9 @@ def test_costing():
     assert isinstance(m.fs.costing.uv.uv_capital_c_parameter, Var)
     assert isinstance(m.fs.costing.uv.uv_capital_d_parameter, Var)
     assert isinstance(m.fs.unit1.costing.capital_cost, Var)
-    assert isinstance(m.fs.unit1.costing.capital_cost_constraint,
-                      Constraint)
+    assert isinstance(m.fs.unit1.costing.capital_cost_constraint, Constraint)
 
     assert_units_consistent(m.fs)
     assert degrees_of_freedom(m.fs.unit1) == 0
 
-    assert m.fs.unit1.electricity[0] in \
-        m.fs.costing._registered_flows["electricity"]
+    assert m.fs.unit1.electricity[0] in m.fs.costing._registered_flows["electricity"]

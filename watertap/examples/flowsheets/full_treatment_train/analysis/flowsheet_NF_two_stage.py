@@ -10,18 +10,20 @@
 # "https://github.com/watertap-org/watertap/"
 #
 ###############################################################################
-'''
+"""
 mutable parameters for optimization:
     m.fs.system_recovery_target
     m.fs.max_allowable_pressure
-'''
+"""
 from pyomo.environ import ConcreteModel, TransformationFactory, Constraint, Param
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.scaling import calculate_scaling_factors
 
-from watertap.examples.flowsheets.full_treatment_train.util import (solve_block,
-                                                             check_dof)
+from watertap.examples.flowsheets.full_treatment_train.util import (
+    solve_block,
+    check_dof,
+)
 
 import watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_NF as flowsheet_NF
 import watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_two_stage as flowsheet_two_stage
@@ -32,17 +34,17 @@ def build(m, **kwargs):
     Build a flowsheet with softening pretreatment and RO.
     """
 
-    assert kwargs['RO_base'] == 'TDS'
-    assert not kwargs['has_desal_feed']
+    assert kwargs["RO_base"] == "TDS"
+    assert not kwargs["has_desal_feed"]
     flowsheet_NF.build_components(m)
-    kwargs['NF_type'] = 'ZO'
-    flowsheet_two_stage.build_components(m, pretrt_type='NF', **kwargs)
+    kwargs["NF_type"] = "ZO"
+    flowsheet_two_stage.build_components(m, pretrt_type="NF", **kwargs)
 
     m.fs.feed.properties[0].flow_vol
-    m.fs.feed.properties[0].conc_mol_phase_comp['Liq', 'Ca']
+    m.fs.feed.properties[0].conc_mol_phase_comp["Liq", "Ca"]
 
     m.fs.tb_pretrt_to_desal.properties_in[0].flow_vol
-    m.fs.tb_pretrt_to_desal.properties_in[0].conc_mol_phase_comp['Liq', 'Ca']
+    m.fs.tb_pretrt_to_desal.properties_in[0].conc_mol_phase_comp["Liq", "Ca"]
 
     return m
 
@@ -64,9 +66,9 @@ def report(m, **kwargs):
 
 def set_optimization_components(m, system_recovery, **kwargs):
     # unfix variables
-    m.fs.splitter.split_fraction[0, 'bypass'].unfix()
-    m.fs.splitter.split_fraction[0, 'bypass'].setlb(0.001)
-    m.fs.splitter.split_fraction[0, 'bypass'].setub(0.99)
+    m.fs.splitter.split_fraction[0, "bypass"].unfix()
+    m.fs.splitter.split_fraction[0, "bypass"].setlb(0.001)
+    m.fs.splitter.split_fraction[0, "bypass"].setub(0.99)
 
     m.fs.NF.area.unfix()
     m.fs.NF.area.setlb(0.1)
@@ -75,10 +77,14 @@ def set_optimization_components(m, system_recovery, **kwargs):
     m.fs.max_conc_factor_target = Param(initialize=3.5, mutable=True)
     m.fs.max_conc_factor_target_tol = Param(initialize=5e-6, mutable=True)
     m.fs.eq_max_conc_NF = Constraint(
-        expr=(0,
-              m.fs.NF.feed_side.properties_out[0].mass_frac_phase_comp['Liq', 'Ca']
-              - m.fs.max_conc_factor_target * m.fs.feed.properties[0].mass_frac_phase_comp['Liq', 'Ca'],
-              m.fs.max_conc_factor_target_tol))
+        expr=(
+            0,
+            m.fs.NF.feed_side.properties_out[0].mass_frac_phase_comp["Liq", "Ca"]
+            - m.fs.max_conc_factor_target
+            * m.fs.feed.properties[0].mass_frac_phase_comp["Liq", "Ca"],
+            m.fs.max_conc_factor_target_tol,
+        )
+    )
 
     flowsheet_two_stage.set_optimization_components(m, system_recovery, **kwargs)
 
@@ -113,8 +119,7 @@ def solve_flowsheet(**desal_kwargs):
     solve_block(m, tee=False, fail_flag=True)
 
     # report
-    print('==================================='
-          '\n          Simulation          ')
+    print("===================================" "\n          Simulation          ")
     report(m, **desal_kwargs)
 
     return m
@@ -125,8 +130,7 @@ def optimize_flowsheet(system_recovery=0.50, **kwargs):
     set_up_optimization(m, system_recovery=system_recovery, **kwargs)
     optimize(m)
 
-    print('==================================='
-          '\n       Optimization            ')
+    print("===================================" "\n       Optimization            ")
     report(m, **flowsheet_two_stage.desal_kwargs)
 
     return m
@@ -134,6 +138,7 @@ def optimize_flowsheet(system_recovery=0.50, **kwargs):
 
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) == 1:
         m = solve_flowsheet()
     else:
