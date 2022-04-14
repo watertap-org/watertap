@@ -34,6 +34,7 @@ def set_up_sensitivity(m):
     outputs["LCOW"] = m.fs.costing.LCOW
     outputs["LCOH"] = m.fs.costing.LCOH
     outputs["LCOM"] = m.fs.costing.LCOM
+    # outputs["Effluent Volumetric Flow Rate"] = m.fs.product_H2O.properties[0].flow_vol
 
     return outputs, optimize_kwargs, opt_function
 
@@ -46,30 +47,69 @@ def run_analysis(case_num, nx, interp_nan_outputs=True):
     sweep_params = {}
     if case_num == 1:
         # bead cost
-        m.fs.costing.metab.bead_cost.display()
         sweep_params["bead_cost"] = LinearSample(
-            m.fs.costing.metab.bead_cost["hydrogen"], 5, 50, nx
+            m.fs.costing.metab.bead_cost["hydrogen"], 1, 50, nx
         )
-        output_filename = "sensitivity_" + str(case_num) + ".csv"
 
     elif case_num == 2:
         pass
         # bead replacement rate
+        # baseline corresponds to replacement rate of 0.3 years; sensitivity on replacement_factor corresponding
+        # to 0.3 yr to 5 yr
+        import numpy as np
+        from pyomo.environ import value
+
+        upper_replacement_rate = 5  # replace every x years
+        replacement_intervals = np.arange(
+            upper_replacement_rate,
+            value(m.fs.costing.plant_lifetime),
+            upper_replacement_rate,
+        )
+        rep_factor_upper_lim = sum(
+            1 / (1 + value(m.fs.costing.wacc)) ** x for x in replacement_intervals
+        ) * value(m.fs.costing.capital_recovery_factor)
+
+        sweep_params["bead_cost"] = LinearSample(
+            m.fs.costing.metab.bead_replacement_factor["hydrogen"],
+            3.376,
+            rep_factor_upper_lim,
+            nx,
+        )
+
     elif case_num == 3:
-        pass
         # Hydrogen METAB HRT
+        sweep_params["hydrogen_hrt"] = LinearSample(
+            m.fs.metab_hydrogen.hydraulic_retention_time, 0.75, 24, nx
+        )
+
     elif case_num == 4:
-        pass
         # Methane METAB HRT
+        sweep_params["methane_hrt"] = LinearSample(
+            m.fs.metab_methane.hydraulic_retention_time, 47.25, 360, nx
+        )
+
     elif case_num == 5:
-        pass
-        # Hydrogen Conversion Rate
+        # Hydrogen Conversion Rate: sweep from 0.06 to 0.6 L H2/g-COD removed
+        sweep_params["hydrogen_conversion_rate"] = LinearSample(
+            m.fs.metab_hydrogen.generation_ratio["cod_to_hydrogen", "hydrogen"],
+            5.03e-3,
+            5e-2,
+            nx,
+        )
+
     elif case_num == 6:
-        pass
-        # Methane Conversion Rate
+        # Methane Conversion Rate: sweep from ~ 0.1 to 0.3 L H2/g-COD removed
+        sweep_params["methane_conversion_rate"] = LinearSample(
+            m.fs.metab_methane.generation_ratio["cod_to_methane", "methane"],
+            6.68e-2,
+            2e-1,
+            nx,
+        )
 
     else:
         raise ValueError("case_num = %d not recognized." % (case_num))
+
+    output_filename = "sensitivity_" + str(case_num) + ".csv"
 
     global_results = parameter_sweep(
         m,

@@ -43,6 +43,7 @@ def main():
     m = build()
 
     set_operating_conditions(m)
+    m.display()
     assert_degrees_of_freedom(m, 0)
     assert_units_consistent(m)
 
@@ -74,15 +75,19 @@ def build():
 
     # unit models
     m.fs.feed = FeedZO(default={"property_package": m.fs.prop})
-    m.fs.metab_hydrogen = MetabZO(default={
-        "property_package": m.fs.prop,
-        "database": m.db,
-        "process_subtype": "hydrogen"},
+    m.fs.metab_hydrogen = MetabZO(
+        default={
+            "property_package": m.fs.prop,
+            "database": m.db,
+            "process_subtype": "hydrogen",
+        },
     )
-    m.fs.metab_methane = MetabZO(default={
-        "property_package": m.fs.prop,
-        "database": m.db,
-        "process_subtype": "methane"},
+    m.fs.metab_methane = MetabZO(
+        default={
+            "property_package": m.fs.prop,
+            "database": m.db,
+            "process_subtype": "methane",
+        },
     )
     m.fs.product_hydrogen = Product(default={"property_package": m.fs.prop})
     m.fs.product_methane = Product(default={"property_package": m.fs.prop})
@@ -90,10 +95,18 @@ def build():
 
     # connections
     m.fs.s01 = Arc(source=m.fs.feed.outlet, destination=m.fs.metab_hydrogen.inlet)
-    m.fs.s02 = Arc(source=m.fs.metab_hydrogen.treated, destination=m.fs.metab_methane.inlet)
-    m.fs.s03 = Arc(source=m.fs.metab_hydrogen.byproduct, destination=m.fs.product_hydrogen.inlet)
-    m.fs.s04 = Arc(source=m.fs.metab_methane.byproduct, destination=m.fs.product_methane.inlet)
-    m.fs.s05 = Arc(source=m.fs.metab_methane.treated, destination=m.fs.product_H2O.inlet)
+    m.fs.s02 = Arc(
+        source=m.fs.metab_hydrogen.treated, destination=m.fs.metab_methane.inlet
+    )
+    m.fs.s03 = Arc(
+        source=m.fs.metab_hydrogen.byproduct, destination=m.fs.product_hydrogen.inlet
+    )
+    m.fs.s04 = Arc(
+        source=m.fs.metab_methane.byproduct, destination=m.fs.product_methane.inlet
+    )
+    m.fs.s05 = Arc(
+        source=m.fs.metab_methane.treated, destination=m.fs.product_H2O.inlet
+    )
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scaling
@@ -105,8 +118,8 @@ def build():
 def set_operating_conditions(m):
     # ---specifications---
     # feed
-    flow_vol = 3.286e-4 * pyunits.m ** 3 / pyunits.s
-    conc_mass_cod = 6.76 * pyunits.kg / pyunits.m ** 3
+    flow_vol = 3.286e-4 * pyunits.m**3 / pyunits.s
+    conc_mass_cod = 6.76 * pyunits.kg / pyunits.m**3
 
     m.fs.feed.flow_vol[0].fix(flow_vol)
     m.fs.feed.conc_mass_comp[0, "cod"].fix(conc_mass_cod)
@@ -138,11 +151,7 @@ def solve(blk, solver=None, tee=False, check_termination=True):
 
 
 def display_results(m):
-    unit_list = [
-        "feed",
-        "metab_hydrogen",
-        "metab_methane"
-    ]
+    unit_list = ["feed", "metab_hydrogen", "metab_methane"]
     for u in unit_list:
         m.fs.component(u).report()
 
@@ -152,9 +161,7 @@ def add_costing(m):
         os.path.dirname(os.path.abspath(__file__)),
         "metab_global_costing.yaml",
     )
-    m.fs.costing = ZeroOrderCosting(
-        default={"case_study_definition": source_file}
-    )
+    m.fs.costing = ZeroOrderCosting(default={"case_study_definition": source_file})
     # typing aid
     costing_kwargs = {"default": {"flowsheet_costing_block": m.fs.costing}}
     m.fs.metab_hydrogen.costing = UnitModelCostingBlock(**costing_kwargs)
@@ -167,39 +174,62 @@ def add_costing(m):
     m.fs.costing.display()
     m.fs.costing.aggregate_flow_costs_constraint.pprint()
 
-    m.fs.costing.LCOH = Expression(expr=(
-            (m.fs.metab_hydrogen.costing.capital_cost * m.fs.costing.capital_recovery_factor
-             + m.fs.metab_hydrogen.costing.capital_cost * m.fs.costing.maintenance_costs_percent_FCI
-             + m.fs.metab_hydrogen.costing.fixed_operating_cost
-             + (m.fs.metab_hydrogen.heat[0] * m.fs.costing.heat_cost * (365 * 24 * 60 * 60 * pyunits.s / pyunits.year)
-                + m.fs.metab_hydrogen.electricity[0] * m.fs.costing.electricity_cost
-                * (365 * 24 * pyunits.hr / pyunits.year)
-                ) * m.fs.costing.utilization_factor
-             )
-            / (m.fs.costing.utilization_factor
-               * pyunits.convert(
-                m.fs.metab_hydrogen.byproduct.flow_mass_comp[0, 'hydrogen'],
-                to_units=pyunits.kg / m.fs.costing.base_period))
-    ),
+    m.fs.costing.LCOH = Expression(
+        expr=(
+            (
+                m.fs.metab_hydrogen.costing.capital_cost
+                * m.fs.costing.capital_recovery_factor
+                + m.fs.metab_hydrogen.costing.capital_cost
+                * m.fs.costing.maintenance_costs_percent_FCI
+                + m.fs.metab_hydrogen.costing.fixed_operating_cost
+                + (
+                    m.fs.metab_hydrogen.heat[0]
+                    * m.fs.costing.heat_cost
+                    * (365 * 24 * 60 * 60 * pyunits.s / pyunits.year)
+                    + m.fs.metab_hydrogen.electricity[0]
+                    * m.fs.costing.electricity_cost
+                    * (365 * 24 * pyunits.hr / pyunits.year)
+                )
+                * m.fs.costing.utilization_factor
+            )
+            / (
+                m.fs.costing.utilization_factor
+                * pyunits.convert(
+                    m.fs.metab_hydrogen.byproduct.flow_mass_comp[0, "hydrogen"],
+                    to_units=pyunits.kg / m.fs.costing.base_period,
+                )
+            )
+        ),
         doc="Levelized Cost of Hydrogen",
     )
-    m.fs.costing.LCOM = Expression(expr=(
-            (m.fs.metab_methane.costing.capital_cost * m.fs.costing.capital_recovery_factor
-             + m.fs.metab_methane.costing.capital_cost * m.fs.costing.maintenance_costs_percent_FCI
-             + m.fs.metab_methane.costing.fixed_operating_cost
-             + (m.fs.metab_methane.heat[0] * m.fs.costing.heat_cost * (365 * 24 * 60 * 60 * pyunits.s / pyunits.year)
-                + m.fs.metab_methane.electricity[0] * m.fs.costing.electricity_cost
-                * (365 * 24 * pyunits.hr / pyunits.year)
-                ) * m.fs.costing.utilization_factor
-             )
-            / (m.fs.costing.utilization_factor
-               * pyunits.convert(
-                m.fs.metab_methane.byproduct.flow_mass_comp[0, 'methane'],
-                to_units=pyunits.kg / m.fs.costing.base_period))
-    ),
+    m.fs.costing.LCOM = Expression(
+        expr=(
+            (
+                m.fs.metab_methane.costing.capital_cost
+                * m.fs.costing.capital_recovery_factor
+                + m.fs.metab_methane.costing.capital_cost
+                * m.fs.costing.maintenance_costs_percent_FCI
+                + m.fs.metab_methane.costing.fixed_operating_cost
+                + (
+                    m.fs.metab_methane.heat[0]
+                    * m.fs.costing.heat_cost
+                    * (365 * 24 * 60 * 60 * pyunits.s / pyunits.year)
+                    + m.fs.metab_methane.electricity[0]
+                    * m.fs.costing.electricity_cost
+                    * (365 * 24 * pyunits.hr / pyunits.year)
+                )
+                * m.fs.costing.utilization_factor
+            )
+            / (
+                m.fs.costing.utilization_factor
+                * pyunits.convert(
+                    m.fs.metab_methane.byproduct.flow_mass_comp[0, "methane"],
+                    to_units=pyunits.kg / m.fs.costing.base_period,
+                )
+            )
+        ),
         doc="Levelized Cost of Methane",
     )
-
 
 
 def initialize_costing(m):
@@ -245,12 +275,12 @@ def display_costing(m):
     print(f"Total Operating Costs: {total_operating_cost:.2f} M$/year")
     electricity_intensity = value(
         pyunits.convert(
-            m.fs.costing.electricity_intensity, to_units=pyunits.kWh / pyunits.m ** 3
+            m.fs.costing.electricity_intensity, to_units=pyunits.kWh / pyunits.m**3
         )
     )
     print(f"Electricity Intensity: {electricity_intensity:.4f} kWh/m^3")
     LCOW = value(
-        pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m ** 3)
+        pyunits.convert(m.fs.costing.LCOW, to_units=pyunits.USD_2018 / pyunits.m**3)
     )
     print(f"Levelized Cost of Water: {LCOW:.4f} $/m^3")
     LCOH = value(
