@@ -14,13 +14,19 @@ def set_up_sensitivity(m):
 
     # tie parameters together
     m.fs.costing.metab.eq_bead_cost = Constraint(
-        expr=m.fs.costing.metab.bead_cost['hydrogen']
-             == m.fs.costing.metab.bead_cost['methane']
+        expr=m.fs.costing.metab.bead_cost["hydrogen"]
+        == m.fs.costing.metab.bead_cost["methane"]
     )
-    m.fs.costing.metab.bead_cost['methane'].unfix()
+    m.fs.costing.metab.bead_cost["methane"].unfix()
 
-    # new basline parameters
-    m.fs.costing.metab.bead_cost['hydrogen'].fix(14.4)
+    m.fs.costing.metab.eq_bead_replacement_factor = Constraint(
+        expr=m.fs.costing.metab.bead_replacement_factor["hydrogen"]
+        == m.fs.costing.metab.bead_replacement_factor["methane"]
+    )
+    m.fs.costing.metab.bead_replacement_factor["methane"].unfix()
+
+    # new baseline parameters
+    m.fs.costing.metab.bead_cost["hydrogen"].fix(14.4)
     # m.fs.costing.metab.hydraulic_retention_time['hydrogen'].fix()
     # m.fs.costing.metab.hydraulic_retention_time['methane'].fix()
 
@@ -42,47 +48,25 @@ def run_analysis(case_num, nx, interp_nan_outputs=True):
         # bead cost
         m.fs.costing.metab.bead_cost.display()
         sweep_params["bead_cost"] = LinearSample(
-            m.fs.costing.metab.bead_cost['hydrogen'], 5, 50, nx
+            m.fs.costing.metab.bead_cost["hydrogen"], 5, 50, nx
         )
-        output_filename = 'sensitivity_'+str(case_num)+'.csv'
+        output_filename = "sensitivity_" + str(case_num) + ".csv"
 
     elif case_num == 2:
         pass
-        # # ================================================================
-        # # Two Stage RO
-        # # ================================================================
-        # import watertap.examples.flowsheets.full_treatment_train.analysis.flowsheet_two_stage as fs_two_stage
-        #
-        # m = fs_two_stage.optimize_flowsheet(**desal_kwargs)
-        #
-        # sweep_params["System Recovery"] = LinearSample(
-        #     m.fs.system_recovery_target, 0.3, 0.95, nx
-        # )
-        # # sweep_params['RO Recovery'] = LinearSample(m.fs.RO_recovery, 0.3, 0.95, nx)
-        # sweep_params["Max Pressure"] = LinearSample(
-        #     m.fs.max_allowable_pressure, 300e5, 75e5, nx
-        # )
-        #
-        # outputs["LCOW"] = m.fs.costing.LCOW
-        # outputs["Saturation Index"] = m.fs.desal_saturation.saturation_index
-        # outputs["RO-1 Pump Pressure"] = m.fs.pump_RO.control_volume.properties_out[
-        #     0
-        # ].pressure
-        # outputs["RO-2 Pump Pressure"] = m.fs.pump_RO2.control_volume.properties_out[
-        #     0
-        # ].pressure
-        # outputs["RO Recovery"] = m.fs.RO_recovery
-        # outputs["Annual Water Production"] = m.fs.costing.annual_water_production
-        # outputs = append_costing_outputs(
-        #     m, outputs, ["RO", "pump_RO", "RO2", "pump_RO2", "ERD"]
-        # )
-        #
-        # output_filename = (
-        #     base_path
-        #     + f"output/fs_two_stage/results_{case_num}_{desal_kwargs['RO_type']}RO.csv"
-        # )
-        #
-        # opt_function = fs_two_stage.optimize
+        # bead replacement rate
+    elif case_num == 3:
+        pass
+        # Hydrogen METAB HRT
+    elif case_num == 4:
+        pass
+        # Methane METAB HRT
+    elif case_num == 5:
+        pass
+        # Hydrogen Conversion Rate
+    elif case_num == 6:
+        pass
+        # Methane Conversion Rate
 
     else:
         raise ValueError("case_num = %d not recognized." % (case_num))
