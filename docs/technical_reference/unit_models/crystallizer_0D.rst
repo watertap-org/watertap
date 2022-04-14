@@ -62,7 +62,7 @@ Variables
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
    "Crystal growth rate", ":math:`G`", "crystal_growth_rate", "None", ":math:`\text{m/s}`"
-   "Sounders-Brown constant", ":math:`C_v`", "souders_brown_constant", "None", ":math:`\text{dimensionless}`"
+   "Souders-Brown constant", ":math:`C_v`", "souders_brown_constant", "None", ":math:`\text{dimensionless}`"
    "Crystal median length", ":math:`L_D`", "crystal_median_length", "None", ":math:`\text{m}`"
    "Crystallization yield", ":math:`Y`", "crystallization_yield", "[j]", ":math:`\text{dimensionless}`"
    "Solids volumetric fraction of product slurry", ":math:`1-{\varepsilon}`", "product_volumetric_solids_fraction", "None", ":math:`\text{dimensionless}`"
