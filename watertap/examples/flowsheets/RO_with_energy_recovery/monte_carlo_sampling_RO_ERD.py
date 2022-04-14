@@ -55,9 +55,8 @@ def get_sweep_params(m, use_LHS=False):
 
 
 def run_parameter_sweep(
-    results_file_name=None,
-    write_csv=False,
-    write_h5=False,
+    csv_results_file_name=None,
+    h5_results_file_name=None,
     seed=None,
     use_LHS=False,
     read_sweep_params_from_file=False,
@@ -100,9 +99,8 @@ def run_parameter_sweep(
         m,
         sweep_params,
         outputs,
-        results_file_name=results_file_name,
-        write_csv=write_csv,
-        write_h5=write_h5,
+        csv_results_file_name=csv_results_file_name,
+        h5_results_file_name=h5_results_file_name,
         optimize_function=optimize,
         optimize_kwargs={"solver": solver, "check_termination": False},
         num_samples=num_samples,
