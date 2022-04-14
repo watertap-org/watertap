@@ -14,13 +14,13 @@ def set_up_sensitivity(m):
 
     # tie parameters together
     m.fs.costing.metab.eq_bead_cost = Constraint(
-        expr=m.fs.costing.metab.bead_cost['hydrogen']
-             == m.fs.costing.metab.bead_cost['methane']
+        expr=m.fs.costing.metab.bead_cost["hydrogen"]
+        == m.fs.costing.metab.bead_cost["methane"]
     )
-    m.fs.costing.metab.bead_cost['methane'].unfix()
+    m.fs.costing.metab.bead_cost["methane"].unfix()
 
     # new basline parameters
-    m.fs.costing.metab.bead_cost['hydrogen'].fix(14.4)
+    m.fs.costing.metab.bead_cost["hydrogen"].fix(14.4)
     # m.fs.costing.metab.hydraulic_retention_time['hydrogen'].fix()
     # m.fs.costing.metab.hydraulic_retention_time['methane'].fix()
 
@@ -42,9 +42,9 @@ def run_analysis(case_num, nx, interp_nan_outputs=True):
         # bead cost
         m.fs.costing.metab.bead_cost.display()
         sweep_params["bead_cost"] = LinearSample(
-            m.fs.costing.metab.bead_cost['hydrogen'], 5, 50, nx
+            m.fs.costing.metab.bead_cost["hydrogen"], 5, 50, nx
         )
-        output_filename = 'sensitivity_'+str(case_num)+'.csv'
+        output_filename = "sensitivity_" + str(case_num) + ".csv"
 
     elif case_num == 2:
         pass
