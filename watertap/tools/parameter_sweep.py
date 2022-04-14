@@ -553,7 +553,6 @@ def _write_to_csv(
     global_results_arr,
     rank,
     write_csv,
-    dirname,
     fname,
     interpolate_nan_outputs,
 ):
@@ -568,7 +567,7 @@ def _write_to_csv(
 
         if write_csv and fname is not None:
             # Write the CSV
-            csv_results_file = os.path.join(str(dirname), fname + ".csv")
+            csv_results_file = fname + ".csv"
             np.savetxt(
                 csv_results_file,
                 global_save_data,
@@ -922,7 +921,6 @@ def _save_results(
         global_results_arr,
         rank,
         write_csv,
-        dirname,
         fname_no_ext,
         interpolate_nan_outputs,
     )
