@@ -18,6 +18,7 @@ import itertools
 import warnings
 import copy, pprint
 import h5py
+import pathlib
 
 from scipy.interpolate import griddata
 from enum import Enum, auto
@@ -552,9 +553,7 @@ def _write_to_csv(
     global_results_dict,
     global_results_arr,
     rank,
-    write_csv,
-    dirname,
-    fname,
+    csv_results_file_name,
     interpolate_nan_outputs,
 ):
 
@@ -566,11 +565,10 @@ def _write_to_csv(
         for i, (key, item) in enumerate(global_results_dict["outputs"].items()):
             data_header = ",".join([data_header, key])
 
-        if write_csv and fname is not None:
+        if csv_results_file_name is not None:
             # Write the CSV
-            csv_results_file = os.path.join(str(dirname), fname + ".csv")
             np.savetxt(
-                csv_results_file,
+                csv_results_file_name,
                 global_save_data,
                 header=data_header,
                 delimiter=",",
@@ -586,7 +584,7 @@ def _write_to_csv(
                     (global_values, global_results_clean)
                 )
 
-                head, tail = os.path.split(csv_results_file)
+                head, tail = os.path.split(csv_results_file_name)
 
                 if head == "":
                     interp_file = "interpolated_%s" % (tail)
@@ -619,7 +617,9 @@ def _write_debug_data(
 
     if write_h5:
         fname_h5 = f"local_results_{rank:03}.h5"
-        _write_output_to_h5(local_results_dict, debugging_data_dir, fname_h5)
+        _write_output_to_h5(
+            local_results_dict, os.path.join(debugging_data_dir, fname_h5)
+        )
     if write_csv:
         fname_csv = f"local_results_{rank:03}.csv"
 
@@ -647,16 +647,13 @@ def _write_debug_data(
 # ================================================================
 
 
-def _write_outputs(output_dict, output_directory, fname_no_ext, txt_options="metadata"):
+def _write_outputs(output_dict, h5_results_file_name, txt_options="metadata"):
 
-    h5_results_file = fname_no_ext + ".h5"
-
-    _write_output_to_h5(output_dict, output_directory, h5_results_file)
+    _write_output_to_h5(output_dict, h5_results_file_name)
 
     # We will also create a companion txt file by default which contains
     # the metadata of the h5 file in a user readable format.
-    txt_fname = fname_no_ext + ".txt"
-    txt_fpath = os.path.join(output_directory, txt_fname)
+    txt_fname = h5_results_file_name + ".txt"
     if "solve_successful" in output_dict.keys():
         output_dict.pop("solve_successful")
     if txt_options == "metadata":
@@ -671,17 +668,16 @@ def _write_outputs(output_dict, output_directory, fname_no_ext, txt_options="met
     else:
         my_dict = output_dict
 
-    with open(txt_fpath, "w") as log_file:
+    with open(txt_fname, "w") as log_file:
         pprint.pprint(my_dict, log_file)
 
 
 # ================================================================
 
 
-def _write_output_to_h5(output_dict, output_directory, fname):
+def _write_output_to_h5(output_dict, h5_results_file_name):
 
-    fpath = os.path.join(output_directory, fname)
-    f = h5py.File(fpath, "w")
+    f = h5py.File(h5_results_file_name, "w")
     for key, item in output_dict.items():
         grp = f.create_group(key)
         if key != "solve_successful":
@@ -859,9 +855,8 @@ def _save_results(
     local_results_dict,
     global_results_dict,
     global_results_arr,
-    results_file_name,
-    write_csv,
-    write_h5,
+    csv_results_file_name,
+    h5_results_file_name,
     debugging_data_dir,
     comm,
     rank,
@@ -869,36 +864,15 @@ def _save_results(
     interpolate_nan_outputs,
 ):
 
-    if results_file_name is not None:
-        dirname, fname_no_ext, extension = _process_results_filename(results_file_name)
-        if rank == 0:
-            # Create the directories for the results and/or for debugging
-            if extension == ".h5" and write_h5 is False:
-                warnings.warn(
-                    "An H5 results filename was provided. Outputs will be created",
-                    UserWarning,
-                )
-                write_h5 = True
-            elif extension == ".csv" and write_csv is False:
-                warnings.warn(
-                    "A CSV results filename was provided. Outputs will be created",
-                    UserWarning,
-                )
-                write_csv = True
-
-            if (write_h5 or write_csv) and dirname != "":
-                os.makedirs(dirname, exist_ok=True)
-            elif not write_h5 and not write_csv:
-                warnings.warn(
-                    "A results filename was provided but neither options to write H5 or csv was selected. No file will be written.",
-                    UserWarning,
-                )
-
-            if debugging_data_dir is not None:
-                os.makedirs(debugging_data_dir, exist_ok=True)
-    else:
-        dirname = None
-        fname_no_ext = None
+    if rank == 0:
+        if debugging_data_dir is not None:
+            os.makedirs(debugging_data_dir, exist_ok=True)
+        if h5_results_file_name is not None:
+            pathlib.Path(h5_results_file_name).parent.mkdir(parents=True, exist_ok=True)
+        if csv_results_file_name is not None:
+            pathlib.Path(csv_results_file_name).parent.mkdir(
+                parents=True, exist_ok=True
+            )
 
     if num_procs > 1:  # pragma: no cover
         comm.Barrier()
@@ -911,8 +885,8 @@ def _save_results(
             local_results_dict,
             debugging_data_dir,
             rank,
-            write_h5,
-            write_csv,
+            h5_results_file_name is not None,
+            csv_results_file_name is not None,
         )
 
     global_save_data = _write_to_csv(
@@ -921,15 +895,13 @@ def _save_results(
         global_results_dict,
         global_results_arr,
         rank,
-        write_csv,
-        dirname,
-        fname_no_ext,
+        csv_results_file_name,
         interpolate_nan_outputs,
     )
 
-    if rank == 0 and write_h5:
+    if rank == 0 and h5_results_file_name is not None:
         # Save the data of output dictionary
-        _write_outputs(global_results_dict, dirname, fname_no_ext, txt_options="keys")
+        _write_outputs(global_results_dict, h5_results_file_name, txt_options="keys")
 
     return global_save_data
 
@@ -941,9 +913,8 @@ def parameter_sweep(
     model,
     sweep_params,
     outputs=None,
-    results_file_name=None,
-    write_csv=False,
-    write_h5=False,
+    csv_results_file_name=None,
+    h5_results_file_name=None,
     optimize_function=_default_optimize,
     optimize_kwargs=None,
     reinitialize_function=None,
@@ -981,15 +952,12 @@ def parameter_sweep(
                   variables, parameters, and expressions which provides very thorough results
                   at the cost of large file sizes.
 
-        results_file_name (optional) : The path and file name without extensions where the results are to be saved;
-                                   subdirectories will be created as needed.
+        csv_results_file_name (optional) : The path and file name to write a csv file. The default `None`
+                                           does not write a csv file.
 
-        write_csv (optional) : Boolean option to write a csv file using `results_file_name`, i.e.,
-                               `{results_file_name}.csv`. The default is False to prevent silent file generation.
-
-        write_h5 (optional) : Boolean option to write a csv file using `results_file_name`, i.e.,
-                              `{results_file_name}.h5`. The default is False to prevent silent file generation.
-                              writing an h5 file will also create a companion text file `{results_file_name}.txt`
+        h5_results_file_name (optional) : The path and file name to write a h5 file. The default `None`
+                                          does not write a file.
+                              Writing an h5 file will also create a companion text file `{h5_results_file_name}.txt`
                               which contains the variable names contained within the H5 file.
 
         optimize_function (optional) : A user-defined function to perform the optimization of flowsheet
@@ -1048,6 +1016,12 @@ def parameter_sweep(
     # Get an MPI communicator
     comm, rank, num_procs = _init_mpi(mpi_comm)
 
+    if rank == 0:
+        if h5_results_file_name is None and csv_results_file_name is None:
+            warnings.warn(
+                "No results will be writen to disk as h5_results_file_name and csv_results_file_name are both None"
+            )
+
     # Convert sweep_params to LinearSamples
     sweep_params, sampling_type = _process_sweep_params(sweep_params)
 
@@ -1103,9 +1077,8 @@ def parameter_sweep(
         local_results_dict,
         global_results_dict,
         global_results_arr,
-        results_file_name,
-        write_csv,
-        write_h5,
+        csv_results_file_name,
+        h5_results_file_name,
         debugging_data_dir,
         comm,
         rank,
