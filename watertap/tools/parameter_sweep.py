@@ -957,8 +957,8 @@ def parameter_sweep(
 
         h5_results_file_name (optional) : The path and file name to write a h5 file. The default `None`
                                           does not write a file.
-                              Writing an h5 file will also create a companion text file `{h5_results_file_name}.txt`
-                              which contains the variable names contained within the H5 file.
+                                          Writing an h5 file will also create a companion text file `{h5_results_file_name}.txt`
+                                          which contains the variable names contained within the H5 file.
 
         optimize_function (optional) : A user-defined function to perform the optimization of flowsheet
                                        ``model`` and loads the results back into ``model``. The first
