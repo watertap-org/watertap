@@ -59,21 +59,11 @@ def log_meth(meth):
 def _get_method_classname(m):
     """Get class name for method, assuming method is bound and class has __dict__.
     """
-    try:
-        qualname = dict.fromkeys(inspect.getmembers(m))["__qualname__"]
-    except KeyError:
-        qualname = "<unknown>"
-    return qualname
-    # print(f"@@ get classname for {m}")
-    # print(f"@@ members = {inspect.getmembers(m)}")
-    # if inspect.ismethod(m):
-    #     mro = inspect.getmro(m.__self__.__class__)
-    #     print(f"@@ mro = {mro}")
-    #     for cls in mro:
-    #         print(f"@@ check {m.__name__} in class {cls.__name__}")
-    #         if m.__name__ in cls.__dict__:
-    #             return cls.__name__
-    # return "<unknown>"
+    for k, v in inspect.getmembers(m):
+        if k == "__qualname__":
+            return v
+    return "<unknown>"
+
 
 class WorkflowStep(abc.ABC):
     """Subclasses are an implementation of the Strategy Pattern where the algorithm is, e.g., building
@@ -103,6 +93,7 @@ class Build(WorkflowStep):
 
 
 class Initialize(WorkflowStep):
+    @log_meth
     def algorithm(self, data) -> Dict:
         self.initialize_model(data)
         return {}
@@ -113,6 +104,7 @@ class Initialize(WorkflowStep):
 
 
 class Optimize(WorkflowStep):
+    @log_meth
     def algorithm(self, data):
         return self.solve(data)
 
@@ -149,6 +141,8 @@ class AnalysisWorkflow:
         return self._steps[name]["data"]
 
     def set_input(self, name: str, d: Dict):
+        """Set input data for a step.
+        """
         name = self._normalize_step_name(name)
         self._steps[name]["data"] = d
         self._steps[name]["changed"] = True
@@ -197,7 +191,19 @@ class AnalysisWorkflow:
         self._steps[name]["input"] = {}
         self._steps[name]["_kwargs"] = kwargs  # just for debugging
 
+    def set_standard_workflow(self, costing=False):
+        """Set the 'standard' series of workflow steps, with optional costing.'
+        """
+        if costing:
+            steps = (Steps.build, Steps.init, Steps.optimize, Steps.build_costing, Steps.init_costing,
+                     Steps.optimize_costing)
+        else:
+            steps = (Steps.build, Steps.init, Steps.optimize)
+        self.set_workflow(steps)
+
     def set_workflow(self, step_names: Iterable[str]) -> Iterable[str]:
+        """Set arbitrary series of steps for the workflow.
+        """
         seen_names, wf = {}, []
         for name in step_names:
             name = self._normalize_step_name(name)
