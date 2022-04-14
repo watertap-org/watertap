@@ -366,7 +366,6 @@ class EvaporatorData(UnitModelBlockData):
     ):
         """
         General wrapper for pressure changer initialization routines
-
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
@@ -376,7 +375,6 @@ class EvaporatorData(UnitModelBlockData):
             optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
                      initialization (default = None)
-
         Returns: None
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
