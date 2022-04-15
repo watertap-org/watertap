@@ -135,5 +135,5 @@ methane:
       value: 498
       units: USD_2020/m^2
     vacuum_cost:
-      value: 59300
+      value: 1360
       units: USD_2020/(kg/hr)
