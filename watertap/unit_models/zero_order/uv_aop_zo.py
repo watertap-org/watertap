@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a UV-AOP unit.
+This module contains a zero-order representation of a UV-AOP unit
 operation.
 """
 

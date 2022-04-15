@@ -11,8 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a blending reservoir unit
-operation.
+This module contains a zero-order representation of a blending reservoir unit.
 """
 from pyomo.environ import Constraint, units as pyunits, Var
 from idaes.core import declare_process_block_class
