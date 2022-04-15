@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of an aeration basin unit.
+This module contains a zero-order representation of an aeration basin unit
 operation.
 """
 

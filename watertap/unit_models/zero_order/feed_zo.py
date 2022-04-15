@@ -12,7 +12,7 @@
 ###############################################################################
 """
 Feed block for zero-order flowsheets with methods for getting concentration
-data from database
+data from database.
 """
 
 from pyomo.environ import (
