@@ -105,11 +105,19 @@ def run_analysis(case_num, nx, interp_nan_outputs=True):
             2e-1,
             nx,
         )
+    elif case_num == 7:
+        # Recovered resource selling price:
+        sweep_params["Hydrogen selling price"] = LinearSample(
+            m.fs.costing.hydrogen_product_cost, -1.5, -10, nx
+        )
+        sweep_params["Methane selling price"] = LinearSample(
+            m.fs.costing.methane_product_cost, -0.15, -1, nx
+        )
 
     else:
         raise ValueError("case_num = %d not recognized." % (case_num))
 
-    output_filename = "sensitivity_" + str(case_num) + ".csv"
+    output_filename = "output/sensitivity_" + str(case_num) + ".csv"
 
     global_results = parameter_sweep(
         m,

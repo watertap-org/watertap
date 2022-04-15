@@ -90,6 +90,7 @@ def main():
     m.fs.costing.metab.vacuum_cost["methane"].fix(136.0)  # default 1360, 0.1x
     m.fs.costing.metab.mixer_cost["methane"].fix(27.40)  # default 2740, 0.1x
     m.fs.costing.metab.membrane_cost["methane"].fix(498)  # default 498
+    assert_degrees_of_freedom(m, 0)
 
     results = solve(m)
     display_costing(m)

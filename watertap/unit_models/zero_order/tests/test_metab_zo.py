@@ -92,7 +92,7 @@ class TestMetabZO_hydrogen:
     def test_initialize(self, model):
         initialization_tester(model)
 
-    @pytest.mark.solver
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
@@ -100,7 +100,7 @@ class TestMetabZO_hydrogen:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.solver
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
@@ -114,7 +114,7 @@ class TestMetabZO_hydrogen:
             model.fs.unit.properties_treated[0].flow_mass_comp["cod"]
         )
 
-    @pytest.mark.solver
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
@@ -131,7 +131,7 @@ class TestMetabZO_hydrogen:
                 )
             )
 
-    @pytest.mark.solver
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_report(self, model):
@@ -221,7 +221,7 @@ class TestMetabZO_methane:
     def test_initialize(self, model):
         initialization_tester(model)
 
-    @pytest.mark.solver
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
@@ -229,7 +229,7 @@ class TestMetabZO_methane:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.solver
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
@@ -243,7 +243,7 @@ class TestMetabZO_methane:
             model.fs.unit.properties_treated[0].flow_mass_comp["cod"]
         )
 
-    @pytest.mark.solver
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, model):
@@ -260,7 +260,7 @@ class TestMetabZO_methane:
                 )
             )
 
-    @pytest.mark.solver
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_report(self, model):
@@ -375,7 +375,7 @@ class TestMetabZO_hydrogen_cost:
     def test_initialize(self, model):
         initialization_tester(model)
 
-    @pytest.mark.solver
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
@@ -383,7 +383,7 @@ class TestMetabZO_hydrogen_cost:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.solver
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_cost_solution(self, model):
@@ -391,7 +391,8 @@ class TestMetabZO_hydrogen_cost:
         assert pytest.approx(3.091e6, rel=1e-3) == value(
             model.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(5069532, rel=1e-3) == value(
+
+        assert pytest.approx(5069532.966912, rel=1e-3) == value(
             model.fs.unit.costing.fixed_operating_cost
         )
 
@@ -399,7 +400,8 @@ class TestMetabZO_hydrogen_cost:
         assert pytest.approx(
             value(model.fs.unit.costing.capital_cost), rel=1e-5
         ) == value(model.fs.costing.total_capital_cost)
-        assert pytest.approx(5162268, rel=1e-3) == value(
+
+        assert pytest.approx(5162268.806429799, rel=1e-3) == value(
             model.fs.costing.total_fixed_operating_cost
         )
         agg_flow_costs = model.fs.costing.aggregate_flow_costs
@@ -487,7 +489,7 @@ class TestMetabZO_methane_cost:
     def test_initialize(self, model):
         initialization_tester(model)
 
-    @pytest.mark.solver
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
@@ -495,7 +497,7 @@ class TestMetabZO_methane_cost:
         # Check for optimal solution
         assert_optimal_termination(results)
 
-    @pytest.mark.solver
+    @pytest.mark.requires_idaes_solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_cost_solution(self, model):
@@ -503,7 +505,8 @@ class TestMetabZO_methane_cost:
         assert pytest.approx(3.881e7, rel=1e-3) == value(
             model.fs.unit.costing.capital_cost
         )
-        assert pytest.approx(63.369e6, rel=1e-3) == value(
+
+        assert pytest.approx(63369162.086399995, rel=1e-3) == value(
             model.fs.unit.costing.fixed_operating_cost
         )
 
@@ -511,7 +514,8 @@ class TestMetabZO_methane_cost:
         assert pytest.approx(
             value(model.fs.unit.costing.capital_cost), rel=1e-5
         ) == value(model.fs.costing.total_capital_cost)
-        assert pytest.approx(64533387, rel=1e-3) == value(
+
+        assert pytest.approx(64533387.715684555, rel=1e-3) == value(
             model.fs.costing.total_fixed_operating_cost
         )
         agg_flow_costs = model.fs.costing.aggregate_flow_costs
