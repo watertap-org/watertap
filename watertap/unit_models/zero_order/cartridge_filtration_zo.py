@@ -12,7 +12,6 @@
 ###############################################################################
 """
 This module contains a zero-order representation of a cartridge filtration unit.
-operation.
 """
 
 from pyomo.environ import Constraint, units as pyunits, Var

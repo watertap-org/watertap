@@ -11,8 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a microscreen filtration unit
-operation.
+This module contains a zero-order representation of a microscreen filtration unit.
 """
 
 from pyomo.environ import Constraint, units as pyunits, Var

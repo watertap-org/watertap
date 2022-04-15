@@ -12,7 +12,7 @@
 ###############################################################################
 """
 This module contains a zero-order representation of a municipal wastewater
-treatment plant unit operation.
+treatment plant.
 """
 from pyomo.environ import Constraint, units as pyunits, Var
 from idaes.core import declare_process_block_class
@@ -26,7 +26,7 @@ __author__ = "Marcus Holly"
 @declare_process_block_class("MunicipalWWTPZO")
 class MunicipalWWTPZOData(ZeroOrderBaseData):
     """
-    Zero-Order model for a municipal wastewater treatment plant unit operation.
+    Zero-Order model for a municipal wastewater treatment plant.
     """
 
     CONFIG = ZeroOrderBaseData.CONFIG()
