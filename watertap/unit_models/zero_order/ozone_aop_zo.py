@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a Ozone-AOP unit.
+This module contains a zero-order representation of a Ozone-AOP unit
 operation.
 """
 

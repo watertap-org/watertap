@@ -11,7 +11,8 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of an ion exchange unit.
+This module contains a zero-order representation of an ion exchange unit
+operation.
 """
 
 from pyomo.environ import Reference, units as pyunits, Var

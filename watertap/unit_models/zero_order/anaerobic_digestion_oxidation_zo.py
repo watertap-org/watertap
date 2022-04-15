@@ -11,7 +11,8 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of an anaerobic digestion oxidation unit.
+This module contains a zero-order representation of an anaerobic digestion oxidation unit
+operation.
 """
 
 from pyomo.environ import Constraint, units as pyunits, Var

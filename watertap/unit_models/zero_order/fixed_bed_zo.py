@@ -11,7 +11,8 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a fixed bed unit.
+This module contains a zero-order representation of a fixed bed unit
+operation.
 """
 
 from pyomo.environ import units as pyunits, Var

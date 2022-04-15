@@ -11,7 +11,8 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of an aeration basin unit.
+This module contains a zero-order representation of an aeration basin unit
+operation.
 """
 
 from idaes.core import declare_process_block_class

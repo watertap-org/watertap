@@ -11,7 +11,8 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a cooling supply unit.
+This module contains a zero-order representation of a cooling supply unit
+operation.
 """
 
 from pyomo.environ import Constraint, units as pyunits, Var
