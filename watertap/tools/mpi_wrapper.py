@@ -13,42 +13,42 @@
 import numpy as np
 
 class DummyMPI:
-    @property
+    @classmethod
     def Get_rank(self):
         return 0
 
-    @property
+    @classmethod
     def Get_size(self):
         return 1
 
-    @property
+    @classmethod
     def Barrier(self):
         pass
 
-    @property
+    @classmethod
     def Bcast(self, array, root=0):
         pass
 
-    @property
+    @classmethod
     def allgather(self, value):
         return [value]
 
-    @property
+    @classmethod
     def Gatherv(self, sendbuf, recvbuf, root=0):
         receive_arr = recvbuf[0]
         receive_sizes = recvbuf[1]
-        assert sum(receive_sizes) = len(receive_arr)
+        assert sum(receive_sizes) == len(receive_arr)
         assert sendbuf.size == receive_arr.size
-        receive_arr[:] = sendbuf
+        receive_arr[:] = sendbuf[:]
 
-# class MPIWrapper:
-#     def __init__(self):
-#         try:
-#             from mpi4py import MPI
-#             return MPI.COMM_WORLD
-#         except:
-#             dummy_comm = DummyMPI()
-#             return dummy_comm
+class MPIWrapper:
+    def __init__(self):
+        try:
+            from mpi4py import MPI
+            return MPI.COMM_WORLD
+        except:
+            dummy_comm = DummyMPI()
+            return dummy_comm
 
 if __name__ == '__main__':
 
@@ -56,4 +56,12 @@ if __name__ == '__main__':
     rank = dummy_comm.Get_rank()
     size = dummy_comm.Get_size()
     dummy_comm.Bcast(np.zeros(2))
-    returned_list = dummy_comm.allgather(np.zeros)
+    returned_list = dummy_comm.allgather(np.zeros(2))
+
+    print("dummy_comm = ", dummy_comm)
+    print("rank = ", rank)
+    print("size = ", size)
+    print("returned_list = ", returned_list)
+
+    comm = MPIWrapper()
+    print("comm = ", comm)
