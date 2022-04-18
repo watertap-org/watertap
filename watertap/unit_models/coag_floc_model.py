@@ -12,7 +12,6 @@
 ###############################################################################
 
 # Import Pyomo libraries
-from math import pi
 from pyomo.environ import (
     Block,
     Set,
@@ -40,6 +39,7 @@ from idaes.core import (
     useDefault,
     MaterialFlowBasis,
 )
+from idaes.core.util.constants import Constants
 from idaes.core.util import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.config import is_physical_parameter_block
@@ -733,7 +733,7 @@ class CoagulationFlocculationData(UnitModelBlockData):
         )
         def eq_floc_wheel_speed(self, t):
             wheel_rate = pyunits.convert(
-                pi * self.single_paddle_length * self.paddle_rotational_speed[t],
+                Constants.pi * self.single_paddle_length * self.paddle_rotational_speed[t],
                 to_units=units_meta("length") * units_meta("time") ** -1,
             )
 
@@ -1095,7 +1095,7 @@ class CoagulationFlocculationData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.floc_wheel_speed[t]) is None:
             sf1 = iscale.get_scaling_factor(self.paddle_rotational_speed)
             sf2 = iscale.get_scaling_factor(self.single_paddle_length)
-            sf = sf1 * sf2 * pi / 10
+            sf = sf1 * sf2 * Constants.pi / 10
             iscale.set_scaling_factor(self.floc_wheel_speed, sf)
 
             for ind, c in self.eq_floc_wheel_speed.items():

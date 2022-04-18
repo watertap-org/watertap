@@ -147,7 +147,7 @@ class TestCoagulation_withChemicals:
         # Check to make sure we have the correct DOF and
         #   check to make sure the units are correct
         assert_units_consistent(model)
-        assert degrees_of_freedom(model) == 11 + 11
+        assert degrees_of_freedom(model) == 22
 
         # set the operational parameters
         model.fs.unit.fix_tss_turbidity_relation_defaults()
@@ -157,7 +157,7 @@ class TestCoagulation_withChemicals:
         model.fs.unit.chemical_doses[0, "Poly"].fix(5)
 
         # set the inlet streams
-        assert degrees_of_freedom(model) == 6 + 11
+        assert degrees_of_freedom(model) == 17
         model.fs.unit.inlet.pressure.fix(101325)
         model.fs.unit.inlet.temperature.fix(298.15)
         model.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(1)
@@ -340,7 +340,7 @@ class TestCoagulation_withNoChemicals:
         # Check to make sure we have the correct DOF and
         #   check to make sure the units are correct
         assert_units_consistent(model)
-        assert degrees_of_freedom(model) == 9 + 11
+        assert degrees_of_freedom(model) == 20
 
         # set the operational parameters
         model.fs.unit.fix_tss_turbidity_relation_defaults()
@@ -348,7 +348,7 @@ class TestCoagulation_withNoChemicals:
         model.fs.unit.final_turbidity_ntu.fix(100)
 
         # set the inlet streams
-        assert degrees_of_freedom(model) == 6 + 11
+        assert degrees_of_freedom(model) == 17
 
         tss_in = value(model.fs.unit.compute_inlet_tss_mass_flow(0))
         assert tss_in == pytest.approx(0.0093, rel=1e-4)
