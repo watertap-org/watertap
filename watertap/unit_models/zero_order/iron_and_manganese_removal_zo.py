@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of an iron and manganese removal unit
+This module contains a zero-order representation of an iron and manganese removal unit.
 """
 
 from pyomo.environ import Constraint, units as pyunits, Var, Param

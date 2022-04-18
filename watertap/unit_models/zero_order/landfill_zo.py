@@ -11,8 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a landfill unit
-operation.
+This module contains a zero-order representation of a landfill unit.
 """
 
 from pyomo.environ import Constraint, units as pyunits, Var
