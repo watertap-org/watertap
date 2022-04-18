@@ -114,6 +114,7 @@ def run_analysis(case_num, nx, interp_nan_outputs=True):
             m.fs.costing.methane_product_cost, -0.305, -1, nx
         )
 
+
     else:
         raise ValueError("case_num = %d not recognized." % (case_num))
 
