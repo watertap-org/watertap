@@ -88,6 +88,7 @@ def test_unit_parameter_files(tech):
         "iron_and_manganese_removal",
         "metab",
         "municipal_drinking",
+        "ozonation",
         "ozone_aop",
         "photothermal_membrane",
         "pump_electricity",
