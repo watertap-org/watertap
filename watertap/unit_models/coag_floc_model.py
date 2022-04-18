@@ -733,7 +733,9 @@ class CoagulationFlocculationData(UnitModelBlockData):
         )
         def eq_floc_wheel_speed(self, t):
             wheel_rate = pyunits.convert(
-                Constants.pi * self.single_paddle_length * self.paddle_rotational_speed[t],
+                Constants.pi
+                * self.single_paddle_length
+                * self.paddle_rotational_speed[t],
                 to_units=units_meta("length") * units_meta("time") ** -1,
             )
 
