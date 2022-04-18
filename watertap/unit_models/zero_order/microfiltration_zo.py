@@ -11,8 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a mircrofiltration unit
-operation.
+This module contains a zero-order representation of a microfiltration unit.
 """
 
 from pyomo.environ import Constraint, units as pyunits, Var

@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a cartridge filtration unit.
+This module contains a zero-order representation of a cartridge filtration unit
 operation.
 """
 

@@ -11,7 +11,7 @@
 #
 ###############################################################################
 """
-This module contains a zero-order representation of a granular activated carbon unit.
+This module contains a zero-order representation of a granular activated carbon unit
 operation.
 """
 
