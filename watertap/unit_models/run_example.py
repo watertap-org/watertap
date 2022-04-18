@@ -202,6 +202,7 @@ def fix_inlets_and_vars(m):
     m.fs.unit.membrane_thickness['aem'].fix()
 
     m.fs.unit.ion_diffusivity_membrane.fix()
+    m.fs.unit.water_permeability_membrane.fix()
 
     print('----------------------------------------------')
     print('DOF after specifying:', degrees_of_freedom(m.fs))
@@ -283,7 +284,9 @@ if __name__ == "__main__":
    run_model(m)
    display_results(m)
 
-
    #view_model_constraints(m)
    #view_model_control_volumes(m)
    #view_model_properties(m)
+
+   # Evaluate the osm_pressure from generic prop pack
+   #print(value(m.fs.unit.concentrate_side.properties[0,0].pressure_osm_phase['Liq']))

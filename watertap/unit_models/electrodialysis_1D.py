@@ -319,6 +319,14 @@ class Electrodialysis1DData(UnitModelBlockData):
             doc = "Ion diffusivity through each membrane"
         )
 
+        self.water_permeability_membrane = Var(
+            self.membrane_set,
+            initialize = 5,
+            bounds = (1e-20, 100),
+            units = pyunits.m / pyunits.s / pyunits.Pa,
+            doc = "Permeability for water through each membrane"
+        )
+
 
         # Build control volume for dilute side
         self.dilute_side = ControlVolume1DBlock(default={
@@ -457,7 +465,25 @@ class Electrodialysis1DData(UnitModelBlockData):
                          doc=" Constraint for rate of flux of water and/or ions caused by osmotic pressure and/or diffusion")
         def eq_nonelec_flux(self, t, x, p, j):
             if j == 'H2O':
-                return self.nonelec_flux[t, x, p, j] == 0.0
+                # # TODO: We should remove the try-except after custom prop pack is fixed
+                # Add in a 'try-except' statement to catch when the property is not
+                #   named used the standard IDAES convention
+                try:
+                    # This is the proper name
+                    Posm_D = self.dilute_side.properties[t, x].pressure_osm_phase[p]
+                    Posm_C = self.concentrate_side.properties[t, x].pressure_osm_phase[p]
+                except:
+                    # This is the improper name that are in custom prop packs
+                    Posm_D = self.dilute_side.properties[t, x].pressure_osm
+                    Posm_C = self.concentrate_side.properties[t, x].pressure_osm
+                L_cem = pyunits.convert( self.water_permeability_membrane['cem'],
+                                to_units=units_meta("length") * units_meta("time") ** -1 * units_meta("pressure") ** -1 )
+                L_aem = pyunits.convert( self.water_permeability_membrane['aem'],
+                                to_units=units_meta("length") * units_meta("time") ** -1 * units_meta("pressure") ** -1 )
+                return self.nonelec_flux[t, x, p, j] == (L_cem + L_aem) * \
+                                (Posm_C*self.concentrate_side.properties[t,x].conc_mol_phase_comp[p,j] - \
+                                Posm_D*self.dilute_side.properties[t,x].conc_mol_phase_comp[p,j])
+
             elif j in anion_set or j in cation_set:
                 cem_rat = pyunits.convert( (self.ion_diffusivity_membrane['cem', j] / self.membrane_thickness['cem']),
                             to_units=units_meta("length") * units_meta("time") ** -1)
@@ -466,6 +492,7 @@ class Electrodialysis1DData(UnitModelBlockData):
                 return self.nonelec_flux[t, x, p, j] == -(cem_rat + aem_rat) * \
                                                     (self.concentrate_side.properties[t, x].conc_mol_phase_comp[p, j] - \
                                                     self.dilute_side.properties[t, x].conc_mol_phase_comp[p, j])
+
             else:
                 return self.nonelec_flux[t, x, p, j] == 0.0
 
