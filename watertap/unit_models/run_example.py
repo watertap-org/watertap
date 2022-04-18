@@ -275,9 +275,12 @@ def view_model_properties(m):
     print()
     m.fs.unit.concentrate_side.properties.pprint()
 
+## Run for testing purposes ##
 if __name__ == "__main__":
-   #m = build_model()
-   m = build_model_generic()
+
+   m = build_model()
+   #m = build_model_generic()
+
    fix_inlets_and_vars(m)
    scale_model(m)
 

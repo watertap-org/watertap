@@ -37,6 +37,7 @@ from idaes.core import (ControlVolume1DBlock,
                         useDefault,
                         MaterialFlowBasis)
 from idaes.core.control_volume1d import DistributedVars
+from idaes.core.util.constants import Constants
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -199,6 +200,8 @@ class Electrodialysis1DData(UnitModelBlockData):
 
         # Refer to the solute_set of the property package for a set of ions
         full_set = self.config.property_package.component_list
+        if 'H2O' not in full_set:
+            raise ConfigurationError("Property Package MUST constain 'H2O' as a component")
 
         # # TODO: Current Issue with how a set of components is defined in Adam's prop pack
         #   Issue is that all non-H2O species are added as 'Solutes', which DO NOT have
@@ -210,6 +213,71 @@ class Electrodialysis1DData(UnitModelBlockData):
         #
         #   e.g., try to grab cation_set, anion_set, and solute_set,
         #           if not available, grab component_list and look for 'charge_comp'.
+
+        # Adam: pressure_osm   | generic: pressure_osm_phase
+
+        # First, try to find cation_set and assign if not already assigned
+        #       NOTE: The assignment is based on the assumption that the
+        #       property package (i.e., ion_DSPMDE_prop_pack) will have
+        #       a property named 'charge_comp'. If not, then another error
+        #       will be thrown.
+        try:
+            cation_set = self.config.property_package.cation_set
+        except AttributeError:
+            temp_list = []
+            for j in full_set:
+                if j in self.config.property_package.charge_comp:
+                    if self.config.property_package.charge_comp[j].value > 0:
+                        temp_list.append(j)
+
+            # Append the set we need to this unit with unique name,
+            #   then assign alias to the common name
+            self.unit_cation_set = Set(initialize = temp_list)
+            cation_set = self.unit_cation_set
+
+        # Next, try to find anion_set and assign if not already assigned
+        #       NOTE: The assignment is based on the assumption that the
+        #       property package (i.e., ion_DSPMDE_prop_pack) will have
+        #       a property named 'charge_comp'. If not, then another error
+        #       will be thrown.
+        try:
+            anion_set = self.config.property_package.anion_set
+        except AttributeError:
+            temp_list = []
+            for j in full_set:
+                if j in self.config.property_package.charge_comp:
+                    if self.config.property_package.charge_comp[j].value < 0:
+                        temp_list.append(j)
+
+            # Append the set we need to this unit with unique name,
+            #   then assign alias to the common name
+            self.unit_anion_set = Set(initialize = temp_list)
+            anion_set = self.unit_anion_set
+
+        # Grab charge from generic package
+        #print(self.config.property_package.get_component('Na_+').config.charge)
+
+        # Create an ion_charge parameter to reference in model equations
+        #   This is for convenience since the charge info is stored in
+        #   different places between Adam's prop pack and the generic
+        #   prop pack  
+        self.ion_charge = Param(
+            anion_set | cation_set,
+            initialize = 0,
+            mutable = True,
+            units=pyunits.dimensionless,
+            doc="Ion charge",
+        )
+
+        # Loop through full set and try to assign charge based on 'charge_comp'
+        for j in full_set:
+            if j in anion_set or j in cation_set:
+                try:
+                    self.ion_charge[j] = self.config.property_package.charge_comp[j].value
+                # If unassignable, then try to access charge from generic package
+                except AttributeError:
+                    self.ion_charge[j] = self.config.property_package.get_component(j).config.charge
+
 
         # Each dilute_side and concentrate_side pair has 2 membranes
         #   cem = Cation-Exchange Membrane
