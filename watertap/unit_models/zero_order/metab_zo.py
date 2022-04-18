@@ -12,7 +12,7 @@
 ###############################################################################
 """
 This module contains a zero-order representation of a METAB bioreactor with simple reactions
-(i.e. conversion fractions for key reagents and conversion ratios for other reactive species).
+(i.e., conversion fractions for key reagents and conversion ratios for other reactive species).
 """
 
 from pyomo.environ import Constraint, units as pyunits, Var
