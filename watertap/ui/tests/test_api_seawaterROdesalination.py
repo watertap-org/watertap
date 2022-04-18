@@ -42,6 +42,7 @@ class AddCosting(Build):
         srd.add_costing(model)
         return model
 
+
 class InitCosting(Initialize):
     def initialize_model(self, data):
         model = self.workflow.model
@@ -78,30 +79,27 @@ cost_vars = dict()
 def test_workflow():
     wf = AnalysisWorkflow()
     wf.set_flowsheet_data({"erd_type": "pressure_exchanger"})
-    # TODO: set strategy and data (if any) for each step
-    wf.set_strategy(Steps.build, BuildRO)
-    wf.set_input(Steps.build, perf_vars)
-    wf.set_strategy(Steps.init, InitializeRO)
-    wf.set_strategy(Steps.optimize, Solve)
-    wf.set_strategy(Steps.build_costing, AddCosting)
-    wf.set_strategy(Steps.init_costing, InitCosting)
-    wf.set_strategy(Steps.optimize_costing, Solve)   # re-use solve class
-    wf.set_standard_workflow(costing=True)
+    # Set action and input data (if any) for each step.
+    # This can be done in any order, since the steps
+    # already exist in the workflow.
+    wf.set_step_action(Steps.build, BuildRO)
+    wf.set_step_input(Steps.build, perf_vars)
+    wf.set_step_action(Steps.init, InitializeRO)
+    wf.set_step_action(Steps.optimize, Solve)
+    wf.set_step_action(Steps.build_costing, AddCosting)
+    wf.set_step_action(Steps.init_costing, InitCosting)
+    wf.set_step_action(Steps.optimize_costing, Solve)   # re-use solve class
     print("Workflow is created")
     print("Performance variables:")
-    pprint.pprint(wf.get_input(Steps.build))
+    pprint.pprint(wf.get_step_input(Steps.build))
     print("Costing variables:")
-    pprint.pprint(wf.get_input(Steps.build_costing))
+    pprint.pprint(wf.get_step_input(Steps.build_costing))
     wf.run_all()
     # TODO: Check results
     print(wf.optimize_result)
 
-
 ## Some modified methods
 
-
-def uv(entry):
-    return entry["value"] * entry["units"]
 
 
 def set_operating_conditions_p(m, p):
@@ -121,12 +119,11 @@ def set_operating_conditions_p(m, p):
     #
 
     # Set feed parameters
-    feed = p["feed"]
-    flow_vol = uv(feed["flow_vol"])
-    conc_mass_tds = uv(feed["conc_mass_tds"])
-    conc_mass_tss = uv(feed["conc_mass_tss"])
-    temperature = uv(feed["temperature"])
-    pressure = uv(feed["pressure"])
+    flow_vol = p.feed.flow_vol.value
+    conc_mass_tds = p.feed.conc_mass_tds.value
+    conc_mass_tss = p.feed.conc_mass_tss.value
+    temperature = p.feed.temperature.value
+    pressure = p.feed.pressure.value
 
     m.fs.feed.flow_vol[0].fix(flow_vol)
     m.fs.feed.conc_mass_comp[0, "tds"].fix(conc_mass_tds)
