@@ -29,102 +29,6 @@ from idaes.core.util import get_solver
 
 solver = get_solver()
 
-# Configuration dictionary for generic
-thermo_config = {
-    "components": {
-        "H2O": {
-            "type": Solvent,
-            # Define the methods used to calculate the following properties
-            "dens_mol_liq_comp": Constant,
-            "enth_mol_liq_comp": Constant,
-            "cp_mol_liq_comp": Constant,
-            "entr_mol_liq_comp": Constant,
-            # Parameter data is always associated with the methods defined above
-            "parameter_data": {
-                "mw": (18.0153, pyunits.g / pyunits.mol),
-                "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
-                "cp_mol_liq_comp_coeff": (75.312, pyunits.J / pyunits.mol / pyunits.K),
-                "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
-                "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
-            },
-            # End parameter_data
-        },
-        "Na_+": {
-            "type": Cation,
-            "charge": 1,
-            # Define the methods used to calculate the following properties
-            "dens_mol_liq_comp": Constant,
-            "enth_mol_liq_comp": Constant,
-            "cp_mol_liq_comp": Constant,
-            "entr_mol_liq_comp": Constant,
-            # Parameter data is always associated with the methods defined above
-            "parameter_data": {
-                "mw": (22.989769, pyunits.g / pyunits.mol),
-                "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
-                "cp_mol_liq_comp_coeff": (75.312, pyunits.J / pyunits.mol / pyunits.K),
-                "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
-                "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
-            },
-            # End parameter_data
-        },
-        "Cl_-": {
-            "type": Anion,
-            "charge": -1,
-            # Define the methods used to calculate the following properties
-            "dens_mol_liq_comp": Constant,
-            "enth_mol_liq_comp": Constant,
-            "cp_mol_liq_comp": Constant,
-            "entr_mol_liq_comp": Constant,
-            # Parameter data is always associated with the methods defined above
-            "parameter_data": {
-                "mw": (35.453, pyunits.g / pyunits.mol),
-                "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
-                "cp_mol_liq_comp_coeff": (75.312, pyunits.J / pyunits.mol / pyunits.K),
-                "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
-                "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
-            },
-            # End parameter_data
-        },
-        "NaCl": {
-            "type": Solute,
-            "valid_phase_types": PT.aqueousPhase,
-            # Define the methods used to calculate the following properties
-            "dens_mol_liq_comp": Constant,
-            "enth_mol_liq_comp": Constant,
-            "cp_mol_liq_comp": Constant,
-            "entr_mol_liq_comp": Constant,
-            # Parameter data is always associated with the methods defined above
-            "parameter_data": {
-                "mw": (58.442, pyunits.g / pyunits.mol),
-                "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
-                "cp_mol_liq_comp_coeff": (75.312, pyunits.J / pyunits.mol / pyunits.K),
-                "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
-                "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
-            },
-            # End parameter_data
-        },
-    },
-    # End Component list
-    "phases": {
-        "Liq": {"type": AqueousPhase, "equation_of_state": Ideal},
-    },
-    "state_definition": FpcTP,
-    "state_bounds": {
-        "temperature": (273.15, 300, 650),
-        "pressure": (5e4, 1e5, 1e6),
-    },
-    "pressure_ref": 1e5,
-    "temperature_ref": 300,
-    "base_units": {
-        "time": pyunits.s,
-        "length": pyunits.m,
-        "mass": pyunits.kg,
-        "amount": pyunits.mol,
-        "temperature": pyunits.K,
-    }
-}
-# End thermo_config definition
-
 def build_model():
     # create model, flowsheet
     m = ConcreteModel()
@@ -165,23 +69,102 @@ def build_model_generic():
     # create model, flowsheet
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    # create dict to define ions (the prop pack of Adam requires this)
-    ion_dict = {
-        "solute_list": ["Na_+", "Cl_-", "NaCl"],
-        "diffusivity_data": {("Liq", "Na_+"): 1.33e-9,
-                             ("Liq", "Cl_-"): 2.03e-9,
-                             ("Liq", "NaCl"): 1.70e-9},
-        "mw_data": {"H2O": 18e-3,
-                    "Na_+": 23e-3,
-                    "Cl_-": 35e-3,
-                    "NaCl": 58e-3},
-        "stokes_radius_data": {"Na_+": 0.184e-9,
-                               "Cl_-": 0.121e-9,
-                               "NaCl": 0.305e-9},
-        "charge": {"Na_+": 1,
-                   "Cl_-": -1,
-                   "NaCl": 0},
+    # Configuration dictionary for generic
+    thermo_config = {
+        "components": {
+            "H2O": {
+                "type": Solvent,
+                # Define the methods used to calculate the following properties
+                "dens_mol_liq_comp": Constant,
+                "enth_mol_liq_comp": Constant,
+                "cp_mol_liq_comp": Constant,
+                "entr_mol_liq_comp": Constant,
+                # Parameter data is always associated with the methods defined above
+                "parameter_data": {
+                    "mw": (18.0153, pyunits.g / pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J / pyunits.mol / pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
+                },
+                # End parameter_data
+            },
+            "Na_+": {
+                "type": Cation,
+                "charge": 1,
+                # Define the methods used to calculate the following properties
+                "dens_mol_liq_comp": Constant,
+                "enth_mol_liq_comp": Constant,
+                "cp_mol_liq_comp": Constant,
+                "entr_mol_liq_comp": Constant,
+                # Parameter data is always associated with the methods defined above
+                "parameter_data": {
+                    "mw": (22.989769, pyunits.g / pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J / pyunits.mol / pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
+                },
+                # End parameter_data
+            },
+            "Cl_-": {
+                "type": Anion,
+                "charge": -1,
+                # Define the methods used to calculate the following properties
+                "dens_mol_liq_comp": Constant,
+                "enth_mol_liq_comp": Constant,
+                "cp_mol_liq_comp": Constant,
+                "entr_mol_liq_comp": Constant,
+                # Parameter data is always associated with the methods defined above
+                "parameter_data": {
+                    "mw": (35.453, pyunits.g / pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J / pyunits.mol / pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
+                },
+                # End parameter_data
+            },
+            "NaCl": {
+                "type": Solute,
+                "valid_phase_types": PT.aqueousPhase,
+                # Define the methods used to calculate the following properties
+                "dens_mol_liq_comp": Constant,
+                "enth_mol_liq_comp": Constant,
+                "cp_mol_liq_comp": Constant,
+                "entr_mol_liq_comp": Constant,
+                # Parameter data is always associated with the methods defined above
+                "parameter_data": {
+                    "mw": (58.442, pyunits.g / pyunits.mol),
+                    "dens_mol_liq_comp_coeff": (55.2, pyunits.kmol * pyunits.m**-3),
+                    "cp_mol_liq_comp_coeff": (75.312, pyunits.J / pyunits.mol / pyunits.K),
+                    "enth_mol_form_liq_comp_ref": (0, pyunits.kJ / pyunits.mol),
+                    "entr_mol_form_liq_comp_ref": (0, pyunits.J / pyunits.K / pyunits.mol),
+                },
+                # End parameter_data
+            },
+        },
+        # End Component list
+        "phases": {
+            "Liq": {"type": AqueousPhase, "equation_of_state": Ideal},
+        },
+        "state_definition": FpcTP,
+        "state_bounds": {
+            "temperature": (273.15, 300, 650),
+            "pressure": (5e4, 1e5, 1e6),
+        },
+        "pressure_ref": 1e5,
+        "temperature_ref": 300,
+        "base_units": {
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        }
     }
+    # End thermo_config definition
+
     # attach prop pack to flowsheet
     m.fs.properties = GenericParameterBlock(default=thermo_config)
 
@@ -213,10 +196,12 @@ def fix_inlets_and_vars(m):
     m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, 'Liq', 'Cl_-'].fix(0.01)
     m.fs.unit.inlet_concentrate.flow_mol_phase_comp[0, 'Liq', 'NaCl'].fix(0.0001)
 
-    m.fs.unit.cell_length.fix(1)
+    m.fs.unit.cell_length.fix(0.5)
     m.fs.unit.cell_width.fix(0.1)
     m.fs.unit.membrane_thickness['cem'].fix()
     m.fs.unit.membrane_thickness['aem'].fix()
+
+    m.fs.unit.ion_diffusivity_membrane.fix()
 
     print('----------------------------------------------')
     print('DOF after specifying:', degrees_of_freedom(m.fs))
@@ -255,6 +240,7 @@ def view_model_constraints(m):
     m.fs.unit.dilute_side.material_balances.pprint()
     m.fs.unit.dilute_side.material_flow_dx_disc_eq.pprint()
     m.fs.unit.dilute_side.mass_transfer_term.pprint()
+    m.fs.unit.eq_mass_transfer_term_dilute.pprint()
 
     print()
 
@@ -262,6 +248,14 @@ def view_model_constraints(m):
     m.fs.unit.concentrate_side.material_balances.pprint()
     m.fs.unit.concentrate_side.material_flow_dx_disc_eq.pprint()
     m.fs.unit.concentrate_side.mass_transfer_term.pprint()
+    m.fs.unit.eq_mass_transfer_term_concentrate.pprint()
+
+    m.fs.unit.cell_length.pprint()
+
+    print()
+
+    m.fs.unit.nonelec_flux.pprint()
+    m.fs.unit.eq_nonelec_flux.pprint()
 
 def view_model_control_volumes(m):
     # Display the full control volume equation set
@@ -278,8 +272,8 @@ def view_model_properties(m):
 ## Run for testing purposes ##
 if __name__ == "__main__":
 
-   m = build_model()
-   #m = build_model_generic()
+   #m = build_model()
+   m = build_model_generic()
 
    fix_inlets_and_vars(m)
    scale_model(m)

@@ -19,6 +19,7 @@ from pyomo.environ import (Block,
                            Expression,
                            Suffix,
                            NonNegativeReals,
+                           Reals,
                            Reference,
                            value,
                            units as pyunits)
@@ -203,6 +204,16 @@ class Electrodialysis1DData(UnitModelBlockData):
         if 'H2O' not in full_set:
             raise ConfigurationError("Property Package MUST constain 'H2O' as a component")
 
+        # Both the generic package and Adam's prop pack have a 'solute_set', but what
+        #   gets put into that set is currently defined differently. The purpose of
+        #   this loop is to ensure that our 'full_solute_set' is always the same
+        #   list for either prop pack used.
+        full_solute_list = []
+        for j in full_set:
+            if j != 'H2O':
+                full_solute_list.append(j)
+        self.full_solute_set = Set(initialize = full_solute_list)
+
         # # TODO: Current Issue with how a set of components is defined in Adam's prop pack
         #   Issue is that all non-H2O species are added as 'Solutes', which DO NOT have
         #   a 'charge' parameter inherently in the GenericProperties system. Also, the
@@ -260,10 +271,10 @@ class Electrodialysis1DData(UnitModelBlockData):
         # Create an ion_charge parameter to reference in model equations
         #   This is for convenience since the charge info is stored in
         #   different places between Adam's prop pack and the generic
-        #   prop pack  
+        #   prop pack
         self.ion_charge = Param(
             anion_set | cation_set,
-            initialize = 0,
+            initialize = 1,
             mutable = True,
             units=pyunits.dimensionless,
             doc="Ion charge",
@@ -297,6 +308,15 @@ class Electrodialysis1DData(UnitModelBlockData):
             bounds = (1e-6, 1e-1),
             units = pyunits.m,
             doc = "Membrane thickness for each membrane"
+        )
+
+        self.ion_diffusivity_membrane = Var(
+            self.membrane_set,
+            anion_set | cation_set,
+            initialize = 1e-8,
+            bounds = (1e-20, 1e-3),
+            units = pyunits.m**2 / pyunits.s,
+            doc = "Ion diffusivity through each membrane"
         )
 
 
@@ -334,6 +354,11 @@ class Electrodialysis1DData(UnitModelBlockData):
         self.dilute_side.apply_transformation()
         self.first_element = self.dilute_side.length_domain.first()
         self.difference_elements = Set(ordered=True, initialize=(x for x in self.dilute_side.length_domain if x != self.first_element))
+        self.nfe = Param(
+            initialize=(len(self.difference_elements)),
+            units=pyunits.dimensionless,
+            doc="Number of finite elements",
+        )
 
         # Build control volume for concentrate side
         self.concentrate_side = ControlVolume1DBlock(default={
@@ -390,11 +415,6 @@ class Electrodialysis1DData(UnitModelBlockData):
         #           Those vars will be coupled into the mass_transfer_term below
         #           and will be of opposite sign for each channel
 
-
-
-
-        # # TODO: Summate the flux terms for each mass transfer term in each domain
-
         # Adds isothermal constraint if no energy balance present
         if not hasattr(self.config, "energy_balance_type"):
             @self.Constraint(self.flowsheet().config.time,
@@ -417,6 +437,63 @@ class Electrodialysis1DData(UnitModelBlockData):
         def eq_equal_length(self):
             return self.dilute_side.length == self.concentrate_side.length
 
+        # # TODO: Summate the flux terms for each mass transfer term in each domain
+
+        # Non-electrical flux terms
+        self.nonelec_flux = Var(
+            self.flowsheet().config.time,
+            self.difference_elements,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            initialize=0,
+            domain=Reals,
+            units=units_meta("amount") * units_meta("length") ** -2 * units_meta("time") ** -1,
+            doc="Rate of flux of water and/or ions caused by osmotic pressure and/or diffusion",
+        )
+        @self.Constraint(self.flowsheet().config.time,
+                         self.difference_elements,
+                         self.config.property_package.phase_list,
+                         self.config.property_package.component_list,
+                         doc=" Constraint for rate of flux of water and/or ions caused by osmotic pressure and/or diffusion")
+        def eq_nonelec_flux(self, t, x, p, j):
+            if j == 'H2O':
+                return self.nonelec_flux[t, x, p, j] == 0.0
+            elif j in anion_set or j in cation_set:
+                cem_rat = pyunits.convert( (self.ion_diffusivity_membrane['cem', j] / self.membrane_thickness['cem']),
+                            to_units=units_meta("length") * units_meta("time") ** -1)
+                aem_rat = pyunits.convert( (self.ion_diffusivity_membrane['aem', j] / self.membrane_thickness['aem']),
+                            to_units=units_meta("length") * units_meta("time") ** -1)
+                return self.nonelec_flux[t, x, p, j] == -(cem_rat + aem_rat) * \
+                                                    (self.concentrate_side.properties[t, x].conc_mol_phase_comp[p, j] - \
+                                                    self.dilute_side.properties[t, x].conc_mol_phase_comp[p, j])
+            else:
+                return self.nonelec_flux[t, x, p, j] == 0.0
+
+
+        # Electrical flux terms
+        self.elec_flux = Var(
+            self.flowsheet().config.time,
+            self.difference_elements,
+            self.config.property_package.phase_list,
+            self.config.property_package.component_list,
+            initialize=0,
+            domain=Reals,
+            units=units_meta("amount") * units_meta("length") ** -2 * units_meta("time") ** -1,
+            doc="Rate of flux of water and/or ions caused by electrical current",
+        )
+        @self.Constraint(self.flowsheet().config.time,
+                         self.difference_elements,
+                         self.config.property_package.phase_list,
+                         self.config.property_package.component_list,
+                         doc=" Constraint for rate of flux of water and/or ions caused by electrical current")
+        def eq_elec_flux(self, t, x, p, j):
+            if j == 'H2O':
+                return self.elec_flux[t, x, p, j] == 0.0
+            elif j in anion_set or j in cation_set:
+                return self.elec_flux[t, x, p, j] == 0.0
+            else:
+                return self.elec_flux[t, x, p, j] == 0.0
+
         # Add constraints for mass transfer terms (dilute_side)
         @self.Constraint(self.flowsheet().config.time,
                          self.difference_elements,
@@ -424,10 +501,9 @@ class Electrodialysis1DData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Mass transfer term on dilute side")
         def eq_mass_transfer_term_dilute(self, t, x, p, j):
-            if j == 'H2O':
-                return self.dilute_side.mass_transfer_term[t, x, p, j] == 0.0
-            else:
-                return self.dilute_side.mass_transfer_term[t, x, p, j] == 0.0
+            width = pyunits.convert( self.cell_width, to_units=units_meta("length"))
+            return self.dilute_side.mass_transfer_term[t, x, p, j] == -self.nonelec_flux[t, x, p, j]*width \
+                                                                     -self.elec_flux[t, x, p, j]*width
 
         # Add constraints for mass transfer terms (concentrate_side)
         @self.Constraint(self.flowsheet().config.time,
@@ -436,10 +512,9 @@ class Electrodialysis1DData(UnitModelBlockData):
                          self.config.property_package.component_list,
                          doc="Mass transfer term concentrate side")
         def eq_mass_transfer_term_concentrate(self, t, x, p, j):
-            if j == 'H2O':
-                return self.concentrate_side.mass_transfer_term[t, x, p, j] == 0.0
-            else:
-                return self.concentrate_side.mass_transfer_term[t, x, p, j] == 0.0
+            width = pyunits.convert( self.cell_width, to_units=units_meta("length"))
+            return self.concentrate_side.mass_transfer_term[t, x, p, j] == self.nonelec_flux[t, x, p, j]*width \
+                                                                        + self.elec_flux[t, x, p, j]*width
 
 
     # initialize method
