@@ -632,6 +632,14 @@ class Electrodialysis1DData(UnitModelBlockData):
 
         # # TODO: Add scaling factors
 
+        ## # TODO: Somehow, the scaling factors I give to the property package
+        #       are not being reflected here and are instead becoming larger. 
+        for set in self.dilute_side.properties:
+            for ind in self.dilute_side.properties[set].flow_mass_phase_comp:
+                print(ind)
+                print(iscale.get_scaling_factor(self.dilute_side.properties[set].flow_mass_phase_comp[ind]))
+                print()
+
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe({"Dilute Side Inlet": self.inlet_dilute,
                                               "Concentrate Side Inlet": self.inlet_concentrate,

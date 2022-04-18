@@ -213,13 +213,41 @@ def fix_inlets_and_vars(m):
 
 def scale_model(m):
     # set scaling factors for state vars and call the 'calculate_scaling_factors' function
+
+    # # TODO: Figure out if this is NOT the proper way to  set scaling factors in 1D unit model
     m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', 'H2O'))
     m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e2, index=('Liq', 'Na_+'))
     m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e2, index=('Liq', 'Cl_-'))
     m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e4, index=('Liq', 'NaCl'))
 
     # NOTE: We have to skip this step for now due to an error in Adams' Prop Pack
-    iscale.calculate_scaling_factors(m.fs)
+
+    # # TODO: Adam's scaling may need to be revisted
+
+    # # TODO: Figure out why 'flow_mass_phase_comp' is being constructed when it is
+    #           not being called for...
+    iscale.calculate_scaling_factors(m)
+
+    # check that all variables have scaling factors
+    unscaled_var_list = list(iscale.unscaled_variables_generator(m))
+    print("List of unscaled variables")
+    print("--------------------------")
+    for j in unscaled_var_list:
+        print(j)
+    print()
+
+    # check if any variables are badly scaled
+    badly_scaled_var_values = {
+        var.name: val
+        for (var, val) in iscale.badly_scaled_var_generator(
+            m, large=1e2, small=1e-2
+        )
+    }
+    print("List of poorly scaled variables")
+    print("-------------------------------")
+    for j in badly_scaled_var_values:
+        print(str(j) + "\t" + str(badly_scaled_var_values[j]))
+    print()
 
 def initialize_model(m):
     # Intialize the model
@@ -273,16 +301,16 @@ def view_model_properties(m):
 ## Run for testing purposes ##
 if __name__ == "__main__":
 
-   #m = build_model()
-   m = build_model_generic()
+   m = build_model()
+   #m = build_model_generic()
 
    fix_inlets_and_vars(m)
    scale_model(m)
 
    # ONLY use these line to solve the model (requires proper solvers)
-   initialize_model(m)
-   run_model(m)
-   display_results(m)
+   #initialize_model(m)
+   #run_model(m)
+   #display_results(m)
 
    #view_model_constraints(m)
    #view_model_control_volumes(m)
