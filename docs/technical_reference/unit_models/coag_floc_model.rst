@@ -15,14 +15,14 @@ Stage 2) Flocculation (where the 'floccs' are formed through slow, gentle mixing
 
 In this implementation of the model, the user MUST provide a measured final Turbidity (in NTU) made
 during a Jar Test for the given water source. This measurement is then used to estimate how much
-TSS would be removed during the Coagulation-Flocculation process. User's may also
+TSS would be removed during the Coagulation-Flocculation process. Users may also
 provide the specific chemical composition of additives used to achieve this final Turbidity, and
 can provide information on the level of salts in those additives. This information can be used
 to estimate an increase in total dissolved salts (TDS) that may occur due to the addition of
 those chemicals.
 
 This model also includes relationships for power usage in the rapid mixing and flocculation
-basins. User's will need to provide information for power usage such as retention times of
+basins. Users will need to provide information for power usage such as retention times of
 each basin, mixing paddle sizes, number of mixers, etc.
 
 The main assumptions of the implemented model are as follows:
@@ -57,7 +57,7 @@ Sets
    "Components", ":math:`j`", "['H2O', 'TDS', 'TSS', 'Sludge', ...]"
    "Chemical Additives", ":math:`i`", "['chem_A', 'chem_B', ...]"
 
-**User's are responsible for naming any chemical additives and defining all parameters associated with them**
+**Users are responsible for naming any chemical additives and defining all parameters associated with them**
 
 Degrees of Freedom and Variables
 --------------------------------
@@ -89,14 +89,14 @@ the user must specify. The table below gives an outline of these.
    "Number of rotating paddle wheels", ":math:`n_w`", "num_paddle_wheels", "None", "None"
    "Number of paddles per wheel", ":math:`n_p`", "num_paddles_per_wheel", "None", "None"
 
-**User's must provide values for and 'fix' these variables to solve the model**
+**Users must provide values for and 'fix' these variables to solve the model**
 
 **NOTE: Default values are provided for the slope and intercept relationships between Turbidity and TSS. These come from Rugner et al. (2013)**
 
 
 Chemical Dosing Parameters
 --------------------------
-In addition to providing and fixing values for chemical additives, the user's will
+In addition to providing and fixing values for chemical additives, the users will
 need to provide parameter information for each additive including molecular weight (:math:`MW_{a,i}`),
 moles of salt that would be added per mole of additive (:math:`N_i`), and a representative molecular
 weight of the salt species that would be formed from addition of the additive (:math:`MW_{s,i}`). If a user
@@ -106,7 +106,7 @@ This information is only used to estimate the rise in TDS when salts are added, 
 is not critical for the determination of the main objective of Coagulation-Flocculation,
 which is the removal of TSS.
 
-To provide this information to the unit model, user's must add a 'chemical_additives'
+To provide this information to the unit model, users must add a 'chemical_additives'
 dictionary to the initialization of the unit model. That dictionary must have the
 following format.
 
