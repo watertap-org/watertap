@@ -7,6 +7,8 @@ temperature, pressure, and mass fraction of suspended/dissolved solids from
 and water viscosity as a function of temperature from
 `D.S. Viswananth, G. Natarajan. (1989) <https://www.osti.gov/biblio/6562161>`_.
 
+**Note: TDS = Total Dissolved Solids and TSS = Total Suspended Solids**
+
 This coagulation property package:
    * supports only 'H2O', 'TDS', 'TSS', and 'Sludge' as Components
    * supports only liquid phase

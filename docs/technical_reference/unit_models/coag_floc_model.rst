@@ -5,10 +5,10 @@ Introduction
 ------------
 
 Coagulation-Flocculation is a water treatment process  designed to remove total suspended
-solids (TSS, primarily as natural organic matter) from solution by converting those small,
-suspended particles into larger 'floccs' (or 'Sludge') that can then be separated by sedimentation
-and/or filtration (or other separation processes) later in the treatment train. This
-is accomplished in a 2-stage process:
+solids (TSS) from solution by converting small suspended and/or colloidal matter, and some
+natural organic matter, into larger 'floccs' (or 'Sludge') that can then be separated by
+sedimentation and/or filtration (or other separation processes) later in the treatment train.
+This is accomplished in a 2-stage process:
 
 Stage 1) Coagulation (where chemical coagulants and other aids are rapidly mixed into solution)
 Stage 2) Flocculation (where the 'floccs' are formed through slow, gentle mixing/agitation)
@@ -28,7 +28,7 @@ each basin, mixing paddle sizes, number of mixers, etc.
 The main assumptions of the implemented model are as follows:
 
 1) Coagulation-Flocculation can be modeled together in a single combined unit (Figure 1)
-2) Model dimensionality is limited to 0D
+2) Model dimensionality is limited to a 0D control volume
 3) Predicted levels of suspended solid removal can be determined solely by Jar Test measurements
 4) Single liquid phase only
 5) Isothermal operation
