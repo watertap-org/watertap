@@ -1,9 +1,0 @@
-default:
-  recovery_frac_mass_H2O:
-    value: 0.9
-    units: dimensionless
-    reference: Texas Water Development Board IT3PR User Manual. Backflush based on
-      Carlsbad case study.
-  default_removal_frac_mass_solute:
-    value: 0
-    units: dimensionless
