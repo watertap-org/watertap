@@ -633,11 +633,19 @@ class Electrodialysis1DData(UnitModelBlockData):
         # # TODO: Add scaling factors
 
         ## # TODO: Somehow, the scaling factors I give to the property package
-        #       are not being reflected here and are instead becoming larger. 
+        #       are not being reflected here and are instead becoming larger.
         for set in self.dilute_side.properties:
-            for ind in self.dilute_side.properties[set].flow_mass_phase_comp:
+            for ind in self.dilute_side.properties[set].flow_mol_phase_comp:
                 print(ind)
-                print(iscale.get_scaling_factor(self.dilute_side.properties[set].flow_mass_phase_comp[ind]))
+                print(iscale.get_scaling_factor(self.dilute_side.properties[set].flow_mol_phase_comp[ind]))
+
+                # Part of the issue is that the values of the properties not at the inlet boundary are
+                #   assumed to all be 100. This is an error in the intialization stage of variable creation
+
+                # # TODO: Need to propogate the inlet values provided by the user for the state variables
+                #           to the full length of the domain (and may need to initialize all other constructed
+                #           property vars in a similar manner)
+                print(value(self.concentrate_side.properties[set].flow_mol_phase_comp[ind]))
                 print()
 
     def _get_stream_table_contents(self, time_point=0):

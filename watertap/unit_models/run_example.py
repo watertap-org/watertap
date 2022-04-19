@@ -225,8 +225,17 @@ def scale_model(m):
     # # TODO: Adam's scaling may need to be revisted
 
     # # TODO: Figure out why 'flow_mass_phase_comp' is being constructed when it is
-    #           not being called for...
+    #           not being called for... this is because the way in which the prop pack
+    #           is written is that the 'conc_mol_phase_comp' is a function of the
+    #           'flow_mass_phase_comp' (even though it doesn't need to be).
     iscale.calculate_scaling_factors(m)
+
+    unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
+    print("List of unscaled constraints")
+    print("----------------------------")
+    for j in unscaled_constraint_list:
+        print(j)
+    print()
 
     # check that all variables have scaling factors
     unscaled_var_list = list(iscale.unscaled_variables_generator(m))
