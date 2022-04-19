@@ -625,6 +625,73 @@ class Electrodialysis1DData(UnitModelBlockData):
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )
 
+    def propogate_initial_state(self):
+
+        i = 0
+        for set in self.dilute_side.properties:
+
+            # Should check 'define_state_vars' to see if user has provided
+            #   state vars that are outside of the checks in this function
+            if ('flow_mol_phase_comp' not in self.dilute_side.properties[set].define_state_vars()
+                and 'flow_mass_phase_comp' not in self.dilute_side.properties[set].define_state_vars()):
+                raise ConfigurationError("Electrodialysis1D unit model requires "
+                                    "either a 'flow_mol_phase_comp' or 'flow_mass_phase_comp' "
+                                    "state variable basis to apply the 'propogate_initial_state' method")
+
+            t = set[0]
+            x = set[1]
+            if i == 0:
+                intial_set = (t,x)
+
+            if 'pressure' in self.dilute_side.properties[set].define_state_vars():
+                self.dilute_side.properties[set].pressure = \
+                    value(self.dilute_side.properties[intial_set].pressure)
+                self.concentrate_side.properties[set].pressure = \
+                    value(self.concentrate_side.properties[intial_set].pressure)
+
+            if 'temperature' in self.dilute_side.properties[set].define_state_vars():
+                self.dilute_side.properties[set].temperature = \
+                    value(self.dilute_side.properties[intial_set].temperature)
+                self.concentrate_side.properties[set].temperature = \
+                    value(self.concentrate_side.properties[intial_set].temperature)
+
+            if 'flow_mol_phase_comp' in self.dilute_side.properties[set].define_state_vars():
+                for ind in self.dilute_side.properties[set].flow_mol_phase_comp:
+                    self.dilute_side.properties[set].flow_mol_phase_comp[ind] = \
+                        value(self.dilute_side.properties[intial_set].flow_mol_phase_comp[ind])
+                    self.concentrate_side.properties[set].flow_mol_phase_comp[ind] = \
+                        value(self.concentrate_side.properties[intial_set].flow_mol_phase_comp[ind])
+
+                # Check to see if 'flow_mass_phase_comp' is constructed
+                if self.dilute_side.properties[set].is_property_constructed("flow_mass_phase_comp"):
+                    for ind in self.dilute_side.properties[set].flow_mass_phase_comp:
+                        self.dilute_side.properties[set].flow_mass_phase_comp[ind] = \
+                            value(self.dilute_side.properties[intial_set].flow_mol_phase_comp[ind])
+                        self.concentrate_side.properties[set].flow_mass_phase_comp[ind] = \
+                            value(self.concentrate_side.properties[intial_set].flow_mol_phase_comp[ind])
+
+            if 'flow_mass_phase_comp' in self.dilute_side.properties[set].define_state_vars():
+                for ind in self.dilute_side.properties[set].flow_mass_phase_comp:
+                    self.dilute_side.properties[set].flow_mass_phase_comp[ind] = \
+                        value(self.dilute_side.properties[intial_set].flow_mass_phase_comp[ind])
+                    self.concentrate_side.properties[set].flow_mass_phase_comp[ind] = \
+                        value(self.concentrate_side.properties[intial_set].flow_mass_phase_comp[ind])
+
+                # Check to see if 'flow_mol_phase_comp' is constructed
+                if self.dilute_side.properties[set].is_property_constructed("flow_mol_phase_comp"):
+                    for ind in self.dilute_side.properties[set].flow_mol_phase_comp:
+                        self.dilute_side.properties[set].flow_mol_phase_comp[ind] = \
+                            value(self.dilute_side.properties[intial_set].flow_mass_phase_comp[ind])
+                        self.concentrate_side.properties[set].flow_mol_phase_comp[ind] = \
+                            value(self.concentrate_side.properties[intial_set].flow_mass_phase_comp[ind])
+
+            i += 1
+
+        #for t in self.flowsheet().config.time:
+        #    print(t)
+        #    for x in self.difference_elements:
+        #        print(x)
+
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
@@ -634,6 +701,7 @@ class Electrodialysis1DData(UnitModelBlockData):
 
         ## # TODO: Somehow, the scaling factors I give to the property package
         #       are not being reflected here and are instead becoming larger.
+        '''
         for set in self.dilute_side.properties:
             for ind in self.dilute_side.properties[set].flow_mol_phase_comp:
                 print(ind)
@@ -645,8 +713,9 @@ class Electrodialysis1DData(UnitModelBlockData):
                 # # TODO: Need to propogate the inlet values provided by the user for the state variables
                 #           to the full length of the domain (and may need to initialize all other constructed
                 #           property vars in a similar manner)
-                print(value(self.concentrate_side.properties[set].flow_mol_phase_comp[ind]))
+                print(value(self.dilute_side.properties[set].flow_mol_phase_comp[ind]))
                 print()
+        '''
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe({"Dilute Side Inlet": self.inlet_dilute,

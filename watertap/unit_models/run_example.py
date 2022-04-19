@@ -214,6 +214,10 @@ def fix_inlets_and_vars(m):
 def scale_model(m):
     # set scaling factors for state vars and call the 'calculate_scaling_factors' function
 
+    # Special function to attempt to fix scaling issues from prop pack
+    #   by manually applying the inlet condition as the initial guess for the states.
+    m.fs.unit.propogate_initial_state()
+
     # # TODO: Figure out if this is NOT the proper way to  set scaling factors in 1D unit model
     m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1, index=('Liq', 'H2O'))
     m.fs.properties.set_default_scaling('flow_mol_phase_comp', 1e2, index=('Liq', 'Na_+'))
@@ -317,9 +321,9 @@ if __name__ == "__main__":
    scale_model(m)
 
    # ONLY use these line to solve the model (requires proper solvers)
-   #initialize_model(m)
-   #run_model(m)
-   #display_results(m)
+   initialize_model(m)
+   run_model(m)
+   display_results(m)
 
    #view_model_constraints(m)
    #view_model_control_volumes(m)
