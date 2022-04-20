@@ -173,6 +173,7 @@ def build(number_of_stages=2):
     # costing
     m.fs.costing.cost_process()
     product_flow_vol_total = m.fs.product.properties[0].flow_vol
+    m.fs.costing.add_annual_water_production(product_flow_vol_total)
     m.fs.costing.add_LCOW(product_flow_vol_total)
     m.fs.costing.add_specific_energy_consumption(product_flow_vol_total)
 
