@@ -48,3 +48,15 @@ class PumpIsothermalData(PumpData):
                 self.control_volume.properties_in[0].temperature
             )
             iscale.constraint_scaling_transform(c, sf)
+
+
+@declare_process_block_class("EnergyRecoveryDevice")
+class EnergyRecoveryDeviceData(PumpIsothermalData):
+    """
+    Turbine-type Isothermal energy recovery device
+    """
+    # switch compressor to False
+    CONFIG = PumpIsothermalData.CONFIG()
+    CONFIG.compressor = False
+    CONFIG.get("compressor")._default = False
+    CONFIG.get("compressor")._domain = In([False])
