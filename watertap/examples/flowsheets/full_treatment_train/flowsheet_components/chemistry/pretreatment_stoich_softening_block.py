@@ -296,6 +296,7 @@ stoich_softening_thermo_config = {
             "entr_mol_liq_comp": Constant,
             # Parameter data is always associated with the methods defined above
             "parameter_data": {
+                "mw": (100.09, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": (55, pyunits.kmol * pyunits.m**-3),
                 "enth_mol_form_liq_comp_ref": (-1207, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": (75348, pyunits.J / pyunits.kmol / pyunits.K),
@@ -313,6 +314,7 @@ stoich_softening_thermo_config = {
             "entr_mol_liq_comp": Constant,
             # Parameter data is always associated with the methods defined above
             "parameter_data": {
+                "mw": (162.11, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": (55, pyunits.kmol * pyunits.m**-3),
                 "enth_mol_form_liq_comp_ref": (-542, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": (75348, pyunits.J / pyunits.kmol / pyunits.K),
@@ -351,6 +353,7 @@ stoich_softening_thermo_config = {
             "entr_mol_liq_comp": Constant,
             # Parameter data is always associated with the methods defined above
             "parameter_data": {
+                "mw": (146.34, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": (55, pyunits.kmol * pyunits.m**-3),
                 "enth_mol_form_liq_comp_ref": (-221, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": (75348, pyunits.J / pyunits.kmol / pyunits.K),
@@ -371,6 +374,7 @@ stoich_softening_thermo_config = {
             "entr_mol_liq_comp": Constant,
             # Parameter data is always associated with the methods defined above
             "parameter_data": {
+                "mw": (96.07, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": (55, pyunits.kmol * pyunits.m**-3),
                 "enth_mol_form_liq_comp_ref": (-909, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": (75348, pyunits.J / pyunits.kmol / pyunits.K),
