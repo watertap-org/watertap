@@ -34,6 +34,7 @@ from watertap.unit_models import (
     NanofiltrationZO,
     PressureExchanger,
     Pump,
+    EnergyRecoveryDevice,
 )
 
 
@@ -45,8 +46,11 @@ class ROType(StrEnum):
 class PumpType(StrEnum):
     low_pressure = "low_pressure"
     high_pressure = "high_pressure"
+
+
+class EnergyRecoveryDeviceType(StrEnum):
+    default = "default"
     pressure_exchanger = "pressure_exchanger"
-    energy_recovery_device = "energy_recovery_device"
 
 
 class MixerType(StrEnum):
@@ -119,7 +123,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             doc="Low pressure pump cost",
             units=self.base_currency / (pyo.units.liter / pyo.units.second),
         )
-        self.pump_pressure_exchanger_cost = pyo.Var(
+        self.erd_pressure_exchanger_cost = pyo.Var(
             initialize=535,
             doc="Pressure exchanger cost",
             units=self.base_currency / (pyo.units.meter**3 / pyo.units.hours),
@@ -351,7 +355,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         Args:
             pump_type - PumpType Enum indicating pump type,
-                        default = pumptype.high_pressure
+                        default = PumpType.high_pressure
         """
         if pump_type not in PumpType:
             raise ConfigurationError(
@@ -363,12 +367,35 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             WaterTAPCostingData.cost_high_pressure_pump(blk)
         elif pump_type == PumpType.low_pressure:
             WaterTAPCostingData.cost_low_pressure_pump(blk)
-        elif pump_type == PumpType.pressure_exchanger:
-            WaterTAPCostingData.cost_pressure_exchanger_pump(blk)
-        elif pump_type == PumpType.energy_recovery_device:
-            WaterTAPCostingData.cost_energy_recovery_device_pump(blk)
         else:
             raise BurntToast(f"Unrecognized pump_type: {pump_type}")
+
+    @staticmethod
+    def cost_energy_recovery_device(
+        blk, energy_recovery_device_type=EnergyRecoveryDeviceType.default
+    ):
+        """
+        Energy recovery device costing method
+
+        TODO: describe equations
+
+        Args:
+            energy_recovery_device_type - EnergyRecoveryDeviceType Enum indicating ERD type,
+                                          default = EnergyRecoveryDeviceType.default
+        """
+        if energy_recovery_device_type not in EnergyRecoveryDeviceType:
+            raise ConfigurationError(
+                f"{blk.unit_model.name} received invalid argument for energy_recovery_device_type:"
+                f" {energy_recovery_device_type}. Argument must be a member of the EnergyRecoveryDeviceType Enum."
+            )
+        if energy_recovery_device_type == EnergyRecoveryDeviceType.default:
+            WaterTAPCostingData.cost_default_energy_recovery_device(blk)
+        elif energy_recovery_device_type == EnergyRecoveryDeviceType.pressure_exchanger:
+            WaterTAPCostingData.cost_pressure_exchanger_erd(blk)
+        else:
+            raise BurntToast(
+                f"Unrecognized energy_recovery_device_type: {energy_recovery_device_type}"
+            )
 
     @staticmethod
     def cost_high_pressure_pump(blk):
@@ -401,15 +428,15 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
     @staticmethod
-    def cost_pressure_exchanger_pump(blk):
+    def cost_pressure_exchanger_erd(blk):
         """
-        Pump pressure exchanger costing method
+        ERD pressure exchanger costing method
 
         TODO: describe equations
         """
         cost_by_flow_volume(
             blk,
-            blk.costing_package.pump_pressure_exchanger_cost,
+            blk.costing_package.erd_pressure_exchanger_cost,
             pyo.units.convert(
                 blk.unit_model.control_volume.properties_in[0].flow_vol,
                 (pyo.units.meter**3 / pyo.units.hours),
@@ -417,9 +444,9 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
         )
 
     @staticmethod
-    def cost_energy_recovery_device_pump(blk):
+    def cost_default_energy_recovery_device(blk):
         """
-        Pump energy recovery device costing method
+        Energy recovery device costing method
 
         TODO: describe equations
         """
@@ -547,6 +574,7 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 WaterTAPCostingData.unit_mapping = {
     Mixer: WaterTAPCostingData.cost_mixer,
     Pump: WaterTAPCostingData.cost_pump,
+    EnergyRecoveryDevice: WaterTAPCostingData.cost_energy_recovery_device,
     PressureExchanger: WaterTAPCostingData.cost_pressure_exchanger,
     ReverseOsmosis0D: WaterTAPCostingData.cost_reverse_osmosis,
     ReverseOsmosis1D: WaterTAPCostingData.cost_reverse_osmosis,
