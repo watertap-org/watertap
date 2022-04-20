@@ -52,7 +52,6 @@ def run_analysis(case_num, nx, interp_nan_outputs=True):
         )
 
     elif case_num == 2:
-        pass
         # bead replacement rate
         # baseline corresponds to replacement rate of 0.3 years; sensitivity on replacement_factor corresponding
         # to 0.3 yr to 5 yr
