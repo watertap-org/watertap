@@ -31,7 +31,7 @@ from idaes.core.util.scaling import (
     constraint_scaling_transform,
 )
 from idaes.core.util.initialization import propagate_state
-from watertap.unit_models.pump_isothermal import Pump
+from watertap.unit_models.pressure_changer import Pump
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
     feed_block,
 )

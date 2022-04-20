@@ -21,7 +21,7 @@ from pyomo.environ import (
     Var,
 )
 from idaes.core import FlowsheetBlock
-from watertap.unit_models.pump_isothermal import Pump
+from watertap.unit_models.pressure_changer import Pump
 import watertap.property_models.seawater_prop_pack as props
 
 from idaes.core.util import get_solver

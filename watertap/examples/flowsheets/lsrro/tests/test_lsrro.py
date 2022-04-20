@@ -24,7 +24,7 @@ from idaes.generic_models.unit_models import Mixer, Separator, Product, Feed
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 
 from watertap.property_models.NaCl_prop_pack import NaClParameterBlock
-from watertap.unit_models.pump_isothermal import Pump
+from watertap.unit_models.pressure_changer import Pump
 from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 
 from watertap.examples.flowsheets.lsrro.lsrro import (
