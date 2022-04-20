@@ -503,13 +503,11 @@ def build_stoich_softening_mixer_unit(model):
     )
 
     # add new constraint for dosing rate
-    dr = (
-        model.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0].value
-        * model.fs.stoich_softening_mixer_unit.lime_stream.mole_frac_comp[
-            0, "Ca(OH)2"
-        ].value
+    dr = value(
+        model.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0]
+        * model.fs.stoich_softening_mixer_unit.lime_stream.mole_frac_comp[0, "Ca(OH)2"]
+        * model.fs.stoich_softening_thermo_params.get_component("Ca(OH)2").mw
     )
-    dr = dr * 74.093 / 1000
     model.fs.stoich_softening_mixer_unit.dosing_rate = Var(
         initialize=dr,
         domain=NonNegativeReals,
@@ -518,10 +516,11 @@ def build_stoich_softening_mixer_unit(model):
     )
 
     def _dosing_rate_cons(blk):
-        return blk.dosing_rate == blk.lime_stream.flow_mol[
-            0
-        ] * blk.lime_stream.mole_frac_comp[0, "Ca(OH)2"] * (
-            74.093e-3 * pyunits.kg / pyunits.mol
+        return (
+            blk.dosing_rate
+            == blk.lime_stream.flow_mol[0]
+            * blk.lime_stream.mole_frac_comp[0, "Ca(OH)2"]
+            * blk.lime_stream_state[0].params.get_component("Ca(OH)2").mw
         )
 
     model.fs.stoich_softening_mixer_unit.dosing_cons = Constraint(

@@ -189,16 +189,8 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
 
         # Define standard material flows and costs
         self.defined_flows["electricity"] = self.electricity_base_cost
-        self.defined_flows["NaOCl"] = (
-            74.44e-3
-            * (pyo.units.kg / pyo.units.mol)
-            * (self.naocl_cost / self.naocl_purity)
-        )
-        self.defined_flows["CaOH2"] = (
-            74.093e-3
-            * (pyo.units.kg / pyo.units.mol)
-            * (self.caoh2_cost / self.caoh2_purity)
-        )
+        self.defined_flows["NaOCl"] = self.naocl_cost / self.naocl_purity
+        self.defined_flows["CaOH2"] = self.caoh2_cost / self.caoh2_purity
 
     def build_process_costs(self):
         self.total_capital_cost = pyo.Expression(
