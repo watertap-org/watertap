@@ -2,47 +2,22 @@
 API for the UI
 """
 import abc
-from glob import fnmatch
 import inspect
-import re
+import logging
 from typing import Dict, Iterable, Union, List
 
 # third-party
 import functools
 from pyomo.environ import ConcreteModel
-from pyomo.environ import units as pyunits
+from pyomo.environ import Block, Var, value
 from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
-import logging
 
 _log.setLevel(logging.DEBUG)
 
-# Schema
-
-
-class Steps:
-    setup = "flowsheet_setup"
-    build = "perf_build"
-    init = "perf_init"
-    optimize = "perf_opt"
-    build_costing = "cost_build"
-    init_costing = "cost_init"
-    optimize_costing = "cost_opt"
-
-
-STEP_NAMES = (
-    Steps.setup,
-    Steps.build,
-    Steps.init,
-    Steps.optimize,
-    Steps.build_costing,
-    Steps.init_costing,
-    Steps.optimize_costing,
-)
-SCHEMA = {k: {} for k in STEP_NAMES}
 
 # Utility functions to wrap the 'algorithm' methods in a begin/end logging message
 
@@ -72,6 +47,96 @@ def _get_method_classname(m):
     return "<unknown>"
 
 # End logging utility functions
+
+# Interface to get exported variables
+
+
+class BlockInterface:
+    """Interface to a block.
+    """
+    def __init__(self, block: Block, config: Dict = None):
+        self._block = block
+        config = config or {}
+        self.display_name = config.get("display_name", block.name)
+        self.description = config.get("description", block.doc)
+        self._variables = config.get("variables", {})
+
+    def get_exported_variables(self) -> Iterable[Var]:
+        """"Called by client to get variables exported by the block.
+        """
+        result = {}
+        for name, data in self._variables.items():
+            c = data.copy()
+            v = getattr(self._block, name)
+            if v.is_indexed():
+                c["indexed_values"] = {}
+                for idx in v.index_set():
+                    c["indexed_values"][str(idx)] = value(v[idx])
+            else:
+                c["value"] = value(v)
+            if "display_name" not in c:
+                c["display_name"] = v.local_name
+            if "description" not in c:
+                c["description"] = v.doc
+            c["units"] = str(v.get_units())
+            result[name] = c
+        return result
+
+
+class FlowsheetInterface(BlockInterface):
+
+    def __init__(self, flowsheet, **kwargs):
+        super().__init__(flowsheet, **kwargs)
+        self.flowsheet = flowsheet
+
+    @log_meth
+    def as_dict(self):
+        block_map = self._get_block_map()
+        return {"blocks": block_map}
+
+    def _get_block_map(self):
+        stack, mapping = [(["fs"], self.flowsheet)], {}
+        while stack:
+            key, val = stack.pop()
+            if hasattr(val, "component_map"):
+                for key2, val2 in val.component_map(ctype=Block).items():
+                    qkey = key + [key2]
+                    self._add_mapping_key(mapping, qkey, val2)
+                    stack.append((qkey, val2))
+        return mapping
+
+    @staticmethod
+    def _add_mapping_key(m, keys, value):
+        node_keys, leaf_key = keys[:-1], keys[-1]
+        for k in node_keys:
+            if k not in m:
+                m[k] = {}
+            m = m[k]  # descend
+        if hasattr(value, "ui"):
+            m[leaf_key] = {"variables": value.ui.get_exported_variables()}
+
+# Workflow interface
+
+class Steps:
+    setup = "flowsheet_setup"
+    build = "perf_build"
+    init = "perf_init"
+    optimize = "perf_opt"
+    build_costing = "cost_build"
+    init_costing = "cost_init"
+    optimize_costing = "cost_opt"
+
+
+STEP_NAMES = (
+    Steps.setup,
+    Steps.build,
+    Steps.init,
+    Steps.optimize,
+    Steps.build_costing,
+    Steps.init_costing,
+    Steps.optimize_costing,
+)
+SCHEMA = {k: {} for k in STEP_NAMES}
 
 
 class WorkflowStep(abc.ABC):
@@ -152,17 +217,7 @@ class AnalysisWorkflow:
         self._set_standard_workflow()
 
     def _set_standard_workflow(self):
-        if self._has_costing:
-            steps = (
-                Steps.build,
-                Steps.init,
-                Steps.optimize,
-                Steps.build_costing,
-                Steps.init_costing,
-                Steps.optimize_costing,
-            )
-        else:
-            steps = (Steps.build, Steps.init, Steps.optimize)
+        steps = (Steps.build, Steps.init, Steps.optimize)
         self._set_workflow_steps(steps)
 
     def _set_workflow_steps(self, step_names: Iterable[str]) -> Iterable[str]:
@@ -316,160 +371,4 @@ class AnalysisWorkflow:
         return norm_name
 
 
-from pyomo.environ import Block
-
-
-class UIBlock:
-    """
-    UI-friendly interface to a Pyomo Block.
-    """
-    def __init__(self, block: Block):
-        self._map = block.component_map()
-        self._names = set()  # updated by 'select_variables'
-
-    def select_variables(self, patterns: List[str], exclude_patterns: List[str] = None) -> List[str]:
-        """Select variables with a list of patterns, which are parsed according to
-        `glob` wildcard rules. Future requests to read and write variables will use these selected names.
-
-        Args:
-            patterns: List of ``glob``-style patterns of variables to select
-            exclude_patterns: List of ``glob``-style patterns of variables to exclude.
-                Note that excluding takes priority over selection.
-
-        Returns:
-            The names of variables selected. This is a copy of the internal value, so it may be modified
-            safely by the caller.
-        """
-        # store all names matching the input patterns in self._names
-        self._names = set()
-        re_exprs = [re.compile(fnmatch.translate(glob_pat)) for glob_pat in patterns]
-        if exclude_patterns:
-            excl_re_exprs = [re.compile(fnmatch.translate(glob_pat)) for glob_pat in exclude_patterns]
-        else:
-            excl_re_exprs = []
-        for key, value in self._map.items():
-            # check if excluded
-            exclude = False
-            for re_expr in excl_re_exprs:
-                if re_expr.match(key):
-                    exclude = True
-                    break
-            # if not excluded, check if selected
-            if not exclude:
-                for re_expr in re_exprs:
-                    if re_expr.match(key):
-                        self._names.add(key)
-        # return a copy
-        return list(self._names)
-
-    @property
-    def variables(self):
-        variables = {}
-        for key, value in self._map.items():
-            if key in self._names:
-                variables[key] = value
-        ui_variables = self._make_entries(variables)
-        return ui_variables
-
-    def _make_entries(self, variables):
-        entries = {}
-        for key, value in variables.items():
-            entries[key] = value
-        return entries
-
-# class AttrDict:
-#     """Generic wrapper of a dict to provide attribute-style access."""
-#
-#     def __init__(
-#         self,
-#         data: Dict,
-#         attr_transform: Callable[[str, Any, Dict], Any] = None,
-#     ):
-#         self._d = data
-#         self._fn = attr_transform
-#
-#     def __getattr__(self, name: str):
-#         try:
-#             value = self._d[name]
-#         except KeyError:
-#             raise KeyError(f"Cannot get field: '{name}' not in {self._keys()}")
-#         if self._fn:
-#             value = self._fn(name, value, self._d)
-#         return value
-#
-#     def _keys(self):
-#         comma_list = ", ".join((f"'{k}'" for k in self._d))
-#         return "(" + comma_list + ")"
-#
-#
-# class StepInputs(AttrDict):
-#     """ "Specific type of AttrDict that expects a structure like:
-#
-#     {
-#       "section1": {
-#         {"item1": { "name1": value1, "name2": "value2", .. }},
-#         {"item2": { "nameA": valueA, "nameB": "valueB", .. }},
-#         ...
-#        },
-#       "section2": {
-#         {"item1": { "name1": value1, "name2": "value2", .. }},
-#         {"item2": { "nameA": valueA, "nameB": "valueB", .. }},
-#         ...
-#        },
-#        ...
-#     }
-#     """
-#     # Units field created to hold pyunits object
-#     UNITS_FIELD = "pyunits"
-#
-#     def __init__(self, data: Dict):
-#         p = {}
-#         for section_name, section_data in data.items():
-#             if not isinstance(section_data, dict):
-#                 raise TypeError(
-#                     f"Section {section_name} is not "
-#                     f"a dictionary, as expected: {section_data}"
-#                 )
-#             p2 = {}
-#             for item_name, item_values in section_data.items():
-#                 if not isinstance(item_values, dict):
-#                     raise TypeError(
-#                         f"Item {item_name} in section {section_name} is not "
-#                         f"a dictionary, as expected: {item_values}"
-#                     )
-#                 if "units" not in item_values:
-#                     pyu = pyunits.dimensionless
-#                 else:
-#                     pyu = self._build_units(item_values["units"])
-#                 item_values[self.UNITS_FIELD] = pyu
-#                 p2[item_name] = AttrDict(item_values, attr_transform=self._uv_transform)
-#             p[section_name] = AttrDict(p2)
-#         super().__init__(p)
-#
-#     @classmethod
-#     def _uv_transform(cls, key, value, d):
-#         """If the requested key is 'value', return value * units.
-#         """
-#         result = value
-#         if key == "value":
-#             units = d[cls.UNITS_FIELD]
-#             result = value * units
-#         return result
-#
-#     @staticmethod
-#     def _build_units(x: str = None):
-#         if not x:
-#             x = "dimensionless"
-#         # replace all the unit strings with U.<unit>
-#         # e.g. 'm/s' -> 'U.m/U.s'
-#         s = re.sub(r"([A-Za-z]+)", r"U.\1", x).replace("U.None", "U.dimensionless")
-#         # Evaluate expression with 'U' being the pyomo units container
-#         try:
-#             units = eval(s, {"U": pyunits})
-#         # Syntax/NameError are just general badness, AttributeError is an unknown unit
-#         except (SyntaxError, NameError, AttributeError) as err:
-#             _log.error(f"while evaluating unit {s}: {err}")
-#             raise
-#         return units
-#
 
