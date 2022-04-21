@@ -49,29 +49,32 @@ def test_default_source():
 
     m.fs.unit.load_feed_data_from_database()
 
-    assert pytest.approx(source_data[DEFAULT_SOURCE]["default_flow"]["value"],
-                         rel=1e-12) == value(
-        m.fs.unit.flow_vol[0])
+    assert pytest.approx(
+        source_data[DEFAULT_SOURCE]["default_flow"]["value"], rel=1e-12
+    ) == value(m.fs.unit.flow_vol[0])
     assert m.fs.unit.flow_vol[0].fixed
 
     for j, v in source_data[DEFAULT_SOURCE]["solutes"].items():
         assert pytest.approx(v["value"], rel=1e-12) == value(
-            m.fs.unit.conc_mass_comp[0, j])
+            m.fs.unit.conc_mass_comp[0, j]
+        )
         assert m.fs.unit.conc_mass_comp[0, j].fixed
 
     assert_units_consistent(m)
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize("source",
-                         list(j for j in source_data.keys() if j != "default"))
+@pytest.mark.parametrize(
+    "source", list(j for j in source_data.keys() if j != "default")
+)
 def test_all_sources(source):
     m = ConcreteModel()
     m.db = Database()
 
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.params = WaterParameterBlock(default={"database": m.db,
-                                               "water_source": source})
+    m.fs.params = WaterParameterBlock(
+        default={"database": m.db, "water_source": source}
+    )
 
     m.fs.unit = FeedZO(default={"property_package": m.fs.params})
 
@@ -80,14 +83,15 @@ def test_all_sources(source):
 
     m.fs.unit.load_feed_data_from_database()
 
-    assert pytest.approx(source_data[source]["default_flow"]["value"],
-                         rel=1e-12) == value(
-        m.fs.unit.flow_vol[0])
+    assert pytest.approx(
+        source_data[source]["default_flow"]["value"], rel=1e-12
+    ) == value(m.fs.unit.flow_vol[0])
     assert m.fs.unit.flow_vol[0].fixed
 
     for j, v in source_data[source]["solutes"].items():
         assert pytest.approx(v["value"], rel=1e-12) == value(
-            m.fs.unit.conc_mass_comp[0, j])
+            m.fs.unit.conc_mass_comp[0, j]
+        )
         assert m.fs.unit.conc_mass_comp[0, j].fixed
 
         assert j in m.db.component_list.keys()

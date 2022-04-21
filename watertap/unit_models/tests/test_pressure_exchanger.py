@@ -11,37 +11,45 @@
 #
 ###############################################################################
 import pytest
-from pyomo.environ import (ConcreteModel,
-                           Var,
-                           Expression,
-                           Constraint,
-                           TerminationCondition,
-                           SolverStatus,
-                           value)
+from pyomo.environ import (
+    ConcreteModel,
+    Var,
+    Expression,
+    Constraint,
+    TerminationCondition,
+    SolverStatus,
+    value,
+)
 from pyomo.network import Port
-from idaes.core import (FlowsheetBlock,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType)
+from idaes.core import (
+    FlowsheetBlock,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
+)
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 import watertap.property_models.seawater_prop_pack as props
 import watertap.examples.flowsheets.full_treatment_train.model_components.seawater_ion_prop_pack as property_seawater_ions
 from watertap.property_models.seawater_ion_generic import configuration
 
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              number_variables,
-                                              number_total_constraints,
-                                              fixed_variables_set,
-                                              activated_constraints_set,
-                                              number_unused_variables)
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_variables,
+    number_total_constraints,
+    fixed_variables_set,
+    activated_constraints_set,
+    number_unused_variables,
+)
 from idaes.core.util import get_solver
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError
-from idaes.core.util.scaling import (calculate_scaling_factors,
-                                     unscaled_variables_generator,
-                                     unscaled_constraints_generator,
-                                     badly_scaled_var_generator)
+from idaes.core.util.scaling import (
+    calculate_scaling_factors,
+    unscaled_variables_generator,
+    unscaled_constraints_generator,
+    badly_scaled_var_generator,
+)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -50,25 +58,22 @@ solver = get_solver()
 
 # # -----------------------------------------------------------------------------
 
+
 @pytest.mark.unit
 def test_config_no_mass_transfer():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={'dynamic': False})
+    m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = props.SeawaterParameterBlock()
-    m.fs.unit = PressureExchanger(default={'property_package': m.fs.properties})
+    m.fs.unit = PressureExchanger(default={"property_package": m.fs.properties})
 
     # check unit config arguments
     assert len(m.fs.unit.config) == 8
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
-
-    assert m.fs.unit.config.material_balance_type == \
-           MaterialBalanceType.useDefault
-    assert m.fs.unit.config.energy_balance_type == \
-           EnergyBalanceType.useDefault
-    assert m.fs.unit.config.momentum_balance_type == \
-           MomentumBalanceType.pressureTotal
+    assert m.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+    assert m.fs.unit.config.energy_balance_type == EnergyBalanceType.useDefault
+    assert m.fs.unit.config.momentum_balance_type == MomentumBalanceType.pressureTotal
     assert m.fs.unit.config.property_package is m.fs.properties
 
     # verify no mass transfer
@@ -78,7 +83,7 @@ def test_config_no_mass_transfer():
 @pytest.mark.unit
 def test_config_mass_transfer():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={'dynamic': False})
+    m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = props.SeawaterParameterBlock()
     m.fs.unit = PressureExchanger(default={'property_package': m.fs.properties,
     'has_mass_transfer':True})
@@ -110,7 +115,7 @@ def test_build(has_mass_transfer=False,extra_variables=0,extra_constraint=0):
             assert isinstance(var, Var)
 
     # test unit variables
-    assert hasattr(m.fs.unit, 'efficiency_pressure_exchanger')
+    assert hasattr(m.fs.unit, "efficiency_pressure_exchanger")
     assert isinstance(m.fs.unit.efficiency_pressure_exchanger, Var)
     if not has_mass_transfer:
         assert not hasattr(m.fs.unit, 'mass_transfer_fraction_comp')
@@ -118,6 +123,7 @@ def test_build(has_mass_transfer=False,extra_variables=0,extra_constraint=0):
         assert isinstance(m.fs.unit.mass_transfer_fraction_comp, Var)
 
     # test unit constraints
+
     unit_cons_lst = ['eq_pressure_transfer', 'eq_equal_flow_vol', 'eq_equal_low_pressure']
 
     if has_mass_transfer:
@@ -130,12 +136,14 @@ def test_build(has_mass_transfer=False,extra_variables=0,extra_constraint=0):
         assert isinstance(con, Constraint)
 
     # test control volumes, only terms directly used by pressure exchanger
+
     cv_list = ['low_pressure_side', 'high_pressure_side']
     cv_var_lst = ['deltaP']
     if has_mass_transfer:
         cv_var_lst.append('mass_transfer_term')
     cv_con_lst = ['eq_isothermal_temperature']
     cv_exp_lst = ['work']
+
     for cv_str in cv_list:
         assert hasattr(m.fs.unit, cv_str)
         cv = getattr(m.fs.unit, cv_str)
@@ -150,9 +158,9 @@ def test_build(has_mass_transfer=False,extra_variables=0,extra_constraint=0):
             assert isinstance(cv_exp, Expression)
 
     # test state blocks, only terms directly used by pressure exchanger
-    cv_stateblock_lst = ['properties_in', 'properties_out']
-    stateblock_var_lst = ['pressure', 'temperature']
-    stateblock_exp_lst = ['flow_vol']
+    cv_stateblock_lst = ["properties_in", "properties_out"]
+    stateblock_var_lst = ["pressure", "temperature"]
+    stateblock_exp_lst = ["flow_vol"]
     for cv_str in cv_list:
         cv = getattr(m.fs.unit, cv_str)
         for cv_sb_str in cv_stateblock_lst:
@@ -182,14 +190,16 @@ def test_build_with_mass_transfer():
     extra_variables=6,\
     extra_constraint=4)
 
-class TestPressureExchanger():
+
+class TestPressureExchanger:
     @pytest.fixture(scope="class")
     def unit_frame(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={'dynamic': False})
+        m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.properties = props.SeawaterParameterBlock()
         m.fs.unit = PressureExchanger(default={'property_package': m.fs.properties,\
          'has_mass_transfer': True})
+
 
         # Specify inlet conditions
         temperature = 25 + 273.15
@@ -199,6 +209,7 @@ class TestPressureExchanger():
         highP_mass_frac_TDS = 0.07
         highP_pressure = 50e5
 
+
         solute_transfer=0.05
         solvent_transfer=0.1
         m.fs.unit.mass_transfer_fraction_comp[0,'H2O'].fix(solvent_transfer)
@@ -206,21 +217,26 @@ class TestPressureExchanger():
 
         m.fs.unit.low_pressure_side.properties_in[0].flow_vol_phase['Liq'].fix(flow_vol)
         m.fs.unit.low_pressure_side.properties_in[0].mass_frac_phase_comp['Liq', 'TDS'].fix(lowP_mass_frac_TDS)
+
         m.fs.unit.low_pressure_side.properties_in[0].pressure.fix(lowP_pressure)
         m.fs.unit.low_pressure_side.properties_in[0].temperature.fix(temperature)
 
-        m.fs.unit.high_pressure_side.properties_in[0].flow_vol_phase['Liq'].fix(flow_vol)
-        m.fs.unit.high_pressure_side.properties_in[0].mass_frac_phase_comp['Liq', 'TDS'].fix(highP_mass_frac_TDS)
+        m.fs.unit.high_pressure_side.properties_in[0].flow_vol_phase["Liq"].fix(
+            flow_vol
+        )
+        m.fs.unit.high_pressure_side.properties_in[0].mass_frac_phase_comp[
+            "Liq", "TDS"
+        ].fix(highP_mass_frac_TDS)
         m.fs.unit.high_pressure_side.properties_in[0].pressure.fix(highP_pressure)
         m.fs.unit.high_pressure_side.properties_in[0].temperature.fix(temperature)
 
         # solve inlet conditions and only fix state variables (i.e. unfix flow_vol and mass_frac_phase)
+
         results = solver.solve(m.fs.unit.high_pressure_side.properties_in[0])
         assert results.solver.termination_condition == TerminationCondition.optimal
         m.fs.unit.high_pressure_side.properties_in[0].flow_mass_phase_comp['Liq', 'TDS'].fix()
         m.fs.unit.high_pressure_side.properties_in[0].flow_vol_phase['Liq'].unfix()
         m.fs.unit.high_pressure_side.properties_in[0].mass_frac_phase_comp['Liq', 'TDS'].unfix()
-
 
 
         results = solver.solve(m.fs.unit.low_pressure_side.properties_in[0])
@@ -245,7 +261,9 @@ class TestPressureExchanger():
         calculate_scaling_factors(m)
 
         # check that all variables have scaling factors
-        unscaled_var_list = list(unscaled_variables_generator(m.fs.unit, include_fixed=True))
+        unscaled_var_list = list(
+            unscaled_variables_generator(m.fs.unit, include_fixed=True)
+        )
         assert len(unscaled_var_list) == 0
         # check that all constraints have been scaled
         unscaled_constraint_list = list(unscaled_constraints_generator(m))
@@ -255,7 +273,6 @@ class TestPressureExchanger():
     def test_initialize(self, unit_frame):
         m = unit_frame
         initialization_tester(unit_frame)
-
 
     @pytest.mark.component
     def test_var_scaling(self, unit_frame):
@@ -269,13 +286,13 @@ class TestPressureExchanger():
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert results.solver.termination_condition == \
-               TerminationCondition.optimal
+        assert results.solver.termination_condition == TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
     @pytest.mark.component
     def test_solution(self, unit_frame):
         m = unit_frame
+<
         assert (pytest.approx(0.9877, rel=1e-3) ==
                 value(m.fs.unit.low_pressure_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']))
         assert (pytest.approx(3.582e-2, rel=1e-3) ==

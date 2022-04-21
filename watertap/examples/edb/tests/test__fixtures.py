@@ -9,7 +9,7 @@ def edb_client_server_info(edb: ElectrolyteDB) -> dict:
     Perform an operation that ensures that the `edb` fixture has a client that:
     - Is able to connect to the server (non-mock), or
     - Is a "convincing fake" (mock), so that test functions using `edb` can expect a realistic behavior
-    
+
     Additionally, if this fixture is dispatched before "real" users (here this is done by using a `test__` prefix with two underscores),
     it avoids any first-use inconsistencies, such as e.g. the time spent to wait for a connection
     being counted as part of the duration of the first test for which the `edb` fixture is instantiated.

@@ -61,7 +61,7 @@ Variables
    "Solvent permeability coefficient", ":math:`A`", "A_comp", "[t, j]", ":math:`\text{m/Pa/s}`"
    "Solute permeability coefficient", ":math:`B`", "B_comp", "[t, j]", ":math:`\text{m/s}`"
    "Mass density of solvent", ":math:`\rho_{solvent}`", "dens_solvent", "[p]", ":math:`\text{kg/}\text{m}^3`"
-   "Mass flux across membrane", ":math:`J`", "flux_mass_io_phase_comp", "[t, x, p, j]", ":math:`\text{kg/s}\text{/m}^2`"
+   "Mass flux across membrane", ":math:`J`", "flux_mass_phase_comp", "[t, x, p, j]", ":math:`\text{kg/s}\text{/m}^2`"
    "Membrane area", ":math:`A_m`", "area", "None", ":math:`\text{m}^2`"
    "Component recovery rate", ":math:`R_j`", "recovery_mass_phase_comp", "[t, p, j]", ":math:`\text{dimensionless}`"
    "Volumetric recovery rate", ":math:`R_{vol}`", "recovery_vol_phase", "[t, p]", ":math:`\text{dimensionless}`"
@@ -90,7 +90,7 @@ if ``concentration_polarization_type`` is set to ``ConcentrationPolarizationType
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Mass transfer coefficient in feed channel", ":math:`k_f`", "Kf_io", "[t, x, j]", ":math:`\text{m/s}`"
+   "Mass transfer coefficient in feed channel", ":math:`k_f`", "Kf", "[t, x, j]", ":math:`\text{m/s}`"
 
 if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``
 or ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
@@ -101,7 +101,7 @@ or ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
    "Feed-channel height", ":math:`h_{ch}`", "channel_height", "None", ":math:`\text{m}`"
    "Hydraulic diameter", ":math:`d_h`", "dh", "None", ":math:`\text{m}`"
    "Spacer porosity", ":math:`\epsilon_{sp}`", "spacer_porosity", "None", ":math:`\text{dimensionless}`"
-   "Reynolds number", ":math:`Re`", "N_Re_io", "[t, x]", ":math:`\text{dimensionless}`"
+   "Reynolds number", ":math:`Re`", "N_Re", "[t, x]", ":math:`\text{dimensionless}`"
 
 
 if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``:
@@ -109,8 +109,8 @@ if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated`
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Schmidt number", ":math:`Sc`", "N_Sc_io", "[t, x]", ":math:`\text{dimensionless}`"
-   "Sherwood number", ":math:`Sh`", "N_Sh_io", "[t, x]", ":math:`\text{dimensionless}`"
+   "Schmidt number", ":math:`Sc`", "N_Sc", "[t, x]", ":math:`\text{dimensionless}`"
+   "Sherwood number", ":math:`Sh`", "N_Sh", "[t, x]", ":math:`\text{dimensionless}`"
 
 if ``mass_transfer_coefficient`` is set to ``MassTransferCoefficient.calculated``
 or ``pressure_change_type`` is **NOT** set to ``PressureChangeType.fixed_per_stage``:
@@ -133,9 +133,9 @@ if ``pressure_change_type`` is set to ``PressureChangeType.calculated``:
 .. csv-table::
    :header: "Description", "Symbol", "Variable Name", "Index", "Units"
 
-   "Feed-channel velocity", ":math:`v_f`", "velocity_io", "[t, x]", ":math:`\text{m/s}`"
-   "Friction factor", ":math:`f`", "friction_factor_darcy_io", "[t, x]", ":math:`\text{dimensionless}`"
-   "Pressure drop per unit length of feed channel at inlet/outlet", ":math:`ΔP/Δx`", "dP_dx_io", "[t, x]", ":math:`\text{Pa/m}`"
+   "Feed-channel velocity", ":math:`v_f`", "velocity", "[t, x]", ":math:`\text{m/s}`"
+   "Friction factor", ":math:`f`", "friction_factor_darcy", "[t, x]", ":math:`\text{dimensionless}`"
+   "Pressure drop per unit length of feed channel at inlet/outlet", ":math:`ΔP/Δx`", "dP_dx", "[t, x]", ":math:`\text{Pa/m}`"
 
 .. _0dro_equations:
 

@@ -1,5 +1,7 @@
+.. _install:
+
 Installing WaterTAP
-=====================
+===================
 
 Introduction
 ------------
@@ -18,7 +20,7 @@ as they provide a way to seamlessly switch between different projects without co
 
 Using Conda environments is not mandatory to be able to install and use WaterTAP; however, it is strongly recommended.
 
-To use Conda environments, the ``conda`` package manager is required. Refer to the `Conda installation guide <https://docs.conda.io/projects/conda/en/latest/user-guide/install/>`_ for detailed steps on how to install Conda for your operating system.
+To use Conda environments, the ``conda`` package manager is required. Refer to the `Conda installation guide <https://idaes-pse.readthedocs.io/en/stable/tutorials/getting_started/index.html#installation>`_ for detailed steps on how to install Conda for your operating system.
 
 General installation
 --------------------
@@ -70,7 +72,7 @@ Windows and Linux Users: solvers distributed through IDAES Extensions
 
 After installing WaterTAP, the ``idaes get-extensions`` command can be used to automatically install the solvers distributed as part of the IDAES Extensions.
 
-.. important:: Depending on your operating system, additional steps might be needed. For more information, refer to the `IDAES installation guide <https://idaes-pse.readthedocs.io/en/stable/getting_started/index.html>`_.
+.. important:: Depending on your operating system, additional steps might be needed. For more information, refer to the `IDAES installation guide <https://idaes-pse.readthedocs.io/en/stable/tutorials/getting_started/index.html#installation>`_.
 
 From the same environment where WaterTAP was installed, run:
 
@@ -221,6 +223,15 @@ If you plan to contribute to WaterTAP's codebase, choose this option.
 		pip install -r requirements-dev.txt
 
 #. If needed, follow the steps described in the ":ref:`install-idaes-ext`" section above to install solvers distributed through IDAES Extensions.
+
+#. (Optional but recommended) `Pre-commit hooks <https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks>`_ are scripts that are automatically run by Git "client-side" (i.e. on a developer's local machine)
+   whenever `git commit` is run.
+   WaterTAP uses the `pre-commit <https://pre-commit.com/>`_ framework to manage a few hooks that are useful for WaterTAP developers.
+   To install the WaterTAP pre-commit hooks, run:
+
+   .. code-block:: shell
+
+       pre-commit install
 
 #. To verify that the installation was successful, try running the WaterTAP test suite using ``pytest``:
 

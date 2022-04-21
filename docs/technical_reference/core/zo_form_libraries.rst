@@ -8,4 +8,7 @@ WaterTap includes a library of helper methods for assembling common model forms 
    
    pt_methods
    sido_methods
+   sidor_methods
+   diso_methods
+   siso_methods
    electricity_methods

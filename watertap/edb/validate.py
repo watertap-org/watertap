@@ -25,9 +25,11 @@ import json
 import logging
 from pathlib import Path
 from typing import Union, Dict, TextIO
+
 # 3rd party
 import fastjsonschema
 from fastjsonschema import compile
+
 # package
 from .schemas import schemas
 from . import data_model
@@ -59,7 +61,9 @@ def validate(obj: Union[Dict, TextIO, Path, str, data_model.DataWrapper], obj_ty
         obj = obj.json_data
     else:
         if not obj_type:
-            raise ValidationError("Cannot determine type: Missing value for 'obj_type' parameter")
+            raise ValidationError(
+                "Cannot determine type: Missing value for 'obj_type' parameter"
+            )
         assert obj_type in _schema_map.values()
     _Validator(schemas[obj_type], obj_type=obj_type).validate(obj)
 
@@ -71,10 +75,14 @@ _schema_map = {
 
 
 class _Validator:
-    """Module internal class to do validation.
-    """
-    def __init__(self, schema: Dict = None, schema_file: Union[Path, str] = None,
-                 obj_type: str = None):
+    """Module internal class to do validation."""
+
+    def __init__(
+        self,
+        schema: Dict = None,
+        schema_file: Union[Path, str] = None,
+        obj_type: str = None,
+    ):
         if schema is not None:
             self._schema = schema  # use provided dictionary
         else:
@@ -105,8 +113,9 @@ class _Validator:
         elif isinstance(instance, str):
             f = open(instance)
         else:
-            raise TypeError("validate: input object is not file-like, dict-like, "
-                            "or string")
+            raise TypeError(
+                "validate: input object is not file-like, dict-like, " "or string"
+            )
         if f is not None:
             d = json.load(f)
 

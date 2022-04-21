@@ -69,6 +69,7 @@
 from pyomo.environ import (
     ConcreteModel,
 )
+
 # Import the idaes objects for Generic Properties and Reactions
 from idaes.generic_models.properties.core.generic.generic_property import (
     GenericParameterBlock,
@@ -82,6 +83,7 @@ from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReac
 
 # Import the core idaes objects for Flowsheets and types of balances
 from idaes.core import FlowsheetBlock
+
 # ========= These imports (above) are for testing the configs from EDB ===============
 
 
@@ -103,6 +105,7 @@ def connect_to_edb(test_invalid_host=False):
     connected = db.can_connect()
     return (db, connected)
 
+
 # ========================== (5) ================================
 # All configuration files used in WaterTAP for electrolyte chemistry
 #   require a 'base' dictionary to start. For example, we need to
@@ -120,6 +123,7 @@ def grab_base_thermo_config(db):
     base = db.get_base("default_thermo")
     return base
 
+
 # ========================== (6) ================================
 # Get chemical components/species for a simulation case
 #       NOTE: This function here also returns a 'list' of the
@@ -129,18 +133,18 @@ def grab_base_thermo_config(db):
 def get_components_and_add_to_idaes_config(db, base_obj, by_elements=False):
     # Going to grab all components that contain ONLY "H" and "O"
     #   Expected behavior = Will get "H2O", "H_+", and "OH_-"
-    element_list = ["H","O"]
+    element_list = ["H", "O"]
 
     # Alternatively, you can pass a list of individual componets
     #   you want to grab and the EDB functions should grab explicitly
     #   those components/species you want.
-    comp_list = ["H2O","H_+","OH_-"]
+    comp_list = ["H2O", "H_+", "OH_-"]
 
     # Just like before, this function returns a results object
     #   that contains other objects that must be iterated through
     #   in order to access the information. Then, call the 'add'
     #   function to add those components to the 'base' object
-    if (by_elements==True):
+    if by_elements == True:
         res_obj_comps = db.get_components(element_names=element_list)
     else:
         res_obj_comps = db.get_components(component_names=comp_list)
@@ -149,11 +153,12 @@ def get_components_and_add_to_idaes_config(db, base_obj, by_elements=False):
     #   to the base_obj
     db_comp_list = []
     for comp_obj in res_obj_comps:
-        print("Adding " + str(comp_obj.name) + "" )
+        print("Adding " + str(comp_obj.name) + "")
         base_obj.add(comp_obj)
         db_comp_list.append(comp_obj.name)
     print()
     return (base_obj, db_comp_list)
+
 
 # ========================== (7) ================================
 # Grab the reactions associated with the list of components and add
@@ -163,10 +168,11 @@ def get_reactions_return_object(db, base_obj, comp_list, is_inherent=True):
     react_obj = db.get_reactions(component_names=comp_list)
     for r in react_obj:
         print("Found reaction: " + str(r.name))
-        if (is_inherent == True):
+        if is_inherent == True:
             r._data["type"] = "inherent"
         base_obj.add(r)
     return base_obj
+
 
 # ========================== (8) ================================
 # Create a base config for reactions.
@@ -175,12 +181,14 @@ def grab_base_reaction_config(db):
     base = db.get_base("reaction")
     return base
 
+
 # This function will produce an error if the thermo config is not correct
 def is_thermo_config_valid(thermo_config):
     model = ConcreteModel()
     model.fs = FlowsheetBlock(default={"dynamic": False})
     model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
     return True
+
 
 # This function will produce an error if the thermo config is not correct
 #   or if the pairing of the thermo and reaction config are invalid
@@ -189,9 +197,10 @@ def is_thermo_reaction_pair_valid(thermo_config, reaction_config):
     model.fs = FlowsheetBlock(default={"dynamic": False})
     model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
     model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params, **reaction_config}
+        default={"property_package": model.fs.thermo_params, **reaction_config}
     )
     return True
+
 
 # Run script for testing
 def run_the_basics_with_mockdb(db):
@@ -203,16 +212,21 @@ def run_the_basics_with_mockdb(db):
     react_base = grab_base_reaction_config(db)
 
     # Add reactions to the reaction base as 'equilibrium'
-    react_base = get_reactions_return_object(db, react_base, comp_list, is_inherent=False)
+    react_base = get_reactions_return_object(
+        db, react_base, comp_list, is_inherent=False
+    )
 
     # If all goes well, this function returns true
     return is_thermo_reaction_pair_valid(base_obj.idaes_config, react_base.idaes_config)
+
 
 # Run script for testing
 def run_the_basics_alt_with_mockdb(db):
     base_obj = grab_base_thermo_config(db)
 
-    (base_obj, comp_list) = get_components_and_add_to_idaes_config(db, base_obj, by_elements=True)
+    (base_obj, comp_list) = get_components_and_add_to_idaes_config(
+        db, base_obj, by_elements=True
+    )
 
     # Add reactions to the thermo base as 'inherent'
     base_obj = get_reactions_return_object(db, base_obj, comp_list, is_inherent=True)
@@ -220,11 +234,14 @@ def run_the_basics_alt_with_mockdb(db):
     # If all goes well, this function returns true
     return is_thermo_config_valid(base_obj.idaes_config)
 
+
 # Run script for testing
 def run_the_basics_dummy_rxn_with_mockdb(db):
     base_obj = grab_base_thermo_config(db)
 
-    (base_obj, comp_list) = get_components_and_add_to_idaes_config(db, base_obj, by_elements=True)
+    (base_obj, comp_list) = get_components_and_add_to_idaes_config(
+        db, base_obj, by_elements=True
+    )
 
     # Add reactions to the thermo base as 'inherent'
     base_obj = get_reactions_return_object(db, base_obj, comp_list, is_inherent=True)
@@ -246,8 +263,8 @@ def run_the_basics_dummy_rxn_with_mockdb(db):
     model.fs = FlowsheetBlock(default={"dynamic": False})
     model.fs.thermo_params = GenericParameterBlock(default=thermo_config)
     model.fs.rxn_params = GenericReactionParameterBlock(
-            default={"property_package": model.fs.thermo_params, **reaction_config}
-        )
+        default={"property_package": model.fs.thermo_params, **reaction_config}
+    )
 
     model.fs.unit = EquilibriumReactor(
         default={

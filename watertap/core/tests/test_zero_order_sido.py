@@ -21,18 +21,24 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
-from pyomo.environ import (check_optimal_termination,
-                           ConcreteModel,
-                           Constraint,
-                           value,
-                           Var)
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    Constraint,
+    value,
+    Var,
+)
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
 
 from watertap.core import WaterParameterBlock, WaterStateBlock, ZeroOrderBaseData
 from watertap.core.zero_order_sido import (
-    build_sido, initialize_sido, calculate_scaling_factors_sido, _get_Q_sido)
+    build_sido,
+    initialize_sido,
+    calculate_scaling_factors_sido,
+    _get_Q_sido,
+)
 
 solver = get_solver()
 
@@ -52,11 +58,9 @@ class TestSIDO:
 
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.water_props = WaterParameterBlock(
-            default={"solute_list": ["A", "B", "C"]})
+        m.fs.water_props = WaterParameterBlock(default={"solute_list": ["A", "B", "C"]})
 
-        m.fs.unit = DerivedSIDO(
-            default={"property_package": m.fs.water_props})
+        m.fs.unit = DerivedSIDO(default={"property_package": m.fs.water_props})
 
         m.fs.unit.inlet.flow_mass_comp[0, "H2O"].fix(1000)
         m.fs.unit.inlet.flow_mass_comp[0, "A"].fix(10)
@@ -81,10 +85,12 @@ class TestSIDO:
         assert model.fs.unit._stream_table_dict == {
             "Inlet": model.fs.unit.inlet,
             "Treated": model.fs.unit.treated,
-            "Byproduct": model.fs.unit.byproduct}
+            "Byproduct": model.fs.unit.byproduct,
+        }
         assert model.fs.unit._perf_var_dict == {
             "Water Recovery": model.fs.unit.recovery_frac_mass_H2O,
-            "Solute Removal": model.fs.unit.removal_frac_mass_solute}
+            "Solute Removal": model.fs.unit.removal_frac_mass_solute,
+        }
 
     @pytest.mark.unit
     def test_build(self, model):
@@ -122,22 +128,54 @@ class TestSIDO:
     def test_scaling(self, model):
         iscale.calculate_scaling_factors(model)
 
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.water_recovery_equation[0]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.water_balance[0]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_removal_equation[0, "A"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_removal_equation[0, "B"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_removal_equation[0, "C"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_treated_equation[0, "A"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_treated_equation[0, "B"]) == 1e5
-        assert iscale.get_constraint_transform_applied_scaling_factor(
-            model.fs.unit.solute_treated_equation[0, "C"]) == 1e5
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.water_recovery_equation[0]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.water_balance[0]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_removal_equation[0, "A"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_removal_equation[0, "B"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_removal_equation[0, "C"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_treated_equation[0, "A"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_treated_equation[0, "B"]
+            )
+            == 1e5
+        )
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(
+                model.fs.unit.solute_treated_equation[0, "C"]
+            )
+            == 1e5
+        )
 
     @pytest.mark.component
     def test_initialization(self, model):
@@ -152,31 +190,45 @@ class TestSIDO:
 
     @pytest.mark.component
     def test_solution(self, model):
-        assert (pytest.approx(800, rel=1e-5) ==
-                value(model.fs.unit.treated.flow_mass_comp[0, "H2O"]))
-        assert (pytest.approx(200, rel=1e-5) ==
-                value(model.fs.unit.byproduct.flow_mass_comp[0, "H2O"]))
+        assert pytest.approx(800, rel=1e-5) == value(
+            model.fs.unit.treated.flow_mass_comp[0, "H2O"]
+        )
+        assert pytest.approx(200, rel=1e-5) == value(
+            model.fs.unit.byproduct.flow_mass_comp[0, "H2O"]
+        )
 
-        assert (pytest.approx(9, rel=1e-5) ==
-                value(model.fs.unit.treated.flow_mass_comp[0, "A"]))
-        assert (pytest.approx(1, rel=1e-5) ==
-                value(model.fs.unit.byproduct.flow_mass_comp[0, "A"]))
-        assert (pytest.approx(16, rel=1e-5) ==
-                value(model.fs.unit.treated.flow_mass_comp[0, "B"]))
-        assert (pytest.approx(4, rel=1e-5) ==
-                value(model.fs.unit.byproduct.flow_mass_comp[0, "B"]))
-        assert (pytest.approx(21, rel=1e-5) ==
-                value(model.fs.unit.treated.flow_mass_comp[0, "C"]))
-        assert (pytest.approx(9, rel=1e-5) ==
-                value(model.fs.unit.byproduct.flow_mass_comp[0, "C"]))
+        assert pytest.approx(9, rel=1e-5) == value(
+            model.fs.unit.treated.flow_mass_comp[0, "A"]
+        )
+        assert pytest.approx(1, rel=1e-5) == value(
+            model.fs.unit.byproduct.flow_mass_comp[0, "A"]
+        )
+        assert pytest.approx(16, rel=1e-5) == value(
+            model.fs.unit.treated.flow_mass_comp[0, "B"]
+        )
+        assert pytest.approx(4, rel=1e-5) == value(
+            model.fs.unit.byproduct.flow_mass_comp[0, "B"]
+        )
+        assert pytest.approx(21, rel=1e-5) == value(
+            model.fs.unit.treated.flow_mass_comp[0, "C"]
+        )
+        assert pytest.approx(9, rel=1e-5) == value(
+            model.fs.unit.byproduct.flow_mass_comp[0, "C"]
+        )
 
     @pytest.mark.component
     def test_conservation(self, model):
         for (t, j) in model.fs.unit.inlet.flow_mass_comp.keys():
-            assert (abs(value(model.fs.unit.inlet.flow_mass_comp[t, j] -
-                              model.fs.unit.treated.flow_mass_comp[t, j] -
-                              model.fs.unit.byproduct.flow_mass_comp[t, j]))
-                    <= 1e-6)
+            assert (
+                abs(
+                    value(
+                        model.fs.unit.inlet.flow_mass_comp[t, j]
+                        - model.fs.unit.treated.flow_mass_comp[t, j]
+                        - model.fs.unit.byproduct.flow_mass_comp[t, j]
+                    )
+                )
+                <= 1e-6
+            )
 
     @pytest.mark.component
     def test_report(self, model):

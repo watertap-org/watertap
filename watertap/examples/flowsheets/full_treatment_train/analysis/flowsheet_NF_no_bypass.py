@@ -40,11 +40,15 @@ def solve_flowsheet():
 
 def simulate(m, **kwargs):
     if kwargs is not None:
-        if kwargs['unfix_nf_area']:
+        if kwargs["unfix_nf_area"]:
             m.fs.NF.area.unfix()
+        if "check_termination" in kwargs.keys():
+            check_termination = kwargs["check_termination"]
+        else:
+            check_termination = True  # Defaults to True
 
-    flowsheet_NF.simulate(m)
-    return m
+    return flowsheet_NF.simulate(m, check_termination=check_termination)
+    # return m
 
 
 if __name__ == "__main__":
