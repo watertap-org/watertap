@@ -33,7 +33,7 @@ from watertap.examples.flowsheets.full_treatment_train.util import (
     solve_block,
     check_dof,
 )
-from watertap.examples.flowsheets.full_treatment_train.model_components import Separator
+from idaes.generic_models.unit_models import Separator
 
 
 def build_SepRO(m, base="TDS"):

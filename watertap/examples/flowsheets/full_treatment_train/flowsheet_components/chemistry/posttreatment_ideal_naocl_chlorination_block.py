@@ -98,8 +98,8 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 # Import the idaes object for the EquilibriumReactor unit model
 from idaes.generic_models.unit_models.equilibrium_reactor import EquilibriumReactor
 
-# Import the WaterTAP object inherited for the Mixer unit model
-from watertap.examples.flowsheets.full_treatment_train.model_components import Mixer
+# Import the Mixer unit model
+from idaes.generic_models.unit_models import Mixer
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
     costing,
 )
