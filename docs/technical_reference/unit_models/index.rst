@@ -11,3 +11,4 @@ Unit Models
    nanofiltration_dspmde_0D
    pressure_exchanger
    coag_floc_model
+   crystallizer_0D
