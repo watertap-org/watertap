@@ -113,8 +113,8 @@ from idaes.generic_models.unit_models.stoichiometric_reactor import (
     StoichiometricReactor,
 )
 
-# Import the WaterTAP objects inherited (includes for the Mixer and Separator unit model
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
+# Import the Mixer and Separator unit model
+from idaes.generic_models.unit_models import (
     Separator,
     Mixer,
 )
@@ -296,6 +296,7 @@ stoich_softening_thermo_config = {
             "entr_mol_liq_comp": Constant,
             # Parameter data is always associated with the methods defined above
             "parameter_data": {
+                "mw": (100.09, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": (55, pyunits.kmol * pyunits.m**-3),
                 "enth_mol_form_liq_comp_ref": (-1207, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": (75348, pyunits.J / pyunits.kmol / pyunits.K),
@@ -313,6 +314,7 @@ stoich_softening_thermo_config = {
             "entr_mol_liq_comp": Constant,
             # Parameter data is always associated with the methods defined above
             "parameter_data": {
+                "mw": (162.11, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": (55, pyunits.kmol * pyunits.m**-3),
                 "enth_mol_form_liq_comp_ref": (-542, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": (75348, pyunits.J / pyunits.kmol / pyunits.K),
@@ -351,6 +353,7 @@ stoich_softening_thermo_config = {
             "entr_mol_liq_comp": Constant,
             # Parameter data is always associated with the methods defined above
             "parameter_data": {
+                "mw": (146.34, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": (55, pyunits.kmol * pyunits.m**-3),
                 "enth_mol_form_liq_comp_ref": (-221, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": (75348, pyunits.J / pyunits.kmol / pyunits.K),
@@ -371,6 +374,7 @@ stoich_softening_thermo_config = {
             "entr_mol_liq_comp": Constant,
             # Parameter data is always associated with the methods defined above
             "parameter_data": {
+                "mw": (96.07, pyunits.g / pyunits.mol),
                 "dens_mol_liq_comp_coeff": (55, pyunits.kmol * pyunits.m**-3),
                 "enth_mol_form_liq_comp_ref": (-909, pyunits.kJ / pyunits.mol),
                 "cp_mol_liq_comp_coeff": (75348, pyunits.J / pyunits.kmol / pyunits.K),
@@ -499,13 +503,11 @@ def build_stoich_softening_mixer_unit(model):
     )
 
     # add new constraint for dosing rate
-    dr = (
-        model.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0].value
-        * model.fs.stoich_softening_mixer_unit.lime_stream.mole_frac_comp[
-            0, "Ca(OH)2"
-        ].value
+    dr = value(
+        model.fs.stoich_softening_mixer_unit.lime_stream.flow_mol[0]
+        * model.fs.stoich_softening_mixer_unit.lime_stream.mole_frac_comp[0, "Ca(OH)2"]
+        * model.fs.stoich_softening_thermo_params.get_component("Ca(OH)2").mw
     )
-    dr = dr * 74.093 / 1000
     model.fs.stoich_softening_mixer_unit.dosing_rate = Var(
         initialize=dr,
         domain=NonNegativeReals,
@@ -514,10 +516,11 @@ def build_stoich_softening_mixer_unit(model):
     )
 
     def _dosing_rate_cons(blk):
-        return blk.dosing_rate == blk.lime_stream.flow_mol[
-            0
-        ] * blk.lime_stream.mole_frac_comp[0, "Ca(OH)2"] * (
-            74.093e-3 * pyunits.kg / pyunits.mol
+        return (
+            blk.dosing_rate
+            == blk.lime_stream.flow_mol[0]
+            * blk.lime_stream.mole_frac_comp[0, "Ca(OH)2"]
+            * blk.lime_stream_state[0].params.get_component("Ca(OH)2").mw
         )
 
     model.fs.stoich_softening_mixer_unit.dosing_cons = Constraint(
