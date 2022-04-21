@@ -292,7 +292,6 @@ class TestPressureExchanger:
     @pytest.mark.component
     def test_solution(self, unit_frame):
         m = unit_frame
-<
         assert (pytest.approx(0.9877, rel=1e-3) ==
                 value(m.fs.unit.low_pressure_inlet.flow_mass_phase_comp[0, 'Liq', 'H2O']))
         assert (pytest.approx(3.582e-2, rel=1e-3) ==
