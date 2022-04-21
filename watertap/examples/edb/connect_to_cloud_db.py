@@ -19,7 +19,7 @@
 
     python -m pip install pymongo[srv]
 
-    After you connect to the Cloud EDB, you can follow the other examples to build
+    After you connect to the Cloud EDB, you can follow some other examples to build
     your IDAES config from that database. In the unit test, we use the cloud database
     to build a correct IDAES config for the same basic water example shown in file
     'the_basics'.
