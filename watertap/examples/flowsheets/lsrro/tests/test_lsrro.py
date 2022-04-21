@@ -560,6 +560,11 @@ Product             : 0.330 kg/s, 823 ppm, 1.0 bar
 
         return data
 
+    @pytest.mark.requires_idaes_solver
+    @pytest.mark.component
+    def test_optimize(self, model, optimization_data):
+        super().test_optimize(model, optimization_data)
+
 
 """
 class TestLSRRO_NStage(_TestLSRRO):
