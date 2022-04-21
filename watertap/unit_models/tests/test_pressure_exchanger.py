@@ -113,9 +113,9 @@ def test_build(has_mass_transfer=False,extra_variables=0,extra_constraint=0):
     assert hasattr(m.fs.unit, 'efficiency_pressure_exchanger')
     assert isinstance(m.fs.unit.efficiency_pressure_exchanger, Var)
     if not has_mass_transfer:
-        assert not hasattr(m.fs.unit, 'solution_transfer_fraction')
+        assert not hasattr(m.fs.unit, 'mass_transfer_fraction_comp')
     else:
-        assert isinstance(m.fs.unit.solution_transfer_fraction, Var)
+        assert isinstance(m.fs.unit.mass_transfer_fraction_comp, Var)
 
     # test unit constraints
     unit_cons_lst = ['eq_pressure_transfer', 'eq_equal_flow_vol', 'eq_equal_low_pressure']
@@ -201,8 +201,8 @@ class TestPressureExchanger():
 
         solute_transfer=0.05
         solvent_transfer=0.1
-        m.fs.unit.solution_transfer_fraction[0,'H2O'].fix(solvent_transfer)
-        m.fs.unit.solution_transfer_fraction[0,'TDS'].fix(solute_transfer)
+        m.fs.unit.mass_transfer_fraction_comp[0,'H2O'].fix(solvent_transfer)
+        m.fs.unit.mass_transfer_fraction_comp[0,'TDS'].fix(solute_transfer)
 
         m.fs.unit.low_pressure_side.properties_in[0].flow_vol_phase['Liq'].fix(flow_vol)
         m.fs.unit.low_pressure_side.properties_in[0].mass_frac_phase_comp['Liq', 'TDS'].fix(lowP_mass_frac_TDS)
@@ -354,9 +354,9 @@ class TestPressureExchanger_with_ion_prop_pack():
         efficiency = 0.95
         m.fs.unit.efficiency_pressure_exchanger.fix(efficiency)
 
-        m.fs.unit.solution_transfer_fraction[0,'H2O'].fix(solvent_transfer)
+        m.fs.unit.mass_transfer_fraction_comp[0,'H2O'].fix(solvent_transfer)
         for s in solute_transfer:
-            m.fs.unit.solution_transfer_fraction[0, s].fix(solute_transfer[s])
+            m.fs.unit.mass_transfer_fraction_comp[0, s].fix(solute_transfer[s])
 
         m.fs.unit.low_pressure_side.properties_in[0].flow_mass_phase_comp['Liq', 'H2O'].fix(
             feed_flow_mass * (1 - sum(x for x in lowP_mass_frac.values())))
@@ -364,9 +364,7 @@ class TestPressureExchanger_with_ion_prop_pack():
             m.fs.unit.low_pressure_side.properties_in[0].flow_mass_phase_comp['Liq', s].fix(feed_flow_mass * lowP_mass_frac[s])
         m.fs.unit.low_pressure_side.properties_in[0].pressure.fix(lowP_pressure)
         m.fs.unit.low_pressure_side.properties_in[0].temperature.fix(temperature)
-        m.fs.unit.low_pressure_side.properties_in[0].mass_frac_phase_comp
-        m.fs.unit.low_pressure_side.properties_in[0].flow_mol_phase_comp
-        m.fs.unit.low_pressure_side.properties_in[0].flow_vol
+
 
         ### NOTE THE PRESSURE EXHCANGER EXPECTS EQUAL VOLUMETRIC FLOW RATES so one of mass fractions on high pressure or low pressure sides
         # should be left unfixed, as other wise you are fixing all the mass fractions, and forcing equal flow, which leaves no degrees of freedom
@@ -380,9 +378,7 @@ class TestPressureExchanger_with_ion_prop_pack():
 
         m.fs.unit.high_pressure_side.properties_in[0].pressure.fix(highP_pressure)
         m.fs.unit.high_pressure_side.properties_in[0].temperature.fix(temperature)
-        m.fs.unit.high_pressure_side.properties_in[0].mass_frac_phase_comp
-        m.fs.unit.high_pressure_side.properties_in[0].flow_mol_phase_comp
-        m.fs.unit.high_pressure_side.properties_in[0].flow_vol
+
 
         return m
 

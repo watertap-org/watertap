@@ -147,7 +147,7 @@ class PressureExchangerData(UnitModelBlockData):
             doc='Pressure exchanger efficiency')
 
         if self.config.has_mass_transfer:
-            self.solution_transfer_fraction = Var(
+            self.mass_transfer_fraction_comp = Var(
                 self.flowsheet().config.time,
                 self.config.property_package.component_list,
                 initialize=0.05,
@@ -221,12 +221,8 @@ class PressureExchangerData(UnitModelBlockData):
             self.flowsheet().config.time,
             doc="Equal volumetric flow rate")
         def eq_equal_flow_vol(b, t):
-            if self.config.has_mass_transfer:
-                return (b.high_pressure_side.properties_out[t].flow_vol ==
-                        b.low_pressure_side.properties_in[t].flow_vol)
-            else:
-                return (b.high_pressure_side.properties_in[t].flow_vol ==
-                        b.low_pressure_side.properties_in[t].flow_vol)
+            return (b.high_pressure_side.properties_out[t].flow_vol ==
+                    b.low_pressure_side.properties_in[t].flow_vol)
 
         @self.Constraint(
             self.flowsheet().config.time,
@@ -256,7 +252,7 @@ class PressureExchangerData(UnitModelBlockData):
             def eq_mass_transfer_from_high_pressure_side(b, t, p, j):
                 comp = self.config.property_package.get_component(j)
                 return b.high_pressure_side.mass_transfer_term[t, p, j] == \
-                     - b.solution_transfer_fraction[t, j]*b.high_pressure_side.properties_in[t].get_material_flow_terms(p,j)
+                     - b.mass_transfer_fraction_comp[t, j]*b.high_pressure_side.properties_in[t].get_material_flow_terms(p,j)
 
             @self.Constraint(
                 self.flowsheet().config.time,
@@ -384,9 +380,9 @@ class PressureExchangerData(UnitModelBlockData):
         if iscale.get_scaling_factor(self.efficiency_pressure_exchanger) is None:
             # efficiency should always be between 0.1-1
             iscale.set_scaling_factor(self.efficiency_pressure_exchanger, 1)
-        if hasattr(self, 'solution_transfer_fraction'):
-            if iscale.get_scaling_factor(self.solution_transfer_fraction) is None:
-                iscale.set_scaling_factor(self.solution_transfer_fraction, 1)
+        if hasattr(self, 'mass_transfer_fraction_comp'):
+            if iscale.get_scaling_factor(self.mass_transfer_fraction_comp) is None:
+                iscale.set_scaling_factor(self.mass_transfer_fraction_comp, 1)
 
         # scale expressions
         if iscale.get_scaling_factor(self.low_pressure_side.work) is None:
@@ -428,10 +424,9 @@ class PressureExchangerData(UnitModelBlockData):
         if hasattr(self, 'eq_mass_transfer_term'):
             for (t,p,j), c in self.eq_mass_transfer_term.items():
                 sf = iscale.get_scaling_factor(self.high_pressure_side.mass_transfer_term[t, p, j])
-                sf = sf*iscale.get_scaling_factor(self.low_pressure_side.mass_transfer_term[t, p, j])
                 iscale.constraint_scaling_transform(c, sf)
-
-
+                sf = iscale.get_scaling_factor(self.low_pressure_side.mass_transfer_term[t, p, j])
+                iscale.constraint_scaling_transform(c, sf)
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
