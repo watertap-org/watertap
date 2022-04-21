@@ -21,7 +21,7 @@ from pyomo.environ import (
     Var,
 )
 from idaes.core import FlowsheetBlock
-from watertap.unit_models.pressure_changer import Pump
+from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 import watertap.property_models.seawater_prop_pack as props
 
 from idaes.core.util import get_solver
@@ -187,6 +187,63 @@ class TestPumpIsothermal:
         assert pytest.approx(4e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
         assert pytest.approx(5, rel=1e-3) == value(m.fs.unit.ratioP[0])
         assert pytest.approx(390.79, rel=1e-3) == value(m.fs.unit.work_fluid[0])
+
+        # outlet state variables
+        assert pytest.approx(0.965, rel=1e-3) == value(
+            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                "Liq", "H2O"
+            ]
+        )
+        assert pytest.approx(0.035, rel=1e-3) == value(
+            m.fs.unit.control_volume.properties_out[0].flow_mass_phase_comp[
+                "Liq", "TDS"
+            ]
+        )
+        assert pytest.approx(298.15, rel=1e-5) == value(
+            m.fs.unit.control_volume.properties_out[0].temperature
+        )
+
+
+class TestEnergyRecoveryDevice(TestPumpIsothermal):
+    @pytest.fixture(scope="class")
+    def Pump_frame(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = props.SeawaterParameterBlock()
+
+        m.fs.unit = EnergyRecoveryDevice(default={"property_package": m.fs.properties})
+
+        # fully specify system
+        feed_flow_mass = 1
+        feed_mass_frac_TDS = 0.035
+        feed_pressure_in = 5e5
+        feed_pressure_out = 1e5
+        feed_temperature = 273.15 + 25
+        efi_pump = 0.75
+
+        feed_mass_frac_H2O = 1 - feed_mass_frac_TDS
+        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "TDS"].fix(
+            feed_flow_mass * feed_mass_frac_TDS
+        )
+        m.fs.unit.inlet.flow_mass_phase_comp[0, "Liq", "H2O"].fix(
+            feed_flow_mass * feed_mass_frac_H2O
+        )
+        m.fs.unit.inlet.pressure[0].fix(feed_pressure_in)
+        m.fs.unit.inlet.temperature[0].fix(feed_temperature)
+        m.fs.unit.outlet.pressure[0].fix(feed_pressure_out)
+        m.fs.unit.efficiency_pump.fix(efi_pump)
+        return m
+
+    @pytest.mark.component
+    def test_solution(self, Pump_frame):
+        m = Pump_frame
+
+        # pump variables
+        assert pytest.approx(-293.09, rel=1e-3) == value(m.fs.unit.work_mechanical[0])
+        assert pytest.approx(-4e5, rel=1e-3) == value(m.fs.unit.deltaP[0])
+        assert pytest.approx(1.0 / 5, rel=1e-3) == value(m.fs.unit.ratioP[0])
+        assert pytest.approx(-390.79, rel=1e-3) == value(m.fs.unit.work_fluid[0])
 
         # outlet state variables
         assert pytest.approx(0.965, rel=1e-3) == value(
