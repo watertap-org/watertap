@@ -16,7 +16,7 @@
 from pyomo.environ import ConcreteModel, TransformationFactory
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
-from watertap.examples.flowsheets.full_treatment_train.model_components import (
+from idaes.generic_models.unit_models import (
     Separator,
     Mixer,
 )
