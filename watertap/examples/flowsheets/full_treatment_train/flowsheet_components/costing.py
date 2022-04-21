@@ -23,7 +23,13 @@ from pyomo.environ import (
     units as pyunits,
 )
 from idaes.generic_models.costing import UnitModelCostingBlock
-from watertap.costing import WaterTAPCosting, PumpType, MixerType, ROType
+from watertap.costing import (
+    WaterTAPCosting,
+    PumpType,
+    EnergyRecoveryDeviceType,
+    MixerType,
+    ROType,
+)
 
 from watertap.examples.flowsheets.full_treatment_train.flowsheet_components import (
     feed_block,
@@ -138,7 +144,9 @@ def build_costing(m, costing_package=WaterTAPCosting, **kwargs):
         m.fs.ERD.costing = UnitModelCostingBlock(
             default={
                 "flowsheet_costing_block": m.fs.costing,
-                "costing_method_arguments": {"pump_type": PumpType.pressure_exchanger},
+                "costing_method_arguments": {
+                    "energy_recovery_device_type": EnergyRecoveryDeviceType.pressure_exchanger
+                },
             }
         )
         m.fs.costing.cost_flow(
