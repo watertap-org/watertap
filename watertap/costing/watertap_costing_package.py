@@ -61,6 +61,10 @@ class MixerType(StrEnum):
 
 @declare_process_block_class("WaterTAPCosting")
 class WaterTAPCostingData(FlowsheetCostingBlockData):
+    def build(self):
+        super().build()
+        self._registered_LCOWs = {}
+
     def build_global_params(self):
 
         # Register currency and conversion rates based on CE Index
@@ -248,50 +252,85 @@ class WaterTAPCostingData(FlowsheetCostingBlockData):
             self.total_operating_cost, self.total_operating_cost_constraint
         )
 
-        if hasattr(self, "LCOW"):
-            calculate_variable_from_constraint(self.LCOW, self.LCOW_constraint)
+        for var, con in self._registered_LCOWs.values():
+            calculate_variable_from_constraint(var, con)
 
-    def add_LCOW(self, flow_rate):
+    def add_LCOW(self, flow_rate, name="LCOW"):
         """
         Add Levelized Cost of Water (LCOW) to costing block.
         Args:
             flow_rate - flow rate of water (volumetric) to be used in
                         calculating LCOW
+            name (optional) - name for the LCOW variable (default: LCOW)
         """
 
-        self.annual_water_production = pyo.Expression(
-            expr=(
-                pyo.units.convert(
-                    flow_rate, to_units=pyo.units.m**3 / self.base_period
-                )
-                * self.load_factor
-            )
+        LCOW = pyo.Var(
+            doc=f"Levelized Cost of Water based on flow {flow_rate.name}",
+            units=self.base_currency / pyo.units.m**3,
         )
+        self.add_component(name, LCOW)
 
-        self.LCOW = pyo.Var(
-            doc="Levelized Cost of Water", units=self.base_currency / pyo.units.m**3
-        )
-
-        self.LCOW_constraint = pyo.Constraint(
-            expr=self.LCOW
+        LCOW_constraint = pyo.Constraint(
+            expr=LCOW
             == (
                 self.total_investment_cost * self.factor_capital_annualization
                 + self.total_operating_cost
             )
-            / self.annual_water_production
+            / (
+                pyo.units.convert(
+                    flow_rate, to_units=pyo.units.m**3 / self.base_period
+                )
+                * self.load_factor
+            ),
+            doc=f"Constraint for Levelized Cost of Water based on flow {flow_rate.name}",
+        )
+        self.add_component(name + "_constraint", LCOW_constraint)
+
+        self._registered_LCOWs[name] = (LCOW, LCOW_constraint)
+
+    def add_annual_water_production(self, flow_rate, name="annual_water_production"):
+        """
+        Add annual water production to costing block.
+        Args:
+            flow_rate - flow rate of water (volumetric) to be used in
+                        calculating annual water production
+            name (optional) - name for the annual water productionvariable
+                              Expression (default: annual_water_production)
+        """
+        self.add_component(
+            name,
+            pyo.Expression(
+                expr=(
+                    pyo.units.convert(
+                        flow_rate, to_units=pyo.units.m**3 / self.base_period
+                    )
+                    * self.load_factor
+                ),
+                doc=f"Annual water production based on flow {flow_rate.name}",
+            ),
         )
 
-    def add_specific_energy_consumption(self, flow_rate):
+    def add_specific_energy_consumption(
+        self, flow_rate, name="specific_energy_consumption"
+    ):
         """
         Add specific energy consumption (kWh/m**3) to costing block.
         Args:
             flow_rate - flow rate of water (volumetric) to be used in
                         calculating specific energy consumption
+            name (optional) - the name of the Expression for the specific
+                              energy consumption (default: specific_energy_consumption)
         """
 
-        self.specific_energy_consumption = pyo.Expression(
-            expr=self.aggregate_flow_electricity
-            / pyo.units.convert(flow_rate, to_units=pyo.units.m**3 / pyo.units.hr)
+        self.add_component(
+            name,
+            pyo.Expression(
+                expr=self.aggregate_flow_electricity
+                / pyo.units.convert(
+                    flow_rate, to_units=pyo.units.m**3 / pyo.units.hr
+                ),
+                doc=f"Specific energy consumption based on flow {flow_rate.name}",
+            ),
         )
 
     # Define costing methods supported by package
